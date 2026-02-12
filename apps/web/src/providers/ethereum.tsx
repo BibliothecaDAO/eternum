@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { mainnet, sepolia } from "@reown/appkit/networks";
-import { createAppKit } from "@reown/appkit/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
@@ -40,16 +39,22 @@ export function AppKitProvider({
       return;
     }
 
-    createAppKit({
-      adapters: [wagmiAdapter],
-      networks: [...NETWORKS],
-      projectId: PROJECT_ID,
-      metadata: METADATA,
-      features: {
-        analytics: true,
-      },
-    });
     initializedRef.current = true;
+    void import("@reown/appkit/react")
+      .then(({ createAppKit }) => {
+        createAppKit({
+          adapters: [wagmiAdapter],
+          networks: [...NETWORKS],
+          projectId: PROJECT_ID,
+          metadata: METADATA,
+          features: {
+            analytics: true,
+          },
+        });
+      })
+      .catch(() => {
+        initializedRef.current = false;
+      });
   }, [wagmiAdapter]);
 
   return (

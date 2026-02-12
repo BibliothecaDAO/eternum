@@ -124,7 +124,6 @@ export const createDelegateProfile = createServerFn({ method: "POST" })
         disableCookieCache: true,
       },
     });
-    console.log(session);
     if (!session) {
       return;
     }

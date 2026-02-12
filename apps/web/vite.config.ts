@@ -27,6 +27,21 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1000,
     target: "esnext",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("react-markdown") || id.includes("remark-gfm") || id.includes("rehype-raw") || id.includes("rehype-sanitize")) {
+            return "markdown-vendors";
+          }
+
+          if (id.includes("recharts")) {
+            return "charts-vendors";
+          }
+
+          return undefined;
+        },
+      },
+    },
   },
   optimizeDeps: {
     include: [

@@ -13,21 +13,37 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
-import { formatAddress } from "@/utils/utils";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { getProposalsQueryOptions } from "@/lib/snapshot/getProposals";
+import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { num } from "starknet";
 
+import { SnapshotSpaceAddresses } from "@realms-world/constants";
+
 export const Route = createFileRoute("/proposal/list")({
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(
+      getProposalsQueryOptions({
+        spaceIds: [SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID] as string],
+        limit: 20,
+        skip: 0,
+        current: 1,
+        searchQuery: "",
+      }),
+    );
+  },
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { data } = useCurrentDelegate();
+  const delegateAddress =
+    data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : undefined;
 
-  const currentDelegateQuery = useSuspenseQuery(
+  const currentDelegateQuery = useQuery(
     getDelegateByIDQueryOptions({
-      address: formatAddress(num.toHex(BigInt(data ?? 0))),
+      address: delegateAddress,
     }),
   );
   const currentDelegate = currentDelegateQuery.data;

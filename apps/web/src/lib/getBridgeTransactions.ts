@@ -6,6 +6,12 @@ import { z } from "zod";
 import { desc, eq, or, realmsBridgeRequests } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 
+const BRIDGE_TRANSACTIONS_POLL_INTERVAL_MS = 10_000;
+
+function hasBridgeAccount(input?: z.infer<typeof GetBridgeTransactionsInput>) {
+  return (input?.l1Account ?? input?.l2Account) != null;
+}
+
 /* -------------------------------------------------------------------------- */
 /*                         getBridgeTransactions Endpoint                     */
 /* -------------------------------------------------------------------------- */
@@ -48,9 +54,10 @@ export const getBridgeTransactionsQueryOptions = (
   queryOptions({
     queryKey: ["getBridgeTransactions", input],
     queryFn: () =>
-      !!input?.l2Account || !!input?.l1Account
-        ? getBridgeTransactions({ data: input })
-        : null,
-    enabled: !!input?.l2Account || !!input?.l1Account,
-    refetchInterval: 10000,
+      hasBridgeAccount(input) ? getBridgeTransactions({ data: input }) : null,
+    enabled: hasBridgeAccount(input),
+    refetchInterval: hasBridgeAccount(input)
+      ? BRIDGE_TRANSACTIONS_POLL_INTERVAL_MS
+      : false,
+    refetchIntervalInBackground: false,
   });

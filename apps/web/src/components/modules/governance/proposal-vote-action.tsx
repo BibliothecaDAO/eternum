@@ -22,6 +22,9 @@ export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {
   const { vote, selectedChoice, setSelectedChoice } = useVoteProposal(proposal);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [voteReason, setVoteReason] = useState("");
+  const proposalTitle =
+    ((proposal as { metadata?: { title?: string } }).metadata?.title ??
+      "this proposal");
   const { address } = useAccount();
   const { openStarknetKitModal } = useStarknetWallet();
 
@@ -43,7 +46,6 @@ export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {
 
   const handleVoteSubmit = async () => {
     if (selectedChoice !== null) {
-      console.log("voting");
       await vote(voteReason)
         .then(() => {
           setDialogOpen(false);
@@ -91,7 +93,7 @@ export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {
           <DialogHeader>
             <DialogTitle>Confirm Your Vote</DialogTitle>
             <DialogDescription>
-              You are voting on: {proposal.metadata?.title}
+              You are voting on: {proposalTitle}
             </DialogDescription>
           </DialogHeader>
 

@@ -15,12 +15,6 @@ async function createSiwsData(statement: string, address: string) {
   const nonce = await authClient.siws.nonce({ address });
   const domain = window.location.host;
   const origin = window.location.origin;
-  /*const res = await fetch(`/api/auth/nonce`, {
-      credentials: "include",
-    });
-    console.log(res);
-    const responseNonce = (await res.json()) as { nonce: string };
-    console.log(responseNonce);*/
   const siwsDomain: ISiwsDomain = {
     version: "0.0.1",
     chainId: env.VITE_PUBLIC_CHAIN == "sepolia" ? `SN_SEPOLIA` : `SN_MAIN`,
@@ -31,8 +25,8 @@ async function createSiwsData(statement: string, address: string) {
     address,
     statement,
     uri: origin,
-    version: "0.0.5", //message version and not the starknetdomain version
-    nonce: nonce.data?.nonce ?? "", //TODO add csrf token
+    version: "0.0.5",
+    nonce: nonce.data?.nonce ?? "",
     issuedAt: new Date().toISOString(),
   };
 
@@ -59,7 +53,7 @@ export function Login() {
     setIsDataPending(false);
   };
 
-  const { signTypedDataAsync, error, isPending } = useSignTypedData({});
+  const { signTypedDataAsync, isPending } = useSignTypedData({});
 
   if (!address) {
     return <StarknetWalletButton className="w-full" />;
@@ -71,7 +65,9 @@ export function Login() {
         onClick={async (e) => {
           e.preventDefault();
           const signInData = await createSignInData();
-          console.log(signInData);
+          if (!signInData) {
+            return;
+          }
           const signature = await signTypedDataAsync(signInData);
           await authClient.siws.verify({
             message: JSON.stringify(signInData),

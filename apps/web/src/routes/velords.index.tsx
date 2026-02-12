@@ -1,9 +1,6 @@
 import type { Address } from "@starknet-react/core";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
-import { VelordsRewards } from "@/components/modules/velords/claim-rewards";
-import { VeLordsRewardsChart } from "@/components/modules/velords/rewards-chart";
-import { StakeLords } from "@/components/modules/velords/stake-lords";
 import { useVelordsData } from "@/hooks/use-velords-data";
 import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
@@ -13,6 +10,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { formatEther } from "viem";
 
 import { StakingAddresses } from "@realms-world/constants";
+
+const VeLordsRewardsChart = lazy(() =>
+  import("@/components/modules/velords/rewards-chart").then((mod) => ({
+    default: mod.VeLordsRewardsChart,
+  })),
+);
+const StakeLords = lazy(() =>
+  import("@/components/modules/velords/stake-lords").then((mod) => ({
+    default: mod.StakeLords,
+  })),
+);
+const VelordsRewards = lazy(() =>
+  import("@/components/modules/velords/claim-rewards").then((mod) => ({
+    default: mod.VelordsRewards,
+  })),
+);
 
 export const Route = createFileRoute("/velords/")({
   component: RouteComponent,
@@ -35,7 +48,7 @@ function RouteComponent() {
     getVelordsBurnsQueryOptions({ startTimestamp }),
   );
   const veLordsBurns = veLordsBurnsQuery.data ?? [];
-  const {address} = useAccount()
+  const { address } = useAccount();
   const velordsData = useVelordsData();
   const {
     totalSupply: hookTotalSupply,
@@ -120,26 +133,42 @@ function RouteComponent() {
               </div>
             </div>
             <div className="bg-card rounded-lg border p-6">
-              <VeLordsRewardsChart
-                totalSupply={hookTotalSupply ?? (
-                  totalSupply
-                    ? Number(formatEther(totalSupply as bigint))
-                    : undefined
-                )}
-                data={veLordsBurns}
-                onTimePeriodChange={handleTimePeriodChange}
-              />
+              <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-md border" />}>
+                <VeLordsRewardsChart
+                  totalSupply={hookTotalSupply ?? (
+                    totalSupply
+                      ? Number(formatEther(totalSupply as bigint))
+                      : undefined
+                  )}
+                  data={veLordsBurns}
+                  onTimePeriodChange={handleTimePeriodChange}
+                />
+              </Suspense>
             </div>
           </div>
 
           {/* Left Column - Staking Controls and Claimable Rewards */}
           <div className="space-y-6 xl:col-span-2">
             <div className="bg-card rounded-lg border">
-              <StakeLords />
+              <Suspense
+                fallback={
+                  <div className="h-[320px] w-full animate-pulse rounded-md border" />
+                }
+              >
+                <StakeLords />
+              </Suspense>
             </div>
-            {address &&<div className="bg-card rounded-lg border">
-              <VelordsRewards />
-            </div>}
+            {address && (
+              <div className="bg-card rounded-lg border">
+                <Suspense
+                  fallback={
+                    <div className="h-[220px] w-full animate-pulse rounded-md border" />
+                  }
+                >
+                  <VelordsRewards />
+                </Suspense>
+              </div>
+            )}
           </div>
         </div>
       </div>

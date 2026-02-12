@@ -20,6 +20,7 @@ import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
+import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import {
@@ -33,7 +34,7 @@ import {
   useReadContract,
   useSendTransaction,
 } from "@starknet-react/core";
-import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
 import { num } from "starknet";
@@ -72,14 +73,14 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   });
   const l1UsersRealms = l1UsersRealmsQuery.data;
   const accountTokens = accountTokensQuery.data;
+  const l1RealmCount = l1UsersRealms?.collections[0]?.ownership.tokenCount ?? 0;
 
   const { data } = useCurrentDelegate();
-  const currentDelegateQuery = useSuspenseQuery(
+  const delegateAddress =
+    data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : undefined;
+  const currentDelegateQuery = useQuery(
     getDelegateByIDQueryOptions({
-      address:
-        data && BigInt(data) != 0n
-          ? formatAddress(num.toHex(BigInt(data)))
-          : undefined,
+      address: delegateAddress,
     }),
   );
   const currentDelegate = currentDelegateQuery.data;
@@ -133,10 +134,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold">
-                    {l1UsersRealms?.collections?.[0]?.ownership?.tokenCount ??
-                      0}
-                  </div>
+                  <div className="text-3xl font-bold">{l1RealmCount}</div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <EthereumIcon className="h-4 w-4" />
                     Ethereum
@@ -305,58 +303,49 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
           {/* Delegate Section */}
           <div className="space-y-4">
-            <Suspense fallback={<DelegateCardSkeleton />}>
-              {!currentDelegate ||
-              (currentDelegate.user && BigInt(currentDelegate.user) == 0n) ? (
-                <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">Governance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <h3 className="mb-2 text-lg font-semibold">
-                        No Delegate Selected
-                      </h3>
-                      <p className="text-muted-foreground mb-4 text-sm">
-                        Delegate your Realms to participate in governance
-                      </p>
-                      <Link to={`/delegate/list`}>
-                        <Button className="w-full">Choose a Delegate</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <DelegateCard
-                  delegate={{
-                    user: currentDelegate.user,
-                    delegateProfile: currentDelegate.delegateProfile
-                      ? {
-                          twitter:
-                            currentDelegate.delegateProfile.twitter ||
-                            undefined,
-                          github:
-                            currentDelegate.delegateProfile.github || undefined,
-                          telegram:
-                            currentDelegate.delegateProfile.telegram ||
-                            undefined,
-                          discord:
-                            currentDelegate.delegateProfile.discord ||
-                            undefined,
-                          interests:
-                            currentDelegate.delegateProfile.interests ||
-                            undefined,
-                          statement:
-                            currentDelegate.delegateProfile.statement ||
-                            undefined,
-                        }
-                      : undefined,
-                    delegatedVotes: currentDelegate.delegatedVotes,
-                    id: currentDelegate.id,
-                  }}
-                />
-              )}
-            </Suspense>
+            {currentDelegateQuery.isLoading ? (
+              <DelegateCardSkeleton />
+            ) : !currentDelegate ||
+              (currentDelegate.user && BigInt(currentDelegate.user) === 0n) ? (
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">Governance</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <h3 className="mb-2 text-lg font-semibold">
+                      No Delegate Selected
+                    </h3>
+                    <p className="text-muted-foreground mb-4 text-sm">
+                      Delegate your Realms to participate in governance
+                    </p>
+                    <Link to={`/delegate/list`}>
+                      <Button className="w-full">Choose a Delegate</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <DelegateCard
+                delegate={{
+                  user: currentDelegate.user,
+                  delegateProfile: currentDelegate.delegateProfile
+                    ? {
+                        twitter: currentDelegate.delegateProfile.twitter ?? undefined,
+                        github: currentDelegate.delegateProfile.github ?? undefined,
+                        telegram:
+                          currentDelegate.delegateProfile.telegram ?? undefined,
+                        discord: currentDelegate.delegateProfile.discord ?? undefined,
+                        interests:
+                          currentDelegate.delegateProfile.interests ?? undefined,
+                        statement: currentDelegate.delegateProfile.statement,
+                      }
+                    : undefined,
+                  delegatedVotes: currentDelegate.delegatedVotes,
+                  id: currentDelegate.id,
+                }}
+              />
+            )}
           </div>
         </div>
 
@@ -383,7 +372,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle className="text-lg">Your Realms</CardTitle>
-                {accountTokens?.length > 5 && (
+                {accountTokens.length > 5 && (
                   <Link to={`/realms`}>
                     <Button variant="outline" size="sm">
                       View All ({accountTokens.length})
@@ -393,15 +382,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                  {accountTokens
-                    ?.slice(0, 5)
-                    .map((realm: any) => (
-                      <RealmCard
-                        key={realm.token_id}
-                        token={realm}
-                        isGrid={true}
-                      />
-                    ))}
+                  {accountTokens.slice(0, 5).map((realm: RawTokenBalanceWithMetadata) => (
+                    <RealmCard key={realm.token_id} token={realm} isGrid={true} />
+                  ))}
                   {accountTokens.length > 5 && (
                     <Card className="flex items-center justify-center">
                       <Link
