@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ScrollIndexRouteImport } from './routes/scroll/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
+import { Route as ScrollSlugRouteImport } from './routes/scroll/$slug'
 import { Route as GamesSlugRouteImport } from './routes/games/$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +20,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScrollIndexRoute = ScrollIndexRouteImport.update({
+  id: '/scroll/',
+  path: '/scroll/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GamesIndexRoute = GamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScrollSlugRoute = ScrollSlugRouteImport.update({
+  id: '/scroll/$slug',
+  path: '/scroll/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesSlugRoute = GamesSlugRouteImport.update({
@@ -32,31 +44,45 @@ const GamesSlugRoute = GamesSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/games/$slug': typeof GamesSlugRoute
+  '/scroll/$slug': typeof ScrollSlugRoute
   '/games/': typeof GamesIndexRoute
+  '/scroll/': typeof ScrollIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/games/$slug': typeof GamesSlugRoute
+  '/scroll/$slug': typeof ScrollSlugRoute
   '/games': typeof GamesIndexRoute
+  '/scroll': typeof ScrollIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/games/$slug': typeof GamesSlugRoute
+  '/scroll/$slug': typeof ScrollSlugRoute
   '/games/': typeof GamesIndexRoute
+  '/scroll/': typeof ScrollIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/games/$slug' | '/games/'
+  fullPaths: '/' | '/games/$slug' | '/scroll/$slug' | '/games/' | '/scroll/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/games/$slug' | '/games'
-  id: '__root__' | '/' | '/games/$slug' | '/games/'
+  to: '/' | '/games/$slug' | '/scroll/$slug' | '/games' | '/scroll'
+  id:
+    | '__root__'
+    | '/'
+    | '/games/$slug'
+    | '/scroll/$slug'
+    | '/games/'
+    | '/scroll/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GamesSlugRoute: typeof GamesSlugRoute
+  ScrollSlugRoute: typeof ScrollSlugRoute
   GamesIndexRoute: typeof GamesIndexRoute
+  ScrollIndexRoute: typeof ScrollIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,11 +94,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/scroll/': {
+      id: '/scroll/'
+      path: '/scroll'
+      fullPath: '/scroll/'
+      preLoaderRoute: typeof ScrollIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/games/': {
       id: '/games/'
       path: '/games'
       fullPath: '/games/'
       preLoaderRoute: typeof GamesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scroll/$slug': {
+      id: '/scroll/$slug'
+      path: '/scroll/$slug'
+      fullPath: '/scroll/$slug'
+      preLoaderRoute: typeof ScrollSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/$slug': {
@@ -88,7 +128,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GamesSlugRoute: GamesSlugRoute,
+  ScrollSlugRoute: ScrollSlugRoute,
   GamesIndexRoute: GamesIndexRoute,
+  ScrollIndexRoute: ScrollIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

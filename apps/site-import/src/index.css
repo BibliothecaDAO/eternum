@@ -313,3 +313,53 @@
 .dark .react-flow__edge-textbg {
   fill: rgba(0, 0, 0, 0.9);
 }
+
+@layer components {
+  .scroll-content {
+    @apply text-base leading-7 text-foreground;
+  }
+
+  .scroll-content h1 {
+    @apply text-3xl font-bold mt-8 mb-4;
+  }
+
+  .scroll-content h2 {
+    @apply text-2xl font-semibold mt-8 mb-3;
+  }
+
+  .scroll-content h3 {
+    @apply text-xl font-semibold mt-6 mb-3;
+  }
+
+  .scroll-content p {
+    @apply mb-4 text-foreground/90;
+  }
+
+  .scroll-content ul {
+    @apply list-disc pl-6 mb-4 space-y-1;
+  }
+
+  .scroll-content ol {
+    @apply list-decimal pl-6 mb-4 space-y-1;
+  }
+
+  .scroll-content a {
+    @apply text-primary underline decoration-primary/50 hover:decoration-primary;
+  }
+
+  .scroll-content blockquote {
+    @apply border-l-2 border-primary/70 pl-4 text-muted-foreground italic my-4;
+  }
+
+  .scroll-content code {
+    @apply bg-muted px-1.5 py-0.5 text-sm;
+  }
+
+  .scroll-content pre {
+    @apply bg-muted p-4 overflow-x-auto my-4;
+  }
+
+  .scroll-content pre code {
+    @apply p-0 bg-transparent;
+  }
+}

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/generate-scroll-posts.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -32,12 +33,15 @@
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.5.2",
     "framer-motion": "^12.0.5",
+    "gray-matter": "^4.0.3",
     "lucide-react": "^0.469.0",
+    "marked": "^17.0.2",
     "motion": "^12.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-helmet-async": "^2.0.5",
     "recharts": "^3.7.0",
+    "sanitize-html": "^2.17.0",
     "simplex-noise": "^4.0.3",
     "starknet": "^8.1.2",
     "tailwind-merge": "^3.0.2",

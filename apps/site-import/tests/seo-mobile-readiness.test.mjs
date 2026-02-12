@@ -26,6 +26,8 @@ test("SEO: sitemap.xml exists and includes core routes", () => {
   const sitemap = readFileSync(sitemapPath, "utf8");
   for (const route of [
     "https://realms.world/",
+    "https://realms.world/scroll",
+    "https://realms.world/scroll/ecosystem-roundup",
     "https://realms.world/games",
     "https://realms.world/games/realms-eternum",
   ]) {

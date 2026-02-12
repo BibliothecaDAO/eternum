@@ -133,6 +133,15 @@ export function TopBar() {
                     >
                       Games
                     </Link>
+                    <Link
+                      to="/scroll"
+                      className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                      activeProps={{
+                        className: "text-primary",
+                      }}
+                    >
+                      Scroll
+                    </Link>
 
                     {/* Show section links on homepage */}
                     {pageSections.length > 0 && (
