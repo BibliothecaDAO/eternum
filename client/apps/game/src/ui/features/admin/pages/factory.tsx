@@ -66,9 +66,7 @@ import {
   generateFactoryCalldata,
   type FactoryConfigCalldataParts,
 } from "../services/factory-config";
-import {
-  createIndexer as createIndexerService,
-} from "../services/factory-indexer";
+import { createIndexer as createIndexerService } from "../services/factory-indexer";
 import { buildWorldConfigForFactory } from "../services/world-config-builder";
 import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
 import {
@@ -361,9 +359,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [registrationDelaySecondsOverrides, setRegistrationDelaySecondsOverrides] = useState<Record<string, string>>(
     {},
   );
-  const [registrationPeriodSecondsOverrides, setRegistrationPeriodSecondsOverrides] = useState<
-    Record<string, string>
-  >({});
+  const [registrationPeriodSecondsOverrides, setRegistrationPeriodSecondsOverrides] = useState<Record<string, string>>(
+    {},
+  );
   const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
   const [seasonBridgeCloseAfterEndSecondsOverrides, setSeasonBridgeCloseAfterEndSecondsOverrides] = useState<
@@ -380,9 +378,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   >({});
   const [tradeMaxCountOverrides, setTradeMaxCountOverrides] = useState<Record<string, string>>({});
   const [battleGraceTickCountOverrides, setBattleGraceTickCountOverrides] = useState<Record<string, string>>({});
-  const [battleGraceTickCountHypOverrides, setBattleGraceTickCountHypOverrides] = useState<
-    Record<string, string>
-  >({});
+  const [battleGraceTickCountHypOverrides, setBattleGraceTickCountHypOverrides] = useState<Record<string, string>>({});
   const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
   const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
   const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
@@ -1189,9 +1185,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                           )}
                         </div>
                       ) : (
-                        <p className="text-[11px] text-gold/60">
-                          Connect your wallet to list the series you control.
-                        </p>
+                        <p className="text-[11px] text-gold/60">Connect your wallet to list the series you control.</p>
                       )}
                     </div>
 
@@ -1859,7 +1853,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             </label>
                                             <input
                                               type="text"
-                                              placeholder={(eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."}
+                                              placeholder={
+                                                (eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."
+                                              }
                                               value={
                                                 blitzFeeRecipientOverrides[name] ??
                                                 ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
@@ -1878,12 +1874,15 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.blitz?.registration?.registration_delay_seconds ?? 60)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.blitz?.registration
+                                                  ?.registration_delay_seconds ?? 60,
+                                              )}
                                               value={
                                                 registrationDelaySecondsOverrides[name] ??
                                                 String(
-                                                  (eternumConfig as any)?.blitz?.registration?.registration_delay_seconds ??
-                                                    60,
+                                                  (eternumConfig as any)?.blitz?.registration
+                                                    ?.registration_delay_seconds ?? 60,
                                                 )
                                               }
                                               onChange={(e) =>
@@ -1903,12 +1902,15 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.blitz?.registration?.registration_period_seconds ?? 600)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.blitz?.registration
+                                                  ?.registration_period_seconds ?? 600,
+                                              )}
                                               value={
                                                 registrationPeriodSecondsOverrides[name] ??
                                                 String(
-                                                  (eternumConfig as any)?.blitz?.registration?.registration_period_seconds ??
-                                                    600,
+                                                  (eternumConfig as any)?.blitz?.registration
+                                                    ?.registration_period_seconds ?? 600,
                                                 )
                                               }
                                               onChange={(e) =>
@@ -1931,12 +1933,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
+                                              )}
                                               value={
                                                 seasonBridgeCloseAfterEndSecondsOverrides[name] ??
-                                                String(
-                                                  (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
-                                                )
+                                                String((eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0)
                                               }
                                               onChange={(e) =>
                                                 setSeasonBridgeCloseAfterEndSecondsOverrides((p) => ({
@@ -1956,7 +1958,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               min={0}
                                               step={1}
                                               placeholder={String(
-                                                (eternumConfig as any)?.season?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                                (eternumConfig as any)?.season?.pointRegistrationCloseAfterEndSeconds ??
+                                                  0,
                                               )}
                                               value={
                                                 seasonPointRegistrationCloseAfterEndSecondsOverrides[name] ??
@@ -1978,7 +1981,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Settlement Center</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Settlement Center
+                                            </label>
                                             <input
                                               type="number"
                                               min={0}
@@ -2002,7 +2007,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.settlement?.base_distance ?? 0)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.settlement?.base_distance ?? 0,
+                                              )}
                                               value={
                                                 settlementBaseDistanceOverrides[name] ??
                                                 String((eternumConfig as any)?.settlement?.base_distance ?? 0)
@@ -2024,7 +2031,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.settlement?.subsequent_distance ?? 0,
+                                              )}
                                               value={
                                                 settlementSubsequentDistanceOverrides[name] ??
                                                 String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)
@@ -2042,7 +2051,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Trade Max Count</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Trade Max Count
+                                            </label>
                                             <input
                                               type="number"
                                               min={0}
@@ -2059,7 +2070,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Battle Grace Ticks</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Battle Grace Ticks
+                                            </label>
                                             <input
                                               type="number"
                                               min={0}
@@ -2086,7 +2099,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.battle?.graceTickCountHyp ?? 0,
+                                              )}
                                               value={
                                                 battleGraceTickCountHypOverrides[name] ??
                                                 String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)
@@ -2104,7 +2119,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Battle Delay (seconds)</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Battle Delay (seconds)
+                                            </label>
                                             <input
                                               type="number"
                                               min={0}
@@ -2115,35 +2132,49 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                 String((eternumConfig as any)?.battle?.delaySeconds ?? 0)
                                               }
                                               onChange={(e) =>
-                                                setBattleDelaySecondsOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                                setBattleDelaySecondsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
                                               }
                                               className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Agent Max Current</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Agent Max Current
+                                            </label>
                                             <input
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.agent?.max_current_count ?? 0)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.agent?.max_current_count ?? 0,
+                                              )}
                                               value={
                                                 agentMaxCurrentCountOverrides[name] ??
                                                 String((eternumConfig as any)?.agent?.max_current_count ?? 0)
                                               }
                                               onChange={(e) =>
-                                                setAgentMaxCurrentCountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                                setAgentMaxCurrentCountOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
                                               }
                                               className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
                                           </div>
                                           <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Agent Max Lifetime</label>
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Agent Max Lifetime
+                                            </label>
                                             <input
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder={String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.agent?.max_lifetime_count ?? 0,
+                                              )}
                                               value={
                                                 agentMaxLifetimeCountOverrides[name] ??
                                                 String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)
@@ -2251,7 +2282,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     startMainAt: selectedStart,
                                                     startSettlingAt: selectedSettling,
                                                     devModeOn: hasDevOverride ? !!devModeOverrides[name] : undefined,
-                                                    mmrEnabled: hasMmrOverride ? !!mmrEnabledOverrides[name] : undefined,
+                                                    mmrEnabled: hasMmrOverride
+                                                      ? !!mmrEnabledOverrides[name]
+                                                      : undefined,
                                                     durationHours: hasDurationHoursOverride
                                                       ? String(durationHoursOverrides[name] ?? 0)
                                                       : undefined,
@@ -2405,9 +2438,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                   <h3 className="text-lg font-bold text-gold mb-4">Configuration</h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">
-                        Factory Address
-                      </label>
+                      <label className="text-xs font-bold text-gold/70 uppercase tracking-wide">Factory Address</label>
                       <input
                         type="text"
                         value={factoryAddress}
@@ -2558,9 +2589,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-5">
-                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">
-                        Calldata Arguments
-                      </span>
+                      <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">Calldata Arguments</span>
                       <span className="text-sm font-bold text-slate-900 font-mono bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-200">
                         {generatedConfigCalldata?.all.length ?? 0}
                       </span>

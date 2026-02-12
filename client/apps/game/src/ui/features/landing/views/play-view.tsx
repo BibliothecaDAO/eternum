@@ -268,7 +268,9 @@ const FactoryTabContent = () => (
     </div>
 
     <Suspense
-      fallback={<div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">Loading factory...</div>}
+      fallback={
+        <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">Loading factory...</div>
+      }
     >
       <FactoryPage embedded />
     </Suspense>
