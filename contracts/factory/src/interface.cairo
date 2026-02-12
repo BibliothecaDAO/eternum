@@ -60,3 +60,9 @@ pub trait IWorldFactorySeries<T> {
         self: @T, name: felt252, class_hash: ClassHash,
     ) -> Array<ContractAddress>;
 }
+
+/// Interface for the world factory.
+#[starknet::interface]
+pub trait IWorldFactoryMMR<T> {
+    fn get_factory_mmr_contract_version(self: @T, addr: ContractAddress) -> felt252;
+}
