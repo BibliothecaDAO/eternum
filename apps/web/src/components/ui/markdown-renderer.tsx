@@ -1,4 +1,4 @@
-import { cn } from "@/utils/utils";
+import type { ReactNode } from "react";
 import { env } from "env";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -14,22 +14,19 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({
   content,
-  _className,
+  className,
 }: MarkdownRendererProps) {
   return (
     <ReactMarkdown
-      //className={cn("prose dark:prose-invert max-w-none", className)}
+      className={className}
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeRaw, rehypeSanitize]}
       urlTransform={(url) => {
-        console.log("ReactMarkdown URL transform called with:", url);
         if (url.startsWith("ipfs://")) {
-          const transformed = url.replace(
+          return url.replace(
             "ipfs://",
             env.VITE_PUBLIC_IPFS_GATEWAY ?? "",
           );
-          console.log("URL transformed to:", transformed);
-          return transformed;
         }
         return url;
       }}
@@ -104,21 +101,30 @@ export function MarkdownRenderer({
         ),
         hr: ({ _node, ...props }) => <hr className="my-4 md:my-8" {...props} />,
         img: ({ _node, alt, src, ...props }) => {
-          console.log("MarkdownRenderer img:", { src, alt });
           if (!src) {
-            console.warn("Image source is undefined!");
             return null;
           }
           return (
             <Media
               src={src}
               className="mx-auto rounded-md border"
-              alt={alt || "Markdown image"}
+              alt={alt ?? "Markdown image"}
               {...props}
             />
           );
         },
-        code: ({ _node, inline, _className, children, ...props }: any) => {
+        code: ({
+          _node,
+          inline,
+          _className,
+          children,
+          ...props
+        }: {
+          _node?: unknown;
+          inline?: boolean;
+          _className?: string;
+          children?: ReactNode;
+        }) => {
           if (inline) {
             return (
               <code

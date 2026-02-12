@@ -92,7 +92,6 @@ function RouteComponent() {
                       : undefined
                   }
                   onSubmit={async (data) => {
-                    console.log(data);
                     await createDelegateProfile({ data });
                   }}
                 />

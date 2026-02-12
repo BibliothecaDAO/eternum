@@ -17,6 +17,8 @@ const ALCHEMY_API_URL = `https://eth-${
   process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "sepolia" : "mainnet"
 }.g.alchemy.com/nft/v3/${process.env.VITE_ALCHEMY_API_KEY}`;
 
+const L1_REALMS_STALE_TIME_MS = 60_000;
+
 /* -------------------------------------------------------------------------- */
 /*                          getL1Realms Endpoint                              */
 /* -------------------------------------------------------------------------- */
@@ -44,7 +46,7 @@ interface AlchemyNFT {
   };
   raw?: {
     metadata?: {
-      attributes?: Record<string, any>[];
+      attributes?: Record<string, unknown>[];
     };
   };
 }
@@ -66,7 +68,7 @@ interface TokenResponse {
         name?: string;
         symbol?: string;
       };
-      attributes: any[];
+      attributes: unknown[];
     };
     ownership: {
       tokenCount: string;
@@ -82,9 +84,10 @@ export const getL1Realms = createServerFn({ method: "GET" })
     if (!ctx.data.address) {
       return { tokens: [], continuation: null } as TokenResponse;
     }
-    
-    const contractAddress = CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
-    
+
+    const contractAddress =
+      CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
+
     const response = await fetch(
       `${ALCHEMY_API_URL}/getNFTsForOwner?owner=${ctx.data.address.toLowerCase()}&contractAddresses[]=${contractAddress}&withMetadata=true&pageSize=100`,
       {
@@ -94,15 +97,15 @@ export const getL1Realms = createServerFn({ method: "GET" })
         },
       },
     );
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch NFTs: ${response.statusText}`);
     }
-    
-    const data = await response.json() as AlchemyNFTsResponse;
-    
+
+    const data = (await response.json()) as AlchemyNFTsResponse;
+
     // Transform Alchemy response to match expected format
-    const tokens = data.ownedNfts?.map((nft) => ({
+    const tokens = data.ownedNfts.map((nft) => ({
       token: {
         tokenId: nft.tokenId,
         name: nft.name ?? nft.title ?? null,
@@ -118,8 +121,8 @@ export const getL1Realms = createServerFn({ method: "GET" })
         tokenCount: nft.balance ?? "1",
         acquiredAt: null,
       },
-    })) ?? [];
-    
+    }));
+
     return {
       tokens,
       continuation: data.pageKey ?? null,
@@ -133,7 +136,8 @@ export const getL1RealmsQueryOptions = (
     queryKey: ["getL1Realms", input?.address],
     queryFn: () =>
       input?.address != undefined ? getL1Realms({ data: input }) : null,
-    refetchInterval: 10000,
+    staleTime: L1_REALMS_STALE_TIME_MS,
+    refetchInterval: false,
     enabled: !!input?.address,
   });
 };
@@ -156,9 +160,10 @@ export const getL1UsersRealms = createServerFn({ method: "GET" })
     if (!ctx.data.address) {
       return { collections: [] };
     }
-    
-    const contractAddress = CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
-    
+
+    const contractAddress =
+      CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
+
     const response = await fetch(
       `${ALCHEMY_API_URL}/getNFTsForOwner?owner=${ctx.data.address.toLowerCase()}&contractAddresses[]=${contractAddress}&withMetadata=false&pageSize=1`,
       {
@@ -168,25 +173,30 @@ export const getL1UsersRealms = createServerFn({ method: "GET" })
         },
       },
     );
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch NFTs: ${response.statusText}`);
     }
-    
-    const data = await response.json() as AlchemyNFTsResponse;
-    
+
+    const data = (await response.json()) as AlchemyNFTsResponse;
+
     // Transform to match expected format for collection summary
     const hasNFTs = data.totalCount > 0;
-    const collections = hasNFTs && contractAddress ? [{
-      collection: {
-        id: contractAddress,
-        name: "Realms",
-      },
-      ownership: {
-        tokenCount: data.totalCount.toString(),
-      },
-    }] : [];
-    
+    const collections =
+      hasNFTs && contractAddress
+        ? [
+            {
+              collection: {
+                id: contractAddress,
+                name: "Realms",
+              },
+              ownership: {
+                tokenCount: data.totalCount.toString(),
+              },
+            },
+          ]
+        : [];
+
     return { collections } as CollectionResponse;
   });
 

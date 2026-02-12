@@ -4,10 +4,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/utils";
 import { env } from "env";
 
-//import { cn } from "@realms-world/utils";
-//import { Skeleton } from "@realms-world/ui/components/ui/skeleton";
-//import { AnimatedMap } from "./AnimatedMap";
-
 interface MediaProps {
   // key used to access the image proxy / CDN
   mediaKey?: string | null;
@@ -39,9 +35,7 @@ function getMediaSrc(
   // Handle IPFS URL transformation
   if (src?.startsWith("ipfs://")) {
     const ipfsGateway = env.VITE_PUBLIC_IPFS_GATEWAY ?? "https://ipfs.io/ipfs/";
-    const transformedUrl = src.replace("ipfs://", ipfsGateway);
-    console.log("Transforming IPFS URL:", src, "to:", transformedUrl);
-    return transformedUrl;
+    return src.replace("ipfs://", ipfsGateway);
   }
 
   return src;

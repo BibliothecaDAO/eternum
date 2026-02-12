@@ -13,6 +13,8 @@ import { z } from "zod";
 
 import { execute } from "../queries/execute";
 
+const USER_VOTES_STALE_TIME_MS = 30_000;
+
 export const VoteFieldsFragment = graphql(`
   fragment voteFields on Vote {
     id
@@ -103,4 +105,5 @@ export const getUserVotesQueryOptions = (
     ],
     queryFn: () => getUserVotes({ data: input }),
     enabled: !!input.voter,
+    staleTime: USER_VOTES_STALE_TIME_MS,
   });

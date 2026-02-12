@@ -16,6 +16,8 @@ import { SnapshotSpaceAddresses } from "@realms-world/constants";
 import { execute } from "../queries/execute";
 import { formatSnapshotProposalReference } from "./proposal-id";
 
+const GOVERNANCE_QUERY_STALE_TIME_MS = 30_000;
+
 graphql(`
   fragment proposalFields on Proposal {
     id
@@ -227,6 +229,7 @@ export const getProposalsQueryOptions = (
       input.searchQuery,
     ],
     queryFn: () => getProposals({ data: input }),
+    staleTime: GOVERNANCE_QUERY_STALE_TIME_MS,
   });
 
 /* -------------------------------------------------------------------------- */
@@ -273,4 +276,5 @@ export const getProposalQueryOptions = (
   queryOptions({
     queryKey: ["loadProposal", input.id],
     queryFn: () => getProposal({ data: input }),
+    staleTime: GOVERNANCE_QUERY_STALE_TIME_MS,
   });
