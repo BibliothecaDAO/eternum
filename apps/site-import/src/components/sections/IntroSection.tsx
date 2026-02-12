@@ -3,8 +3,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Coins, Shield, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useVelords } from "@/hooks/use-velords";
+import { StarknetProvider } from "@/hooks/starknet-provider";
 
 export function IntroSection() {
+  return (
+    <StarknetProvider>
+      <IntroSectionContent />
+    </StarknetProvider>
+  );
+}
+
+function IntroSectionContent() {
   const { currentAPY, isAPYLoading, tvl, isTVLLoading, lordsLocked } =
     useVelords();
 

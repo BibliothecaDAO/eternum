@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { games } from "@/data/games";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { generateMetaTags } from "@/lib/og-image";
 
 export const Route = createFileRoute("/games/")({
+  loader: async () => {
+    const { games } = await import("@/data/games");
+    return { games };
+  },
   component: GamesPage,
   head: () => ({
     meta: generateMetaTags({
@@ -21,6 +24,7 @@ export const Route = createFileRoute("/games/")({
 
 function GamesPage() {
   const navigate = useNavigate();
+  const { games } = Route.useLoaderData();
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
 

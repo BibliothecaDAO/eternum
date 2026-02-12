@@ -13,6 +13,7 @@ import "@xyflow/react/dist/style.css";
 import { motion } from "framer-motion";
 import { useVelords } from "@/hooks/use-velords";
 import { useFlowStore } from "@/lib/stores/flow-store";
+import { StarknetProvider } from "@/hooks/starknet-provider";
 import {
   Gamepad2,
   ArrowRightLeft,
@@ -148,6 +149,14 @@ function StakersNode({ data }: { data: { label: string; rewards?: number } }) {
 }
 
 export function ValueFlowSection() {
+  return (
+    <StarknetProvider>
+      <ValueFlowSectionContent />
+    </StarknetProvider>
+  );
+}
+
+function ValueFlowSectionContent() {
   const { currentAPY, tokensThisWeek, lordsLocked, tvl } = useVelords();
 
   // Get store methods
