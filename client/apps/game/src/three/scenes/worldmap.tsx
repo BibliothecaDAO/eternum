@@ -3407,8 +3407,11 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
+
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
     if (areaKey === this.toriiBoundsAreaKey) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
       if (TORII_BOUNDS_DEBUG) {
         console.log("[ToriiBounds] Skip switch (area unchanged)", { chunkKey, areaKey });
       }
@@ -3434,10 +3437,18 @@ export default class WorldmapScene extends HexagonScene {
           models: TORII_BOUNDS_MODELS.map((model) => model.model),
         });
       }
-      await this.toriiStreamManager.switchBounds(descriptor);
+      const result = await this.toriiStreamManager.switchBounds(descriptor);
+      if (result.outcome === "stale_dropped") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_stale_dropped");
+        return;
+      }
+      if (result.outcome === "skipped_same_signature") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+      }
       if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
         return;
       }
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
     } catch (error) {
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);

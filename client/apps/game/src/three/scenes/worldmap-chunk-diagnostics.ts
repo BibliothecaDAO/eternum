@@ -11,6 +11,10 @@ export type WorldmapChunkDiagnosticsEvent =
   | "prefetch_queued"
   | "prefetch_skipped"
   | "prefetch_executed"
+  | "bounds_switch_requested"
+  | "bounds_switch_applied"
+  | "bounds_switch_skipped_same_signature"
+  | "bounds_switch_stale_dropped"
   | "refresh_requested"
   | "refresh_executed"
   | "refresh_superseded"
@@ -32,6 +36,10 @@ export interface WorldmapChunkDiagnostics {
   prefetchQueued: number;
   prefetchSkipped: number;
   prefetchExecuted: number;
+  boundsSwitchRequested: number;
+  boundsSwitchApplied: number;
+  boundsSwitchSkippedSameSignature: number;
+  boundsSwitchStaleDropped: number;
   refreshRequested: number;
   refreshExecuted: number;
   refreshSuperseded: number;
@@ -62,6 +70,10 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     prefetchQueued: 0,
     prefetchSkipped: 0,
     prefetchExecuted: 0,
+    boundsSwitchRequested: 0,
+    boundsSwitchApplied: 0,
+    boundsSwitchSkippedSameSignature: 0,
+    boundsSwitchStaleDropped: 0,
     refreshRequested: 0,
     refreshExecuted: 0,
     refreshSuperseded: 0,
@@ -118,6 +130,18 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "prefetch_executed":
       diagnostics.prefetchExecuted += 1;
+      break;
+    case "bounds_switch_requested":
+      diagnostics.boundsSwitchRequested += 1;
+      break;
+    case "bounds_switch_applied":
+      diagnostics.boundsSwitchApplied += 1;
+      break;
+    case "bounds_switch_skipped_same_signature":
+      diagnostics.boundsSwitchSkippedSameSignature += 1;
+      break;
+    case "bounds_switch_stale_dropped":
+      diagnostics.boundsSwitchStaleDropped += 1;
       break;
     case "refresh_requested":
       diagnostics.refreshRequested += 1;

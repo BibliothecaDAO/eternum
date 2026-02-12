@@ -26,6 +26,25 @@ const descriptor = (minCol: number): BoundsDescriptor => ({
 });
 
 describe("ToriiStreamManager", () => {
+  it("reports skipped outcome when switching to an unchanged signature", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const cancel = vi.fn();
+    syncMock.mockImplementation(async () => ({ cancel }));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    const first = await manager.switchBounds(descriptor(0));
+    const second = await manager.switchBounds(descriptor(0));
+
+    expect(first.outcome).toBe("applied");
+    expect(second.outcome).toBe("skipped_same_signature");
+    expect(syncMock).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the newest bounds subscription active when switches race", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const firstSwitch = deferred<{ cancel: () => void }>();
@@ -51,12 +70,13 @@ describe("ToriiStreamManager", () => {
 
     firstSwitch.resolve({ cancel: cancelFirst });
 
-    await Promise.all([pendingFirst, pendingSecond]);
+    const [firstResult, secondResult] = await Promise.all([pendingFirst, pendingSecond]);
 
     manager.cancelCurrentSubscription();
 
+    expect(firstResult.outcome).toBe("stale_dropped");
+    expect(secondResult.outcome).toBe("applied");
     expect(cancelFirst).toHaveBeenCalledTimes(1);
     expect(cancelSecond).toHaveBeenCalledTimes(1);
   });
 });
-

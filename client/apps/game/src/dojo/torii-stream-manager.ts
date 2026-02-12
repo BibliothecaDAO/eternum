@@ -20,6 +20,12 @@ export interface BoundsDescriptor {
   additionalClauses?: Clause[];
 }
 
+export type BoundsSwitchOutcome = "applied" | "skipped_same_signature" | "stale_dropped";
+
+export interface BoundsSwitchResult {
+  outcome: BoundsSwitchOutcome;
+}
+
 interface ToriiStreamManagerConfig {
   client: ToriiClient;
   setup: SetupResult;
@@ -81,8 +87,8 @@ export class ToriiStreamManager {
   private readonly setup: SetupResult;
   private readonly logging: boolean;
   private currentSubscription: { cancel: () => void } | null = null;
-  private pendingSwitch: Promise<void> | null = null;
-  private switchQueue: Promise<void> = Promise.resolve();
+  private pendingSwitch: Promise<BoundsSwitchResult> | null = null;
+  private switchQueue: Promise<unknown> = Promise.resolve();
   private latestSwitchRequestId = 0;
   private clauseBuilder: (descriptor: BoundsDescriptor) => Clause | null;
   private currentSignature: string | null = null;
@@ -94,11 +100,11 @@ export class ToriiStreamManager {
     this.clauseBuilder = clauseBuilder;
   }
 
-  async start(descriptor: BoundsDescriptor): Promise<void> {
+  async start(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
     return this.switchBounds(descriptor);
   }
 
-  async switchBounds(descriptor: BoundsDescriptor): Promise<void> {
+  async switchBounds(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
     const signature = JSON.stringify({
       minCol: descriptor.minCol,
       maxCol: descriptor.maxCol,
@@ -110,32 +116,36 @@ export class ToriiStreamManager {
     });
 
     if (signature === this.currentSignature) {
-      return;
+      return { outcome: "skipped_same_signature" };
     }
 
     const clause = this.clauseBuilder(descriptor);
     const requestId = ++this.latestSwitchRequestId;
 
-    const task = this.switchQueue.then(async () => {
+    const task = this.switchQueue.then(async (): Promise<BoundsSwitchResult> => {
       const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging);
 
       // A newer request superseded this one while it was in flight; drop the stale subscription.
       if (requestId !== this.latestSwitchRequestId) {
         subscription.cancel();
-        return;
+        return { outcome: "stale_dropped" };
       }
 
       // Swap active stream only after the replacement subscription is ready.
       this.cancelCurrentSubscription();
       this.currentSubscription = subscription;
       this.currentSignature = signature;
+      return { outcome: "applied" };
     });
 
-    this.switchQueue = task.catch(() => {});
+    this.switchQueue = task.then(
+      () => undefined,
+      () => undefined,
+    );
     this.pendingSwitch = task;
 
     try {
-      await task;
+      return await task;
     } finally {
       if (this.pendingSwitch === task) {
         this.pendingSwitch = null;
