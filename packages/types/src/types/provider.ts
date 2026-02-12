@@ -510,7 +510,8 @@ export interface SetBankConfigProps extends SystemSigner {
 
 export interface SetBattleConfigProps extends SystemSigner {
   regular_immunity_ticks: BigNumberish;
-  hyperstructure_immunity_ticks: BigNumberish;
+  village_immunity_ticks: BigNumberish;
+  village_raid_immunity_ticks: BigNumberish;
 }
 
 export interface SetTroopConfigProps extends SystemSigner {
@@ -537,13 +538,21 @@ export interface TroopStaminaConfigProps {
 }
 
 export interface TroopLimitConfigProps {
-  explorer_max_party_count: BigNumberish;
-  explorer_guard_max_troop_count: BigNumberish;
   guard_resurrection_delay: BigNumberish;
   mercenaries_troop_lower_bound: BigNumberish;
   mercenaries_troop_upper_bound: BigNumberish;
   agent_troop_lower_bound: BigNumberish;
   agent_troop_upper_bound: BigNumberish;
+  settlement_deployment_cap: BigNumberish;
+  city_deployment_cap: BigNumberish;
+  kingdom_deployment_cap: BigNumberish;
+  empire_deployment_cap: BigNumberish;
+  t1_tier_strength: BigNumberish;
+  t2_tier_strength: BigNumberish;
+  t3_tier_strength: BigNumberish;
+  t1_tier_modifier: BigNumberish;
+  t2_tier_modifier: BigNumberish;
+  t3_tier_modifier: BigNumberish;
 }
 
 export interface TroopDamageConfigProps {

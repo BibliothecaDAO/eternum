@@ -3,19 +3,39 @@
 /**
  * Copy ABI sections from one Dojo manifest JSON to another.
  *
- * Configure parameters below (no CLI args).
+ * Usage:
+ *   node scripts/copy-abis.mjs <network>
+ *   pnpm run manifest:copy-abis <network>
  *
  * Examples:
- *   FROM_JSON = 'contracts/game/manifest_slot.json'
- *   TO_JSON   = 'contracts/game/manifest_mainnet.json'
- *   WORLD_ONLY = false
- *   CONTRACTS_ONLY = false
- *   DRY_RUN = false
+ *   node scripts/copy-abis.mjs slot
+ *   pnpm run manifest:copy-abis mainnet
+ *
+ * Valid networks: local, slot, slottest, sepolia, mainnet
  */
 
-// ====== Parameters (edit as needed) ======
+// ====== Parse CLI arguments ======
+const args = process.argv.slice(2);
+const network = args[0];
+
+const VALID_NETWORKS = ["local", "slot", "slottest", "sepolia", "mainnet"];
+
+if (!network) {
+  console.error("Error: Network parameter is required");
+  console.error("Usage: node scripts/copy-abis.mjs <network>");
+  console.error(`Valid networks: ${VALID_NETWORKS.join(", ")}`);
+  process.exit(1);
+}
+
+if (!VALID_NETWORKS.includes(network)) {
+  console.error(`Error: Invalid network "${network}"`);
+  console.error(`Valid networks: ${VALID_NETWORKS.join(", ")}`);
+  process.exit(1);
+}
+
+// ====== Parameters ======
 const FROM_JSON = "contracts/game/manifest_local.json";
-const TO_JSON = "contracts/game/manifest_mainnet.json";
+const TO_JSON = `contracts/game/manifest_${network}.json`;
 const WORLD_ONLY = false; // if true, copy only world.abi
 const CONTRACTS_ONLY = false; // if true, copy only contract ABIs by tag
 const DRY_RUN = false; // if true, do not write file

@@ -196,7 +196,7 @@ const PM_SQL_QUERIES = {
 /**
  * PM SQL API Client class
  */
-export class PmSqlApi {
+class PmSqlApi {
   private readonly baseUrl: string;
 
   constructor(toriiUrl?: string) {

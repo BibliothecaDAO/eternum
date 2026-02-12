@@ -36,7 +36,9 @@ use crate::models::resource::resource::{
 };
 use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots};
-use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
+use crate::models::troop::{
+    ExplorerTroops, GuardSlot, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops,
+};
 use crate::models::weight::Weight;
 use crate::systems::combat::contracts::troop_battle::{
     ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
@@ -137,13 +139,21 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
 
 pub fn MOCK_TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
     TroopLimitConfig {
-        explorer_max_party_count: 20, // hard max of explorers per structure
-        explorer_guard_max_troop_count: 500_000, // hard max of troops per party
-        guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
-        mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-        mercenaries_troop_upper_bound: 500_000, // max of troops per mercenary
-        agents_troop_lower_bound: 5_000, // min of troops per agent
-        agents_troop_upper_bound: 50_000 // max of troops per agent
+        guard_resurrection_delay: 24, // delay in ticks before a guard can be resurrected
+        mercenaries_troop_lower_bound: 800, // min of troops per mercenary
+        mercenaries_troop_upper_bound: 1_600, // max of troops per mercenary
+        agents_troop_lower_bound: 500, // min of troops per agent
+        agents_troop_upper_bound: 15_000, // max of troops per agent
+        settlement_deployment_cap: 6_000,
+        city_deployment_cap: 30_000,
+        kingdom_deployment_cap: 90_000,
+        empire_deployment_cap: 180_000,
+        t1_tier_strength: 1,
+        t2_tier_strength: 3,
+        t3_tier_strength: 9,
+        t1_tier_modifier: 50,
+        t2_tier_modifier: 100,
+        t3_tier_modifier: 150,
     }
 }
 
@@ -369,7 +379,7 @@ pub fn tspawn_realm_with_resources(
 ) -> ID {
     let realm_entity_id = tspawn_simple_realm(ref world, realm_id, owner, coord);
 
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
     let wheat_amount: u128 = 10000000000000000;
     let fish_amount: u128 = 5000000000000000;
     tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span());
@@ -399,7 +409,7 @@ pub fn tspawn_realm(
 
 pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
     let troop_boosts = TroopBoosts {
         incr_damage_dealt_percent_num: 0,
         incr_damage_dealt_end_tick: 0,
@@ -446,7 +456,7 @@ pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: C
     let mut uuid = world.dispatcher.uuid();
     let explorer_id = uuid;
 
-    let troop_amount = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
     let current_tick = starknet::get_block_timestamp();
 
@@ -521,7 +531,7 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
             troop_guard_count: 0,
             troop_explorer_count: 0,
             troop_max_guard_count: 4, // Default max guards
-            troop_max_explorer_count: MOCK_TROOP_LIMIT_CONFIG().explorer_max_party_count.into(),
+            troop_max_explorer_count: 20,
             created_at: starknet::get_block_timestamp().try_into().unwrap(),
             category: StructureCategory::Village.into(),
             coord_x: coord.x,
@@ -609,10 +619,10 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_9")),
-            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
+            TestResource::Library(("structure_creation_library", "0_1_10")),
+            TestResource::Library(("biome_library", "0_1_10")), TestResource::Library(("rng_library", "0_1_10")),
             TestResource::Library(
-                ("combat_library", "0_1_9"),
+                ("combat_library", "0_1_10"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
@@ -983,7 +993,7 @@ pub fn setup_explorer_battle(
     let (first_realm, second_realm) = create_two_realms(ref world);
 
     // Grant resources based on troop types
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
     let first_resource = match first_troop_tier {
         TroopTier::T1 => ResourceTypes::KNIGHT_T1,
@@ -1107,7 +1117,7 @@ pub fn setup_guard_battle(
     let (first_realm, second_realm) = create_two_realms(ref world);
 
     // Grant resources based on troop types
-    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
     let guard_resource = match guard_troop_tier {
         TroopTier::T1 => ResourceTypes::KNIGHT_T1,
@@ -1178,9 +1188,9 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_9")),
-            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
-            TestResource::Library(("combat_library", "0_1_9")),
+            TestResource::Library(("structure_creation_library", "0_1_10")),
+            TestResource::Library(("biome_library", "0_1_10")), TestResource::Library(("rng_library", "0_1_10")),
+            TestResource::Library(("combat_library", "0_1_10")),
         ]
             .span(),
     }

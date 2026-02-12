@@ -40,7 +40,8 @@ pub mod relic_systems {
     };
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
-        StructureBase, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopGuardStoreImpl,
+        StructureBase, StructureBaseStoreImpl, StructureBaseTrait, StructureOwnerStoreImpl,
+        StructureTroopGuardStoreImpl,
     };
     use crate::models::troop::{ExplorerTroops, GuardImpl, GuardTroops};
     use crate::models::weight::Weight;
@@ -323,6 +324,10 @@ pub mod relic_systems {
             } else {
                 panic!("Eternum: invalid relic resource id for structure production");
             }
+
+            // set structure coord for spatial filtering
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            production_boost_bonus.coord = structure_base.coord();
 
             world.write_model(@production_boost_bonus);
         }

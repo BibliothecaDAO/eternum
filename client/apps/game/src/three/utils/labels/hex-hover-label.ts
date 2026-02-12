@@ -2,7 +2,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { Scene, Vector3 } from "three";
 import { CSS2DObject } from "three-stdlib";
 
-export type HexHoverLabelContent =
+type HexHoverLabelContent =
   | {
       kind: "resource";
       buildingName: string;

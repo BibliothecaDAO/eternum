@@ -11,6 +11,8 @@ export interface WorldProfile {
   rpcUrl?: string; // rpc url resolved from factory (if available)
   worldAddress: string; // resolved from torii /sql
   contractsBySelector: Record<string, string>; // normalized selector -> address
+  entryTokenAddress?: string; // entry token contract address from WorldConfig
+  feeTokenAddress?: string; // fee token contract address from WorldConfig
   fetchedAt: number; // epoch ms
 }
 

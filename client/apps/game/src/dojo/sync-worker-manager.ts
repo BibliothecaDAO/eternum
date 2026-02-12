@@ -15,7 +15,7 @@ type WorkerErrorMessage = { type: "error"; message: string; entityId?: string };
 
 type WorkerMessage = WorkerReadyMessage | WorkerBatchReadyMessage | WorkerLogMessage | WorkerErrorMessage;
 
-export interface ToriiSyncWorkerOptions {
+interface ToriiSyncWorkerOptions {
   batchSize?: number;
   batchIntervalMs?: number;
   warningThreshold?: number;

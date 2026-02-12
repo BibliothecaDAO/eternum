@@ -96,7 +96,7 @@ export const useSyncMarket = () => {
   return { isSyncing };
 };
 
-export const useSyncQuest = () => {
+const useSyncQuest = () => {
   const syncQuest = useCallback(
     async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const start = performance.now();

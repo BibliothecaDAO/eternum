@@ -703,19 +703,25 @@ export const setBattleConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const { graceTickCount: regular_immunity_ticks, graceTickCountHyp: hyperstructure_immunity_ticks } =
-    config.config.battle;
+  const {
+    regularImmunityTicks: regular_immunity_ticks,
+    villageImmunityTicks: village_immunity_ticks,
+    villageRaidImmunityTicks: village_raid_immunity_ticks,
+  } = config.config.battle;
 
   const calldata = {
     signer: config.account,
     regular_immunity_ticks,
-    hyperstructure_immunity_ticks,
+    village_immunity_ticks,
+    village_raid_immunity_ticks,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Battle Parameters")}
-    │  ${chalk.gray(" Immunity Period:")}      ${chalk.white(calldata.regular_immunity_ticks + " ticks")}
+    │  ${chalk.gray(" Regular Immunity Period [For all structures fom game start]:")}      ${chalk.white(calldata.regular_immunity_ticks + " ticks")}
+    │  ${chalk.gray(" Village Immunity Period [For villages from time of settlement]:")}      ${chalk.white(calldata.village_immunity_ticks + " ticks")}
+    │  ${chalk.gray(" Village Raid Immunity:")} ${chalk.white(calldata.village_raid_immunity_ticks + " ticks")}
     └────────────────────────────────`),
   );
 
@@ -761,13 +767,21 @@ export const setTroopConfig = async (config: Config) => {
       staminaTravelStaminaCost: stamina_travel_stamina_cost,
     },
     limit: {
-      explorerMaxPartyCount: explorer_max_party_count,
-      explorerAndGuardMaxTroopCount: explorer_guard_max_troop_count,
       guardResurrectionDelay: guard_resurrection_delay,
       mercenariesTroopLowerBound: mercenaries_troop_lower_bound,
       mercenariesTroopUpperBound: mercenaries_troop_upper_bound,
       agentTroopLowerBound: agent_troop_lower_bound,
       agentTroopUpperBound: agent_troop_upper_bound,
+      settlementDeploymentCap: settlement_deployment_cap,
+      cityDeploymentCap: city_deployment_cap,
+      kingdomDeploymentCap: kingdom_deployment_cap,
+      empireDeploymentCap: empire_deployment_cap,
+      t1TierStrength: t1_tier_strength,
+      t2TierStrength: t2_tier_strength,
+      t3TierStrength: t3_tier_strength,
+      t1TierModifier: t1_tier_modifier,
+      t2TierModifier: t2_tier_modifier,
+      t3TierModifier: t3_tier_modifier,
     },
   } = config.config.troop;
 
@@ -802,13 +816,21 @@ export const setTroopConfig = async (config: Config) => {
       stamina_travel_stamina_cost: stamina_travel_stamina_cost,
     },
     limit_config: {
-      explorer_max_party_count: explorer_max_party_count,
-      explorer_guard_max_troop_count: explorer_guard_max_troop_count,
       guard_resurrection_delay: guard_resurrection_delay,
       mercenaries_troop_lower_bound: mercenaries_troop_lower_bound,
       mercenaries_troop_upper_bound: mercenaries_troop_upper_bound,
       agent_troop_lower_bound: agent_troop_lower_bound,
       agent_troop_upper_bound: agent_troop_upper_bound,
+      settlement_deployment_cap: settlement_deployment_cap,
+      city_deployment_cap: city_deployment_cap,
+      kingdom_deployment_cap: kingdom_deployment_cap,
+      empire_deployment_cap: empire_deployment_cap,
+      t1_tier_strength: t1_tier_strength,
+      t2_tier_strength: t2_tier_strength,
+      t3_tier_strength: t3_tier_strength,
+      t1_tier_modifier: t1_tier_modifier,
+      t2_tier_modifier: t2_tier_modifier,
+      t3_tier_modifier: t3_tier_modifier,
     },
   };
 
@@ -843,13 +865,21 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("Travel Stamina Cost:")}     ${chalk.white(calldata.stamina_config.stamina_travel_stamina_cost)}
     │
     │  ${chalk.yellow("Limit Configuration")}
-    │  ${chalk.gray("Max Explorer Party:")}       ${chalk.white(calldata.limit_config.explorer_max_party_count)}
-    │  ${chalk.gray("Max Explorer and Guard Troops:")}      ${chalk.white(calldata.limit_config.explorer_guard_max_troop_count)}
     │  ${chalk.gray("Guard Resurrection:")}       ${chalk.white(calldata.limit_config.guard_resurrection_delay)}
     │  ${chalk.gray("Mercenary Min:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_lower_bound)}
     │  ${chalk.gray("Mercenary Max:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_upper_bound)}
     │  ${chalk.gray("Agent Min:")}               ${chalk.white(calldata.limit_config.agent_troop_lower_bound)}
     │  ${chalk.gray("Agent Max:")}               ${chalk.white(calldata.limit_config.agent_troop_upper_bound)}
+    │  ${chalk.gray("Settlement Cap:")}          ${chalk.white(calldata.limit_config.settlement_deployment_cap)}
+    │  ${chalk.gray("City Cap:")}                ${chalk.white(calldata.limit_config.city_deployment_cap)}
+    │  ${chalk.gray("Kingdom Cap:")}             ${chalk.white(calldata.limit_config.kingdom_deployment_cap)}
+    │  ${chalk.gray("Empire Cap:")}              ${chalk.white(calldata.limit_config.empire_deployment_cap)}
+    │  ${chalk.gray("T1 Tier Strength:")}       ${chalk.white(calldata.limit_config.t1_tier_strength)}
+    │  ${chalk.gray("T2 Tier Strength:")}       ${chalk.white(calldata.limit_config.t2_tier_strength)}
+    │  ${chalk.gray("T3 Tier Strength:")}       ${chalk.white(calldata.limit_config.t3_tier_strength)}
+    │  ${chalk.gray("T1 Tier Modifier:")}       ${chalk.white(calldata.limit_config.t1_tier_modifier)}
+    │  ${chalk.gray("T2 Tier Modifier:")}       ${chalk.white(calldata.limit_config.t2_tier_modifier)}
+    │  ${chalk.gray("T3 Tier Modifier:")}       ${chalk.white(calldata.limit_config.t3_tier_modifier)}
     └────────────────────────────────`),
   );
 

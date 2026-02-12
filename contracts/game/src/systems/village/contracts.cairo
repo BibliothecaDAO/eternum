@@ -4,6 +4,7 @@ use crate::models::position::Direction;
 #[starknet::interface]
 pub trait IVillageSystems<T> {
     fn create(ref self: T, village_pass_token_id: u16, connected_realm_entity_id: ID, direction: Direction) -> ID;
+    fn receive_army_grant(ref self: T, village_id: ID);
 }
 
 #[dojo::contract]
@@ -13,13 +14,16 @@ pub mod village_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
+    use crate::models::config::{
+        SeasonConfigImpl, TickImpl, VillageTokenConfig, VillageTroopConfig, WorldConfigUtilImpl,
+    };
     use crate::models::map::TileOccupier;
+    use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
     use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
-        StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots, VillageTroop,
     };
     use crate::system_libraries::structure_libraries::structure_creation_library::{
         IStructureCreationlibraryDispatcherTrait, structure_creation_library,
@@ -118,8 +122,8 @@ pub mod village_systems {
                     false,
                 );
 
-            // grant starting resources
-            structure_creation_library.grant_starting_resources(world, village_id, village_coord);
+            // grant starting resources (no troops — troops come from receive_army_grant)
+            structure_creation_library.grant_starting_resources_only(world, village_id, village_coord);
 
             // place castle building
             BuildingImpl::create(
@@ -136,7 +140,41 @@ pub mod village_systems {
                 world, caller.into(), Tasks::VILLAGE_SETTLEMENT, 1, starknet::get_block_timestamp(),
             );
 
-            village_id.into()
+            village_id
+        }
+
+        fn receive_army_grant(ref self: ContractState, village_id: ID) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
+            // ensure caller owns the village
+            let village_owner = StructureOwnerStoreImpl::retrieve(ref world, village_id);
+            village_owner.assert_caller_owner();
+
+            // ensure structure is a village
+            let village_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, village_id);
+            assert!(village_base.category == StructureCategory::Village.into(), "structure is not a village");
+
+            // ensure army grant hasn't been claimed yet
+            let village_troop: VillageTroop = world.read_model(village_id);
+            assert!(!village_troop.claimed, "army grant already claimed");
+
+            // ensure troop claim delay has passed (uses created_at from structure_base)
+            let village_troop_config: VillageTroopConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("village_troop_config"),
+            );
+            let tick = TickImpl::get_tick_interval(ref world);
+            let current_tick = tick.current();
+            let claimable_at = tick.at(village_base.created_at.into()) + village_troop_config.troop_delay_ticks.into();
+            assert!(current_tick >= claimable_at, "army grant cannot be claimed yet");
+
+            // grant starting troop resources using the existing library function
+            let village_coord = village_base.coord();
+            let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+            structure_creation_library.grant_starting_troop_resources(world, village_id, village_coord);
+
+            // mark as claimed
+            world.write_model(@VillageTroop { village_id, claimed: true });
         }
     }
 }

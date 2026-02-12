@@ -511,7 +511,7 @@ mod tests {
         StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl, m_Structure,
         m_StructureOwnerStats, m_StructureVillageSlots,
     };
-    use crate::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType, m_ExplorerTroops};
+    use crate::models::troop::{ExplorerTroops, GuardImpl, TroopLimitTrait, TroopTier, TroopType, m_ExplorerTroops};
     use crate::models::weight::Weight;
     use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
@@ -633,7 +633,7 @@ mod tests {
         let realm_entity_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
 
         // grant basic resources to the realm
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
         let wheat_amount: u128 = 100000000000000000;
         let fish_amount: u128 = 50000000000000000;
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span());

@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import { isDeletionPayload } from "../sync-utils";
+
 interface ToriiPayload {
   hashed_keys: string;
   models: Record<string, unknown>;
@@ -68,8 +70,6 @@ const queue: string[] = [];
 const post = (message: OutboundMessage, transfer?: Transferable[]) => {
   ctx.postMessage(message, transfer ?? []);
 };
-
-const isDeletionPayload = (payload: ToriiPayload) => !payload.models || Object.keys(payload.models).length === 0;
 
 const mergeDeep = (target: ToriiPayload, source: ToriiPayload): ToriiPayload => {
   const output: Record<string, unknown> = { ...target };

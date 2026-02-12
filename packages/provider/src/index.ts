@@ -3030,24 +3030,32 @@ export class EternumProvider extends EnhancedDojoProvider {
         stamina_config.stamina_travel_fish_cost,
 
         // limit config
-        limit_config.explorer_max_party_count,
-        limit_config.explorer_guard_max_troop_count,
         limit_config.guard_resurrection_delay,
         limit_config.mercenaries_troop_lower_bound,
         limit_config.mercenaries_troop_upper_bound,
         limit_config.agent_troop_lower_bound,
         limit_config.agent_troop_upper_bound,
+        limit_config.settlement_deployment_cap,
+        limit_config.city_deployment_cap,
+        limit_config.kingdom_deployment_cap,
+        limit_config.empire_deployment_cap,
+        limit_config.t1_tier_strength,
+        limit_config.t2_tier_strength,
+        limit_config.t3_tier_strength,
+        limit_config.t1_tier_modifier,
+        limit_config.t2_tier_modifier,
+        limit_config.t3_tier_modifier,
       ],
     });
   }
 
   public async set_battle_config(props: SystemProps.SetBattleConfigProps) {
-    const { signer, regular_immunity_ticks, hyperstructure_immunity_ticks } = props;
+    const { signer, regular_immunity_ticks, village_immunity_ticks, village_raid_immunity_ticks } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_battle_config",
-      calldata: [regular_immunity_ticks, hyperstructure_immunity_ticks],
+      calldata: [regular_immunity_ticks, village_immunity_ticks, village_raid_immunity_ticks],
     });
   }
 

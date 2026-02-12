@@ -160,7 +160,22 @@ const envSchema = z.object({
     .string()
     .transform((v) => v === "true")
     .optional()
-    .default("false"),
+    .default("true"),
+  VITE_PUBLIC_TORII_BOUNDS_DEBUG: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING_TELEMETRY: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
   VITE_PERF_FPS_THRESHOLD: z.string().optional().default("30"),
   VITE_PERF_NETWORK_TIMEOUT: z.string().optional().default("5000"),
 

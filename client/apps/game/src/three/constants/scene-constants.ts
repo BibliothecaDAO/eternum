@@ -3,7 +3,6 @@ import { StructureProgress } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   BuildingType,
-  QuestType,
   RealmLevelNames,
   RealmLevels,
   ResourceMiningTypes,
@@ -23,7 +22,6 @@ const BIOMES_FLAT_PATH = "/models/biomes-flat/";
 const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
 
 const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
-const QUEST_MODELS_PATH = "/models/quests/";
 
 enum BiomeFilenames {
   Bare = "bare_2_0_baked.glb",
@@ -78,10 +76,6 @@ enum BuildingFilenames {
   Realm3 = "castle3.glb",
   Village = "village.glb",
   WonderAnimated = "wonder2.glb",
-}
-
-enum QuestFilenames {
-  DarkShuffle = "quest_tile_high.glb",
 }
 
 enum ChestFilenames {
@@ -346,8 +340,4 @@ export const MinesMaterialsParams: Record<number, { color: Color; emissive: Colo
     emissive: new Color(0.0, 0.5, 0.03),
     emissiveIntensity: 0.8,
   },
-};
-
-export const QuestModelPaths: Record<string, string> = {
-  [QuestType.DarkShuffle]: QUEST_MODELS_PATH + QuestFilenames.DarkShuffle,
 };

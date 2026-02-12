@@ -1,3 +1,4 @@
+import { getActiveWorld } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
@@ -5,10 +6,15 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { messages } from "./signing-policy";
 
+// Get entry token address from active world profile, fallback to env var
+const activeWorld = getActiveWorld();
+const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
+const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+
 const entryTokenPolicies =
-  env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS && env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS !== "0x0"
+  entryTokenAddress && entryTokenAddress !== "0x0"
     ? {
-        [env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS]: {
+        [entryTokenAddress]: {
           methods: [
             {
               name: "token_lock",
@@ -19,9 +25,9 @@ const entryTokenPolicies =
       }
     : {};
 
-const feeTokenPolicies = env.VITE_PUBLIC_FEE_TOKEN_ADDRESS
+const feeTokenPolicies = feeTokenAddress
   ? {
-      [env.VITE_PUBLIC_FEE_TOKEN_ADDRESS]: {
+      [feeTokenAddress]: {
         methods: [
           {
             name: "approve",
@@ -54,6 +60,14 @@ export const buildPolicies = (manifest: any) =>
           {
             name: "create",
             entrypoint: "create",
+          },
+          {
+            name: "assign_realm_positions",
+            entrypoint: "assign_realm_positions",
+          },
+          {
+            name: "settle_realms",
+            entrypoint: "settle_realms",
           },
         ],
       },

@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
-use crate::constants::{all_resource_ids, is_bank};
+use crate::constants::all_resource_ids;
 use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};
 use crate::models::events::{
     ResourceBurnStory, ResourceReceiveArrivalStory, ResourceTransferStory, Story, StoryEvent, TransferType,
@@ -172,7 +172,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_troop_id: ID,
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
+        troop_resources_only: bool,
     ) {
+        if troop_resources_only {
+            Self::ensure_only_troop_resource(resources);
+        }
         Self::_instant_transfer_storable(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
         );
@@ -475,14 +479,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // if the recipient is a village, and troops are being transferred,
             //  ensure the sender realm owner is the connected realm owner
             if to_structure_base.category == StructureCategory::Village.into() {
-                // hack to check if it is from lp position.
-                // todo: fix this
-                let is_lp_position = is_bank(from_id) && mint == true && pickup == true && resources.len() == 2;
-                if TroopResourceImpl::is_troop(resource_type) && !is_lp_position {
+                if TroopResourceImpl::is_troop(resource_type) {
                     let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                         ref world, to_id,
                     );
-                    iVillageImpl::ensure_village_realm(ref world, village_structure_metadata, from_id);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_structure_metadata, from_id);
                 }
             }
 
@@ -702,6 +703,15 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             let (resource_type, _) = resources.at(i);
             if TroopResourceImpl::is_troop(*resource_type) {
                 panic!("troop resource can't be transferred");
+            }
+        }
+    }
+
+    fn ensure_only_troop_resource(mut resources: Span<(u8, u128)>) {
+        for i in 0..resources.len() {
+            let (resource_type, _) = resources.at(i);
+            if !TroopResourceImpl::is_troop(*resource_type) {
+                panic!("only troop resources can be raided during village raid immunity");
             }
         }
     }

@@ -453,13 +453,18 @@ export function defineContractComponents(world: World) {
             current: RecsType.Number,
             max: RecsType.Number,
           },
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
-            customTypes: ["Population"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Population", "Coord"],
           },
         },
       );
@@ -482,6 +487,23 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "StructureVillageSlots",
             types: ["u32", "u16", "Span<u8>", "u32", "u32"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    VillageTroop: (() => {
+      return defineComponent(
+        world,
+        {
+          village_id: RecsType.Number,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "VillageTroop",
+            types: ["bool"],
             customTypes: [],
           },
         },
@@ -631,13 +653,18 @@ export function defineContractComponents(world: World) {
           incr_resource_rate_end_tick: RecsType.Number,
           incr_labor_rate_end_tick: RecsType.Number,
           incr_troop_rate_end_tick: RecsType.Number,
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "ProductionBoostBonus",
-            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32"],
-            customTypes: [],
+            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Coord"],
           },
         },
       );
@@ -1176,6 +1203,7 @@ export function defineContractComponents(world: World) {
               "u16",
               "u32",
               "u32",
+              "bool",
               "u32",
               "u32",
             ],
@@ -1621,13 +1649,21 @@ export function defineContractComponents(world: World) {
             stamina_travel_stamina_cost: RecsType.Number,
           },
           troop_limit_config: {
-            explorer_max_party_count: RecsType.Number,
-            explorer_guard_max_troop_count: RecsType.Number,
             guard_resurrection_delay: RecsType.Number,
-            mercenaries_troop_lower_bound: RecsType.BigInt,
-            mercenaries_troop_upper_bound: RecsType.BigInt,
-            agents_troop_lower_bound: RecsType.BigInt,
-            agents_troop_upper_bound: RecsType.BigInt,
+            mercenaries_troop_lower_bound: RecsType.Number,
+            mercenaries_troop_upper_bound: RecsType.Number,
+            agents_troop_lower_bound: RecsType.Number,
+            agents_troop_upper_bound: RecsType.Number,
+            settlement_deployment_cap: RecsType.Number,
+            city_deployment_cap: RecsType.Number,
+            kingdom_deployment_cap: RecsType.Number,
+            empire_deployment_cap: RecsType.Number,
+            t1_tier_strength: RecsType.Number,
+            t2_tier_strength: RecsType.Number,
+            t3_tier_strength: RecsType.Number,
+            t1_tier_modifier: RecsType.Number,
+            t2_tier_modifier: RecsType.Number,
+            t3_tier_modifier: RecsType.Number,
           },
           capacity_config: {
             structure_capacity: RecsType.Number,
@@ -1640,7 +1676,8 @@ export function defineContractComponents(world: World) {
           },
           battle_config: {
             regular_immunity_ticks: RecsType.Number,
-            hyperstructure_immunity_ticks: RecsType.Number,
+            village_immunity_ticks: RecsType.Number,
+            village_raid_immunity_ticks: RecsType.Number,
           },
           realm_count_config: {
             count: RecsType.Number,
@@ -1670,6 +1707,9 @@ export function defineContractComponents(world: World) {
           village_pass_config: {
             token_address: RecsType.BigInt,
             mint_recipient_address: RecsType.BigInt,
+          },
+          village_troop_config: {
+            troop_delay_ticks: RecsType.Number,
           },
           quest_config: {
             quest_discovery_prob: RecsType.Number,
@@ -1814,20 +1854,29 @@ export function defineContractComponents(world: World) {
               "u16", // TroopStaminaConfig stamina_travel_wheat_cost
               "u16", // TroopStaminaConfig stamina_travel_fish_cost
               "u16", // TroopStaminaConfig stamina_travel_stamina_cost
-              "u8", // TroopLimitConfig explorer_max_party_count
-              "u32", // TroopLimitConfig explorer_guard_max_troop_count
-              "u32", // TroopLimitConfig guard_resurrection_delay
-              "u32", // TroopLimitConfig mercenaries_troop_lower_bound
-              "u32", // TroopLimitConfig mercenaries_troop_upper_bound
-              "u32", // TroopLimitConfig agents_troop_lower_bound
-              "u32", // TroopLimitConfig agents_troop_upper_bound
+              "u16", // TroopLimitConfig guard_resurrection_delay
+              "u16", // TroopLimitConfig mercenaries_troop_lower_bound
+              "u16", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u16", // TroopLimitConfig agents_troop_lower_bound
+              "u16", // TroopLimitConfig agents_troop_upper_bound
+              "u32", // TroopLimitConfig settlement_deployment_cap
+              "u32", // TroopLimitConfig city_deployment_cap
+              "u32", // TroopLimitConfig kingdom_deployment_cap
+              "u32", // TroopLimitConfig empire_deployment_cap
+              "u8", // TroopLimitConfig t1_tier_strength
+              "u8", // TroopLimitConfig t2_tier_strength
+              "u8", // TroopLimitConfig t3_tier_strength
+              "u8", // TroopLimitConfig t1_tier_modifier
+              "u8", // TroopLimitConfig t2_tier_modifier
+              "u8", // TroopLimitConfig t3_tier_modifier
               "u32", // CapacityConfig structure_capacity
               "u32", // CapacityConfig troop_capacity
               "u32", // CapacityConfig donkey_capacity
               "u32", // CapacityConfig storehouse_boost_capacity
               "u8", // TradeConfig max_count
               "u8", // BattleConfig regular_immunity_ticks
-              "u8", // BattleConfig hyperstructure_immunity_ticks
+              "u8", // BattleConfig village_immunity_ticks
+              "u8", // BattleConfig village_raid_immunity_ticks
               "u16", // RealmCountConfig realm_count
               "bool", // SeasonConfig dev_mode_on
               "u64", // SeasonConfig start_settling_at
@@ -1845,6 +1894,7 @@ export function defineContractComponents(world: World) {
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
+              "u8", // VillageTroopConfig troop_delay_ticks
               "u16", // QuestConfig quest_discovery_prob
               "u16", // QuestConfig quest_discovery_fail_prob
               "u64", // StructureCapacityConfig realm_structure_capacity
@@ -2146,6 +2196,11 @@ const eventsComponents = (world: World) => {
             attacker_owner: RecsType.Number,
             defender_owner: RecsType.Number,
             winner_id: RecsType.Number,
+            coord: {
+              alt: RecsType.Boolean,
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
             max_reward: RecsType.StringArray,
             timestamp: RecsType.Number,
           },
@@ -2153,7 +2208,7 @@ const eventsComponents = (world: World) => {
             metadata: {
               namespace: "s1_eternum",
               name: "BattleEvent",
-              types: ["u32", "u32", "u32", "u32", "u32", "Span<(u8, u128)>", "u64"],
+              types: ["u32", "u32", "u32", "u32", "u32", "bool", "u32", "u32", "Span<(u8, u128)>", "u64"],
               customTypes: [],
             },
           },
@@ -2283,13 +2338,18 @@ const eventsComponents = (world: World) => {
             explorer_owner_address: RecsType.String,
             reward_resource_id: RecsType.Number,
             reward_resource_amount: RecsType.BigInt,
+            coord: {
+              alt: RecsType.Boolean,
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "s1_eternum",
               name: "ExplorerRewardEvent",
-              types: ["u32", "u32", "ContractAddress", "u8", "u128", "u64"],
+              types: ["u32", "u32", "ContractAddress", "u8", "u128", "bool", "u32", "u32", "u64"],
               customTypes: [],
             },
           },

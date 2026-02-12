@@ -14,7 +14,7 @@ import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTim
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, ID, RelicEffect, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -47,8 +47,12 @@ import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
+import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
+import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
+import { waitForVisualSettle } from "./manager-update-convergence";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -64,6 +68,12 @@ interface PendingExplorerTroopsUpdate {
   attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
   battleTimerLeft?: number;
+}
+
+interface MovingArmySourceState {
+  bucketKey: string;
+  col: number;
+  row: number;
 }
 
 interface AddArmyParams {
@@ -90,16 +100,6 @@ interface AddArmyParams {
   latestDefenderCoordY?: number;
 }
 
-type RelicFxHandle = {
-  end: () => void;
-  instance?: {
-    initialX: number;
-    initialY: number;
-    initialZ: number;
-    [key: string]: unknown;
-  };
-};
-
 export class ArmyManager {
   private scene: Scene;
   private armyModel: ArmyModel;
@@ -113,7 +113,7 @@ export class ArmyManager {
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
-  private pendingRenderOptions: { force?: boolean } | null = null;
+  private pendingRenderOptions: { force?: boolean; transitionToken?: number } | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
   private lastKnownVisibleHexes: Map<ID, { col: number; row: number }> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
@@ -123,9 +123,6 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
-  private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }>> = new Map();
-  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
-  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
@@ -145,6 +142,7 @@ export class ArmyManager {
   private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private latestTransitionToken = 0;
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
@@ -156,7 +154,7 @@ export class ArmyManager {
   private chunkStride: number;
   private needsSpatialReindex = false;
   // Track source buckets for moving armies to keep them visible during animation
-  private movingArmySourceBuckets: Map<ID, string> = new Map();
+  private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
 
   // Path visualization
   private pathRenderer: PathRenderer;
@@ -167,7 +165,6 @@ export class ArmyManager {
   private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
 
   // Reusable objects for memory optimization
-  private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempColor: Color = new Color();
@@ -178,8 +175,6 @@ export class ArmyManager {
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     dojoContext?: SetupResult,
-    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
-    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
@@ -187,6 +182,8 @@ export class ArmyManager {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
+    // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
+    void this.armyModel.preloadModels([ModelType.Boat]);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
@@ -213,8 +210,6 @@ export class ArmyManager {
     this.fxManager = new FXManager(scene, 1);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
-    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
-    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
 
     // Initialize memory monitor for tracking army operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -599,8 +594,16 @@ export class ArmyManager {
     return false;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
+    const transitionToken = options?.transitionToken;
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (transitionToken !== undefined) {
+      this.latestTransitionToken = transitionToken;
+    }
+
     await this.armyModel.loadPromise;
 
     if (!force && this.currentChunkKey === chunkKey) {
@@ -622,6 +625,10 @@ export class ArmyManager {
       return;
     }
 
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+
     const previousChunkKey = this.currentChunkKey;
     const chunkChanged = previousChunkKey !== chunkKey;
 
@@ -631,17 +638,21 @@ export class ArmyManager {
     }
 
     // Create and track the chunk switch promise
-    const renderOptions = { force: force || chunkChanged };
+    const renderOptions = { force: force || chunkChanged, transitionToken };
     this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
 
     try {
       await this.chunkSwitchPromise;
+      await waitForVisualSettle();
     } finally {
       this.chunkSwitchPromise = null;
     }
   }
 
-  private renderVisibleArmies(chunkKey: string, options?: { force?: boolean }): Promise<void> {
+  private renderVisibleArmies(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number },
+  ): Promise<void> {
     if (!chunkKey) {
       return Promise.resolve();
     }
@@ -973,7 +984,17 @@ export class ArmyManager {
     });
   }
 
-  private async executeRenderForChunk(chunkKey: string, options?: { force?: boolean }): Promise<void> {
+  private async executeRenderForChunk(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number },
+  ): Promise<void> {
+    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+      return;
+    }
+
     // Ensure centralized visibility state is refreshed when invoked outside the render loop
     this.visibilityManager?.beginFrame();
 
@@ -986,6 +1007,13 @@ export class ArmyManager {
     // Preload all required models once
     if (requiredModelTypes.size > 0) {
       await this.armyModel.preloadModels(requiredModelTypes);
+    }
+
+    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+      return;
     }
 
     // Recompute after async work to capture any armies added during preload
@@ -1087,24 +1115,14 @@ export class ArmyManager {
       }
     }
 
-    // Check if destination position is in bounds
-    const destInBounds = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
-
-    // For moving armies, also check if source position is in bounds
-    // This ensures armies remain visible throughout their movement across chunk boundaries
-    let sourceInBounds = false;
-    const sourceBucketKey = this.movingArmySourceBuckets.get(army.entityId);
-    if (sourceBucketKey && !destInBounds) {
-      // Parse source bucket key to get approximate source position
-      const [bucketX, bucketY] = sourceBucketKey.split(",").map(Number);
-      // Use bucket center as approximate source position
-      const sourceX = (bucketX + 0.5) * this.chunkStride;
-      const sourceY = (bucketY + 0.5) * this.chunkStride;
-      sourceInBounds =
-        sourceX >= bounds.minCol && sourceX <= bounds.maxCol && sourceY >= bounds.minRow && sourceY <= bounds.maxRow;
-    }
-
-    if (!destInBounds && !sourceInBounds) {
+    const sourceState = this.movingArmySourceBuckets.get(army.entityId);
+    if (
+      !shouldArmyRemainVisibleInBounds(
+        { col: x, row: y },
+        bounds,
+        sourceState ? { col: sourceState.col, row: sourceState.row } : undefined,
+      )
+    ) {
       return false;
     }
 
@@ -1172,17 +1190,17 @@ export class ArmyManager {
    * Remove army from its tracked source bucket after movement completes.
    */
   private cleanupMovementSourceBucket(entityId: ID) {
-    const sourceBucketKey = this.movingArmySourceBuckets.get(entityId);
-    if (!sourceBucketKey) {
+    const sourceState = this.movingArmySourceBuckets.get(entityId);
+    if (!sourceState) {
       return;
     }
     this.movingArmySourceBuckets.delete(entityId);
 
-    const bucket = this.chunkToArmies.get(sourceBucketKey);
+    const bucket = this.chunkToArmies.get(sourceState.bucketKey);
     if (bucket) {
       bucket.delete(entityId);
       if (bucket.size === 0) {
-        this.chunkToArmies.delete(sourceBucketKey);
+        this.chunkToArmies.delete(sourceState.bucketKey);
       }
     }
   }
@@ -1192,6 +1210,7 @@ export class ArmyManager {
       this.rebuildSpatialIndex();
     }
     const visibleArmies: ArmyData[] = [];
+    const seenArmyIds = new Set<ID>();
     const bounds = this.getChunkBounds(startRow, startCol);
 
     const minCol = bounds.minCol;
@@ -1210,10 +1229,14 @@ export class ArmyManager {
         const armyIds = this.chunkToArmies.get(key);
         if (armyIds) {
           for (const id of armyIds) {
+            if (seenArmyIds.has(id)) {
+              continue;
+            }
             const army = this.armies.get(id);
             // Double check visibility using the precise check
             if (army && this.isArmyVisible(army, bounds)) {
               visibleArmies.push(army);
+              seenArmyIds.add(id);
             }
           }
         }
@@ -1229,11 +1252,11 @@ export class ArmyManager {
       this.updateSpatialIndex(army.entityId, undefined, army.hexCoords);
     });
     // Re-add source buckets for armies that are currently moving
-    this.movingArmySourceBuckets.forEach((sourceBucketKey, entityId) => {
-      let bucket = this.chunkToArmies.get(sourceBucketKey);
+    this.movingArmySourceBuckets.forEach((sourceState, entityId) => {
+      let bucket = this.chunkToArmies.get(sourceState.bucketKey);
       if (!bucket) {
         bucket = new Set();
-        this.chunkToArmies.set(sourceBucketKey, bucket);
+        this.chunkToArmies.set(sourceState.bucketKey, bucket);
       }
       bucket.add(entityId);
     });
@@ -1461,15 +1484,6 @@ export class ArmyManager {
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
 
-    // Apply any pending relic effects for this army
-    if (this.applyPendingRelicEffectsCallback) {
-      try {
-        await this.applyPendingRelicEffectsCallback(params.entityId);
-      } catch (error) {
-        console.error(`Failed to apply pending relic effects for army ${params.entityId}:`, error);
-      }
-    }
-
     await this.renderVisibleArmies(this.currentChunkKey!);
   }
 
@@ -1492,22 +1506,8 @@ export class ArmyManager {
     const minTravelCost = configManager.getMinTravelStaminaCost();
     const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
-    const path = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
-
-    if (!path || path.length === 0) {
-      // If no path is found, just teleport the army to the target position
-      this.armies.set(entityId, { ...armyData, hexCoords });
-      this.runMovementCompleteListeners(numericEntityId);
-      return;
-    }
-
-    if (path.length < 2) {
-      this.armies.set(entityId, { ...armyData, hexCoords });
-      this.armyPaths.delete(entityId);
-      this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-      this.runMovementCompleteListeners(numericEntityId);
-      return;
-    }
+    const workerPath = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
+    const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
 
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
@@ -1522,7 +1522,11 @@ export class ArmyManager {
 
     // Only track source if buckets are different
     if (sourceBucketKey !== destBucketKey) {
-      this.movingArmySourceBuckets.set(entityId, sourceBucketKey);
+      this.movingArmySourceBuckets.set(entityId, {
+        bucketKey: sourceBucketKey,
+        col: sourceNorm.x,
+        row: sourceNorm.y,
+      });
     }
 
     // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
@@ -1550,9 +1554,6 @@ export class ArmyManager {
       this.runMovementCompleteListeners(numericEntityId);
     });
 
-    // Don't remove relic effects during movement - they will follow the army
-    // The updateRelicEffectPositions method will handle smooth positioning
-
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
 
@@ -1563,60 +1564,6 @@ export class ArmyManager {
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
-  }
-
-  public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
-    const army = this.armies.get(entityId);
-    if (!army) return;
-
-    const currentEffects = this.armyRelicEffects.get(entityId) || [];
-    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
-    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
-
-    // Remove effects that are no longer in the new list
-    for (const currentEffect of currentEffects) {
-      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
-        currentEffect.fx.end();
-      }
-    }
-
-    // Add new effects that weren't previously active
-    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }> = [];
-    for (const newEffect of newRelicEffects) {
-      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
-        try {
-          const position = this.getArmyWorldPosition(entityId, army.hexCoords);
-          position.y += 1.5;
-
-          // Register the relic FX if not already registered (wait for texture to load)
-          await this.fxManager.registerRelicFX(newEffect.relicNumber);
-
-          // Play the relic effect
-          const fx = this.fxManager.playFxAtCoords(
-            `relic_${newEffect.relicNumber}`,
-            position.x,
-            position.y,
-            position.z,
-            0.8,
-            undefined,
-            true,
-          );
-
-          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx: fx as RelicFxHandle });
-        } catch (error) {
-          console.error(`Failed to add relic effect ${newEffect.relicNumber} for army ${entityId}:`, error);
-        }
-      }
-    }
-
-    // Update the stored effects
-    if (newRelicEffects.length === 0) {
-      this.armyRelicEffects.delete(entityId);
-    } else {
-      // Keep existing effects that are still in the new list, add new ones
-      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
-      this.armyRelicEffects.set(entityId, updatedEffects);
-    }
   }
 
   public removeArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
@@ -1647,9 +1594,6 @@ export class ArmyManager {
       this.selectedArmyForPath = null;
     }
 
-    // Remove any relic effects
-    this.updateRelicEffects(entityId, []);
-
     // Clean up movement source bucket tracking if army was mid-movement
     this.cleanupMovementSourceBucket(entityId);
 
@@ -1665,11 +1609,6 @@ export class ArmyManager {
           this.chunkToArmies.delete(key);
         }
       }
-    }
-
-    // Clear any pending relic effects
-    if (this.clearPendingRelicEffectsCallback) {
-      this.clearPendingRelicEffectsCallback(entityId);
     }
 
     // Clear any pending label updates for this army
@@ -1836,7 +1775,7 @@ export class ArmyManager {
     }
 
     // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, attachment transforms, and relic effects
+    // This consolidates point icons, attachment transforms, and indicators
     this.updateVisibleArmiesBatched();
 
     if (this.frustumVisibilityDirty) {
@@ -1854,17 +1793,16 @@ export class ArmyManager {
 
   /**
    * Batched update for all visible army per-frame operations.
-   * Consolidates point icon updates, attachment transforms, and relic effect positions
+   * Consolidates point icon updates, attachment transforms, and indicator positions
    * into a single iteration over visibleArmies to reduce iteration overhead.
    */
   private updateVisibleArmiesBatched() {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
-    const hasRelicEffects = this.armyRelicEffects.size > 0;
     const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasRelicEffects && !hasIndicators) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasIndicators) {
       return;
     }
 
@@ -1942,24 +1880,6 @@ export class ArmyManager {
         );
 
         this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
-      }
-
-      // 3. Update relic effect positions for moving armies
-      if (hasRelicEffects && instanceData?.isMoving) {
-        const relicEffects = this.armyRelicEffects.get(army.entityId);
-        if (relicEffects) {
-          this.tempPosition.copy(instanceData.position);
-          this.tempPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
-
-          for (let j = 0; j < relicEffects.length; j++) {
-            const relicEffect = relicEffects[j];
-            if (relicEffect.fx.instance) {
-              relicEffect.fx.instance.initialX = this.tempPosition.x;
-              relicEffect.fx.instance.initialY = this.tempPosition.y;
-              relicEffect.fx.instance.initialZ = this.tempPosition.z;
-            }
-          }
-        }
       }
     }
 
@@ -2401,38 +2321,6 @@ ${
     `);
   }
 
-  public getArmyRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
-    const effects = this.armyRelicEffects.get(entityId);
-    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
-  }
-
-  private updateRelicEffectPositions() {
-    // Update relic effect positions for armies that are currently moving
-    this.armyRelicEffects.forEach((relicEffects, entityId) => {
-      const army = this.armies.get(entityId);
-      if (!army) return;
-
-      // Get the current position of the army (might be interpolated during movement)
-      const instanceData = this.armyModel.getInstanceData(this.toNumericId(entityId));
-      if (instanceData && instanceData.isMoving) {
-        // Army is currently moving, update relic effects to follow the current interpolated position
-        // Use reusable vector to avoid cloning every frame
-        this.tempPosition.copy(instanceData.position);
-        this.tempPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
-
-        relicEffects.forEach((relicEffect) => {
-          // Update the position of each relic effect to follow the army
-          if (relicEffect.fx.instance) {
-            // Update the base position that the orbital animation uses
-            relicEffect.fx.instance.initialX = this.tempPosition.x;
-            relicEffect.fx.instance.initialY = this.tempPosition.y;
-            relicEffect.fx.instance.initialZ = this.tempPosition.z;
-          }
-        });
-      }
-    });
-  }
-
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
@@ -2749,11 +2637,6 @@ ${
     // Clear any remaining pending updates
     if (this.pendingExplorerTroopsUpdate.size > 0) {
       this.pendingExplorerTroopsUpdate.clear();
-    }
-
-    // Clean up relic effects
-    for (const [entityId] of this.armyRelicEffects) {
-      this.updateRelicEffects(entityId, []);
     }
 
     this.entityIdLabels.forEach((label, entityId) => {

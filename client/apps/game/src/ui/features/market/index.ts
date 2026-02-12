@@ -1,8 +1,8 @@
 // Utils
-export * from "@/ui/features/landing/sections/markets/market-utils";
+export * from "./landing-markets/market-utils";
 
 // Landing providers and config (needed for wrapping in-game market)
-export { MarketsProviders } from "@/ui/features/landing/sections/markets";
+export { MarketsProviders } from "./markets-providers";
 
 // In-game specific
 export { InGameMarket } from "./in-game-market";

@@ -233,7 +233,9 @@ pub mod trade_systems {
                     let taker_village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                         ref world, taker_id,
                     );
-                    iVillageImpl::ensure_village_realm(ref world, taker_village_structure_metadata, trade.maker_id);
+                    iVillageImpl::ensure_associated_with_village(
+                        ref world, taker_village_structure_metadata, trade.maker_id,
+                    );
                 }
             }
 

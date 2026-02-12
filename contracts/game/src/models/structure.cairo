@@ -103,7 +103,7 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct StructureBase {
     pub troop_guard_count: u8,
     pub troop_explorer_count: u16,
@@ -125,6 +125,22 @@ pub struct StructureMetadata {
     pub villages_count: u8,
     // associated with village
     pub village_realm: ID,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct VillageTroop {
+    #[key]
+    pub village_id: ID,
+    pub claimed: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct VillageRaidImmunity {
+    #[key]
+    pub village_id: ID,
+    pub last_raided_at: u64,
 }
 
 #[generate_trait]
@@ -159,11 +175,21 @@ pub impl StructureBaseImpl of StructureBaseTrait {
         self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) -> (bool, ByteArray) {
         let current_tick = tick_config.current();
-        let mut allow_attack_tick: u64 = tick_config.at(season_config.start_main_at)
-            + battle_config.regular_immunity_ticks.into();
 
-        if current_tick < allow_attack_tick {
+        // Global season immunity (applies to all structures)
+        let season_immunity_end: u64 = tick_config.at(season_config.start_main_at)
+            + battle_config.regular_immunity_ticks.into();
+        if current_tick < season_immunity_end {
             return (true, "This entity can't be attacked until immunity period ends");
+        }
+
+        // Village-specific immunity: counted from structure created_at
+        if self.category == StructureCategory::Village.into() {
+            let created_at_tick: u64 = tick_config.at(self.created_at.into());
+            let village_immunity_end: u64 = created_at_tick + battle_config.village_immunity_ticks.into();
+            if current_tick < village_immunity_end {
+                return (true, "Village is protected by spawn immunity");
+            }
         }
 
         return (false, "");

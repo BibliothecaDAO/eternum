@@ -20,6 +20,8 @@ pub trait IStructureCreationlibrary<T> {
         explore_village_coord: bool,
     );
     fn grant_starting_resources(self: @T, world: WorldStorage, structure_id: ID, structure_coord: Coord);
+    fn grant_starting_resources_only(self: @T, world: WorldStorage, structure_id: ID, structure_coord: Coord);
+    fn grant_starting_troop_resources(self: @T, world: WorldStorage, structure_id: ID, structure_coord: Coord);
 }
 
 #[dojo::library]
@@ -226,63 +228,106 @@ pub mod structure_creation_library {
             self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
         ) {
             let mut world = world;
-            // todo: use library to get biome
-            let biome: Biome = get_biome(structure_coord.alt, structure_coord.x.into(), structure_coord.y.into());
             let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-            let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
-            let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
-                WorldConfigUtilImpl::get_member(world, selector!("village_start_resources_config"))
-            } else {
-                WorldConfigUtilImpl::get_member(world, selector!("realm_start_resources_config"))
-            };
+            let resources = _fetch_resource_list(ref world, structure_id);
+            _grant_non_troop_resources(ref world, structure_id, ref structure_weight, resources.span());
+            _grant_troop_resources(ref world, structure_id, structure_coord, ref structure_weight, resources.span());
+        }
 
-            let (start_troop_resource_type, (start_troop_type, start_troop_tier)) = TroopsImpl::start_troop_type(biome);
-            for i in 0..starting_resources.resources_list_count {
-                let resource: ResourceList = world.read_model((starting_resources.resources_list_id, i));
-                assert!(resource.resource_type != ResourceTypes::LORDS, "invalid start resource");
+        fn grant_starting_resources_only(
+            self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
+        ) {
+            let mut world = world;
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let resources = _fetch_resource_list(ref world, structure_id);
+            _grant_non_troop_resources(ref world, structure_id, ref structure_weight, resources.span());
+        }
 
-                let mut resource_type = resource.resource_type;
-                let mut resource_amount = resource.amount;
-                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
-                let mut realm_resource = SingleResourceStoreImpl::retrieve(
-                    ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
-                );
-
-                if TroopResourceImpl::is_troop(resource_type) {
-                    if resource_type != start_troop_resource_type {
-                        continue;
-                    } else {
-                        // store the resource
-                        realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
-                        realm_resource.store(ref world);
-                        structure_weight.store(ref world, structure_id);
-
-                        // create starting guard
-                        let start_guard_troop_amount = resource_amount - TroopsImpl::start_resource_amount();
-                        let (troop_management_systems_address, _) = world.dns(@"troop_management_systems").unwrap();
-                        ITroopManagementSystemsDispatcher { contract_address: troop_management_systems_address }
-                            .guard_add(
-                                structure_id,
-                                GuardSlot::Delta,
-                                start_troop_type,
-                                start_troop_tier,
-                                start_guard_troop_amount,
-                            );
-
-                        // refetch structure weight
-                        structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
-                    }
-                } else {
-                    realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
-                    realm_resource.store(ref world);
-                    structure_weight.store(ref world, structure_id);
-                }
-            };
+        fn grant_starting_troop_resources(
+            self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
+        ) {
+            let mut world = world;
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let resources = _fetch_resource_list(ref world, structure_id);
+            _grant_troop_resources(ref world, structure_id, structure_coord, ref structure_weight, resources.span());
         }
     }
 
+    fn _fetch_resource_list(ref world: WorldStorage, structure_id: ID) -> Array<ResourceList> {
+        let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
+        let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
+            WorldConfigUtilImpl::get_member(world, selector!("village_start_resources_config"))
+        } else {
+            WorldConfigUtilImpl::get_member(world, selector!("realm_start_resources_config"))
+        };
+        let mut resources: Array<ResourceList> = array![];
+        for i in 0..starting_resources.resources_list_count {
+            let resource: ResourceList = world.read_model((starting_resources.resources_list_id, i));
+            resources.append(resource);
+        }
+        resources
+    }
+
+    fn _grant_non_troop_resources(
+        ref world: WorldStorage, structure_id: ID, ref structure_weight: Weight, resources: Span<ResourceList>,
+    ) {
+        for resource in resources {
+            let resource = *resource;
+            assert!(resource.resource_type != ResourceTypes::LORDS, "invalid start resource");
+            if TroopResourceImpl::is_troop(resource.resource_type) {
+                continue;
+            }
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource.resource_type);
+            let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, resource.resource_type, ref structure_weight, resource_weight_grams, true,
+            );
+            realm_resource.add(resource.amount, ref structure_weight, resource_weight_grams);
+            realm_resource.store(ref world);
+            structure_weight.store(ref world, structure_id);
+        };
+    }
+
+    fn _grant_troop_resources(
+        ref world: WorldStorage,
+        structure_id: ID,
+        structure_coord: Coord,
+        ref structure_weight: Weight,
+        resources: Span<ResourceList>,
+    ) {
+        let biome: Biome = get_biome(structure_coord.alt, structure_coord.x.into(), structure_coord.y.into());
+        let (start_troop_resource_type, (start_troop_type, start_troop_tier)) = TroopsImpl::start_troop_type(biome);
+
+        for resource in resources {
+            let resource = *resource;
+            if !TroopResourceImpl::is_troop(resource.resource_type) {
+                continue;
+            }
+            if resource.resource_type != start_troop_resource_type {
+                continue;
+            }
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource.resource_type);
+            let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, resource.resource_type, ref structure_weight, resource_weight_grams, true,
+            );
+            realm_resource.add(resource.amount, ref structure_weight, resource_weight_grams);
+            realm_resource.store(ref world);
+            structure_weight.store(ref world, structure_id);
+
+            // create starting guard
+            let start_guard_troop_amount = resource.amount - TroopsImpl::start_resource_amount();
+            let (troop_management_systems_address, _) = world.dns(@"troop_management_systems").unwrap();
+            ITroopManagementSystemsDispatcher { contract_address: troop_management_systems_address }
+                .guard_add(
+                    structure_id, GuardSlot::Delta, start_troop_type, start_troop_tier, start_guard_troop_amount,
+                );
+
+            // refetch structure weight
+            structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        };
+    }
+
     pub fn get_dispatcher(world: @WorldStorage) -> super::IStructureCreationlibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_9").expect('structure create lib not found');
+        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_10").expect('structure create lib not found');
         super::IStructureCreationlibraryLibraryDispatcher { class_hash }
     }
 }

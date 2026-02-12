@@ -1,16 +1,16 @@
 // onload -> fetch single key entities
 
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
-import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { Component, Metadata, Schema, getComponentValue } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
-  debouncedGetTilesForPositionsFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
@@ -54,6 +54,7 @@ export const getStructuresDataFromTorii = async (
   client: ToriiClient,
   components: Component<Schema, Metadata, undefined>[],
   structures: { entityId: ID; position: HexPosition }[],
+  onComplete?: () => void,
 ) => {
   const structuresToSync = structures.filter((structure) => {
     const valid = isValidId(structure.entityId) && hasValidPosition(structure.position);
@@ -69,6 +70,7 @@ export const getStructuresDataFromTorii = async (
     if (import.meta.env.DEV) {
       console.warn("[torii] No valid structures to sync", structures);
     }
+    onComplete?.();
     return;
   }
 
@@ -83,35 +85,83 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Hyperstructure",
   ];
 
+  const runOnComplete = onComplete
+    ? (() => {
+        let completedQueries = 0;
+        return () => {
+          completedQueries += 1;
+          if (completedQueries >= 3) {
+            onComplete();
+          }
+        };
+      })()
+    : undefined;
+
   // Create promises for all queries without awaiting them
   const structuresPromise = debouncedGetEntitiesFromTorii(
     client,
     components as any,
     structuresToSync.map((structure) => structure.entityId),
     playerStructuresModels,
-    () => {},
+    runOnComplete,
   );
 
   const armiesPromise = debouncedGetOwnedArmiesFromTorii(
     client,
     components as any,
     structuresToSync.map((structure) => structure.entityId),
-    () => {},
+    runOnComplete,
   );
 
   const buildingsPromise = debouncedGetBuildingsFromTorii(
     client,
     components as any,
     structuresToSync.map((structure) => structure.position),
-    () => {},
+    runOnComplete,
   );
 
-  // Query tile components for the structure positions
-  const tilePositions = structuresToSync.map((structure) => structure.position);
-  const tilePromise = debouncedGetTilesForPositionsFromTorii(client, components as any, tilePositions, () => {});
-
   // Execute all promises in parallel
-  return Promise.all([structuresPromise, armiesPromise, buildingsPromise, tilePromise]);
+  return Promise.all([structuresPromise, armiesPromise, buildingsPromise]);
+};
+
+// For own structures, usePlayerStructureSync keeps data fresh so we only fetch if missing.
+// For non-owned structures, always re-fetch since no subscription covers them and data may be stale.
+export const ensureStructureSynced = async (
+  components: { Structure?: Component<any, any, any> },
+  toriiClient: ToriiClient,
+  contractComponents: Component<Schema, Metadata, undefined>[],
+  structureEntityId: ID,
+  position: { col: number; row: number },
+  accountAddress?: string,
+): Promise<void> => {
+  if (!components?.Structure || !toriiClient || !contractComponents) {
+    return;
+  }
+
+  let entityKey: any;
+  try {
+    entityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
+  } catch {
+    return;
+  }
+
+  const existing = getComponentValue(components.Structure, entityKey);
+  if (existing && accountAddress) {
+    try {
+      if (BigInt(existing.owner) === BigInt(accountAddress)) {
+        return;
+      }
+    } catch {
+      // owner comparison failed, re-fetch to be safe
+    }
+  }
+
+  const numericId = Number(structureEntityId);
+  if (!Number.isFinite(numericId) || !Number.isFinite(position.col) || !Number.isFinite(position.row)) {
+    return;
+  }
+
+  await getStructuresDataFromTorii(toriiClient, contractComponents, [{ entityId: numericId, position }]);
 };
 
 export const getConfigFromTorii = async <S extends Schema>(

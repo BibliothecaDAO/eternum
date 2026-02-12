@@ -37,10 +37,19 @@ export const TROOP_EXPLORE_FISH_COST = 0;
 export const TROOP_EXPLORE_STAMINA_COST = 30;
 
 // Troop limit config
-export const TROOP_EXPLORER_MAX_PARTY_COUNT = 10;
-export const TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT = 30_000;
 export const TROOP_GUARD_RESURRECTION_DELAY = 60 * 10; // 10 minutes
 export const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 800;
 export const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 1_600;
 export const TROOP_AGENTS_TROOP_LOWER_BOUND = 500;
 export const TROOP_AGENTS_TROOP_UPPER_BOUND = 15_000;
+
+// Army Strength: Army_Strength = Troop_Amount * Tier_Strength
+// Max_Army_Size = (Deployment_Cap / Tier_Strength) * Tier_Modifier
+export const TROOP_TIER_STRENGTH = { T1: 1, T2: 3, T3: 9 };
+export const TROOP_TIER_MODIFIER = { T1: 50, T2: 100, T3: 150 }; // /100 (50 = 0.5, 100 = 1.0, 150 = 1.5)
+
+// Deployment caps per structure level (without precision)
+export const TROOP_SETTLEMENT_DEPLOYMENT_CAP = 6_000;
+export const TROOP_CITY_DEPLOYMENT_CAP = 30_000;
+export const TROOP_KINGDOM_DEPLOYMENT_CAP = 90_000;
+export const TROOP_EMPIRE_DEPLOYMENT_CAP = 180_000;

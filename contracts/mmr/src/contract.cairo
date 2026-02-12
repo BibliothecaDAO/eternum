@@ -12,6 +12,18 @@
 
 use starknet::ContractAddress;
 
+
+#[starknet::interface]
+pub trait IMMRFactoryContract<T> {
+    fn is_factory_mmr_contract(self: @T, addr: ContractAddress) -> bool;
+    fn set_factory_details(ref self: T, addr: ContractAddress, version: felt252);
+}
+
+#[starknet::interface]
+pub trait IWorldFactoryMMR<T> {
+    fn get_factory_mmr_contract_version(self: @T, addr: ContractAddress) -> felt252;
+}
+
 /// MMR-specific interface for the token
 #[starknet::interface]
 pub trait IMMRToken<TContractState> {
@@ -44,7 +56,6 @@ pub trait IERC20View<TContractState> {
 }
 
 // Role constants
-pub const GAME_ROLE: felt252 = selector!("GAME_ROLE");
 pub const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
 
 // MMR Constants (with 18 decimals like standard ERC20)
@@ -61,7 +72,10 @@ pub mod MMRToken {
     use openzeppelin::upgrades::interface::IUpgradeable;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
-    use super::{GAME_ROLE, IERC20View, IMMRToken, INITIAL_MMR, MIN_MMR, UPGRADER_ROLE};
+    use super::{
+        IERC20View, IMMRFactoryContract, IMMRToken, INITIAL_MMR, IWorldFactoryMMRDispatcher,
+        IWorldFactoryMMRDispatcherTrait, MIN_MMR, UPGRADER_ROLE,
+    };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
@@ -79,6 +93,8 @@ pub mod MMRToken {
     struct Storage {
         /// MMR balances (0 means uninitialized, will return INITIAL_MMR)
         balances: Map<ContractAddress, u256>,
+        /// Factory data
+        factory: (ContractAddress, felt252),
         /// Total supply tracking
         total_supply: u256,
         #[substorage(v0)]
@@ -112,16 +128,10 @@ pub mod MMRToken {
     }
 
     #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        default_admin: ContractAddress,
-        game_contract: ContractAddress,
-        upgrader: ContractAddress,
-    ) {
+    fn constructor(ref self: ContractState, default_admin: ContractAddress, upgrader: ContractAddress) {
         // Initialize access control
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, default_admin);
-        self.accesscontrol._grant_role(GAME_ROLE, game_contract);
         self.accesscontrol._grant_role(UPGRADER_ROLE, upgrader);
     }
 
@@ -152,7 +162,8 @@ pub mod MMRToken {
 
         fn update_mmr(ref self: ContractState, player: ContractAddress, new_mmr: u256) {
             // Only game contract can update MMR
-            self.accesscontrol.assert_only_role(GAME_ROLE);
+            let caller = starknet::get_caller_address();
+            assert!(self.is_factory_mmr_contract(caller), "MMR: Caller is not authorized game contract");
 
             // Check if this is first time (before reading balance_of which returns INITIAL_MMR)
             let stored_before = self.balances.entry(player).read();
@@ -195,7 +206,8 @@ pub mod MMRToken {
 
         fn update_mmr_batch(ref self: ContractState, updates: Array<(ContractAddress, u256)>) {
             // Only game contract can update MMR
-            self.accesscontrol.assert_only_role(GAME_ROLE);
+            let caller = starknet::get_caller_address();
+            assert!(self.is_factory_mmr_contract(caller), "MMR: Caller is not authorized game contract");
 
             for (player, new_mmr) in updates {
                 let old_mmr = self.get_player_mmr(player);
@@ -249,6 +261,23 @@ pub mod MMRToken {
 
         fn decimals(self: @ContractState) -> u8 {
             18 // Standard ERC20 decimals
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IMMRFactoryContractImpl of IMMRFactoryContract<ContractState> {
+        fn is_factory_mmr_contract(self: @ContractState, addr: ContractAddress) -> bool {
+            let (factory_address, factory_version) = self.factory.read();
+            assert!(factory_address.is_non_zero(), "MMR: Factory address not set");
+            assert!(factory_version.is_non_zero(), "MMR: Factory version not set");
+
+            factory_version == IWorldFactoryMMRDispatcher { contract_address: factory_address }
+                .get_factory_mmr_contract_version(addr)
+        }
+
+        fn set_factory_details(ref self: ContractState, addr: ContractAddress, version: felt252) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.factory.write((addr, version));
         }
     }
 }

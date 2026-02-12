@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { sqlApi } from "@/services/api";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { QuestReward } from "@/ui/features/economy/resources";
@@ -9,7 +8,6 @@ import { useDojo } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { addAddressPadding } from "starknet";
 
 import {
   EntityDetailLayoutVariant,
@@ -30,6 +28,17 @@ interface QuestEntityDetailProps {
 interface QuestEntityDetailContentProps extends Omit<QuestEntityDetailProps, "layoutVariant" | "layout"> {
   variant: EntityDetailLayoutVariant;
 }
+
+type QuestLevelInfo = {
+  value?: {
+    target_score?: {
+      value?: number;
+    };
+    time_limit?: {
+      value?: number;
+    };
+  };
+};
 
 const QuestEntityDetailContent = ({
   questEntityId,
@@ -55,11 +64,6 @@ const QuestEntityDetailContent = ({
     fetchQuest();
   }, [questEntityId]);
 
-  const minigames = useMinigameStore((state) => state.minigames);
-  const game = useMemo(
-    () => minigames?.find((miniGame) => miniGame.contract_address === addAddressPadding(quest?.game_address || 0n)),
-    [minigames, quest?.game_address],
-  );
   const slotsRemaining = useMemo(
     () => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0),
     [quest?.capacity, quest?.participant_count],
@@ -71,7 +75,12 @@ const QuestEntityDetailContent = ({
     [components, quest?.game_address],
   );
 
-  const questLevel = questLevelsEntity?.levels[quest?.level ?? 0] as any;
+  const questLevel = questLevelsEntity?.levels[quest?.level ?? 0] as QuestLevelInfo | undefined;
+  const questTimeLimitSeconds = questLevel?.value?.time_limit?.value;
+  const questTimeLabel =
+    typeof questTimeLimitSeconds === "number" && Number.isFinite(questTimeLimitSeconds)
+      ? formatTime(questTimeLimitSeconds)
+      : "N/A";
 
   if (!quest) return null;
 
@@ -99,7 +108,7 @@ const QuestEntityDetailContent = ({
   return (
     <div className={containerClasses}>
       <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
-        <div className={cn(labelClass, "mb-1")}>{game?.name}</div>
+        <div className={cn(labelClass, "mb-1")}>Quest</div>
         <div className={cn(bodyClass, "mb-2")}>{`${isBanner ? "Lvl" : "Level"} ${(quest?.level ?? 0) + 1}`}</div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm text-gold/70">{questDescription}</span>
@@ -126,7 +135,7 @@ const QuestEntityDetailContent = ({
             label="Target"
             value={`${questLevel?.value?.target_score?.value ?? 0} XP`}
           />
-          <EntityDetailStat compact={compact} label="Time" value={formatTime(questLevel?.value?.time_limit?.value)} />
+          <EntityDetailStat compact={compact} label="Time" value={questTimeLabel} />
         </EntityDetailStatList>
       </EntityDetailSection>
     </div>

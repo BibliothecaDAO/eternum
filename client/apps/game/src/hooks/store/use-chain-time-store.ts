@@ -1,8 +1,11 @@
 import { create } from "zustand";
 
+import { logChainTimeDebug } from "@/utils/chain-time-debug";
+
 type ProviderHeartbeat = {
   timestamp: number;
-  // Add more fields if the real ProviderHeartbeat has them
+  blockNumber?: number;
+  source?: string;
 };
 
 interface ChainTimeState {
@@ -40,11 +43,29 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
   setHeartbeat: (heartbeat: ProviderHeartbeat) =>
     set((state) => {
       if (state.lastHeartbeat && state.lastHeartbeat.timestamp > heartbeat.timestamp) {
+        logChainTimeDebug("heartbeat_discarded_stale", {
+          heartbeatTimestampMs: heartbeat.timestamp,
+          lastHeartbeatTimestampMs: state.lastHeartbeat.timestamp,
+          heartbeatBlockNumber: heartbeat.blockNumber ?? null,
+          heartbeatSource: heartbeat.source ?? "unknown",
+        });
         return state;
       }
 
-      const anchorTimestampMs = heartbeat.timestamp;
+      const currentNowMs = computeNowMs(state.anchorTimestampMs, state.anchorPerfMs);
+      const anchorTimestampMs = Math.max(heartbeat.timestamp, currentNowMs);
       const anchorPerfMs = getPerfNowMs();
+      const rewindPreventedMs = Math.max(0, currentNowMs - heartbeat.timestamp);
+
+      logChainTimeDebug("heartbeat_applied", {
+        heartbeatTimestampMs: heartbeat.timestamp,
+        heartbeatBlockNumber: heartbeat.blockNumber ?? null,
+        heartbeatSource: heartbeat.source ?? "unknown",
+        previousAnchorTimestampMs: state.anchorTimestampMs,
+        previousNowMs: currentNowMs,
+        nextAnchorTimestampMs: anchorTimestampMs,
+        rewindPreventedMs,
+      });
 
       return {
         lastHeartbeat: heartbeat,

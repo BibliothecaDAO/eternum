@@ -7,7 +7,7 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import { BuildingType, ClientComponents, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -34,16 +34,13 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
+import { createCoalescedAsyncUpdateRunner, waitForVisualSettle } from "./manager-update-convergence";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { shouldRefreshVisibleStructures } from "./structure-update-policy";
+import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
-
-// Enum to track the source of relic effects
-export enum RelicSource {
-  Guard = "guard",
-  Production = "production",
-}
 
 const normalizeEntityId = (entityId: ID | bigint | string | undefined | null): ID | undefined => {
   if (entityId === undefined || entityId === null) {
@@ -97,7 +94,7 @@ export class StructureManager {
   private cosmeticStructureModels: Map<string, InstancedModel[]> = new Map();
   private cosmeticStructureModelPromises: Map<string, Promise<InstancedModel[]>> = new Map();
   private isUpdatingVisibleStructures = false;
-  private hasPendingVisibleStructuresUpdate = false;
+  private readonly runVisibleStructuresUpdate: () => Promise<void>;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   // Cosmetic entity ID maps keyed by cosmeticId
   private cosmeticEntityIdMaps: Map<string, Map<number, ID>> = new Map();
@@ -116,17 +113,10 @@ export class StructureManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
-  private structureRelicEffects: Map<
-    ID,
-    Map<RelicSource, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>>
-  > = new Map();
-  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
-  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private mode: GameModeConfig;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
-  private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
-  private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private latestTransitionToken = 0;
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
   private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
   private unsubscribeAccountStore?: () => void;
@@ -233,13 +223,19 @@ export class StructureManager {
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
     dojoContext?: SetupResult,
-    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
-    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
   ) {
     this.scene = scene;
+    this.runVisibleStructuresUpdate = createCoalescedAsyncUpdateRunner(async () => {
+      this.isUpdatingVisibleStructures = true;
+      try {
+        await this.performVisibleStructuresUpdate();
+      } finally {
+        this.isUpdatingVisibleStructures = false;
+      }
+    });
     this.renderChunkSize = renderChunkSize;
     this.structures = new Structures(this.handleStructureRecordRemoved, () => this.updateVisibleStructures());
     this.labelsGroup = labelsGroup || new Group();
@@ -248,8 +244,6 @@ export class StructureManager {
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
-    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
-    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
     this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
     if (this.frustumManager) {
@@ -500,18 +494,6 @@ export class StructureManager {
       this.pendingLabelUpdates.clear();
     }
 
-    // Clean up all relic effects
-    this.structureRelicEffects.forEach((entityEffectsMap, entityId) => {
-      // Clear effects for all sources
-      for (const relicSource of entityEffectsMap.keys()) {
-        this.updateRelicEffects(entityId, [], relicSource);
-      }
-      // Clear any pending relic effects
-      if (this.clearPendingRelicEffectsCallback) {
-        this.clearPendingRelicEffectsCallback(entityId);
-      }
-    });
-
     this.entityIdLabels.forEach((label) => {
       this.labelsGroup.remove(label);
       this.labelPool.release(label);
@@ -556,8 +538,6 @@ export class StructureManager {
     this.wonderEntityIdMaps.clear();
     this.structures.getStructures().clear();
     this.structureHexCoords.clear();
-    this.structureUpdateTimestamps.clear();
-    this.structureUpdateSources.clear();
     this.chunkToStructures.clear();
     this.structuresWithActiveBattleTimer.clear();
     this.previousVisibleIds.clear();
@@ -759,6 +739,14 @@ export class StructureManager {
     let finalGuardArmies = update.guardArmies;
     let finalActiveProductions = update.activeProductions;
 
+    // Preserve existing activeProductions if the structure already has them.
+    // The real-time onStructureBuildingsUpdate subscription is the authoritative source
+    // for building data, while this update path reads from MapDataStore (SQL cache) which
+    // refreshes on a timer and may be stale.
+    if (existingStructure?.activeProductions && existingStructure.activeProductions.length > 0) {
+      finalActiveProductions = existingStructure.activeProductions;
+    }
+
     const battleData = update.battleData ?? {};
     let { battleCooldownEnd } = battleData as { battleCooldownEnd?: number };
     const {
@@ -899,47 +887,6 @@ export class StructureManager {
       this.updateStructureLabelData(structureRecord, existingLabel);
     }
 
-    // Smart relic effects management - differentiate between genuine updates and chunk reloads
-    const currentTime = Date.now();
-    const lastUpdateTime = this.structureUpdateTimestamps.get(entityId) || 0;
-    const updateSource = `tile-${entityId}`; // Source identifier for this update
-    const lastUpdateSource = this.structureUpdateSources.get(entityId);
-
-    // Consider it a genuine structure update if:
-    // 1. More than 2 seconds since last update (prevents rapid chunk switches), OR
-    // 2. The structure has never been seen before, OR
-    // 3. This is the first time we've seen this source type for this entity
-    const isGenuineUpdate =
-      currentTime - lastUpdateTime > 2000 || lastUpdateTime === 0 || lastUpdateSource !== updateSource;
-
-    if (isGenuineUpdate) {
-      // console.log(
-      //   `[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects (source: ${updateSource})`,
-      // );
-      // This is a genuine structure update, clear existing relic effects
-      const entityEffectsMap = this.structureRelicEffects.get(entityId);
-      if (entityEffectsMap) {
-        for (const relicSource of entityEffectsMap.keys()) {
-          this.updateRelicEffects(entityId, [], relicSource);
-        }
-      }
-
-      // Update tracking info
-      this.structureUpdateTimestamps.set(entityId, currentTime);
-      this.structureUpdateSources.set(entityId, updateSource);
-    } else {
-      // console.log(`[RELIC EFFECTS] Structure ${entityId} quick reload/chunk switch - preserving existing effects`);
-    }
-
-    // Always apply pending relic effects (for both genuine updates and chunk reloads)
-    if (this.applyPendingRelicEffectsCallback) {
-      try {
-        await this.applyPendingRelicEffectsCallback(entityId);
-      } catch (error) {
-        console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
-      }
-    }
-
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
       this.updateVisibleStructures();
@@ -950,8 +897,16 @@ export class StructureManager {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
+    const transitionToken = options?.transitionToken;
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (transitionToken !== undefined) {
+      this.latestTransitionToken = transitionToken;
+    }
+
     if (!force && this.currentChunk === chunkKey) {
       return;
     }
@@ -973,6 +928,10 @@ export class StructureManager {
       return;
     }
 
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+
     const previousChunk = this.currentChunk;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
@@ -983,10 +942,18 @@ export class StructureManager {
     }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = Promise.resolve().then(() => {
-      this.updateVisibleStructures();
+    this.chunkSwitchPromise = (async () => {
+      if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+        return;
+      }
+      if (transitionToken !== undefined && this.currentChunk !== chunkKey) {
+        return;
+      }
+
+      await this.updateVisibleStructures();
       this.showLabels();
-    });
+      await waitForVisualSettle();
+    })();
 
     try {
       await this.chunkSwitchPromise;
@@ -1014,24 +981,10 @@ export class StructureManager {
     return this.visibleStructureCount;
   }
 
-  private updateVisibleStructures(): void {
-    if (this.isUpdatingVisibleStructures) {
-      this.hasPendingVisibleStructuresUpdate = true;
-      return;
-    }
-
-    this.isUpdatingVisibleStructures = true;
-    void this.performVisibleStructuresUpdate()
-      .catch((error) => {
-        console.error("Failed to update visible structures", error);
-      })
-      .finally(() => {
-        this.isUpdatingVisibleStructures = false;
-        if (this.hasPendingVisibleStructuresUpdate) {
-          this.hasPendingVisibleStructuresUpdate = false;
-          this.updateVisibleStructures();
-        }
-      });
+  private updateVisibleStructures(): Promise<void> {
+    return this.runVisibleStructuresUpdate().catch((error) => {
+      console.error("Failed to update visible structures", error);
+    });
   }
 
   private resolveStructureAttachmentsForRender(structure: StructureInfo): CosmeticAttachmentTemplate[] {
@@ -1833,125 +1786,6 @@ export class StructureManager {
     this.frustumVisibilityDirty = true;
   }
 
-  // Relic effect management methods
-  public async updateRelicEffects(
-    entityId: ID,
-    newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
-    relicSource: RelicSource = RelicSource.Guard,
-  ) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      console.warn("[StructureManager] Received relic effect update without a valid entity id", {
-        entityId,
-        relicSource,
-      });
-      return;
-    }
-
-    const structure = this.structures.getStructureByEntityId(normalizedEntityId);
-    if (!structure) return;
-
-    // Get or create the effects map for this entity
-    let entityEffectsMap = this.structureRelicEffects.get(normalizedEntityId);
-    if (!entityEffectsMap) {
-      entityEffectsMap = new Map();
-      this.structureRelicEffects.set(normalizedEntityId, entityEffectsMap);
-    }
-
-    // Get current effects for this specific source
-    const currentEffects = entityEffectsMap.get(relicSource) || [];
-
-    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
-    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
-
-    // Remove effects that are no longer in the new list
-    for (const currentEffect of currentEffects) {
-      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
-        currentEffect.fx.end();
-      }
-    }
-
-    // Add new effects that weren't previously active
-    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }> = [];
-    for (const newEffect of newRelicEffects) {
-      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
-        try {
-          const position = getWorldPositionForHex(structure.hexCoords);
-          position.y += 1.5; // Position above structure
-
-          // Register the relic FX type if not already registered (wait for texture to load)
-          await this.fxManager.registerRelicFX(newEffect.relicNumber);
-
-          // Create the FX at the structure position
-          const fx = this.fxManager.playFxAtCoords(
-            `relic_${newEffect.relicNumber}`,
-            position.x,
-            position.y,
-            position.z,
-            1,
-            undefined,
-            true,
-          );
-
-          if (fx) {
-            effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
-          }
-        } catch (error) {
-          console.error(
-            `Failed to add relic effect ${newEffect.relicNumber} for structure ${normalizedEntityId}:`,
-            error,
-          );
-        }
-      }
-    }
-
-    // Update the effects for this specific source
-    if (newRelicEffects.length === 0) {
-      entityEffectsMap.delete(relicSource);
-      // If no sources have effects, remove the entity from the main map
-      if (entityEffectsMap.size === 0) {
-        this.structureRelicEffects.delete(normalizedEntityId);
-      }
-    } else {
-      // Keep existing effects that are still in the new list, add new ones
-      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
-      entityEffectsMap.set(relicSource, updatedEffects);
-    }
-  }
-
-  public getStructureRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return [];
-    }
-
-    const entityEffectsMap = this.structureRelicEffects.get(normalizedEntityId);
-    if (!entityEffectsMap) return [];
-
-    // Combine effects from all sources
-    const allEffects: { relicId: number; effect: RelicEffect }[] = [];
-    for (const effects of entityEffectsMap.values()) {
-      allEffects.push(...effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })));
-    }
-    return allEffects;
-  }
-
-  public getStructureRelicEffectsBySource(
-    entityId: ID,
-    relicSource: RelicSource,
-  ): { relicId: number; effect: RelicEffect }[] {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return [];
-    }
-
-    const entityEffectsMap = this.structureRelicEffects.get(normalizedEntityId);
-    if (!entityEffectsMap) return [];
-
-    const effects = entityEffectsMap.get(relicSource);
-    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
-  }
-
   /**
    * Update structure label from guard update (troop count/stamina changes)
    */
@@ -2026,6 +1860,11 @@ export class StructureManager {
       }
     }
 
+    const previousOwnership = {
+      isMine: structure.isMine,
+      isAlly: structure.isAlly,
+    };
+
     // Update cached guard armies data
     structure.guardArmies = update.guardArmies.map((guard) => ({
       slot: guard.slot,
@@ -2050,9 +1889,16 @@ export class StructureManager {
       this.updateStructureLabelData(structure, label);
     }
 
-    // Refresh visible structures to update point icons (e.g., myRealm vs enemyRealm)
-    // when ownership changes
-    this.updateVisibleStructures();
+    if (
+      shouldRefreshVisibleStructures(previousOwnership, {
+        isMine: structure.isMine,
+        isAlly: structure.isAlly,
+      })
+    ) {
+      // Refresh visible structures to update point icons (e.g., myRealm vs enemyRealm)
+      // only when ownership bucket changes.
+      this.updateVisibleStructures();
+    }
   }
 
   /**

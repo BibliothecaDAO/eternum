@@ -1,15 +1,17 @@
-import { OnboardingCountdownOverlay, OnboardingLoadingOverlay } from "@/ui/layouts/onboarding/index";
-import "../../index.css";
+import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
+import { useEffect } from "react";
+import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 
 interface LoadingScreenProps {
-  backgroundImage: string;
-  progress?: number;
+  prefetchPlayAssets?: boolean;
 }
 
-export const LoadingScreen = ({ backgroundImage, progress }: LoadingScreenProps) => {
-  return <OnboardingLoadingOverlay backgroundImage={backgroundImage} progress={progress} />;
+export const LoadingScreen = ({ prefetchPlayAssets: shouldPrefetch }: LoadingScreenProps) => {
+  useEffect(() => {
+    if (shouldPrefetch) {
+      prefetchPlayAssets();
+    }
+  }, [shouldPrefetch]);
+
+  return <LoadingOroborus loading />;
 };
-
-function CountdownTimer({ backgroundImage }: { backgroundImage: string }) {
-  return <OnboardingCountdownOverlay backgroundImage={backgroundImage} />;
-}

@@ -14,7 +14,7 @@ export { getEntityIdFromKeys };
 
 // Pads a hex address (with 0x prefix) to 66 characters (64 hex digits + 0x)
 // Example: '0xabc' => '0x' + '0'.repeat(61) + 'abc'
-function padHexAddressTo66(address: string): string {
+export function padHexAddressTo66(address: string): string {
   if (!address || typeof address !== "string") return "";
   let norm = address.toLowerCase();
   if (norm.startsWith("0x")) {

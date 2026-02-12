@@ -3,11 +3,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import type { LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
+import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
 import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
-} from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+} from "@/services/leaderboard/use-landing-leaderboard-store";
 import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";

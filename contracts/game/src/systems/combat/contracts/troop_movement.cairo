@@ -29,7 +29,7 @@ pub mod troop_movement_systems {
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
-    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -68,6 +68,7 @@ pub mod troop_movement_systems {
         pub explorer_owner_address: starknet::ContractAddress,
         pub reward_resource_id: u8,
         pub reward_resource_amount: u128,
+        pub coord: Coord,
         pub timestamp: u64,
     }
     #[abi(embed_v0)]
@@ -433,6 +434,7 @@ pub mod troop_movement_systems {
                         explorer_owner_address: starknet::get_caller_address(),
                         reward_resource_id: explore_reward_type,
                         reward_resource_amount: explore_reward_amount,
+                        coord: explorer.coord,
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );

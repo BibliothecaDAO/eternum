@@ -42,7 +42,7 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   pinRadius: 2, // 5x5 pinned neighborhood
   switchPadding: 0.05,
   toriiFetch: {
-    // Coalesce overlapping 64x64 render windows into larger stable fetch areas.
+    // Coalesce overlapping render windows into larger stable fetch areas.
     superAreaStrides: 4,
   },
   prefetch: {

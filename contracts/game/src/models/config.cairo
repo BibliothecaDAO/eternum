@@ -52,6 +52,7 @@ pub struct WorldConfig {
     pub village_find_resources_config: VillageFoundResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
     pub village_pass_config: VillageTokenConfig,
+    pub village_troop_config: VillageTroopConfig,
     pub quest_config: QuestConfig,
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
@@ -82,6 +83,11 @@ pub struct VillageTokenConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VillageControllerConfig {
     pub addresses: Span<ContractAddress>,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VillageTroopConfig {
+    pub troop_delay_ticks: u8,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -798,23 +804,32 @@ pub struct TroopStaminaConfig {
 }
 
 
-#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default, DojoStore)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopLimitConfig {
-    // Maximum number of explorers allowed per structure
-    pub explorer_max_party_count: u8,
-    // Troop count per army limits without precision
-    // Applies to both explorers and guards
-    pub explorer_guard_max_troop_count: u32,
     // Guard specific settings
-    pub guard_resurrection_delay: u32,
+    pub guard_resurrection_delay: u16,
     // Mercenary bounds without precision
-    pub mercenaries_troop_lower_bound: u32,
+    pub mercenaries_troop_lower_bound: u16,
     // without precision
-    pub mercenaries_troop_upper_bound: u32,
+    pub mercenaries_troop_upper_bound: u16,
     // Agents bounds without precision
-    pub agents_troop_lower_bound: u32,
+    pub agents_troop_lower_bound: u16,
     // without precision
-    pub agents_troop_upper_bound: u32,
+    pub agents_troop_upper_bound: u16,
+    // Deployment caps per structure level (without precision)
+    // Max_Army_Size = (Deployment_Cap / Tier_Strength) * Tier_Modifier / 100
+    pub settlement_deployment_cap: u32,
+    pub city_deployment_cap: u32,
+    pub kingdom_deployment_cap: u32,
+    pub empire_deployment_cap: u32,
+    // Tier strength: T1=1, T2=3, T3=9
+    pub t1_tier_strength: u8,
+    pub t2_tier_strength: u8,
+    pub t3_tier_strength: u8,
+    // Tier modifier (x100): T1=50 (0.5), T2=100 (1.0), T3=150 (1.5)
+    pub t1_tier_modifier: u8,
+    pub t2_tier_modifier: u8,
+    pub t3_tier_modifier: u8,
 }
 
 
@@ -956,7 +971,8 @@ pub struct BankConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
-    pub hyperstructure_immunity_ticks: u8,
+    pub village_immunity_ticks: u8,
+    pub village_raid_immunity_ticks: u8,
 }
 
 #[generate_trait]

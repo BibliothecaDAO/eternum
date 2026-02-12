@@ -17,15 +17,18 @@ import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengin
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import {
+  DEFAULT_COORD_ALT,
   FELT_CENTER,
   ResourceManager,
   getBuildingCosts,
   getBuildingCount,
-  setBuildingCount,
   getTileAt,
-  DEFAULT_COORD_ALT,
+  setBuildingCount,
 } from "..";
 import { configManager } from "./config-manager";
+
+// Global const to flick optimistic building on or off
+export const OPTIMISTIC_BUILDING_ENABLED = true;
 
 // Module-level Set to track pending builds across TileManager instances
 // This prevents race conditions between optimistic updates and Torii sync
@@ -376,8 +379,11 @@ export class TileManager {
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
 
-    // add optimistic rendering
-    const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
+    // add optimistic rendering if enabled
+    let removeBuildingOverride = () => {};
+    if (OPTIMISTIC_BUILDING_ENABLED) {
+      removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
+    }
 
     try {
       const result = await this.systemCalls.create_building({
@@ -406,8 +412,11 @@ export class TileManager {
   };
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    // add optimistic rendering
-    const removeBuildingOverride = this._optimisticDestroy(structureEntityId, col, row);
+    // add optimistic rendering if enabled
+    let removeBuildingOverride = () => {};
+    if (OPTIMISTIC_BUILDING_ENABLED) {
+      removeBuildingOverride = this._optimisticDestroy(structureEntityId, col, row);
+    }
 
     try {
       await this.systemCalls.destroy_building({
@@ -427,7 +436,10 @@ export class TileManager {
   };
 
   pauseProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    const overrideId = this._optimisticPause(col, row);
+    let overrideId: string | undefined;
+    if (OPTIMISTIC_BUILDING_ENABLED) {
+      overrideId = this._optimisticPause(col, row);
+    }
 
     try {
       await this.systemCalls.pause_production({
@@ -443,12 +455,17 @@ export class TileManager {
       console.error(error);
       throw error;
     } finally {
-      this.components.Building.removeOverride(overrideId);
+      if (OPTIMISTIC_BUILDING_ENABLED && overrideId) {
+        this.components.Building.removeOverride(overrideId);
+      }
     }
   };
 
   resumeProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    const overrideId = this._optimisticResume(col, row);
+    let overrideId: string | undefined;
+    if (OPTIMISTIC_BUILDING_ENABLED) {
+      overrideId = this._optimisticResume(col, row);
+    }
 
     try {
       await this.systemCalls.resume_production({
@@ -464,7 +481,9 @@ export class TileManager {
       console.error(error);
       throw error;
     } finally {
-      this.components.Building.removeOverride(overrideId);
+      if (OPTIMISTIC_BUILDING_ENABLED && overrideId) {
+        this.components.Building.removeOverride(overrideId);
+      }
     }
   };
 }

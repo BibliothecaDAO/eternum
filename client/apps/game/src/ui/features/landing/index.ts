@@ -1,8 +1,8 @@
-export { LandingWelcome } from "./sections/welcome";
-export { LandingAccount } from "./sections/account";
-export { LandingPlayer } from "./sections/player";
-export { LandingLeaderboard } from "./sections/leaderboard";
-export { LandingMarkets } from "./sections/markets";
-export { LandingMarketDetails } from "./sections/market-details";
-export { LandingCreateMarket, LandingCreateMarketTest } from "./sections/create-market";
-export { LandingMint } from "./sections/mint";
+// Main layout
+export { LandingLayout } from "./landing-layout";
+
+// Views
+export { PlayView } from "./views/play-view";
+export { ProfileView } from "./views/profile-view";
+export { MarketsView } from "./views/markets-view";
+export { LeaderboardView } from "./views/leaderboard-view";
