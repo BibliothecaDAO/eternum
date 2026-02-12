@@ -7,10 +7,10 @@ private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e6
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9"
 
 [lib_versions]
-"s1_eternum-combat_library" = "0_1_9"
-"s1_eternum-rng_library" = "0_1_9"
-"s1_eternum-biome_library" = "0_1_9"
-"s1_eternum-structure_creation_library" = "0_1_9"
+"s1_eternum-combat_library" = "0_1_10"
+"s1_eternum-rng_library" = "0_1_10"
+"s1_eternum-biome_library" = "0_1_10"
+"s1_eternum-structure_creation_library" = "0_1_10"
 
 
 [world]
@@ -48,6 +48,9 @@ website = "https://eternum.realms.world/"
     "s1_eternum-relic_chest_discovery_systems",
     "s1_eternum-mine_discovery_systems",
     "s1_eternum-village_discovery_systems",
+    "s1_eternum-bitcoin_mine_systems",
+    "s1_eternum-bitcoin_mine_discovery_systems",
+    "s1_eternum-artificer_systems",
 	"s1_eternum-season_systems",
 	"s1_eternum-village_systems",
     ## "s1_eternum-quest_systems",

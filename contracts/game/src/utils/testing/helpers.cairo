@@ -94,8 +94,12 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         relic_chest_relics_per_chest: 3,
         relic_hex_dist_from_center: 10,
         relic_discovery_interval_sec: 60,
-        village_fail_probability: 1,
-        village_win_probability: 0,
+        camp_fail_probability: 1,
+        camp_win_probability: 0,
+        holysite_win_probability: 5000,
+        holysite_fail_probability: 5000,
+        bitcoin_mine_win_probability: 200, // 2%
+        bitcoin_mine_fail_probability: 9800,
     }
 }
 
@@ -168,7 +172,10 @@ pub fn MOCK_STRUCTURE_CAPACITY_CONFIG() -> StructureCapacityConfig {
         village_capacity: 1000000000000000, // grams
         hyperstructure_capacity: 1000000000000000, // grams
         fragment_mine_capacity: 1000000000000000, // grams
-        bank_structure_capacity: 1000000000000000 // grams
+        bank_structure_capacity: 1000000000000000, // grams
+        holysite_capacity: 1000000000000000, // grams
+        camp_capacity: 1000000000000000, // grams
+        bitcoin_mine_capacity: 1000000000000000 // grams
     }
 }
 
@@ -177,7 +184,7 @@ pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
 }
 
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
-    TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1 }
+    TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1, bitcoin_phase_in_seconds: 600 }
 }
 
 pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
@@ -612,10 +619,10 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_9")),
-            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
+            TestResource::Library(("structure_creation_library", "0_1_10")),
+            TestResource::Library(("biome_library", "0_1_10")), TestResource::Library(("rng_library", "0_1_10")),
             TestResource::Library(
-                ("combat_library", "0_1_9"),
+                ("combat_library", "0_1_10"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
@@ -1181,9 +1188,9 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_9")),
-            TestResource::Library(("biome_library", "0_1_9")), TestResource::Library(("rng_library", "0_1_9")),
-            TestResource::Library(("combat_library", "0_1_9")),
+            TestResource::Library(("structure_creation_library", "0_1_10")),
+            TestResource::Library(("biome_library", "0_1_10")), TestResource::Library(("rng_library", "0_1_10")),
+            TestResource::Library(("combat_library", "0_1_10")),
         ]
             .span(),
     }

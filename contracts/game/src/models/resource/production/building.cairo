@@ -198,9 +198,10 @@ pub enum BuildingCategory {
     ResourceWheat,
     ResourceFish,
     ResourceEssence,
+    ResourceResearch,
 }
 
-const LAST_RESOURCE_BUILDING: u8 = 39;
+const LAST_RESOURCE_BUILDING: u8 = 40;
 pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     fn into(self: BuildingCategory) -> felt252 {
         match self {
@@ -245,7 +246,8 @@ pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::ResourcePaladinT3 => 36,
             BuildingCategory::ResourceWheat => 37,
             BuildingCategory::ResourceFish => 38,
-            BuildingCategory::ResourceEssence => LAST_RESOURCE_BUILDING.into(),
+            BuildingCategory::ResourceEssence => 39,
+            BuildingCategory::ResourceResearch => LAST_RESOURCE_BUILDING.into(),
         }
     }
 }
@@ -303,6 +305,7 @@ pub impl BuildingCategoryFromU8 of Into<u8, BuildingCategory> {
             37 => BuildingCategory::ResourceWheat,
             38 => BuildingCategory::ResourceFish,
             39 => BuildingCategory::ResourceEssence,
+            40 => BuildingCategory::ResourceResearch,
             _ => BuildingCategory::None,
         }
     }
@@ -421,6 +424,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::ResourceWheat => true,
             BuildingCategory::ResourceFish => true,
             BuildingCategory::ResourceEssence => true,
+            BuildingCategory::ResourceResearch => true,
             //  NEVER ALLOW LORDS TO BE BUILT
         }
     }
@@ -468,6 +472,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::ResourceWheat => ResourceTypes::WHEAT,
             BuildingCategory::ResourceFish => ResourceTypes::FISH,
             BuildingCategory::ResourceEssence => ResourceTypes::ESSENCE,
+            BuildingCategory::ResourceResearch => ResourceTypes::RESEARCH,
             //  NEVER ALLOW LORDS TO BE BUILT
         }
     }

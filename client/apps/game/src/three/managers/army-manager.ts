@@ -52,6 +52,7 @@ import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
 import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
+import { waitForVisualSettle } from "./manager-update-convergence";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -642,6 +643,7 @@ export class ArmyManager {
 
     try {
       await this.chunkSwitchPromise;
+      await waitForVisualSettle();
     } finally {
       this.chunkSwitchPromise = null;
     }

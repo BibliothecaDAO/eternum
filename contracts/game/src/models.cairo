@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod config;
 pub mod events;
+pub mod faith;
 pub mod guild;
 pub mod hyperstructure;
 pub mod map;
@@ -34,6 +35,7 @@ pub mod resource {
         pub mod production;
     }
 }
+pub mod bitcoin_mine;
 pub mod quest;
 pub mod rank;
 pub mod rng;

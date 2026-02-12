@@ -135,10 +135,10 @@ const GameCard = ({
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
-  // Forge hyperstructures button shown for upcoming games
+  // Forge hyperstructures button shown during registration period
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
-  // Show forge button for upcoming games when we have the config (even if 0 left, show disabled)
-  const showForgeButton = isUpcoming && game.config?.numHyperstructuresLeft !== null && playerAddress;
+  // Show forge button when we have config (even if 0 left, show disabled)
+  const showForgeButton = canRegisterPeriod && game.config?.numHyperstructuresLeft !== null && playerAddress;
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({

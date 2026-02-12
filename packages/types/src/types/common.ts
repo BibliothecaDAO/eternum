@@ -71,6 +71,9 @@ export enum TileOccupier {
   Quest = 33,
   Chest = 34,
   Spire = 35,
+  //
+  HolySite = 36,
+  Camp = 37,
 }
 
 /**
@@ -474,8 +477,10 @@ export interface Config {
     shardsMinesWinProbability: number;
     agentFindProbability: number;
     agentFindFailProbability: number;
-    villageFindProbability: number;
-    villageFindFailProbability: number;
+    campFindProbability: number;
+    campFindFailProbability: number;
+    holysiteFindProbability: number;
+    holysiteFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -554,7 +559,13 @@ export interface Config {
   settlement: {
     center: number;
     base_distance: number;
-    subsequent_distance: number;
+    layers_skipped: number;
+    layer_max: number;
+    layer_capacity_increment: number;
+    layer_capacity_bps: number;
+    spires_layer_distance: number;
+    spires_max_count: number;
+    spires_settled_count: number;
     single_realm_mode: boolean;
   };
   season: {
@@ -662,6 +673,18 @@ export interface Config {
     lobby_split_weight_scaled: number;
     mean_regression_scaled: number;
     min_players: number;
+  };
+  faith?: {
+    enabled: boolean;
+    wonder_base_fp_per_sec: number;
+    holy_site_fp_per_sec: number;
+    realm_fp_per_sec: number;
+    village_fp_per_sec: number;
+    owner_share_percent: number;
+    reward_token: string;
+  };
+  artificer?: {
+    research_cost_for_relic: number;
   };
 
   // Config for calling the setup function

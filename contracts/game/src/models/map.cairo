@@ -108,6 +108,10 @@ pub enum TileOccupier {
     Quest,
     Chest,
     Spire,
+    //
+    HolySite,
+    Camp,
+    BitcoinMine,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -156,6 +160,10 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::Quest => 33,
             TileOccupier::Chest => 34,
             TileOccupier::Spire => 35,
+            //
+            TileOccupier::HolySite => 36,
+            TileOccupier::Camp => 37,
+            TileOccupier::BitcoinMine => 38,
         }
     }
 }

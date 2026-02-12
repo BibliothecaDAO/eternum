@@ -111,8 +111,11 @@ export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 export const AGENT_FIND_PROBABILITY = 0; // 0/100 = 0%
 export const AGENT_FIND_FAIL_PROBABILITY = 100; // 100/100 = 100%
 
-export const VILLAGE_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
-export const VILLAGE_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
+export const CAMP_FIND_PROBABILITY = 1_500; // * 2 // = 3/100 = 3%
+export const CAMP_FIND_FAIL_PROBABILITY = 48_500; // * 2 // =  97/100 = 97%
+
+export const HOLYSITE_FIND_PROBABILITY = 500; // 500 / 50_000 = 1%
+export const HOLYSITE_FIND_FAIL_PROBABILITY = 49_500; // 49_500 / 50_000 = 99%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 2_000; // 2_000 / 100_000 = 2%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 98_000; // 98_000 / 100_000 = 98%
@@ -160,6 +163,14 @@ export const VILLAGE_RAID_IMMUNITY_TICKS = 24;
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 8;
+export const SETTLEMENT_LAYERS_SKIPPED = 2; // first 2 layers are empty
+export const SETTLEMENT_LAYER_MAX = 6; // starting number of layers
+export const SETTLEMENT_LAYER_CAPACITY_BPS = 8000; // 80% - once 80% of current layer capacity is used, capacity increases
+export const SETTLEMENT_LAYER_CAPACITY_INCREMENT = 6; // layer capacity increases by 6 layers after capacity bps is reached
+export const SETTLEMENT_SPIRES_LAYER_DISTANCE = 6;
+export const SETTLEMENT_SPIRES_MAX_COUNT = 1; // starts at 1, increased in contracts
+export const SETTLEMENT_SPIRES_SETTLED_COUNT = 0; // starts at 0, increased in contracts
+// Legacy constants (may be used elsewhere)
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
@@ -197,6 +208,9 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7; // 
 export const SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7; // 7 days
 
 export const TRADE_MAX_COUNT = 10;
+
+// ----- Artificer ----- //
+export const ARTIFICER_RESEARCH_COST_FOR_RELIC = 50_000;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344"; // set in indexer.sh
 export const AGENT_MAX_LIFETIME_COUNT = 10_000;
@@ -251,6 +265,16 @@ const MMR_LOBBY_SPLIT_WEIGHT_SCALED = 2500; // 0.25 scaled by 10000 (split lobby
 const MMR_MEAN_REGRESSION_SCALED = 150; // 0.015 scaled by 10000 (pull toward distribution mean)
 const MMR_MIN_PLAYERS = 6; // Minimum players for a game to be rated
 
+// ----- Faith System ----- //
+const FAITH_PRECISION = 10; // Multiplier for FP rates (allows fractional FP without decimals)
+const FAITH_ENABLED = true;
+const FAITH_WONDER_BASE_FP_PER_SEC = 50 * FAITH_PRECISION; // Base FP/sec for wonder self-pledge
+const FAITH_HOLY_SITE_FP_PER_SEC = 30 * FAITH_PRECISION; // FP/sec for holy site pledge
+const FAITH_REALM_FP_PER_SEC = 10 * FAITH_PRECISION; // FP/sec for realm pledge
+const FAITH_VILLAGE_FP_PER_SEC = 5 * FAITH_PRECISION; // FP/sec for village pledge
+const FAITH_OWNER_SHARE_PERCENT = 30; // 30% goes to wonder owner, 70% to pledger
+const FAITH_REWARD_TOKEN = (await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords) || "0x0";
+
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -296,8 +320,10 @@ export const EternumGlobalConfig: Config = {
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
     agentFindProbability: AGENT_FIND_PROBABILITY,
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
-    villageFindProbability: VILLAGE_FIND_PROBABILITY,
-    villageFindFailProbability: VILLAGE_FIND_FAIL_PROBABILITY,
+    campFindProbability: CAMP_FIND_PROBABILITY,
+    campFindFailProbability: CAMP_FIND_FAIL_PROBABILITY,
+    holysiteFindProbability: HOLYSITE_FIND_PROBABILITY,
+    holysiteFindFailProbability: HOLYSITE_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
@@ -322,6 +348,8 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfig.HyperstructureStructure]: 18446744073709551615n, // max
     [CapacityConfig.BankStructure]: 18446744073709551615n, // max
     [CapacityConfig.FragmentMineStructure]: 18446744073709551615n, // max
+    [CapacityConfig.HolySiteStructure]: 18446744073709551615n, // max
+    [CapacityConfig.CampStructure]: 18446744073709551615n, // max
     [CapacityConfig.Donkey]: 50 * 1000, // 500 kg per donkey
     // 10_000 gr per army
     [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count
@@ -387,7 +415,13 @@ export const EternumGlobalConfig: Config = {
   settlement: {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
-    subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
+    layers_skipped: SETTLEMENT_LAYERS_SKIPPED,
+    layer_max: SETTLEMENT_LAYER_MAX,
+    layer_capacity_increment: SETTLEMENT_LAYER_CAPACITY_INCREMENT,
+    layer_capacity_bps: SETTLEMENT_LAYER_CAPACITY_BPS,
+    spires_layer_distance: SETTLEMENT_SPIRES_LAYER_DISTANCE,
+    spires_max_count: SETTLEMENT_SPIRES_MAX_COUNT,
+    spires_settled_count: SETTLEMENT_SPIRES_SETTLED_COUNT,
     single_realm_mode: false,
   },
   buildings: {
@@ -483,6 +517,18 @@ export const EternumGlobalConfig: Config = {
     lobby_split_weight_scaled: MMR_LOBBY_SPLIT_WEIGHT_SCALED,
     mean_regression_scaled: MMR_MEAN_REGRESSION_SCALED,
     min_players: MMR_MIN_PLAYERS,
+  },
+  faith: {
+    enabled: FAITH_ENABLED,
+    wonder_base_fp_per_sec: FAITH_WONDER_BASE_FP_PER_SEC,
+    holy_site_fp_per_sec: FAITH_HOLY_SITE_FP_PER_SEC,
+    realm_fp_per_sec: FAITH_REALM_FP_PER_SEC,
+    village_fp_per_sec: FAITH_VILLAGE_FP_PER_SEC,
+    owner_share_percent: FAITH_OWNER_SHARE_PERCENT,
+    reward_token: FAITH_REWARD_TOKEN,
+  },
+  artificer: {
+    research_cost_for_relic: ARTIFICER_RESEARCH_COST_FOR_RELIC,
   },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
