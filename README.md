@@ -10,15 +10,18 @@ It serves as both a game and an open platform.
 ## Choose your path
 
 ### I’m here to play / learn the game
+
 - Start with the docs site: [`client/apps/game-docs`](./client/apps/game-docs)
 
 ### I’m here to build (developers)
+
 - Setup: see **Prerequisites** + **Setup** below
 - Contributing: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - Contracts: [`contracts/`](./contracts)
 - Packages/SDK: [`packages/`](./packages)
 
 ### I’m here for architecture / internal notes
+
 - See [`docs/`](./docs)
 
 ---
@@ -42,11 +45,13 @@ It serves as both a game and an open platform.
 ## Realtime communication
 
 The realtime work plan was moved out of the README to keep this page focused:
+
 - [`docs/roadmap/realtime.md`](./docs/roadmap/realtime.md)
 
 ## Packages overview
 
 For package-by-package docs, see:
+
 - [`packages/README.md`](./packages/README.md)
 
 ## Prerequisites
@@ -58,25 +63,25 @@ For package-by-package docs, see:
 
 ## Setup
 
-1) Install Dojo:
+1. Install Dojo:
 
 ```bash
 curl -L https://install.dojoengine.org | bash
 ```
 
-2) Install pnpm:
+2. Install pnpm:
 
 ```bash
 npm install -g pnpm
 ```
 
-3) Install dependencies:
+3. Install dependencies:
 
 ```bash
 pnpm install
 ```
 
-4) Build shared packages:
+4. Build shared packages:
 
 ```bash
 pnpm run build:packages
