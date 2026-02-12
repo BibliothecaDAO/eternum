@@ -82,6 +82,7 @@ import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
+  getChunkKeysContainingHexInRenderBounds,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
   isHexWithinRenderBounds,
@@ -2744,14 +2745,31 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
+    const overlappingChunkKeys = getChunkKeysContainingHexInRenderBounds({
+      chunkKeys: this.cachedMatrices.keys(),
+      col,
+      row,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
+
+    if (overlappingChunkKeys.length > 0) {
+      overlappingChunkKeys.forEach((chunkKey) => {
+        const [chunkRow, chunkCol] = chunkKey.split(",").map(Number);
+        if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
+          this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+        }
+      });
+      return;
+    }
+
     const pos = getWorldPositionForHex({ row, col });
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
 
     const chunkCol = chunkX * this.chunkSize;
     const chunkRow = chunkZ * this.chunkSize;
 
-    // Only invalidate the chunk that actually contains this hex
-    // Previously invalidated 9 chunks (3x3 grid) which was excessive
+    // Fallback: invalidate the containing stride chunk when no cached overlaps are found.
     this.removeCachedMatricesForChunk(chunkRow, chunkCol);
   }
 

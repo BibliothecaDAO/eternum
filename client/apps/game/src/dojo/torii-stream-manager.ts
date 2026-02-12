@@ -82,6 +82,8 @@ export class ToriiStreamManager {
   private readonly logging: boolean;
   private currentSubscription: { cancel: () => void } | null = null;
   private pendingSwitch: Promise<void> | null = null;
+  private switchQueue: Promise<void> = Promise.resolve();
+  private latestSwitchRequestId = 0;
   private clauseBuilder: (descriptor: BoundsDescriptor) => Clause | null;
   private currentSignature: string | null = null;
 
@@ -112,21 +114,33 @@ export class ToriiStreamManager {
     }
 
     const clause = this.clauseBuilder(descriptor);
+    const requestId = ++this.latestSwitchRequestId;
 
-    this.pendingSwitch = this.createSubscription(clause);
+    const task = this.switchQueue.then(async () => {
+      const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging);
+
+      // A newer request superseded this one while it was in flight; drop the stale subscription.
+      if (requestId !== this.latestSwitchRequestId) {
+        subscription.cancel();
+        return;
+      }
+
+      // Swap active stream only after the replacement subscription is ready.
+      this.cancelCurrentSubscription();
+      this.currentSubscription = subscription;
+      this.currentSignature = signature;
+    });
+
+    this.switchQueue = task.catch(() => {});
+    this.pendingSwitch = task;
 
     try {
-      await this.pendingSwitch;
-      this.currentSignature = signature;
+      await task;
     } finally {
-      this.pendingSwitch = null;
+      if (this.pendingSwitch === task) {
+        this.pendingSwitch = null;
+      }
     }
-  }
-
-  private async createSubscription(clause: Clause | null): Promise<void> {
-    this.cancelCurrentSubscription();
-    const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging);
-    this.currentSubscription = subscription;
   }
 
   cancelCurrentSubscription() {

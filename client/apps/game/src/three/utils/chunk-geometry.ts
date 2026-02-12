@@ -77,3 +77,33 @@ export function isHexWithinRenderBounds(
   const bounds = getRenderBounds(startRow, startCol, renderSize, chunkSize);
   return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
 }
+
+interface ChunkKeyOverlapInput {
+  chunkKeys: Iterable<string>;
+  col: number;
+  row: number;
+  renderSize: ChunkRenderSize;
+  chunkSize: number;
+}
+
+/**
+ * Return cached chunk keys whose render windows include the provided hex.
+ * This is used to invalidate every overlapping render cache, not just the
+ * chunk that contains the hex by stride coordinates.
+ */
+export function getChunkKeysContainingHexInRenderBounds(input: ChunkKeyOverlapInput): string[] {
+  const matches: string[] = [];
+
+  for (const chunkKey of input.chunkKeys) {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      continue;
+    }
+
+    if (isHexWithinRenderBounds(input.col, input.row, startRow, startCol, input.renderSize, input.chunkSize)) {
+      matches.push(chunkKey);
+    }
+  }
+
+  return matches;
+}
