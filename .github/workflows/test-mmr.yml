@@ -1,0 +1,21 @@
+name: test mmr
+
+on:
+  pull_request:
+    paths:
+      - "contracts/mmr/**"
+      - ".github/workflows/test-mmr.yml"
+
+jobs:
+  test-mmr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: .tool-versions
+      - name: Run MMR tests
+        run: cd contracts/mmr && snforge test
