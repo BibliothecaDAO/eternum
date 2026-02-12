@@ -21,8 +21,13 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
   });
 
   const rpc = (_chain: Chain) => {
+    const nodeUrl =
+      _chain.id === sepolia.id
+        ? "https://api.cartridge.gg/x/starknet/sepolia"
+        : "https://api.cartridge.gg/x/starknet/mainnet";
+
     return {
-      nodeUrl: `https://api.cartridge.gg/x/starknet/mainnet`,
+      nodeUrl,
     };
   };
 

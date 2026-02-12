@@ -121,7 +121,7 @@ const PROPOSALS_QUERY = graphql(`
 /* -------------------------------------------------------------------------- */
 
 // Define a Zod schema for the proposals request input.
-const LoadProposalsInput = z.object({
+const loadProposalsInputSchema = z.object({
   limit: z.number().min(1),
   skip: z.number().min(0).default(0),
   current: z.number(),
@@ -134,14 +134,15 @@ const LoadProposalsInput = z.object({
   searchQuery: z.string().default(""),
 });
 
-type LoadProposalsInputType = z.infer<typeof LoadProposalsInput>;
+type LoadProposalsInputType = z.infer<typeof loadProposalsInputSchema>;
 
 /**
  * This function wraps the loadProposals logic and uses generic fetch
  * to execute GraphQL POST calls instead of Apollo.
  */
 export async function getProposals(input: LoadProposalsInputType) {
-  const { limit, skip, /* current, filters,*/ searchQuery } = input;
+  const { limit, skip, /* current, filters,*/ searchQuery } =
+    loadProposalsInputSchema.parse(input);
   
   const metadataFilters: Record<string, string> = {
     title_contains_nocase: searchQuery,
@@ -188,17 +189,17 @@ export const getProposalsQueryOptions = (
 /* -------------------------------------------------------------------------- */
 
 // Define a Zod schema for the proposal request input.
-const LoadProposalInput = z.object({
+const loadProposalInputSchema = z.object({
   id: z.string(),
 });
 
-type LoadProposalInputType = z.infer<typeof LoadProposalInput>;
+type LoadProposalInputType = z.infer<typeof loadProposalInputSchema>;
 
 /**
  * This function fetches a single proposal by ID
  */
 export async function getProposal(input: LoadProposalInputType) {
-  const { id } = input;
+  const { id } = loadProposalInputSchema.parse(input);
 
   // Fetch a single proposal using the generic fetch helper
   const proposalData = await execute(PROPOSAL_QUERY, {
