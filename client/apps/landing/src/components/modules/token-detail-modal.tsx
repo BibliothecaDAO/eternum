@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
+import { marketplaceCollections, realmsAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
@@ -25,6 +25,7 @@ import { Separator } from "../ui/separator";
 import { CreateListingsDrawer } from "./marketplace-create-listings-drawer";
 import { EditListingDrawer } from "./marketplace-edit-listing-drawer";
 import { CollectionType } from "./token-card";
+import { getActiveOrderLookupAddress } from "./token-detail-modal.utils";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
@@ -112,6 +113,8 @@ export const TokenDetailModal = ({
   expiration, // Added
   displayName, // Added
 }: TokenDetailModalProps) => {
+  void collectionType;
+
   const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
 
   // Transform IPFS URLs to use Pinata gateway
@@ -119,19 +122,19 @@ export const TokenDetailModal = ({
     ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
     : originalImage;
   const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
+  const orderLookupAddress = getActiveOrderLookupAddress(tokenData);
 
   const { data: activeMarketOrder } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
-    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
+    queryKey: ["activeMarketOrdersTotal", orderLookupAddress, tokenData.token_id.toString()],
+    queryFn: ({ signal }) => fetchActiveMarketOrders(orderLookupAddress, [tokenData.token_id.toString()], { signal }),
     refetchInterval: 30_000,
     enabled: isOpen,
   });
 
-  console.log("[TokenDetailModal] tokenData", tokenData);
-
   // Get wallet state
   const { address } = useAccount();
   const { connector, connectors, connect } = useConnect();
+  void connector;
 
   const { lordsBalance } = useLords();
 
@@ -365,7 +368,7 @@ export const TokenDetailModal = ({
                         size="sm"
                         onClick={() => {
                           const collectionKey = Object.entries(marketplaceCollections).find(
-                            ([_, config]) => config.address === tokenData.contract_address,
+                            ([, config]) => config.address === tokenData.contract_address,
                           )?.[0];
 
                           if (collectionKey) {
@@ -388,18 +391,22 @@ export const TokenDetailModal = ({
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-sm">Owned By</span>
                         {(() => {
-                          const v = (tokenData as any)?.token_owner as unknown;
+                          const v: unknown = tokenData.token_owner;
                           let addr = "";
                           if (typeof v === "string") {
                             addr = v;
                           } else if (typeof v === "number" || typeof v === "bigint") {
                             try {
                               addr = `0x${BigInt(v).toString(16)}`;
-                            } catch {}
+                            } catch {
+                              // Ignore invalid owner values.
+                            }
                           } else if (v != null) {
                             try {
                               addr = String(v);
-                            } catch {}
+                            } catch {
+                              // Ignore invalid owner values.
+                            }
                           }
                           return <span className="text-foreground">{addr ? shortenHex(addr, 10) : ""}</span>;
                         })()}
