@@ -295,12 +295,17 @@ Example payload for hot-swapping world connectivity:
 
 ## Architecture Reference
 
-The `docs/` directory contains reference documents for understanding and reviewing the agent's world-building and
-session policy pipeline:
+The `docs/` directory contains reference documents for understanding the agent's architecture, dependencies, and
+internals:
 
 | Document                                                                                 | Purpose                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                           | Comprehensive architecture guide covering entry points, world discovery, session management, adapter layer (60+ actions), TUI, release packaging, configuration reference, and key design decisions. Start here for onboarding.            |
+| [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)                                           | How the agent uses `@bibliothecadao/torii`, `@bibliothecadao/client`, and `@bibliothecadao/eternum` (core). Covers data flow, usage patterns, caching, and error handling across the three packages.                                       |
 | [`docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md`](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | Canonical 8-phase pipeline specification covering factory SQL resolution, manifest patching, policy construction, and Controller initialization. Use as the source of truth when reviewing or evolving the agent's world-connection logic. |
 | [`docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md`](docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md)         | Gap analysis comparing the agent's implementation against the canonical pipeline. Lists identified issues by severity with recommendations. Useful context for code reviewers and for tracking future alignment work.                      |
+
+See also [`packages/game-agent/docs/ARCHITECTURE.md`](../../../packages/game-agent/docs/ARCHITECTURE.md) for the core
+AI agent framework documentation (tick loop, heartbeat, decision logging, soul/personality system, evolution, tools).
 
 These documents are intended to support code review, onboarding, and ongoing agent design evolution.
