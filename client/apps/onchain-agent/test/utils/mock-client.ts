@@ -55,6 +55,14 @@ export function createMockClient() {
             level: 2,
           },
           {
+            entityId: 3,
+            structureType: "mine",
+            position: { x: 13, y: 22 },
+            owner: "0xother",
+            name: "Mine #1",
+            level: 1,
+          },
+          {
             entityId: 2,
             structureType: "bank",
             position: { x: 50, y: 60 },

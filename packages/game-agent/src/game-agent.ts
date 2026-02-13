@@ -8,7 +8,7 @@ import { createDecisionRecorder, type DecisionRecorder } from "./decision-log.js
 import { buildGamePrompt, loadSoul, loadTaskLists } from "./soul.js";
 import { createTickLoop, formatTickPrompt, type TickLoop } from "./tick-loop.js";
 import { createAgentConfigTools, createGameTools } from "./tools.js";
-import type { GameAgentConfig, RuntimeConfigManager, WorldState } from "./types.js";
+import type { ActionDefinition, GameAgentConfig, RuntimeConfigManager, WorldState } from "./types.js";
 
 export interface GameAgentResult {
   agent: Agent;
@@ -31,6 +31,8 @@ export interface CreateGameAgentOptions<TState extends WorldState = WorldState> 
   extraTools?: AgentTool[];
   /** Optional runtime config manager exposed as get/set config tools. */
   runtimeConfigManager?: RuntimeConfigManager;
+  /** Action definitions to constrain execute/simulate tools and enable list_actions. */
+  actionDefs?: ActionDefinition[];
 }
 
 function buildSystemPromptFromDataDir(dataDir: string): string {
@@ -54,11 +56,12 @@ export function createGameAgent<TState extends WorldState = WorldState>(
     includeDataTools = true,
     extraTools = [],
     runtimeConfigManager,
+    actionDefs,
   } = options;
   let currentDataDir = options.dataDir;
 
   const buildTools = () => {
-    const gameTools = createGameTools(adapter);
+    const gameTools = createGameTools(adapter, actionDefs);
     const fileTools = includeDataTools ? [createReadTool(currentDataDir), createWriteTool(currentDataDir)] : [];
     const configTools = runtimeConfigManager ? createAgentConfigTools(runtimeConfigManager) : [];
     return [...gameTools, ...fileTools, ...configTools, ...extraTools] as AgentTool[];

@@ -43,55 +43,126 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
   };
 }
 
+/** Visibility radius (in hexes) around each owned entity. */
+const VIEW_RADIUS = 5;
+
+type Pos = { x: number; y: number };
+
+/** Chebyshev distance — true if (x,y) is within `radius` hexes of `center`. */
+function withinRadius(pos: Pos, center: Pos, radius: number): boolean {
+  return Math.abs(pos.x - center.x) <= radius && Math.abs(pos.y - center.y) <= radius;
+}
+
+/** Returns true if `pos` is within VIEW_RADIUS of any position in `centers`. */
+function nearAnyOwned(pos: Pos, centers: Pos[]): boolean {
+  return centers.some((c) => withinRadius(pos, c, VIEW_RADIUS));
+}
+
 /**
  * Build a snapshot of the Eternum world state by querying all relevant
  * view methods on the client in parallel.
+ *
+ * The map view is the union of VIEW_RADIUS-hex areas around every entity
+ * the player owns (structures + explorers). Explorers are owned by their
+ * home structure, so we match on the player's structure entity IDs.
  *
  * @param client - An initialized EternumClient instance
  * @param accountAddress - The player's on-chain address
  * @returns A fully populated EternumWorldState
  */
 export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
-  const [playerView, mapAreaView, marketView, leaderboardView] = await Promise.all([
+  // 1. Fetch player data first — we need owned entity positions to scope the map view.
+  const [playerView, marketView, leaderboardView] = await Promise.all([
     client.view.player(accountAddress),
-    client.view.mapArea({ x: 0, y: 0, radius: 15 }),
     client.view.market(),
     client.view.leaderboard({ limit: 10 }),
   ]);
 
-  const structures = Array.isArray((mapAreaView as any)?.structures) ? (mapAreaView as any).structures : [];
-  const armies = Array.isArray((mapAreaView as any)?.armies) ? (mapAreaView as any).armies : [];
   const playerStructures = Array.isArray((playerView as any)?.structures) ? (playerView as any).structures : [];
   const playerArmies = Array.isArray((playerView as any)?.armies) ? (playerView as any).armies : [];
-  const recentSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
-  const openOrders = Array.isArray((marketView as any)?.openOrders) ? (marketView as any).openOrders : [];
-  const leaderboardEntries = Array.isArray((leaderboardView as any)?.entries) ? (leaderboardView as any).entries : [];
 
-  // Build entities from map area structures
-  const structureEntities: EternumEntity[] = structures.map((s: any) => ({
-    type: "structure" as const,
-    entityId: s.entityId,
-    owner: s.owner,
-    position: { x: s.position.x, y: s.position.y },
-    name: s.name || undefined,
-    structureType: s.structureType,
-    level: s.level,
-  }));
+  // 2. Collect positions of every entity the player owns.
+  const ownedPositions: Pos[] = [
+    ...playerStructures.map((s: any) => ({ x: Number(s.position?.x ?? 0), y: Number(s.position?.y ?? 0) })),
+    ...playerArmies.map((a: any) => ({ x: Number(a.position?.x ?? 0), y: Number(a.position?.y ?? 0) })),
+  ];
 
-  // Build entities from map area armies
-  const armyEntities: EternumEntity[] = armies.map((a: any) => ({
+  // 3. Compute a bounding box that covers all owned positions + VIEW_RADIUS padding,
+  //    then fetch the map area once.  MapArea fetches all data and filters client-side,
+  //    so we post-filter to the exact per-entity radii afterwards.
+  let mapAreaView: any = { structures: [], armies: [], tiles: [], battles: [] };
+
+  if (ownedPositions.length > 0) {
+    const xs = ownedPositions.map((p) => p.x);
+    const ys = ownedPositions.map((p) => p.y);
+    const minX = Math.min(...xs) - VIEW_RADIUS;
+    const maxX = Math.max(...xs) + VIEW_RADIUS;
+    const minY = Math.min(...ys) - VIEW_RADIUS;
+    const maxY = Math.max(...ys) + VIEW_RADIUS;
+    const cx = Math.floor((minX + maxX) / 2);
+    const cy = Math.floor((minY + maxY) / 2);
+    const r = Math.max(Math.ceil((maxX - minX) / 2), Math.ceil((maxY - minY) / 2));
+    mapAreaView = await client.view.mapArea({ x: cx, y: cy, radius: r });
+  }
+
+  // 4. Post-filter map entities: only keep things within VIEW_RADIUS of an owned entity.
+  const allMapStructures = Array.isArray(mapAreaView?.structures) ? mapAreaView.structures : [];
+  const allMapArmies = Array.isArray(mapAreaView?.armies) ? mapAreaView.armies : [];
+
+  const nearbyStructures = allMapStructures.filter((s: any) =>
+    nearAnyOwned({ x: Number(s.position?.x ?? 0), y: Number(s.position?.y ?? 0) }, ownedPositions),
+  );
+  const nearbyArmies = allMapArmies.filter((a: any) =>
+    nearAnyOwned({ x: Number(a.position?.x ?? 0), y: Number(a.position?.y ?? 0) }, ownedPositions),
+  );
+
+  // 5. Build entities — structures from map view (includes player's own + neighbours).
+  const seenIds = new Set<number>();
+
+  const structureEntities: EternumEntity[] = nearbyStructures.map((s: any) => {
+    const id = Number(s.entityId ?? 0);
+    seenIds.add(id);
+    return {
+      type: "structure" as const,
+      entityId: id,
+      owner: String(s.owner ?? ""),
+      position: { x: Number(s.position?.x ?? 0), y: Number(s.position?.y ?? 0) },
+      name: s.name || undefined,
+      structureType: String(s.structureType ?? ""),
+      level: Number(s.level ?? 0),
+    };
+  });
+
+  // Ensure player's own structures are always present even if mapArea missed them.
+  for (const s of playerStructures) {
+    const id = Number(s.entityId ?? 0);
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      structureEntities.push({
+        type: "structure" as const,
+        entityId: id,
+        owner: accountAddress,
+        position: { x: Number(s.position?.x ?? 0), y: Number(s.position?.y ?? 0) },
+        name: String(s.name ?? ""),
+        structureType: String(s.structureType ?? ""),
+        level: Number(s.level ?? 0),
+      });
+    }
+  }
+
+  const armyEntities: EternumEntity[] = nearbyArmies.map((a: any) => ({
     type: "army" as const,
-    entityId: a.entityId,
-    owner: a.owner,
-    position: { x: a.position.x, y: a.position.y },
-    strength: a.strength,
-    stamina: a.stamina,
-    isInBattle: a.isInBattle,
+    entityId: Number(a.entityId ?? 0),
+    owner: String(a.owner ?? ""),
+    position: { x: Number(a.position?.x ?? 0), y: Number(a.position?.y ?? 0) },
+    strength: Number(a.strength ?? 0),
+    stamina: Number(a.stamina ?? 0),
+    isInBattle: Boolean(a.isInBattle ?? false),
   }));
 
   const entities: EternumEntity[] = [...structureEntities, ...armyEntities];
 
-  // Build resource map from ViewClient's totalResources (aggregated across all structures)
+  // 6. Build resource map from ViewClient's totalResources (aggregated across all structures).
   const resources = new Map<string, number>();
   if (Array.isArray((playerView as any)?.totalResources)) {
     for (const r of (playerView as any).totalResources) {
@@ -100,6 +171,10 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       }
     }
   }
+
+  const recentSwaps = Array.isArray((marketView as any)?.recentSwaps) ? (marketView as any).recentSwaps : [];
+  const openOrders = Array.isArray((marketView as any)?.openOrders) ? (marketView as any).openOrders : [];
+  const leaderboardEntries = Array.isArray((leaderboardView as any)?.entries) ? (leaderboardView as any).entries : [];
 
   return {
     tick: Math.floor(Date.now() / 1000),

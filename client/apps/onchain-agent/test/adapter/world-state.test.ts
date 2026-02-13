@@ -13,13 +13,15 @@ describe("buildWorldState", () => {
     expect(Array.isArray(state.entities)).toBe(true);
   });
 
-  it("merges structures and armies into entities", async () => {
+  it("merges nearby structures and armies into entities", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");
 
     const structures = state.entities.filter((e) => e.type === "structure");
     const armies = state.entities.filter((e) => e.type === "army");
 
+    // Only entities within VIEW_RADIUS (5) of an owned entity are included.
+    // The bank at (50,60) is too far and gets filtered out.
     expect(structures.length).toBe(2);
     expect(armies.length).toBe(1);
     expect(state.entities.length).toBe(3);
@@ -88,13 +90,29 @@ describe("buildWorldState", () => {
     expect(state.resources!.get("Stone")).toBe(300);
   });
 
-  it("calls all view methods in parallel", async () => {
+  it("calls view methods with bounding box around owned entities", async () => {
     const client = createMockClient() as any;
     await buildWorldState(client, "0xdeadbeef");
 
     expect(client.view.player).toHaveBeenCalledWith("0xdeadbeef");
-    expect(client.view.mapArea).toHaveBeenCalledWith({ x: 0, y: 0, radius: 15 });
     expect(client.view.market).toHaveBeenCalled();
     expect(client.view.leaderboard).toHaveBeenCalledWith({ limit: 10 });
+    // mapArea is called with a bounding box centered on owned entities (10,20) and (15,25)
+    // minX=5, maxX=20, minY=15, maxY=30 → center (12,22), radius 8
+    expect(client.view.mapArea).toHaveBeenCalledWith({ x: 12, y: 22, radius: 8 });
+  });
+
+  it("filters out entities beyond VIEW_RADIUS of owned positions", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // Bank at (50,60) is far from owned positions (10,20) and (15,25) — filtered out
+    const bank = state.entities.find((e) => e.entityId === 2);
+    expect(bank).toBeUndefined();
+
+    // Nearby mine at (13,22) is within 5 hexes of (10,20) — included
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine).toBeDefined();
+    expect(mine!.owner).toBe("0xother");
   });
 });

@@ -24,6 +24,7 @@ import { normalizeRpcUrl, deriveChainIdFromRpcUrl } from "./world/normalize";
 import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
 import { createInspectTools } from "./tools/inspect-tools";
+import { getActionDefinitions } from "./adapter/action-registry";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
@@ -418,6 +419,7 @@ export async function main() {
     tickIntervalMs: runtimeConfig.tickIntervalMs,
     runtimeConfigManager,
     extraTools: createInspectTools(services.client),
+    actionDefs: getActionDefinitions(),
   });
   runtimeAgent = game;
   const { agent, ticker, dispose: disposeAgent } = game;

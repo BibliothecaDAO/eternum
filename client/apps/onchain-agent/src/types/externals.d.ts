@@ -96,11 +96,25 @@ declare module "@bibliothecadao/game-agent" {
     tickIntervalMs?: number;
   }
 
+  export interface ActionDefinition {
+    type: string;
+    description: string;
+    params: ActionParamSchema[];
+  }
+
+  export interface ActionParamSchema {
+    name: string;
+    type: "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint";
+    description: string;
+    required?: boolean;
+  }
+
   export interface CreateGameAgentOptions<TState extends WorldState = WorldState> extends GameAgentConfig<TState> {
     streamFn?: any;
     includeDataTools?: boolean;
     extraTools?: any[];
     runtimeConfigManager?: RuntimeConfigManager;
+    actionDefs?: ActionDefinition[];
   }
 
   export interface GameAgentResult {

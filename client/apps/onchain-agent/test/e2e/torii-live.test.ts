@@ -2,15 +2,15 @@
  * E2E tests against live Torii SQL endpoint.
  * Tests the full tooling pipeline: SQL queries → SqlApi → ViewClient → buildWorldState
  *
- * Torii endpoint: https://api.cartridge.gg/x/test-snow-true-64/torii/sql
+ * Torii endpoint: https://api.cartridge.gg/x/test-jade-snow-61/torii/sql
  */
 import { describe, it, expect, beforeAll } from "vitest";
 
-const TORII_BASE_URL = "https://api.cartridge.gg/x/test-snow-true-64/torii";
+const TORII_BASE_URL = "https://api.cartridge.gg/x/test-jade-snow-61/torii";
 const TORII_SQL_URL = `${TORII_BASE_URL}/sql`;
 
 // Known data from the live world
-const KNOWN_OWNER = "0x05372427e24ffd54c70e3c04bed5077a670fa1442caa1ad90e4d3ffab39e08ab";
+const KNOWN_OWNER = "0x0058eda6e4d33221679fb027ce223fd6e25688ec8656fa3a72e15c7b3950bb92";
 
 async function querySql<T = any>(query: string): Promise<T[]> {
   const url = `${TORII_SQL_URL}?query=${encodeURIComponent(query)}`;
@@ -48,7 +48,7 @@ describe("Live Torii SQL — Structure queries match SqlApi format", () => {
     const rows = await querySql(
       `SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
        FROM [s1_eternum-Structure] 
-       WHERE owner == '${KNOWN_OWNER}'`,
+       WHERE owner = '${KNOWN_OWNER}'`,
     );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
