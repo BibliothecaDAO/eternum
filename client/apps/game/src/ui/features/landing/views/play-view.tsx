@@ -20,13 +20,15 @@ import {
   Trophy,
   RefreshCw,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
-import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
+import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
-import { ScoreCardModal } from "../components/score-card-modal";
+import { GameIsOverModal } from "../components/game-is-over-modal";
+import { GameReviewModal } from "../components/game-review-modal";
+import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 
 interface PlayViewProps {
   className?: string;
@@ -292,6 +294,8 @@ const PlayTabContent = ({
   onRefresh,
   isRefreshing = false,
   disabled = false,
+  onUpcomingGamesResolved,
+  onEndedGamesResolved,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
@@ -301,6 +305,8 @@ const PlayTabContent = ({
   onRefresh: () => void;
   isRefreshing?: boolean;
   disabled?: boolean;
+  onUpcomingGamesResolved?: (games: GameData[]) => void;
+  onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
@@ -375,6 +381,7 @@ const PlayTabContent = ({
               hideLegend
               layout="vertical"
               sortRegisteredFirst
+              onGamesResolved={onUpcomingGamesResolved}
             />
           </div>
         </div>
@@ -399,6 +406,7 @@ const PlayTabContent = ({
               hideLegend
               layout="vertical"
               sortRegisteredFirst
+              onGamesResolved={onEndedGamesResolved}
             />
           </div>
         </div>
@@ -412,7 +420,7 @@ const PlayTabContent = ({
  * This is the default landing page content.
  */
 export const PlayView = ({ className }: PlayViewProps) => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as PlayTab) || "play";
   const queryClient = useQueryClient();
 
@@ -423,9 +431,11 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [isForgeMode, setIsForgeMode] = useState(false);
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
 
-  // Modal state for score card
-  const [scoreModalOpen, setScoreModalOpen] = useState(false);
-  const [scoreWorld, setScoreWorld] = useState<WorldSelection | null>(null);
+  // Review flow state
+  const [gameOverWorld, setGameOverWorld] = useState<WorldSelection | null>(null);
+  const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
+  const [upcomingGames, setUpcomingGames] = useState<GameData[]>([]);
+  const [endedGames, setEndedGames] = useState<GameData[]>([]);
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -490,13 +500,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
-    setScoreWorld(selection);
-    setScoreModalOpen(true);
-  }, []);
-
-  const handleCloseScoreModal = useCallback(() => {
-    setScoreModalOpen(false);
-    setScoreWorld(null);
+    setGameOverWorld(null);
+    setReviewWorld(selection);
   }, []);
 
   // Registration is handled inline by GameCardGrid - this callback is for any post-registration actions
@@ -515,6 +520,71 @@ export const PlayView = ({ className }: PlayViewProps) => {
       setTimeout(() => setIsRefreshing(false), 500);
     }
   }, [queryClient]);
+
+  const dismissReviewForWorld = useCallback((world: WorldSelection | null) => {
+    if (!world?.chain) return;
+    setGameReviewDismissed(world.chain, world.name);
+  }, []);
+
+  const handleCloseGameOverModal = useCallback(() => {
+    dismissReviewForWorld(gameOverWorld);
+    setGameOverWorld(null);
+  }, [dismissReviewForWorld, gameOverWorld]);
+
+  const handleReviewFromGameOver = useCallback(() => {
+    if (!gameOverWorld) return;
+    setReviewWorld(gameOverWorld);
+    setGameOverWorld(null);
+  }, [gameOverWorld]);
+
+  const handleCloseReviewModal = useCallback(() => {
+    dismissReviewForWorld(reviewWorld);
+    setReviewWorld(null);
+  }, [dismissReviewForWorld, reviewWorld]);
+
+  const handleReturnHomeFromReview = useCallback(() => {
+    dismissReviewForWorld(reviewWorld);
+    setReviewWorld(null);
+    setGameOverWorld(null);
+
+    if (activeTab !== "play") {
+      const params = new URLSearchParams(searchParams);
+      params.set("tab", "play");
+      setSearchParams(params, { replace: true });
+    }
+  }, [activeTab, dismissReviewForWorld, reviewWorld, searchParams, setSearchParams]);
+
+  const handleRequireSignIn = useCallback(() => {
+    setModal(<SignInPromptModal />, true);
+  }, [setModal]);
+
+  const handleUpcomingGamesResolved = useCallback((games: GameData[]) => {
+    setUpcomingGames(games);
+  }, []);
+
+  const handleEndedGamesResolved = useCallback((games: GameData[]) => {
+    setEndedGames(games);
+  }, []);
+
+  const nextUpcomingGame = useMemo(() => {
+    if (upcomingGames.length === 0) return null;
+    if (!reviewWorld?.chain) return upcomingGames[0] ?? null;
+
+    const sameChain = upcomingGames.find((game) => game.chain === reviewWorld.chain);
+    return sameChain ?? upcomingGames[0] ?? null;
+  }, [reviewWorld?.chain, upcomingGames]);
+
+  useEffect(() => {
+    if (activeTab !== "play") return;
+    if (entryModalOpen || gameOverWorld || reviewWorld) return;
+    if (endedGames.length === 0) return;
+
+    const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
+    if (!candidate) return;
+    if (isGameReviewDismissed(candidate.chain, candidate.name)) return;
+
+    setGameOverWorld({ name: candidate.name, chain: candidate.chain });
+  }, [activeTab, endedGames, entryModalOpen, gameOverWorld, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -541,7 +611,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            disabled={entryModalOpen || scoreModalOpen}
+            disabled={entryModalOpen || Boolean(gameOverWorld) || Boolean(reviewWorld)}
+            onUpcomingGamesResolved={handleUpcomingGamesResolved}
+            onEndedGamesResolved={handleEndedGamesResolved}
           />
         );
     }
@@ -567,9 +639,25 @@ export const PlayView = ({ className }: PlayViewProps) => {
         />
       )}
 
-      {/* Score Card Modal - for ended games */}
-      {scoreWorld && (
-        <ScoreCardModal isOpen={scoreModalOpen} onClose={handleCloseScoreModal} worldName={scoreWorld.name} />
+      {gameOverWorld && (
+        <GameIsOverModal
+          isOpen={Boolean(gameOverWorld)}
+          worldName={gameOverWorld.name}
+          onReview={handleReviewFromGameOver}
+          onClose={handleCloseGameOverModal}
+        />
+      )}
+
+      {reviewWorld && (
+        <GameReviewModal
+          isOpen={Boolean(reviewWorld)}
+          world={reviewWorld}
+          nextGame={nextUpcomingGame}
+          onClose={handleCloseReviewModal}
+          onReturnHome={handleReturnHomeFromReview}
+          onRegistrationComplete={handleRegistrationComplete}
+          onRequireSignIn={handleRequireSignIn}
+        />
       )}
     </>
   );

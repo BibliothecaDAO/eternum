@@ -24,6 +24,14 @@ interface ScoreCardModalProps {
   worldName: string;
 }
 
+export interface ScoreCardContentProps {
+  worldName: string;
+  playerEntry: LandingLeaderboardEntry | null;
+  isLoading?: boolean;
+  error?: string | null;
+  showActions?: boolean;
+}
+
 const buildToriiSqlUrl = (gameName: string) => `https://api.cartridge.gg/x/${gameName}/torii/sql`;
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
@@ -53,46 +61,15 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
   hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
 });
 
-/**
- * Modal to display player's score card for an ended game
- * Features: BlitzHighlightCard display, copy image, share to X, copy message
- */
-export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
-  const [playerEntry, setPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const ScoreCardContent = ({
+  worldName,
+  playerEntry,
+  isLoading = false,
+  error = null,
+  showActions = true,
+}: ScoreCardContentProps) => {
   const [isCopyingImage, setIsCopyingImage] = useState(false);
-
   const cardRef = useRef<HTMLDivElement | null>(null);
-
-  const account = useAccountStore((state) => state.account);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
-
-  // Fetch player score data
-  useEffect(() => {
-    if (!isOpen || !playerAddress) {
-      setPlayerEntry(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const toriiUrl = buildToriiSqlUrl(worldName);
-        const data = await fetchLandingLeaderboardEntryByAddress(playerAddress, toriiUrl);
-        setPlayerEntry(data);
-      } catch (err) {
-        console.error("Failed to fetch player score:", err);
-        setError("Failed to load score data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchData();
-  }, [isOpen, playerAddress, worldName]);
 
   const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
     () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
@@ -206,89 +183,129 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
       .catch(() => toast.error("Failed to copy message"));
   }, [shareMessage]);
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+        <p className="mt-4 text-sm text-white/60">Loading your score...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-sm text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (!highlightPlayer) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-sm text-white/60">No score data found for this game</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex justify-center" ref={cardRef}>
+        <BlitzHighlightCardWithSelector title="Realms Blitz" subtitle="Blitz Leaderboard" highlight={highlightPlayer} />
+      </div>
+
+      {showActions && (
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <Button
+            onClick={handleCopyImage}
+            variant="gold"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+            isLoading={isCopyingImage}
+            disabled={isCopyingImage || !highlightPlayer}
+          >
+            <Copy className="h-4 w-4" />
+            <span>{isCopyingImage ? "Preparing image..." : "Copy highlight image"}</span>
+          </Button>
+          <Button
+            onClick={handleShareOnX}
+            variant="outline"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+            disabled={!highlightPlayer}
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share on X</span>
+          </Button>
+          <Button
+            onClick={handleCopyMessage}
+            variant="secondary"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+          >
+            <Copy className="h-4 w-4" />
+            <span>Copy message</span>
+          </Button>
+        </div>
+      )}
+    </>
+  );
+};
+
+/**
+ * Modal to display player's score card for an ended game
+ * Features: BlitzHighlightCard display, copy image, share to X, copy message
+ */
+export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
+  const [playerEntry, setPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const account = useAccountStore((state) => state.account);
+  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+
+  useEffect(() => {
+    if (!isOpen || !playerAddress) {
+      setPlayerEntry(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const toriiUrl = buildToriiSqlUrl(worldName);
+        const data = await fetchLandingLeaderboardEntryByAddress(playerAddress, toriiUrl);
+        setPlayerEntry(data);
+      } catch (err) {
+        console.error("Failed to fetch player score:", err);
+        setError("Failed to load score data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void fetchData();
+  }, [isOpen, playerAddress, worldName]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative z-10 w-full max-w-[1000px]">
         <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0a0a0a] to-[#050505] backdrop-blur-xl overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gold/20">
             <h2 className="font-serif text-lg text-gold">Your Score - {worldName}</h2>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-              aria-label="Close"
-            >
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close">
               <X className="w-5 h-5 text-white/60" />
             </button>
           </div>
 
-          {/* Content */}
           <div className="p-4 sm:p-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="w-10 h-10 text-gold animate-spin" />
-                <p className="mt-4 text-sm text-white/60">Loading your score...</p>
-              </div>
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-sm text-red-400">{error}</p>
-              </div>
-            ) : !highlightPlayer ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-sm text-white/60">No score data found for this game</p>
-              </div>
-            ) : (
-              <>
-                {/* Blitz Highlight Card */}
-                <div className="flex justify-center" ref={cardRef}>
-                  <BlitzHighlightCardWithSelector
-                    title="Realms Blitz"
-                    subtitle="Blitz Leaderboard"
-                    highlight={highlightPlayer}
-                  />
-                </div>
-
-                {/* Action buttons */}
-                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    onClick={handleCopyImage}
-                    variant="gold"
-                    className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-                    forceUppercase={false}
-                    isLoading={isCopyingImage}
-                    disabled={isCopyingImage || !highlightPlayer}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>{isCopyingImage ? "Preparing image..." : "Copy highlight image"}</span>
-                  </Button>
-                  <Button
-                    onClick={handleShareOnX}
-                    variant="outline"
-                    className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-                    forceUppercase={false}
-                    disabled={!highlightPlayer}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    <span>Share on X</span>
-                  </Button>
-                  <Button
-                    onClick={handleCopyMessage}
-                    variant="secondary"
-                    className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-                    forceUppercase={false}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>Copy message</span>
-                  </Button>
-                </div>
-              </>
-            )}
+            <ScoreCardContent worldName={worldName} playerEntry={playerEntry} isLoading={isLoading} error={error} />
           </div>
         </div>
       </div>

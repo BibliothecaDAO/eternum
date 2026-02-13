@@ -89,7 +89,7 @@ export type WorldSelection = WorldSelectionInput;
 
 type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
 
-interface GameData {
+export interface GameData {
   name: string;
   chain: Chain;
   worldKey: string;
@@ -116,7 +116,7 @@ interface GameCardProps {
 /**
  * Single game card component with inline registration
  */
-const GameCard = ({
+export const GameCard = ({
   game,
   onPlay,
   onSpectate,
@@ -304,7 +304,7 @@ const GameCard = ({
               )}
             >
               <Trophy className="w-3 h-3" />
-              See Score
+              Review
             </button>
           )}
 
@@ -378,6 +378,8 @@ interface UnifiedGameGridProps {
   layout?: "horizontal" | "vertical";
   /** Sort games where user is registered first */
   sortRegisteredFirst?: boolean;
+  /** Optional callback to expose the resolved list (for reuse without extra queries) */
+  onGamesResolved?: (games: GameData[]) => void;
 }
 
 /**
@@ -397,6 +399,7 @@ export const UnifiedGameGrid = ({
   hideLegend = false,
   layout = "horizontal",
   sortRegisteredFirst = false,
+  onGamesResolved,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
@@ -553,6 +556,10 @@ export const UnifiedGameGrid = ({
       ended: games.filter((g) => g.gameStatus === "ended").length,
     };
   }, [games]);
+
+  useEffect(() => {
+    onGamesResolved?.(games);
+  }, [games, onGamesResolved]);
 
   return (
     <div className={cn("relative", className)}>
