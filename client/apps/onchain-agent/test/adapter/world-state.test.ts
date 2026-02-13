@@ -249,6 +249,78 @@ describe("buildWorldState", () => {
     expect(mine!.buildingSlots).toBeUndefined();
   });
 
+  it("computes population from building counts for owned structures", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.population).toBeDefined();
+    // WorkersHut x2 = 0 pop cost, +12 capacity; Wood x3 = 6 pop cost; Wheat x1 = 1 pop cost
+    // current = 0 + 6 + 1 = 7, capacity = 6 (base) + 12 (huts) = 18
+    expect(realm!.population!.current).toBe(7);
+    expect(realm!.population!.capacity).toBe(18);
+
+    // Non-owned entities have no population
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.population).toBeUndefined();
+  });
+
+  it("provides next upgrade info for owned realms", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // Mock realm is level 2 (Kingdom) → next upgrade is Empire
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.nextUpgrade).toBeDefined();
+    expect(realm!.nextUpgrade!.name).toBe("Empire");
+    expect(realm!.nextUpgrade!.cost).toContain("720 Labor");
+    expect(realm!.nextUpgrade!.cost).toContain("4800 Wheat");
+
+    // Non-owned structures have no nextUpgrade
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.nextUpgrade).toBeUndefined();
+  });
+
+  it("counts armies per structure using owner_structure_id", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    // Mock army has owner_structure_id: 1
+    expect(realm!.armies).toBeDefined();
+    expect(realm!.armies!.current).toBe(1);
+    expect(realm!.armies!.max).toBe(1); // Realm max = 1
+  });
+
+  it("provides guard slot details for owned structures", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.guardSlots).toBeDefined();
+    expect(realm!.guardSlots).toHaveLength(4);
+    // Alpha has troops, rest are empty
+    expect(realm!.guardSlots![0].slot).toBe("Alpha");
+    expect(realm!.guardSlots![0].troops).toContain("Knight");
+    expect(realm!.guardSlots![1].troops).toBe("empty");
+    expect(realm!.guardSlots![2].troops).toBe("empty");
+    expect(realm!.guardSlots![3].troops).toBe("empty");
+
+    // Non-owned entities have no guardSlots
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.guardSlots).toBeUndefined();
+  });
+
+  it("parses troop reserves from resource balance rows", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    // Mock has KNIGHT_T1_BALANCE: "0x2E90EDD000" = 200 * 1e9
+    expect(realm!.troopsInReserve).toBeDefined();
+    expect(realm!.troopsInReserve).toContain("Knight T1: 200");
+  });
+
   it("uses structure category names from numeric types", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");

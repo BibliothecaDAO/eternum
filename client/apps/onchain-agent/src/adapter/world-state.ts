@@ -1,7 +1,7 @@
 import type { WorldState } from "@bibliothecadao/game-agent";
 import type { EternumClient } from "@bibliothecadao/client";
 import { computeStrength } from "@bibliothecadao/client";
-import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
+import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 
@@ -22,9 +22,15 @@ export interface EternumEntity {
   structureType?: string;
   level?: number;
   guardStrength?: number;
+  guardSummary?: string;
+  guardSlots?: { slot: string; troops: string }[];
   resources?: Map<string, number>;
   productionBuildings?: string[];
   buildingSlots?: { used: number; total: number; buildings: string[] };
+  population?: { current: number; capacity: number };
+  nextUpgrade?: { name: string; cost: string } | null; // null = max level
+  armies?: { current: number; max: number };
+  troopsInReserve?: string[]; // e.g. ["KnightT1: 150", "PaladinT2: 30"]
 
   // Army-specific
   strength?: number;
@@ -179,6 +185,46 @@ function computeGuardStrength(raw: any): number {
   return total;
 }
 
+/** Build a human-readable guard summary like "2900 Knight T1" or "1500 Knight T2 + 1400 Paladin T1". */
+function buildGuardSummary(raw: any): string | undefined {
+  const parts: string[] = [];
+  for (const slot of ["alpha", "bravo", "charlie", "delta"] as const) {
+    const count = parseTroopCount(raw[`${slot}_count`]);
+    if (count > 0) {
+      const cat = troopCategoryName(raw[`${slot}_category`]);
+      const tier = troopTierLabel(raw[`${slot}_tier`]);
+      parts.push(`${count} ${cat} ${tier}`);
+    }
+  }
+  return parts.length > 0 ? parts.join(" + ") : undefined;
+}
+
+/** Build per-slot guard details: [{slot: "Alpha", troops: "2900 Knight T1"}, ...]. */
+function buildGuardSlots(raw: any): { slot: string; troops: string }[] {
+  const slots: { slot: string; troops: string }[] = [];
+  for (const slot of ["alpha", "bravo", "charlie", "delta"] as const) {
+    const count = parseTroopCount(raw[`${slot}_count`]);
+    const label = slot.charAt(0).toUpperCase() + slot.slice(1);
+    if (count > 0) {
+      const cat = troopCategoryName(raw[`${slot}_category`]);
+      const tier = troopTierLabel(raw[`${slot}_tier`]);
+      slots.push({ slot: label, troops: `${count} ${cat} ${tier}` });
+    } else {
+      slots.push({ slot: label, troops: "empty" });
+    }
+  }
+  return slots;
+}
+
+// Max explorer armies per structure type
+const MAX_ARMIES: Record<string, number> = {
+  Realm: 1,
+  Village: 1,
+  Hyperstructure: 0,
+  Bank: 0,
+  Mine: 0,
+};
+
 /** Build a human-readable troop summary like "150 Knight T2". */
 function buildTroopSummary(raw: any): string | undefined {
   const count = parseTroopCount(raw.count);
@@ -277,6 +323,47 @@ function buildBuildingSlots(raw: any): { used: number; total: number; buildings:
   }
 
   return { used, total, buildings };
+}
+
+// Population cost per building category index (1-based).
+// WorkersHut=0, Labor=0, resource buildings=2, military/donkey=3, Wheat/Fish=1
+const BUILDING_POP_COST: Record<number, number> = {
+  1: 0, // WorkersHut
+  3: 2, 4: 2, 5: 2, 6: 2, 7: 2, 9: 2, 11: 2, 13: 2, 21: 2, 24: 2, // resources
+  25: 0, // Labor
+  27: 3, // Donkey
+  28: 3, 29: 3, 30: 3, 31: 3, 32: 3, 33: 3, 34: 3, 35: 3, 36: 3, // military
+  37: 1, 38: 1, // Wheat, Fish
+  39: 2, // Essence
+};
+const WORKERS_HUT_CAPACITY = 6;
+const BASE_POPULATION_CAPACITY = 6;
+
+/** Compute population (current usage, total capacity) from building counts. */
+function computePopulation(counts: number[]): { current: number; capacity: number } {
+  let current = 0;
+  let granted = 0;
+  for (let i = 0; i < counts.length; i++) {
+    if (counts[i] > 0) {
+      const catId = i + 1;
+      current += counts[i] * (BUILDING_POP_COST[catId] ?? 2);
+      if (catId === 1) granted += counts[i] * WORKERS_HUT_CAPACITY; // WorkersHut
+    }
+  }
+  return { current, capacity: BASE_POPULATION_CAPACITY + granted };
+}
+
+// Realm upgrade levels: 0=Settlement, 1=City, 2=Kingdom, 3=Empire (max)
+const REALM_LEVEL_NAMES = ["Settlement", "City", "Kingdom", "Empire"];
+const REALM_UPGRADE_COSTS: Record<number, { name: string; cost: string }> = {
+  0: { name: "City", cost: "180 Labor, 1200 Wheat, 200 Essence" },
+  1: { name: "Kingdom", cost: "360 Labor, 2400 Wheat, 600 Essence, 180 Wood" },
+  2: { name: "Empire", cost: "720 Labor, 4800 Wheat, 1200 Essence, 360 Wood, 180 Coal, 180 Copper" },
+};
+
+/** Get the next realm upgrade info, or null if already at max level. */
+function getNextUpgrade(level: number): { name: string; cost: string } | null {
+  return REALM_UPGRADE_COSTS[level] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -386,6 +473,27 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   const structureEntities: EternumEntity[] = nearbyRawStructures.map((s: any) => {
     const owned = sameAddress(s.owner_address, accountAddress);
     const stType = structureCategoryName(Number(s.structure_type));
+    const level = Number(s.level ?? 0);
+
+    // Compute building slots and population for owned structures
+    let buildingSlots: EternumEntity["buildingSlots"];
+    let population: EternumEntity["population"];
+    if (owned) {
+      const counts = unpackBuildingCountsFromHex(s.packed_counts_1, s.packed_counts_2, s.packed_counts_3);
+      const total = 3 * (level + 1) * (level + 2);
+      let used = 0;
+      const buildings: string[] = [];
+      for (let i = 0; i < counts.length; i++) {
+        if (counts[i] > 0) {
+          used += counts[i];
+          const name = BUILDING_NAMES[i + 1] ?? `Type${i + 1}`;
+          buildings.push(`${name} x${counts[i]}`);
+        }
+      }
+      buildingSlots = { used, total, buildings };
+      population = computePopulation(counts);
+    }
+
     return {
       type: "structure" as const,
       entityId: Number(s.entity_id ?? 0),
@@ -394,9 +502,14 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       isOwned: owned,
       position: { x: Number(s.coord_x ?? 0), y: Number(s.coord_y ?? 0) },
       structureType: stType,
-      level: Number(s.level ?? 0),
+      level,
       guardStrength: computeGuardStrength(s),
-      buildingSlots: owned ? buildBuildingSlots(s) : undefined,
+      guardSummary: buildGuardSummary(s),
+      guardSlots: owned ? buildGuardSlots(s) : undefined,
+      buildingSlots,
+      population,
+      nextUpgrade: owned && stType === "Realm" ? getNextUpgrade(level) : undefined,
+      armies: owned ? { current: 0, max: MAX_ARMIES[stType] ?? 0 } : undefined, // current filled below
       actions: owned ? getStructureActions(stType) : undefined,
     };
   });
@@ -420,6 +533,17 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       actions: owned ? getArmyActions() : undefined,
     };
   });
+
+  // 5a. Count armies per owned structure using owner_structure_id from ALL raw armies.
+  for (const a of rawArmies) {
+    const structId = Number(a.owner_structure_id ?? 0);
+    if (structId > 0) {
+      const struct = structureEntities.find((e) => e.entityId === structId && e.isOwned);
+      if (struct?.armies) {
+        struct.armies.current++;
+      }
+    }
+  }
 
   // 5b. Build exploration map and per-army neighbor tiles.
   //     Tile biome > 0 means explored; biome 0 or missing means unexplored.
@@ -488,8 +612,21 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
           }
         }
 
+        // Parse troop reserve balances
+        const troopReserves: string[] = [];
+        for (const col of TROOP_BALANCE_COLUMNS) {
+          const hexVal = row[col.column];
+          if (hexVal && hexVal !== "0x0") {
+            const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
+            if (amount > 0) {
+              troopReserves.push(`${col.name}: ${amount}`);
+            }
+          }
+        }
+
         entity.resources = entityResources;
         entity.productionBuildings = buildings.length > 0 ? buildings : undefined;
+        entity.troopsInReserve = troopReserves.length > 0 ? troopReserves : undefined;
       }
     } catch (err) {
       console.error("Failed to fetch resource balances:", err);
@@ -601,10 +738,15 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
 
 function formatEntityLine(e: EternumEntity): string {
   if (e.type === "structure") {
-    const guard = e.guardStrength ? ` | guard: ${fmtNum(e.guardStrength)}` : "";
+    const guard = e.guardSummary
+      ? ` | guard: ${fmtNum(e.guardStrength ?? 0)} [${e.guardSummary}]`
+      : e.guardStrength
+        ? ` | guard: ${fmtNum(e.guardStrength)}`
+        : "";
     const owner = e.isOwned ? "MINE" : e.ownerName || shortAddr(e.owner);
     const acts = e.actions ? ` | actions: ${e.actions.join(", ")}` : "";
-    return `  [${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0} owner=${owner} pos=(${e.position.x},${e.position.y})${guard}${acts}`;
+    const lvlName = REALM_LEVEL_NAMES[e.level ?? 0] ?? `L${e.level}`;
+    return `  [${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0}(${lvlName}) owner=${owner} pos=(${e.position.x},${e.position.y})${guard}${acts}`;
   }
   // army
   const owner = e.isOwned ? "MINE" : e.ownerName || shortAddr(e.owner);
@@ -672,6 +814,30 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
           const { used, total, buildings } = e.buildingSlots;
           const free = total - used;
           lines.push(`    Slots: ${used}/${total} used (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`);
+        }
+        // Population
+        if (e.population) {
+          const { current, capacity } = e.population;
+          lines.push(`    Population: ${current}/${capacity}${current >= capacity ? " FULL — build WorkersHut for +6 capacity" : ""}`);
+        }
+        // Next realm upgrade
+        if (e.nextUpgrade) {
+          lines.push(`    Next upgrade → ${e.nextUpgrade.name}: ${e.nextUpgrade.cost}`);
+        } else if (e.nextUpgrade === null) {
+          lines.push(`    Level: MAX (Empire)`);
+        }
+        // Armies
+        if (e.armies) {
+          lines.push(`    Armies: ${e.armies.current}/${e.armies.max}`);
+        }
+        // Guard slots
+        if (e.guardSlots) {
+          const slotParts = e.guardSlots.map((s) => `${s.slot}: ${s.troops}`);
+          lines.push(`    Guard slots: ${slotParts.join(" | ")}`);
+        }
+        // Troop reserves
+        if (e.troopsInReserve && e.troopsInReserve.length > 0) {
+          lines.push(`    Troop reserves: ${e.troopsInReserve.join(", ")}`);
         }
       }
     }

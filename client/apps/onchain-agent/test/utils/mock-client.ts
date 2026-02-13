@@ -215,6 +215,16 @@ export function createMockClient() {
           "WOOD_PRODUCTION.building_count": 2,
           "STONE_PRODUCTION.building_count": 1,
           "COAL_PRODUCTION.building_count": 0,
+          // Troop reserves: 200 Knight T1 (200 * 1e9 = 0x2E90EDD000)
+          KNIGHT_T1_BALANCE: "0x2E90EDD000",
+          KNIGHT_T2_BALANCE: "0x0",
+          KNIGHT_T3_BALANCE: "0x0",
+          CROSSBOWMAN_T1_BALANCE: "0x0",
+          CROSSBOWMAN_T2_BALANCE: "0x0",
+          CROSSBOWMAN_T3_BALANCE: "0x0",
+          PALADIN_T1_BALANCE: "0x0",
+          PALADIN_T2_BALANCE: "0x0",
+          PALADIN_T3_BALANCE: "0x0",
         },
       ]),
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([

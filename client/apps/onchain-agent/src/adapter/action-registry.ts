@@ -840,10 +840,16 @@ registerAliases(["cancel_order", "cancel_trade"], "Cancel your trade order", can
 
 register(
   "create_building",
-  `Build a new building at a structure. Each building produces a resource per tick but consumes inputs (mainly Wheat + Labor). ${BUILDING_GUIDE}`,
+  `Build a new building at a structure. Each building produces a resource per tick but consumes inputs (mainly Wheat + Labor). ` +
+    `Buildings are placed on an inner hex grid centered at (10,10). The 'directions' array is a PATH from center outward — it must have at least 1 element. ` +
+    `Ring 1 (6 slots): [0],[1],[2],[3],[4],[5]. ` +
+    `Ring 2 (12 slots): [0,0],[0,1],[1,1],[1,2],[2,2],[2,3],[3,3],[3,4],[4,4],[4,5],[5,5],[5,0]. ` +
+    `Ring 3 (18 slots): [0,0,0],[0,0,1],[0,1,1],[1,1,1],[1,1,2],[1,2,2],[2,2,2],[2,2,3],[2,3,3],[3,3,3],[3,3,4],[3,4,4],[4,4,4],[4,4,5],[4,5,5],[5,5,5],[5,5,0],[5,0,0]. ` +
+    `Available rings depend on structure level: L0=ring1 (6), L1=rings1-2 (18), L2=rings1-3 (36). ` +
+    `If "space is occupied", try the next path in the ring. Check your building slots to see how many are used. ${BUILDING_GUIDE}`,
   [
     n("entityId", "Structure entity ID to build at"),
-    na("directions", `Hex directions to building location (${DIR})`),
+    na("directions", `Path from center hex to building slot — MUST have at least 1 direction. Direction IDs: ${DIR}. Use paths listed above per ring.`),
     n("buildingCategory", `Building category ID. ${BUILDING_TYPES}`),
     b("useSimple", "true = pay only Labor (higher amount, no other resources). false = pay Labor + specific resources. T2/T3 military buildings are NOT available in simple mode"),
   ],
