@@ -49,24 +49,29 @@ cp .env.example .env
 pnpm --dir client/apps/onchain-agent dev
 ```
 
-On first run the agent will prompt you to approve a Cartridge Controller session in your browser (see [Authentication](#cartridge-controller-authentication) below).
+On first run the agent will prompt you to approve a Cartridge Controller session in your browser (see
+[Authentication](#cartridge-controller-authentication) below).
 
 ### Default paths with zero config
 
 With only `ANTHROPIC_API_KEY` set (no other env vars), the agent resolves everything automatically:
 
-| What | Default path | Override env var |
-|---|---|---|
-| Agent home | `~/.eternum-agent/` | `ETERNUM_AGENT_HOME` |
-| Data dir (soul, tasks, heartbeat) | `~/.eternum-agent/data/` | `DATA_DIR` |
-| Session storage | `~/.eternum-agent/.cartridge/` | `SESSION_BASE_PATH` |
-| Chain | `slot` | `CHAIN` |
-| Game name | `eternum` | `GAME_NAME` |
-| Model | `anthropic` / `claude-sonnet-4-5-20250929` | `MODEL_PROVIDER` / `MODEL_ID` |
-| Tick interval | 60000ms (1 min) | `TICK_INTERVAL_MS` |
-| Tick loop | enabled | `LOOP_ENABLED` |
+| What                              | Default path                               | Override env var              |
+| --------------------------------- | ------------------------------------------ | ----------------------------- |
+| Agent home                        | `~/.eternum-agent/`                        | `ETERNUM_AGENT_HOME`          |
+| Data dir (soul, tasks, heartbeat) | `~/.eternum-agent/data/`                   | `DATA_DIR`                    |
+| Session storage                   | `~/.eternum-agent/.cartridge/`             | `SESSION_BASE_PATH`           |
+| Chain                             | `slot`                                     | `CHAIN`                       |
+| Game name                         | `eternum`                                  | `GAME_NAME`                   |
+| Model                             | `anthropic` / `claude-sonnet-4-5-20250929` | `MODEL_PROVIDER` / `MODEL_ID` |
+| Tick interval                     | 60000ms (1 min)                            | `TICK_INTERVAL_MS`            |
+| Tick loop                         | enabled                                    | `LOOP_ENABLED`                |
 
-**World discovery is automatic.** When `RPC_URL`, `TORII_URL`, and `WORLD_ADDRESS` are not set, the agent queries the Cartridge Factory SQL API to discover active worlds, then either presents a TUI picker or auto-selects if `SLOT_NAME` matches a discovered world. The manifest is loaded from `contracts/game/manifest_<chain>.json` in the repo and patched with live contract addresses from the factory. The agent also fetches entry/fee token addresses from the world's `WorldConfig` and derives a per-world chain ID from the RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`).
+**World discovery is automatic.** When `RPC_URL`, `TORII_URL`, and `WORLD_ADDRESS` are not set, the agent queries the
+Cartridge Factory SQL API to discover active worlds, then either presents a TUI picker or auto-selects if `SLOT_NAME`
+matches a discovered world. The manifest is loaded from `contracts/game/manifest_<chain>.json` in the repo and patched
+with live contract addresses from the factory. The agent also fetches entry/fee token addresses from the world's
+`WorldConfig` and derives a per-world chain ID from the RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`).
 
 So a minimal `.env` is just:
 
@@ -202,13 +207,13 @@ automatically.
 
 ### Configuration
 
-| Env var              | Default                          | Description                                                                                    |
-| -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Env var              | Default                          | Description                                                                                                                                                  |
+| -------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `CHAIN_ID`           | derived from `RPC_URL`           | StarkNet chain ID. Auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`), falls back to `KATANA` for slot or `SN_MAIN`/`SN_SEPOLIA` for L1 chains. |
-| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for runtime files                                                               |
-| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Data directory for soul/tasks/heartbeat                                                        |
-| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Directory for session storage                                                                  |
-| `GAME_NAME`          | `eternum`                        | Game namespace used to select policy contracts from manifest tags (for example `s1_eternum-*`) |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for runtime files                                                                                                                             |
+| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Data directory for soul/tasks/heartbeat                                                                                                                      |
+| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Directory for session storage                                                                                                                                |
+| `GAME_NAME`          | `eternum`                        | Game namespace used to select policy contracts from manifest tags (for example `s1_eternum-*`)                                                               |
 
 ### Runtime requirements
 
@@ -290,11 +295,12 @@ Example payload for hot-swapping world connectivity:
 
 ## Architecture Reference
 
-The `docs/` directory contains reference documents for understanding and reviewing the agent's world-building and session policy pipeline:
+The `docs/` directory contains reference documents for understanding and reviewing the agent's world-building and
+session policy pipeline:
 
-| Document | Purpose |
-|---|---|
+| Document                                                                                 | Purpose                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [`docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md`](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | Canonical 8-phase pipeline specification covering factory SQL resolution, manifest patching, policy construction, and Controller initialization. Use as the source of truth when reviewing or evolving the agent's world-connection logic. |
-| [`docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md`](docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md) | Gap analysis comparing the agent's implementation against the canonical pipeline. Lists identified issues by severity with recommendations. Useful context for code reviewers and for tracking future alignment work. |
+| [`docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md`](docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md)         | Gap analysis comparing the agent's implementation against the canonical pipeline. Lists identified issues by severity with recommendations. Useful context for code reviewers and for tracking future alignment work.                      |
 
 These documents are intended to support code review, onboarding, and ongoing agent design evolution.

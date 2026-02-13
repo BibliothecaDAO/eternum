@@ -94,10 +94,7 @@ export function createListActionsTool(actionDefs: ActionDefinition[]): AgentTool
  * When actionDefs are provided, actionType is constrained to a StringEnum of valid types.
  * Use list_actions to look up available actions and their parameters.
  */
-export function createExecuteActionTool(
-  adapter: GameAdapter<any>,
-  actionDefs?: ActionDefinition[],
-): AgentTool<any> {
+export function createExecuteActionTool(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any> {
   const actionTypes = actionDefs?.map((a) => a.type) ?? [];
   const actionSchema = Type.Object({
     actionType:
@@ -132,10 +129,7 @@ export function createExecuteActionTool(
  * When actionDefs are provided, actionType is constrained to a StringEnum of valid types.
  * Use list_actions to look up available actions and their parameters.
  */
-export function createSimulateActionTool(
-  adapter: GameAdapter<any>,
-  actionDefs?: ActionDefinition[],
-): AgentTool<any> {
+export function createSimulateActionTool(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any> {
   const actionTypes = actionDefs?.map((a) => a.type) ?? [];
   const simulateSchema = Type.Object({
     actionType:

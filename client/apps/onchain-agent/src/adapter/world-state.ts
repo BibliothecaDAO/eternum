@@ -51,10 +51,7 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
  * @param accountAddress - The player's on-chain address
  * @returns A fully populated EternumWorldState
  */
-export async function buildWorldState(
-  client: EternumClient,
-  accountAddress: string,
-): Promise<EternumWorldState> {
+export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
   const [playerView, mapAreaView, marketView, leaderboardView] = await Promise.all([
     client.view.player(accountAddress),
     client.view.mapArea({ x: 0, y: 0, radius: 15 }),

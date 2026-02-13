@@ -38,12 +38,7 @@ function register(type: string, description: string, params: ActionParamSchema[]
   registry.set(type, { handler, definition: { type, description, params } });
 }
 
-function registerAliases(
-  types: string[],
-  description: string,
-  params: ActionParamSchema[],
-  handler: ActionHandler,
-) {
+function registerAliases(types: string[], description: string, params: ActionParamSchema[], handler: ActionHandler) {
   // All aliases share a single definition (using the first type as canonical)
   const definition: ActionDefinition = { type: types[0], description, params };
   for (const type of types) {
@@ -243,280 +238,341 @@ const TROOP_TIER = "0=T1, 1=T2, 2=T3";
 // Resources
 // ---------------------------------------------------------------------------
 
-register("send_resources", "Send resources from one entity to another", [
-  n("senderEntityId", "Entity ID of the sender"),
-  n("recipientEntityId", "Entity ID of the recipient"),
-  oa("resources", `Array of {resourceType, amount} to send. ${RESOURCE_IDS}`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.resources.send(signer, {
-      senderEntityId: num(p.senderEntityId),
-      recipientEntityId: num(p.recipientEntityId),
-      resources: resourceList(p.resources),
-    }),
-  ),
+register(
+  "send_resources",
+  "Send resources from one entity to another",
+  [
+    n("senderEntityId", "Entity ID of the sender"),
+    n("recipientEntityId", "Entity ID of the recipient"),
+    oa("resources", `Array of {resourceType, amount} to send. ${RESOURCE_IDS}`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.resources.send(signer, {
+        senderEntityId: num(p.senderEntityId),
+        recipientEntityId: num(p.recipientEntityId),
+        resources: resourceList(p.resources),
+      }),
+    ),
 );
 
-register("pickup_resources", "Pick up resources from an entity you own", [
-  n("recipientEntityId", "Entity ID receiving the resources"),
-  n("ownerEntityId", "Entity ID that owns the resources"),
-  oa("resources", `Array of {resourceType, amount} to pick up. ${RESOURCE_IDS}`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.resources.pickup(signer, {
-      recipientEntityId: num(p.recipientEntityId),
-      ownerEntityId: num(p.ownerEntityId),
-      resources: resourceList(p.resources),
-    }),
-  ),
+register(
+  "pickup_resources",
+  "Pick up resources from an entity you own",
+  [
+    n("recipientEntityId", "Entity ID receiving the resources"),
+    n("ownerEntityId", "Entity ID that owns the resources"),
+    oa("resources", `Array of {resourceType, amount} to pick up. ${RESOURCE_IDS}`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.resources.pickup(signer, {
+        recipientEntityId: num(p.recipientEntityId),
+        ownerEntityId: num(p.ownerEntityId),
+        resources: resourceList(p.resources),
+      }),
+    ),
 );
 
-register("claim_arrivals", "Claim incoming resource arrivals at a structure", [
-  n("structureId", "Structure entity ID to claim at"),
-  n("day", "Day index"),
-  n("slot", "Slot index"),
-  n("resourceCount", "Number of resources to claim"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.resources.claimArrivals(signer, {
-      structureId: num(p.structureId),
-      day: num(p.day),
-      slot: num(p.slot),
-      resourceCount: num(p.resourceCount),
-    }),
-  ),
+register(
+  "claim_arrivals",
+  "Claim incoming resource arrivals at a structure",
+  [
+    n("structureId", "Structure entity ID to claim at"),
+    n("day", "Day index"),
+    n("slot", "Slot index"),
+    n("resourceCount", "Number of resources to claim"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.resources.claimArrivals(signer, {
+        structureId: num(p.structureId),
+        day: num(p.day),
+        slot: num(p.slot),
+        resourceCount: num(p.resourceCount),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
 // Troops
 // ---------------------------------------------------------------------------
 
-register("create_explorer", "Create a new explorer troop from a structure", [
-  n("forStructureId", "Structure entity ID to spawn from"),
-  n("category", `Troop category (${TROOP_CATEGORY})`),
-  n("tier", `Troop tier (${TROOP_TIER}; higher is stronger)`),
-  n("amount", "Number of troops to create"),
-  n("spawnDirection", `Hex direction (${DIR})`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.createExplorer(signer, {
-      forStructureId: num(p.forStructureId),
-      category: num(p.category),
-      tier: num(p.tier),
-      amount: num(p.amount),
-      spawnDirection: num(p.spawnDirection),
-    }),
-  ),
+register(
+  "create_explorer",
+  "Create a new explorer troop from a structure",
+  [
+    n("forStructureId", "Structure entity ID to spawn from"),
+    n("category", `Troop category (${TROOP_CATEGORY})`),
+    n("tier", `Troop tier (${TROOP_TIER}; higher is stronger)`),
+    n("amount", "Number of troops to create"),
+    n("spawnDirection", `Hex direction (${DIR})`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.createExplorer(signer, {
+        forStructureId: num(p.forStructureId),
+        category: num(p.category),
+        tier: num(p.tier),
+        amount: num(p.amount),
+        spawnDirection: num(p.spawnDirection),
+      }),
+    ),
 );
 
-register("add_to_explorer", "Add more troops to an existing explorer", [
-  n("toExplorerId", "Explorer entity ID to reinforce"),
-  n("amount", "Number of troops to add"),
-  n("homeDirection", `Direction back to home structure (${DIR})`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.addToExplorer(signer, {
-      toExplorerId: num(p.toExplorerId),
-      amount: num(p.amount),
-      homeDirection: num(p.homeDirection),
-    }),
-  ),
+register(
+  "add_to_explorer",
+  "Add more troops to an existing explorer",
+  [
+    n("toExplorerId", "Explorer entity ID to reinforce"),
+    n("amount", "Number of troops to add"),
+    n("homeDirection", `Direction back to home structure (${DIR})`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.addToExplorer(signer, {
+        toExplorerId: num(p.toExplorerId),
+        amount: num(p.amount),
+        homeDirection: num(p.homeDirection),
+      }),
+    ),
 );
 
-register("delete_explorer", "Delete an explorer and return troops to structure", [
-  n("explorerId", "Explorer entity ID to delete"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.deleteExplorer(signer, {
-      explorerId: num(p.explorerId),
-    }),
-  ),
+register(
+  "delete_explorer",
+  "Delete an explorer and return troops to structure",
+  [n("explorerId", "Explorer entity ID to delete")],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.deleteExplorer(signer, {
+        explorerId: num(p.explorerId),
+      }),
+    ),
 );
 
-register("add_guard", "Add a guard troop to a structure's defense slot", [
-  n("forStructureId", "Structure entity ID to guard"),
-  n("slot", "Guard slot index (0-3, depends on structure max guards)"),
-  n("category", `Troop category (${TROOP_CATEGORY})`),
-  n("tier", `Troop tier (${TROOP_TIER})`),
-  n("amount", "Number of troops"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.addGuard(signer, {
-      forStructureId: num(p.forStructureId),
-      slot: num(p.slot),
-      category: num(p.category),
-      tier: num(p.tier),
-      amount: num(p.amount),
-    }),
-  ),
+register(
+  "add_guard",
+  "Add a guard troop to a structure's defense slot",
+  [
+    n("forStructureId", "Structure entity ID to guard"),
+    n("slot", "Guard slot index (0-3, depends on structure max guards)"),
+    n("category", `Troop category (${TROOP_CATEGORY})`),
+    n("tier", `Troop tier (${TROOP_TIER})`),
+    n("amount", "Number of troops"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.addGuard(signer, {
+        forStructureId: num(p.forStructureId),
+        slot: num(p.slot),
+        category: num(p.category),
+        tier: num(p.tier),
+        amount: num(p.amount),
+      }),
+    ),
 );
 
-register("delete_guard", "Remove a guard from a structure's defense slot", [
-  n("forStructureId", "Structure entity ID"),
-  n("slot", "Guard slot index to clear (0-3)"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.deleteGuard(signer, {
-      forStructureId: num(p.forStructureId),
-      slot: num(p.slot),
-    }),
-  ),
+register(
+  "delete_guard",
+  "Remove a guard from a structure's defense slot",
+  [n("forStructureId", "Structure entity ID"), n("slot", "Guard slot index to clear (0-3)")],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.deleteGuard(signer, {
+        forStructureId: num(p.forStructureId),
+        slot: num(p.slot),
+      }),
+    ),
 );
 
-register("move_explorer", "Move an explorer along hex directions (optionally exploring)", [
-  n("explorerId", "Explorer entity ID"),
-  na("directions", `Array of hex directions (${DIR})`),
-  b("explore", "Whether to explore (discover new tiles) while moving"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.move(signer, {
-      explorerId: num(p.explorerId),
-      directions: numArray(p.directions),
-      explore: bool(p.explore),
-    }),
-  ),
+register(
+  "move_explorer",
+  "Move an explorer along hex directions (optionally exploring)",
+  [
+    n("explorerId", "Explorer entity ID"),
+    na("directions", `Array of hex directions (${DIR})`),
+    b("explore", "Whether to explore (discover new tiles) while moving"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.move(signer, {
+        explorerId: num(p.explorerId),
+        directions: numArray(p.directions),
+        explore: bool(p.explore),
+      }),
+    ),
 );
 
-register("travel_explorer", "Travel an explorer along hex directions (no exploration)", [
-  n("explorerId", "Explorer entity ID"),
-  na("directions", `Array of hex directions (${DIR})`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.travel(signer, {
-      explorerId: num(p.explorerId),
-      directions: numArray(p.directions),
-    }),
-  ),
+register(
+  "travel_explorer",
+  "Travel an explorer along hex directions (no exploration)",
+  [n("explorerId", "Explorer entity ID"), na("directions", `Array of hex directions (${DIR})`)],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.travel(signer, {
+        explorerId: num(p.explorerId),
+        directions: numArray(p.directions),
+      }),
+    ),
 );
 
-register("explore", "Explore new tiles with an explorer", [
-  n("explorerId", "Explorer entity ID"),
-  na("directions", `Array of hex directions (${DIR})`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.explore(signer, {
-      explorerId: num(p.explorerId),
-      directions: numArray(p.directions),
-    }),
-  ),
+register(
+  "explore",
+  "Explore new tiles with an explorer",
+  [n("explorerId", "Explorer entity ID"), na("directions", `Array of hex directions (${DIR})`)],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.explore(signer, {
+        explorerId: num(p.explorerId),
+        directions: numArray(p.directions),
+      }),
+    ),
 );
 
-register("swap_explorer_to_explorer", "Transfer troops between two explorers", [
-  n("fromExplorerId", "Source explorer entity ID"),
-  n("toExplorerId", "Destination explorer entity ID"),
-  n("toExplorerDirection", `Hex direction (${DIR})`),
-  n("count", "Number of troops to transfer"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.swapExplorerToExplorer(signer, {
-      fromExplorerId: num(p.fromExplorerId),
-      toExplorerId: num(p.toExplorerId),
-      toExplorerDirection: num(p.toExplorerDirection),
-      count: num(p.count),
-    }),
-  ),
+register(
+  "swap_explorer_to_explorer",
+  "Transfer troops between two explorers",
+  [
+    n("fromExplorerId", "Source explorer entity ID"),
+    n("toExplorerId", "Destination explorer entity ID"),
+    n("toExplorerDirection", `Hex direction (${DIR})`),
+    n("count", "Number of troops to transfer"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.swapExplorerToExplorer(signer, {
+        fromExplorerId: num(p.fromExplorerId),
+        toExplorerId: num(p.toExplorerId),
+        toExplorerDirection: num(p.toExplorerDirection),
+        count: num(p.count),
+      }),
+    ),
 );
 
-register("swap_explorer_to_guard", "Transfer troops from an explorer to a structure guard slot", [
-  n("fromExplorerId", "Source explorer entity ID"),
-  n("toStructureId", "Destination structure entity ID"),
-  n("toStructureDirection", `Hex direction (${DIR})`),
-  n("toGuardSlot", "Guard slot index at the structure (0-3)"),
-  n("count", "Number of troops to transfer"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.swapExplorerToGuard(signer, {
-      fromExplorerId: num(p.fromExplorerId),
-      toStructureId: num(p.toStructureId),
-      toStructureDirection: num(p.toStructureDirection),
-      toGuardSlot: num(p.toGuardSlot),
-      count: num(p.count),
-    }),
-  ),
+register(
+  "swap_explorer_to_guard",
+  "Transfer troops from an explorer to a structure guard slot",
+  [
+    n("fromExplorerId", "Source explorer entity ID"),
+    n("toStructureId", "Destination structure entity ID"),
+    n("toStructureDirection", `Hex direction (${DIR})`),
+    n("toGuardSlot", "Guard slot index at the structure (0-3)"),
+    n("count", "Number of troops to transfer"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.swapExplorerToGuard(signer, {
+        fromExplorerId: num(p.fromExplorerId),
+        toStructureId: num(p.toStructureId),
+        toStructureDirection: num(p.toStructureDirection),
+        toGuardSlot: num(p.toGuardSlot),
+        count: num(p.count),
+      }),
+    ),
 );
 
-register("swap_guard_to_explorer", "Transfer troops from a structure guard slot to an explorer", [
-  n("fromStructureId", "Source structure entity ID"),
-  n("fromGuardSlot", "Guard slot index at the structure (0-3)"),
-  n("toExplorerId", "Destination explorer entity ID"),
-  n("toExplorerDirection", `Hex direction (${DIR})`),
-  n("count", "Number of troops to transfer"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.troops.swapGuardToExplorer(signer, {
-      fromStructureId: num(p.fromStructureId),
-      fromGuardSlot: num(p.fromGuardSlot),
-      toExplorerId: num(p.toExplorerId),
-      toExplorerDirection: num(p.toExplorerDirection),
-      count: num(p.count),
-    }),
-  ),
+register(
+  "swap_guard_to_explorer",
+  "Transfer troops from a structure guard slot to an explorer",
+  [
+    n("fromStructureId", "Source structure entity ID"),
+    n("fromGuardSlot", "Guard slot index at the structure (0-3)"),
+    n("toExplorerId", "Destination explorer entity ID"),
+    n("toExplorerDirection", `Hex direction (${DIR})`),
+    n("count", "Number of troops to transfer"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.troops.swapGuardToExplorer(signer, {
+        fromStructureId: num(p.fromStructureId),
+        fromGuardSlot: num(p.fromGuardSlot),
+        toExplorerId: num(p.toExplorerId),
+        toExplorerDirection: num(p.toExplorerDirection),
+        count: num(p.count),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
 // Combat
 // ---------------------------------------------------------------------------
 
-register("attack_explorer", "Attack another explorer with your explorer (costs 50 stamina attacker, 40 defender)", [
-  n("aggressorId", "Your explorer entity ID"),
-  n("defenderId", "Target explorer entity ID"),
-  n("defenderDirection", `Hex direction (${DIR})`),
-  oa("stealResources", `Array of {resourceId, amount} to steal on victory. ${RESOURCE_IDS}`, false),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.combat.attackExplorer(signer, {
-      aggressorId: num(p.aggressorId),
-      defenderId: num(p.defenderId),
-      defenderDirection: num(p.defenderDirection),
-      stealResources: stealResourceList(p.stealResources),
-    }),
-  ),
+register(
+  "attack_explorer",
+  "Attack another explorer with your explorer (costs 50 stamina attacker, 40 defender)",
+  [
+    n("aggressorId", "Your explorer entity ID"),
+    n("defenderId", "Target explorer entity ID"),
+    n("defenderDirection", `Hex direction (${DIR})`),
+    oa("stealResources", `Array of {resourceId, amount} to steal on victory. ${RESOURCE_IDS}`, false),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.combat.attackExplorer(signer, {
+        aggressorId: num(p.aggressorId),
+        defenderId: num(p.defenderId),
+        defenderDirection: num(p.defenderDirection),
+        stealResources: stealResourceList(p.stealResources),
+      }),
+    ),
 );
 
-register("attack_guard", "Attack a structure's guard with your explorer", [
-  n("explorerId", "Your explorer entity ID"),
-  n("structureId", "Target structure entity ID"),
-  n("structureDirection", `Hex direction (${DIR})`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.combat.attackGuard(signer, {
-      explorerId: num(p.explorerId),
-      structureId: num(p.structureId),
-      structureDirection: num(p.structureDirection),
-    }),
-  ),
+register(
+  "attack_guard",
+  "Attack a structure's guard with your explorer",
+  [
+    n("explorerId", "Your explorer entity ID"),
+    n("structureId", "Target structure entity ID"),
+    n("structureDirection", `Hex direction (${DIR})`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.combat.attackGuard(signer, {
+        explorerId: num(p.explorerId),
+        structureId: num(p.structureId),
+        structureDirection: num(p.structureDirection),
+      }),
+    ),
 );
 
-register("guard_attack_explorer", "Use a structure's guard to attack a nearby explorer", [
-  n("structureId", "Your structure entity ID"),
-  n("structureGuardSlot", "Guard slot index (0-3, depends on structure max guards)"),
-  n("explorerId", "Target explorer entity ID"),
-  n("explorerDirection", `Hex direction (${DIR})`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.combat.guardAttackExplorer(signer, {
-      structureId: num(p.structureId),
-      structureGuardSlot: num(p.structureGuardSlot),
-      explorerId: num(p.explorerId),
-      explorerDirection: num(p.explorerDirection),
-    }),
-  ),
+register(
+  "guard_attack_explorer",
+  "Use a structure's guard to attack a nearby explorer",
+  [
+    n("structureId", "Your structure entity ID"),
+    n("structureGuardSlot", "Guard slot index (0-3, depends on structure max guards)"),
+    n("explorerId", "Target explorer entity ID"),
+    n("explorerDirection", `Hex direction (${DIR})`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.combat.guardAttackExplorer(signer, {
+        structureId: num(p.structureId),
+        structureGuardSlot: num(p.structureGuardSlot),
+        explorerId: num(p.explorerId),
+        explorerDirection: num(p.explorerDirection),
+      }),
+    ),
 );
 
-register("raid", "Raid a structure to steal resources (without destroying guard)", [
-  n("explorerId", "Your explorer entity ID"),
-  n("structureId", "Target structure entity ID"),
-  n("structureDirection", `Hex direction (${DIR})`),
-  oa("stealResources", `Array of {resourceId, amount} to steal. ${RESOURCE_IDS}`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.combat.raid(signer, {
-      explorerId: num(p.explorerId),
-      structureId: num(p.structureId),
-      structureDirection: num(p.structureDirection),
-      stealResources: stealResourceList(p.stealResources),
-    }),
-  ),
+register(
+  "raid",
+  "Raid a structure to steal resources (without destroying guard)",
+  [
+    n("explorerId", "Your explorer entity ID"),
+    n("structureId", "Target structure entity ID"),
+    n("structureDirection", `Hex direction (${DIR})`),
+    oa("stealResources", `Array of {resourceId, amount} to steal. ${RESOURCE_IDS}`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.combat.raid(signer, {
+        explorerId: num(p.explorerId),
+        structureId: num(p.structureId),
+        structureDirection: num(p.structureDirection),
+        stealResources: stealResourceList(p.stealResources),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
@@ -563,9 +619,7 @@ const acceptOrderHandler: ActionHandler = (client, signer, p) =>
     }),
   );
 
-const cancelOrderParams: ActionParamSchema[] = [
-  n("tradeId", "Trade order ID to cancel"),
-];
+const cancelOrderParams: ActionParamSchema[] = [n("tradeId", "Trade order ID to cancel")];
 
 const cancelOrderHandler: ActionHandler = (client, signer, p) =>
   wrapTx(() =>
@@ -574,151 +628,192 @@ const cancelOrderHandler: ActionHandler = (client, signer, p) =>
     }),
   );
 
-registerAliases(["create_order", "create_trade"], "Create a trade order on the market", createOrderParams, createOrderHandler);
-registerAliases(["accept_order", "accept_trade"], "Accept an existing trade order", acceptOrderParams, acceptOrderHandler);
+registerAliases(
+  ["create_order", "create_trade"],
+  "Create a trade order on the market",
+  createOrderParams,
+  createOrderHandler,
+);
+registerAliases(
+  ["accept_order", "accept_trade"],
+  "Accept an existing trade order",
+  acceptOrderParams,
+  acceptOrderHandler,
+);
 registerAliases(["cancel_order", "cancel_trade"], "Cancel your trade order", cancelOrderParams, cancelOrderHandler);
 
 // ---------------------------------------------------------------------------
 // Buildings
 // ---------------------------------------------------------------------------
 
-register("create_building", "Build a new building at a structure", [
-  n("entityId", "Structure entity ID to build at"),
-  na("directions", `Hex directions to building location (${DIR})`),
-  n("buildingCategory", `Building category ID. ${BUILDING_TYPES}`),
-  b("useSimple", "Use simple (cheaper) building variant"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.buildings.create(signer, {
-      entityId: num(p.entityId),
-      directions: numArray(p.directions),
-      buildingCategory: num(p.buildingCategory),
-      useSimple: bool(p.useSimple),
-    }),
-  ),
+register(
+  "create_building",
+  "Build a new building at a structure",
+  [
+    n("entityId", "Structure entity ID to build at"),
+    na("directions", `Hex directions to building location (${DIR})`),
+    n("buildingCategory", `Building category ID. ${BUILDING_TYPES}`),
+    b("useSimple", "Use simple (cheaper) building variant"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.buildings.create(signer, {
+        entityId: num(p.entityId),
+        directions: numArray(p.directions),
+        buildingCategory: num(p.buildingCategory),
+        useSimple: bool(p.useSimple),
+      }),
+    ),
 );
 
-register("destroy_building", "Destroy a building at a structure", [
-  n("entityId", "Structure entity ID"),
-  { name: "buildingCoord", type: "object[]" as any, description: "Building coordinate {x, y, alt?}" },
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.buildings.destroy(signer, {
-      entityId: num(p.entityId),
-      buildingCoord: buildingCoord(p.buildingCoord),
-    }),
-  ),
+register(
+  "destroy_building",
+  "Destroy a building at a structure",
+  [
+    n("entityId", "Structure entity ID"),
+    { name: "buildingCoord", type: "object[]" as any, description: "Building coordinate {x, y, alt?}" },
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.buildings.destroy(signer, {
+        entityId: num(p.entityId),
+        buildingCoord: buildingCoord(p.buildingCoord),
+      }),
+    ),
 );
 
-register("pause_production", "Pause production at a building", [
-  n("entityId", "Structure entity ID"),
-  { name: "buildingCoord", type: "object[]" as any, description: "Building coordinate {x, y, alt?}" },
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.buildings.pauseProduction(signer, {
-      entityId: num(p.entityId),
-      buildingCoord: buildingCoord(p.buildingCoord),
-    }),
-  ),
+register(
+  "pause_production",
+  "Pause production at a building",
+  [
+    n("entityId", "Structure entity ID"),
+    { name: "buildingCoord", type: "object[]" as any, description: "Building coordinate {x, y, alt?}" },
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.buildings.pauseProduction(signer, {
+        entityId: num(p.entityId),
+        buildingCoord: buildingCoord(p.buildingCoord),
+      }),
+    ),
 );
 
-register("resume_production", "Resume production at a paused building", [
-  n("entityId", "Structure entity ID"),
-  { name: "buildingCoord", type: "object[]" as any, description: "Building coordinate {x, y, alt?}" },
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.buildings.resumeProduction(signer, {
-      entityId: num(p.entityId),
-      buildingCoord: buildingCoord(p.buildingCoord),
-    }),
-  ),
+register(
+  "resume_production",
+  "Resume production at a paused building",
+  [
+    n("entityId", "Structure entity ID"),
+    { name: "buildingCoord", type: "object[]" as any, description: "Building coordinate {x, y, alt?}" },
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.buildings.resumeProduction(signer, {
+        entityId: num(p.entityId),
+        buildingCoord: buildingCoord(p.buildingCoord),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
 // Bank
 // ---------------------------------------------------------------------------
 
-register("buy_resources", "Buy resources from the bank using Lords", [
-  n("bankEntityId", "Bank entity ID"),
-  n("entityId", "Your entity ID making the purchase"),
-  n("resourceType", `Resource type ID to buy. ${RESOURCE_IDS}`),
-  n("amount", "Amount to buy"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.bank.buy(signer, {
-      bankEntityId: num(p.bankEntityId),
-      entityId: num(p.entityId),
-      resourceType: num(p.resourceType),
-      amount: num(p.amount),
-    }),
-  ),
+register(
+  "buy_resources",
+  "Buy resources from the bank using Lords",
+  [
+    n("bankEntityId", "Bank entity ID"),
+    n("entityId", "Your entity ID making the purchase"),
+    n("resourceType", `Resource type ID to buy. ${RESOURCE_IDS}`),
+    n("amount", "Amount to buy"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.bank.buy(signer, {
+        bankEntityId: num(p.bankEntityId),
+        entityId: num(p.entityId),
+        resourceType: num(p.resourceType),
+        amount: num(p.amount),
+      }),
+    ),
 );
 
-register("sell_resources", "Sell resources to the bank for Lords", [
-  n("bankEntityId", "Bank entity ID"),
-  n("entityId", "Your entity ID selling"),
-  n("resourceType", `Resource type ID to sell. ${RESOURCE_IDS}`),
-  n("amount", "Amount to sell"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.bank.sell(signer, {
-      bankEntityId: num(p.bankEntityId),
-      entityId: num(p.entityId),
-      resourceType: num(p.resourceType),
-      amount: num(p.amount),
-    }),
-  ),
+register(
+  "sell_resources",
+  "Sell resources to the bank for Lords",
+  [
+    n("bankEntityId", "Bank entity ID"),
+    n("entityId", "Your entity ID selling"),
+    n("resourceType", `Resource type ID to sell. ${RESOURCE_IDS}`),
+    n("amount", "Amount to sell"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.bank.sell(signer, {
+        bankEntityId: num(p.bankEntityId),
+        entityId: num(p.entityId),
+        resourceType: num(p.resourceType),
+        amount: num(p.amount),
+      }),
+    ),
 );
 
-register("add_liquidity", "Add liquidity to the bank's AMM pool", [
-  n("bankEntityId", "Bank entity ID"),
-  n("entityId", "Your entity ID providing liquidity"),
-  oa("calls", `Array of {resourceType, resourceAmount, lordsAmount}. ${RESOURCE_IDS}`),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.bank.addLiquidity(signer, {
-      bankEntityId: num(p.bankEntityId),
-      entityId: num(p.entityId),
-      calls: liquidityCalls(p.calls),
-    }),
-  ),
+register(
+  "add_liquidity",
+  "Add liquidity to the bank's AMM pool",
+  [
+    n("bankEntityId", "Bank entity ID"),
+    n("entityId", "Your entity ID providing liquidity"),
+    oa("calls", `Array of {resourceType, resourceAmount, lordsAmount}. ${RESOURCE_IDS}`),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.bank.addLiquidity(signer, {
+        bankEntityId: num(p.bankEntityId),
+        entityId: num(p.entityId),
+        calls: liquidityCalls(p.calls),
+      }),
+    ),
 );
 
-register("remove_liquidity", "Remove liquidity from the bank's AMM pool", [
-  n("bankEntityId", "Bank entity ID"),
-  n("entityId", "Your entity ID"),
-  n("resourceType", `Resource type ID. ${RESOURCE_IDS}`),
-  n("shares", "Number of LP shares to remove"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.bank.removeLiquidity(signer, {
-      bankEntityId: num(p.bankEntityId),
-      entityId: num(p.entityId),
-      resourceType: num(p.resourceType),
-      shares: num(p.shares),
-    }),
-  ),
+register(
+  "remove_liquidity",
+  "Remove liquidity from the bank's AMM pool",
+  [
+    n("bankEntityId", "Bank entity ID"),
+    n("entityId", "Your entity ID"),
+    n("resourceType", `Resource type ID. ${RESOURCE_IDS}`),
+    n("shares", "Number of LP shares to remove"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.bank.removeLiquidity(signer, {
+        bankEntityId: num(p.bankEntityId),
+        entityId: num(p.entityId),
+        resourceType: num(p.resourceType),
+        shares: num(p.shares),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
 // Guild
 // ---------------------------------------------------------------------------
 
-register("create_guild", "Create a new guild", [
-  b("isPublic", "Whether the guild is open to anyone"),
-  s("guildName", "Name for the guild"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.guild.create(signer, {
-      isPublic: bool(p.isPublic),
-      guildName: str(p.guildName ?? p.name ?? ""),
-    }),
-  ),
+register(
+  "create_guild",
+  "Create a new guild",
+  [b("isPublic", "Whether the guild is open to anyone"), s("guildName", "Name for the guild")],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.guild.create(signer, {
+        isPublic: bool(p.isPublic),
+        guildName: str(p.guildName ?? p.name ?? ""),
+      }),
+    ),
 );
 
-register("join_guild", "Join an existing guild", [
-  n("guildEntityId", "Guild entity ID to join"),
-], (client, signer, p) =>
+register("join_guild", "Join an existing guild", [n("guildEntityId", "Guild entity ID to join")], (client, signer, p) =>
   wrapTx(() =>
     client.guild.join(signer, {
       guildEntityId: num(p.guildEntityId),
@@ -730,48 +825,55 @@ register("leave_guild", "Leave your current guild", [], (client, signer, _p) =>
   wrapTx(() => client.guild.leave(signer)),
 );
 
-register("update_whitelist", "Add or remove an address from guild whitelist", [
-  s("address", "Player hex address to whitelist/unwhitelist"),
-  b("whitelist", "true to add, false to remove"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.guild.updateWhitelist(signer, {
-      address: bigNumberish(p.address),
-      whitelist: bool(p.whitelist),
-    }),
-  ),
+register(
+  "update_whitelist",
+  "Add or remove an address from guild whitelist",
+  [s("address", "Player hex address to whitelist/unwhitelist"), b("whitelist", "true to add, false to remove")],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.guild.updateWhitelist(signer, {
+        address: bigNumberish(p.address),
+        whitelist: bool(p.whitelist),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
 // Realm
 // ---------------------------------------------------------------------------
 
-register("upgrade_realm", "Upgrade your realm to the next level", [
-  n("realmEntityId", "Realm entity ID to upgrade"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.realm.upgrade(signer, {
-      realmEntityId: num(p.realmEntityId),
-    }),
-  ),
+register(
+  "upgrade_realm",
+  "Upgrade your realm to the next level",
+  [n("realmEntityId", "Realm entity ID to upgrade")],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.realm.upgrade(signer, {
+        realmEntityId: num(p.realmEntityId),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
 // Hyperstructure
 // ---------------------------------------------------------------------------
 
-register("contribute_hyperstructure", "Contribute resources to a hyperstructure", [
-  n("hyperstructureEntityId", "Hyperstructure entity ID"),
-  n("contributorEntityId", "Your structure entity ID contributing"),
-  na("contributions", "Array of contribution amounts by resource type"),
-], (client, signer, p) =>
-  wrapTx(() =>
-    client.hyperstructure.contribute(signer, {
-      hyperstructureEntityId: num(p.hyperstructureEntityId),
-      contributorEntityId: num(p.contributorEntityId),
-      contributions: numArray(p.contributions),
-    }),
-  ),
+register(
+  "contribute_hyperstructure",
+  "Contribute resources to a hyperstructure",
+  [
+    n("hyperstructureEntityId", "Hyperstructure entity ID"),
+    n("contributorEntityId", "Your structure entity ID contributing"),
+    na("contributions", "Array of contribution amounts by resource type"),
+  ],
+  (client, signer, p) =>
+    wrapTx(() =>
+      client.hyperstructure.contribute(signer, {
+        hyperstructureEntityId: num(p.hyperstructureEntityId),
+        contributorEntityId: num(p.contributorEntityId),
+        contributions: numArray(p.contributions),
+      }),
+    ),
 );
 
 // ---------------------------------------------------------------------------
