@@ -287,3 +287,14 @@ Example payload for hot-swapping world connectivity:
   "reason": "switching to new world"
 }
 ```
+
+## Architecture Reference
+
+The `docs/` directory contains reference documents for understanding and reviewing the agent's world-building and session policy pipeline:
+
+| Document | Purpose |
+|---|---|
+| [`docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md`](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | Canonical 8-phase pipeline specification covering factory SQL resolution, manifest patching, policy construction, and Controller initialization. Use as the source of truth when reviewing or evolving the agent's world-connection logic. |
+| [`docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md`](docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md) | Gap analysis comparing the agent's implementation against the canonical pipeline. Lists identified issues by severity with recommendations. Useful context for code reviewers and for tracking future alignment work. |
+
+These documents are intended to support code review, onboarding, and ongoing agent design evolution.
