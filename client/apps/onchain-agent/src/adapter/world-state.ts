@@ -917,12 +917,18 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     }
     if (myArmies.length > 0) {
       lines.push("Armies:");
+      const shownTiles = new Set<string>();
       for (const e of myArmies) {
         lines.push(formatEntityLine(e));
-        // Show neighbor tile details for owned armies
+        // Show neighbor tile details for owned armies (skip tiles already shown by another army)
         if (e.neighborTiles && e.neighborTiles.length > 0) {
+          const neighbors = hexNeighbors(e.position.x, e.position.y);
           const tileParts: string[] = [];
-          for (const t of e.neighborTiles) {
+          for (let i = 0; i < e.neighborTiles.length; i++) {
+            const t = e.neighborTiles[i];
+            const coord = `${neighbors[i].x},${neighbors[i].y}`;
+            if (shownTiles.has(coord)) continue;
+            shownTiles.add(coord);
             let label = `${t.dirId}:${t.direction}`;
             if (!t.explored) {
               label += "(unexplored)";
@@ -933,7 +939,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
             }
             tileParts.push(label);
           }
-          lines.push(`    Neighbors: ${tileParts.join(", ")}`);
+          if (tileParts.length > 0) {
+            lines.push(`    Neighbors: ${tileParts.join(", ")}`);
+          }
         }
       }
     }
