@@ -10,6 +10,8 @@ import { displayAddress } from "@/ui/utils/utils";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { getAvatarUrl, useMyAvatar } from "@/hooks/use-player-avatar";
+import { ReferralPanel } from "@/ui/features/referrals/referral-panel";
+import { env } from "../../../../../env";
 
 // Token configs - always mainnet
 interface TokenConfig {
@@ -217,6 +219,8 @@ export const WalletSection = () => {
           })}
         </div>
       </div>
+
+      {env.VITE_PUBLIC_REFERRALS_ENABLED && <ReferralPanel />}
 
       {/* Actions */}
       <a

@@ -7,6 +7,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { useReferralCapture } from "./ui/features/referrals/use-referral-capture";
 import "./index.css";
 import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView } from "./ui/features/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -43,6 +44,7 @@ function App() {
     <StarknetProvider>
       <BrowserRouter>
         <MusicRouterProvider>
+          {env.VITE_PUBLIC_REFERRALS_ENABLED && <ReferralCaptureBridge />}
           <Routes>
             {/* New unified landing layout */}
             <Route path="/" element={<LandingLayout />}>
@@ -87,5 +89,10 @@ function App() {
     </StarknetProvider>
   );
 }
+
+const ReferralCaptureBridge = () => {
+  useReferralCapture();
+  return null;
+};
 
 export default App;
