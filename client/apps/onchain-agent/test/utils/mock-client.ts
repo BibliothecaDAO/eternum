@@ -104,12 +104,13 @@ export function createMockClient() {
           packed_counts_2: null,
           // packed_counts_3: category 37 (Wheat) at index 36, offset (36-32)*8 = 32 → 1 << 32
           packed_counts_3: "0x100000000",
-          latest_attacker_id: null,
-          latest_attack_timestamp: null,
+          // Battle data: structure was attacked by entity #500 at (30,40)
+          latest_attacker_id: 500,
+          latest_attack_timestamp: "0x65B8D800", // unix timestamp
           latest_defender_id: null,
           latest_defense_timestamp: null,
-          latest_attacker_coord_x: null,
-          latest_attacker_coord_y: null,
+          latest_attacker_coord_x: 30,
+          latest_attacker_coord_y: 40,
           latest_defender_coord_x: null,
           latest_defender_coord_y: null,
         },
@@ -265,6 +266,50 @@ export function createMockClient() {
         { col: 15, row: 24, biome: 1, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
         // Owned structure tile at (10,20) — explored
         { col: 10, row: 20, biome: 4, occupier_id: 1, occupier_type: 1, occupier_is_structure: true, reward_extracted: false },
+      ]),
+      fetchBuildingsByStructures: vi.fn().mockResolvedValue([
+        // Structure entity_id=1 has 3 buildings: center (10,10), (11,10) via [0], (10,11) via [2]
+        { outer_entity_id: 1, inner_col: 10, inner_row: 10, category: 25 }, // Labor at center
+        { outer_entity_id: 1, inner_col: 11, inner_row: 10, category: 5 }, // Wood at [0] (East of center, even row)
+        { outer_entity_id: 1, inner_col: 10, inner_row: 11, category: 3 }, // Stone at [2] (NW of center, even row)
+      ]),
+      fetchBattleLogs: vi.fn().mockResolvedValue([
+        // Player's army #100 attacked defender #200 — player won
+        {
+          event_type: "BattleEvent",
+          attacker_id: 100,
+          defender_id: 200,
+          attacker_owner_id: 1,
+          defender_owner_id: 0,
+          winner_id: 100,
+          max_reward: "[]",
+          success: null,
+          timestamp: "0x65B8D800",
+        },
+        // Enemy #300 raided player's structure #1 — raid failed
+        {
+          event_type: "ExplorerNewRaidEvent",
+          attacker_id: 300,
+          defender_id: 1,
+          attacker_owner_id: 0,
+          defender_owner_id: 1,
+          winner_id: null,
+          max_reward: null,
+          success: 0,
+          timestamp: "0x65B8D700",
+        },
+        // Unrelated battle — not involving player
+        {
+          event_type: "BattleEvent",
+          attacker_id: 400,
+          defender_id: 500,
+          attacker_owner_id: 600,
+          defender_owner_id: 700,
+          winner_id: 400,
+          max_reward: "[]",
+          success: null,
+          timestamp: "0x65B8D600",
+        },
       ]),
     },
     cache: {

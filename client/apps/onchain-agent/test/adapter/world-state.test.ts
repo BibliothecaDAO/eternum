@@ -339,4 +339,68 @@ describe("buildWorldState", () => {
     const mine = state.entities.find((e) => e.entityId === 3);
     expect(mine!.structureType).toBe("Mine"); // structure_type: 4
   });
+
+  it("computes freeSlots from occupied building positions", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.freeSlots).toBeDefined();
+
+    // Level 2 → maxRing 3 → 36 total paths
+    // Mock buildings occupy (11,10) via [0] and (10,11) via [2]; center (10,10) doesn't count
+    // So 34 paths should be free
+    expect(realm!.freeSlots!.length).toBe(34);
+    expect(realm!.freeSlots).not.toContain("[0]");
+    expect(realm!.freeSlots).not.toContain("[2]");
+    expect(realm!.freeSlots).toContain("[1]");
+    expect(realm!.freeSlots).toContain("[3]");
+    expect(realm!.freeSlots).toContain("[4]");
+    expect(realm!.freeSlots).toContain("[5]");
+
+    // Non-owned entities have no freeSlots
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.freeSlots).toBeUndefined();
+
+    expect(client.sql.fetchBuildingsByStructures).toHaveBeenCalledWith([1]);
+  });
+
+  it("populates lastAttack from raw SQL battle fields", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // Realm entity_id=1 has latest_attacker_id=500 at (30,40)
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.lastAttack).toBeDefined();
+    expect(realm!.lastAttack!.attackerId).toBe(500);
+    expect(realm!.lastAttack!.pos).toEqual({ x: 30, y: 40 });
+
+    // Mine entity_id=3 has no attacker
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.lastAttack).toBeUndefined();
+  });
+
+  it("populates recentBattles from battle logs (player-only)", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    // 3 battle logs in mock — only 2 involve the player's entities (ids: 1, 100)
+    expect(state.recentBattles.length).toBe(2);
+
+    // First (most recent): player's army #100 won a battle
+    const battle = state.recentBattles[0];
+    expect(battle.type).toBe("battle");
+    expect(battle.attackerId).toBe(100);
+    expect(battle.winnerId).toBe(100);
+    expect(battle.yours).toBe(true);
+
+    // Second: enemy #300 raided player's structure #1 — failed
+    const raid = state.recentBattles[1];
+    expect(raid.type).toBe("raid");
+    expect(raid.defenderId).toBe(1);
+    expect(raid.raidSuccess).toBe(false);
+    expect(raid.yours).toBe(true);
+
+    expect(client.sql.fetchBattleLogs).toHaveBeenCalled();
+  });
 });

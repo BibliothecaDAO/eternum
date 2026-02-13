@@ -21,6 +21,7 @@ describe("buildWorldState edge cases", () => {
         fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
         fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
         fetchAllTiles: vi.fn().mockResolvedValue([]),
+        fetchBattleLogs: vi.fn().mockResolvedValue([]),
       },
     } as any;
 

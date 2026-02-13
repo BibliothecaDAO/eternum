@@ -846,7 +846,7 @@ register(
     `Ring 2 (12 slots): [0,0],[0,1],[1,1],[1,2],[2,2],[2,3],[3,3],[3,4],[4,4],[4,5],[5,5],[5,0]. ` +
     `Ring 3 (18 slots): [0,0,0],[0,0,1],[0,1,1],[1,1,1],[1,1,2],[1,2,2],[2,2,2],[2,2,3],[2,3,3],[3,3,3],[3,3,4],[3,4,4],[4,4,4],[4,4,5],[4,5,5],[5,5,5],[5,5,0],[5,0,0]. ` +
     `Available rings depend on structure level: L0=ring1 (6), L1=rings1-2 (18), L2=rings1-3 (36). ` +
-    `If "space is occupied", try the next path in the ring. Check your building slots to see how many are used. ${BUILDING_GUIDE}`,
+    `IMPORTANT: Use a path from "Free building paths" shown in your world state — these are confirmed unoccupied slots. Do NOT guess paths. ${BUILDING_GUIDE}`,
   [
     n("entityId", "Structure entity ID to build at"),
     na("directions", `Path from center hex to building slot — MUST have at least 1 direction. Direction IDs: ${DIR}. Use paths listed above per ring.`),

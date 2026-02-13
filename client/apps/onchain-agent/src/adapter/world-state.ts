@@ -31,6 +31,7 @@ export interface EternumEntity {
   nextUpgrade?: { name: string; cost: string } | null; // null = max level
   armies?: { current: number; max: number };
   troopsInReserve?: string[]; // e.g. ["KnightT1: 150", "PaladinT2: 30"]
+  freeSlots?: string[]; // e.g. ["[0]", "[1,2]"] — free direction paths for create_building
 
   // Army-specific
   strength?: number;
@@ -46,6 +47,10 @@ export interface EternumEntity {
     occupant?: string; // e.g. "Realm L2", "Explorer Knight T1", "Chest", "Quest"
     occupantId?: number;
   }[];
+
+  // Battle history — parsed from already-fetched raw SQL fields
+  lastAttack?: { attackerId: number; timestamp: number; pos?: { x: number; y: number } };
+  lastDefense?: { defenderId: number; timestamp: number; pos?: { x: number; y: number } };
 
   // Owned entities only
   actions?: string[];
@@ -72,6 +77,15 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
     topPlayers: { name: string; points: number; rank: number }[];
     totalPlayers: number;
   };
+  recentBattles: {
+    type: "battle" | "raid";
+    attackerId: number;
+    defenderId: number;
+    winnerId?: number;
+    raidSuccess?: boolean;
+    yours: boolean;
+    timestamp: number;
+  }[];
 }
 
 /** Visibility radius (in hexes) around each owned entity. */
@@ -333,6 +347,71 @@ function buildBuildingSlots(raw: any): { used: number; total: number; buildings:
   return { used, total, buildings };
 }
 
+// ---------------------------------------------------------------------------
+// Free building slot computation — walk direction paths from center (10,10)
+// using even-r hex neighbors to find which inner coords are unoccupied
+// ---------------------------------------------------------------------------
+
+const INNER_CENTER = { x: 10, y: 10 };
+
+/** Walk a direction path from center and return the resulting inner coord. */
+function walkDirections(dirs: number[]): { x: number; y: number } {
+  let { x, y } = INNER_CENTER;
+  for (const d of dirs) {
+    const n = hexNeighbors(x, y);
+    const next = n[d];
+    if (next) {
+      x = next.x;
+      y = next.y;
+    }
+  }
+  return { x, y };
+}
+
+/** Generate all valid direction paths for rings 1..maxRing. */
+function allDirectionPaths(maxRing: number): number[][] {
+  const paths: number[][] = [];
+  // Ring 1: [d] for d in 0..5
+  if (maxRing >= 1) {
+    for (let d = 0; d < 6; d++) paths.push([d]);
+  }
+  // Ring 2: [d, d], [d, (d+1)%6] for each d
+  if (maxRing >= 2) {
+    for (let d = 0; d < 6; d++) {
+      paths.push([d, d]);
+      paths.push([d, (d + 1) % 6]);
+    }
+  }
+  // Ring 3: [d, d, d], [d, d, (d+1)%6], [d, (d+1)%6, (d+1)%6] for each d
+  if (maxRing >= 3) {
+    for (let d = 0; d < 6; d++) {
+      const n = (d + 1) % 6;
+      paths.push([d, d, d]);
+      paths.push([d, d, n]);
+      paths.push([d, n, n]);
+    }
+  }
+  return paths;
+}
+
+/** Compute free direction paths given occupied inner coords and structure level. */
+function computeFreeSlots(
+  occupiedCoords: Set<string>,
+  level: number,
+): string[] {
+  const maxRing = level + 1;
+  const paths = allDirectionPaths(maxRing);
+  const free: string[] = [];
+  for (const path of paths) {
+    const coord = walkDirections(path);
+    const key = `${coord.x},${coord.y}`;
+    if (!occupiedCoords.has(key)) {
+      free.push(`[${path.join(",")}]`);
+    }
+  }
+  return free;
+}
+
 // Population cost per building category index (1-based).
 // WorkersHut=0, Labor=0, resource buildings=2, military/donkey=3, Wheat/Fish=1
 const BUILDING_POP_COST: Record<number, number> = {
@@ -467,6 +546,26 @@ function hexNeighbors(x: number, y: number): { dir: string; dirId: number; x: nu
   ];
 }
 
+/** Parse latest_attacker fields from raw SQL data into a battle info object. */
+function parseLastAttack(raw: any): EternumEntity["lastAttack"] {
+  const id = Number(raw.latest_attacker_id ?? 0);
+  if (!id) return undefined;
+  const ts = Number(parseHexBig(raw.latest_attack_timestamp));
+  const x = raw.latest_attacker_coord_x != null ? Number(raw.latest_attacker_coord_x) : undefined;
+  const y = raw.latest_attacker_coord_y != null ? Number(raw.latest_attacker_coord_y) : undefined;
+  return { attackerId: id, timestamp: ts, pos: x != null && y != null ? { x, y } : undefined };
+}
+
+/** Parse latest_defender fields from raw SQL data into a defense info object. */
+function parseLastDefense(raw: any): EternumEntity["lastDefense"] {
+  const id = Number(raw.latest_defender_id ?? 0);
+  if (!id) return undefined;
+  const ts = Number(parseHexBig(raw.latest_defense_timestamp));
+  const x = raw.latest_defender_coord_x != null ? Number(raw.latest_defender_coord_x) : undefined;
+  const y = raw.latest_defender_coord_y != null ? Number(raw.latest_defender_coord_y) : undefined;
+  return { defenderId: id, timestamp: ts, pos: x != null && y != null ? { x, y } : undefined };
+}
+
 function getStructureActions(structureType: string): string[] {
   const base = ["addGuard", "deleteGuard"];
   switch (structureType) {
@@ -505,18 +604,21 @@ function getArmyActions(): string[] {
  */
 export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
   // 1. Fetch all data sources in parallel.
-  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles] = await Promise.all([
-    client.view.player(accountAddress),
-    client.view.market(),
-    client.view.leaderboard({ limit: 10 }),
-    client.sql.fetchAllStructuresMapData(),
-    client.sql.fetchAllArmiesMapData(),
-    client.sql.fetchAllTiles().catch(() => [] as any[]),
-  ]);
+  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs] =
+    await Promise.all([
+      client.view.player(accountAddress),
+      client.view.market(),
+      client.view.leaderboard({ limit: 10 }),
+      client.sql.fetchAllStructuresMapData(),
+      client.sql.fetchAllArmiesMapData(),
+      client.sql.fetchAllTiles().catch(() => [] as any[]),
+      client.sql.fetchBattleLogs().catch(() => [] as any[]),
+    ]);
 
   const rawStructures: any[] = Array.isArray(allRawStructures) ? allRawStructures : [];
   const rawArmies: any[] = Array.isArray(allRawArmies) ? allRawArmies : [];
   const rawTiles: any[] = Array.isArray(allTiles) ? allTiles : [];
+  const rawBattleLogs: any[] = Array.isArray(allBattleLogs) ? allBattleLogs : [];
 
   // 2. Collect positions of every entity the player owns (from raw data).
   const ownedPositions: Pos[] = [];
@@ -581,6 +683,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       population,
       nextUpgrade: owned && stType === "Realm" ? getNextUpgrade(level) : undefined,
       armies: owned ? { current: 0, max: MAX_ARMIES[stType] ?? 0 } : undefined, // current filled below
+      lastAttack: parseLastAttack(s),
+      lastDefense: parseLastDefense(s),
       actions: owned ? getStructureActions(stType) : undefined,
     };
   });
@@ -601,6 +705,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       stamina: parseStamina(a.stamina_amount),
       isInBattle: Number(a.battle_cooldown_end ?? 0) > 0,
       troopSummary: buildTroopSummary(a),
+      lastAttack: parseLastAttack(a),
+      lastDefense: parseLastDefense(a),
       actions: owned ? getArmyActions() : undefined,
     };
   });
@@ -654,12 +760,25 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
 
   const entities: EternumEntity[] = [...structureEntities, ...armyEntities];
 
-  // 6. Fetch per-structure resources and production buildings from SQL.
+  // 6. Fetch per-structure resources, production, and occupied building positions from SQL.
   const ownedEntityIds = structureEntities.filter((e) => e.isOwned).map((e) => e.entityId);
   const resources = new Map<string, number>();
   if (ownedEntityIds.length > 0) {
     try {
-      const balanceRows: any[] = await client.sql.fetchResourceBalancesAndProduction(ownedEntityIds);
+      const [balanceRows, buildingRows] = await Promise.all([
+        client.sql.fetchResourceBalancesAndProduction(ownedEntityIds),
+        client.sql.fetchBuildingsByStructures(ownedEntityIds).catch(() => [] as any[]),
+      ]) as [any[], any[]];
+
+      // Group building positions by structure entity ID → occupied inner coords
+      const buildingsByStructure = new Map<number, Set<string>>();
+      for (const b of buildingRows) {
+        const structId = Number(b.outer_entity_id);
+        if (!buildingsByStructure.has(structId)) {
+          buildingsByStructure.set(structId, new Set());
+        }
+        buildingsByStructure.get(structId)!.add(`${b.inner_col},${b.inner_row}`);
+      }
       for (const row of balanceRows) {
         const entityId = Number(row.entity_id);
         const entity = structureEntities.find((e) => e.entityId === entityId && e.isOwned);
@@ -701,6 +820,13 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
         entity.resources = entityResources;
         entity.productionBuildings = buildings.length > 0 ? buildings : undefined;
         entity.troopsInReserve = troopReserves.length > 0 ? troopReserves : undefined;
+      }
+
+      // Compute free building slots for each owned structure
+      for (const entity of structureEntities) {
+        if (!entity.isOwned) continue;
+        const occupied = buildingsByStructure.get(entity.entityId) ?? new Set();
+        entity.freeSlots = computeFreeSlots(occupied, entity.level ?? 0);
       }
     } catch (err) {
       console.error("Failed to fetch resource balances:", err);
@@ -777,6 +903,43 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   }
   // --- END DEBUG LOG ---
 
+  // 7. Process battle logs — filter to player-involved battles, limit to most recent 10.
+  const ownedEntityIdSet = new Set(entities.filter((e) => e.isOwned).map((e) => e.entityId));
+  const recentBattles: EternumWorldState["recentBattles"] = rawBattleLogs
+    .map((b: any) => {
+      const attackerId = Number(b.attacker_id ?? 0);
+      const defenderId = Number(b.defender_id ?? 0);
+      const attackerOwnerId = Number(b.attacker_owner_id ?? 0);
+      const defenderOwnerId = Number(b.defender_owner_id ?? 0);
+      const yours =
+        ownedEntityIdSet.has(attackerId) ||
+        ownedEntityIdSet.has(defenderId) ||
+        ownedEntityIdSet.has(attackerOwnerId) ||
+        ownedEntityIdSet.has(defenderOwnerId);
+      const ts = Number(parseHexBig(b.timestamp));
+      if (b.event_type === "ExplorerNewRaidEvent") {
+        return {
+          type: "raid" as const,
+          attackerId,
+          defenderId,
+          raidSuccess: b.success === 1,
+          yours,
+          timestamp: ts,
+        };
+      }
+      return {
+        type: "battle" as const,
+        attackerId,
+        defenderId,
+        winnerId: Number(b.winner_id ?? 0) || undefined,
+        yours,
+        timestamp: ts,
+      };
+    })
+    .filter((b) => b.yours)
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 10);
+
   return {
     tick: Math.floor(Date.now() / 1000),
     timestamp: Date.now(),
@@ -803,6 +966,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       })),
       totalPlayers: Number((leaderboardView as any)?.totalPlayers ?? 0),
     },
+    recentBattles,
   };
 }
 
@@ -828,6 +992,18 @@ function formatEntityLine(e: EternumEntity): string {
   const battle = e.isInBattle ? " IN BATTLE" : "";
   const acts = e.actions ? ` | actions: ${e.actions.join(", ")}` : "";
   return `  [Army] id=${e.entityId} ${troops} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=(${e.position.x},${e.position.y})${battle}${acts}`;
+}
+
+/** Format a unix timestamp as a relative time string like "5m ago" or "2h ago". */
+function formatTimeAgo(unixSeconds: number): string {
+  if (!unixSeconds) return "";
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - unixSeconds;
+  if (diff < 0) return "just now";
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 function shortAddr(addr: string): string {
@@ -889,6 +1065,10 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
           const free = total - used;
           lines.push(`    Slots: ${used}/${total} used (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`);
         }
+        // Free building slots (direction paths the agent can use for create_building)
+        if (e.freeSlots && e.freeSlots.length > 0) {
+          lines.push(`    Free building paths (${e.freeSlots.length}): ${e.freeSlots.join(",")}`);
+        }
         // Population
         if (e.population) {
           const { current, capacity } = e.population;
@@ -912,6 +1092,12 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
         // Troop reserves
         if (e.troopsInReserve && e.troopsInReserve.length > 0) {
           lines.push(`    Troop reserves: ${e.troopsInReserve.join(", ")}`);
+        }
+        // Last attack/defense on this structure
+        if (e.lastAttack) {
+          const ago = formatTimeAgo(e.lastAttack.timestamp);
+          const pos = e.lastAttack.pos ? ` from (${e.lastAttack.pos.x},${e.lastAttack.pos.y})` : "";
+          lines.push(`    ⚔ Last attacked by #${e.lastAttack.attackerId}${pos} ${ago}`);
         }
       }
     }
@@ -943,6 +1129,12 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
             lines.push(`    Neighbors: ${tileParts.join(", ")}`);
           }
         }
+        // Last attack/defense on this army
+        if (e.lastAttack) {
+          const ago = formatTimeAgo(e.lastAttack.timestamp);
+          const pos = e.lastAttack.pos ? ` from (${e.lastAttack.pos.x},${e.lastAttack.pos.y})` : "";
+          lines.push(`    ⚔ Last attacked by #${e.lastAttack.attackerId}${pos} ${ago}`);
+        }
       }
     }
     sections.push(lines.join("\n"));
@@ -960,6 +1152,22 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     if (enemyArmies.length > 0) {
       lines.push("Armies:");
       for (const e of enemyArmies) lines.push(formatEntityLine(e));
+    }
+    sections.push(lines.join("\n"));
+  }
+
+  // Recent battles
+  if (state.recentBattles.length > 0) {
+    const lines = ["### Recent Battles"];
+    for (const b of state.recentBattles) {
+      const ago = formatTimeAgo(b.timestamp);
+      if (b.type === "raid") {
+        const result = b.raidSuccess ? "SUCCESS" : "FAILED";
+        lines.push(`  Raid: #${b.attackerId} → #${b.defenderId} — ${result} ${ago}`);
+      } else {
+        const winner = b.winnerId ? `winner=#${b.winnerId}` : "no winner";
+        lines.push(`  Battle: #${b.attackerId} vs #${b.defenderId} — ${winner} ${ago}`);
+      }
     }
     sections.push(lines.join("\n"));
   }
