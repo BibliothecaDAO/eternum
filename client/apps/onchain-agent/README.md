@@ -66,7 +66,7 @@ With only `ANTHROPIC_API_KEY` set (no other env vars), the agent resolves everyt
 | Tick interval | 60000ms (1 min) | `TICK_INTERVAL_MS` |
 | Tick loop | enabled | `LOOP_ENABLED` |
 
-**World discovery is automatic.** When `RPC_URL`, `TORII_URL`, and `WORLD_ADDRESS` are not set, the agent queries the Cartridge Factory SQL API to discover active worlds, then either presents a TUI picker or auto-selects if `SLOT_NAME` matches a discovered world. The manifest is loaded from `contracts/game/manifest_<chain>.json` in the repo and patched with live contract addresses from the factory.
+**World discovery is automatic.** When `RPC_URL`, `TORII_URL`, and `WORLD_ADDRESS` are not set, the agent queries the Cartridge Factory SQL API to discover active worlds, then either presents a TUI picker or auto-selects if `SLOT_NAME` matches a discovered world. The manifest is loaded from `contracts/game/manifest_<chain>.json` in the repo and patched with live contract addresses from the factory. The agent also fetches entry/fee token addresses from the world's `WorldConfig` and derives a per-world chain ID from the RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`).
 
 So a minimal `.env` is just:
 
@@ -129,29 +129,35 @@ Useful flags:
 
 ## Run in CLI
 
-1. Ensure your Eternum backend endpoints are reachable (`RPC_URL`, `TORII_URL`) and your manifest/world values are set.
-2. Create local env config:
+With world discovery (recommended — zero manual endpoint config):
+
+```bash
+cd client/apps/onchain-agent
+cp .env.example .env
+# Set ANTHROPIC_API_KEY (or OPENAI_API_KEY + MODEL_PROVIDER)
+# Optionally set SLOT_NAME to auto-select a world, or leave blank for the TUI picker
+pnpm --dir client/apps/onchain-agent dev
+```
+
+With manual endpoint overrides (skips discovery):
 
 ```bash
 cd client/apps/onchain-agent
 cp .env.example .env
 ```
 
-3. Update `.env` with at least:
+Update `.env` with:
 
-- `RPC_URL`
-- `TORII_URL`
-- `WORLD_ADDRESS`
-- `MANIFEST_PATH`
+- `RPC_URL`, `TORII_URL`, `WORLD_ADDRESS` — all three required to skip discovery
+- `MANIFEST_PATH` — path to a manifest JSON (optional, defaults to `contracts/game/manifest_<chain>.json`)
+- `CHAIN_ID` — override chain ID (optional, derived from `RPC_URL` automatically)
 - `ETERNUM_AGENT_HOME` (optional, defaults to `~/.eternum-agent`)
-- `DATA_DIR` (optional override, defaults to `$ETERNUM_AGENT_HOME/data`)
-- `CHAIN_ID` (e.g. `SN_SEPOLIA`)
 - `GAME_NAME` (default: `eternum`)
 - `LOOP_ENABLED` (`true` or `false`)
 - `MODEL_PROVIDER` and `MODEL_ID`
 - matching API key (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`)
 
-4. Start the agent from the repository root:
+Start the agent:
 
 ```bash
 pnpm --dir client/apps/onchain-agent dev
@@ -178,6 +184,16 @@ private keys are stored in config — instead, the agent requests a session that
 6. **Agent is live** — the `SessionAccount` can now execute transactions. `executeFromOutside` is tried first
    (paymaster-sponsored, no gas needed), falling back to direct execution.
 
+### Session policies
+
+The session requests approval for all Eternum system contracts discovered in the manifest, including:
+
+- All game system entrypoints (resource, troop, trade, production, guild, hyperstructure, etc.)
+- `dojo_name` and `world_dispatcher` introspection on every system contract
+- VRF provider (`request_random`) for verifiable randomness
+- Entry token (`token_lock`) and fee token (`approve`) when provided by the world's `WorldConfig`
+- `s1_eternum-Message` typed data signing for in-game messaging
+
 ### Session persistence
 
 The session persists to `SESSION_BASE_PATH` (default: `~/.eternum-agent/.cartridge/`). Restarting the agent reconnects
@@ -188,7 +204,7 @@ automatically.
 
 | Env var              | Default                          | Description                                                                                    |
 | -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `CHAIN_ID`           | `SN_SEPOLIA`                     | StarkNet chain ID (`SN_SEPOLIA`, `SN_MAIN`, or Dojo slot/katana encoded IDs)                   |
+| `CHAIN_ID`           | derived from `RPC_URL`           | StarkNet chain ID. Auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`), falls back to `KATANA` for slot or `SN_MAIN`/`SN_SEPOLIA` for L1 chains. |
 | `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for runtime files                                                               |
 | `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Data directory for soul/tasks/heartbeat                                                        |
 | `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Directory for session storage                                                                  |
