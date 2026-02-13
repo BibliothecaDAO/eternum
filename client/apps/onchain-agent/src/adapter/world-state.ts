@@ -37,7 +37,15 @@ export interface EternumEntity {
   stamina?: number;
   isInBattle?: boolean;
   troopSummary?: string;
-  neighborTiles?: { direction: string; dirId: number; explored: boolean; occupied: boolean }[];
+  neighborTiles?: {
+    direction: string;
+    dirId: number;
+    explored: boolean;
+    occupied: boolean;
+    biome?: string;
+    occupant?: string; // e.g. "Realm L2", "Explorer Knight T1", "Chest", "Quest"
+    occupantId?: number;
+  }[];
 
   // Owned entities only
   actions?: string[];
@@ -367,6 +375,69 @@ function getNextUpgrade(level: number): { name: string; cost: string } | null {
 }
 
 // ---------------------------------------------------------------------------
+// Tile biome and occupier lookups (matches TileOccupier enum from @bibliothecadao/types)
+// ---------------------------------------------------------------------------
+
+const BIOME_NAMES: Record<number, string> = {
+  0: "Unexplored",
+  1: "DeepOcean",
+  2: "Ocean",
+  3: "Beach",
+  4: "Scorched",
+  5: "Bare",
+  6: "Tundra",
+  7: "Snow",
+  8: "Desert",
+  9: "Shrubland",
+  10: "Taiga",
+  11: "Grassland",
+  12: "Forest",
+  13: "RainForest",
+  14: "SubtropicalDesert",
+  15: "TropicalForest",
+  16: "TropicalRainForest",
+};
+
+const OCCUPIER_NAMES: Record<number, string> = {
+  0: "",
+  1: "Realm L1",
+  2: "Realm L2",
+  3: "Realm L3",
+  4: "Realm L4",
+  5: "WonderRealm L1",
+  6: "WonderRealm L2",
+  7: "WonderRealm L3",
+  8: "WonderRealm L4",
+  9: "Hyperstructure L1",
+  10: "Hyperstructure L2",
+  11: "Hyperstructure L3",
+  12: "FragmentMine",
+  13: "Village",
+  14: "Bank",
+  15: "Explorer Knight T1",
+  16: "Explorer Knight T2",
+  17: "Explorer Knight T3",
+  18: "Explorer Paladin T1",
+  19: "Explorer Paladin T2",
+  20: "Explorer Paladin T3",
+  21: "Explorer Crossbow T1",
+  22: "Explorer Crossbow T2",
+  23: "Explorer Crossbow T3",
+  24: "Agent Knight T1",
+  25: "Agent Knight T2",
+  26: "Agent Knight T3",
+  27: "Agent Paladin T1",
+  28: "Agent Paladin T2",
+  29: "Agent Paladin T3",
+  30: "Agent Crossbow T1",
+  31: "Agent Crossbow T2",
+  32: "Agent Crossbow T3",
+  33: "Quest",
+  34: "Chest",
+  35: "Spire",
+};
+
+// ---------------------------------------------------------------------------
 // Hex neighbor calculation — even-r offset coordinates (matches Cairo contract)
 // ---------------------------------------------------------------------------
 
@@ -545,37 +616,40 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
     }
   }
 
-  // 5b. Build exploration map and per-army neighbor tiles.
+  // 5b. Build tile map with biome, occupier info, and per-army neighbor tiles.
   //     Tile biome > 0 means explored; biome 0 or missing means unexplored.
-  const exploredTiles = new Set<string>();
+  const tileMap = new Map<string, { biome: number; occupierType: number; occupierId: number }>();
   for (const t of rawTiles) {
     const col = Number(t.col ?? t.x ?? 0);
     const row = Number(t.row ?? t.y ?? 0);
-    const biome = Number(t.biome ?? 0);
-    if (biome > 0) {
-      exploredTiles.add(`${col},${row}`);
-    }
+    tileMap.set(`${col},${row}`, {
+      biome: Number(t.biome ?? 0),
+      occupierType: Number(t.occupier_type ?? 0),
+      occupierId: Number(t.occupier_id ?? 0),
+    });
   }
 
-  // Build a set of occupied tile coords (structures + armies) for army pathfinding.
-  const occupiedTiles = new Set<string>();
-  for (const s of nearbyRawStructures) {
-    occupiedTiles.add(`${Number(s.coord_x ?? 0)},${Number(s.coord_y ?? 0)}`);
-  }
-  for (const a of nearbyRawArmies) {
-    occupiedTiles.add(`${Number(a.coord_x ?? 0)},${Number(a.coord_y ?? 0)}`);
-  }
-
-  // For each owned army, compute neighbor tile exploration + occupation status.
+  // For each owned army, compute neighbor tile details.
   for (const army of armyEntities) {
     if (!army.isOwned) continue;
     const neighbors = hexNeighbors(army.position.x, army.position.y);
-    army.neighborTiles = neighbors.map((n) => ({
-      direction: n.dir,
-      dirId: n.dirId,
-      explored: exploredTiles.has(`${n.x},${n.y}`),
-      occupied: occupiedTiles.has(`${n.x},${n.y}`),
-    }));
+    army.neighborTiles = neighbors.map((n) => {
+      const key = `${n.x},${n.y}`;
+      const tile = tileMap.get(key);
+      const explored = tile ? tile.biome > 0 : false;
+      const occupierType = tile?.occupierType ?? 0;
+      const occupierId = tile?.occupierId ?? 0;
+      const occupied = occupierType > 0;
+      return {
+        direction: n.dir,
+        dirId: n.dirId,
+        explored,
+        occupied,
+        biome: explored ? BIOME_NAMES[tile!.biome] ?? `Biome${tile!.biome}` : undefined,
+        occupant: occupied ? OCCUPIER_NAMES[occupierType] ?? `Type${occupierType}` : undefined,
+        occupantId: occupied ? occupierId : undefined,
+      };
+    });
   }
 
   const entities: EternumEntity[] = [...structureEntities, ...armyEntities];
@@ -845,25 +919,21 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
       lines.push("Armies:");
       for (const e of myArmies) {
         lines.push(formatEntityLine(e));
-        // Show neighbor tile exploration/occupation for owned armies
+        // Show neighbor tile details for owned armies
         if (e.neighborTiles && e.neighborTiles.length > 0) {
-          const explored = e.neighborTiles
-            .filter((n) => n.explored && !n.occupied)
-            .map((n) => `${n.dirId}:${n.direction}`)
-            .join(", ");
-          const unexplored = e.neighborTiles
-            .filter((n) => !n.explored)
-            .map((n) => `${n.dirId}:${n.direction}`)
-            .join(", ");
-          const blocked = e.neighborTiles
-            .filter((n) => n.occupied)
-            .map((n) => `${n.dirId}:${n.direction}`)
-            .join(", ");
-          const parts: string[] = [];
-          if (explored) parts.push(`move:[${explored}]`);
-          if (unexplored) parts.push(`explore:[${unexplored}]`);
-          if (blocked) parts.push(`occupied:[${blocked}]`);
-          lines.push(`    Tiles: ${parts.join(" | ")}`);
+          const tileParts: string[] = [];
+          for (const t of e.neighborTiles) {
+            let label = `${t.dirId}:${t.direction}`;
+            if (!t.explored) {
+              label += "(unexplored)";
+            } else if (t.occupied && t.occupant) {
+              label += `(${t.occupant}${t.occupantId ? ` #${t.occupantId}` : ""})`;
+            } else {
+              label += t.biome ? `(${t.biome})` : "(empty)";
+            }
+            tileParts.push(label);
+          }
+          lines.push(`    Neighbors: ${tileParts.join(", ")}`);
         }
       }
     }

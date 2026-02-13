@@ -199,7 +199,7 @@ describe("buildWorldState", () => {
     expect(mine!.actions).toBeUndefined();
   });
 
-  it("populates neighborTiles with exploration status for owned armies", async () => {
+  it("populates neighborTiles with biome and occupant details for owned armies", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");
 
@@ -208,26 +208,34 @@ describe("buildWorldState", () => {
     expect(army!.neighborTiles!.length).toBe(6);
 
     // Army at (15, 25) — odd row
-    // East (16,25) → biome=3 → explored, not occupied
+    // East (16,25) → biome=3 (Beach) → explored, not occupied
     const east = army!.neighborTiles!.find((n) => n.direction === "East");
     expect(east!.explored).toBe(true);
     expect(east!.occupied).toBe(false);
+    expect(east!.biome).toBe("Beach");
+    expect(east!.occupant).toBeUndefined();
 
-    // NE (15,26) → biome=5 → explored
+    // NE (15,26) → biome=5 (Bare) → explored, occupied by Chest #999
     const ne = army!.neighborTiles!.find((n) => n.direction === "NE");
     expect(ne!.explored).toBe(true);
+    expect(ne!.occupied).toBe(true);
+    expect(ne!.biome).toBe("Bare");
+    expect(ne!.occupant).toBe("Chest");
+    expect(ne!.occupantId).toBe(999);
 
     // West (14,25) → not in tiles → unexplored
     const west = army!.neighborTiles!.find((n) => n.direction === "West");
     expect(west!.explored).toBe(false);
+    expect(west!.biome).toBeUndefined();
 
     // SW (14,24) → not in tiles → unexplored
     const sw = army!.neighborTiles!.find((n) => n.direction === "SW");
     expect(sw!.explored).toBe(false);
 
-    // SE (15,24) → biome=1 → explored
+    // SE (15,24) → biome=1 (DeepOcean) → explored, empty
     const se = army!.neighborTiles!.find((n) => n.direction === "SE");
     expect(se!.explored).toBe(true);
+    expect(se!.biome).toBe("DeepOcean");
   });
 
   it("populates buildingSlots from packed_counts for owned structures", async () => {

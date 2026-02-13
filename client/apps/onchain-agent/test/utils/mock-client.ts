@@ -256,7 +256,8 @@ export function createMockClient() {
         // Army is at (15,25) — odd row neighbors:
         //   East: (16,25), NE: (15,26), NW: (14,26), West: (14,25), SW: (14,24), SE: (15,24)
         { col: 16, row: 25, biome: 3, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
-        { col: 15, row: 26, biome: 5, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
+        // NE (15,26) has a Chest (occupier_type: 34)
+        { col: 15, row: 26, biome: 5, occupier_id: 999, occupier_type: 34, occupier_is_structure: false, reward_extracted: false },
         { col: 14, row: 26, biome: 2, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
         // West (14,25) is NOT in the list → unexplored
         // SW (14,24) is NOT in the list → unexplored
