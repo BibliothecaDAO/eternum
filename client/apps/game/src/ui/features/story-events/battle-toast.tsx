@@ -7,7 +7,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { type BattleLocation, formatWinnerName, STORY_EVENT_THEMES } from "./story-event-utils";
 import type { StoryEventIcon } from "@bibliothecadao/eternum";
 
-export interface BattleToastProps {
+interface BattleToastProps {
   toastId: string | number;
   icon: StoryEventIcon;
   attackerLabel: string;

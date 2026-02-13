@@ -25,9 +25,7 @@ export class SceneManager {
 
   switchScene(sceneName: SceneName) {
     const scene = this.scenes.get(sceneName);
-    if (!scene) {
-      return;
-    }
+    if (!scene) return;
 
     const previousScene = this.scenes.get(this.currentScene!);
     previousScene?.onSwitchOff();

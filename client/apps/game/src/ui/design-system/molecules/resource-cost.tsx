@@ -46,7 +46,7 @@ export const ResourceCost = ({
   const trait = useMemo(() => findResourceById(resourceId)?.trait, [resourceId]);
 
   const hasSufficientBalance = balance !== undefined && divideByPrecision(balance) >= amount;
-  const balanceColor = hasSufficientBalance ? "text-green/90" : "text-red/90";
+  const balanceColor = hasSufficientBalance ? "text-green-400" : "text-red-400";
 
   const containerClasses = clsx(
     "relative flex items-center p-2 bg-gold/5 rounded gap-1 border border-gold/5 shadow-inner",

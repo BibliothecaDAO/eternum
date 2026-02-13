@@ -3,6 +3,7 @@ import { Account } from "starknet";
 import type { AccountInterface } from "starknet";
 
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
+import { connectWithControllerRetry, pickPrimaryConnector } from "@/hooks/context/controller-connect";
 import { useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -11,7 +12,7 @@ import type { SetupResult } from "@/init/bootstrap";
 import { getActiveWorld, setActiveWorldName } from "@/runtime/world";
 import { useAccount, useConnect } from "@starknet-react/core";
 
-import type { BootstrapTask, EagerBootstrapState } from "./use-eager-bootstrap";
+import type { EagerBootstrapState } from "./use-eager-bootstrap";
 import { useEagerBootstrap } from "./use-eager-bootstrap";
 
 /**
@@ -26,7 +27,7 @@ export type OnboardingPhase =
   | "settlement" // User picks realm/blitz setup (bootstrap complete, account connected)
   | "ready"; // All done, can enter game
 
-export type UnifiedOnboardingState = {
+type UnifiedOnboardingState = {
   // Current phase (what UI to show)
   phase: OnboardingPhase;
 
@@ -64,7 +65,7 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
 
   // Account state from starknet-react
   const { isConnected, isConnecting } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connectAsync, connectors } = useConnect();
   const controllerAccount = useControllerAccount();
   const setAccountName = useAccountStore((state) => state.setAccountName);
   const { username: cartridgeUsername } = useCartridgeUsername();
@@ -73,14 +74,26 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
-  // Local state
-  const [isSpectating, setIsSpectating] = useState(false);
+  // Check URL for spectate mode
+  const urlSpectateMode =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("spectate") === "true";
+
+  // Local state - initialize isSpectating from URL param
+  const [isSpectating, setIsSpectating] = useState(urlSpectateMode);
   const [selectedWorldName, setSelectedWorldName] = useState<string | null>(() => {
     const active = getActiveWorld();
     return active?.name ?? null;
   });
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [hasCompletedAvatar, setHasCompletedAvatar] = useState(false);
+
+  // If URL has spectate param and we have a world, auto-trigger spectate mode
+  useEffect(() => {
+    if (urlSpectateMode && selectedWorldName && !isSpectating) {
+      console.log("[useUnifiedOnboarding] Auto-enabling spectate mode from URL param");
+      setIsSpectating(true);
+    }
+  }, [urlSpectateMode, selectedWorldName, isSpectating]);
 
   // Spectator navigation
   const spectatorNavigate = useSpectatorModeClick(bootstrap.setupResult);
@@ -126,16 +139,19 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   const connectWallet = useCallback(() => {
     if (isConnected || isConnecting) return;
 
-    const primaryConnector = connectors[0];
+    const primaryConnector = pickPrimaryConnector(connectors);
     if (!primaryConnector) {
       console.error("Unable to connect wallet: no connectors available");
       return;
     }
 
-    connect({ connector: primaryConnector });
-  }, [connect, connectors, isConnected, isConnecting]);
+    void connectWithControllerRetry(connectAsync, primaryConnector).catch((error) => {
+      console.error("Unable to connect wallet:", error);
+    });
+  }, [connectAsync, connectors, isConnected, isConnecting]);
 
   const spectate = useCallback(() => {
+    console.log("[useUnifiedOnboarding] spectate() called");
     setIsSpectating(true);
     spectatorNavigate();
     setShowBlankOverlay(false);
@@ -159,20 +175,32 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
 
   // Determine current phase
   const phase: OnboardingPhase = useMemo(() => {
+    console.log("[useUnifiedOnboarding] Calculating phase:", {
+      selectedWorldName,
+      connected,
+      isSpectating,
+      showBlankOverlay,
+      bootstrapStatus: bootstrap.status,
+      hasCompletedAvatar,
+    });
+
     // 1. No world selected - must select world first
     if (!selectedWorldName) {
+      console.log("[useUnifiedOnboarding] -> world-select (no world)");
       return "world-select";
     }
 
     // 2. World selected but not connected and not spectating
     //    Show account panel, bootstrap runs in background
     if (!connected && !isSpectating && showBlankOverlay) {
+      console.log("[useUnifiedOnboarding] -> account (not connected, not spectating, showBlankOverlay)");
       return "account";
     }
 
     // 2.5. Connected but haven't completed avatar creation (optional step)
     //      Only show avatar phase if connected (not spectating) and haven't completed it yet
     if (connected && !isSpectating && !hasCompletedAvatar && showBlankOverlay) {
+      console.log("[useUnifiedOnboarding] -> avatar (connected, no avatar, showBlankOverlay)");
       return "avatar";
     }
 
@@ -181,22 +209,27 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     if (bootstrap.status !== "ready" && bootstrap.status !== "error") {
       // If we're in account phase, stay there while bootstrap runs in background
       if (!connected && !isSpectating) {
+        console.log("[useUnifiedOnboarding] -> account (bootstrap loading, not connected)");
         return "account";
       }
+      console.log("[useUnifiedOnboarding] -> loading (bootstrap not ready)");
       return "loading";
     }
 
     // 4. Bootstrap errored
     if (bootstrap.status === "error") {
+      console.log("[useUnifiedOnboarding] -> loading (bootstrap error)");
       return "loading"; // Show error in loading panel
     }
 
     // 5. Bootstrap ready, show onboarding/settlement if needed
     if (showBlankOverlay && (connected || isSpectating)) {
+      console.log("[useUnifiedOnboarding] -> settlement (ready, showBlankOverlay)");
       return "settlement";
     }
 
     // 6. All done
+    console.log("[useUnifiedOnboarding] -> ready");
     return "ready";
   }, [selectedWorldName, connected, isSpectating, showBlankOverlay, bootstrap.status, hasCompletedAvatar]);
 
@@ -227,5 +260,3 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     setupResult: bootstrap.setupResult,
   };
 };
-
-export type { BootstrapTask };

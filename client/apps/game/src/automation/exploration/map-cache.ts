@@ -1,4 +1,4 @@
-import { getMapFromToriiExact } from "@/dojo/queries";
+import { getEntitiesFromTorii, getMapFromToriiExact } from "@/dojo/queries";
 import {
   DEFAULT_COORD_ALT,
   Position,
@@ -125,7 +125,101 @@ const setNestedValue = <T>(map: Map<number, Map<number, T>>, col: number, row: n
   map.get(col)!.set(row, value);
 };
 
-const buildHexInfo = (id: number): HexEntityInfo => ({ id, owner: 0n });
+const normalizeEntityId = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
+    return value;
+  }
+
+  if (typeof value === "bigint" && value !== 0n) {
+    const normalized = Number(value);
+    return Number.isFinite(normalized) ? normalized : null;
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    const normalized = Number(value);
+    return Number.isFinite(normalized) && normalized !== 0 ? normalized : null;
+  }
+
+  return null;
+};
+
+const normalizeOwnerAddress = (value: unknown): bigint => {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number" && Number.isFinite(value) && value !== 0) return BigInt(value);
+  if (typeof value === "string" && value.length > 0) {
+    try {
+      return BigInt(value);
+    } catch {
+      return 0n;
+    }
+  }
+  return 0n;
+};
+
+const getStructureOwnerAddress = (components: ClientComponents, structureId: number): bigint => {
+  const structureEntity = getEntityIdFromKeys([BigInt(structureId)]);
+  const structure = getComponentValue(components.Structure, structureEntity);
+  return normalizeOwnerAddress(structure?.owner);
+};
+
+const getArmyOwnerAddress = (components: ClientComponents, armyId: number): bigint => {
+  const armyEntity = getEntityIdFromKeys([BigInt(armyId)]);
+  const explorer = getComponentValue(components.ExplorerTroops, armyEntity);
+  const ownerStructureId = normalizeEntityId(explorer?.owner);
+  if (!ownerStructureId) {
+    return 0n;
+  }
+
+  return getStructureOwnerAddress(components, ownerStructureId);
+};
+
+const buildHexInfo = (id: number, owner: bigint): HexEntityInfo => ({ id, owner });
+
+const hydrateOccupierEntities = async ({
+  components,
+  contractComponents,
+  toriiClient,
+  structureIds,
+  armyIds,
+}: {
+  components: ClientComponents;
+  contractComponents: any;
+  toriiClient: ToriiClient;
+  structureIds: Set<number>;
+  armyIds: Set<number>;
+}) => {
+  const occupierIds = new Set<number>([...structureIds, ...armyIds]);
+  if (occupierIds.size > 0) {
+    await getEntitiesFromTorii(
+      toriiClient,
+      contractComponents,
+      [...occupierIds],
+      ["s1_eternum-Structure", "s1_eternum-ExplorerTroops"],
+    );
+  }
+
+  const ownerStructureIds = new Set<number>();
+  armyIds.forEach((armyId) => {
+    const explorerEntity = getEntityIdFromKeys([BigInt(armyId)]);
+    const explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
+    const ownerStructureId = normalizeEntityId(explorer?.owner);
+    if (ownerStructureId) {
+      ownerStructureIds.add(ownerStructureId);
+    }
+  });
+
+  if (ownerStructureIds.size === 0) {
+    return;
+  }
+
+  const unresolvedOwnerStructures = [...ownerStructureIds].filter(
+    (ownerStructureId) => getStructureOwnerAddress(components, ownerStructureId) === 0n,
+  );
+
+  if (unresolvedOwnerStructures.length > 0) {
+    await getEntitiesFromTorii(toriiClient, contractComponents, unresolvedOwnerStructures, ["s1_eternum-Structure"]);
+  }
+};
 
 type SnapshotParams = {
   components: ClientComponents;
@@ -164,6 +258,9 @@ export const buildExplorationSnapshot = async ({
   const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
   const questHexes = new Map<number, Map<number, HexEntityInfo>>();
   const chestHexes = new Map<number, Map<number, HexEntityInfo>>();
+  const occupiers: Array<{ col: number; row: number; id: number; type: TileOccupier }> = [];
+  const structureOccupierIds = new Set<number>();
+  const armyOccupierIds = new Set<number>();
 
   for (let col = minCol; col <= maxCol; col += 1) {
     for (let row = minRow; row <= maxRow; row += 1) {
@@ -177,21 +274,56 @@ export const buildExplorationSnapshot = async ({
         setNestedValue(exploredTiles, normalized.x, normalized.y, biome);
       }
 
-      if (tile.occupier_id && tile.occupier_id !== 0) {
-        const info = buildHexInfo(tile.occupier_id);
+      const occupierId = normalizeEntityId(tile.occupier_id);
+      if (occupierId) {
         const occupierType = tile.occupier_type as TileOccupier;
-        if (isTileOccupierQuest(occupierType)) {
-          setNestedValue(questHexes, normalized.x, normalized.y, info);
-        } else if (isTileOccupierChest(occupierType)) {
-          setNestedValue(chestHexes, normalized.x, normalized.y, info);
-        } else if (isTileOccupierStructure(occupierType)) {
-          setNestedValue(structureHexes, normalized.x, normalized.y, info);
-        } else {
-          setNestedValue(armyHexes, normalized.x, normalized.y, info);
+        occupiers.push({ col: normalized.x, row: normalized.y, id: occupierId, type: occupierType });
+
+        if (isTileOccupierStructure(occupierType)) {
+          structureOccupierIds.add(occupierId);
+        } else if (!isTileOccupierQuest(occupierType) && !isTileOccupierChest(occupierType)) {
+          armyOccupierIds.add(occupierId);
         }
       }
     }
   }
+
+  await hydrateOccupierEntities({
+    components,
+    contractComponents,
+    toriiClient,
+    structureIds: structureOccupierIds,
+    armyIds: armyOccupierIds,
+  });
+
+  occupiers.forEach(({ col, row, id, type }) => {
+    const isStructure = isTileOccupierStructure(type);
+    const isQuest = isTileOccupierQuest(type);
+    const isChest = isTileOccupierChest(type);
+    const owner = isStructure
+      ? getStructureOwnerAddress(components, id)
+      : isQuest || isChest
+        ? 0n
+        : getArmyOwnerAddress(components, id);
+    const info = buildHexInfo(id, owner);
+
+    if (isQuest) {
+      setNestedValue(questHexes, col, row, info);
+      return;
+    }
+
+    if (isChest) {
+      setNestedValue(chestHexes, col, row, info);
+      return;
+    }
+
+    if (isStructure) {
+      setNestedValue(structureHexes, col, row, info);
+      return;
+    }
+
+    setNestedValue(armyHexes, col, row, info);
+  });
 
   return {
     position: { col: centerCol, row: centerRow },

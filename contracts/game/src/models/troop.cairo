@@ -2,7 +2,7 @@ use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
-use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
+use crate::models::config::{TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig};
 use crate::models::position::Coord;
 use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use crate::utils::map::biomes::Biome;
@@ -45,6 +45,47 @@ pub impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
     }
 }
 
+#[generate_trait]
+pub impl TroopLimitImpl of TroopLimitTrait {
+    fn tier_modifier_divisor() -> u32 {
+        100
+    }
+
+    /// Max_Army_Size = (Deployment_Cap * Tier_Modifier) / (Tier_Strength * Tier_Modifier_Divisor)
+    fn max_army_size(self: TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
+        let deployment_cap: u32 = match level {
+            0 => self.settlement_deployment_cap,
+            1 => self.city_deployment_cap,
+            2 => self.kingdom_deployment_cap,
+            3 => self.empire_deployment_cap,
+            _ => {
+                panic!("unknown structure level");
+                0
+            },
+        };
+
+        let (tier_strength, tier_modifier) = match tier {
+            TroopTier::T1 => (self.t1_tier_strength, self.t1_tier_modifier),
+            TroopTier::T2 => (self.t2_tier_strength, self.t2_tier_modifier),
+            TroopTier::T3 => (self.t3_tier_strength, self.t3_tier_modifier),
+        };
+
+        let tier_strength: u32 = tier_strength.into();
+        let tier_modifier: u32 = tier_modifier.into();
+        (deployment_cap * tier_modifier) / (tier_strength * Self::tier_modifier_divisor())
+    }
+
+    // Returns (explorer_slot_limit, guard_slot_limit)
+    fn max_slot_size(level: u8) -> (u8, u8) {
+        match level {
+            0 => (1, 1),
+            1 => (3, 2),
+            2 => (5, 3),
+            3 => (8, 4),
+            _ => { panic!("unknown structure level"); },
+        }
+    }
+}
 
 #[derive(Copy, Drop, Serde, Introspect, DojoStore)]
 pub struct Troops {

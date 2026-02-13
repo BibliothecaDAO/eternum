@@ -8,8 +8,3 @@ export * from "./quests/quest-utils";
 export { ExplorationTable } from "./hints/exploration-table";
 export { HintModal, HintSection } from "./hints/hint-modal";
 export * from "./hints/utils";
-
-// Onboarding System - Exports used externally
-export { BlitzOnboarding } from "./onboarding/blitz";
-export { SpectateButton } from "./onboarding/spectate-button";
-export { LocalStepOne, SettleRealm, StepOne } from "./onboarding/steps";

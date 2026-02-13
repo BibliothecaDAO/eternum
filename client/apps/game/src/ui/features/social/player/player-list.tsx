@@ -5,7 +5,7 @@ import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
-import { type LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
+import { type LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";

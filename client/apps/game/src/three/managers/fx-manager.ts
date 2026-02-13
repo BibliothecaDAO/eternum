@@ -588,10 +588,10 @@ export class FXManager {
     }
 
     const texture = this.textures.get(config.textureUrl);
-    if (!texture || !texture.image) {
-      console.warn("Texture not loaded yet, skipping FX");
+    if (!texture) {
+      console.warn("Texture not registered for FX");
       return {
-        promise: Promise.reject("Texture not loaded"),
+        promise: Promise.reject("Texture not registered"),
         end: () => {},
         instance: undefined,
       };

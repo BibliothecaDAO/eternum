@@ -1,4 +1,3 @@
-import { ChestOpeningExperience, FloatingOpenButton } from "@/components/modules/chest-opening";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
@@ -8,15 +7,17 @@ import { Button } from "@/components/ui/button";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
+import { getPaginationWindow } from "@/lib/pagination";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
@@ -30,8 +31,18 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import Badge from "lucide-react/dist/esm/icons/badge";
 import Grid2X2 from "lucide-react/dist/esm/icons/grid-2x2";
 import Grid3X3 from "lucide-react/dist/esm/icons/grid-3x3";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 import { formatUnits } from "viem";
+
+const ChestOpeningExperience = lazy(async () => {
+  const module = await import("@/components/modules/chest-opening");
+  return { default: module.ChestOpeningExperience };
+});
+
+const FloatingOpenButton = lazy(async () => {
+  const module = await import("@/components/modules/chest-opening");
+  return { default: module.FloatingOpenButton };
+});
 
 export const Route = createLazyFileRoute("/$collection")({
   component: ManageCollectionRoute,
@@ -39,8 +50,12 @@ export const Route = createLazyFileRoute("/$collection")({
 
 function ManageCollectionRoute() {
   const { collection } = Route.useParams();
-  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
-  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const collectionAddress = collectionConfig?.address ?? "";
+  const collectionName = collectionConfig?.name ?? collection;
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
@@ -58,7 +73,8 @@ function ManageCollectionRoute() {
     queries: [
       {
         queryKey: ["tokenBalance", collection, address],
-        queryFn: () => (address ? fetchTokenBalancesWithMetadata(collectionAddress, address) : null),
+        queryFn: () =>
+          address && isValidCollection ? fetchTokenBalancesWithMetadata(collectionAddress, address) : null,
         refetchInterval: 8_000,
       },
     ],
@@ -66,8 +82,9 @@ function ManageCollectionRoute() {
 
   const { data: collectionStats } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
-    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    queryFn: ({ signal }) => fetchCollectionStatistics(collectionAddress, { signal }),
     refetchInterval: 60_000,
+    enabled: isValidCollection,
   });
 
   const getMetadataString = useCallback((token: MergedNftData) => {
@@ -113,10 +130,17 @@ function ManageCollectionRoute() {
   const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-  const [isListDialogOpen, setIsListDialogOpen] = useState(false);
 
-  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
-    `collection-${collection}`,
+  const { selectedPasses, togglePass, clearSelection } = useSelectedPassesStore(`collection-${collection}`);
+
+  const paginationWindow = useMemo(
+    () =>
+      getPaginationWindow({
+        currentPage,
+        totalPages,
+        maxVisiblePages: 7,
+      }),
+    [currentPage, totalPages],
   );
 
   const handlePageChange = (page: number) => {
@@ -160,6 +184,10 @@ function ManageCollectionRoute() {
       setInitialSelectedTokenId(null);
     }
   };
+
+  if (!isValidCollection) {
+    return <div className="text-center py-6 text-muted-foreground">Collection not available.</div>;
+  }
 
   if (!address) {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
@@ -215,28 +243,26 @@ function ManageCollectionRoute() {
         {/* Grid container - Removed extra bottom padding */}
         <div className="flex-grow pt-0 px-2 pb-4">
           <div className="flex flex-col gap-2">
-            <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-              {filteredTokens.length > 0 && (
-                <CollectionTokenGrid
-                  tokens={paginatedTokens}
-                  setIsTransferOpen={handleTransferClick}
-                  isCompactGrid={isCompactGrid}
-                  onToggleSelection={togglePass}
-                  pageId={`collection-${collection}`}
-                />
-              )}
+            {filteredTokens.length > 0 && (
+              <CollectionTokenGrid
+                tokens={paginatedTokens}
+                setIsTransferOpen={handleTransferClick}
+                isCompactGrid={isCompactGrid}
+                onToggleSelection={togglePass}
+                pageId={`collection-${collection}`}
+              />
+            )}
 
-              {filteredTokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  No {collectionName} match the selected filters.
-                </div>
-              )}
-              {totalTokens === 0 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  You do not own any {collectionName} NFTs yet.
-                </div>
-              )}
-            </Suspense>
+            {filteredTokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                No {collectionName} match the selected filters.
+              </div>
+            )}
+            {totalTokens === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                You do not own any {collectionName} NFTs yet.
+              </div>
+            )}
           </div>
         </div>
 
@@ -300,20 +326,59 @@ function ManageCollectionRoute() {
                 />
               </PaginationItem>
               {/* Pagination Links */}
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
+              {paginationWindow.showFirst && (
+                <PaginationItem>
                   <PaginationLink
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      handlePageChange(i + 1);
+                      handlePageChange(1);
                     }}
-                    isActive={currentPage === i + 1}
+                    isActive={currentPage === 1}
                   >
-                    {i + 1}
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+              )}
+              {paginationWindow.showFirst && paginationWindow.pages[0] > 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              {paginationWindow.pages.map((pageNumber) => (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(pageNumber);
+                    }}
+                    isActive={currentPage === pageNumber}
+                  >
+                    {pageNumber}
                   </PaginationLink>
                 </PaginationItem>
               ))}
+              {paginationWindow.showLast &&
+                paginationWindow.pages[paginationWindow.pages.length - 1] < totalPages - 1 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+              {paginationWindow.showLast && (
+                <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(totalPages);
+                    }}
+                    isActive={currentPage === totalPages}
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              )}
               <PaginationItem>
                 <PaginationNext
                   href="#"
@@ -342,12 +407,16 @@ function ManageCollectionRoute() {
 
         {/* Floating Open Chest Button - only shown for Loot Chest collection */}
         {isLootChestCollection && ownedChests.length > 0 && (
-          <FloatingOpenButton chestCount={ownedChests.length} onClick={() => setShowLootChestOpening(true)} />
+          <Suspense fallback={null}>
+            <FloatingOpenButton chestCount={ownedChests.length} onClick={() => setShowLootChestOpening(true)} />
+          </Suspense>
         )}
 
         {/* Chest Opening Experience */}
         {showLootChestOpening && (
-          <ChestOpeningExperience ownedChests={ownedChests} onClose={() => clearLootChestOpening()} />
+          <Suspense fallback={null}>
+            <ChestOpeningExperience ownedChests={ownedChests} onClose={() => clearLootChestOpening()} />
+          </Suspense>
         )}
       </>
     </div>

@@ -50,8 +50,6 @@ export const useOpenChest = () => {
         // const endTime = Date.now();
         // const transactionTime = endTime - startTime;
 
-        // console.log("Transaction time:", transactionTime);
-
         // Wait for transaction confirmation
         toast.success("Transaction sent! Opening chest...");
 

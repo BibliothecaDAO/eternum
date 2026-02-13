@@ -3,8 +3,8 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { type LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
-import { useLandingLeaderboardStore } from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+import { type LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
+import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
 import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,

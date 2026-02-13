@@ -9,6 +9,48 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-12",
+    title: "Building Cost Visual Feedback",
+    description:
+      "Missing resources in building construction costs now appear in red, making it easier to identify what resources you need to gather before building.",
+    type: "improvement",
+  },
+  {
+    date: "2026-02-11",
+    title: "Unit Selection Recovery After Moves",
+    description:
+      "Fixed a case where moved units could become unselectable after rapid chunk camera jumps by automatically recovering stale movement locks and refreshing map state.",
+    type: "fix",
+  },
+  {
+    date: "2026-02-11",
+    title: "Stable Chunk Refresh Recovery",
+    description:
+      "Fixed a world map issue where terrain could disappear after rapid cross-chunk movement, so map rendering now recovers automatically without requiring a full reload.",
+    type: "fix",
+  },
+  {
+    date: "2026-02-09",
+    title: "In-Game Leaderboard Live Updates",
+    description:
+      "Hyperstructure leaderboard points now refresh automatically while you play, so rankings stay current without reloading or switching tabs.",
+    type: "fix",
+  },
+  {
+    date: "2026-02-09",
+    title: "Auto-Refreshing MMR Leaderboard",
+    description:
+      "The Ranked leaderboard now refreshes automatically in the background, so standings update without needing to click Refresh.",
+    type: "fix",
+  },
+  {
+    date: "2026-02-05",
+    title: "New Landing Experience",
+    description:
+      "The landing page has been completely redesigned! Browse Live, Upcoming, and Ended games in organized columns. Register for games directly from the home screen. Faster game loading with instant entry - you'll land right at your realm. Mobile users get a new hamburger menu and contextual bottom tabs that change based on your current section.",
+    type: "feature",
+  },
+  {
     date: "2026-01-19",
     title: "Mobile Game Registration",
     description:

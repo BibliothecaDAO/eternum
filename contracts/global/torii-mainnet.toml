@@ -1,0 +1,27 @@
+world_address = "0x50ed913cc4b5fb11f50b5e1118d2999ee3e7917a7349bc34900fd76b307b5d"
+rpc = "https://api.cartridge.gg/x/starknet/mainnet"
+
+[server]
+http_cors_origins = ["*"]
+
+[indexing]
+controllers = true
+index_pending = true
+polling_interval = 1000
+max_concurrent_tasks = 2
+events_chunk_size = 128
+contracts = [
+    "ERC1155:0x7a21ad2b063162ae5fbfd4092d28a5655bc77d64c87eddb3c65e082a10938b3", # ctf
+    "ERC1155:0x19ec5ac3043a33e66ae1f073f28c1553b25b1ec725ce6b1b4c43e8c7c997f4a", # vault fees
+    "ERC1155:0x2b02d07b36d6488c4f00c5cb6d471a0578004d72edd870886c547b43f1178fc", # vault positions
+    "ERC20:0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",    # lords
+    # "ERC20:<address>",                                                              # mmr token (not yet deployed on mainnet)
+]
+
+[sql]
+historical = [
+    "pm-VaultNumerator",
+    "pm-VaultDenominator",
+    "pm-VaultNumeratorEvent",
+    "pm-VaultDenominatorEvent",
+]

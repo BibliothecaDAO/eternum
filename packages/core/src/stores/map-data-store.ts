@@ -147,7 +147,12 @@ export class MapDataStore {
     if (!entity) return undefined;
     const trimmed = entity.trim();
     if (!trimmed) return undefined;
-    return trimmed.toLowerCase();
+    const lower = trimmed.toLowerCase();
+    if (lower.startsWith("0x")) {
+      const stripped = lower.slice(2).replace(/^0+/, "") || "0";
+      return "0x" + stripped;
+    }
+    return lower;
   }
 
   private parseActiveProductions(
@@ -251,6 +256,21 @@ export class MapDataStore {
       MapDataStore.instance = new MapDataStore(refreshInterval, sqlApi);
     }
     return MapDataStore.instance;
+  }
+
+  /**
+   * Clear cached data and destroy the existing singleton (if any).
+   * Safe to call even if the instance hasn't been created yet.
+   * Used during game/world switches to prevent stale data from the
+   * previous world being served while the new world is bootstrapping.
+   * Destroys the instance so the next `getInstance()` call creates a
+   * fresh one with the new world's sqlApi reference.
+   */
+  public static clearIfExists(): void {
+    if (MapDataStore.instance) {
+      MapDataStore.instance.destroy();
+      MapDataStore.instance = null as any;
+    }
   }
 
   /**

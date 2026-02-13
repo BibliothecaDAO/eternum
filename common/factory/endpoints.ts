@@ -1,4 +1,4 @@
-export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet" | string;
+type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet" | string;
 
 /**
  * Returns the Factory Torii SQL base URL for a given chain.

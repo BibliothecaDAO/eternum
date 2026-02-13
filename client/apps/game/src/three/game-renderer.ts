@@ -702,6 +702,15 @@ export default class GameRenderer {
 
     document.body.style.background = "black";
     this.renderer.domElement.id = "main-canvas";
+
+    // CRITICAL: Remove any existing canvas before adding a new one
+    // This prevents memory leaks from multiple canvases when navigating home and back
+    const existingCanvas = document.getElementById("main-canvas");
+    if (existingCanvas) {
+      console.warn("[GameRenderer] Found existing canvas, removing it to prevent memory leak");
+      existingCanvas.remove();
+    }
+
     document.body.appendChild(this.renderer.domElement);
 
     // Set up periodic cleanup of the transition database
@@ -1274,6 +1283,12 @@ export default class GameRenderer {
     // Clear the renderer at the start of each frame
     this.renderer.clear();
 
+    const cycleProgress = useUIStore.getState().cycleProgress || 0;
+    this.hudScene.update(deltaTime, cycleProgress);
+    const weatherState = this.hudScene.getWeatherState();
+    this.worldmapScene.setWeatherAtmosphereState(weatherState);
+    this.hexceptionScene.setWeatherAtmosphereState(weatherState);
+
     // Render the current game scene
     const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
     if (isWorldMap) {
@@ -1289,13 +1304,11 @@ export default class GameRenderer {
       this.labelRenderer.render(activeScene, this.camera);
     }
     this.composer.render();
-    // Render the HUD scene without clearing the buffer
-    const cycleProgress = useUIStore.getState().cycleProgress || 0;
-    this.hudScene.update(deltaTime, cycleProgress);
 
     // Update post-processing based on weather state
     this.updateWeatherPostProcessing();
 
+    // Render the HUD scene without clearing the buffer
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     if (shouldRenderLabels) {

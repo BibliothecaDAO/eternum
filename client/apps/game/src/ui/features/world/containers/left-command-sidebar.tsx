@@ -1138,11 +1138,14 @@ export const LeftCommandSidebar = memo(() => {
     prevChatOpen.current = isChatOpen;
   }, [isChatOpen, setView, view]);
 
+  // listen to structure updates
+  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
   const structureInfo = useMemo(() => {
     // Include structureNameVersion to refresh cached info when renames happen locally.
     void structureNameVersion;
     return mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components);
-  }, [structureEntityId, account.address, components, structureNameVersion, mode]);
+  }, [structureEntityId, structure, account.address, components, structureNameVersion, mode]);
 
   const isRealmOrVillage = useMemo(
     () =>
