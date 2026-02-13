@@ -17,6 +17,40 @@ export const nameToPaddedFelt = (name: string) => {
   return `0x${padded}`;
 };
 
+const encodeShortString = (value: string): string => {
+  const bytes = new TextEncoder().encode(value);
+  let hex = "";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return `0x${hex}`;
+};
+
+export const deriveChainIdFromRpcUrl = (rpcUrl: string): string | null => {
+  if (!rpcUrl) return null;
+  try {
+    const url = new URL(rpcUrl);
+    const pathname = url.pathname;
+    const lowerPath = pathname.toLowerCase();
+
+    if (lowerPath.includes("/starknet/mainnet")) {
+      return "0x534e5f4d41494e"; // SN_MAIN
+    }
+    if (lowerPath.includes("/starknet/sepolia")) {
+      return "0x534e5f5345504f4c4941"; // SN_SEPOLIA
+    }
+
+    const match = pathname.match(/\/x\/([^/]+)\/katana/i);
+    if (!match) return null;
+
+    const slug = match[1];
+    const label = `WP_${slug.replace(/-/g, "_").toUpperCase()}`;
+    if (label.length > 31) return null;
+
+    return encodeShortString(label);
+  } catch {
+    return null;
+  }
+};
+
 const RPC_VERSION_PATH = "/rpc/v0_9";
 
 export const normalizeRpcUrl = (value: string) => {

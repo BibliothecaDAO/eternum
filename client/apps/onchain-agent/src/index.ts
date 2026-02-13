@@ -20,7 +20,8 @@ import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
 import { createApp } from "./tui/app";
 import { type DiscoveredWorld, discoverAllWorlds, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
-import { normalizeRpcUrl } from "./world/normalize";
+import { normalizeRpcUrl, deriveChainIdFromRpcUrl } from "./world/normalize";
+import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
@@ -148,15 +149,19 @@ function updateResultForKey(
 async function createRuntimeServices(
   config: AgentConfig,
   resolvedManifest?: { contracts: unknown[] },
+  worldProfile?: WorldProfile,
 ): Promise<RuntimeServices> {
   const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath)));
 
+  const chainId = deriveChainIdFromRpcUrl(config.rpcUrl) ?? config.chainId;
+
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
-    chainId: config.chainId,
+    chainId,
     gameName: config.gameName,
     basePath: config.sessionBasePath,
     manifest,
+    worldProfile,
   });
 
   const account = await session.connect();
@@ -182,6 +187,7 @@ export async function main() {
 
   let runtimeConfig: AgentConfig = loadConfig();
   let resolvedManifest: { contracts: unknown[] } | undefined;
+  let currentWorldProfile: WorldProfile | undefined;
 
   // World Discovery Flow — resolve config from factory unless all overrides are set
   const hasManualOverrides = runtimeConfig.rpcUrl && runtimeConfig.toriiUrl && runtimeConfig.worldAddress;
@@ -222,6 +228,7 @@ export async function main() {
 
     console.log("  Building world profile...");
     const profile = await buildWorldProfile(selected.chain, selected.name);
+    currentWorldProfile = profile;
     console.log("  Profile built. Resolving manifest...");
     resolvedManifest = await buildResolvedManifest(selected.chain, profile);
     console.log("  Manifest resolved.");
@@ -229,6 +236,7 @@ export async function main() {
     runtimeConfig.rpcUrl = normalizeRpcUrl(profile.rpcUrl ?? runtimeConfig.rpcUrl);
     runtimeConfig.toriiUrl = `${profile.toriiBaseUrl}/sql`;
     runtimeConfig.worldAddress = profile.worldAddress;
+    runtimeConfig.chainId = deriveChainIdFromRpcUrl(runtimeConfig.rpcUrl) ?? runtimeConfig.chainId;
   }
 
   console.log("  Connecting controller session...");
@@ -246,7 +254,7 @@ export async function main() {
     });
   }
 
-  let services = await createRuntimeServices(runtimeConfig, resolvedManifest);
+  let services = await createRuntimeServices(runtimeConfig, resolvedManifest, currentWorldProfile);
   const adapter = new MutableGameAdapter(services.adapter);
 
   let runtimeAgent: ReturnType<typeof createGameAgent> | null = null;
@@ -307,7 +315,7 @@ export async function main() {
     const backendChanged = Array.from(changedKeys).some((key) => BACKEND_KEYS.has(key));
     if (backendChanged) {
       try {
-        const nextServices = await createRuntimeServices(candidate, resolvedManifest);
+        const nextServices = await createRuntimeServices(candidate, resolvedManifest, currentWorldProfile);
         adapter.setAdapter(nextServices.adapter);
         services.client.disconnect();
         services = nextServices;

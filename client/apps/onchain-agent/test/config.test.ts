@@ -8,6 +8,7 @@ const ENV_KEYS = [
   "WORLD_ADDRESS",
   "MANIFEST_PATH",
   "CHAIN_ID",
+  "CHAIN",
   "SESSION_BASE_PATH",
   "TICK_INTERVAL_MS",
   "LOOP_ENABLED",
@@ -95,6 +96,34 @@ describe("loadConfig", () => {
   it("defaults GAME_NAME to eternum", () => {
     delete process.env.GAME_NAME;
     expect(loadConfig().gameName).toBe("eternum");
+  });
+
+  it("derives chain ID from RPC_URL when CHAIN_ID is not set", () => {
+    delete process.env.CHAIN_ID;
+    process.env.CHAIN = "slot";
+    process.env.RPC_URL = "https://api.cartridge.gg/x/my-test-world/katana/rpc/v0_9";
+
+    const cfg = loadConfig();
+    // Should be derived from URL slug, not the static KATANA fallback
+    expect(cfg.chainId).not.toBe("0x4b4154414e41");
+    expect(cfg.chainId.startsWith("0x")).toBe(true);
+  });
+
+  it("falls back to static chain ID when RPC_URL has no recognizable pattern", () => {
+    delete process.env.CHAIN_ID;
+    process.env.CHAIN = "slot";
+    process.env.RPC_URL = "http://localhost:5050";
+
+    const cfg = loadConfig();
+    expect(cfg.chainId).toBe("0x4b4154414e41"); // KATANA fallback
+  });
+
+  it("explicit CHAIN_ID takes precedence over RPC_URL derivation", () => {
+    process.env.CHAIN_ID = "0xcustom";
+    process.env.RPC_URL = "https://api.cartridge.gg/x/my-world/katana";
+
+    const cfg = loadConfig();
+    expect(cfg.chainId).toBe("0xcustom");
   });
 
   // === ETERNUM_AGENT_HOME cascading defaults ===
