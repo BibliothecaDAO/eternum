@@ -1,10 +1,14 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { fetchFactoryRows, decodePaddedFeltAscii, extractNameFelt } from "./factory-sql";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory, isToriiAvailable } from "./factory-resolver";
 import { patchManifestWithFactory } from "./manifest-patcher";
 import { normalizeRpcUrl } from "./normalize";
 import type { WorldProfile } from "./types";
+
+import manifestSlot from "../../../../../contracts/game/manifest_slot.json";
+import manifestSlottest from "../../../../../contracts/game/manifest_slottest.json";
+import manifestLocal from "../../../../../contracts/game/manifest_local.json";
+import manifestSepolia from "../../../../../contracts/game/manifest_sepolia.json";
+import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
 
 export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
 
@@ -197,30 +201,19 @@ export async function buildWorldProfile(chain: Chain, worldName: string): Promis
   };
 }
 
-const MANIFEST_CHAIN_MAP: Record<Chain, string> = {
-  slot: "manifest_slot.json",
-  slottest: "manifest_slottest.json",
-  local: "manifest_local.json",
-  sepolia: "manifest_sepolia.json",
-  mainnet: "manifest_mainnet.json",
+const EMBEDDED_MANIFESTS: Record<Chain, { contracts: unknown[] }> = {
+  slot: manifestSlot as unknown as { contracts: unknown[] },
+  slottest: manifestSlottest as unknown as { contracts: unknown[] },
+  local: manifestLocal as unknown as { contracts: unknown[] },
+  sepolia: manifestSepolia as unknown as { contracts: unknown[] },
+  mainnet: manifestMainnet as unknown as { contracts: unknown[] },
 };
 
 export async function buildResolvedManifest(chain: Chain, profile: WorldProfile): Promise<{ contracts: unknown[] }> {
-  const manifestFile = MANIFEST_CHAIN_MAP[chain];
-  const manifestPath = path.resolve(
-    import.meta.dirname,
-    "..",
-    "..",
-    "..",
-    "..",
-    "..",
-    "contracts",
-    "game",
-    manifestFile,
-  );
-
-  const raw = await readFile(manifestPath, "utf8");
-  const baseManifest = JSON.parse(raw);
+  const baseManifest = EMBEDDED_MANIFESTS[chain];
+  if (!baseManifest) {
+    throw new Error(`No embedded manifest for chain: ${chain}`);
+  }
 
   return patchManifestWithFactory(baseManifest, profile.worldAddress, profile.contractsBySelector);
 }
