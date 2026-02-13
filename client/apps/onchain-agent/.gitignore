@@ -1,2 +1,5 @@
 session.json
 .env
+axis
+dist-bun/
+*.wasm

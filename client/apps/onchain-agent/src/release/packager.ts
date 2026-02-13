@@ -51,7 +51,14 @@ function hashFileSha256(filePath: string): string {
 }
 
 function buildTargetBinary(packageDir: string, target: string, outputPath: string): void {
-  execFileSync("bun", ["build", "src/cli.ts", "--compile", "--target", `bun-${target}`, "--outfile", outputPath], {
+  // Two-step build: bundle with wasm plugin first, then compile for target.
+  // Step 1: bundle src/cli.ts -> dist-bun/cli.js (embeds WASM via plugin)
+  execFileSync("bun", ["run", "build.ts"], {
+    cwd: packageDir,
+    stdio: "inherit",
+  });
+  // Step 2: compile the bundle into a standalone binary for the target
+  execFileSync("bun", ["build", "dist-bun/cli.js", "--compile", "--target", `bun-${target}`, "--outfile", outputPath], {
     cwd: packageDir,
     stdio: "inherit",
   });
