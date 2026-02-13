@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-13",
+    title: "Compact Laptop Tile Panel",
+    description:
+      "The bottom-right world panel now uses a tighter laptop layout with cleaner spacing, abbreviated secondary labels, and preserved core actions so tile details stay readable on smaller screens.",
+    type: "improvement",
+  },
+  {
     date: "2026-02-12",
     title: "Building Cost Visual Feedback",
     description:

@@ -124,13 +124,13 @@ const PanelFrame = ({ title, children, headerAction, className, attached = false
     )}
     style={{ height: BOTTOM_PANEL_HEIGHT }}
   >
-    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2">
-      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
+    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2 lg:px-3 lg:py-1.5 2xl:px-4 2xl:py-2">
+      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70 lg:text-[10px] lg:tracking-[0.28em] 2xl:text-[11px] 2xl:tracking-[0.35em]">
         {title}
       </p>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
-    <div className="flex-1 min-h-0 overflow-hidden px-3 py-2">{children}</div>
+    <div className="flex-1 min-h-0 overflow-hidden px-3 py-2 lg:px-2 lg:py-1.5 2xl:px-3 2xl:py-2">{children}</div>
   </section>
 );
 
@@ -156,7 +156,7 @@ const PanelTabs = ({
   onSelect: (tab: BottomPanelTabId) => void;
   className?: string;
 }) => (
-  <div className={cn("pointer-events-auto flex gap-2", className)}>
+  <div className={cn("pointer-events-auto flex gap-2 lg:gap-1.5 2xl:gap-2", className)}>
     {tabs.map(({ id, label, icon: Icon }) => {
       const isActive = activeTab === id;
       return (
@@ -166,7 +166,7 @@ const PanelTabs = ({
           onClick={() => onSelect(id)}
           aria-pressed={isActive}
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-md border transition",
+            "flex h-11 w-11 items-center justify-center rounded-md border transition",
             isActive
               ? "border-gold/80 bg-black/80 text-gold shadow-[0_6px_18px_rgba(255,209,128,0.25)] ring-1 ring-gold/40"
               : "border-gold/30 bg-black/70 text-gold/70 hover:border-gold/60 hover:text-gold",
@@ -292,7 +292,7 @@ const MapTilePanel = () => {
       <Button
         variant="outline"
         size="xs"
-        className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+        className="gap-1.5 rounded-full border-gold/60 px-2.5 py-1 text-[11px] lg:px-2 lg:py-0.5 2xl:px-3 2xl:py-1"
         forceUppercase={false}
         onClick={handleResyncCurrentEntity}
         withoutSound
@@ -304,7 +304,7 @@ const MapTilePanel = () => {
         ) : (
           <RefreshCw className="h-3.5 w-3.5" />
         )}
-        <span>{isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}</span>
+        <span className="hidden 2xl:inline">{isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}</span>
       </Button>
     ) : null;
 
@@ -550,7 +550,7 @@ const LocalTilePanel = () => {
     <Button
       variant="outline"
       size="xs"
-      className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+      className="gap-1.5 rounded-full border-gold/60 px-2.5 py-1 text-[11px] lg:px-2 lg:py-0.5 2xl:px-3 2xl:py-1"
       forceUppercase={false}
       onClick={handleResyncStructure}
       withoutSound
@@ -558,7 +558,7 @@ const LocalTilePanel = () => {
       aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
     >
       {isSyncingStructure ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-      <span>{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
+      <span className="hidden 2xl:inline">{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
     </Button>
   ) : null;
 
@@ -630,20 +630,20 @@ const LocalTilePanel = () => {
           </div>
         ) : hasBuilding ? (
           <div className="h-full min-h-0 overflow-hidden">
-            <div className="flex flex-col gap-3 text-xs text-gold">
+            <div className="flex flex-col gap-3 text-xs text-gold lg:gap-2 2xl:gap-3">
               {isPaused && (
-                <div className="flex items-center justify-between gap-2 py-2 px-3 bg-red/20 rounded">
+                <div className="flex flex-col items-start gap-2 rounded bg-red/20 px-3 py-2 lg:gap-1.5 2xl:flex-row 2xl:items-center 2xl:justify-between 2xl:gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
                     ⚠️ Production Paused
                   </span>
                   {isOwnedByPlayer && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full items-center gap-2 2xl:w-auto">
                       <Button
                         size="xs"
                         variant="outline"
                         disabled={isActionLoading}
                         onClick={handleToggleProduction}
-                        className="text-xxs h-6 bg-green/20 hover:bg-green/40 border-green/50"
+                        className="h-6 border-green/50 bg-green/20 text-xxs hover:bg-green/40"
                       >
                         ▶ Resume
                       </Button>
@@ -663,14 +663,23 @@ const LocalTilePanel = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-2 2xl:grid-cols-2 2xl:gap-3">
                 <div className="space-y-1">
                   <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">
-                    {isCastleTile ? "Labor rate" : "Produces per sec"}
+                    {isCastleTile ? (
+                      "Labor rate"
+                    ) : (
+                      <>
+                        <span className="hidden 2xl:inline">Produces per sec</span>
+                        <span className="2xl:hidden">Output / sec</span>
+                      </>
+                    )}
                   </p>
                   {producedResource && producedResourceName ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-green-300">+{producedPerTick}</span>
+                      <span className="text-sm font-semibold text-green-300 lg:text-xs 2xl:text-sm">
+                        +{producedPerTick}
+                      </span>
                       <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
                       <button
                         type="button"
@@ -717,15 +726,16 @@ const LocalTilePanel = () => {
 
                 <div className="space-y-1">
                   <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Population</p>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-1.5 text-sm lg:text-xs 2xl:gap-2 2xl:text-sm">
                     {populationCost !== 0 && (
-                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
-                        Cost +{populationCost}
+                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold lg:px-1.5 lg:py-0.5 lg:text-[10px] 2xl:px-2 2xl:py-1 2xl:text-xxs">
+                        <span className="hidden 2xl:inline">Cost </span>+{populationCost}
                       </span>
                     )}
                     {populationCapacity !== 0 && (
-                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
-                        Capacity +{populationCapacity}
+                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold lg:px-1.5 lg:py-0.5 lg:text-[10px] 2xl:px-2 2xl:py-1 2xl:text-xxs">
+                        <span className="hidden 2xl:inline">Capacity </span>
+                        <span className="2xl:hidden">Cap </span>+{populationCapacity}
                       </span>
                     )}
                     {populationCost === 0 && populationCapacity === 0 && (
@@ -736,7 +746,10 @@ const LocalTilePanel = () => {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes per sec</p>
+                <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">
+                  <span className="hidden 2xl:inline">Consumes per sec</span>
+                  <span className="2xl:hidden">Inputs / sec</span>
+                </p>
                 {ongoingCost.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {ongoingCost.map((entry, index) => {
@@ -744,9 +757,11 @@ const LocalTilePanel = () => {
                       return (
                         <div
                           key={`${entry.resource}-${index}`}
-                          className="flex items-center gap-2 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                          className="flex items-center gap-1.5 rounded border border-gold/20 bg-black/40 px-2 py-1 lg:px-1.5 lg:py-0.5 2xl:gap-2 2xl:px-2 2xl:py-1"
                         >
-                          <span className="text-xxs font-semibold text-red-200">-{entry.amount}</span>
+                          <span className="text-xxs font-semibold text-red-200 lg:text-[10px] 2xl:text-xxs">
+                            -{entry.amount}
+                          </span>
                           <button
                             type="button"
                             className="flex h-6 w-6 items-center justify-center rounded"
@@ -794,7 +809,7 @@ const LocalTilePanel = () => {
                           type="button"
                           key={`build-cost-${entry.resource}-${index}`}
                           className={cn(
-                            "relative flex items-center gap-2 rounded px-2 py-1.5 text-[11px] shadow-inner",
+                            "relative flex items-center gap-1.5 rounded px-2 py-1.5 text-[11px] shadow-inner lg:px-1.5 lg:py-1 lg:text-[10px] 2xl:gap-2 2xl:px-2 2xl:py-1.5 2xl:text-[11px]",
                             hasEnough
                               ? "bg-gold/5 border border-gold/10 text-gold/80"
                               : "bg-red-900/15 border border-red-500/30 text-red-100",
@@ -818,7 +833,7 @@ const LocalTilePanel = () => {
                             {formatResourceAmount(balance)}
                           </span>
                           <span className={cn("text-[11px]", hasEnough ? "text-gold/70" : "text-red-200")}>
-                            / {entry.amount}
+                            / {formatResourceAmount(entry.amount)}
                           </span>
                         </button>
                       );
@@ -828,16 +843,17 @@ const LocalTilePanel = () => {
               )}
 
               {isOwnedByPlayer && (
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap gap-1.5 pt-1 2xl:gap-2">
                   {canAddProduction && (
                     <Button
                       size="xs"
                       variant="gold"
                       disabled={isActionLoading}
                       onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-                      className="text-xxs h-7"
+                      className="h-7 text-xxs lg:h-6 lg:px-2 2xl:h-7"
                     >
-                      + Production
+                      + <span className="hidden 2xl:inline">Production</span>
+                      <span className="2xl:hidden">Prod</span>
                     </Button>
                   )}
                   {buildingCategory !== BuildingType.WorkersHut && (
@@ -846,7 +862,7 @@ const LocalTilePanel = () => {
                       variant="outline"
                       disabled={isActionLoading}
                       onClick={handleToggleProduction}
-                      className="text-xxs h-7"
+                      className="h-7 text-xxs lg:h-6 lg:px-2 2xl:h-7"
                     >
                       {isPaused ? "▶ Resume" : "⏸ Pause"}
                     </Button>
@@ -857,17 +873,17 @@ const LocalTilePanel = () => {
                       variant="danger"
                       disabled={isActionLoading}
                       onClick={handleDestroy}
-                      className="text-xxs h-7 flex items-center gap-2"
+                      className="flex h-7 items-center gap-2 text-xxs lg:h-6 lg:px-2 2xl:h-7"
                     >
                       <Trash2 className="h-3 w-3" />
-                      {showDestroyConfirm ? "Confirm" : "Delete"}
+                      {showDestroyConfirm ? "Confirm" : <span className="hidden 2xl:inline">Delete</span>}
                     </Button>
                   )}
                 </div>
               )}
 
               {isCastleTile && structureUpgrade && (
-                <div className="space-y-2 rounded border border-gold/15 bg-black/40 p-2">
+                <div className="space-y-2 rounded border border-gold/15 bg-black/40 p-2 lg:space-y-1.5 lg:p-1.5 2xl:space-y-2 2xl:p-2">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">
                       Upgrade {structureUpgrade.nextLevelName ? `to ${structureUpgrade.nextLevelName}` : "(max)"}
@@ -976,7 +992,7 @@ const MinimapPanel = () => {
   return (
     <PanelFrame title="Minimap" attached>
       <div className="relative flex h-full min-h-0 flex-col">
-        <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
+        <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20 lg:min-h-[180px] 2xl:min-h-[220px]">
           <HexMinimap
             tiles={tiles}
             selectedHex={selectedHex}
@@ -1023,18 +1039,18 @@ export const BottomRightPanel = memo(() => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 z-[35] flex flex-col gap-4 px-0 transition-all duration-300 md:flex-row md:items-end md:justify-end",
+        "pointer-events-none fixed inset-x-0 z-[35] flex flex-col gap-4 px-0 transition-all duration-300 md:flex-row md:items-end md:justify-end md:gap-3 lg:gap-2 2xl:gap-4",
         shouldShow ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-6",
       )}
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="relative w-full md:w-[37%] lg:w-[27%] md:ml-auto min-h-[44px]">
+      <div className="relative min-h-[44px] w-full md:ml-auto md:w-[40%] lg:w-[31%] xl:w-[29%] 2xl:w-[27%]">
         <PanelTabs
           tabs={availableTabs}
           activeTab={activeTab}
           onSelect={handleTabToggle}
-          className="absolute right-2 bottom-full pb-2"
+          className="absolute bottom-full right-2 pb-2 lg:pb-1.5 2xl:pb-2"
         />
         <div className="pointer-events-auto">
           <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
