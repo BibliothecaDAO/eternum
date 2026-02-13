@@ -849,9 +849,15 @@ register(
     `IMPORTANT: Use a path from "Free building paths" shown in your world state — these are confirmed unoccupied slots. Do NOT guess paths. ${BUILDING_GUIDE}`,
   [
     n("entityId", "Structure entity ID to build at"),
-    na("directions", `Path from center hex to building slot — MUST have at least 1 direction. Direction IDs: ${DIR}. Use paths listed above per ring.`),
+    na(
+      "directions",
+      `Path from center hex to building slot — MUST have at least 1 direction. Direction IDs: ${DIR}. Use paths listed above per ring.`,
+    ),
     n("buildingCategory", `Building category ID. ${BUILDING_TYPES}`),
-    b("useSimple", "true = pay only Labor (higher amount, no other resources). false = pay Labor + specific resources. T2/T3 military buildings are NOT available in simple mode"),
+    b(
+      "useSimple",
+      "true = pay only Labor (higher amount, no other resources). false = pay Labor + specific resources. T2/T3 military buildings are NOT available in simple mode",
+    ),
   ],
   (client, signer, p) =>
     wrapTx(() =>

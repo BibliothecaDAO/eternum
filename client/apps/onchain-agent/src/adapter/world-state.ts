@@ -395,10 +395,7 @@ function allDirectionPaths(maxRing: number): number[][] {
 }
 
 /** Compute free direction paths given occupied inner coords and structure level. */
-function computeFreeSlots(
-  occupiedCoords: Set<string>,
-  level: number,
-): string[] {
+function computeFreeSlots(occupiedCoords: Set<string>, level: number): string[] {
   const maxRing = level + 1;
   const paths = allDirectionPaths(maxRing);
   const free: string[] = [];
@@ -416,11 +413,29 @@ function computeFreeSlots(
 // WorkersHut=0, Labor=0, resource buildings=2, military/donkey=3, Wheat/Fish=1
 const BUILDING_POP_COST: Record<number, number> = {
   1: 0, // WorkersHut
-  3: 2, 4: 2, 5: 2, 6: 2, 7: 2, 9: 2, 11: 2, 13: 2, 21: 2, 24: 2, // resources
+  3: 2,
+  4: 2,
+  5: 2,
+  6: 2,
+  7: 2,
+  9: 2,
+  11: 2,
+  13: 2,
+  21: 2,
+  24: 2, // resources
   25: 0, // Labor
   27: 3, // Donkey
-  28: 3, 29: 3, 30: 3, 31: 3, 32: 3, 33: 3, 34: 3, 35: 3, 36: 3, // military
-  37: 1, 38: 1, // Wheat, Fish
+  28: 3,
+  29: 3,
+  30: 3,
+  31: 3,
+  32: 3,
+  33: 3,
+  34: 3,
+  35: 3,
+  36: 3, // military
+  37: 1,
+  38: 1, // Wheat, Fish
   39: 2, // Essence
 };
 const WORKERS_HUT_CAPACITY = 6;
@@ -751,8 +766,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
         dirId: n.dirId,
         explored,
         occupied,
-        biome: explored ? BIOME_NAMES[tile!.biome] ?? `Biome${tile!.biome}` : undefined,
-        occupant: occupied ? OCCUPIER_NAMES[occupierType] ?? `Type${occupierType}` : undefined,
+        biome: explored ? (BIOME_NAMES[tile!.biome] ?? `Biome${tile!.biome}`) : undefined,
+        occupant: occupied ? (OCCUPIER_NAMES[occupierType] ?? `Type${occupierType}`) : undefined,
         occupantId: occupied ? occupierId : undefined,
       };
     });
@@ -765,10 +780,10 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   const resources = new Map<string, number>();
   if (ownedEntityIds.length > 0) {
     try {
-      const [balanceRows, buildingRows] = await Promise.all([
+      const [balanceRows, buildingRows] = (await Promise.all([
         client.sql.fetchResourceBalancesAndProduction(ownedEntityIds),
         client.sql.fetchBuildingsByStructures(ownedEntityIds).catch(() => [] as any[]),
-      ]) as [any[], any[]];
+      ])) as [any[], any[]];
 
       // Group building positions by structure entity ID → occupied inner coords
       const buildingsByStructure = new Map<number, Set<string>>();
@@ -841,7 +856,10 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
 
   // --- DEBUG LOG ---
   try {
-    const debugPath = join(process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"), "debug-world-state.log");
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-world-state.log",
+    );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();
     const lines: string[] = [
@@ -854,22 +872,30 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       ...Array.from(new Set(rawStructures.map((s: any) => s.owner_address))).map((addr: any) => `  ${addr}`),
       ``,
       `ALL structures from SQL (first 10):`,
-      ...rawStructures.slice(0, 10).map((s: any, i: number) =>
-        `  [${i}] entity_id=${s.entity_id} owner_address=${s.owner_address} owner_name=${s.owner_name} coord=(${s.coord_x},${s.coord_y}) type=${s.structure_type} level=${s.level}`
-      ),
+      ...rawStructures
+        .slice(0, 10)
+        .map(
+          (s: any, i: number) =>
+            `  [${i}] entity_id=${s.entity_id} owner_address=${s.owner_address} owner_name=${s.owner_name} coord=(${s.coord_x},${s.coord_y}) type=${s.structure_type} level=${s.level}`,
+        ),
       ``,
       `Ownership matches (sameAddress with ${accountAddress}):`,
       ...rawStructures
         .filter((s: any) => sameAddress(s.owner_address, accountAddress))
-        .map((s: any) => `  OWNED: entity_id=${s.entity_id} owner=${s.owner_address} coord=(${s.coord_x},${s.coord_y})`),
+        .map(
+          (s: any) => `  OWNED: entity_id=${s.entity_id} owner=${s.owner_address} coord=(${s.coord_x},${s.coord_y})`,
+        ),
       ...(rawStructures.filter((s: any) => sameAddress(s.owner_address, accountAddress)).length === 0
         ? [`  ** NO STRUCTURES MATCHED **`]
         : []),
       ``,
       `ALL armies from SQL (first 10):`,
-      ...rawArmies.slice(0, 10).map((a: any, i: number) =>
-        `  [${i}] entity_id=${a.entity_id} owner_address=${a.owner_address} owner_name=${a.owner_name} coord=(${a.coord_x},${a.coord_y}) count=${a.count} tier=${a.tier}`
-      ),
+      ...rawArmies
+        .slice(0, 10)
+        .map(
+          (a: any, i: number) =>
+            `  [${i}] entity_id=${a.entity_id} owner_address=${a.owner_address} owner_name=${a.owner_name} coord=(${a.coord_x},${a.coord_y}) count=${a.count} tier=${a.tier}`,
+        ),
       ``,
       `Owned army matches:`,
       ...rawArmies
@@ -893,9 +919,18 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       `resources total (from SQL): ${resources.size}`,
       ...(resources.size > 0 ? Array.from(resources.entries()).map(([k, v]) => `  ${k}: ${v}`) : [`  (none)`]),
       `per-structure resources:`,
-      ...structureEntities.filter((e) => e.isOwned).map((e) =>
-        `  id=${e.entityId}: ${e.resources ? Array.from(e.resources.entries()).map(([k, v]) => `${k}=${v}`).join(", ") : "(none)"} | buildings: ${e.productionBuildings?.join(", ") ?? "(none)"}`
-      ),
+      ...structureEntities
+        .filter((e) => e.isOwned)
+        .map(
+          (e) =>
+            `  id=${e.entityId}: ${
+              e.resources
+                ? Array.from(e.resources.entries())
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join(", ")
+                : "(none)"
+            } | buildings: ${e.productionBuildings?.join(", ") ?? "(none)"}`,
+        ),
     ];
     writeFileSync(debugPath, lines.join("\n") + "\n", { flag: "a" });
   } catch (_) {
@@ -1063,7 +1098,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
         if (e.buildingSlots) {
           const { used, total, buildings } = e.buildingSlots;
           const free = total - used;
-          lines.push(`    Slots: ${used}/${total} used (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`);
+          lines.push(
+            `    Slots: ${used}/${total} used (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`,
+          );
         }
         // Free building slots (direction paths the agent can use for create_building)
         if (e.freeSlots && e.freeSlots.length > 0) {
@@ -1072,7 +1109,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
         // Population
         if (e.population) {
           const { current, capacity } = e.population;
-          lines.push(`    Population: ${current}/${capacity}${current >= capacity ? " FULL — build WorkersHut for +6 capacity" : ""}`);
+          lines.push(
+            `    Population: ${current}/${capacity}${current >= capacity ? " FULL — build WorkersHut for +6 capacity" : ""}`,
+          );
         }
         // Next realm upgrade
         if (e.nextUpgrade) {
@@ -1198,7 +1237,10 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
 
   // --- DEBUG: log the tick prompt the agent receives ---
   try {
-    const debugPath = join(process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"), "debug-tick-prompt.log");
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-tick-prompt.log",
+    );
     const ts = new Date().toISOString();
     writeFileSync(debugPath, `\n========== ${ts} ==========\n${result}\n`, { flag: "a" });
   } catch (_) {}

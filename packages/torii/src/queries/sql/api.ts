@@ -626,11 +626,18 @@ export class SqlApi {
    * Fetch occupied building positions for a set of structure entity IDs.
    * Returns inner_col, inner_row, category for each building placed at these structures.
    */
-  async fetchBuildingsByStructures(entityIds: number[]): Promise<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }[]> {
+  async fetchBuildingsByStructures(
+    entityIds: number[],
+  ): Promise<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }[]> {
     if (entityIds.length === 0) return [];
     const query = `SELECT outer_entity_id, inner_col, inner_row, category FROM \`s1_eternum-Building\` WHERE outer_entity_id IN (${entityIds.join(",")})`;
     const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }>(url, "Failed to fetch buildings by structures");
+    return await fetchWithErrorHandling<{
+      outer_entity_id: number;
+      inner_col: number;
+      inner_row: number;
+      category: number;
+    }>(url, "Failed to fetch buildings by structures");
   }
 
   /**
