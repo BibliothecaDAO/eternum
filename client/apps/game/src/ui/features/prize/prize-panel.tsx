@@ -20,6 +20,26 @@ import { commitAndClaimMMR } from "./utils/mmr-utils";
 import { WinnersTable } from "./components/winners-table";
 
 type RegisteredPlayer = { address: bigint; points: bigint };
+type SubmissionPhase =
+  | "idle"
+  | "preparing"
+  | "submitting_ranks"
+  | "updating_mmr"
+  | "success"
+  | "partial_success"
+  | "error";
+type SubmissionErrorStage = "validation" | "ranking" | "mmr";
+type SubmissionState = {
+  phase: SubmissionPhase;
+  message?: string;
+  progress?: { current: number; total: number };
+  errorStage?: SubmissionErrorStage;
+  errorMessage?: string;
+};
+type MmrRetryState = {
+  phase: "idle" | "updating" | "success" | "error";
+  message?: string;
+};
 
 export const PrizePanel = () => {
   const {
@@ -39,10 +59,8 @@ export const PrizePanel = () => {
   const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);
   const final = useMemo(
     () => (finalEntities[0] ? getComponentValue(components.PlayersRankFinal, finalEntities[0]) : undefined),
-    [finalEntities],
+    [finalEntities, components.PlayersRankFinal],
   );
-
-  console.log({ final, finalEntities });
   const finalTrialId = final?.trial_id as bigint | undefined;
 
   // All trials to find the one owned by the connected user
@@ -166,8 +184,8 @@ export const PrizePanel = () => {
 
   // Defaults
   const [playersPerTx, setPlayersPerTx] = useState<number>(200);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [submission, setSubmission] = useState<SubmissionState>({ phase: "idle" });
+  const [mmrRetry, setMmrRetry] = useState<MmrRetryState>({ phase: "idle" });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const mode = useGameModeConfig();
@@ -186,6 +204,8 @@ export const PrizePanel = () => {
   const myRemaining = Math.max(0, myCommitted - myRevealed);
   const myBatchEstimate = playersPerTx > 0 ? Math.ceil(myRemaining / playersPerTx) : 0;
   const rankingCompleted = myCommitted > 0 && myRemaining === 0;
+  const myTrialId = myTrial?.trial_id as bigint | undefined;
+  const hasMyTrial = Boolean(myTrialId);
 
   const rankingWindowOpen = hasFinal || seasonTiming.status === "ranking-open";
   const graceActive = seasonTiming.status === "grace";
@@ -244,22 +264,72 @@ export const PrizePanel = () => {
           ? `Finalization unlocks after the ${timelineSubjectLower} ends${countdownText ? ` (${countdownText})` : ""}.`
           : `Waiting on ${timelineSubjectLower} data.`;
 
+  const singleRegistrantNoGame = Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal;
+  const isSubmissionPending =
+    submission.phase === "preparing" || submission.phase === "submitting_ranks" || submission.phase === "updating_mmr";
+
+  const submitBlockedReason = useMemo(() => {
+    if (rankingCompleted) return "Ranking is already complete.";
+    if (!rankingWindowOpen && !singleRegistrantNoGame) {
+      return `Submission opens once ${timelineSubjectLower} and grace period end.`;
+    }
+    if (singleRegistrantNoGame && registeredAddresses.length !== 1) {
+      return "Single-player claim requires exactly one registered player.";
+    }
+    if (registeredPlayers.length === 0 && !singleRegistrantNoGame) {
+      return "No registered points are available yet.";
+    }
+    return null;
+  }, [
+    rankingCompleted,
+    rankingWindowOpen,
+    singleRegistrantNoGame,
+    timelineSubjectLower,
+    registeredAddresses.length,
+    registeredPlayers.length,
+  ]);
+
+  const submitButtonLabel = useMemo(() => {
+    if (singleRegistrantNoGame) {
+      return isSubmissionPending ? "Submitting Single-Player Claim..." : "Claim Single-Player Prize";
+    }
+    if (rankingCompleted) {
+      return "Ranking Complete";
+    }
+    if (isSubmissionPending) {
+      if (submission.phase === "updating_mmr") return "Updating MMR...";
+      if (submission.phase === "submitting_ranks") return "Submitting Rankings...";
+      return "Preparing Submission...";
+    }
+    if (!rankingWindowOpen) {
+      return `Ready When ${timelineSubject} Ends`;
+    }
+    return hasMyTrial ? "Continue Submission + Update MMR" : "Submit Rankings + Update MMR";
+  }, [singleRegistrantNoGame, isSubmissionPending, rankingCompleted, submission.phase, rankingWindowOpen, timelineSubject, hasMyTrial]);
+
   const handleStartOrContinue = async () => {
-    // Allow single-registrant claim even if no points registered
-    const singleReg = Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1;
+    if (submitBlockedReason) {
+      setSubmission({
+        phase: "error",
+        errorStage: "validation",
+        errorMessage: submitBlockedReason,
+        message: "Submission blocked.",
+      });
+      return;
+    }
+
     const hasFinalized = Boolean(finalTrialId && (finalTrialId as bigint) > 0n);
-    if (registeredPlayers.length === 0 && !(singleReg && !hasFinalized && registeredAddresses.length === 1)) return;
-    setIsSubmitting(true);
-    setStatus("Preparing…");
+    setSubmission({ phase: "preparing", message: "Preparing submission..." });
     try {
       // Special case: exactly one registration and no finalized ranking — claim back entry fee
-      if (singleReg && !hasFinalized) {
+      if (singleRegistrantNoGame && !hasFinalized) {
         const onlyRegistered = registeredAddresses.length === 1 ? registeredAddresses[0] : undefined;
         if (!onlyRegistered) {
           throw new Error("Could not determine registered player address");
         }
+        setSubmission({ phase: "submitting_ranks", message: "Submitting single-player prize claim..." });
         await blitz_prize_claim_no_game({ signer: account, registered_player: onlyRegistered.toString() });
-        setStatus("Done");
+        setSubmission({ phase: "success", message: "Single-player prize claim submitted." });
         toast("Submitted single-player prize claim", {
           description: `Entry fee returned to ${displayAddress(toHexString(onlyRegistered))}.`,
         });
@@ -280,15 +350,20 @@ export const PrizePanel = () => {
       // Determine which addresses still need to be submitted
       const remaining = addresses.slice(revealed, committed);
       if (remaining.length === 0 && myTrial) {
-        setStatus("No remaining players to submit.");
-        setIsSubmitting(false);
+        setSubmission({ phase: "success", message: "No remaining players to submit." });
         return;
       }
 
       // Chunk and submit
+      const totalBatches = Math.max(1, Math.ceil(remaining.length / playersPerTx));
       for (let i = 0; i < remaining.length; i += playersPerTx) {
         const chunk = remaining.slice(i, i + playersPerTx);
-        setStatus(`Submitting ${i + 1}-${Math.min(i + playersPerTx, remaining.length)} of ${remaining.length}…`);
+        const batchNumber = Math.floor(i / playersPerTx) + 1;
+        setSubmission({
+          phase: "submitting_ranks",
+          message: `Submitting ranking batch ${batchNumber}/${totalBatches}...`,
+          progress: { current: batchNumber, total: totalBatches },
+        });
         await blitz_prize_player_rank({
           signer: account,
           trial_id: trialId,
@@ -301,7 +376,7 @@ export const PrizePanel = () => {
       const shouldUpdateMMR =
         mmrEnabled && mmrTokenAddress && !isMMRCommitted && registeredPlayers.length >= mmrMinPlayers;
       if (shouldUpdateMMR) {
-        setStatus("Updating MMR...");
+        setSubmission({ phase: "updating_mmr", message: "Updating MMR..." });
         try {
           const registeredPlayerBigints = registeredPlayers.map((p) => p.address);
           const sortedAddresses = await commitAndClaimMMR({
@@ -310,31 +385,155 @@ export const PrizePanel = () => {
             rpcUrl,
             commitAndClaimGameMmr: commit_and_claim_game_mmr,
             signer: account,
-            onStatusChange: setStatus,
+            onStatusChange: (message) =>
+              setSubmission((prev) => ({ ...prev, phase: "updating_mmr", message, progress: undefined })),
           });
-          setStatus("Done");
+          setSubmission({
+            phase: "success",
+            message: `Rankings and MMR submitted for ${sortedAddresses.length} players.`,
+          });
           toast("Submitted blitz rankings and MMR update", {
             description: `Ranking finalized and MMR updated for ${sortedAddresses.length} players.`,
           });
         } catch (mmrError: unknown) {
           console.error("MMR update failed (ranking succeeded):", mmrError);
-          setStatus("Done (MMR update failed)");
           const errorMessage = mmrError instanceof Error ? mmrError.message : String(mmrError);
+          setSubmission({
+            phase: "partial_success",
+            message: "Rankings submitted, but MMR update failed.",
+            errorStage: "mmr",
+            errorMessage,
+          });
           toast("Submitted blitz rankings", {
             description: `Ranking finalized. MMR update failed: ${errorMessage}`,
           });
         }
       } else {
-        setStatus("Done");
+        const mmrSkipReason = !mmrEnabled
+          ? "MMR is disabled in this world."
+          : !mmrTokenAddress
+            ? "MMR token is not configured."
+            : isMMRCommitted
+              ? "MMR was already updated."
+              : registeredPlayers.length < mmrMinPlayers
+                ? `Need at least ${mmrMinPlayers} ranked players for MMR.`
+                : undefined;
+        setSubmission({
+          phase: "success",
+          message: mmrSkipReason ? `Rankings submitted. ${mmrSkipReason}` : "Rankings submitted.",
+        });
         toast("Submitted blitz rankings", { description: `Ranking reference ${String(trialId)} updated.` });
       }
     } catch (e: unknown) {
       console.error(e);
-      setStatus("Failed");
       const errorMessage = e instanceof Error ? e.message : String(e);
+      setSubmission({
+        phase: "error",
+        message: "Ranking submission failed.",
+        errorStage: "ranking",
+        errorMessage,
+      });
       toast("❌ Blitz ranking failed", { description: errorMessage });
-    } finally {
-      setIsSubmitting(false);
+    }
+  };
+
+  const submitButtonDisabled = isSubmissionPending || Boolean(submitBlockedReason);
+  const canRetryMMR =
+    hasFinal && mmrEnabled && Boolean(mmrTokenAddress) && !isMMRCommitted && registeredPlayers.length >= mmrMinPlayers;
+  const mmrRetryBlockedReason = !hasFinal
+    ? "MMR update is available once rankings are finalized."
+    : !mmrEnabled
+      ? "MMR is disabled in this world."
+      : !mmrTokenAddress
+        ? "MMR token is not configured."
+        : isMMRCommitted
+          ? "MMR was already updated."
+          : registeredPlayers.length < mmrMinPlayers
+            ? `Need at least ${mmrMinPlayers} ranked players for MMR.`
+            : null;
+  const submissionStageLabel =
+    submission.phase === "preparing"
+      ? "Preparing"
+      : submission.phase === "submitting_ranks"
+        ? "Submitting Rankings"
+        : "Updating MMR";
+  const submissionErrorTitle =
+    submission.errorStage === "mmr"
+      ? "MMR update failed"
+      : submission.errorStage === "validation"
+        ? "Submission blocked"
+        : "Ranking submission failed";
+  const submissionFeedback = (
+    <>
+      {submitBlockedReason && submission.phase === "idle" && (
+        <div className="rounded-md bg-gold/10 border border-gold/30 text-gold/80 p-2 text-xs">{submitBlockedReason}</div>
+      )}
+      {isSubmissionPending && (
+        <div className="rounded-md bg-gold/10 border border-gold/30 text-gold p-2 text-xs">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-gold/80 mb-1">{submissionStageLabel}</div>
+          <div>{submission.message ?? "Working..."}</div>
+          {submission.progress && (
+            <div className="text-gold/80 mt-1">
+              Batch {submission.progress.current}/{submission.progress.total}
+            </div>
+          )}
+        </div>
+      )}
+      {submission.phase === "success" && (
+        <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
+          {submission.message ?? "Submitted successfully."}
+        </div>
+      )}
+      {submission.phase === "partial_success" && (
+        <div className="rounded-md bg-yellow-500/10 border border-yellow-500/40 text-yellow-300 p-2 text-xs">
+          <div className="font-medium">{submission.message ?? "Rankings submitted with issues."}</div>
+          {submission.errorMessage && <div className="text-yellow-200/90 mt-1">{submission.errorMessage}</div>}
+        </div>
+      )}
+      {submission.phase === "error" && (
+        <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
+          <div className="font-medium">{submissionErrorTitle}</div>
+          {submission.errorMessage && <div className="text-danger/90 mt-1">{submission.errorMessage}</div>}
+        </div>
+      )}
+    </>
+  );
+
+  const handleRetryMMR = async () => {
+    if (!canRetryMMR || !mmrTokenAddress) {
+      setMmrRetry({
+        phase: "error",
+        message: mmrRetryBlockedReason ?? "MMR update is unavailable.",
+      });
+      return;
+    }
+
+    setMmrRetry({ phase: "updating", message: "Updating MMR..." });
+    try {
+      const registeredPlayerBigints = registeredPlayers.map((p) => p.address);
+      const sortedAddresses = await commitAndClaimMMR({
+        registeredPlayers: registeredPlayerBigints,
+        mmrTokenAddress,
+        rpcUrl,
+        commitAndClaimGameMmr: commit_and_claim_game_mmr,
+        signer: account,
+        onStatusChange: (message) => setMmrRetry({ phase: "updating", message }),
+      });
+      setMmrRetry({
+        phase: "success",
+        message: `MMR updated for ${sortedAddresses.length} players.`,
+      });
+      toast("Submitted MMR update", {
+        description: `MMR updated for ${sortedAddresses.length} players.`,
+      });
+    } catch (e: unknown) {
+      console.error("MMR retry failed", e);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setMmrRetry({
+        phase: "error",
+        message: errorMessage,
+      });
+      toast("MMR update failed", { description: errorMessage });
     }
   };
 
@@ -372,15 +571,49 @@ export const PrizePanel = () => {
               <ClaimBlitzPrizeButton />
               <div className="text-xs text-gold/70">Each ranked player can now claim their reward.</div>
             </div>
+            {mmrEnabled && !isMMRCommitted && (
+              <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex flex-col gap-3">
+                <div className="flex flex-col md:flex-row md:items-center gap-3">
+                  <Button
+                    className="md:w-auto"
+                    variant={canRetryMMR ? "primary" : "outline"}
+                    isLoading={mmrRetry.phase === "updating"}
+                    disabled={!canRetryMMR || mmrRetry.phase === "updating"}
+                    onClick={handleRetryMMR}
+                  >
+                    {mmrRetry.phase === "updating" ? "Updating MMR..." : "Retry MMR Update"}
+                  </Button>
+                  <div className="text-xs text-gold/70">
+                    Retry the MMR update here if the ranking flow completed but MMR submission failed.
+                  </div>
+                </div>
+                {mmrRetryBlockedReason && mmrRetry.phase === "idle" && (
+                  <div className="rounded-md bg-gold/10 border border-gold/30 text-gold/80 p-2 text-xs">
+                    {mmrRetryBlockedReason}
+                  </div>
+                )}
+                {mmrRetry.phase === "updating" && (
+                  <div className="rounded-md bg-gold/10 border border-gold/30 text-gold p-2 text-xs">
+                    {mmrRetry.message ?? "Updating MMR..."}
+                  </div>
+                )}
+                {mmrRetry.phase === "success" && (
+                  <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
+                    {mmrRetry.message ?? "MMR updated successfully."}
+                  </div>
+                )}
+                {mmrRetry.phase === "error" && (
+                  <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
+                    {mmrRetry.message ?? "Failed to update MMR."}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
-
-  // No global final yet: show the active ranking reference
-  const myTrialId = myTrial?.trial_id as bigint | undefined;
-  const hasMyTrial = Boolean(myTrialId);
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -471,20 +704,11 @@ export const PrizePanel = () => {
                 <Button
                   className="md:flex-1"
                   variant="primary"
-                  isLoading={isSubmitting}
-                  disabled={
-                    isSubmitting ||
-                    (!rankingWindowOpen &&
-                      !(Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal)) ||
-                    rankingCompleted
-                  }
+                  isLoading={isSubmissionPending}
+                  disabled={submitButtonDisabled}
                   onClick={handleStartOrContinue}
                 >
-                  {Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
-                    ? "Claim Single-Player Prize"
-                    : rankingCompleted
-                      ? "Ranking Complete"
-                      : "Continue Ranking"}
+                  {submitButtonLabel}
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
@@ -514,19 +738,7 @@ export const PrizePanel = () => {
                   </div>
                 </div>
               )}
-              {status === "Failed" && (
-                <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
-                  Failed to submit
-                </div>
-              )}
-              {status === "Done" && (
-                <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
-                  Submitted successfully.
-                </div>
-              )}
-              {status && status !== "Failed" && status !== "Done" && (
-                <div className="text-xs text-gold/60">{status}</div>
-              )}
+              {submissionFeedback}
             </div>
           </>
         ) : (
@@ -572,22 +784,11 @@ export const PrizePanel = () => {
                 <Button
                   className="md:flex-1"
                   variant="primary"
-                  isLoading={isSubmitting}
-                  disabled={
-                    isSubmitting ||
-                    (!rankingWindowOpen &&
-                      !(Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal)) ||
-                    rankingCompleted
-                  }
+                  isLoading={isSubmissionPending}
+                  disabled={submitButtonDisabled}
                   onClick={handleStartOrContinue}
                 >
-                  {Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
-                    ? "Claim Single-Player Prize"
-                    : rankingCompleted
-                      ? "Ranking Complete"
-                      : rankingWindowOpen
-                        ? "Start Ranking Submission"
-                        : `Ready When ${timelineSubject} Ends`}
+                  {submitButtonLabel}
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
@@ -615,19 +816,7 @@ export const PrizePanel = () => {
                   </div>
                 </div>
               )}
-              {status === "Failed" && (
-                <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
-                  Failed to start ranking. Try a smaller batch size or wait until the ranking window opens.
-                </div>
-              )}
-              {status === "Done" && (
-                <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
-                  Submitted successfully.
-                </div>
-              )}
-              {status && status !== "Failed" && status !== "Done" && (
-                <div className="text-xs text-gold/60">{status}</div>
-              )}
+              {submissionFeedback}
             </div>
           </>
         )}
