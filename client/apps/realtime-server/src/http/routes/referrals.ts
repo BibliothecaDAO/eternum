@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 
 import { and, eq, gt, sql } from "drizzle-orm";
-import { type Context, Hono } from "hono";
+import { Hono } from "hono";
 
 import {
   referralCreateSchema,
@@ -25,56 +25,167 @@ const STARKNET_ADDRESS_REGEX = /^0x[a-fA-F0-9]{1,64}$/;
 
 const roundToTwoDecimals = (value: number): number => Math.round(value * 100) / 100;
 
-const readVerifyKey = (c: Context<AppEnv>): string | null =>
-  c.req.header("x-referral-verify-key") ?? c.req.header("x-verify-key") ?? null;
+export interface ReferralCreateRecord {
+  id: string;
+  refereeAddress: string;
+  referrerAddress: string;
+  refereeUsername: string | null;
+  referrerUsername: string | null;
+  source: string;
+  hasPlayed: boolean;
+  gamesPlayed: number;
+  updatedAt: Date;
+}
 
-const requireVerifyKey = (c: Context<AppEnv>): boolean => {
-  const expected = process.env.REFERRAL_VERIFY_API_KEY;
-  if (!expected) {
-    return false;
-  }
+export interface ReferralStatsRow {
+  referrerAddress: string;
+  referrerUsername: string | null;
+  hasPlayed: boolean;
+  gamesPlayed: number;
+}
 
-  const received = readVerifyKey(c);
-  return received === expected;
+export interface ReferralVerificationUpdate {
+  refereeAddress: string;
+  gamesPlayed: number;
+  lastCheckedBlock: number | null;
+  updatedAt: Date;
+}
+
+export interface ReferralRepository {
+  createReferral(input: ReferralCreateRecord): Promise<unknown | null>;
+  listLeaderboardRows(): Promise<ReferralStatsRow[]>;
+  listReferrerRows(referrerAddress: string): Promise<ReferralStatsRow[]>;
+  updateReferralVerification(input: ReferralVerificationUpdate): Promise<boolean>;
+  getVerificationTotals(): Promise<{ total: number; verified: number }>;
+}
+
+const drizzleReferralRepository: ReferralRepository = {
+  async createReferral(input) {
+    const [created] = await db
+      .insert(referrals)
+      .values(input)
+      .onConflictDoNothing({
+        target: referrals.refereeAddress,
+      })
+      .returning();
+
+    return created ?? null;
+  },
+
+  async listLeaderboardRows() {
+    return db
+      .select({
+        referrerAddress: referrals.referrerAddress,
+        referrerUsername: referrals.referrerUsername,
+        hasPlayed: referrals.hasPlayed,
+        gamesPlayed: referrals.gamesPlayed,
+      })
+      .from(referrals)
+      .where(and(eq(referrals.hasPlayed, true), gt(referrals.gamesPlayed, 0)));
+  },
+
+  async listReferrerRows(referrerAddress) {
+    return db
+      .select({
+        referrerAddress: referrals.referrerAddress,
+        referrerUsername: referrals.referrerUsername,
+        hasPlayed: referrals.hasPlayed,
+        gamesPlayed: referrals.gamesPlayed,
+      })
+      .from(referrals)
+      .where(sql`lower(${referrals.referrerAddress}) = ${referrerAddress}`);
+  },
+
+  async updateReferralVerification(input) {
+    const [row] = await db
+      .update(referrals)
+      .set({
+        gamesPlayed: input.gamesPlayed,
+        hasPlayed: input.gamesPlayed > 0,
+        verifiedAt: input.gamesPlayed > 0 ? new Date() : null,
+        lastCheckedBlock: input.lastCheckedBlock,
+        updatedAt: input.updatedAt,
+      })
+      .where(eq(referrals.refereeAddress, input.refereeAddress))
+      .returning({ id: referrals.id });
+
+    return Boolean(row);
+  },
+
+  async getVerificationTotals() {
+    const [totals] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        verified: sql<number>`count(*) FILTER (WHERE ${referrals.hasPlayed} = true)::int`,
+      })
+      .from(referrals);
+
+    return {
+      total: totals?.total ?? 0,
+      verified: totals?.verified ?? 0,
+    };
+  },
 };
 
-const referralRoutes = new Hono<AppEnv>();
+export interface CreateReferralRoutesOptions {
+  repo?: ReferralRepository;
+  referralsEnabled?: boolean;
+  verifyApiKey?: string;
+}
 
-referralRoutes.use("/*", async (c, next) => {
-  if (process.env.REFERRALS_ENABLED === "false") {
-    return c.json({ error: "Referrals are disabled." }, 404);
-  }
+const readVerifyKey = (c: { req: { header: (name: string) => string | undefined } }): string | null =>
+  c.req.header("x-referral-verify-key") ?? c.req.header("x-verify-key") ?? null;
 
-  await next();
-});
+export const createReferralRoutes = (options?: CreateReferralRoutesOptions) => {
+  const repo = options?.repo ?? drizzleReferralRepository;
+  const referralsEnabled = options?.referralsEnabled ?? process.env.REFERRALS_ENABLED !== "false";
+  const verifyApiKey = options?.verifyApiKey ?? process.env.REFERRAL_VERIFY_API_KEY ?? null;
 
-referralRoutes.post("/", requirePlayerSession, async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const parsed = referralCreateSchema.safeParse(body);
+  const requireVerifyKey = (key: string | null): boolean => {
+    if (!verifyApiKey) {
+      return false;
+    }
 
-  if (!parsed.success) {
-    return c.json(formatZodError(parsed.error), 400);
-  }
+    return key === verifyApiKey;
+  };
 
-  const payload = parsed.data;
-  const session = c.get("playerSession")!;
+  const referralRoutes = new Hono<AppEnv>();
 
-  const relationship = validateReferralRelationship(payload.refereeAddress, payload.referrerAddress);
-  if (!relationship.ok) {
-    return c.json({ error: relationship.reason }, 400);
-  }
+  referralRoutes.use("/*", async (c, next) => {
+    if (!referralsEnabled) {
+      return c.json({ error: "Referrals are disabled." }, 404);
+    }
 
-  const sessionWallet = session.walletAddress?.trim() ?? "";
-  if (sessionWallet && STARKNET_ADDRESS_REGEX.test(sessionWallet)) {
+    await next();
+  });
+
+  referralRoutes.post("/", requirePlayerSession, async (c) => {
+    const body = await c.req.json().catch(() => null);
+    const parsed = referralCreateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
+
+    const payload = parsed.data;
+    const session = c.get("playerSession")!;
+
+    const relationship = validateReferralRelationship(payload.refereeAddress, payload.referrerAddress);
+    if (!relationship.ok) {
+      return c.json({ error: relationship.reason }, 400);
+    }
+
+    const sessionWallet = session.walletAddress?.trim() ?? "";
+    if (!sessionWallet || !STARKNET_ADDRESS_REGEX.test(sessionWallet)) {
+      return c.json({ error: "A valid wallet address is required." }, 403);
+    }
+
     const normalizedSessionWallet = normalizeReferralAddress(sessionWallet);
     if (normalizedSessionWallet !== payload.refereeAddress) {
       return c.json({ error: "Referee address must match the authenticated wallet address." }, 403);
     }
-  }
 
-  const [created] = await db
-    .insert(referrals)
-    .values({
+    const created = await repo.createReferral({
       id: randomUUID(),
       refereeAddress: payload.refereeAddress,
       referrerAddress: payload.referrerAddress,
@@ -84,159 +195,129 @@ referralRoutes.post("/", requirePlayerSession, async (c) => {
       hasPlayed: false,
       gamesPlayed: 0,
       updatedAt: new Date(),
-    })
-    .onConflictDoNothing({
-      target: referrals.refereeAddress,
-    })
-    .returning();
+    });
 
-  if (!created) {
-    return c.json({ error: "Referral already exists for this wallet." }, 409);
-  }
-
-  return c.json({ success: true, data: created }, 201);
-});
-
-referralRoutes.get("/leaderboard", async (c) => {
-  const parsed = referralLeaderboardQuerySchema.safeParse({
-    limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
-  });
-
-  if (!parsed.success) {
-    return c.json(formatZodError(parsed.error), 400);
-  }
-
-  const rows = await db
-    .select({
-      referrerAddress: referrals.referrerAddress,
-      referrerUsername: referrals.referrerUsername,
-      hasPlayed: referrals.hasPlayed,
-      gamesPlayed: referrals.gamesPlayed,
-    })
-    .from(referrals)
-    .where(and(eq(referrals.hasPlayed, true), gt(referrals.gamesPlayed, 0)));
-
-  const data = buildReferralLeaderboard(rows, parsed.data.limit ?? 50);
-  return c.json({ data });
-});
-
-referralRoutes.get("/stats", async (c) => {
-  const parsed = referralStatsQuerySchema.safeParse({
-    referrerAddress: c.req.query("referrerAddress") ?? undefined,
-  });
-
-  if (!parsed.success) {
-    return c.json(formatZodError(parsed.error), 400);
-  }
-
-  const session = c.get("playerSession");
-  const fallbackAddress = session?.walletAddress && STARKNET_ADDRESS_REGEX.test(session.walletAddress)
-    ? normalizeReferralAddress(session.walletAddress)
-    : null;
-  const referrerAddress = parsed.data.referrerAddress ?? fallbackAddress;
-
-  if (!referrerAddress) {
-    return c.json({ error: "Provide referrerAddress query or authenticate with a wallet address." }, 400);
-  }
-
-  const rows = await db
-    .select({
-      referrerAddress: referrals.referrerAddress,
-      referrerUsername: referrals.referrerUsername,
-      hasPlayed: referrals.hasPlayed,
-      gamesPlayed: referrals.gamesPlayed,
-    })
-    .from(referrals)
-    .where(sql`lower(${referrals.referrerAddress}) = ${referrerAddress}`);
-
-  let referrerUsername: string | null = null;
-  let referredPlayers = 0;
-  let verifiedPlayers = 0;
-  let totalGamesPlayed = 0;
-  let totalPoints = 0;
-
-  for (const row of rows) {
-    referredPlayers += 1;
-    if (!referrerUsername && row.referrerUsername) {
-      referrerUsername = row.referrerUsername;
+    if (!created) {
+      return c.json({ error: "Referral already exists for this wallet." }, 409);
     }
 
-    if (row.hasPlayed && row.gamesPlayed > 0) {
-      verifiedPlayers += 1;
-      totalGamesPlayed += row.gamesPlayed;
-      totalPoints += calculateReferralPoints(row.gamesPlayed);
-    }
-  }
-
-  return c.json({
-    data: {
-      referrerAddress,
-      referrerUsername,
-      referredPlayers,
-      verifiedPlayers,
-      totalGamesPlayed,
-      totalPoints: roundToTwoDecimals(totalPoints),
-    },
+    return c.json({ success: true, data: created }, 201);
   });
-});
 
-referralRoutes.post("/verify", async (c) => {
-  if (!requireVerifyKey(c)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
+  referralRoutes.get("/leaderboard", async (c) => {
+    const parsed = referralLeaderboardQuerySchema.safeParse({
+      limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
+    });
 
-  const body = await c.req.json().catch(() => null);
-  const parsed = referralVerifyBodySchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
 
-  if (!parsed.success) {
-    return c.json(formatZodError(parsed.error), 400);
-  }
+    const rows = await repo.listLeaderboardRows();
+    const data = buildReferralLeaderboard(rows, parsed.data.limit ?? 50);
+    return c.json({ data });
+  });
 
-  let updated = 0;
+  referralRoutes.get("/stats", async (c) => {
+    const parsed = referralStatsQuerySchema.safeParse({
+      referrerAddress: c.req.query("referrerAddress") ?? undefined,
+    });
 
-  for (const update of parsed.data.updates) {
-    const [row] = await db
-      .update(referrals)
-      .set({
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
+
+    const session = c.get("playerSession");
+    const fallbackAddress =
+      session?.walletAddress && STARKNET_ADDRESS_REGEX.test(session.walletAddress)
+        ? normalizeReferralAddress(session.walletAddress)
+        : null;
+    const referrerAddress = parsed.data.referrerAddress ?? fallbackAddress;
+
+    if (!referrerAddress) {
+      return c.json({ error: "Provide referrerAddress query or authenticate with a wallet address." }, 400);
+    }
+
+    const rows = await repo.listReferrerRows(referrerAddress);
+
+    let referrerUsername: string | null = null;
+    let referredPlayers = 0;
+    let verifiedPlayers = 0;
+    let totalGamesPlayed = 0;
+    let totalPoints = 0;
+
+    for (const row of rows) {
+      referredPlayers += 1;
+      if (!referrerUsername && row.referrerUsername) {
+        referrerUsername = row.referrerUsername;
+      }
+
+      if (row.hasPlayed && row.gamesPlayed > 0) {
+        verifiedPlayers += 1;
+        totalGamesPlayed += row.gamesPlayed;
+        totalPoints += calculateReferralPoints(row.gamesPlayed);
+      }
+    }
+
+    return c.json({
+      data: {
+        referrerAddress,
+        referrerUsername,
+        referredPlayers,
+        verifiedPlayers,
+        totalGamesPlayed,
+        totalPoints: roundToTwoDecimals(totalPoints),
+      },
+    });
+  });
+
+  referralRoutes.post("/verify", async (c) => {
+    if (!requireVerifyKey(readVerifyKey(c))) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await c.req.json().catch(() => null);
+    const parsed = referralVerifyBodySchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
+
+    let updated = 0;
+
+    for (const update of parsed.data.updates) {
+      const didUpdate = await repo.updateReferralVerification({
+        refereeAddress: update.refereeAddress,
         gamesPlayed: update.gamesPlayed,
-        hasPlayed: update.gamesPlayed > 0,
-        verifiedAt: update.gamesPlayed > 0 ? new Date() : null,
         lastCheckedBlock: update.lastCheckedBlock ?? null,
         updatedAt: new Date(),
-      })
-      .where(eq(referrals.refereeAddress, update.refereeAddress))
-      .returning({ id: referrals.id });
+      });
 
-    if (row) {
-      updated += 1;
+      if (didUpdate) {
+        updated += 1;
+      }
     }
-  }
 
-  return c.json({ success: true, updated, total: parsed.data.updates.length });
-});
-
-referralRoutes.get("/verify/status", async (c) => {
-  if (!requireVerifyKey(c)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  const [totals] = await db
-    .select({
-      total: sql<number>`count(*)::int`,
-      verified: sql<number>`count(*) FILTER (WHERE ${referrals.hasPlayed} = true)::int`,
-    })
-    .from(referrals);
-
-  const total = totals?.total ?? 0;
-  const verified = totals?.verified ?? 0;
-
-  return c.json({
-    data: {
-      total,
-      verified,
-      unverified: Math.max(0, total - verified),
-    },
+    return c.json({ success: true, updated, total: parsed.data.updates.length });
   });
-});
 
-export default referralRoutes;
+  referralRoutes.get("/verify/status", async (c) => {
+    if (!requireVerifyKey(readVerifyKey(c))) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const totals = await repo.getVerificationTotals();
+
+    return c.json({
+      data: {
+        total: totals.total,
+        verified: totals.verified,
+        unverified: Math.max(0, totals.total - totals.verified),
+      },
+    });
+  });
+
+  return referralRoutes;
+};
+
+export default createReferralRoutes();
