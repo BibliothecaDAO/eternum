@@ -247,7 +247,16 @@ describe("ViewClient.mapArea", () => {
       ]),
       fetchAllArmiesMapData: vi
         .fn()
-        .mockResolvedValue([{ entity_id: 10, coord_x: 6, coord_y: 6, owner_address: "0x1", stamina_amount: "0x50", battle_cooldown_end: null }]),
+        .mockResolvedValue([
+          {
+            entity_id: 10,
+            coord_x: 6,
+            coord_y: 6,
+            owner_address: "0x1",
+            stamina_amount: "0x50",
+            battle_cooldown_end: null,
+          },
+        ]),
       fetchAllTiles: vi.fn().mockResolvedValue([
         { col: 5, row: 5, biome: "forest", explored: true, occupier_id: null },
         { col: 200, row: 200, biome: "desert", explored: false, occupier_id: null },
@@ -358,7 +367,14 @@ describe("ViewClient.player", () => {
       fetchAllArmiesMapData: vi
         .fn()
         .mockResolvedValue([
-          { entity_id: 10, owner_address: "0xPlayer", coord_x: 6, coord_y: 6, stamina_amount: "0x46", battle_cooldown_end: 9999 },
+          {
+            entity_id: 10,
+            owner_address: "0xPlayer",
+            coord_x: 6,
+            coord_y: 6,
+            stamina_amount: "0x46",
+            battle_cooldown_end: 9999,
+          },
         ]),
       fetchPlayerLeaderboard: vi
         .fn()
@@ -490,15 +506,13 @@ describe("ViewClient.player", () => {
     sql = createMockSql({
       fetchStructuresByOwner: vi.fn().mockResolvedValue([{ entity_id: 14 }]),
       fetchPlayerStructures: vi.fn().mockResolvedValue([{ entity_id: 14 }]),
-      fetchResourceBalances: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            entity_id: 14,
-            STONE_BALANCE: "0x00000000000000000000000000000000",
-            WOOD_BALANCE: "0x00000000000000000000000000000000",
-          },
-        ]),
+      fetchResourceBalances: vi.fn().mockResolvedValue([
+        {
+          entity_id: 14,
+          STONE_BALANCE: "0x00000000000000000000000000000000",
+          WOOD_BALANCE: "0x00000000000000000000000000000000",
+        },
+      ]),
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
       fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
       fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),

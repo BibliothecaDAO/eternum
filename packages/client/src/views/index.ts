@@ -97,7 +97,9 @@ export class ViewClient {
 
       // Fetch armies to find explorers for this realm
       const allArmies = await this.sql.fetchAllArmiesMapData();
-      const ownedArmies = allArmies.filter((a: any) => a.owner_address !== undefined && this.sameAddress(a.owner_address, owner));
+      const ownedArmies = allArmies.filter(
+        (a: any) => a.owner_address !== undefined && this.sameAddress(a.owner_address, owner),
+      );
 
       const guardState = this.buildGuardState(guards);
 
@@ -781,9 +783,10 @@ export class ViewClient {
     const slots = guards
       .filter((g: any) => g.troops !== null && g.troops !== undefined)
       .map((g: any) => {
-        const count = typeof g.troops?.count === "bigint"
-          ? Number(g.troops.count / ViewClient.RESOURCE_PRECISION)
-          : this.parseHexCount(g.troops?.count);
+        const count =
+          typeof g.troops?.count === "bigint"
+            ? Number(g.troops.count / ViewClient.RESOURCE_PRECISION)
+            : this.parseHexCount(g.troops?.count);
         const tier = this.parseTier(g.troops?.tier);
         return {
           troopType: String(g.troops?.category ?? "unknown"),
