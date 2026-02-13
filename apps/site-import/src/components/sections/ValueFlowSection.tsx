@@ -194,6 +194,36 @@ export function ValueFlowSection() {
 
 function ValueFlowSectionContent() {
   const { currentAPY, tokensThisWeek, lordsLocked, tvl } = useVelords();
+  const flowSnapshot = [
+    {
+      label: "Current APY",
+      value: currentAPY ? `${currentAPY.toFixed(2)}%` : "Syncing...",
+      helper: "Live rate",
+    },
+    {
+      label: "Rewards This Week",
+      value: tokensThisWeek
+        ? `${tokensThisWeek.toLocaleString(undefined, {
+            maximumFractionDigits: 0,
+          })} LORDS`
+        : "Syncing...",
+      helper: "Distribution pace",
+    },
+    {
+      label: "LORDS Locked",
+      value: lordsLocked
+        ? lordsLocked.toLocaleString(undefined, { maximumFractionDigits: 0 })
+        : "Syncing...",
+      helper: "veLORDS stake",
+    },
+    {
+      label: "Staking TVL",
+      value: tvl
+        ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        : "Syncing...",
+      helper: "Pool depth",
+    },
+  ];
 
   // Get store methods
   const nodes = useFlowStore((state) => state.nodes);
@@ -337,14 +367,15 @@ function ValueFlowSectionContent() {
 
   return (
     <motion.section
-      className="container mx-auto px-4 py-16 md:py-24"
+      className="realm-section container mx-auto px-4 py-16 md:py-24"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
-      <div className="text-center mb-12">
+      <div className="text-center mb-10">
+        <p className="realm-banner mx-auto mb-4">Value Circuit</p>
         <motion.h2
-          className="text-4xl md:text-5xl font-bold mb-4"
+          className="realm-title text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -352,18 +383,40 @@ function ValueFlowSectionContent() {
           Value Flow in the Ecosystem
         </motion.h2>
         <motion.p
-          className="text-xl text-muted-foreground max-w-3xl mx-auto"
+          className="realm-subtitle text-base sm:text-lg max-w-3xl mx-auto"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          Multiple revenue streams flow into the veLORDS staking pool, creating
-          sustainable rewards for stakers
+          Revenue from games, trading, and infrastructure converges into veLORDS
+          and cycles back to stakers.
         </motion.p>
       </div>
 
       <motion.div
-        className="h-[420px] sm:h-[600px] bg-background/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden shadow-lg"
+        className="realm-panel mb-10 rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.5 }}
+      >
+        <h3 className="realm-banner mb-4">
+          Flow Snapshot
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {flowSnapshot.map((item) => (
+            <div key={item.label} className="card-relic rounded-xl border border-primary/15 p-4">
+              <p className="realm-sigil mb-2">
+                {item.label}
+              </p>
+              <p className="text-lg sm:text-xl font-semibold mb-1">{item.value}</p>
+              <p className="text-xs text-foreground/60">{item.helper}</p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div
+        className="realm-panel h-[420px] sm:h-[600px] bg-background/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden shadow-lg"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
@@ -399,7 +452,7 @@ function ValueFlowSectionContent() {
           return (
             <motion.div
               key={source.id}
-              className="bg-background/50 backdrop-blur-sm rounded-lg p-6 border border-border hover:border-primary/50 transition-colors"
+              className="card-relic bg-background/50 backdrop-blur-sm rounded-lg p-6 border border-border hover:border-primary/50 transition-colors"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 + index * 0.1 }}
@@ -418,111 +471,67 @@ function ValueFlowSectionContent() {
       </motion.div>
 
       <motion.div
-        className="mt-12 space-y-12"
+        className="mt-10 space-y-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
+        transition={{ delay: 0.9 }}
       >
-        <div className="text-center">
-          <h3 className="text-3xl font-bold mb-4">
-            How Value Flows to Stakers
+        <div className="text-center max-w-3xl mx-auto">
+          <h3 className="realm-title text-2xl sm:text-3xl font-bold mb-3">
+            Reward Loop
           </h3>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            The Realms ecosystem creates a sustainable flywheel where every
-            interaction generates value for veLORDS stakers
+          <p className="realm-subtitle">
+            Keep these three mechanics in mind when evaluating staking yield.
           </p>
         </div>
 
-        {/* Step by step process */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <motion.div
             className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl p-6 border border-green-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1 }}
+            transition={{ delay: 1.0 }}
           >
             <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
               <span className="text-xl font-bold text-green-500">1</span>
             </div>
             <h4 className="text-xl font-bold mb-3">Revenue Generation</h4>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Autonomous Worlds:</strong>{" "}
-                Players in Eternum pay fees for actions like building, trading,
-                and battling. These fees accumulate continuously as the world
-                operates 24/7.
-              </p>
-              <p>
-                <strong className="text-foreground">Trading Activity:</strong>{" "}
-                Every swap on DEXs and NFT marketplace transactions generate
-                fees that flow directly to the pool.
-              </p>
-              <p>
-                <strong className="text-foreground">Game Ecosystem:</strong>{" "}
-                Entry fees, in-game purchases, and tournament prizes from games
-                like Loot Survivor contribute to the revenue stream.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Game actions, swaps, and protocol usage continuously route fees
+              into the ecosystem reward pipeline.
+            </p>
           </motion.div>
 
           <motion.div
             className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl p-6 border border-blue-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2 }}
+            transition={{ delay: 1.1 }}
           >
             <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
               <span className="text-xl font-bold text-blue-500">2</span>
             </div>
             <h4 className="text-xl font-bold mb-3">Value Accumulation</h4>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">
-                  Automatic Collection:
-                </strong>{" "}
-                Smart contracts automatically route all fees to the veLORDS pool
-                without manual intervention.
-              </p>
-              <p>
-                <strong className="text-foreground">Compounding Effect:</strong>{" "}
-                As more games and services launch, revenue sources multiply,
-                creating exponential growth potential.
-              </p>
-              <p>
-                <strong className="text-foreground">Treasury Growth:</strong>{" "}
-                The pool continuously grows from multiple revenue streams,
-                increasing the rewards available for distribution.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Smart contracts aggregate those streams directly into veLORDS,
+              making rewards responsive to ecosystem activity.
+            </p>
           </motion.div>
 
           <motion.div
             className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-xl p-6 border border-purple-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.3 }}
+            transition={{ delay: 1.2 }}
           >
             <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
               <span className="text-xl font-bold text-purple-500">3</span>
             </div>
             <h4 className="text-xl font-bold mb-3">Reward Distribution</h4>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Weekly Epochs:</strong>{" "}
-                Rewards are calculated and distributed every week based on your
-                share of the total veLORDS supply.
-              </p>
-              <p>
-                <strong className="text-foreground">Lock Multiplier:</strong>{" "}
-                Longer lock periods (up to 4 years) give you more veLORDS,
-                increasing your share of weekly rewards.
-              </p>
-              <p>
-                <strong className="text-foreground">Claim Anytime:</strong>{" "}
-                Accumulated rewards can be claimed at any time, giving you
-                flexibility in managing your earnings.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Rewards are emitted in epochs and weighted by veLORDS position,
+              letting long-term stakers capture more of the flow.
+            </p>
           </motion.div>
         </div>
       </motion.div>

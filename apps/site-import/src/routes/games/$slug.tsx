@@ -73,21 +73,19 @@ function GamePage() {
   const { game } = Route.useLoaderData();
 
   return (
-    <>
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="realm-section realm-games-detail-stage relative z-10 min-h-screen py-8 sm:py-12"
+    >
       {/* Game-specific background */}
       {/* <div className="fixed inset-0 -z-10">
         <AnimatedBackground selectedGame={game} />
       </div> */}
-
-      {/* Game content with proper spacing */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 min-h-screen"
-      >
+      <div className="relative z-10">
         <GameDetails game={game} />
-      </motion.div>
-    </>
+      </div>
+    </motion.section>
   );
 }

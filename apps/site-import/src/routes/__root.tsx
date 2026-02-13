@@ -1,8 +1,14 @@
-import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  useLocation,
+} from "@tanstack/react-router";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 // import { WaveformBackground } from "@/components/WaveformBackground";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 // import AsciiArt from "@/components/ascii";
 
 const RouterDevtools = import.meta.env.DEV
@@ -124,6 +130,14 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const location = useLocation();
+  const isBlitzRoute = location.pathname === "/blitz";
+  const isEternumRoute = location.pathname === "/eternum";
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
   return (
     <>
       <HeadContent />
@@ -145,7 +159,13 @@ function RootComponent() {
         transition={{ delay: 0.2, duration: 0.5 }}
       >
         <TopBar />
-        <div className="min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4">
+        <div
+          className={cn(
+            isBlitzRoute || isEternumRoute
+              ? "min-h-screen"
+              : "min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4"
+          )}
+        >
           <Outlet />
         </div>
       </motion.div>

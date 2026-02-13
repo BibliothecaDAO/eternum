@@ -1,120 +1,142 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Coins, Sparkles, Sword, Zap } from "lucide-react";
+import { ArrowRight, Compass, ShieldCheck, Sparkles, Sword } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useVelords } from "@/hooks/use-velords";
-import { StarknetProvider } from "@/hooks/starknet-provider";
 import { games } from "@/data/games";
 
 export function IntroSection() {
-  return (
-    <StarknetProvider>
-      <IntroSectionContent />
-    </StarknetProvider>
-  );
+  return <IntroSectionContent />;
 }
 
 function IntroSectionContent() {
-  const { currentAPY, isAPYLoading, tvl, isTVLLoading } = useVelords();
   const liveGameCount = games.filter((game) => game.isLive).length;
+  const integratedStudioCount = new Set(games.map((game) => game.studio)).size;
 
-  const heroStats = [
+  const rolloutSignals = [
     {
       icon: Sword,
-      label: "Live Game Count",
-      value: liveGameCount.toString(),
-      detail: "Realms currently playable",
+      label: "Live Worlds",
+      value: liveGameCount,
+      detail: "Realms now traversable",
     },
     {
       icon: Sparkles,
-      label: "Agent Rollout",
-      value: "Active",
+      label: "Agent Status",
+      value: "Traversing",
       detail: "Rolling out across games",
     },
     {
-      icon: Coins,
-      label: "Ecosystem TVL",
-      value: tvl
-        ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-        : isTVLLoading
-        ? "Syncing..."
-        : "N/A",
-      detail: "Locked via veLORDS",
-    },
-    {
-      icon: Zap,
-      label: "Current APY",
-      value: currentAPY
-        ? `${currentAPY.toFixed(2)}%`
-        : isAPYLoading
-        ? "Syncing..."
-        : "N/A",
-      detail: "Annual rewards",
+      icon: Compass,
+      label: "Integrated Studios",
+      value: integratedStudioCount,
+      detail: "Worldbuilders now linked",
     },
   ];
 
   return (
-    <section className="relative overflow-hidden py-18 sm:py-24 md:py-32">
+    <section className="realm-section relative min-h-[100vh] overflow-hidden flex items-center">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-12 -translate-x-1/2 h-[360px] w-[95%] max-w-6xl rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute left-1/2 top-16 -translate-x-1/2 h-[520px] w-[92%] max-w-6xl border border-primary/30 rounded-[999px] opacity-55" />
+        <div className="absolute left-[12%] top-[24%] h-[360px] w-[360px] rounded-full bg-primary/14 blur-3xl" />
+        <div className="absolute right-[6%] top-[16%] h-[400px] w-[400px] rounded-full bg-primary/12 blur-3xl" />
+        <div className="absolute left-[-6%] bottom-[-8%] h-[440px] w-[440px] rounded-full bg-primary/10 blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 py-24 sm:py-28 md:py-32">
         <motion.div
-          className="max-w-5xl mx-auto text-center"
-          initial={{ opacity: 0, y: 24 }}
+          className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center"
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
         >
-          <p className="inline-flex items-center gap-2 text-xs tracking-[0.28em] uppercase text-primary/90 mb-6">
-            <Sparkles className="h-3.5 w-3.5" />
-            Agent Native Games
-          </p>
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight text-foreground mb-6">
-            Mythic Worlds.
-            <span className="block text-primary">One Autonomous Champion.</span>
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-foreground/85 max-w-3xl mx-auto mb-10">
-            The Realms ecosystem is now agent-native. Our autonomous player is
-            rolling out across games so you can explore every realm with deeper
-            strategy and faster execution.
-          </p>
+          <motion.div
+            className="text-left"
+            initial={{ opacity: 0, x: -36 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <p className="realm-banner mb-6">
+              <Sparkles className="h-3.5 w-3.5" />
+              The Summoning Gate
+            </p>
+            <h1 className="realm-title text-4xl sm:text-5xl md:text-7xl leading-[0.92] mb-6 max-w-3xl">
+              One Agent.
+              <span className="block text-primary mt-1">Every Realm.</span>
+            </h1>
+            <p className="realm-subtitle text-base sm:text-lg md:text-xl max-w-2xl mb-10">
+              A single autonomous champion now crosses the Realms ecosystem and is
+              rolling out across games, adapting strategy to each world as the
+              campaign expands.
+            </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
-            <Button size="lg" className="shadow-lg shadow-primary/20" asChild>
-              <Link to="/games">
-                Explore Ecosystem <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href="#agent-native">See Agent Rollout</a>
-            </Button>
-          </div>
-        </motion.div>
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <Button
+                size="lg"
+                variant="war"
+                className="shadow-lg shadow-primary/20"
+                asChild
+              >
+                <Link to="/games">
+                  Enter the Realms <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="oath" asChild>
+                <a href="#agent-native">Track Live Rollout</a>
+              </Button>
+            </div>
 
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.7 }}
-        >
-          {heroStats.map((stat, index) => (
-            <motion.article
-              key={stat.label}
-              className="rounded-2xl border border-primary/20 bg-black/25 backdrop-blur-md p-5"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + index * 0.1, duration: 0.45 }}
-            >
-              <stat.icon className="h-5 w-5 text-primary mb-4" />
-              <p className="text-3xl font-bold text-foreground mb-1">{stat.value}</p>
-              <p className="text-xs uppercase tracking-[0.14em] text-primary/90 mb-2">
-                {stat.label}
-              </p>
-              <p className="text-sm text-foreground/70">{stat.detail}</p>
-            </motion.article>
-          ))}
+            <div className="flex flex-wrap gap-2.5">
+              <span className="realm-sigil">Mythic Strategy Worlds</span>
+              <span className="realm-sigil">Autonomous Champion</span>
+              <span className="realm-sigil">Shared Agent Progression</span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="hero-summoning-panel realm-panel realm-edge-brackets realm-grid-scan rounded-2xl p-5 sm:p-6"
+            initial={{ opacity: 0, x: 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.12, duration: 0.8, ease: "easeOut" }}
+          >
+            <div className="hero-ember-field" aria-hidden />
+            <div className="hero-sigil-ring mx-auto mb-6">
+              <div className="hero-sigil-core">
+                <Sword className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+
+            <p className="realm-banner mb-3">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Campaign Pulse
+            </p>
+            <p className="text-2xl sm:text-3xl font-semibold leading-tight mb-2">
+              The Gate Is Open
+            </p>
+            <p className="text-sm sm:text-base text-foreground/75 mb-5">
+              Agent routes are propagating realm to realm with synchronized
+              playbooks and encounter-specific adaptation.
+            </p>
+
+            <div className="space-y-2.5">
+              {rolloutSignals.map((signal, index) => (
+                <motion.div
+                  key={signal.label}
+                  className="card-parchment-dark realm-holo-card flex items-center gap-3 px-3.5 py-3"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22 + index * 0.1, duration: 0.45, ease: "easeOut" }}
+                >
+                  <signal.icon className="h-4.5 w-4.5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="realm-sigil mb-1">{signal.label}</p>
+                    <p className="text-sm text-foreground/80 leading-tight">
+                      <span className="font-semibold text-foreground">{signal.value}</span>{" "}
+                      {signal.detail}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>

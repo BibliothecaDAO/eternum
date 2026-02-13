@@ -48,6 +48,9 @@ export function TreasurySection() {
     (treasuryBalance?.ETH.usdValue ?? 0) +
     (treasuryBalance?.WETH.usdValue ?? 0) +
     (treasuryBalance?.USDC.usdValue ?? 0);
+  const activeProposalCount =
+    proposalsQuery?.proposals?.filter((proposal) => proposal && isActive(proposal))
+      .length ?? 0;
 
   const getProposalStatus = (proposal: ProposalQuery["proposal"]) => {
     if (!proposal)
@@ -113,7 +116,7 @@ export function TreasurySection() {
   ];
 
   return (
-    <section className="container mx-auto px-4 py-16 sm:py-24">
+    <section className="realm-section container mx-auto px-4 py-16 sm:py-24">
       <motion.div
         className="space-y-12"
         initial={{ opacity: 0 }}
@@ -127,76 +130,82 @@ export function TreasurySection() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.8 }}
         >
-          <h2 className="text-4xl sm:text-5xl font-bold">
+          <p className="realm-banner mx-auto">Council Ledger</p>
+          <h2 className="realm-title text-4xl sm:text-5xl font-bold">
             DAO Treasury & Governance
           </h2>
-          <p className="text-xl text-muted-foreground">
+          <p className="realm-subtitle text-xl">
             Community-controlled treasury managed through decentralized
             governance. Every Realm holder has a voice in shaping the
             ecosystem's future.
           </p>
         </motion.div>
 
-        {/* Key Stats */}
+        {/* Governance Pulse */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-4 gap-6"
+          className="space-y-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.8 }}
         >
-          <Card className="backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Total Treasury
-                  </p>
-                  <p className="text-2xl font-bold">
-                    ${(totalTreasuryBalance / 1000000).toFixed(2)}M
-                  </p>
+          <h3 className="realm-banner mx-auto">
+            Governance Pulse
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="card-relic backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Treasury Value
+                    </p>
+                    <p className="text-2xl font-bold">
+                      ${(totalTreasuryBalance / 1_000_000).toFixed(2)}M
+                    </p>
+                  </div>
+                  <Wallet className="w-8 h-8 text-primary opacity-50" />
                 </div>
-                <Wallet className="w-8 h-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Voting Power</p>
-                  <p className="text-2xl font-bold">1 Realm = 1 Vote</p>
+            <Card className="card-relic backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Active Proposals
+                    </p>
+                    <p className="text-2xl font-bold">{activeProposalCount}</p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-purple-500 opacity-50" />
                 </div>
-                <Vote className="w-8 h-8 text-blue-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Realms</p>
-                  <p className="text-2xl font-bold">8,000</p>
+            <Card className="card-relic backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Quorum Target</p>
+                    <p className="text-2xl font-bold">1,500</p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-yellow-500 opacity-50" />
                 </div>
-                <Users className="w-8 h-8 text-green-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Proposals</p>
-                  <p className="text-2xl font-bold">
-                    {proposalsQuery?.proposals?.length || 0} Active
-                  </p>
+            <Card className="card-relic backdrop-blur-md border-border/50 hover:border-primary/50 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Vote Weight</p>
+                    <p className="text-2xl font-bold">1 Realm = 1 Vote</p>
+                  </div>
+                  <Vote className="w-8 h-8 text-blue-500 opacity-50" />
                 </div>
-                <TrendingUp className="w-8 h-8 text-purple-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </motion.div>
 
         {/* Main Content Grid */}
@@ -208,7 +217,7 @@ export function TreasurySection() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <Card className="backdrop-blur-md border-border/50">
+            <Card className="card-parchment-dark backdrop-blur-md border-border/50">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -328,7 +337,7 @@ export function TreasurySection() {
             transition={{ delay: 0.6, duration: 0.8 }}
           >
             {/* Governance Model */}
-            <Card className="backdrop-blur-md border-border/50">
+            <Card className="card-parchment-dark backdrop-blur-md border-border/50">
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center gap-2">
                   <Vote className="w-6 h-6" />
@@ -381,7 +390,7 @@ export function TreasurySection() {
             </Card>
 
             {/* Recent Proposals */}
-            <Card className="backdrop-blur-md border-border/50">
+            <Card className="card-parchment-dark backdrop-blur-md border-border/50">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -395,7 +404,7 @@ export function TreasurySection() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Button size="sm" variant="outline" className="gap-2">
+                    <Button size="sm" variant="oath" className="gap-2">
                       View All
                       <ExternalLink className="w-4 h-4" />
                     </Button>
@@ -482,7 +491,7 @@ export function TreasurySection() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button size="lg" className="gap-2">
+              <Button size="lg" variant="war" className="gap-2">
                 View Proposals
                 <ExternalLink className="w-4 h-4" />
               </Button>
@@ -492,7 +501,7 @@ export function TreasurySection() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button size="lg" variant="oath" className="gap-2">
                 Join Discord
                 <Users className="w-4 h-4" />
               </Button>

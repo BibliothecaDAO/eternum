@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as EternumRouteImport } from './routes/eternum'
+import { Route as BlitzRouteImport } from './routes/blitz'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScrollIndexRouteImport } from './routes/scroll/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
 import { Route as ScrollSlugRouteImport } from './routes/scroll/$slug'
 import { Route as GamesSlugRouteImport } from './routes/games/$slug'
 
+const EternumRoute = EternumRouteImport.update({
+  id: '/eternum',
+  path: '/eternum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlitzRoute = BlitzRouteImport.update({
+  id: '/blitz',
+  path: '/blitz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +55,8 @@ const GamesSlugRoute = GamesSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/blitz': typeof BlitzRoute
+  '/eternum': typeof EternumRoute
   '/games/$slug': typeof GamesSlugRoute
   '/scroll/$slug': typeof ScrollSlugRoute
   '/games/': typeof GamesIndexRoute
@@ -50,6 +64,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/blitz': typeof BlitzRoute
+  '/eternum': typeof EternumRoute
   '/games/$slug': typeof GamesSlugRoute
   '/scroll/$slug': typeof ScrollSlugRoute
   '/games': typeof GamesIndexRoute
@@ -58,6 +74,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/blitz': typeof BlitzRoute
+  '/eternum': typeof EternumRoute
   '/games/$slug': typeof GamesSlugRoute
   '/scroll/$slug': typeof ScrollSlugRoute
   '/games/': typeof GamesIndexRoute
@@ -65,12 +83,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/games/$slug' | '/scroll/$slug' | '/games/' | '/scroll/'
+  fullPaths:
+    | '/'
+    | '/blitz'
+    | '/eternum'
+    | '/games/$slug'
+    | '/scroll/$slug'
+    | '/games/'
+    | '/scroll/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/games/$slug' | '/scroll/$slug' | '/games' | '/scroll'
+  to:
+    | '/'
+    | '/blitz'
+    | '/eternum'
+    | '/games/$slug'
+    | '/scroll/$slug'
+    | '/games'
+    | '/scroll'
   id:
     | '__root__'
     | '/'
+    | '/blitz'
+    | '/eternum'
     | '/games/$slug'
     | '/scroll/$slug'
     | '/games/'
@@ -79,6 +113,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BlitzRoute: typeof BlitzRoute
+  EternumRoute: typeof EternumRoute
   GamesSlugRoute: typeof GamesSlugRoute
   ScrollSlugRoute: typeof ScrollSlugRoute
   GamesIndexRoute: typeof GamesIndexRoute
@@ -87,6 +123,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/eternum': {
+      id: '/eternum'
+      path: '/eternum'
+      fullPath: '/eternum'
+      preLoaderRoute: typeof EternumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blitz': {
+      id: '/blitz'
+      path: '/blitz'
+      fullPath: '/blitz'
+      preLoaderRoute: typeof BlitzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -127,6 +177,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BlitzRoute: BlitzRoute,
+  EternumRoute: EternumRoute,
   GamesSlugRoute: GamesSlugRoute,
   ScrollSlugRoute: ScrollSlugRoute,
   GamesIndexRoute: GamesIndexRoute,

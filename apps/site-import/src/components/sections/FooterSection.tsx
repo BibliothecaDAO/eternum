@@ -15,6 +15,7 @@ import {
   Github,
   ShoppingBag,
 } from "lucide-react";
+import { games } from "@/data/games";
 
 function DeferredApyValue() {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -54,6 +55,9 @@ function DeferredApyValue() {
 }
 
 export function FooterSection() {
+  const liveGameCount = games.filter((game) => game.isLive).length;
+  const totalGameCount = games.length;
+
   // Fetch live data
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
 
@@ -92,8 +96,8 @@ export function FooterSection() {
     },
     {
       icon: Gamepad2,
-      label: "Ecosystem Games",
-      value: "20+",
+      label: "Game Coverage",
+      value: `${liveGameCount}/${totalGameCount}`,
       color: "text-orange-500",
     },
   ];
@@ -154,7 +158,7 @@ export function FooterSection() {
       <div className="container mx-auto px-4">
         {/* Key Metrics Section */}
         <motion.div
-          className="py-12 grid grid-cols-2 md:grid-cols-4 gap-6"
+          className="py-12 grid grid-cols-2 md:grid-cols-4 gap-6 realm-panel p-6"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -163,7 +167,7 @@ export function FooterSection() {
           {keyMetrics.map((metric, index) => (
             <motion.div
               key={metric.label}
-              className="text-center"
+              className="text-center card-relic"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -178,7 +182,7 @@ export function FooterSection() {
           ))}
         </motion.div>
 
-        <div className="border-t border-border/50" />
+        <div className="border-t border-border/50 mt-4" />
 
         {/* Main Footer Content */}
         <div className="py-16">
@@ -197,7 +201,7 @@ export function FooterSection() {
                   alt="Realms World"
                   className="w-20 mb-4"
                 />
-                <h3 className="text-2xl font-bold mb-2">Realms World</h3>
+                <h3 className="realm-title text-2xl font-bold mb-2">Realms World</h3>
                 <p className="text-muted-foreground">
                   Building the future of onchain gaming with $LORDS
                 </p>
