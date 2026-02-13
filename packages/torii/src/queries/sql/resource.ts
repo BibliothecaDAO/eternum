@@ -42,6 +42,11 @@ export const RESOURCE_BALANCE_COLUMNS: ReadonlyArray<{
 
 const BALANCE_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => c.column).join(", ");
 
+/** Production building_count column for each resource (dot-notation from Torii SQL). */
+const PRODUCTION_COLS = RESOURCE_BALANCE_COLUMNS.map(
+  (c) => `\`${c.column.replace("_BALANCE", "_PRODUCTION")}.building_count\``,
+).join(", ");
+
 export const RESOURCE_QUERIES = {
   /**
    * Fetch resource balances for a set of entity IDs.
@@ -49,6 +54,16 @@ export const RESOURCE_QUERIES = {
    */
   RESOURCE_BALANCES: `
     SELECT entity_id, ${BALANCE_COLS}
+    FROM \`s1_eternum-Resource\`
+    WHERE entity_id IN ({entityIds});
+  `,
+
+  /**
+   * Fetch resource balances AND production building counts for a set of entity IDs.
+   * Returns both *_BALANCE hex columns and *_PRODUCTION.building_count integer columns.
+   */
+  RESOURCE_BALANCES_AND_PRODUCTION: `
+    SELECT entity_id, ${BALANCE_COLS}, ${PRODUCTION_COLS}
     FROM \`s1_eternum-Resource\`
     WHERE entity_id IN ({entityIds});
   `,

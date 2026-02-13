@@ -57,6 +57,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
     extraTools = [],
     runtimeConfigManager,
     actionDefs,
+    formatTickPrompt: customFormatTickPrompt,
   } = options;
   let currentDataDir = options.dataDir;
 
@@ -116,7 +117,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
         agent.setSystemPrompt(nextPrompt);
       }
       const state = await adapter.getWorldState();
-      const prompt = formatTickPrompt(state);
+      const prompt = customFormatTickPrompt ? customFormatTickPrompt(state) : formatTickPrompt(state);
       await enqueuePrompt(prompt);
     },
     onError: (err) => {

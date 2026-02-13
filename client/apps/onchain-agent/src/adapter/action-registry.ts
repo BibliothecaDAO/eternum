@@ -1,5 +1,7 @@
 import type { EternumClient } from "@bibliothecadao/client";
 import type { ActionResult, GameAction } from "@bibliothecadao/game-agent";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
 
 // Re-declared here to avoid tsup d.ts resolution issues with game-agent.
 // These types mirror the canonical definitions in @bibliothecadao/game-agent/types.
@@ -33,6 +35,7 @@ interface RegistryEntry {
 }
 
 const registry = new Map<string, RegistryEntry>();
+let _currentActionType: string | undefined;
 
 function register(type: string, description: string, params: ActionParamSchema[], handler: ActionHandler) {
   registry.set(type, { handler, definition: { type, description, params } });
@@ -89,12 +92,65 @@ const oa = (name: string, description: string, required = true): ActionParamSche
  * Extract a short, human-readable error from a Starknet error.
  * Starknet errors often contain huge execution traces; we pull out the useful bit.
  */
+/**
+ * Try to decode felt252 hex values into readable ASCII strings.
+ * Returns decoded strings of length >= 3 chars.
+ */
+function decodeFeltHexStrings(text: string): string[] {
+  const feltMatches = text.match(/0x[0-9a-fA-F]{6,}/g);
+  if (!feltMatches) return [];
+  const decoded: string[] = [];
+  for (const hex of feltMatches) {
+    try {
+      const n = BigInt(hex);
+      if (n === 0n) continue;
+      let h = n.toString(16);
+      if (h.length % 2 !== 0) h = "0" + h;
+      let s = "";
+      for (let i = 0; i < h.length; i += 2) {
+        const code = parseInt(h.slice(i, i + 2), 16);
+        if (code >= 32 && code < 127) s += String.fromCharCode(code);
+      }
+      if (s.length >= 3) decoded.push(s);
+    } catch {}
+  }
+  return [...new Set(decoded)];
+}
+
 function extractErrorMessage(err: any): string {
-  const raw = err?.message ?? String(err);
+  // Collect all text sources: message, baseError (RpcError), data, revert_reason
+  const sources: string[] = [];
+  const msg = err?.message ?? String(err);
+  sources.push(msg);
+
+  // starknet.js RpcError wraps the real error in baseError
+  if (err?.baseError) {
+    if (err.baseError.message) sources.push(String(err.baseError.message));
+    if (err.baseError.data) {
+      const dataStr = typeof err.baseError.data === "string" ? err.baseError.data : JSON.stringify(err.baseError.data);
+      sources.push(dataStr);
+    }
+  }
+  if (err?.data) {
+    const dataStr = typeof err.data === "string" ? err.data : JSON.stringify(err.data);
+    sources.push(dataStr);
+  }
+  if (err?.revert_reason) sources.push(String(err.revert_reason));
+  if (err?.revertReason) sources.push(String(err.revertReason));
+
+  const raw = sources.join("\n");
+
+  // Look for "Transaction failed with reason:" from our provider
+  const txFailedMatch = raw.match(/Transaction failed with reason:\s*(.+?)(?:\n|$)/i);
+  if (txFailedMatch) return txFailedMatch[1].trim();
 
   // Look for "Failure reason:" pattern common in Starknet reverts
   const failureMatch = raw.match(/Failure reason:\s*"?([^"]+)"?/i);
   if (failureMatch) return failureMatch[1].trim();
+
+  // Look for "execution_revert" or "revert_error" in structured data
+  const revertDataMatch = raw.match(/(?:execution_revert|revert_error|revert_reason)["\s:]+([^"}\]]+)/i);
+  if (revertDataMatch) return `Reverted: ${revertDataMatch[1].trim()}`;
 
   // Look for "execution reverted" with a reason
   const revertMatch = raw.match(/execution reverted[:\s]*(.+?)(?:\n|$)/i);
@@ -104,10 +160,75 @@ function extractErrorMessage(err: any): string {
   const cairoMatch = raw.match(/(?:assert|panic)[:\s]+(.+?)(?:\n|$)/i);
   if (cairoMatch) return cairoMatch[1].trim();
 
+  // Look for felt252 short-string error codes in all sources
+  const decoded = decodeFeltHexStrings(raw);
+  if (decoded.length > 0) {
+    return `Reverted: ${decoded.join(", ")}`;
+  }
+
   // Truncate generic long errors to something readable
-  const firstLine = raw.split("\n")[0].trim();
+  const firstLine = msg.split("\n")[0].trim();
   if (firstLine.length > 200) return firstLine.slice(0, 200) + "...";
   return firstLine;
+}
+
+/** Log raw error to debug file for post-mortem analysis. */
+function logRawError(actionType: string, err: any) {
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-actions-raw-errors.log",
+    );
+    mkdirSync(dirname(debugPath), { recursive: true });
+    const ts = new Date().toISOString();
+
+    // Dump everything we can from the error object
+    const parts: string[] = [`[${ts}] ${actionType}`];
+    parts.push(`  message: ${err?.message}`);
+    parts.push(`  name: ${err?.name}`);
+    parts.push(`  code: ${err?.code}`);
+    // starknet.js RpcError stores the original RPC error in baseError
+    if (err?.baseError) {
+      parts.push(`  baseError.code: ${err.baseError.code}`);
+      parts.push(`  baseError.message: ${err.baseError.message}`);
+      try {
+        parts.push(`  baseError.data: ${JSON.stringify(err.baseError.data)?.slice(0, 4000)}`);
+      } catch {
+        parts.push(`  baseError.data: ${String(err.baseError.data)?.slice(0, 4000)}`);
+      }
+    }
+    if (err?.data) {
+      try {
+        parts.push(`  data: ${JSON.stringify(err.data)?.slice(0, 4000)}`);
+      } catch {
+        parts.push(`  data: ${String(err.data)?.slice(0, 4000)}`);
+      }
+    }
+    if (err?.cause) {
+      parts.push(`  cause: ${err.cause?.message ?? String(err.cause)}`);
+    }
+    if (err?.request) {
+      try {
+        parts.push(`  request.method: ${err.request.method}`);
+      } catch {}
+    }
+    // Enumerate all own keys for anything we missed
+    try {
+      const keys = Object.getOwnPropertyNames(err).filter(
+        (k) => !["message", "name", "stack", "code", "baseError", "data", "cause", "request"].includes(k),
+      );
+      for (const k of keys) {
+        try {
+          const v = err[k];
+          parts.push(`  ${k}: ${typeof v === "object" ? JSON.stringify(v)?.slice(0, 1000) : String(v)}`);
+        } catch {}
+      }
+    } catch {}
+    parts.push(`  stack: ${err?.stack?.slice(0, 1000)}`);
+    parts.push("");
+
+    writeFileSync(debugPath, parts.join("\n") + "\n", { flag: "a" });
+  } catch (_) {}
 }
 
 /**
@@ -126,6 +247,7 @@ async function wrapTx(fn: () => Promise<any>): Promise<ActionResult> {
       data: txHash ? { transactionHash: txHash } : undefined,
     };
   } catch (err: any) {
+    logRawError(_currentActionType ?? "unknown", err);
     return {
       success: false,
       error: extractErrorMessage(err),
@@ -137,8 +259,26 @@ async function wrapTx(fn: () => Promise<any>): Promise<ActionResult> {
 // Helpers – coerce unknown params from the LLM into typed values
 // ---------------------------------------------------------------------------
 
+/** On-chain amounts (troops, resources) must be multiplied by this precision factor. */
+const RESOURCE_PRECISION = 1_000_000_000;
+
+/**
+ * Coerce an LLM value to a number. Handles human-readable suffixes
+ * (K, M, B, T) and commas so the agent can pass values like "1.5K" or "2,000".
+ */
 function num(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (typeof v !== "string") return Number(v);
+  const s = v.replace(/,/g, "").trim().toUpperCase();
+  const suffixes: Record<string, number> = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 };
+  const match = s.match(/^(-?[\d.]+)\s*([KMBT])$/);
+  if (match) return parseFloat(match[1]) * suffixes[match[2]];
   return Number(v);
+}
+
+/** Coerce to number and multiply by RESOURCE_PRECISION for on-chain amounts. */
+function precisionAmount(v: unknown): number {
+  return Math.floor(num(v) * RESOURCE_PRECISION);
 }
 
 function str(v: unknown): string {
@@ -177,7 +317,7 @@ function resourceList(v: unknown): { resourceType: number; amount: number }[] {
   if (!Array.isArray(v)) return [];
   return v.map((r: any) => ({
     resourceType: num(r.resourceType ?? r.resource_type ?? r.resourceId ?? 0),
-    amount: num(r.amount ?? 0),
+    amount: precisionAmount(r.amount ?? 0),
   }));
 }
 
@@ -185,7 +325,7 @@ function stealResourceList(v: unknown): { resourceId: number; amount: number }[]
   if (!Array.isArray(v)) return [];
   return v.map((r: any) => ({
     resourceId: num(r.resourceId ?? r.resource_id ?? r.resourceType ?? 0),
-    amount: num(r.amount ?? 0),
+    amount: precisionAmount(r.amount ?? 0),
   }));
 }
 
@@ -202,8 +342,8 @@ function liquidityCalls(v: unknown): { resourceType: number; resourceAmount: num
   if (!Array.isArray(v)) return [];
   return v.map((c: any) => ({
     resourceType: num(c.resourceType ?? c.resource_type ?? 0),
-    resourceAmount: num(c.resourceAmount ?? c.resource_amount ?? 0),
-    lordsAmount: num(c.lordsAmount ?? c.lords_amount ?? 0),
+    resourceAmount: precisionAmount(c.resourceAmount ?? c.resource_amount ?? 0),
+    lordsAmount: precisionAmount(c.lordsAmount ?? c.lords_amount ?? 0),
   }));
 }
 
@@ -314,7 +454,7 @@ register(
         forStructureId: num(p.forStructureId),
         category: num(p.category),
         tier: num(p.tier),
-        amount: num(p.amount),
+        amount: precisionAmount(p.amount),
         spawnDirection: num(p.spawnDirection),
       }),
     ),
@@ -332,7 +472,7 @@ register(
     wrapTx(() =>
       client.troops.addToExplorer(signer, {
         toExplorerId: num(p.toExplorerId),
-        amount: num(p.amount),
+        amount: precisionAmount(p.amount),
         homeDirection: num(p.homeDirection),
       }),
     ),
@@ -367,7 +507,7 @@ register(
         slot: num(p.slot),
         category: num(p.category),
         tier: num(p.tier),
-        amount: num(p.amount),
+        amount: precisionAmount(p.amount),
       }),
     ),
 );
@@ -444,7 +584,7 @@ register(
         fromExplorerId: num(p.fromExplorerId),
         toExplorerId: num(p.toExplorerId),
         toExplorerDirection: num(p.toExplorerDirection),
-        count: num(p.count),
+        count: precisionAmount(p.count),
       }),
     ),
 );
@@ -466,7 +606,7 @@ register(
         toStructureId: num(p.toStructureId),
         toStructureDirection: num(p.toStructureDirection),
         toGuardSlot: num(p.toGuardSlot),
-        count: num(p.count),
+        count: precisionAmount(p.count),
       }),
     ),
 );
@@ -488,7 +628,7 @@ register(
         fromGuardSlot: num(p.fromGuardSlot),
         toExplorerId: num(p.toExplorerId),
         toExplorerDirection: num(p.toExplorerDirection),
-        count: num(p.count),
+        count: precisionAmount(p.count),
       }),
     ),
 );
@@ -597,9 +737,9 @@ const createOrderHandler: ActionHandler = (client, signer, p) =>
       takerId: num(p.takerId),
       makerGivesResourceType: num(p.makerGivesResourceType),
       takerPaysResourceType: num(p.takerPaysResourceType),
-      makerGivesMinResourceAmount: num(p.makerGivesMinResourceAmount),
+      makerGivesMinResourceAmount: precisionAmount(p.makerGivesMinResourceAmount),
       makerGivesMaxCount: num(p.makerGivesMaxCount),
-      takerPaysMinResourceAmount: num(p.takerPaysMinResourceAmount),
+      takerPaysMinResourceAmount: precisionAmount(p.takerPaysMinResourceAmount),
       expiresAt: num(p.expiresAt),
     }),
   );
@@ -733,7 +873,7 @@ register(
         bankEntityId: num(p.bankEntityId),
         entityId: num(p.entityId),
         resourceType: num(p.resourceType),
-        amount: num(p.amount),
+        amount: precisionAmount(p.amount),
       }),
     ),
 );
@@ -753,7 +893,7 @@ register(
         bankEntityId: num(p.bankEntityId),
         entityId: num(p.entityId),
         resourceType: num(p.resourceType),
-        amount: num(p.amount),
+        amount: precisionAmount(p.amount),
       }),
     ),
 );
@@ -920,5 +1060,24 @@ export async function executeAction(client: EternumClient, signer: Account, acti
   if (!entry) {
     return { success: false, error: `Unknown action type: ${action.type}` };
   }
-  return entry.handler(client, signer, action.params);
+
+  // Set current action type so wrapTx can include it in raw error logs
+  _currentActionType = action.type;
+  const result = await entry.handler(client, signer, action.params);
+  _currentActionType = undefined;
+
+  // --- DEBUG: log every action execution ---
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-actions.log",
+    );
+    mkdirSync(dirname(debugPath), { recursive: true });
+    const ts = new Date().toISOString();
+    const paramStr = JSON.stringify(action.params);
+    const status = result.success ? `OK tx=${result.txHash}` : `FAIL: ${result.error}`;
+    writeFileSync(debugPath, `[${ts}] ${action.type}(${paramStr}) => ${status}\n`, { flag: "a" });
+  } catch (_) {}
+
+  return result;
 }

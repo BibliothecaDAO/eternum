@@ -396,6 +396,17 @@ export class SqlApi {
   }
 
   /**
+   * Fetch resource balances AND production building counts for a set of entity IDs.
+   * Returns rows with both *_BALANCE hex columns and *_PRODUCTION.building_count integers.
+   */
+  async fetchResourceBalancesAndProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
+    if (entityIds.length === 0) return [];
+    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_AND_PRODUCTION.replace("{entityIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances and production");
+  }
+
+  /**
    * Fetch season ended info from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */

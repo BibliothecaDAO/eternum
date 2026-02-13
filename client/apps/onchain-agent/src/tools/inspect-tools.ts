@@ -1,5 +1,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { EternumClient } from "@bibliothecadao/client";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
 
 // Inline JSON Schema objects (avoids @sinclair/typebox dependency in onchain-agent)
 const entityIdSchema = {
@@ -30,6 +32,20 @@ function serializeView(data: unknown, maxChars = 8000): string {
   return json.slice(0, maxChars) + `\n... (truncated, ${json.length} chars total)`;
 }
 
+/** Log what the agent sees from tool calls. */
+function logToolResponse(toolName: string, params: any, response: string) {
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-tool-responses.log",
+    );
+    mkdirSync(dirname(debugPath), { recursive: true });
+    const ts = new Date().toISOString();
+    const paramStr = params ? JSON.stringify(params) : "";
+    writeFileSync(debugPath, `\n[${ts}] ${toolName}(${paramStr})\n${response}\n`, { flag: "a" });
+  } catch (_) {}
+}
+
 /**
  * Inspect a specific realm/structure — returns full detail including resources,
  * production rates, buildings with costs, guard slots, explorers, arrivals, and orders.
@@ -48,13 +64,17 @@ export function createInspectRealmTool(client: EternumClient): AgentTool<any> {
     async execute(_toolCallId, { entityId }: { entityId: number }) {
       try {
         const realm = await client.view.realm(entityId);
+        const text = serializeView(realm);
+        logToolResponse("inspect_realm", { entityId }, text);
         return {
-          content: [{ type: "text", text: serializeView(realm) }],
+          content: [{ type: "text", text }],
           details: { entityId, found: true },
         };
       } catch (err: any) {
+        const text = `Error inspecting realm ${entityId}: ${err?.message ?? err}`;
+        logToolResponse("inspect_realm", { entityId }, text);
         return {
-          content: [{ type: "text", text: `Error inspecting realm ${entityId}: ${err?.message ?? err}` }],
+          content: [{ type: "text", text }],
           details: { entityId, found: false },
         };
       }
@@ -79,13 +99,17 @@ export function createInspectExplorerTool(client: EternumClient): AgentTool<any>
     async execute(_toolCallId, { entityId }: { entityId: number }) {
       try {
         const explorer = await client.view.explorer(entityId);
+        const text = serializeView(explorer);
+        logToolResponse("inspect_explorer", { entityId }, text);
         return {
-          content: [{ type: "text", text: serializeView(explorer) }],
+          content: [{ type: "text", text }],
           details: { entityId, found: true },
         };
       } catch (err: any) {
+        const text = `Error inspecting explorer ${entityId}: ${err?.message ?? err}`;
+        logToolResponse("inspect_explorer", { entityId }, text);
         return {
-          content: [{ type: "text", text: `Error inspecting explorer ${entityId}: ${err?.message ?? err}` }],
+          content: [{ type: "text", text }],
           details: { entityId, found: false },
         };
       }
@@ -108,13 +132,17 @@ export function createInspectMarketTool(client: EternumClient): AgentTool<any> {
     async execute() {
       try {
         const market = await client.view.market();
+        const text = serializeView(market);
+        logToolResponse("inspect_market", {}, text);
         return {
-          content: [{ type: "text", text: serializeView(market) }],
+          content: [{ type: "text", text }],
           details: { found: true },
         };
       } catch (err: any) {
+        const text = `Error inspecting market: ${err?.message ?? err}`;
+        logToolResponse("inspect_market", {}, text);
         return {
-          content: [{ type: "text", text: `Error inspecting market: ${err?.message ?? err}` }],
+          content: [{ type: "text", text }],
           details: { found: false },
         };
       }
@@ -136,13 +164,17 @@ export function createInspectBankTool(client: EternumClient): AgentTool<any> {
     async execute(_toolCallId, { bankEntityId }: { bankEntityId: number }) {
       try {
         const bank = await client.view.bank(bankEntityId);
+        const text = serializeView(bank);
+        logToolResponse("inspect_bank", { bankEntityId }, text);
         return {
-          content: [{ type: "text", text: serializeView(bank) }],
+          content: [{ type: "text", text }],
           details: { bankEntityId, found: true },
         };
       } catch (err: any) {
+        const text = `Error inspecting bank ${bankEntityId}: ${err?.message ?? err}`;
+        logToolResponse("inspect_bank", { bankEntityId }, text);
         return {
-          content: [{ type: "text", text: `Error inspecting bank ${bankEntityId}: ${err?.message ?? err}` }],
+          content: [{ type: "text", text }],
           details: { bankEntityId, found: false },
         };
       }

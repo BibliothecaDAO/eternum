@@ -94,6 +94,7 @@ declare module "@bibliothecadao/game-agent" {
     dataDir: string;
     model?: any;
     tickIntervalMs?: number;
+    formatTickPrompt?: (state: TState) => string;
   }
 
   export interface ActionDefinition {

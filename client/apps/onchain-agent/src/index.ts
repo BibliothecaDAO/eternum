@@ -25,6 +25,7 @@ import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
 import { createInspectTools } from "./tools/inspect-tools";
 import { getActionDefinitions } from "./adapter/action-registry";
+import { formatEternumTickPrompt } from "./adapter/world-state";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
@@ -420,6 +421,7 @@ export async function main() {
     runtimeConfigManager,
     extraTools: createInspectTools(services.client),
     actionDefs: getActionDefinitions(),
+    formatTickPrompt: formatEternumTickPrompt,
   });
   runtimeAgent = game;
   const { agent, ticker, dispose: disposeAgent } = game;

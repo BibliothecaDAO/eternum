@@ -14,9 +14,12 @@ describe("buildWorldState edge cases", () => {
           rank: 0,
           totalResources: undefined,
         }),
-        mapArea: vi.fn().mockResolvedValue({}),
         market: vi.fn().mockResolvedValue({}),
         leaderboard: vi.fn().mockResolvedValue({ entries: undefined, totalPlayers: undefined }),
+      },
+      sql: {
+        fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
+        fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
       },
     } as any;
 

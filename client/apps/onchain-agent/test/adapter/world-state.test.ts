@@ -34,9 +34,9 @@ describe("buildWorldState", () => {
     const realm = state.entities.find((e) => e.entityId === 1);
     expect(realm).toBeDefined();
     expect(realm!.type).toBe("structure");
-    expect(realm!.owner).toBe("0xdeadbeef");
+    expect(realm!.owner).toBe("0xDeadBeef");
     expect(realm!.position).toEqual({ x: 10, y: 20 });
-    expect(realm!.structureType).toBe("realm");
+    expect(realm!.structureType).toBe("Realm");
     expect(realm!.level).toBe(2);
   });
 
@@ -47,8 +47,8 @@ describe("buildWorldState", () => {
     const army = state.entities.find((e) => e.entityId === 100);
     expect(army).toBeDefined();
     expect(army!.type).toBe("army");
-    expect(army!.strength).toBe(50);
-    expect(army!.stamina).toBe(80);
+    expect(army!.strength).toBe(300); // computeStrength(150, 2) = 300
+    expect(army!.stamina).toBe(80); // parseHex("0x50") = 80
     expect(army!.isInBattle).toBe(false);
   });
 
@@ -81,25 +81,38 @@ describe("buildWorldState", () => {
     expect(state.leaderboard.totalPlayers).toBe(50);
   });
 
-  it("populates resources map from player totalResources", async () => {
+  it("populates per-structure resources and production buildings from SQL", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");
 
+    // Global aggregate
     expect(state.resources).toBeDefined();
     expect(state.resources!.get("Wood")).toBe(500);
     expect(state.resources!.get("Stone")).toBe(300);
+
+    // Per-structure resources
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.resources).toBeDefined();
+    expect(realm!.resources!.get("Wood")).toBe(500);
+    expect(realm!.resources!.get("Stone")).toBe(300);
+
+    // Production buildings
+    expect(realm!.productionBuildings).toBeDefined();
+    expect(realm!.productionBuildings).toContain("Wood x2");
+    expect(realm!.productionBuildings).toContain("Stone x1");
+
+    expect(client.sql.fetchResourceBalancesAndProduction).toHaveBeenCalledWith([1]);
   });
 
-  it("calls view methods with bounding box around owned entities", async () => {
+  it("calls sql and view methods", async () => {
     const client = createMockClient() as any;
     await buildWorldState(client, "0xdeadbeef");
 
     expect(client.view.player).toHaveBeenCalledWith("0xdeadbeef");
     expect(client.view.market).toHaveBeenCalled();
     expect(client.view.leaderboard).toHaveBeenCalledWith({ limit: 10 });
-    // mapArea is called with a bounding box centered on owned entities (10,20) and (15,25)
-    // minX=5, maxX=20, minY=15, maxY=30 → center (12,22), radius 8
-    expect(client.view.mapArea).toHaveBeenCalledWith({ x: 12, y: 22, radius: 8 });
+    expect(client.sql.fetchAllStructuresMapData).toHaveBeenCalled();
+    expect(client.sql.fetchAllArmiesMapData).toHaveBeenCalled();
   });
 
   it("filters out entities beyond VIEW_RADIUS of owned positions", async () => {
@@ -114,5 +127,86 @@ describe("buildWorldState", () => {
     const mine = state.entities.find((e) => e.entityId === 3);
     expect(mine).toBeDefined();
     expect(mine!.owner).toBe("0xother");
+  });
+
+  it("marks owned entities with isOwned=true", async () => {
+    const client = createMockClient() as any;
+    // Use lowercase address — sameAddress does case-insensitive compare
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.isOwned).toBe(true);
+
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army!.isOwned).toBe(true);
+
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.isOwned).toBe(false);
+  });
+
+  it("populates ownerName from raw SQL data", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.ownerName).toBe("TestPlayer");
+
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.ownerName).toBe("Rival");
+
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army!.ownerName).toBe("TestPlayer");
+  });
+
+  it("computes guardStrength from guard slots", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    // alpha_count=0x22ECB25C00=150*1B, alpha_tier=T2 → computeStrength(150, 2) = 300
+    expect(realm!.guardStrength).toBe(300);
+
+    // Mine has no guards
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.guardStrength).toBe(0);
+  });
+
+  it("builds troopSummary for armies", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const army = state.entities.find((e) => e.entityId === 100);
+    // count=0x22ECB25C00=150*1B, category="Knight", tier="T2"
+    expect(army!.troopSummary).toBe("150 Knight T2");
+  });
+
+  it("populates actions for owned entities only", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.actions).toBeDefined();
+    expect(realm!.actions).toContain("createExplorer");
+    expect(realm!.actions).toContain("addGuard");
+
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army!.actions).toBeDefined();
+    expect(army!.actions).toContain("move");
+    expect(army!.actions).toContain("attackExplorer");
+
+    // Non-owned entities have no actions
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.actions).toBeUndefined();
+  });
+
+  it("uses structure category names from numeric types", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.structureType).toBe("Realm"); // structure_type: 1
+
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.structureType).toBe("Mine"); // structure_type: 4
   });
 });
