@@ -1,21 +1,21 @@
 /**
- * Bundle onchain-agent with the wasm-bindgen embed plugin.
+ * Bundle onchain-agent with build plugins for standalone binary support.
  *
  * Usage:
  *   bun run build.ts              # bundle only (dist-bun/cli.js)
  *   bun run build.ts --compile    # bundle + compile standalone binary (./axis)
  */
 
-import { wasmPlugin } from "./src/wasm-plugin";
+import { wasmPlugin, createPiConfigPlugin } from "./src/build-plugins";
+import path from "node:path";
 
-const args = process.argv.slice(2);
-const compile = args.includes("--compile");
+const packageJsonPath = path.join(import.meta.dir, "package.json");
 
 const result = await Bun.build({
   entrypoints: ["./src/cli.ts"],
   outdir: "./dist-bun",
   target: "bun",
-  plugins: [wasmPlugin],
+  plugins: [wasmPlugin, createPiConfigPlugin(packageJsonPath)],
 });
 
 if (!result.success) {
@@ -27,11 +27,15 @@ if (!result.success) {
 
 console.log(`Bundled ${result.outputs.length} file(s) to dist-bun/`);
 
-if (compile) {
+if (compile()) {
   console.log("Compiling binary...");
   const proc = Bun.spawnSync(["bun", "build", "./dist-bun/cli.js", "--compile", "--outfile", "axis"], {
     cwd: import.meta.dir,
     stdio: ["inherit", "inherit", "inherit"],
   });
   process.exit(proc.exitCode ?? 0);
+}
+
+function compile() {
+  return process.argv.slice(2).includes("--compile");
 }
