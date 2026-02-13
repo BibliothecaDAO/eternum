@@ -20,6 +20,7 @@ describe("buildWorldState edge cases", () => {
       sql: {
         fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
         fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+        fetchAllTiles: vi.fn().mockResolvedValue([]),
       },
     } as any;
 

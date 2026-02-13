@@ -97,9 +97,13 @@ export function createMockClient() {
           delta_count: null,
           delta_stamina_amount: null,
           delta_battle_cooldown_end: null,
-          packed_counts_1: null,
+          // packed_counts_1: category 1 (WorkersHut) = 2, category 5 (Wood) = 3
+          // Bits: cat 1 at offset 0*8=0, cat 5 at offset 4*8=32
+          // (2 << 0) | (3 << 32) = 0x300000002
+          packed_counts_1: "0x300000002",
           packed_counts_2: null,
-          packed_counts_3: null,
+          // packed_counts_3: category 37 (Wheat) at index 36, offset (36-32)*8 = 32 → 1 << 32
+          packed_counts_3: "0x100000000",
           latest_attacker_id: null,
           latest_attack_timestamp: null,
           latest_defender_id: null,
@@ -236,6 +240,20 @@ export function createMockClient() {
           latest_defender_coord_x: null,
           latest_defender_coord_y: null,
         },
+      ]),
+      fetchAllTiles: vi.fn().mockResolvedValue([
+        // Explored tiles around army at (15, 25)
+        // Army is at (15,25) — odd row neighbors:
+        //   East: (16,25), NE: (15,26), NW: (14,26), West: (14,25), SW: (14,24), SE: (15,24)
+        { col: 16, row: 25, biome: 3, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
+        { col: 15, row: 26, biome: 5, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
+        { col: 14, row: 26, biome: 2, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
+        // West (14,25) is NOT in the list → unexplored
+        // SW (14,24) is NOT in the list → unexplored
+        // SE (15,24) explored:
+        { col: 15, row: 24, biome: 1, occupier_id: 0, occupier_type: 0, occupier_is_structure: false, reward_extracted: false },
+        // Owned structure tile at (10,20) — explored
+        { col: 10, row: 20, biome: 4, occupier_id: 1, occupier_type: 1, occupier_is_structure: true, reward_extracted: false },
       ]),
     },
     cache: {

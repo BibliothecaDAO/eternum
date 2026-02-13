@@ -199,6 +199,56 @@ describe("buildWorldState", () => {
     expect(mine!.actions).toBeUndefined();
   });
 
+  it("populates neighborTiles with exploration status for owned armies", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const army = state.entities.find((e) => e.entityId === 100);
+    expect(army!.neighborTiles).toBeDefined();
+    expect(army!.neighborTiles!.length).toBe(6);
+
+    // Army at (15, 25) — odd row
+    // East (16,25) → biome=3 → explored, not occupied
+    const east = army!.neighborTiles!.find((n) => n.direction === "East");
+    expect(east!.explored).toBe(true);
+    expect(east!.occupied).toBe(false);
+
+    // NE (15,26) → biome=5 → explored
+    const ne = army!.neighborTiles!.find((n) => n.direction === "NE");
+    expect(ne!.explored).toBe(true);
+
+    // West (14,25) → not in tiles → unexplored
+    const west = army!.neighborTiles!.find((n) => n.direction === "West");
+    expect(west!.explored).toBe(false);
+
+    // SW (14,24) → not in tiles → unexplored
+    const sw = army!.neighborTiles!.find((n) => n.direction === "SW");
+    expect(sw!.explored).toBe(false);
+
+    // SE (15,24) → biome=1 → explored
+    const se = army!.neighborTiles!.find((n) => n.direction === "SE");
+    expect(se!.explored).toBe(true);
+  });
+
+  it("populates buildingSlots from packed_counts for owned structures", async () => {
+    const client = createMockClient() as any;
+    const state = await buildWorldState(client, "0xdeadbeef");
+
+    const realm = state.entities.find((e) => e.entityId === 1);
+    expect(realm!.buildingSlots).toBeDefined();
+    // Level 2 → total = 3 * 3 * 4 = 36
+    expect(realm!.buildingSlots!.total).toBe(36);
+    // packed_counts_1 has WorkersHut x2 + Wood x3, packed_counts_3 has Wheat x1 = 6 used
+    expect(realm!.buildingSlots!.used).toBe(6);
+    expect(realm!.buildingSlots!.buildings).toContain("WorkersHut x2");
+    expect(realm!.buildingSlots!.buildings).toContain("Wood x3");
+    expect(realm!.buildingSlots!.buildings).toContain("Wheat x1");
+
+    // Non-owned entities have no buildingSlots
+    const mine = state.entities.find((e) => e.entityId === 3);
+    expect(mine!.buildingSlots).toBeUndefined();
+  });
+
   it("uses structure category names from numeric types", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");

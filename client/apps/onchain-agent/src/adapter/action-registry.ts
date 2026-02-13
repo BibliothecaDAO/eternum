@@ -380,6 +380,46 @@ const BUILDING_TYPES =
   "31=CrossbowmanT1, 32=CrossbowmanT2, 33=CrossbowmanT3, 34=PaladinT1, 35=PaladinT2, " +
   "36=PaladinT3, 37=Wheat, 38=Fish, 39=Essence";
 
+// Compact building reference: ID, simple-mode Labor cost, pop cost, production inputs/outputs.
+// Format: "ID:Name — cost:L<labor> pop:<pop> produces:<resource>(output/tick) consumes:<inputs>"
+// Buildings with empty [] costs cannot be built in simple mode.
+// Realm must produce the resource matching the building (e.g., Realm must have Stone to build Stone building).
+const BUILDING_GUIDE =
+  "BUILDING GUIDE — build cost (simple=Labor only | complex=Labor+resources), per-tick production consumption:\n" +
+  "Economy:\n" +
+  "  1:WorkersHut — simple:60L | complex:20L+20Wood | pop:0, +6 population\n" +
+  "  27:Donkey — simple:180L | complex:60L+60Wood | pop:3, 1/tick. simple: free | complex: 3Wheat\n" +
+  "  25:Labor — free to build | pop:1, 1/tick, free upkeep\n" +
+  "  37:Wheat(Farm) — simple:10L | complex:10L | pop:1, 6/tick, free upkeep\n" +
+  "  38:Fish — free | pop:1, realm-native, free upkeep\n" +
+  "Base Resources (1/tick, pop:2):\n" +
+  "  5:Wood — simple:30L | complex:30L. simple: 1Wh+0.5Lab | complex: 1Wh+0.2Coal+0.2Copper\n" +
+  "  4:Coal — simple:90L | complex:30L+30Wood. simple: 1Wh+1Lab | complex: 1Wh+0.3Wood+0.2Copper\n" +
+  "  6:Copper — simple:300L | complex:60L+60Wood+30Coal. simple: 1Wh+1Lab | complex: 1Wh+0.3Wood+0.2Coal\n" +
+  "  3:Stone — realm-native, free build, free upkeep\n" +
+  "Mid Resources (1/tick, pop:2):\n" +
+  "  7:Ironwood — simple:720L | complex:120L+120Wood+60Coal+30Copper. simple: 2Wh+2.5Lab | complex: 2Wh+0.6Coal+0.4Copper\n" +
+  "  13:ColdIron — simple:720L | complex:120L+120Wood+60Coal+30Copper. simple: 2Wh+2.5Lab | complex: 2Wh+0.6Coal+0.4Copper\n" +
+  "  9:Gold — simple:720L | complex:120L+120Wood+60Coal+30Copper. simple: 2Wh+2.5Lab | complex: 2Wh+0.6Coal+0.4Copper\n" +
+  "Rare Resources (1/tick, pop:2):\n" +
+  "  21:Adamantine — simple:free | complex:240L+180Wood+120Copper+60Ironwood+600Essence. simple: 4Wh+10Lab | complex: 3Wh+0.9Coal+0.6Ironwood\n" +
+  "  11:Mithral — simple:free | complex:240L+180Wood+120Copper+60ColdIron+600Essence. simple: 4Wh+10Lab | complex: 3Wh+0.9Coal+0.6ColdIron\n" +
+  "  24:Dragonhide — simple:free | complex:240L+180Wood+120Copper+60Gold+600Essence. simple: 4Wh+10Lab | complex: 3Wh+0.9Coal+0.6Gold\n" +
+  "T1 Military (5 troops/tick, pop:3):\n" +
+  "  28:KnightT1 — simple:1200L | complex:180L+180Wood+120Copper. simple: 2Wh+0.5Lab | complex: 2Wh+0.4Copper\n" +
+  "  31:CrossbowT1 — simple:1200L | complex:180L+180Wood+120Copper. simple: 2Wh+0.5Lab | complex: 2Wh+0.4Copper\n" +
+  "  34:PaladinT1 — simple:1200L | complex:180L+180Wood+120Copper. simple: 2Wh+0.5Lab | complex: 2Wh+0.4Copper\n" +
+  "T2 Military (5 troops/tick, pop:3) — complex mode ONLY:\n" +
+  "  29:KnightT2 — complex:360L+240Wood+180Copper+60ColdIron+600Essence. consumes: 3Wh+10KnightT1+0.2Copper+0.6ColdIron+1Essence\n" +
+  "  32:CrossbowT2 — complex:360L+240Wood+180Copper+60Ironwood+600Essence. consumes: 3Wh+10CrossbowT1+0.2Copper+0.6Ironwood+1Essence\n" +
+  "  35:PaladinT2 — complex:360L+240Wood+180Copper+60Gold+600Essence. consumes: 3Wh+10PaladinT1+0.2Copper+0.6Gold+1Essence\n" +
+  "T3 Military (5 troops/tick, pop:3) — complex mode ONLY:\n" +
+  "  30:KnightT3 — complex:540L+360Wood+240ColdIron+120Mithral+1200Essence. consumes: 4Wh+10KnightT2+0.4ColdIron+0.8Mithral+3Essence\n" +
+  "  33:CrossbowT3 — complex:540L+360Wood+240Ironwood+120Adamantine+1200Essence. consumes: 4Wh+10CrossbowT2+0.4Ironwood+0.8Adamantine+3Essence\n" +
+  "  36:PaladinT3 — complex:540L+360Wood+240Gold+120Dragonhide+1200Essence. consumes: 4Wh+10PaladinT2+0.4Gold+0.8Dragonhide+3Essence\n" +
+  "Slots: Level 0=6, Level 1=18, Level 2=36. Formula: 3*(level+1)*(level+2). Use directions to path from center hex.\n" +
+  "Priority: Wheat farms first (all production needs Wheat), then Labor, then resource buildings, then military.";
+
 const DIR = "0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE";
 
 const TROOP_CATEGORY = "0=Knight, 1=Paladin, 2=Crossbowman";
@@ -800,12 +840,12 @@ registerAliases(["cancel_order", "cancel_trade"], "Cancel your trade order", can
 
 register(
   "create_building",
-  "Build a new building at a structure",
+  `Build a new building at a structure. Each building produces a resource per tick but consumes inputs (mainly Wheat + Labor). ${BUILDING_GUIDE}`,
   [
     n("entityId", "Structure entity ID to build at"),
     na("directions", `Hex directions to building location (${DIR})`),
     n("buildingCategory", `Building category ID. ${BUILDING_TYPES}`),
-    b("useSimple", "Use simple (cheaper) building variant"),
+    b("useSimple", "true = pay only Labor (higher amount, no other resources). false = pay Labor + specific resources. T2/T3 military buildings are NOT available in simple mode"),
   ],
   (client, signer, p) =>
     wrapTx(() =>

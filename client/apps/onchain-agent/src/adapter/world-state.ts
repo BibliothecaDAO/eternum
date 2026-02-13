@@ -24,12 +24,14 @@ export interface EternumEntity {
   guardStrength?: number;
   resources?: Map<string, number>;
   productionBuildings?: string[];
+  buildingSlots?: { used: number; total: number; buildings: string[] };
 
   // Army-specific
   strength?: number;
   stamina?: number;
   isInBattle?: boolean;
   troopSummary?: string;
+  neighborTiles?: { direction: string; dirId: number; explored: boolean; occupied: boolean }[];
 
   // Owned entities only
   actions?: string[];
@@ -208,6 +210,105 @@ function sameAddress(a: string | null | undefined, b: string | null | undefined)
   }
 }
 
+// ---------------------------------------------------------------------------
+// Building slot parsing — unpack packed_counts from structure data
+// ---------------------------------------------------------------------------
+
+const BUILDING_NAMES: Record<number, string> = {
+  1: "WorkersHut",
+  3: "Stone",
+  4: "Coal",
+  5: "Wood",
+  6: "Copper",
+  7: "Ironwood",
+  9: "Gold",
+  11: "Mithral",
+  13: "ColdIron",
+  21: "Adamantine",
+  24: "Dragonhide",
+  25: "Labor",
+  27: "Donkey",
+  28: "KnightT1",
+  29: "KnightT2",
+  30: "KnightT3",
+  31: "CrossbowT1",
+  32: "CrossbowT2",
+  33: "CrossbowT3",
+  34: "PaladinT1",
+  35: "PaladinT2",
+  36: "PaladinT3",
+  37: "Wheat",
+  38: "Fish",
+  39: "Essence",
+};
+
+/** Unpack 3 packed u128 hex strings into an array of 48 8-bit building counts. */
+function unpackBuildingCountsFromHex(
+  hex1: string | null | undefined,
+  hex2: string | null | undefined,
+  hex3: string | null | undefined,
+): number[] {
+  const counts: number[] = [];
+  for (const hex of [hex1, hex2, hex3]) {
+    const val = hex ? parseHexBig(hex) : 0n;
+    for (let i = 0; i < 16; i++) {
+      counts.push(Number((val >> BigInt(i * 8)) & 0xffn));
+    }
+  }
+  return counts;
+}
+
+/** Build building slot summary for a structure. */
+function buildBuildingSlots(raw: any): { used: number; total: number; buildings: string[] } {
+  const level = Number(raw.level ?? 0);
+  // Max slots = 3 * (level+1) * (level+2) — rings 1..(level+1) around center hex
+  const total = 3 * (level + 1) * (level + 2);
+
+  const counts = unpackBuildingCountsFromHex(raw.packed_counts_1, raw.packed_counts_2, raw.packed_counts_3);
+
+  let used = 0;
+  const buildings: string[] = [];
+  for (let i = 0; i < counts.length; i++) {
+    if (counts[i] > 0) {
+      used += counts[i];
+      const name = BUILDING_NAMES[i + 1] ?? `Type${i + 1}`;
+      buildings.push(`${name} x${counts[i]}`);
+    }
+  }
+
+  return { used, total, buildings };
+}
+
+// ---------------------------------------------------------------------------
+// Hex neighbor calculation — even-r offset coordinates (matches Cairo contract)
+// ---------------------------------------------------------------------------
+
+const DIR_NAMES = ["East", "NE", "NW", "West", "SW", "SE"] as const;
+
+/** Compute the 6 hex neighbors of a position using even-r offset coords. */
+function hexNeighbors(x: number, y: number): { dir: string; dirId: number; x: number; y: number }[] {
+  if (y % 2 === 0) {
+    // Even row
+    return [
+      { dir: "East", dirId: 0, x: x + 1, y },
+      { dir: "NE", dirId: 1, x: x + 1, y: y + 1 },
+      { dir: "NW", dirId: 2, x, y: y + 1 },
+      { dir: "West", dirId: 3, x: x - 1, y },
+      { dir: "SW", dirId: 4, x, y: y - 1 },
+      { dir: "SE", dirId: 5, x: x + 1, y: y - 1 },
+    ];
+  }
+  // Odd row
+  return [
+    { dir: "East", dirId: 0, x: x + 1, y },
+    { dir: "NE", dirId: 1, x, y: y + 1 },
+    { dir: "NW", dirId: 2, x: x - 1, y: y + 1 },
+    { dir: "West", dirId: 3, x: x - 1, y },
+    { dir: "SW", dirId: 4, x: x - 1, y: y - 1 },
+    { dir: "SE", dirId: 5, x, y: y - 1 },
+  ];
+}
+
 function getStructureActions(structureType: string): string[] {
   const base = ["addGuard", "deleteGuard"];
   switch (structureType) {
@@ -246,16 +347,18 @@ function getArmyActions(): string[] {
  */
 export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
   // 1. Fetch all data sources in parallel.
-  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies] = await Promise.all([
+  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles] = await Promise.all([
     client.view.player(accountAddress),
     client.view.market(),
     client.view.leaderboard({ limit: 10 }),
     client.sql.fetchAllStructuresMapData(),
     client.sql.fetchAllArmiesMapData(),
+    client.sql.fetchAllTiles().catch(() => [] as any[]),
   ]);
 
   const rawStructures: any[] = Array.isArray(allRawStructures) ? allRawStructures : [];
   const rawArmies: any[] = Array.isArray(allRawArmies) ? allRawArmies : [];
+  const rawTiles: any[] = Array.isArray(allTiles) ? allTiles : [];
 
   // 2. Collect positions of every entity the player owns (from raw data).
   const ownedPositions: Pos[] = [];
@@ -293,6 +396,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       structureType: stType,
       level: Number(s.level ?? 0),
       guardStrength: computeGuardStrength(s),
+      buildingSlots: owned ? buildBuildingSlots(s) : undefined,
       actions: owned ? getStructureActions(stType) : undefined,
     };
   });
@@ -316,6 +420,39 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       actions: owned ? getArmyActions() : undefined,
     };
   });
+
+  // 5b. Build exploration map and per-army neighbor tiles.
+  //     Tile biome > 0 means explored; biome 0 or missing means unexplored.
+  const exploredTiles = new Set<string>();
+  for (const t of rawTiles) {
+    const col = Number(t.col ?? t.x ?? 0);
+    const row = Number(t.row ?? t.y ?? 0);
+    const biome = Number(t.biome ?? 0);
+    if (biome > 0) {
+      exploredTiles.add(`${col},${row}`);
+    }
+  }
+
+  // Build a set of occupied tile coords (structures + armies) for army pathfinding.
+  const occupiedTiles = new Set<string>();
+  for (const s of nearbyRawStructures) {
+    occupiedTiles.add(`${Number(s.coord_x ?? 0)},${Number(s.coord_y ?? 0)}`);
+  }
+  for (const a of nearbyRawArmies) {
+    occupiedTiles.add(`${Number(a.coord_x ?? 0)},${Number(a.coord_y ?? 0)}`);
+  }
+
+  // For each owned army, compute neighbor tile exploration + occupation status.
+  for (const army of armyEntities) {
+    if (!army.isOwned) continue;
+    const neighbors = hexNeighbors(army.position.x, army.position.y);
+    army.neighborTiles = neighbors.map((n) => ({
+      direction: n.dir,
+      dirId: n.dirId,
+      explored: exploredTiles.has(`${n.x},${n.y}`),
+      occupied: occupiedTiles.has(`${n.x},${n.y}`),
+    }));
+  }
 
   const entities: EternumEntity[] = [...structureEntities, ...armyEntities];
 
@@ -437,8 +574,9 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
     player: {
       address: (playerView as any)?.address ?? accountAddress,
       name: (playerView as any)?.name ?? "",
-      structures: playerStructures.length,
-      armies: playerArmies.length,
+      // Use SQL-derived entity counts — playerView.armies is unreliable (often empty)
+      structures: structureEntities.filter((e) => e.isOwned).length,
+      armies: armyEntities.filter((e) => e.isOwned).length,
       points: Number((playerView as any)?.points ?? 0),
       rank: Number((playerView as any)?.rank ?? 0),
     },
@@ -529,11 +667,39 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
         if (e.productionBuildings && e.productionBuildings.length > 0) {
           lines.push(`    Buildings: ${e.productionBuildings.join(", ")}`);
         }
+        // Building slots
+        if (e.buildingSlots) {
+          const { used, total, buildings } = e.buildingSlots;
+          const free = total - used;
+          lines.push(`    Slots: ${used}/${total} used (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`);
+        }
       }
     }
     if (myArmies.length > 0) {
       lines.push("Armies:");
-      for (const e of myArmies) lines.push(formatEntityLine(e));
+      for (const e of myArmies) {
+        lines.push(formatEntityLine(e));
+        // Show neighbor tile exploration/occupation for owned armies
+        if (e.neighborTiles && e.neighborTiles.length > 0) {
+          const explored = e.neighborTiles
+            .filter((n) => n.explored && !n.occupied)
+            .map((n) => `${n.dirId}:${n.direction}`)
+            .join(", ");
+          const unexplored = e.neighborTiles
+            .filter((n) => !n.explored)
+            .map((n) => `${n.dirId}:${n.direction}`)
+            .join(", ");
+          const blocked = e.neighborTiles
+            .filter((n) => n.occupied)
+            .map((n) => `${n.dirId}:${n.direction}`)
+            .join(", ");
+          const parts: string[] = [];
+          if (explored) parts.push(`move:[${explored}]`);
+          if (unexplored) parts.push(`explore:[${unexplored}]`);
+          if (blocked) parts.push(`occupied:[${blocked}]`);
+          lines.push(`    Tiles: ${parts.join(" | ")}`);
+        }
+      }
     }
     sections.push(lines.join("\n"));
   } else {
