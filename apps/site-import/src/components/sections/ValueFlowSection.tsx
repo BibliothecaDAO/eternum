@@ -422,7 +422,6 @@ function ValueFlowSectionContent() {
         transition={{ delay: 0.4, duration: 0.5 }}
       >
         <ReactFlow
-          key={`${lordsLocked}-${tvl}-${currentAPY}-${tokensThisWeek}`}
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}

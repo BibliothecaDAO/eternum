@@ -1433,6 +1433,49 @@
   }
 }
 
+@keyframes hero-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes hero-glow-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 30px color-mix(in oklab, var(--primary) 35%, transparent),
+      0 0 60px color-mix(in oklab, var(--primary) 15%, transparent);
+  }
+  50% {
+    text-shadow:
+      0 0 40px color-mix(in oklab, var(--primary) 50%, transparent),
+      0 0 80px color-mix(in oklab, var(--primary) 25%, transparent),
+      0 0 120px color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+}
+
+.hero-title-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--primary) 0%,
+    color-mix(in oklab, var(--realm-accent-brass) 100%, white) 25%,
+    color-mix(in oklab, var(--primary) 100%, white) 40%,
+    color-mix(in oklab, var(--realm-accent-ember) 85%, white) 55%,
+    var(--primary) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-shimmer 4s ease-in-out infinite;
+}
+
+.hero-title-glow {
+  animation: hero-glow-pulse 3s ease-in-out infinite;
+}
+
 @keyframes blitz-ascii-drift {
   0% {
     transform: translate3d(-1%, -1%, 0) scale(1);

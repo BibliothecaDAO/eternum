@@ -13,21 +13,20 @@ import {
   lordsInfoQueryOptions,
   treasuryBalanceQueryOptions,
 } from "@/lib/query-options";
-
-const TOTAL_SUPPLY = 300_000_000;
+import { LORDS_TOTAL_SUPPLY } from "@/lib/constants";
 
 export function TokenomicsSection() {
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
 
   const treasuryLords = treasuryBalance?.LORDS.amount || 0;
-  const treasuryPercentage = ((treasuryLords / TOTAL_SUPPLY) * 100).toFixed(1);
+  const treasuryPercentage = ((treasuryLords / LORDS_TOTAL_SUPPLY) * 100).toFixed(1);
   const marketPercentage = (100 - parseFloat(treasuryPercentage)).toFixed(1);
 
   const supplySnapshot = [
     {
       label: "Total Supply",
-      value: TOTAL_SUPPLY.toLocaleString(),
+      value: LORDS_TOTAL_SUPPLY.toLocaleString(),
       helper: "$LORDS",
     },
     {
@@ -159,7 +158,7 @@ export function TokenomicsSection() {
                     <p className="text-sm text-muted-foreground">
                       {treasuryLords > 0
                         ? `${(
-                            TOTAL_SUPPLY - treasuryLords
+                            LORDS_TOTAL_SUPPLY - treasuryLords
                           ).toLocaleString()} LORDS`
                         : "Syncing..."}
                     </p>

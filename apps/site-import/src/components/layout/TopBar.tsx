@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { HEADER_SCROLL_OFFSET } from "@/lib/constants";
 import {
   Bot,
   Coins,
@@ -196,12 +197,11 @@ export function TopBar() {
       return;
     }
 
-    const element = document.querySelector(href);
+    const element = document.getElementById(sectionId);
     if (!element) return;
 
-    const offset = 108;
     const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - offset;
+    const offsetPosition = elementPosition + window.pageYOffset - HEADER_SCROLL_OFFSET;
 
     window.scrollTo({
       top: offsetPosition,

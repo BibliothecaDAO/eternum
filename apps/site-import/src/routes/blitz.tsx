@@ -1,30 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { FormEvent, MouseEvent, useCallback, useEffect, useRef, useState } from "react";
-import { Bot, Command, Send } from "lucide-react";
 import { generateMetaTags } from "@/lib/og-image";
-import { cn } from "@/lib/utils";
-
-type TerminalLineKind = "system" | "input" | "agent";
-
-interface TerminalLine {
-  id: string;
-  kind: TerminalLineKind;
-  text: string;
-}
-
-const INITIAL_TERMINAL_LINES: TerminalLine[] = [
-  {
-    id: "boot-1",
-    kind: "system",
-    text: "Blitz Agent Console v0.1 booted. Type `help` to inspect commands.",
-  },
-  {
-    id: "boot-2",
-    kind: "agent",
-    text: "Agent online. I can explain Blitz loops, agents, and cross-ecosystem handoffs.",
-  },
-];
+import { Button } from "@/components/ui/button";
+import {
+  ArrowRight,
+  Bot,
+  Shield,
+  Coins,
+  Globe,
+  ChevronDown,
+  ImageIcon,
+} from "lucide-react";
 
 const blitzPhases = [
   {
@@ -80,243 +66,59 @@ const agentRoles = [
   },
 ];
 
-const ecosystemSignals = [
+const trustCards = [
   {
-    id: "quests",
-    label: "Quest Systems",
-    value: "Live objective outcomes",
+    id: "auditable",
+    icon: Shield,
+    title: "Auditable Matches",
     description:
-      "Campaign and mission systems can react to completed Blitz actions in near real-time.",
+      "Every agent decision and match outcome is recorded onchain. Verify any result.",
   },
   {
-    id: "economy",
-    label: "Economy & Rewards",
-    value: "Verified action checkpoints",
+    id: "stakes",
+    icon: Coins,
+    title: "Live $LORDS Stakes",
     description:
-      "Reward engines consume verifier output instead of ad-hoc logs, reducing payout ambiguity.",
+      "Real token rewards for competitive performance. Earn as you climb the brackets.",
   },
   {
-    id: "identity",
-    label: "Identity Graph",
-    value: "Per-wallet play signatures",
+    id: "open",
+    icon: Globe,
+    title: "Open Protocol",
     description:
-      "Agent output enriches identity rails used by matchmaking, trust scoring, and progression.",
+      "Open-source agents and verifiable execution. Build your own strategies on top.",
   },
 ];
 
-const blitzTiers = [
-  {
-    id: "recruit",
-    tier: "Recruit",
-    summary:
-      "Entry bracket for new commanders calibrating openings and tempo in short matches.",
-  },
-  {
-    id: "gladiator",
-    tier: "Gladiator",
-    summary:
-      "Mid-bracket with tighter timings where composition and reaction windows decide fights.",
-  },
-  {
-    id: "warrior",
-    tier: "Warrior",
-    summary:
-      "High-skill bracket focused on reliable execution and low-error tactical loops.",
-  },
-  {
-    id: "elite",
-    tier: "Elite",
-    summary:
-      "Top bracket where each two-hour run is optimized for precision, adaptation, and consistency.",
-  },
+const screenshotPlaceholders = [
+  { id: "ss-1", label: "Match overview" },
+  { id: "ss-2", label: "Agent decision tree" },
+  { id: "ss-3", label: "Live combat feed" },
+  { id: "ss-4", label: "Post-match audit" },
 ];
-
-function getCommandResponse(command: string): string[] {
-  const normalized = command.trim().toLowerCase();
-
-  switch (normalized) {
-    case "help":
-      return [
-        "Available: help, blitz, agents, ecosystem, loop, status, clear",
-        "Try `loop` for a short breakdown of an agent turn in Blitz.",
-      ];
-    case "blitz":
-      return [
-        "Blitz is a two-hour RTS mode with fast, agent-assisted combat cycles.",
-        "Modes run in four brackets: Recruit, Gladiator, Warrior, and Elite.",
-      ];
-    case "agents":
-      return [
-        "Blitz agents are role-based: scout, planner, executor, and verifier.",
-        "The verifier writes structured state so other games and services can consume the result.",
-      ];
-    case "ecosystem":
-      return [
-        "Cross-ecosystem flow: Blitz emits action logs, strategy metadata, and identity-linked outcomes.",
-        "Other Realms surfaces can subscribe to that feed for rewards, quests, and progression sync.",
-      ];
-    case "loop":
-      return [
-        "Agent loop: ingest onchain state -> infer tactical objective -> choose command -> execute -> checkpoint.",
-        "Checkpoint data is designed for composability across the wider Realms stack.",
-      ];
-    case "status":
-      return [
-        "Status: Video placeholder active. Agent simulation active. Awaiting Blitz footage drop-in.",
-      ];
-    default:
-      return [
-        `Unknown command: ${command}`,
-        "Use `help` to see supported commands.",
-      ];
-  }
-}
 
 export const Route = createFileRoute("/blitz")({
   component: BlitzPage,
   head: () => ({
     meta: generateMetaTags({
-      title: "Blitz Agent Console - Realms World",
+      title: "Blitz - Agent RTS Combat | Realms World",
       description:
-        "Preview Blitz, the two-hour RTS mode, with a full-screen video stub and simulated agent CLI.",
+        "Two-hour RTS matches with AI agents executing your tactics. Every move verified onchain on Starknet.",
       path: "/blitz",
     }),
   }),
 });
 
 function BlitzPage() {
-  const [command, setCommand] = useState("");
-  const [terminalLines, setTerminalLines] = useState(INITIAL_TERMINAL_LINES);
-  const [isResponding, setIsResponding] = useState(false);
-  const [isHeroAsciiActive, setIsHeroAsciiActive] = useState(false);
-  const terminalBottomRef = useRef<HTMLDivElement | null>(null);
-  const responseTimeoutsRef = useRef<number[]>([]);
-  const heroAsciiOverlayRef = useRef<HTMLDivElement | null>(null);
-  const heroAsciiRafRef = useRef<number | null>(null);
-  const heroAsciiPendingRef = useRef({ x: 50, y: 50 });
-
-  useEffect(() => {
-    terminalBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [terminalLines]);
-
-  useEffect(() => {
-    return () => {
-      responseTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
-      responseTimeoutsRef.current = [];
-      if (heroAsciiRafRef.current !== null) {
-        window.cancelAnimationFrame(heroAsciiRafRef.current);
-        heroAsciiRafRef.current = null;
-      }
-    };
-  }, []);
-
-  const commitHeroAsciiPosition = useCallback(() => {
-    const overlay = heroAsciiOverlayRef.current;
-    if (!overlay) {
-      heroAsciiRafRef.current = null;
-      return;
-    }
-
-    overlay.style.setProperty("--ascii-x", `${heroAsciiPendingRef.current.x}%`);
-    overlay.style.setProperty("--ascii-y", `${heroAsciiPendingRef.current.y}%`);
-    heroAsciiRafRef.current = null;
-  }, []);
-
-  const handleHeroMouseMove = useCallback(
-    (event: MouseEvent<HTMLElement>) => {
-      const overlay = heroAsciiOverlayRef.current;
-      if (!overlay) return;
-
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * 100;
-      const y = ((event.clientY - rect.top) / rect.height) * 100;
-
-      heroAsciiPendingRef.current = {
-        x: Math.max(0, Math.min(100, x)),
-        y: Math.max(0, Math.min(100, y)),
-      };
-
-      if (heroAsciiRafRef.current !== null) return;
-      heroAsciiRafRef.current = window.requestAnimationFrame(commitHeroAsciiPosition);
-    },
-    [commitHeroAsciiPosition]
-  );
-
-  const handleHeroMouseEnter = useCallback(() => {
-    setIsHeroAsciiActive(true);
-  }, []);
-
-  const handleHeroMouseLeave = useCallback(() => {
-    setIsHeroAsciiActive(false);
-  }, []);
-
-  const queueResponse = (lines: string[]) => {
-    setIsResponding(true);
-
-    lines.forEach((line, index) => {
-      const timeoutId = window.setTimeout(() => {
-        setTerminalLines((prev) => [
-          ...prev,
-          {
-            id: `agent-${Date.now()}-${index}`,
-            kind: "agent",
-            text: line,
-          },
-        ]);
-
-        if (index === lines.length - 1) {
-          setIsResponding(false);
-        }
-      }, 200 + index * 220);
-
-      responseTimeoutsRef.current.push(timeoutId);
-    });
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const trimmedCommand = command.trim();
-    if (!trimmedCommand) return;
-
-    setCommand("");
-    setTerminalLines((prev) => [
-      ...prev,
-      {
-        id: `input-${Date.now()}`,
-        kind: "input",
-        text: `> ${trimmedCommand}`,
-      },
-    ]);
-
-    if (trimmedCommand.toLowerCase() === "clear") {
-      const timeoutId = window.setTimeout(() => {
-        setTerminalLines([
-          {
-            id: `clear-${Date.now()}`,
-            kind: "system",
-            text: "Console cleared. Type `help` to continue.",
-          },
-        ]);
-      }, 90);
-
-      responseTimeoutsRef.current.push(timeoutId);
-      return;
-    }
-
-    queueResponse(getCommandResponse(trimmedCommand));
-  };
-
   return (
     <>
-      <section
-        className="relative min-h-[100svh] overflow-hidden"
-        onMouseEnter={handleHeroMouseEnter}
-        onMouseLeave={handleHeroMouseLeave}
-        onMouseMove={handleHeroMouseMove}
-      >
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 1 - Full-bleed Hero                                        */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="relative min-h-[100svh] overflow-hidden flex flex-col">
+        {/* Video background */}
         <video
-          className="absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-70 saturate-140 contrast-110 scale-[1.03]"
+          className="absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-70 saturate-150 contrast-110 scale-[1.03]"
           autoPlay
           muted
           loop
@@ -327,138 +129,107 @@ function BlitzPage() {
           <source src="/videos/blitz-stub.mp4" type="video/mp4" />
         </video>
 
-        <div
-          ref={heroAsciiOverlayRef}
-          className={cn(
-            "absolute inset-0 pointer-events-none transition-opacity duration-300",
-            isHeroAsciiActive ? "opacity-100" : "opacity-0"
-          )}
-          style={{
-            // CSS vars are updated by RAF in mousemove handler.
-            ["--ascii-x" as string]: "50%",
-            ["--ascii-y" as string]: "50%",
-          }}
-        >
-          <div className="realm-blitz-ascii-overlay absolute inset-0" />
-          <div className="realm-blitz-hover-lens absolute inset-0" />
-        </div>
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90" />
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(246,194,122,0.28),transparent_38%),radial-gradient(circle_at_24%_80%,rgba(109,123,216,0.24),transparent_40%),linear-gradient(180deg,rgba(8,8,11,0.14),rgba(8,8,11,0.72))]" />
-
-        <div className="relative z-10 min-h-[100svh] flex items-end sm:items-center">
-          <div className="container mx-auto px-4 pb-10 sm:pb-0">
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
+        {/* Centered content */}
+        <div className="relative z-10 flex flex-1 items-center justify-center">
+          <div className="container mx-auto px-4 text-center">
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55 }}
-              className="max-w-3xl realm-panel p-6 sm:p-8"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="realm-banner mb-6"
             >
-              <p className="realm-banner mb-4">Blitz Preview</p>
-              <h1 className="realm-title text-3xl sm:text-5xl leading-tight">
-                Full-Screen Blitz Capture Placeholder
-              </h1>
-              <p className="mt-4 text-foreground/85 text-base sm:text-lg max-w-2xl">
-                Drop your final Blitz video into <code>public/videos/blitz-stub.mp4</code>
-                . Blitz is framed as a two-hour RTS run, with bracketed progression from
-                Recruit to Gladiator, Warrior, and Elite.
-              </p>
+              Agent RTS
+            </motion.p>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="realm-title text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05]"
+            >
+              Two Hours. One Winner.
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.45 }}
+              className="mt-6 text-foreground/85 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed"
+            >
+              A fast-paced onchain RTS where AI agents execute your tactics in
+              real-time. Every decision is verified. Every match is auditable.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.65 }}
+              className="mt-10 flex flex-wrap items-center justify-center gap-4"
+            >
+              <Button
+                size="lg"
+                variant="war"
+                className="shadow-lg shadow-primary/20 text-base px-8"
+                asChild
+              >
+                <Link to="/games">
+                  Enter Blitz
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+
+              <Button size="lg" variant="oath" className="text-base px-8" asChild>
+                <a href="#agent-loop">See The Loop</a>
+              </Button>
             </motion.div>
           </div>
         </div>
+
+        {/* Bouncing scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.6 }}
+          className="relative z-10 flex justify-center pb-8"
+        >
+          <a
+            href="#agent-loop"
+            className="text-foreground/50 hover:text-foreground/80 transition-colors animate-bounce"
+            aria-label="Scroll to learn more"
+          >
+            <ChevronDown className="h-7 w-7" />
+          </a>
+        </motion.div>
       </section>
 
-      <section className="relative py-16 sm:py-24">
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 2 - Agent-First Gameplay                                   */}
+      {/* ------------------------------------------------------------------ */}
+      <section id="agent-loop" className="relative py-20 sm:py-28">
         <div className="container mx-auto px-4">
+          {/* Section header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.45 }}
-            className="mb-8"
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
           >
-            <p className="realm-banner mb-3">Agent Walkthrough</p>
-            <h2 className="realm-title text-2xl sm:text-4xl">
-              Simulated CLI: Talk To A Blitz Agent
+            <p className="realm-banner mb-4">The Agent Loop</p>
+            <h2 className="realm-title text-3xl sm:text-5xl">
+              Agents Run Your Tactics
             </h2>
-            <p className="mt-3 text-foreground/80 max-w-3xl">
-              This terminal stub is where we will narrate how agents operate inside Blitz,
-              and how their outputs move across the broader ecosystem.
+            <p className="mt-4 text-foreground/80 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed">
+              Every Blitz turn follows a deterministic four-phase cycle. Your
+              agents ingest state, decide tactics, execute commands, and
+              checkpoint results.
             </p>
           </motion.div>
 
-          <div className="realm-panel realm-grid-scan rounded-xl p-4 sm:p-6 border border-primary/35 bg-black/55">
-            <div className="flex items-center justify-between gap-3 border-b border-primary/20 pb-3">
-              <div className="flex items-center gap-2 text-primary/90">
-                <Bot className="h-4 w-4" />
-                <span className="text-xs uppercase tracking-[0.2em] font-medium">
-                  Agent Console
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] text-foreground/65 uppercase tracking-[0.14em]">
-                <Command className="h-3.5 w-3.5" />
-                {isResponding ? "Responding" : "Idle"}
-              </div>
-            </div>
-
-            <div className="mt-4 h-[300px] sm:h-[360px] overflow-y-auto rounded-lg border border-primary/20 bg-black/50 px-3 py-3 font-mono text-[12px] sm:text-[13px] leading-6">
-              {terminalLines.map((line) => (
-                <p
-                  key={line.id}
-                  className={
-                    line.kind === "input"
-                      ? "text-primary"
-                      : line.kind === "system"
-                      ? "text-foreground/65"
-                      : "text-foreground/90"
-                  }
-                >
-                  {line.text}
-                </p>
-              ))}
-              <div ref={terminalBottomRef} />
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2">
-              <div className="flex-1 rounded-lg border border-primary/28 bg-black/60 px-3 py-2">
-                <input
-                  value={command}
-                  onChange={(event) => setCommand(event.target.value)}
-                  disabled={isResponding}
-                  placeholder="Type a command (try: help)"
-                  className="w-full bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-foreground/45"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isResponding}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-primary/35 bg-primary/15 text-primary transition-colors hover:bg-primary/25 disabled:opacity-50"
-                aria-label="Send command"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative py-16 sm:py-20">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.45 }}
-            className="mb-8"
-          >
-            <p className="realm-banner mb-3">Core Loop</p>
-            <h2 className="realm-title text-2xl sm:text-4xl">How Blitz Works</h2>
-            <p className="mt-3 text-foreground/80 max-w-3xl">
-              Blitz is tuned around short, repeatable agent loops. Every match turn follows
-              a deterministic cycle inside a two-hour session so players can inspect decisions
-              and downstream systems can trust the output.
-            </p>
-          </motion.div>
-
+          {/* Phase cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {blitzPhases.map((phase, index) => (
               <motion.article
@@ -466,126 +237,160 @@ function BlitzPage() {
                 initial={{ opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.35, delay: index * 0.08 }}
+                transition={{ duration: 0.35, delay: index * 0.1 }}
                 className="card-relic realm-holo-card"
               >
-                <p className="realm-sigil mb-3">Phase 0{index + 1}</p>
+                <p className="realm-sigil mb-3">
+                  Phase {String(index + 1).padStart(2, "0")}
+                </p>
                 <h3 className="realm-title text-xl">{phase.title}</h3>
-                <p className="mt-2 text-foreground/78 text-sm leading-6">{phase.detail}</p>
-              </motion.article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative py-16 sm:py-20">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.45 }}
-            className="mb-8"
-          >
-            <p className="realm-banner mb-3">Agent Stack</p>
-            <h2 className="realm-title text-2xl sm:text-4xl">Agent Roles In Every Match</h2>
-            <p className="mt-3 text-foreground/80 max-w-3xl">
-              Each Blitz turn is split into specialized responsibilities. This keeps command
-              output inspectable and makes adaptation easier without rewriting the full stack.
-            </p>
-          </motion.div>
-
-          <div className="realm-journey-map">
-            <div className="realm-journey-path" />
-            <div className="space-y-4">
-              {agentRoles.map((agent, index) => (
-                <motion.article
-                  key={agent.id}
-                  initial={{ opacity: 0, x: -16 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ duration: 0.38, delay: index * 0.08 }}
-                  className="realm-world-node card-relic sm:max-w-[88%]"
-                >
-                  <h3 className="realm-title text-xl">{agent.role}</h3>
-                  <p className="mt-2 text-foreground/78 text-sm leading-6">{agent.summary}</p>
-                </motion.article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative py-16 sm:py-20">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.45 }}
-            className="mb-8"
-          >
-            <p className="realm-banner mb-3">Brackets</p>
-            <h2 className="realm-title text-2xl sm:text-4xl">Recruit To Elite</h2>
-            <p className="mt-3 text-foreground/80 max-w-3xl">
-              Blitz sessions are grouped into four tiers so similar skill bands compete
-              with comparable tempo and tactical depth.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {blitzTiers.map((entry, index) => (
-              <motion.article
-                key={entry.id}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.35, delay: index * 0.07 }}
-                className="card-relic realm-holo-card"
-              >
-                <p className="realm-sigil mb-3">{entry.tier}</p>
-                <p className="text-sm text-foreground/80 leading-6">{entry.summary}</p>
-              </motion.article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative py-16 sm:py-24">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.45 }}
-            className="mb-8"
-          >
-            <p className="realm-banner mb-3">Integration</p>
-            <h2 className="realm-title text-2xl sm:text-4xl">Across The Realms Ecosystem</h2>
-            <p className="mt-3 text-foreground/80 max-w-3xl">
-              Blitz is designed as a producer of high-fidelity gameplay signals that other
-              systems can consume immediately.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {ecosystemSignals.map((signal, index) => (
-              <motion.article
-                key={signal.id}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.35, delay: index * 0.08 }}
-                className="realm-panel realm-grid-scan rounded-xl border border-primary/25 p-5"
-              >
-                <p className="realm-sigil mb-3">{signal.label}</p>
-                <h3 className="realm-title text-lg">{signal.value}</h3>
                 <p className="mt-2 text-foreground/78 text-sm leading-6">
-                  {signal.description}
+                  {phase.detail}
                 </p>
               </motion.article>
             ))}
           </div>
+
+          {/* Agent Roles sub-section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center mt-20 mb-10"
+          >
+            <p className="realm-banner mb-4">Agent Roles</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {agentRoles.map((agent, index) => (
+              <motion.article
+                key={agent.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.35, delay: index * 0.1 }}
+                className="card-relic"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <Bot className="h-5 w-5 text-primary/80" />
+                  <h3 className="realm-title text-lg">{agent.role}</h3>
+                </div>
+                <p className="text-foreground/78 text-sm leading-6">
+                  {agent.summary}
+                </p>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 3 - Fully Onchain & Secure                                 */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="relative py-20 sm:py-28">
+        <div className="container mx-auto px-4">
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <p className="realm-banner mb-4">Fully Onchain</p>
+            <h2 className="realm-title text-3xl sm:text-5xl">
+              Every Match Verified on Starknet
+            </h2>
+            <p className="mt-4 text-foreground/80 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed">
+              Deterministic execution means every move can be replayed and
+              audited. No hidden logic, no server-side secrets.
+            </p>
+          </motion.div>
+
+          {/* Trust cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {trustCards.map((card, index) => (
+              <motion.article
+                key={card.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.35, delay: index * 0.1 }}
+                className="realm-panel realm-grid-scan rounded-xl border border-primary/25 p-6"
+              >
+                <card.icon className="h-8 w-8 text-primary mb-4" />
+                <h3 className="realm-title text-xl mb-2">{card.title}</h3>
+                <p className="text-foreground/78 text-sm leading-6">
+                  {card.description}
+                </p>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 4 - Screenshot Gallery (placeholder)                       */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="relative py-20 sm:py-28">
+        <div className="container mx-auto px-4">
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <p className="realm-banner mb-4">See It In Action</p>
+            <h2 className="realm-title text-3xl sm:text-5xl">
+              The Arena Awaits
+            </h2>
+          </motion.div>
+
+          {/* Placeholder screenshot grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {screenshotPlaceholders.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.3, delay: index * 0.08 }}
+                className="aspect-video rounded-xl border border-dashed border-primary/30 bg-black/30 flex flex-col items-center justify-center gap-3"
+              >
+                <ImageIcon className="h-8 w-8 text-foreground/25" />
+                <span className="text-foreground/35 text-sm">
+                  Screenshot coming soon
+                </span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Final CTA banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5 }}
+            className="mt-16 text-center"
+          >
+            <h3 className="realm-title text-2xl sm:text-4xl mb-6">
+              Ready to Compete?
+            </h3>
+            <Button
+              size="lg"
+              variant="war"
+              className="shadow-lg shadow-primary/20 text-base px-8"
+              asChild
+            >
+              <Link to="/games">
+                Enter Blitz
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </motion.div>
         </div>
       </section>
     </>

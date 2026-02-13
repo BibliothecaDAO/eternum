@@ -25,6 +25,7 @@ import {
   PieChart,
   Gamepad2,
 } from "lucide-react";
+import { PROPOSAL_QUORUM } from "@/lib/constants";
 
 const appLoadTimestamp = Date.now();
 
@@ -65,11 +66,11 @@ export function TreasurySection() {
     }
 
     if (
-      (proposal.scores_total ?? 0) >= 1500 &&
+      (proposal.scores_total ?? 0) >= PROPOSAL_QUORUM &&
       Number(proposal.scores_1 ?? 0) > Number(proposal.scores_2 ?? 0)
     ) {
       return { status: "Passed", icon: CheckCircle2, color: "text-green-500" };
-    } else if ((proposal.scores_total ?? 0) < 1500) {
+    } else if ((proposal.scores_total ?? 0) < PROPOSAL_QUORUM) {
       return {
         status: "Quorum not met",
         icon: AlertCircle,
