@@ -34,7 +34,6 @@ import { Component, getComponentValue, Metadata, Schema } from "@dojoengine/recs
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
@@ -124,13 +123,13 @@ const PanelFrame = ({ title, children, headerAction, className, attached = false
     )}
     style={{ height: BOTTOM_PANEL_HEIGHT }}
   >
-    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2">
+    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-3 py-1.5">
       <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
         {title}
       </p>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
-    <div className="flex-1 min-h-0 overflow-hidden px-3 py-2">{children}</div>
+    <div className="flex-1 min-h-0 overflow-hidden px-2.5 py-2">{children}</div>
   </section>
 );
 
@@ -166,7 +165,7 @@ const PanelTabs = ({
           onClick={() => onSelect(id)}
           aria-pressed={isActive}
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-md border transition",
+            "flex h-11 w-11 items-center justify-center rounded-md border transition",
             isActive
               ? "border-gold/80 bg-black/80 text-gold shadow-[0_6px_18px_rgba(255,209,128,0.25)] ring-1 ring-gold/40"
               : "border-gold/30 bg-black/70 text-gold/70 hover:border-gold/60 hover:text-gold",
@@ -337,7 +336,6 @@ const LocalTilePanel = () => {
   const playerStructures = useUIStore((state) => state.playerStructures);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const structureUpgrade = useStructureUpgrade(structureEntityId ?? null);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
@@ -630,9 +628,9 @@ const LocalTilePanel = () => {
           </div>
         ) : hasBuilding ? (
           <div className="h-full min-h-0 overflow-hidden">
-            <div className="flex flex-col gap-3 text-xs text-gold">
+            <div className="grid h-full min-h-0 auto-rows-min grid-cols-2 gap-2 text-[11px] text-gold">
               {isPaused && (
-                <div className="flex items-center justify-between gap-2 py-2 px-3 bg-red/20 rounded">
+                <div className="col-span-2 flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red/900/25 px-2 py-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
                     ⚠️ Production Paused
                   </span>
@@ -643,113 +641,110 @@ const LocalTilePanel = () => {
                         variant="outline"
                         disabled={isActionLoading}
                         onClick={handleToggleProduction}
-                        className="text-xxs h-6 bg-green/20 hover:bg-green/40 border-green/50"
+                        className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
                       >
                         ▶ Resume
                       </Button>
-                      {!isCastleTile && (
-                        <Button
-                          size="xs"
-                          variant="danger"
-                          disabled={isActionLoading}
-                          onClick={handleDestroy}
-                          className="text-xxs h-6"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <Button
+                        size="xs"
+                        variant="danger"
+                        disabled={isActionLoading}
+                        onClick={handleDestroy}
+                        className="h-7 px-2 text-xxs"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">
-                    {isCastleTile ? "Labor rate" : "Produces per sec"}
-                  </p>
-                  {producedResource && producedResourceName ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-green-300">+{producedPerTick}</span>
-                      <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
-                      <button
-                        type="button"
-                        className="text-xxs uppercase tracking-[0.2em] text-gold/60"
-                        onMouseEnter={() =>
-                          setTooltip({
-                            position: "right",
-                            content: (
-                              <div className="space-y-2">
-                                <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
-                                {consumedBy.length > 0 ? (
-                                  <div className="grid grid-cols-3 gap-2">
-                                    {consumedBy.map((resourceId) => {
-                                      const name =
-                                        findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
-                                      return (
-                                        <div
-                                          key={resourceId}
-                                          className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
-                                        >
-                                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                          <span className="text-xxs text-gold/80">{name}</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : (
-                                  <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
-                                )}
-                              </div>
-                            ),
-                          })
-                        }
-                        onMouseLeave={() => setTooltip(null)}
-                        aria-label="Show consumers"
-                      >
-                        <Info className="h-4 w-4 text-gold/70" />
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-xxs text-gold/60">No production</p>
-                  )}
-                </div>
+              <div className="col-span-2 rounded border border-gold/15 bg-black/30 px-2 py-1.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Produces per sec</p>
+                    {producedResource && producedResourceName ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-green-300">+{producedPerTick}</span>
+                        <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
+                        <button
+                          type="button"
+                          className="text-xxs uppercase tracking-[0.2em] text-gold/60"
+                          onMouseEnter={() =>
+                            setTooltip({
+                              position: "right",
+                              content: (
+                                <div className="space-y-2">
+                                  <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
+                                  {consumedBy.length > 0 ? (
+                                    <div className="grid grid-cols-3 gap-2">
+                                      {consumedBy.map((resourceId) => {
+                                        const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                                        return (
+                                          <div
+                                            key={resourceId}
+                                            className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                                          >
+                                            <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                            <span className="text-xxs text-gold/80">{name}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
+                                  )}
+                                </div>
+                              ),
+                            })
+                          }
+                          onMouseLeave={() => setTooltip(null)}
+                          aria-label="Show consumers"
+                        >
+                          <Info className="h-4 w-4 text-gold/70" />
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xxs text-gold/60">No production</p>
+                    )}
+                  </div>
 
-                <div className="space-y-1">
-                  <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Population</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    {populationCost !== 0 && (
-                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
-                        Cost +{populationCost}
-                      </span>
-                    )}
-                    {populationCapacity !== 0 && (
-                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
-                        Capacity +{populationCapacity}
-                      </span>
-                    )}
-                    {populationCost === 0 && populationCapacity === 0 && (
-                      <span className="text-xxs text-gold/60">No population impact</span>
-                    )}
+                  <div className="space-y-1">
+                    <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Population</p>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {populationCost !== 0 && (
+                        <span className="rounded bg-black/40 px-1.5 py-1 text-xxs font-semibold text-gold">
+                          Cost +{populationCost}
+                        </span>
+                      )}
+                      {populationCapacity !== 0 && (
+                        <span className="rounded bg-black/40 px-1.5 py-1 text-xxs font-semibold text-gold">
+                          Capacity +{populationCapacity}
+                        </span>
+                      )}
+                      {populationCost === 0 && populationCapacity === 0 && (
+                        <span className="text-xxs text-gold/60">No population impact</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes per sec</p>
+              <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
+                <p className="mb-1 text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes per sec</p>
                 {ongoingCost.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {ongoingCost.map((entry, index) => {
                       const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
                       return (
                         <div
                           key={`${entry.resource}-${index}`}
-                          className="flex items-center gap-2 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                          className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1"
                         >
                           <span className="text-xxs font-semibold text-red-200">-{entry.amount}</span>
                           <button
                             type="button"
-                            className="flex h-6 w-6 items-center justify-center rounded"
+                            className="flex h-5 w-5 items-center justify-center rounded"
                             onMouseEnter={() =>
                               setTooltip({
                                 position: "top",
@@ -775,10 +770,10 @@ const LocalTilePanel = () => {
                 )}
               </div>
 
-              {buildCost.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Build Cost</p>
-                  <div className="flex flex-wrap gap-2">
+              <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
+                <p className="mb-1 text-xxs uppercase tracking-[0.2em] text-gold/60">Build Cost</p>
+                {buildCost.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
                     {buildCost.map((entry, index) => {
                       const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
                       const balanceInfo = getBalance(
@@ -794,7 +789,7 @@ const LocalTilePanel = () => {
                           type="button"
                           key={`build-cost-${entry.resource}-${index}`}
                           className={cn(
-                            "relative flex items-center gap-2 rounded px-2 py-1.5 text-[11px] shadow-inner",
+                            "relative flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
                             hasEnough
                               ? "bg-gold/5 border border-gold/10 text-gold/80"
                               : "bg-red-900/15 border border-red-500/30 text-red-100",
@@ -814,28 +809,30 @@ const LocalTilePanel = () => {
                           aria-label={`${name} build cost`}
                         >
                           <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          <span className={cn("text-[11px]", hasEnough ? "text-gold font-semibold" : "text-red-200")}>
+                          <span className={cn("text-[10px]", hasEnough ? "font-semibold text-gold" : "text-red-200")}>
                             {formatResourceAmount(balance)}
                           </span>
-                          <span className={cn("text-[11px]", hasEnough ? "text-gold/70" : "text-red-200")}>
+                          <span className={cn("text-[10px]", hasEnough ? "text-gold/70" : "text-red-200")}>
                             / {entry.amount}
                           </span>
                         </button>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-xxs text-gold/60">No build cost data</p>
+                )}
+              </div>
 
               {isOwnedByPlayer && (
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="col-span-2 flex flex-wrap gap-1.5 pt-0.5">
                   {canAddProduction && (
                     <Button
                       size="xs"
                       variant="gold"
                       disabled={isActionLoading}
                       onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-                      className="text-xxs h-7"
+                      className="h-8 px-2 text-xxs"
                     >
                       + Production
                     </Button>
@@ -846,63 +843,21 @@ const LocalTilePanel = () => {
                       variant="outline"
                       disabled={isActionLoading}
                       onClick={handleToggleProduction}
-                      className="text-xxs h-7"
+                      className="h-8 px-2 text-xxs"
                     >
                       {isPaused ? "▶ Resume" : "⏸ Pause"}
                     </Button>
                   )}
-                  {!isCastleTile && (
-                    <Button
-                      size="xs"
-                      variant="danger"
-                      disabled={isActionLoading}
-                      onClick={handleDestroy}
-                      className="text-xxs h-7 flex items-center gap-2"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      {showDestroyConfirm ? "Confirm" : "Delete"}
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {isCastleTile && structureUpgrade && (
-                <div className="space-y-2 rounded border border-gold/15 bg-black/40 p-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">
-                      Upgrade {structureUpgrade.nextLevelName ? `to ${structureUpgrade.nextLevelName}` : "(max)"}
-                    </p>
-                    <span className="text-xxs text-gold/70">{structureUpgrade.nextLevelName ?? "Max level"}</span>
-                  </div>
-                  {structureUpgrade.nextLevel ? (
-                    <div className="space-y-1">
-                      {structureUpgrade.requirements.map((req) => {
-                        const name = findResourceById(Number(req.resource))?.trait ?? `Resource ${req.resource}`;
-                        const pct = Math.min(100, Math.floor((req.current * 100) / (req.amount || 1)));
-                        return (
-                          <div key={req.resource} className="space-y-1">
-                            <div className="flex items-center justify-between gap-2 text-xxs text-gold">
-                              <span className="flex items-center gap-1">
-                                <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                {name}
-                              </span>
-                              <span className="text-gold/80">
-                                {formatResourceAmount(req.current)} / {req.amount.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="h-1.5 rounded bg-gold/10">
-                              <div className="h-full rounded bg-gold" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {!structureUpgrade.isOwner && (
-                        <p className="text-xxs text-gold/60">Only the owner can upgrade.</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xxs text-gold/60">Castle at maximum level.</p>
-                  )}
+                  <Button
+                    size="xs"
+                    variant="danger"
+                    disabled={isActionLoading}
+                    onClick={handleDestroy}
+                    className="flex h-8 items-center gap-1.5 px-2 text-xxs"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    {showDestroyConfirm ? "Confirm" : "Delete"}
+                  </Button>
                 </div>
               )}
             </div>
@@ -1029,7 +984,7 @@ export const BottomRightPanel = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="relative w-full md:w-[37%] lg:w-[27%] md:ml-auto min-h-[44px]">
+      <div className="relative w-full min-h-[44px] md:ml-auto md:w-[44%] lg:w-[36%] xl:w-[32%]">
         <PanelTabs
           tabs={availableTabs}
           activeTab={activeTab}
