@@ -144,9 +144,21 @@ function extractErrorMessage(err: any): string {
   const txFailedMatch = raw.match(/Transaction failed with reason:\s*(.+?)(?:\n|$)/i);
   if (txFailedMatch) return txFailedMatch[1].trim();
 
-  // Look for "Failure reason:" pattern common in Starknet reverts
-  const failureMatch = raw.match(/Failure reason:\s*"?([^"]+)"?/i);
-  if (failureMatch) return failureMatch[1].trim();
+  // Look for "Failure reason:" pattern common in Starknet reverts.
+  // The failure block looks like: Failure reason:\n(hex ('label'), ..., \"actual error message\", hex ('ENTRYPOINT_FAILED'))
+  // Extract the quoted plain-text error first, then fall back to decoded felt labels.
+  const failureBlock = raw.match(/Failure reason:\s*\\?n?\(?(.+?)\)?\s*(?:\.\s*)?(?:\\n|$)/is);
+  if (failureBlock) {
+    // Look for escaped-quoted plain-text message: \"some error\" or \\\"some error\\\"
+    const quotedMsg = failureBlock[1].match(/\\*"([a-zA-Z][^"\\]*(?:\s[^"\\]*)*)\\*"/);
+    if (quotedMsg) return quotedMsg[1].trim();
+    // Look for single-quoted decoded felt labels like ('argent/multicall-failed')
+    // Skip generic wrappers, keep domain-specific error labels
+    const labels = [...failureBlock[1].matchAll(/\('([^']+)'\)/g)]
+      .map((m) => m[1])
+      .filter((l) => l !== "ENTRYPOINT_FAILED" && l !== "" && l !== "argent/multicall-failed");
+    if (labels.length > 0) return labels.join(", ");
+  }
 
   // Look for "execution_revert" or "revert_error" in structured data
   const revertDataMatch = raw.match(/(?:execution_revert|revert_error|revert_reason)["\s:]+([^"}\]]+)/i);
