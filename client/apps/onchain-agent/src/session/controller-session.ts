@@ -40,9 +40,21 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     { name: "arrivals_offload", entrypoint: "arrivals_offload", description: "Claim incoming arrivals" },
     { name: "deposit", entrypoint: "deposit", description: "Deposit resources" },
     { name: "withdraw", entrypoint: "withdraw", description: "Withdraw resources" },
-    { name: "troop_troop_adjacent_transfer", entrypoint: "troop_troop_adjacent_transfer", description: "Transfer between adjacent troops" },
-    { name: "troop_structure_adjacent_transfer", entrypoint: "troop_structure_adjacent_transfer", description: "Transfer from troop to structure" },
-    { name: "structure_troop_adjacent_transfer", entrypoint: "structure_troop_adjacent_transfer", description: "Transfer from structure to troop" },
+    {
+      name: "troop_troop_adjacent_transfer",
+      entrypoint: "troop_troop_adjacent_transfer",
+      description: "Transfer between adjacent troops",
+    },
+    {
+      name: "troop_structure_adjacent_transfer",
+      entrypoint: "troop_structure_adjacent_transfer",
+      description: "Transfer from troop to structure",
+    },
+    {
+      name: "structure_troop_adjacent_transfer",
+      entrypoint: "structure_troop_adjacent_transfer",
+      description: "Transfer from structure to troop",
+    },
     { name: "structure_burn", entrypoint: "structure_burn", description: "Burn structure resources" },
     { name: "troop_burn", entrypoint: "troop_burn", description: "Burn troop resources" },
     ...DOJO_INTROSPECTION,
@@ -53,7 +65,11 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     { name: "explorer_delete", entrypoint: "explorer_delete", description: "Delete an explorer" },
     { name: "guard_add", entrypoint: "guard_add", description: "Add guard troops to a structure" },
     { name: "guard_delete", entrypoint: "guard_delete", description: "Delete guard troops from a structure" },
-    { name: "explorer_explorer_swap", entrypoint: "explorer_explorer_swap", description: "Swap troops between explorers" },
+    {
+      name: "explorer_explorer_swap",
+      entrypoint: "explorer_explorer_swap",
+      description: "Swap troops between explorers",
+    },
     { name: "explorer_guard_swap", entrypoint: "explorer_guard_swap", description: "Swap explorer troops to guard" },
     { name: "guard_explorer_swap", entrypoint: "guard_explorer_swap", description: "Swap guard troops to explorer" },
     ...DOJO_INTROSPECTION,
@@ -63,13 +79,23 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     { name: "explorer_extract_reward", entrypoint: "explorer_extract_reward", description: "Extract explore reward" },
     ...DOJO_INTROSPECTION,
   ],
-  troop_movement_util_systems: [
-    ...DOJO_INTROSPECTION,
-  ],
+  troop_movement_util_systems: [...DOJO_INTROSPECTION],
   troop_battle_systems: [
-    { name: "attack_explorer_vs_explorer", entrypoint: "attack_explorer_vs_explorer", description: "Attack an enemy explorer" },
-    { name: "attack_explorer_vs_guard", entrypoint: "attack_explorer_vs_guard", description: "Attack an enemy guard with an explorer" },
-    { name: "attack_guard_vs_explorer", entrypoint: "attack_guard_vs_explorer", description: "Attack an explorer with a guard" },
+    {
+      name: "attack_explorer_vs_explorer",
+      entrypoint: "attack_explorer_vs_explorer",
+      description: "Attack an enemy explorer",
+    },
+    {
+      name: "attack_explorer_vs_guard",
+      entrypoint: "attack_explorer_vs_guard",
+      description: "Attack an enemy guard with an explorer",
+    },
+    {
+      name: "attack_guard_vs_explorer",
+      entrypoint: "attack_guard_vs_explorer",
+      description: "Attack an explorer with a guard",
+    },
     ...DOJO_INTROSPECTION,
   ],
   troop_raid_systems: [
@@ -87,9 +113,21 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     { name: "destroy_building", entrypoint: "destroy_building", description: "Destroy building" },
     { name: "pause_building_production", entrypoint: "pause_building_production", description: "Pause production" },
     { name: "resume_building_production", entrypoint: "resume_building_production", description: "Resume production" },
-    { name: "burn_resource_for_labor_production", entrypoint: "burn_resource_for_labor_production", description: "Burn resource for labor" },
-    { name: "burn_labor_for_resource_production", entrypoint: "burn_labor_for_resource_production", description: "Burn labor for resource" },
-    { name: "burn_resource_for_resource_production", entrypoint: "burn_resource_for_resource_production", description: "Burn resource for resource" },
+    {
+      name: "burn_resource_for_labor_production",
+      entrypoint: "burn_resource_for_labor_production",
+      description: "Burn resource for labor",
+    },
+    {
+      name: "burn_labor_for_resource_production",
+      entrypoint: "burn_labor_for_resource_production",
+      description: "Burn labor for resource",
+    },
+    {
+      name: "burn_resource_for_resource_production",
+      entrypoint: "burn_resource_for_resource_production",
+      description: "Burn resource for resource",
+    },
     ...DOJO_INTROSPECTION,
   ],
   swap_systems: [
@@ -111,17 +149,22 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     { name: "join_guild", entrypoint: "join_guild", description: "Join guild" },
     { name: "leave_guild", entrypoint: "leave_guild", description: "Leave guild" },
     { name: "whitelist_player", entrypoint: "whitelist_player", description: "Whitelist player" },
-    { name: "transfer_guild_ownership", entrypoint: "transfer_guild_ownership", description: "Transfer guild ownership" },
+    {
+      name: "transfer_guild_ownership",
+      entrypoint: "transfer_guild_ownership",
+      description: "Transfer guild ownership",
+    },
     { name: "remove_guild_member", entrypoint: "remove_guild_member", description: "Remove guild member" },
-    { name: "remove_player_from_whitelist", entrypoint: "remove_player_from_whitelist", description: "Remove player from whitelist" },
+    {
+      name: "remove_player_from_whitelist",
+      entrypoint: "remove_player_from_whitelist",
+      description: "Remove player from whitelist",
+    },
     { name: "update_whitelist", entrypoint: "update_whitelist", description: "Update guild whitelist" },
     { name: "remove_member", entrypoint: "remove_member", description: "Remove member" },
     ...DOJO_INTROSPECTION,
   ],
-  realm_systems: [
-    { name: "create", entrypoint: "create", description: "Create realm" },
-    ...DOJO_INTROSPECTION,
-  ],
+  realm_systems: [{ name: "create", entrypoint: "create", description: "Create realm" }, ...DOJO_INTROSPECTION],
   structure_systems: [
     { name: "level_up", entrypoint: "level_up", description: "Upgrade structure level" },
     ...DOJO_INTROSPECTION,
@@ -131,7 +174,11 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     { name: "contribute", entrypoint: "contribute", description: "Contribute resources to hyperstructure" },
     { name: "claim_share_points", entrypoint: "claim_share_points", description: "Claim share points" },
     { name: "allocate_shares", entrypoint: "allocate_shares", description: "Allocate shares" },
-    { name: "update_construction_access", entrypoint: "update_construction_access", description: "Update construction access" },
+    {
+      name: "update_construction_access",
+      entrypoint: "update_construction_access",
+      description: "Update construction access",
+    },
     ...DOJO_INTROSPECTION,
   ],
   config_systems: [
@@ -144,8 +191,16 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
     ...DOJO_INTROSPECTION,
   ],
   ownership_systems: [
-    { name: "transfer_structure_ownership", entrypoint: "transfer_structure_ownership", description: "Transfer structure ownership" },
-    { name: "transfer_agent_ownership", entrypoint: "transfer_agent_ownership", description: "Transfer agent ownership" },
+    {
+      name: "transfer_structure_ownership",
+      entrypoint: "transfer_structure_ownership",
+      description: "Transfer structure ownership",
+    },
+    {
+      name: "transfer_agent_ownership",
+      entrypoint: "transfer_agent_ownership",
+      description: "Transfer agent ownership",
+    },
     ...DOJO_INTROSPECTION,
   ],
   dev_resource_systems: [
@@ -159,7 +214,11 @@ const POLICY_METHODS_BY_SUFFIX: Record<string, PolicyMethod[]> = {
   ],
   season_systems: [
     { name: "register_to_leaderboard", entrypoint: "register_to_leaderboard", description: "Register to leaderboard" },
-    { name: "claim_leaderboard_rewards", entrypoint: "claim_leaderboard_rewards", description: "Claim leaderboard rewards" },
+    {
+      name: "claim_leaderboard_rewards",
+      entrypoint: "claim_leaderboard_rewards",
+      description: "Claim leaderboard rewards",
+    },
     ...DOJO_INTROSPECTION,
   ],
   village_systems: [

@@ -256,10 +256,14 @@ describe("controller session policies", () => {
 
     expect(policies.contracts?.["0xconfig"]?.methods?.some((m: any) => m.entrypoint === "set_agent_config")).toBe(true);
     expect(policies.contracts?.["0xname"]?.methods?.some((m: any) => m.entrypoint === "set_address_name")).toBe(true);
-    expect(policies.contracts?.["0xown"]?.methods?.some((m: any) => m.entrypoint === "transfer_structure_ownership")).toBe(true);
+    expect(
+      policies.contracts?.["0xown"]?.methods?.some((m: any) => m.entrypoint === "transfer_structure_ownership"),
+    ).toBe(true);
     expect(policies.contracts?.["0xdev"]?.methods?.some((m: any) => m.entrypoint === "mint")).toBe(true);
     expect(policies.contracts?.["0xrelic"]?.methods?.some((m: any) => m.entrypoint === "open_chest")).toBe(true);
-    expect(policies.contracts?.["0xseason"]?.methods?.some((m: any) => m.entrypoint === "register_to_leaderboard")).toBe(true);
+    expect(
+      policies.contracts?.["0xseason"]?.methods?.some((m: any) => m.entrypoint === "register_to_leaderboard"),
+    ).toBe(true);
     expect(policies.contracts?.["0xvillage"]?.methods?.some((m: any) => m.entrypoint === "upgrade")).toBe(true);
     expect(policies.contracts?.["0xblitz"]?.methods?.some((m: any) => m.entrypoint === "register")).toBe(true);
     expect(policies.contracts?.["0xutil"]?.methods?.some((m: any) => m.entrypoint === "dojo_name")).toBe(true);

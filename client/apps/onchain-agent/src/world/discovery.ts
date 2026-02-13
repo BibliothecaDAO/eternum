@@ -147,7 +147,9 @@ const normalizeTokenAddress = (value: unknown): string | undefined => {
 
 const TOKEN_CONFIG_QUERY = `SELECT "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
-async function fetchTokenAddresses(toriiBaseUrl: string): Promise<{ entryTokenAddress?: string; feeTokenAddress?: string }> {
+async function fetchTokenAddresses(
+  toriiBaseUrl: string,
+): Promise<{ entryTokenAddress?: string; feeTokenAddress?: string }> {
   try {
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(TOKEN_CONFIG_QUERY)}`;
     const res = await fetch(url);

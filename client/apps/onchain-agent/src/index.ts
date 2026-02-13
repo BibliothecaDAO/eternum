@@ -23,6 +23,7 @@ import { type DiscoveredWorld, discoverAllWorlds, buildWorldProfile, buildResolv
 import { normalizeRpcUrl, deriveChainIdFromRpcUrl } from "./world/normalize";
 import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
+import { createInspectTools } from "./tools/inspect-tools";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
@@ -208,7 +209,9 @@ export async function main() {
       if (selected) {
         console.log(`  Auto-selected world: [${selected.chain}] ${selected.name}`);
       } else {
-        console.log(`  SLOT_NAME="${slotName}" did not match any world. Available: ${worlds.map((w) => w.name).join(", ")}`);
+        console.log(
+          `  SLOT_NAME="${slotName}" did not match any world. Available: ${worlds.map((w) => w.name).join(", ")}`,
+        );
       }
     }
     if (!selected) {
@@ -414,6 +417,7 @@ export async function main() {
     model,
     tickIntervalMs: runtimeConfig.tickIntervalMs,
     runtimeConfigManager,
+    extraTools: createInspectTools(services.client),
   });
   runtimeAgent = game;
   const { agent, ticker, dispose: disposeAgent } = game;
