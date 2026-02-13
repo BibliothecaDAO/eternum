@@ -20,9 +20,9 @@ export interface BoundsDescriptor {
   additionalClauses?: Clause[];
 }
 
-export type BoundsSwitchOutcome = "applied" | "skipped_same_signature" | "stale_dropped";
+type BoundsSwitchOutcome = "applied" | "skipped_same_signature" | "stale_dropped";
 
-export interface BoundsSwitchResult {
+interface BoundsSwitchResult {
   outcome: BoundsSwitchOutcome;
 }
 
