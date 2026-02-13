@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveDuplicateTileUpdateActions,
   shouldForceShortcutNavigationRefresh,
   shouldForceRefreshForDuplicateTileUpdate,
   shouldRunShortcutForceFallback,
@@ -337,6 +338,53 @@ describe("shouldForceRefreshForDuplicateTileUpdate", () => {
         isVisibleInCurrentChunk: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("resolveDuplicateTileUpdateActions", () => {
+  it("keeps offscreen duplicate updates in cache-reconcile mode without forcing immediate refresh", () => {
+    expect(
+      resolveDuplicateTileUpdateActions({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: false,
+      }),
+    ).toEqual({
+      shouldInvalidateCaches: true,
+      shouldRequestRefresh: false,
+    });
+  });
+
+  it("forces refresh when duplicate update is visible in active chunk", () => {
+    expect(
+      resolveDuplicateTileUpdateActions({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toEqual({
+      shouldInvalidateCaches: true,
+      shouldRequestRefresh: true,
+    });
+  });
+
+  it("does nothing when update is not a duplicate tile add", () => {
+    expect(
+      resolveDuplicateTileUpdateActions({
+        removeExplored: false,
+        tileAlreadyKnown: false,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toEqual({
+      shouldInvalidateCaches: false,
+      shouldRequestRefresh: false,
+    });
   });
 });
 

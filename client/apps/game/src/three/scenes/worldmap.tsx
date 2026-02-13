@@ -106,10 +106,10 @@ import {
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
+  resolveDuplicateTileUpdateActions,
   resolveRefreshExecutionToken,
   resolveChunkSwitchActions,
   shouldApplyRefreshToken,
-  shouldForceRefreshForDuplicateTileUpdate,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRescheduleRefreshToken,
@@ -2508,22 +2508,20 @@ export default class WorldmapScene extends HexagonScene {
 
     // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
     // and force a refresh when the duplicate impacts the currently visible chunk.
-    if (tileAlreadyKnown) {
+    const duplicateTileActions = resolveDuplicateTileUpdateActions({
+      removeExplored,
+      tileAlreadyKnown,
+      currentChunk: this.currentChunk,
+      isChunkTransitioning: this.isChunkTransitioning,
+      isVisibleInCurrentChunk:
+        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
+    });
+
+    if (duplicateTileActions.shouldInvalidateCaches) {
       this.invalidateAllChunkCachesContainingHex(col, row);
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
 
-      const isVisibleInCurrentChunk =
-        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false;
-
-      if (
-        shouldForceRefreshForDuplicateTileUpdate({
-          removeExplored,
-          tileAlreadyKnown,
-          currentChunk: this.currentChunk,
-          isChunkTransitioning: this.isChunkTransitioning,
-          isVisibleInCurrentChunk,
-        })
-      ) {
+      if (duplicateTileActions.shouldRequestRefresh) {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
         this.requestChunkRefresh(true);
       }

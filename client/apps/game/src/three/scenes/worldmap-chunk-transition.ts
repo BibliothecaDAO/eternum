@@ -39,6 +39,11 @@ interface DuplicateTileRefreshDecisionInput {
   isVisibleInCurrentChunk: boolean;
 }
 
+interface DuplicateTileUpdateActions {
+  shouldInvalidateCaches: boolean;
+  shouldRequestRefresh: boolean;
+}
+
 /**
  * Resolve chunk-switch side effects after hydration completes.
  * Keeps behavior deterministic for success, failure, and stale transitions.
@@ -171,6 +176,26 @@ export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRef
   }
 
   return input.isVisibleInCurrentChunk;
+}
+
+/**
+ * Duplicate tile updates can indicate stale visual state despite data parity.
+ * Invalidate caches for duplicate adds and request a refresh only when visible.
+ */
+export function resolveDuplicateTileUpdateActions(
+  input: DuplicateTileRefreshDecisionInput,
+): DuplicateTileUpdateActions {
+  if (input.removeExplored || !input.tileAlreadyKnown) {
+    return {
+      shouldInvalidateCaches: false,
+      shouldRequestRefresh: false,
+    };
+  }
+
+  return {
+    shouldInvalidateCaches: true,
+    shouldRequestRefresh: shouldForceRefreshForDuplicateTileUpdate(input),
+  };
 }
 
 /**
