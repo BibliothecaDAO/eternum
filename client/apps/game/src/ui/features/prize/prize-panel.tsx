@@ -264,7 +264,8 @@ export const PrizePanel = () => {
           ? `Finalization unlocks after the ${timelineSubjectLower} ends${countdownText ? ` (${countdownText})` : ""}.`
           : `Waiting on ${timelineSubjectLower} data.`;
 
-  const singleRegistrantNoGame = Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal;
+  const singleRegistrantNoGame =
+    Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal;
   const isSubmissionPending =
     submission.phase === "preparing" || submission.phase === "submitting_ranks" || submission.phase === "updating_mmr";
 
@@ -305,7 +306,15 @@ export const PrizePanel = () => {
       return `Ready When ${timelineSubject} Ends`;
     }
     return hasMyTrial ? "Continue Submission + Update MMR" : "Submit Rankings + Update MMR";
-  }, [singleRegistrantNoGame, isSubmissionPending, rankingCompleted, submission.phase, rankingWindowOpen, timelineSubject, hasMyTrial]);
+  }, [
+    singleRegistrantNoGame,
+    isSubmissionPending,
+    rankingCompleted,
+    submission.phase,
+    rankingWindowOpen,
+    timelineSubject,
+    hasMyTrial,
+  ]);
 
   const handleStartOrContinue = async () => {
     if (submitBlockedReason) {
@@ -466,7 +475,9 @@ export const PrizePanel = () => {
   const submissionFeedback = (
     <>
       {submitBlockedReason && submission.phase === "idle" && (
-        <div className="rounded-md bg-gold/10 border border-gold/30 text-gold/80 p-2 text-xs">{submitBlockedReason}</div>
+        <div className="rounded-md bg-gold/10 border border-gold/30 text-gold/80 p-2 text-xs">
+          {submitBlockedReason}
+        </div>
       )}
       {isSubmissionPending && (
         <div className="rounded-md bg-gold/10 border border-gold/30 text-gold p-2 text-xs">

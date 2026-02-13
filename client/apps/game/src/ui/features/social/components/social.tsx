@@ -257,16 +257,7 @@ export const Social = () => {
     }
 
     return baseTabs;
-  }, [
-    mode,
-    selectedGuild,
-    selectedPlayer,
-    playerInfo,
-    viewPlayerInfo,
-    viewGuildMembers,
-    setIsExpanded,
-    mmrEnabled,
-  ]);
+  }, [mode, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded, mmrEnabled]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
