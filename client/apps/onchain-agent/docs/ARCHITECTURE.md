@@ -100,7 +100,7 @@ Main orchestration flow:
    - `extraTools`: `createInspectTools(client)` for detailed queries
    - `actionDefs`: `getActionDefinitions()` from action registry
    - `formatTickPrompt`: `formatEternumTickPrompt` from world-state
-6. **Launch TUI** — `createApp({ agent, ticker })` renders header, chat log, input area
+6. **Launch TUI** — `createApp({ agent, ticker })` renders header, chat log, input area. Returns `addSystemMessage` which is assigned to a `systemMessage` lazy reference used by all post-TUI logging (config changes, shutdown messages, errors)
 7. **Start loops** — `ticker.start()` if `loopEnabled`, `heartbeat.start()` for cron-style jobs
 8. **Graceful shutdown** — `createShutdownGate()` returns a promise that resolves on SIGINT/SIGTERM, cleans up agent/ticker/client
 
@@ -428,7 +428,11 @@ Formats world state into a structured prompt for the agent:
 
 **Dependencies:** `@mariozechner/pi-tui` — TUI primitives (`ProcessTerminal`, `Container`, `Text`, `Markdown`)
 
-**Lifecycle:** returns `{ tui, terminal, dispose() }` — `dispose()` unsubscribes from agent, stops TUI
+**Lifecycle:** returns `{ tui, terminal, addSystemMessage, dispose() }`:
+- `addSystemMessage(msg)` adds a `[System]`-prefixed text entry to the chat container and triggers a render
+- `dispose()` unsubscribes from agent, stops TUI
+
+All post-TUI messages in `index.ts` route through `addSystemMessage()` instead of `console.log` to avoid corrupting the TUI's differential renderer.
 
 ### world-picker.ts
 **`createWorldPicker(worlds: DiscoveredWorld[])`** — interactive TUI for selecting a game world.
@@ -520,7 +524,9 @@ CLI script for building release archives — invoked via `pnpm package:release`.
 
 1. **Build or reuse binary:**
    - If `skipBuild`: use `binaryPath`
-   - Else: `bun build src/cli.ts --compile --target bun-{target} --outfile {temp}/{APP_NAME}-{target}`
+   - Else: two-step build via `buildTargetBinary()`:
+     - Step 1: `bun run build.ts` — bundles `src/cli.ts` to `dist-bun/cli.js` with build plugins (WASM embed + pi-config embed)
+     - Step 2: `bun build dist-bun/cli.js --compile --target bun-{target} --outfile {temp}/{APP_NAME}-{target}` — compiles the bundle to a standalone binary
 2. **Stage release layout:**
    - Create `{temp}/stage-{target}/axis/` directory
    - Copy binary → `axis` (chmod 755)
@@ -539,6 +545,32 @@ CLI script for building release archives — invoked via `pnpm package:release`.
 
 **Supported targets:** `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64` (Bun compile targets)
 
+## Build Plugins
+
+### build-plugins.ts
+Two Bun build plugins that make the standalone binary fully self-contained.
+
+**`wasmPlugin`** -- embeds `@cartridge/controller-wasm` WASM modules into the bundle.
+
+Bun's bundler treats `.wasm` imports as file assets (path strings), which breaks the wasm-bindgen pattern. This plugin:
+1. Intercepts wasm-bindgen entry JS files matching `controller-wasm/pkg-*/\w+_wasm.js`
+2. Reads the sibling `.wasm` binary, encodes as base64
+3. Generates replacement code that decodes bytes, instantiates `WebAssembly.Module`, and calls `__wbg_set_wasm(instance.exports)` with the glue JS as import object
+
+**`createPiConfigPlugin(packageJsonPath)`** -- embeds `package.json` data into `pi-coding-agent`'s config.
+
+The `@mariozechner/pi-coding-agent` config module reads `package.json` from disk relative to the module location, which fails in a standalone binary. This plugin:
+1. Reads `package.json` at build time
+2. Intercepts `pi-coding-agent/dist/config.js`
+3. Replaces the `readFileSync(getPackageJsonPath())` call with the static JSON literal
+
+### build.ts
+Two-step build script:
+1. `Bun.build()` API bundles `src/cli.ts` to `dist-bun/cli.js` with both plugins
+2. If `--compile` flag: `bun build dist-bun/cli.js --compile --outfile axis`
+
+The resulting binary is fully standalone -- manifests (embedded via JSON imports), WASM modules (embedded via wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
+
 ## Integration with @bibliothecadao Packages
 
 ### @bibliothecadao/game-agent
@@ -546,7 +578,8 @@ CLI script for building release archives — invoked via `pnpm package:release`.
 
 **Key functions:**
 
-- **`createGameAgent({ adapter, dataDir, model, tickIntervalMs, runtimeConfigManager?, extraTools?, actionDefs?, formatTickPrompt? })`** — returns `{ agent, ticker, dispose, enqueuePrompt, setDataDir }`
+- **`createGameAgent({ adapter, dataDir, model, tickIntervalMs, runtimeConfigManager?, extraTools?, actionDefs?, formatTickPrompt?, onTickError? })`** — returns `{ agent, ticker, dispose, enqueuePrompt, setDataDir }`
+  - `onTickError` — optional callback invoked on tick errors; defaults to `console.error` but should route through the TUI's `addSystemMessage()` in the onchain-agent to keep output within the TUI
 - **`createHeartbeatLoop({ getHeartbeatPath, onRun, onError })`** — cron-style scheduler for `HEARTBEAT.md` jobs, hot-reloads file on changes
 
 **Agent lifecycle:**

@@ -33,6 +33,8 @@ export interface CreateGameAgentOptions<TState extends WorldState = WorldState> 
   runtimeConfigManager?: RuntimeConfigManager;
   /** Action definitions to constrain execute/simulate tools and enable list_actions. */
   actionDefs?: ActionDefinition[];
+  /** Called when a tick errors. Defaults to console.error. */
+  onTickError?: (err: Error) => void;
 }
 
 function buildSystemPromptFromDataDir(dataDir: string): string {
@@ -58,6 +60,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
     runtimeConfigManager,
     actionDefs,
     formatTickPrompt: customFormatTickPrompt,
+    onTickError,
   } = options;
   let currentDataDir = options.dataDir;
 
@@ -120,9 +123,11 @@ export function createGameAgent<TState extends WorldState = WorldState>(
       const prompt = customFormatTickPrompt ? customFormatTickPrompt(state) : formatTickPrompt(state);
       await enqueuePrompt(prompt);
     },
-    onError: (err) => {
-      console.error("Tick error:", err.message);
-    },
+    onError:
+      onTickError ??
+      ((err) => {
+        console.error("Tick error:", err.message);
+      }),
   });
 
   return {

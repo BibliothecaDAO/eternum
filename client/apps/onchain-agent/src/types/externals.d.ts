@@ -116,6 +116,7 @@ declare module "@bibliothecadao/game-agent" {
     extraTools?: any[];
     runtimeConfigManager?: RuntimeConfigManager;
     actionDefs?: ActionDefinition[];
+    onTickError?: (err: Error) => void;
   }
 
   export interface GameAgentResult {

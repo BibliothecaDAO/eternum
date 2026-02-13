@@ -31,6 +31,8 @@ CLI (cli.ts) → index.ts orchestrates:
 - `src/tui/` — terminal UI (app layout, world picker)
 - `src/tools/` — extra inspect tools (realm, explorer, market, bank)
 - `src/release/` — binary packaging for cross-platform releases
+- `src/build-plugins.ts` — Bun build plugins (WASM embed + pi-config embed) for standalone binary
+- `build.ts` — two-step build script (bundle with plugins, then compile)
 
 ### Core Dependencies
 
@@ -55,6 +57,14 @@ pnpm --dir client/apps/onchain-agent build   # type-check
 pnpm --dir client/apps/onchain-agent dev     # run
 ```
 
+### Standalone Binary (requires Bun)
+
+```bash
+cd client/apps/onchain-agent
+bun run build.ts --compile    # produces ./axis
+cp axis ~/.local/bin/          # works anywhere, no adjacent files needed
+```
+
 ## Key Patterns
 
 ### Adapter Pattern
@@ -73,6 +83,23 @@ human-friendly suffixes (K/M/B/T) and are coerced via helpers like `num()`, `pre
 `adapter/world-state.ts` fetches structures, armies, tiles, battles in parallel via `client.sql.*` and `client.view.*`,
 filters to a 5-hex view radius around owned entities, enriches with guard strength, building slots, neighbor tiles, and
 formats a structured tick prompt for the LLM.
+
+### TUI Output Routing
+
+After the TUI is created, never use `console.log`/`console.error` — it corrupts the differential renderer. Use the
+`addSystemMessage()` function returned by `createApp()`. All post-TUI messages in `index.ts` route through a lazy
+`systemMessage` callback.
+
+### Build Plugins (`build-plugins.ts`)
+
+Two Bun build plugins enable standalone binary:
+- `wasmPlugin` — intercepts `@cartridge/controller-wasm` entry JS, embeds WASM as base64, instantiates with `__wbg_set_wasm()`
+- `createPiConfigPlugin()` — patches `pi-coding-agent` config.js to embed `package.json` data, removing filesystem dependency
+
+### Embedded Manifests
+
+`world/discovery.ts` imports all 5 chain manifests (`manifest_slot.json`, etc.) directly via JSON imports. Bun inlines
+these into the bundle. No filesystem reads at runtime.
 
 ### World Discovery
 

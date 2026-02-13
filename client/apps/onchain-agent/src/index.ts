@@ -262,6 +262,8 @@ export async function main() {
   let services = await createRuntimeServices(runtimeConfig, resolvedManifest, currentWorldProfile);
   const adapter = new MutableGameAdapter(services.adapter);
 
+  // Lazy reference for TUI messages — set once TUI is created, avoids console.log to raw stdout
+  let systemMessage: ((msg: string) => void) | null = null;
   let runtimeAgent: ReturnType<typeof createGameAgent> | null = null;
   let applyQueue: Promise<RuntimeConfigApplyResult> = Promise.resolve({
     ok: true,
@@ -392,7 +394,7 @@ export async function main() {
     runtimeConfig = candidate;
 
     if (reason) {
-      console.log(`Applied runtime config changes (${reason})`);
+      systemMessage?.(`Applied runtime config changes (${reason})`);
     }
 
     return {
@@ -422,6 +424,9 @@ export async function main() {
     extraTools: createInspectTools(services.client),
     actionDefs: getActionDefinitions(),
     formatTickPrompt: formatEternumTickPrompt,
+    onTickError: (err) => {
+      systemMessage?.(`Tick error: ${err.message}`);
+    },
   });
   runtimeAgent = game;
   const { agent, ticker, dispose: disposeAgent } = game;
@@ -434,7 +439,8 @@ export async function main() {
   process.stdin.pause();
 
   // 5. Create the TUI
-  const { dispose: disposeTui } = createApp({ agent, ticker });
+  const { dispose: disposeTui, addSystemMessage } = createApp({ agent, ticker });
+  systemMessage = addSystemMessage;
 
   const heartbeat = createHeartbeatLoop({
     getHeartbeatPath: () => path.join(runtimeConfig.dataDir, "HEARTBEAT.md"),
@@ -457,7 +463,7 @@ export async function main() {
       await runtimeAgent.enqueuePrompt(heartbeatPrompt);
     },
     onError: (error) => {
-      console.error("Heartbeat error:", error.message);
+      addSystemMessage(`Heartbeat error: ${error.message}`);
     },
   });
 
@@ -465,17 +471,16 @@ export async function main() {
   if (runtimeConfig.loopEnabled) {
     ticker.start();
   } else {
-    console.log("  Loop: disabled (set LOOP_ENABLED=true or use set_agent_config)");
+    addSystemMessage("Loop: disabled (set LOOP_ENABLED=true or use set_agent_config)");
   }
   heartbeat.start();
 
-  console.log("Agent running. Press Ctrl+C to exit.\n");
+  addSystemMessage("Agent running. Press Ctrl+C to exit.");
 
   // 7. Graceful shutdown
   const gate = createShutdownGate();
 
   const shutdown = async () => {
-    console.log("\nShutting down...");
     heartbeat.stop();
     ticker.stop();
     await disposeAgent();
