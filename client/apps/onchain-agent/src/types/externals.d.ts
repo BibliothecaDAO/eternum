@@ -94,6 +94,20 @@ declare module "@bibliothecadao/game-agent" {
     dataDir: string;
     model?: any;
     tickIntervalMs?: number;
+    formatTickPrompt?: (state: TState) => string;
+  }
+
+  export interface ActionDefinition {
+    type: string;
+    description: string;
+    params: ActionParamSchema[];
+  }
+
+  export interface ActionParamSchema {
+    name: string;
+    type: "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint";
+    description: string;
+    required?: boolean;
   }
 
   export interface CreateGameAgentOptions<TState extends WorldState = WorldState> extends GameAgentConfig<TState> {
@@ -101,6 +115,8 @@ declare module "@bibliothecadao/game-agent" {
     includeDataTools?: boolean;
     extraTools?: any[];
     runtimeConfigManager?: RuntimeConfigManager;
+    actionDefs?: ActionDefinition[];
+    onTickError?: (err: Error) => void;
   }
 
   export interface GameAgentResult {

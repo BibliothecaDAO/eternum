@@ -21,8 +21,8 @@ function createMockSql(overrides: Partial<SqlApiLike> = {}): SqlApiLike {
     fetchGuardsByStructure: vi.fn().mockResolvedValue([
       {
         slot: 0,
-        troops: { category: "Knight", tier: 2, count: 100 },
-        destroyedTick: 0,
+        troops: { category: "Knight", tier: "T2", count: 100_000_000_000n },
+        destroyedTick: 0n,
         cooldownEnd: 0,
       },
     ]),
@@ -30,11 +30,14 @@ function createMockSql(overrides: Partial<SqlApiLike> = {}): SqlApiLike {
       {
         entity_id: 99,
         explorer_id: 99,
-        owner: "0xABC",
+        owner_address: "0xABC",
         coord_x: 11,
         coord_y: 21,
-        stamina: 50,
-        is_in_battle: false,
+        category: "Knight",
+        tier: "T1",
+        count: "0x2540be400", // 10_000_000_000 = 10 troops
+        stamina_amount: "0x32", // 50
+        battle_cooldown_end: null,
       },
     ]),
     fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
@@ -84,14 +87,15 @@ describe("ViewClient.realm", () => {
   it("populates guard state from fetched guards", async () => {
     const view = await client.realm(42);
 
+    // 100_000_000_000n / 1e9 = 100 troops
     expect(view.guard.totalTroops).toBe(100);
     expect(view.guard.slots).toHaveLength(1);
     expect(view.guard.slots[0]).toEqual({
       troopType: "Knight",
       count: 100,
-      tier: 2,
+      tier: 2, // "T2" → 2
     });
-    // strength = count * tier
+    // strength = count * tier = 100 * 2
     expect(view.guard.strength).toBe(200);
   });
 
@@ -243,7 +247,16 @@ describe("ViewClient.mapArea", () => {
       ]),
       fetchAllArmiesMapData: vi
         .fn()
-        .mockResolvedValue([{ entity_id: 10, coord_x: 6, coord_y: 6, owner: "0x1", stamina: 80, is_in_battle: false }]),
+        .mockResolvedValue([
+          {
+            entity_id: 10,
+            coord_x: 6,
+            coord_y: 6,
+            owner_address: "0x1",
+            stamina_amount: "0x50",
+            battle_cooldown_end: null,
+          },
+        ]),
       fetchAllTiles: vi.fn().mockResolvedValue([
         { col: 5, row: 5, biome: "forest", explored: true, occupier_id: null },
         { col: 200, row: 200, biome: "desert", explored: false, occupier_id: null },
@@ -354,7 +367,14 @@ describe("ViewClient.player", () => {
       fetchAllArmiesMapData: vi
         .fn()
         .mockResolvedValue([
-          { entity_id: 10, owner: "0xPlayer", coord_x: 6, coord_y: 6, stamina: 70, is_in_battle: true },
+          {
+            entity_id: 10,
+            owner_address: "0xPlayer",
+            coord_x: 6,
+            coord_y: 6,
+            stamina_amount: "0x46",
+            battle_cooldown_end: 9999,
+          },
         ]),
       fetchPlayerLeaderboard: vi
         .fn()
@@ -435,10 +455,7 @@ describe("ViewClient.player", () => {
         { entity_id: 1, category: "Realm", name: "R1", coord_x: 5, coord_y: 5, level: 2 },
         { entity_id: 2, category: "Village", name: "V1", coord_x: 7, coord_y: 8, level: 1 },
       ]),
-      fetchPlayerStructures: vi.fn().mockResolvedValue([
-        { entity_id: 1 },
-        { entity_id: 2 },
-      ]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([{ entity_id: 1 }, { entity_id: 2 }]),
       fetchResourceBalances: vi.fn().mockResolvedValue([
         { entity_id: 1, STONE_BALANCE: hex100, WOOD_BALANCE: hex40 },
         { entity_id: 2, STONE_BALANCE: hex20, WOOD_BALANCE: hex20 },
@@ -467,12 +484,8 @@ describe("ViewClient.player", () => {
 
   it("returns empty totalResources when no resource balances exist", async () => {
     sql = createMockSql({
-      fetchStructuresByOwner: vi.fn().mockResolvedValue([
-        { entity_id: 12 },
-      ]),
-      fetchPlayerStructures: vi.fn().mockResolvedValue([
-        { entity_id: 12 },
-      ]),
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([{ entity_id: 12 }]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([{ entity_id: 12 }]),
       fetchResourceBalances: vi.fn().mockResolvedValue([]),
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
       fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),
@@ -491,14 +504,14 @@ describe("ViewClient.player", () => {
 
   it("ignores zero-value hex balances", async () => {
     sql = createMockSql({
-      fetchStructuresByOwner: vi.fn().mockResolvedValue([
-        { entity_id: 14 },
-      ]),
-      fetchPlayerStructures: vi.fn().mockResolvedValue([
-        { entity_id: 14 },
-      ]),
+      fetchStructuresByOwner: vi.fn().mockResolvedValue([{ entity_id: 14 }]),
+      fetchPlayerStructures: vi.fn().mockResolvedValue([{ entity_id: 14 }]),
       fetchResourceBalances: vi.fn().mockResolvedValue([
-        { entity_id: 14, STONE_BALANCE: "0x00000000000000000000000000000000", WOOD_BALANCE: "0x00000000000000000000000000000000" },
+        {
+          entity_id: 14,
+          STONE_BALANCE: "0x00000000000000000000000000000000",
+          WOOD_BALANCE: "0x00000000000000000000000000000000",
+        },
       ]),
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
       fetchPlayerLeaderboardByAddress: vi.fn().mockResolvedValue(null),

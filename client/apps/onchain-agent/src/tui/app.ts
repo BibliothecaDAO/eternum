@@ -117,6 +117,12 @@ export function createApp(state: AppState) {
   return {
     tui,
     terminal,
+    addSystemMessage(msg: string) {
+      const text = new Text();
+      text.text = `[System] ${msg}`;
+      chat.addChild(text);
+      tui.requestRender();
+    },
     dispose() {
       unsubscribe();
       tui.stop();

@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { getAvailableActions, getActionHandler, executeAction } from "../../src/adapter/action-registry";
 import { createMockClient, mockSigner } from "../utils/mock-client";
 
+const RESOURCE_PRECISION = 1_000_000_000;
+
 describe("action-registry", () => {
   let client: ReturnType<typeof createMockClient>;
 
@@ -119,7 +121,7 @@ describe("action-registry", () => {
       expect(signer).toBe(mockSigner);
       expect(props.senderEntityId).toBe(10);
       expect(props.recipientEntityId).toBe(20);
-      expect(props.resources).toEqual([{ resourceType: 1, amount: 500 }]);
+      expect(props.resources).toEqual([{ resourceType: 1, amount: 500 * RESOURCE_PRECISION }]);
     });
 
     it("pickup_resources calls client.resources.pickup", async () => {
@@ -167,7 +169,7 @@ describe("action-registry", () => {
       expect(props.forStructureId).toBe(1);
       expect(props.category).toBe(2);
       expect(props.tier).toBe(1);
-      expect(props.amount).toBe(100);
+      expect(props.amount).toBe(100 * RESOURCE_PRECISION);
       expect(props.spawnDirection).toBe(3);
     });
 
@@ -203,7 +205,7 @@ describe("action-registry", () => {
       expect(result.success).toBe(true);
       expect(client.troops.swapExplorerToGuard).toHaveBeenCalledOnce();
       const [, props] = client.troops.swapExplorerToGuard.mock.calls[0];
-      expect(props.count).toBe(10);
+      expect(props.count).toBe(10 * RESOURCE_PRECISION);
     });
 
     it("leave_guild calls client.guild.leave with just signer", async () => {
@@ -270,7 +272,7 @@ describe("action-registry", () => {
       expect(result.success).toBe(true);
       const [, props] = client.combat.attackExplorer.mock.calls[0];
       expect(props.aggressorId).toBe(10);
-      expect(props.stealResources).toEqual([{ resourceId: 3, amount: 50 }]);
+      expect(props.stealResources).toEqual([{ resourceId: 3, amount: 50 * RESOURCE_PRECISION }]);
     });
 
     // ---------------------------------------------------------------------

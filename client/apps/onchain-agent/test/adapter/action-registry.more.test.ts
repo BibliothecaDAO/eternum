@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { executeAction } from "../../src/adapter/action-registry";
 import { createMockClient, mockSigner } from "../utils/mock-client";
 
+const RESOURCE_PRECISION = 1_000_000_000;
+
 describe("action-registry additional handlers", () => {
   let client: ReturnType<typeof createMockClient>;
 
@@ -99,7 +101,7 @@ describe("action-registry additional handlers", () => {
     });
     expect(client.combat.raid).toHaveBeenCalledOnce();
     const [, raidProps] = client.combat.raid.mock.calls[0];
-    expect(raidProps.stealResources).toEqual([{ resourceId: 8, amount: 9 }]);
+    expect(raidProps.stealResources).toEqual([{ resourceId: 8, amount: 9 * RESOURCE_PRECISION }]);
   });
 
   it("routes trade aliases and handlers", async () => {

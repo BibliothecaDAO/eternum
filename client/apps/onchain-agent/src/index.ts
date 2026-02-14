@@ -20,8 +20,12 @@ import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
 import { createApp } from "./tui/app";
 import { type DiscoveredWorld, discoverAllWorlds, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
-import { normalizeRpcUrl } from "./world/normalize";
+import { normalizeRpcUrl, deriveChainIdFromRpcUrl } from "./world/normalize";
+import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
+import { createInspectTools } from "./tools/inspect-tools";
+import { getActionDefinitions } from "./adapter/action-registry";
+import { formatEternumTickPrompt } from "./adapter/world-state";
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
@@ -148,15 +152,19 @@ function updateResultForKey(
 async function createRuntimeServices(
   config: AgentConfig,
   resolvedManifest?: { contracts: unknown[] },
+  worldProfile?: WorldProfile,
 ): Promise<RuntimeServices> {
   const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath)));
 
+  const chainId = deriveChainIdFromRpcUrl(config.rpcUrl) ?? config.chainId;
+
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
-    chainId: config.chainId,
+    chainId,
     gameName: config.gameName,
     basePath: config.sessionBasePath,
     manifest,
+    worldProfile,
   });
 
   const account = await session.connect();
@@ -182,6 +190,7 @@ export async function main() {
 
   let runtimeConfig: AgentConfig = loadConfig();
   let resolvedManifest: { contracts: unknown[] } | undefined;
+  let currentWorldProfile: WorldProfile | undefined;
 
   // World Discovery Flow — resolve config from factory unless all overrides are set
   const hasManualOverrides = runtimeConfig.rpcUrl && runtimeConfig.toriiUrl && runtimeConfig.worldAddress;
@@ -202,7 +211,9 @@ export async function main() {
       if (selected) {
         console.log(`  Auto-selected world: [${selected.chain}] ${selected.name}`);
       } else {
-        console.log(`  SLOT_NAME="${slotName}" did not match any world. Available: ${worlds.map((w) => w.name).join(", ")}`);
+        console.log(
+          `  SLOT_NAME="${slotName}" did not match any world. Available: ${worlds.map((w) => w.name).join(", ")}`,
+        );
       }
     }
     if (!selected) {
@@ -222,6 +233,7 @@ export async function main() {
 
     console.log("  Building world profile...");
     const profile = await buildWorldProfile(selected.chain, selected.name);
+    currentWorldProfile = profile;
     console.log("  Profile built. Resolving manifest...");
     resolvedManifest = await buildResolvedManifest(selected.chain, profile);
     console.log("  Manifest resolved.");
@@ -229,6 +241,7 @@ export async function main() {
     runtimeConfig.rpcUrl = normalizeRpcUrl(profile.rpcUrl ?? runtimeConfig.rpcUrl);
     runtimeConfig.toriiUrl = `${profile.toriiBaseUrl}/sql`;
     runtimeConfig.worldAddress = profile.worldAddress;
+    runtimeConfig.chainId = deriveChainIdFromRpcUrl(runtimeConfig.rpcUrl) ?? runtimeConfig.chainId;
   }
 
   console.log("  Connecting controller session...");
@@ -246,9 +259,11 @@ export async function main() {
     });
   }
 
-  let services = await createRuntimeServices(runtimeConfig, resolvedManifest);
+  let services = await createRuntimeServices(runtimeConfig, resolvedManifest, currentWorldProfile);
   const adapter = new MutableGameAdapter(services.adapter);
 
+  // Lazy reference for TUI messages — set once TUI is created, avoids console.log to raw stdout
+  let systemMessage: ((msg: string) => void) | null = null;
   let runtimeAgent: ReturnType<typeof createGameAgent> | null = null;
   let applyQueue: Promise<RuntimeConfigApplyResult> = Promise.resolve({
     ok: true,
@@ -307,7 +322,7 @@ export async function main() {
     const backendChanged = Array.from(changedKeys).some((key) => BACKEND_KEYS.has(key));
     if (backendChanged) {
       try {
-        const nextServices = await createRuntimeServices(candidate, resolvedManifest);
+        const nextServices = await createRuntimeServices(candidate, resolvedManifest, currentWorldProfile);
         adapter.setAdapter(nextServices.adapter);
         services.client.disconnect();
         services = nextServices;
@@ -379,7 +394,7 @@ export async function main() {
     runtimeConfig = candidate;
 
     if (reason) {
-      console.log(`Applied runtime config changes (${reason})`);
+      systemMessage?.(`Applied runtime config changes (${reason})`);
     }
 
     return {
@@ -406,6 +421,12 @@ export async function main() {
     model,
     tickIntervalMs: runtimeConfig.tickIntervalMs,
     runtimeConfigManager,
+    extraTools: createInspectTools(services.client),
+    actionDefs: getActionDefinitions(),
+    formatTickPrompt: formatEternumTickPrompt,
+    onTickError: (err) => {
+      systemMessage?.(`Tick error: ${err.message}`);
+    },
   });
   runtimeAgent = game;
   const { agent, ticker, dispose: disposeAgent } = game;
@@ -418,7 +439,8 @@ export async function main() {
   process.stdin.pause();
 
   // 5. Create the TUI
-  const { dispose: disposeTui } = createApp({ agent, ticker });
+  const { dispose: disposeTui, addSystemMessage } = createApp({ agent, ticker });
+  systemMessage = addSystemMessage;
 
   const heartbeat = createHeartbeatLoop({
     getHeartbeatPath: () => path.join(runtimeConfig.dataDir, "HEARTBEAT.md"),
@@ -441,7 +463,7 @@ export async function main() {
       await runtimeAgent.enqueuePrompt(heartbeatPrompt);
     },
     onError: (error) => {
-      console.error("Heartbeat error:", error.message);
+      addSystemMessage(`Heartbeat error: ${error.message}`);
     },
   });
 
@@ -449,17 +471,16 @@ export async function main() {
   if (runtimeConfig.loopEnabled) {
     ticker.start();
   } else {
-    console.log("  Loop: disabled (set LOOP_ENABLED=true or use set_agent_config)");
+    addSystemMessage("Loop: disabled (set LOOP_ENABLED=true or use set_agent_config)");
   }
   heartbeat.start();
 
-  console.log("Agent running. Press Ctrl+C to exit.\n");
+  addSystemMessage("Agent running. Press Ctrl+C to exit.");
 
   // 7. Graceful shutdown
   const gate = createShutdownGate();
 
   const shutdown = async () => {
-    console.log("\nShutting down...");
     heartbeat.stop();
     ticker.stop();
     await disposeAgent();

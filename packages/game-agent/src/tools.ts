@@ -2,6 +2,22 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ActionDefinition, GameAdapter, RuntimeConfigManager } from "./types.js";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+
+/** Log tool responses to a debug file so we can see what the agent sees. */
+function logToolResponse(toolName: string, params: any, response: string) {
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-tool-responses.log",
+    );
+    mkdirSync(dirname(debugPath), { recursive: true });
+    const ts = new Date().toISOString();
+    const paramStr = params ? JSON.stringify(params) : "";
+    writeFileSync(debugPath, `\n[${ts}] ${toolName}(${paramStr})\n${response}\n`, { flag: "a" });
+  } catch (_) {}
+}
 
 const observeSchema = Type.Object({
   filter: Type.Optional(Type.String({ description: "Optional filter for entities" })),
@@ -81,6 +97,7 @@ export function createListActionsTool(actionDefs: ActionDefinition[]): AgentTool
         );
         text = filtered.length > 0 ? formatActionDocs(filtered) : `No actions matching "${filter}".`;
       }
+      logToolResponse("list_actions", { filter }, text);
       return {
         content: [{ type: "text", text }],
         details: { total: actionDefs.length, filtered: !!filter },
@@ -94,10 +111,7 @@ export function createListActionsTool(actionDefs: ActionDefinition[]): AgentTool
  * When actionDefs are provided, actionType is constrained to a StringEnum of valid types.
  * Use list_actions to look up available actions and their parameters.
  */
-export function createExecuteActionTool(
-  adapter: GameAdapter<any>,
-  actionDefs?: ActionDefinition[],
-): AgentTool<any> {
+export function createExecuteActionTool(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any> {
   const actionTypes = actionDefs?.map((a) => a.type) ?? [];
   const actionSchema = Type.Object({
     actionType:
@@ -119,8 +133,10 @@ export function createExecuteActionTool(
         type: actionType,
         params: params ?? {},
       });
+      const text = JSON.stringify(result, null, 2);
+      logToolResponse("execute_action", { actionType, params }, text);
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [{ type: "text", text }],
         details: { actionType, success: result.success },
       };
     },
@@ -132,10 +148,7 @@ export function createExecuteActionTool(
  * When actionDefs are provided, actionType is constrained to a StringEnum of valid types.
  * Use list_actions to look up available actions and their parameters.
  */
-export function createSimulateActionTool(
-  adapter: GameAdapter<any>,
-  actionDefs?: ActionDefinition[],
-): AgentTool<any> {
+export function createSimulateActionTool(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any> {
   const actionTypes = actionDefs?.map((a) => a.type) ?? [];
   const simulateSchema = Type.Object({
     actionType:
@@ -157,8 +170,10 @@ export function createSimulateActionTool(
         type: actionType,
         params: params ?? {},
       });
+      const text = JSON.stringify(result, null, 2);
+      logToolResponse("simulate_action", { actionType, params }, text);
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [{ type: "text", text }],
         details: { actionType, success: result.success },
       };
     },

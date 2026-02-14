@@ -1,10 +1,14 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { fetchFactoryRows, decodePaddedFeltAscii, extractNameFelt } from "./factory-sql";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory, isToriiAvailable } from "./factory-resolver";
 import { patchManifestWithFactory } from "./manifest-patcher";
 import { normalizeRpcUrl } from "./normalize";
 import type { WorldProfile } from "./types";
+
+import manifestSlot from "../../../../../contracts/game/manifest_slot.json";
+import manifestSlottest from "../../../../../contracts/game/manifest_slottest.json";
+import manifestLocal from "../../../../../contracts/game/manifest_local.json";
+import manifestSepolia from "../../../../../contracts/game/manifest_sepolia.json";
+import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
 
 export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
 
@@ -32,7 +36,19 @@ function getFactorySqlBaseUrl(chain: Chain): string {
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
-const DEFAULT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9";
+function getDefaultRpcUrl(chain: Chain): string {
+  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+  switch (chain) {
+    case "mainnet":
+      return `${base}/x/starknet/mainnet`;
+    case "sepolia":
+      return `${base}/x/starknet/sepolia`;
+    case "slot":
+    case "slottest":
+    case "local":
+      return `${base}/x/eternum-blitz-slot-3/katana`;
+  }
+}
 
 const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
@@ -126,6 +142,34 @@ export async function discoverAllWorlds(): Promise<DiscoveredWorld[]> {
   return results.flat();
 }
 
+const normalizeTokenAddress = (value: unknown): string | undefined => {
+  if (value == null) return undefined;
+  if (typeof value === "string") return value || undefined;
+  if (typeof value === "bigint") return `0x${value.toString(16)}`;
+  return undefined;
+};
+
+const TOKEN_CONFIG_QUERY = `SELECT "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+async function fetchTokenAddresses(
+  toriiBaseUrl: string,
+): Promise<{ entryTokenAddress?: string; feeTokenAddress?: string }> {
+  try {
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(TOKEN_CONFIG_QUERY)}`;
+    const res = await fetch(url);
+    if (!res.ok) return {};
+    const rows = (await res.json()) as Record<string, unknown>[];
+    const row = rows[0];
+    if (!row) return {};
+    return {
+      entryTokenAddress: normalizeTokenAddress(row.entry_token_address),
+      feeTokenAddress: normalizeTokenAddress(row.fee_token),
+    };
+  } catch {
+    return {};
+  }
+}
+
 export async function buildWorldProfile(chain: Chain, worldName: string): Promise<WorldProfile> {
   const factoryUrl = getFactorySqlBaseUrl(chain);
 
@@ -140,7 +184,9 @@ export async function buildWorldProfile(chain: Chain, worldName: string): Promis
   }
 
   const toriiBaseUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
-  const rpcUrl = deployment.rpcUrl ? normalizeRpcUrl(deployment.rpcUrl) : DEFAULT_RPC_URL;
+  const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? getDefaultRpcUrl(chain));
+
+  const { entryTokenAddress, feeTokenAddress } = await fetchTokenAddresses(toriiBaseUrl);
 
   return {
     name: worldName,
@@ -149,34 +195,25 @@ export async function buildWorldProfile(chain: Chain, worldName: string): Promis
     rpcUrl,
     worldAddress,
     contractsBySelector,
+    entryTokenAddress,
+    feeTokenAddress,
     fetchedAt: Date.now(),
   };
 }
 
-const MANIFEST_CHAIN_MAP: Record<Chain, string> = {
-  slot: "manifest_slot.json",
-  slottest: "manifest_slottest.json",
-  local: "manifest_local.json",
-  sepolia: "manifest_sepolia.json",
-  mainnet: "manifest_mainnet.json",
+const EMBEDDED_MANIFESTS: Record<Chain, { contracts: unknown[] }> = {
+  slot: manifestSlot as unknown as { contracts: unknown[] },
+  slottest: manifestSlottest as unknown as { contracts: unknown[] },
+  local: manifestLocal as unknown as { contracts: unknown[] },
+  sepolia: manifestSepolia as unknown as { contracts: unknown[] },
+  mainnet: manifestMainnet as unknown as { contracts: unknown[] },
 };
 
 export async function buildResolvedManifest(chain: Chain, profile: WorldProfile): Promise<{ contracts: unknown[] }> {
-  const manifestFile = MANIFEST_CHAIN_MAP[chain];
-  const manifestPath = path.resolve(
-    import.meta.dirname,
-    "..",
-    "..",
-    "..",
-    "..",
-    "..",
-    "contracts",
-    "game",
-    manifestFile,
-  );
-
-  const raw = await readFile(manifestPath, "utf8");
-  const baseManifest = JSON.parse(raw);
+  const baseManifest = EMBEDDED_MANIFESTS[chain];
+  if (!baseManifest) {
+    throw new Error(`No embedded manifest for chain: ${chain}`);
+  }
 
   return patchManifestWithFactory(baseManifest, profile.worldAddress, profile.contractsBySelector);
 }

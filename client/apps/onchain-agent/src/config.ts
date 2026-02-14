@@ -1,9 +1,10 @@
 import path from "node:path";
 import { resolveDefaultDataDir, resolveDefaultManifestPath, resolveDefaultSessionBasePath } from "./runtime-paths";
+import { deriveChainIdFromRpcUrl } from "./world/normalize";
 
 export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
 
-const CHAIN_ID_MAP: Record<Chain, string> = {
+const CHAIN_ID_FALLBACK: Record<Chain, string> = {
   slot: "0x4b4154414e41",
   slottest: "0x4b4154414e41",
   local: "0x4b4154414e41",
@@ -60,10 +61,11 @@ function parseChain(value: string | undefined): Chain {
 export function loadConfig(): AgentConfig {
   const env = process.env;
   const chain = parseChain(env.CHAIN);
-  const chainId = env.CHAIN_ID ?? CHAIN_ID_MAP[chain];
+  const rpcUrl = env.RPC_URL ?? "";
+  const chainId = env.CHAIN_ID ?? deriveChainIdFromRpcUrl(rpcUrl) ?? CHAIN_ID_FALLBACK[chain];
   return {
     chain,
-    rpcUrl: env.RPC_URL ?? "",
+    rpcUrl,
     toriiUrl: env.TORII_URL ?? "",
     worldAddress: env.WORLD_ADDRESS ?? "",
     manifestPath: env.MANIFEST_PATH ? path.resolve(env.MANIFEST_PATH) : resolveDefaultManifestPath(env),

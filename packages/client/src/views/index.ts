@@ -97,22 +97,27 @@ export class ViewClient {
 
       // Fetch armies to find explorers for this realm
       const allArmies = await this.sql.fetchAllArmiesMapData();
-      const ownedArmies = allArmies.filter((a: any) => a.owner !== undefined && a.owner === owner);
+      const ownedArmies = allArmies.filter(
+        (a: any) => a.owner_address !== undefined && this.sameAddress(a.owner_address, owner),
+      );
 
       const guardState = this.buildGuardState(guards);
 
-      const explorers: ExplorerSummary[] = ownedArmies.slice(0, 20).map((a: any) => ({
-        entityId: Number(a.entity_id ?? a.entityId ?? 0),
-        explorerId: Number(a.explorer_id ?? a.entity_id ?? 0),
-        owner: String(a.owner ?? owner),
-        position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
-        stamina: Number(a.stamina ?? 0),
-        maxStamina: 100,
-        troops: [],
-        strength: 0,
-        isInBattle: Boolean(a.is_in_battle ?? false),
-        carriedResources: [],
-      }));
+      const explorers: ExplorerSummary[] = ownedArmies.slice(0, 20).map((a: any) => {
+        const troops = this.buildArmyTroops(a);
+        return {
+          entityId: Number(a.entity_id ?? a.entityId ?? 0),
+          explorerId: Number(a.explorer_id ?? a.entity_id ?? 0),
+          owner: String(a.owner_address ?? owner),
+          position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
+          stamina: this.parseHexStamina(a.stamina_amount),
+          maxStamina: 100,
+          troops: troops.slots,
+          strength: troops.strength,
+          isInBattle: Boolean(a.battle_cooldown_end ? Number(a.battle_cooldown_end) > 0 : false),
+          carriedResources: [],
+        };
+      });
 
       const result: RealmView = {
         entityId,
@@ -177,6 +182,8 @@ export class ViewClient {
 
       const ownerAddress = (await this.sql.fetchExplorerAddressOwner(entityId)) ?? this.getAccount() ?? "0x0";
 
+      const troops = this.buildArmyTroops(army);
+
       const result: ExplorerView = {
         entityId,
         explorerId: Number(army?.explorer_id ?? army?.entity_id ?? entityId),
@@ -185,15 +192,11 @@ export class ViewClient {
           x: Number(army?.coord_x ?? army?.x ?? 0),
           y: Number(army?.coord_y ?? army?.y ?? 0),
         },
-        stamina: Number(army?.stamina ?? 0),
+        stamina: this.parseHexStamina(army?.stamina_amount),
         maxStamina: 100,
-        troops: {
-          totalTroops: 0,
-          slots: [],
-          strength: 0,
-        },
+        troops,
         carriedResources: [],
-        isInBattle: Boolean(army?.is_in_battle ?? false),
+        isInBattle: Boolean(army?.battle_cooldown_end ? Number(army.battle_cooldown_end) > 0 : false),
         currentBattle: null,
         nearbyEntities: [],
         recentEvents: [],
@@ -252,15 +255,18 @@ export class ViewClient {
 
       const armies: MapArmy[] = allArmies
         .filter((a: any) => inRadius(Number(a.coord_x ?? a.x ?? 0), Number(a.coord_y ?? a.y ?? 0)))
-        .map((a: any) => ({
-          entityId: Number(a.entity_id ?? a.entityId ?? 0),
-          owner: String(a.owner ?? "0x0"),
-          position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
-          troops: [],
-          strength: 0,
-          stamina: Number(a.stamina ?? 0),
-          isInBattle: Boolean(a.is_in_battle ?? false),
-        }));
+        .map((a: any) => {
+          const troops = this.buildArmyTroops(a);
+          return {
+            entityId: Number(a.entity_id ?? a.entityId ?? 0),
+            owner: String(a.owner_address ?? "0x0"),
+            position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
+            troops: troops.slots,
+            strength: troops.strength,
+            stamina: this.parseHexStamina(a.stamina_amount),
+            isInBattle: Boolean(a.battle_cooldown_end ? Number(a.battle_cooldown_end) > 0 : false),
+          };
+        });
 
       const tiles: TileState[] = allTiles
         .filter((t: any) => inRadius(Number(t.col ?? t.x ?? 0), Number(t.row ?? t.y ?? 0)))
@@ -365,16 +371,19 @@ export class ViewClient {
         guardStrength: 0,
       }));
 
-      const ownedArmies = allArmies.filter((a: any) => String(a.owner) === address);
-      const playerArmies: PlayerArmySummary[] = ownedArmies.map((a: any) => ({
-        entityId: Number(a.entity_id ?? a.entityId ?? 0),
-        explorerId: Number(a.explorer_id ?? a.entity_id ?? 0),
-        position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
-        strength: 0,
-        stamina: Number(a.stamina ?? 0),
-        isInBattle: Boolean(a.is_in_battle ?? false),
-        carriedResourceCount: 0,
-      }));
+      const ownedArmies = allArmies.filter((a: any) => this.sameAddress(a.owner_address, address));
+      const playerArmies: PlayerArmySummary[] = ownedArmies.map((a: any) => {
+        const troops = this.buildArmyTroops(a);
+        return {
+          entityId: Number(a.entity_id ?? a.entityId ?? 0),
+          explorerId: Number(a.explorer_id ?? a.entity_id ?? 0),
+          position: { x: Number(a.coord_x ?? a.x ?? 0), y: Number(a.coord_y ?? a.y ?? 0) },
+          strength: troops.strength,
+          stamina: this.parseHexStamina(a.stamina_amount),
+          isInBattle: Boolean(a.battle_cooldown_end ? Number(a.battle_cooldown_end) > 0 : false),
+          carriedResourceCount: 0,
+        };
+      });
 
       let leaderboardEntry = leaderboardByAddress;
       if (!leaderboardEntry) {
@@ -628,7 +637,7 @@ export class ViewClient {
     return normalize(a) !== "" && normalize(a) === normalize(b);
   }
 
-  private static readonly RESOURCE_PRECISION = 1_000_000_000_000_000_000n; // 1e18
+  private static readonly RESOURCE_PRECISION = 1_000_000_000n; // 1e9 — matches @bibliothecadao/types RESOURCE_PRECISION
   private static readonly ZERO_HEX = "0x00000000000000000000000000000000";
 
   /**
@@ -663,7 +672,6 @@ export class ViewClient {
             name: col.name,
             tier: "",
             balance,
-            rawBalance: typeof hex === "string" ? BigInt(hex) : 0n,
             production: null,
             atMaxCapacity: false,
             weightKg: 0,
@@ -716,6 +724,57 @@ export class ViewClient {
       .sort((a, b) => a.resourceId - b.resourceId);
   }
 
+  /** Parse a tier string ("T1"/"T2"/"T3" or hex "0x0"/"0x1"/"0x2") to a 1-based number. */
+  private parseTier(raw: unknown): number {
+    if (raw === null || raw === undefined) return 1;
+    const s = String(raw).trim().toUpperCase();
+    if (s === "T1" || s === "0" || s === "0X0") return 1;
+    if (s === "T2" || s === "1" || s === "0X1") return 2;
+    if (s === "T3" || s === "2" || s === "0X2") return 3;
+    const n = Number(raw);
+    return isNaN(n) ? 1 : n + 1; // 0-based enum → 1-based tier
+  }
+
+  /** Parse a hex string to a BigInt-derived number, dividing by resource precision. */
+  private parseHexCount(hex: unknown): number {
+    if (typeof hex !== "string" || !hex || hex === "0x0") return 0;
+    try {
+      const raw = BigInt(hex);
+      if (raw <= 0n) return 0;
+      return Number(raw / ViewClient.RESOURCE_PRECISION);
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Parse a hex stamina value to a plain number (no precision division). */
+  private parseHexStamina(hex: unknown): number {
+    if (typeof hex !== "string" || !hex || hex === "0x0") return 0;
+    try {
+      return Number(BigInt(hex));
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Build troop state from a raw army row (from fetchAllArmiesMapData). */
+  private buildArmyTroops(army: any): { totalTroops: number; slots: any[]; strength: number } {
+    if (!army) return { totalTroops: 0, slots: [], strength: 0 };
+
+    const count = this.parseHexCount(army.count);
+    if (count <= 0) return { totalTroops: 0, slots: [], strength: 0 };
+
+    const tier = this.parseTier(army.tier);
+    const category = String(army.category ?? "unknown");
+    const strength = computeStrength(count, tier);
+
+    return {
+      totalTroops: count,
+      slots: [{ troopType: category, count, tier }],
+      strength,
+    };
+  }
+
   private buildGuardState(guards: any[]): GuardState {
     if (!guards || guards.length === 0) {
       return { totalTroops: 0, slots: [], strength: 0 };
@@ -723,11 +782,18 @@ export class ViewClient {
 
     const slots = guards
       .filter((g: any) => g.troops !== null && g.troops !== undefined)
-      .map((g: any) => ({
-        troopType: String(g.troops?.category ?? "unknown"),
-        count: Number(g.troops?.count ?? 0),
-        tier: Number(g.troops?.tier ?? 1),
-      }));
+      .map((g: any) => {
+        const count =
+          typeof g.troops?.count === "bigint"
+            ? Number(g.troops.count / ViewClient.RESOURCE_PRECISION)
+            : this.parseHexCount(g.troops?.count);
+        const tier = this.parseTier(g.troops?.tier);
+        return {
+          troopType: String(g.troops?.category ?? "unknown"),
+          count,
+          tier,
+        };
+      });
 
     const totalTroops = slots.reduce((sum, s) => sum + s.count, 0);
     const strength = slots.reduce((sum, s) => sum + computeStrength(s.count, s.tier), 0);

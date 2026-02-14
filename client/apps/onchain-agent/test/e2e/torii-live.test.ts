@@ -2,15 +2,15 @@
  * E2E tests against live Torii SQL endpoint.
  * Tests the full tooling pipeline: SQL queries → SqlApi → ViewClient → buildWorldState
  *
- * Torii endpoint: https://api.cartridge.gg/x/test-snow-true-64/torii/sql
+ * Torii endpoint: https://api.cartridge.gg/x/test-jade-snow-61/torii/sql
  */
 import { describe, it, expect, beforeAll } from "vitest";
 
-const TORII_BASE_URL = "https://api.cartridge.gg/x/test-snow-true-64/torii";
+const TORII_BASE_URL = "https://api.cartridge.gg/x/test-jade-snow-61/torii";
 const TORII_SQL_URL = `${TORII_BASE_URL}/sql`;
 
 // Known data from the live world
-const KNOWN_OWNER = "0x05372427e24ffd54c70e3c04bed5077a670fa1442caa1ad90e4d3ffab39e08ab";
+const KNOWN_OWNER = "0x0058eda6e4d33221679fb027ce223fd6e25688ec8656fa3a72e15c7b3950bb92";
 
 async function querySql<T = any>(query: string): Promise<T[]> {
   const url = `${TORII_SQL_URL}?query=${encodeURIComponent(query)}`;
@@ -48,7 +48,7 @@ describe("Live Torii SQL — Structure queries match SqlApi format", () => {
     const rows = await querySql(
       `SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
        FROM [s1_eternum-Structure] 
-       WHERE owner == '${KNOWN_OWNER}'`
+       WHERE owner = '${KNOWN_OWNER}'`,
     );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
@@ -74,7 +74,7 @@ describe("Live Torii SQL — Structure queries match SqlApi format", () => {
           \`base.level\` as level
        FROM \`s1_eternum-Structure\`
        WHERE owner = '${KNOWN_OWNER}'
-       ORDER BY category, entity_id`
+       ORDER BY category, entity_id`,
     );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
@@ -89,7 +89,7 @@ describe("Live Torii SQL — Structure queries match SqlApi format", () => {
     // This mirrors STRUCTURE_QUERIES.ALL_STRUCTURES_MAP_DATA
     const rows = await querySql(
       `SELECT entity_id, owner, category, \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y
-       FROM [s1_eternum-Structure] LIMIT 10`
+       FROM [s1_eternum-Structure] LIMIT 10`,
     );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
@@ -102,9 +102,7 @@ describe("Live Torii SQL — Structure queries match SqlApi format", () => {
 
 describe("Live Torii SQL — Army/Explorer queries", () => {
   it("fetches explorer troops with expected schema", async () => {
-    const rows = await querySql(
-      `SELECT * FROM [s1_eternum-ExplorerTroops] LIMIT 3`
-    );
+    const rows = await querySql(`SELECT * FROM [s1_eternum-ExplorerTroops] LIMIT 3`);
     expect(rows.length).toBeGreaterThan(0);
     const firstRow = rows[0];
     // ExplorerTroops uses explorer_id, NOT entity_id
@@ -123,18 +121,16 @@ describe("Live Torii SQL — Army/Explorer queries", () => {
     // FINDING: ExplorerTroops.owner is a numeric entity_id referencing the
     // spawning structure, NOT a hex address. The ViewClient/SqlApi must join
     // to resolve the actual player address.
-    const rows = await querySql<{ owner: number }>(
-      `SELECT DISTINCT owner FROM [s1_eternum-ExplorerTroops] LIMIT 5`
-    );
+    const rows = await querySql<{ owner: number }>(`SELECT DISTINCT owner FROM [s1_eternum-ExplorerTroops] LIMIT 5`);
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
       expect(typeof row.owner).toBe("number");
     }
 
     // Verify these entity_ids exist in the Structure table
-    const entityIds = rows.map(r => r.owner);
+    const entityIds = rows.map((r) => r.owner);
     const structures = await querySql<{ entity_id: number }>(
-      `SELECT entity_id FROM [s1_eternum-Structure] WHERE entity_id IN (${entityIds.join(",")})`
+      `SELECT entity_id FROM [s1_eternum-Structure] WHERE entity_id IN (${entityIds.join(",")})`,
     );
     expect(structures.length).toBeGreaterThan(0);
   });
@@ -142,9 +138,7 @@ describe("Live Torii SQL — Army/Explorer queries", () => {
 
 describe("Live Torii SQL — Leaderboard queries", () => {
   it("fetches registered player points", async () => {
-    const rows = await querySql(
-      `SELECT address, registered_points FROM [s1_eternum-PlayerRegisteredPoints] LIMIT 5`
-    );
+    const rows = await querySql(`SELECT address, registered_points FROM [s1_eternum-PlayerRegisteredPoints] LIMIT 5`);
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
       expect(row).toHaveProperty("address");
@@ -166,7 +160,7 @@ describe("Live Torii SQL — Market queries", () => {
 describe("Live Torii SQL — World contract", () => {
   it("can fetch world contract address", async () => {
     const rows = await querySql<{ contract_address: string }>(
-      "SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'"
+      "SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'",
     );
     expect(rows.length).toBe(1);
     expect(rows[0].contract_address).toMatch(/^0x/);
@@ -188,10 +182,10 @@ describe("Live Torii SQL — ViewClient data pipeline", () => {
               \`base.level\` AS level
        FROM [s1_eternum-Structure]
        WHERE owner != '0x0000000000000000000000000000000000000000000000000000000000000000'
-       LIMIT 5`
+       LIMIT 5`,
     );
     expect(rows.length).toBeGreaterThan(0);
-    
+
     // Transform like ViewClient.mapArea does
     const structures = rows.map((s: any) => ({
       entityId: Number(s.entity_id ?? 0),
@@ -215,16 +209,17 @@ describe("Live Torii SQL — ViewClient data pipeline", () => {
 
   it("leaderboard data can be ranked", async () => {
     const rows = await querySql<{ address: string; registered_points: string }>(
-      `SELECT address, registered_points FROM [s1_eternum-PlayerRegisteredPoints] ORDER BY registered_points DESC LIMIT 10`
+      `SELECT address, registered_points FROM [s1_eternum-PlayerRegisteredPoints] ORDER BY registered_points DESC LIMIT 10`,
     );
     expect(rows.length).toBeGreaterThan(0);
 
     // Transform like leaderboard helpers
     const entries = rows.map((r, i) => ({
       address: r.address,
-      points: typeof r.registered_points === "string" && r.registered_points.startsWith("0x")
-        ? Number(BigInt(r.registered_points))
-        : Number(r.registered_points),
+      points:
+        typeof r.registered_points === "string" && r.registered_points.startsWith("0x")
+          ? Number(BigInt(r.registered_points))
+          : Number(r.registered_points),
       rank: i + 1,
     }));
 
@@ -237,10 +232,10 @@ describe("Live Torii SQL — ViewClient data pipeline", () => {
 
   it("world address matches contracts table", async () => {
     const rows = await querySql<{ contract_address: string }>(
-      "SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'"
+      "SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'",
     );
     const worldAddress = rows[0].contract_address;
-    
+
     // Verify it's a valid Starknet address (66 chars with 0x prefix)
     expect(worldAddress).toMatch(/^0x[0-9a-fA-F]+$/);
     expect(worldAddress.length).toBeLessThanOrEqual(66);
