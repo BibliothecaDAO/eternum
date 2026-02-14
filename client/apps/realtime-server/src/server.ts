@@ -36,6 +36,7 @@ import notesRoutes from "./http/routes/notes";
 import worldChatRoutes from "./http/routes/world-chat";
 import avatarRoutes from "./http/routes/avatars";
 import cacheRoutes from "./http/routes/cache";
+import referralRoutes from "./http/routes/referrals";
 import { createZoneRegistry } from "./ws/zone-registry";
 
 const app = new Hono<AppEnv>();
@@ -536,6 +537,7 @@ app.route("/api/chat/world", worldChatRoutes);
 app.route("/api/chat/dm", directMessageRoutes);
 app.route("/api/avatars", avatarRoutes);
 app.route("/api/cache", cacheRoutes);
+app.route("/api/referrals", referralRoutes);
 
 type ClientMessage =
   | { type: "join:zone"; zoneId: string }

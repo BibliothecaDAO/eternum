@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-13",
+    title: "Referral Dashboard + Wallet Capture",
+    description:
+      "Added a referral program panel to the wallet dashboard with personal link sharing, personal stats, and a top leaderboard. Referral links are now captured from URL and auto-submitted once a wallet connects.",
+    type: "feature",
+  },
+  {
     date: "2026-02-12",
     title: "Building Cost Visual Feedback",
     description:

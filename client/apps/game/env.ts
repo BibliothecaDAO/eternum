@@ -46,6 +46,11 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_REFERRALS_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
 
   // Marketplace API endpoint (added)
   VITE_PUBLIC_MARKETPLACE_URL: z
