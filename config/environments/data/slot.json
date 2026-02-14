@@ -753,12 +753,10 @@
     "army": 1
   },
   "battle": {
-    "regularImmunityTicks": 24,
+    "regularImmunityTicks": 0,
     "villageImmunityTicks": 0,
     "delaySeconds": 0,
-    "villageRaidImmunityTicks": 24,
-    "graceTickCount": 0,
-    "graceTickCountHyp": 0
+    "villageRaidImmunityTicks": 24
   },
   "troop": {
     "damage": {
@@ -795,10 +793,10 @@
       "mercenariesTroopUpperBound": 1600,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000,
-      "settlementDeploymentCap": 6000,
-      "cityDeploymentCap": 30000,
-      "kingdomDeploymentCap": 90000,
-      "empireDeploymentCap": 180000,
+      "settlementDeploymentCap": 3000,
+      "cityDeploymentCap": 15000,
+      "kingdomDeploymentCap": 45000,
+      "empireDeploymentCap": 90000,
       "t1TierStrength": 1,
       "t2TierStrength": 3,
       "t3TierStrength": 9,

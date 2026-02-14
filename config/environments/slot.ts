@@ -39,9 +39,8 @@ export const SlotEternumGlobalConfig: Config = {
   },
   battle: {
     ...CommonEternumGlobalConfig.battle,
-    graceTickCount: 0,
-    graceTickCountHyp: 0,
-    delaySeconds: 0,
+    regularImmunityTicks: 0,
+    villageImmunityTicks: 0,
   },
   blitz: {
     ...CommonEternumGlobalConfig.blitz,

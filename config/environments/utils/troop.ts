@@ -49,7 +49,7 @@ export const TROOP_TIER_STRENGTH = { T1: 1, T2: 3, T3: 9 };
 export const TROOP_TIER_MODIFIER = { T1: 50, T2: 100, T3: 150 }; // /100 (50 = 0.5, 100 = 1.0, 150 = 1.5)
 
 // Deployment caps per structure level (without precision)
-export const TROOP_SETTLEMENT_DEPLOYMENT_CAP = 6_000;
-export const TROOP_CITY_DEPLOYMENT_CAP = 30_000;
-export const TROOP_KINGDOM_DEPLOYMENT_CAP = 90_000;
-export const TROOP_EMPIRE_DEPLOYMENT_CAP = 180_000;
+export const TROOP_SETTLEMENT_DEPLOYMENT_CAP = 3_000;
+export const TROOP_CITY_DEPLOYMENT_CAP = 15_000;
+export const TROOP_KINGDOM_DEPLOYMENT_CAP = 45_000;
+export const TROOP_EMPIRE_DEPLOYMENT_CAP = 90_000;
