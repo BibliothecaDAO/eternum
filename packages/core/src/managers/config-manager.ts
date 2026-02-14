@@ -516,13 +516,21 @@ export class ClientConfigManager {
       },
 
       troop_limit_config: {
-        explorer_max_party_count: 0,
-        explorer_guard_max_troop_count: 0,
         guard_resurrection_delay: 0,
         mercenaries_troop_lower_bound: 0,
         mercenaries_troop_upper_bound: 0,
-        troops_per_military_building: 0,
-        max_defense_armies: 0,
+        agents_troop_lower_bound: 0,
+        agents_troop_upper_bound: 0,
+        settlement_deployment_cap: 0,
+        city_deployment_cap: 0,
+        kingdom_deployment_cap: 0,
+        empire_deployment_cap: 0,
+        t1_tier_strength: 0,
+        t2_tier_strength: 0,
+        t3_tier_strength: 0,
+        t1_tier_modifier: 0,
+        t2_tier_modifier: 0,
+        t3_tier_modifier: 0,
       },
 
       troop_stamina_config: {
@@ -561,6 +569,28 @@ export class ClientConfigManager {
         troop_stamina_config,
       };
     }, defaultTroopConfig);
+  }
+
+  getMaxArmySize(level: number, tier: TroopTier): number {
+    const config = this.getTroopConfig().troop_limit_config;
+
+    const deploymentCap =
+      [
+        config.settlement_deployment_cap,
+        config.city_deployment_cap,
+        config.kingdom_deployment_cap,
+        config.empire_deployment_cap,
+      ][level] ?? config.settlement_deployment_cap;
+
+    const tierParams: Record<TroopTier, { strength: number; modifier: number }> = {
+      [TroopTier.T1]: { strength: config.t1_tier_strength, modifier: config.t1_tier_modifier },
+      [TroopTier.T2]: { strength: config.t2_tier_strength, modifier: config.t2_tier_modifier },
+      [TroopTier.T3]: { strength: config.t3_tier_strength, modifier: config.t3_tier_modifier },
+    };
+
+    const { strength, modifier } = tierParams[tier];
+    if (strength === 0) return 0;
+    return Math.floor((deploymentCap * modifier) / (strength * 100));
   }
 
   getCombatConfig() {

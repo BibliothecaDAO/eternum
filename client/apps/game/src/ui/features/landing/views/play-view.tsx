@@ -7,6 +7,7 @@ import { useAccount } from "@starknet-react/core";
 import {
   BookOpen,
   ExternalLink,
+  Factory,
   Play,
   Sparkles,
   Video,
@@ -19,7 +20,7 @@ import {
   Trophy,
   RefreshCw,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Suspense, lazy, useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
@@ -31,7 +32,9 @@ interface PlayViewProps {
   className?: string;
 }
 
-type PlayTab = "play" | "learn" | "news";
+type PlayTab = "play" | "learn" | "news" | "factory";
+
+const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
 
 // Video guide data - ordered from basic to advanced
 const VIDEO_GUIDES = [
@@ -252,6 +255,28 @@ const NewsContent = () => (
   </div>
 );
 
+const FactoryTabContent = () => (
+  <div className="rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
+    <div className="mb-4 flex items-center gap-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/20">
+        <Factory className="h-5 w-5 text-gold" />
+      </div>
+      <div>
+        <h2 className="font-serif text-xl text-gold">Factory</h2>
+        <p className="text-sm text-gold/60">Deploy and configure worlds from the main dashboard.</p>
+      </div>
+    </div>
+
+    <Suspense
+      fallback={
+        <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">Loading factory...</div>
+      }
+    >
+      <FactoryPage embedded />
+    </Suspense>
+  </div>
+);
+
 /**
  * Play tab content with centered hero + 3 columns layout:
  * - Hero centered at top with CTA
@@ -309,8 +334,8 @@ const PlayTabContent = ({
             <UnifiedGameGrid
               onSelectGame={onSelectGame}
               onSpectate={onSpectate}
+              onForgeHyperstructures={onForgeHyperstructures}
               onRegistrationComplete={onRegistrationComplete}
-              devModeFilter={false}
               statusFilter="ongoing"
               hideHeader
               hideLegend
@@ -503,6 +528,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
         );
       case "news":
         return <NewsContent />;
+      case "factory":
+        return <FactoryTabContent />;
       case "play":
       default:
         return (

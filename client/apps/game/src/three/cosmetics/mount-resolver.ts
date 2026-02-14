@@ -9,7 +9,7 @@ type MountDefinition = {
   scale?: [number, number, number];
 };
 
-export interface MountBaseTransform {
+interface MountBaseTransform {
   position: Vector3;
   rotation?: Euler;
   scale?: Vector3;

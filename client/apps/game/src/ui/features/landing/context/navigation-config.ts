@@ -2,14 +2,14 @@ import { Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
 
 type SectionId = "home" | "leaderboard" | "markets" | "profile";
 
-export interface SubMenuItem {
+interface SubMenuItem {
   id: string;
   label: string;
   /** Tab parameter value (used in URL query string) */
   tab: string | null;
 }
 
-export interface SectionConfig {
+interface SectionConfig {
   id: SectionId;
   label: string;
   icon: LucideIcon;
@@ -28,6 +28,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "play", label: "PLAY", tab: null },
       { id: "learn", label: "LEARN", tab: "learn" },
       { id: "news", label: "NEWS", tab: "news" },
+      { id: "factory", label: "FACTORY", tab: "factory" },
     ],
   },
   {

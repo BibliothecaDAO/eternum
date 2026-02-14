@@ -30,15 +30,17 @@ pub mod resource_systems {
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{SeasonConfigImpl, SpeedImpl};
+    use crate::models::config::{BattleConfigImpl, SeasonConfigImpl, SpeedImpl, TickImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::TravelTrait;
     use crate::models::resource::arrivals::ResourceArrivalImpl;
     use crate::models::resource::resource::{
-        ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
+        WeightStoreImpl,
     };
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;
@@ -46,6 +48,7 @@ pub mod resource_systems {
     use crate::systems::utils::donkey::iDonkeyImpl;
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::troop::iExplorerImpl;
+    use crate::systems::utils::village::iVillageImpl;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -315,6 +318,21 @@ pub mod resource_systems {
             // ensure troop and stucture are adjacent to each other
             assert!(explorer.coord.is_adjacent(to_structure.coord()), "troop and structure are not adjacent");
 
+            // if target is a village, ensure no troop resources from non-connected explorers
+            if to_structure.category == StructureCategory::Village.into() {
+                let mut i: u32 = 0;
+                let mut has_troop = false;
+                while i < resources.len() && !has_troop {
+                    let (resource_type, _) = *resources.at(i);
+                    has_troop = TroopResourceImpl::is_troop(resource_type);
+                    i += 1;
+                }
+                if has_troop {
+                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
+                    iVillageImpl::ensure_associated_with_village(ref world, village_metadata, explorer.owner);
+                }
+            }
+
             let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
             let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
             iResourceTransferImpl::troop_to_structure_instant(
@@ -423,6 +441,18 @@ pub mod resource_systems {
             // ensure from_structure is owned by caller
             let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
             from_structure_owner.assert_caller_owner();
+
+            // block resource claims for cloaked villages (48h spawn immunity)
+            let from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            if from_structure_base.category == StructureCategory::Village.into() {
+                let battle_config = BattleConfigImpl::get(ref world);
+                let tick = TickImpl::get_tick_interval(ref world);
+                let season_config = SeasonConfigImpl::get(world);
+                assert!(
+                    from_structure_base.is_not_cloaked(battle_config, tick, season_config),
+                    "village cannot claim deposits during spawn immunity",
+                );
+            }
 
             // move balance from resource arrivals to structure balance
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);

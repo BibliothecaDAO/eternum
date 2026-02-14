@@ -315,7 +315,7 @@ export class WorldUpdateListener {
               return result || undefined;
             }
           },
-          false,
+          true,
         );
       },
       onExplorerTroopsUpdate: (callback: (value: ExplorerTroopsSystemUpdate) => void) => {

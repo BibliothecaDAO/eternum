@@ -11,7 +11,7 @@ mod tests {
     use crate::constants::RESOURCE_PRECISION;
     use crate::models::position::{Coord, Direction};
     use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl};
-    use crate::models::troop::{ExplorerTroops, GuardSlot, TroopTier, TroopType, Troops};
+    use crate::models::troop::{ExplorerTroops, GuardSlot, TroopLimitTrait, TroopTier, TroopType, Troops};
     use crate::systems::combat::contracts::troop_battle::{
         ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
     };
@@ -71,8 +71,8 @@ mod tests {
     fn test_library_can_be_found() {
         let world = spawn_combat_world();
 
-        let result = world.dns(@"structure_creation_library_v0_1_9");
-        assert!(result.is_some(), "structure_creation_library_v0_1_9 should be found");
+        let result = world.dns(@"structure_creation_library_v0_1_10");
+        assert!(result.is_some(), "structure_creation_library_v0_1_10 should be found");
 
         let (_addr, class_hash) = result.unwrap();
         assert!(class_hash.is_non_zero(), "Library class_hash should be non-zero");
@@ -89,7 +89,7 @@ mod tests {
             TroopType::Crossbowman, TroopTier::T2, TroopType::Paladin, TroopTier::T3,
         );
 
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
         attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
@@ -121,7 +121,7 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
         attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
@@ -220,7 +220,7 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Paladin, TroopTier::T3,
         );
 
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
         attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
@@ -285,7 +285,7 @@ mod tests {
             TroopType::Paladin, TroopTier::T3, TroopType::Knight, TroopTier::T1,
         );
 
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
         attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);

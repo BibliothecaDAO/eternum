@@ -11,7 +11,7 @@ const PARICLE_COLOR = new THREE.Color(8, 8, 4);
 
 const LIGHT_INTENSITY = 10;
 
-const MAX_DELTA = 1 / 120; // Cap at 30 FPS equivalent to prevent large jumps
+const MAX_DELTA = 1 / 30; // Cap at 30 FPS equivalent to prevent large jumps
 
 export class Particles {
   private pointsPositions: Float32Array;

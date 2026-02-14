@@ -15,6 +15,8 @@ import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
+import { waitForVisualSettle } from "./manager-update-convergence";
 
 const MAX_INSTANCES = 1000;
 
@@ -39,6 +41,7 @@ export class ChestManager {
   private animations: Map<number, THREE.AnimationMixer> = new Map();
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private latestTransitionToken = 0;
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
 
   constructor(
@@ -206,8 +209,16 @@ export class ChestManager {
     }
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
+    const transitionToken = options?.transitionToken;
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (transitionToken !== undefined) {
+      this.latestTransitionToken = transitionToken;
+    }
+
     if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
@@ -227,6 +238,10 @@ export class ChestManager {
       return;
     }
 
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+
     const previousChunk = this.currentChunkKey;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
@@ -237,9 +252,16 @@ export class ChestManager {
     }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = Promise.resolve().then(() => {
+    this.chunkSwitchPromise = (async () => {
+      if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+        return;
+      }
+      if (transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+        return;
+      }
       this.renderVisibleChests(chunkKey);
-    });
+      await waitForVisualSettle();
+    })();
 
     try {
       await this.chunkSwitchPromise;

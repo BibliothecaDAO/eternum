@@ -11,7 +11,6 @@ import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
-  debouncedGetTilesForPositionsFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
@@ -55,6 +54,7 @@ export const getStructuresDataFromTorii = async (
   client: ToriiClient,
   components: Component<Schema, Metadata, undefined>[],
   structures: { entityId: ID; position: HexPosition }[],
+  onComplete?: () => void,
 ) => {
   const structuresToSync = structures.filter((structure) => {
     const valid = isValidId(structure.entityId) && hasValidPosition(structure.position);
@@ -70,6 +70,7 @@ export const getStructuresDataFromTorii = async (
     if (import.meta.env.DEV) {
       console.warn("[torii] No valid structures to sync", structures);
     }
+    onComplete?.();
     return;
   }
 
@@ -84,35 +85,43 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Hyperstructure",
   ];
 
+  const runOnComplete = onComplete
+    ? (() => {
+        let completedQueries = 0;
+        return () => {
+          completedQueries += 1;
+          if (completedQueries >= 3) {
+            onComplete();
+          }
+        };
+      })()
+    : undefined;
+
   // Create promises for all queries without awaiting them
   const structuresPromise = debouncedGetEntitiesFromTorii(
     client,
     components as any,
     structuresToSync.map((structure) => structure.entityId),
     playerStructuresModels,
-    () => {},
+    runOnComplete,
   );
 
   const armiesPromise = debouncedGetOwnedArmiesFromTorii(
     client,
     components as any,
     structuresToSync.map((structure) => structure.entityId),
-    () => {},
+    runOnComplete,
   );
 
   const buildingsPromise = debouncedGetBuildingsFromTorii(
     client,
     components as any,
     structuresToSync.map((structure) => structure.position),
-    () => {},
+    runOnComplete,
   );
 
-  // Query tile components for the structure positions
-  const tilePositions = structuresToSync.map((structure) => structure.position);
-  const tilePromise = debouncedGetTilesForPositionsFromTorii(client, components as any, tilePositions, () => {});
-
   // Execute all promises in parallel
-  return Promise.all([structuresPromise, armiesPromise, buildingsPromise, tilePromise]);
+  return Promise.all([structuresPromise, armiesPromise, buildingsPromise]);
 };
 
 // For own structures, usePlayerStructureSync keeps data fresh so we only fetch if missing.

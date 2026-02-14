@@ -34,8 +34,10 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
+import { createCoalescedAsyncUpdateRunner, waitForVisualSettle } from "./manager-update-convergence";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { shouldRefreshVisibleStructures } from "./structure-update-policy";
+import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -92,7 +94,7 @@ export class StructureManager {
   private cosmeticStructureModels: Map<string, InstancedModel[]> = new Map();
   private cosmeticStructureModelPromises: Map<string, Promise<InstancedModel[]>> = new Map();
   private isUpdatingVisibleStructures = false;
-  private hasPendingVisibleStructuresUpdate = false;
+  private readonly runVisibleStructuresUpdate: () => Promise<void>;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   // Cosmetic entity ID maps keyed by cosmeticId
   private cosmeticEntityIdMaps: Map<string, Map<number, ID>> = new Map();
@@ -114,6 +116,7 @@ export class StructureManager {
   private mode: GameModeConfig;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private latestTransitionToken = 0;
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
   private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
   private unsubscribeAccountStore?: () => void;
@@ -225,6 +228,14 @@ export class StructureManager {
     chunkStride?: number,
   ) {
     this.scene = scene;
+    this.runVisibleStructuresUpdate = createCoalescedAsyncUpdateRunner(async () => {
+      this.isUpdatingVisibleStructures = true;
+      try {
+        await this.performVisibleStructuresUpdate();
+      } finally {
+        this.isUpdatingVisibleStructures = false;
+      }
+    });
     this.renderChunkSize = renderChunkSize;
     this.structures = new Structures(this.handleStructureRecordRemoved, () => this.updateVisibleStructures());
     this.labelsGroup = labelsGroup || new Group();
@@ -886,8 +897,16 @@ export class StructureManager {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
+    const transitionToken = options?.transitionToken;
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+    if (transitionToken !== undefined) {
+      this.latestTransitionToken = transitionToken;
+    }
+
     if (!force && this.currentChunk === chunkKey) {
       return;
     }
@@ -909,6 +928,10 @@ export class StructureManager {
       return;
     }
 
+    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+      return;
+    }
+
     const previousChunk = this.currentChunk;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
@@ -919,10 +942,18 @@ export class StructureManager {
     }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = Promise.resolve().then(() => {
-      this.updateVisibleStructures();
+    this.chunkSwitchPromise = (async () => {
+      if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+        return;
+      }
+      if (transitionToken !== undefined && this.currentChunk !== chunkKey) {
+        return;
+      }
+
+      await this.updateVisibleStructures();
       this.showLabels();
-    });
+      await waitForVisualSettle();
+    })();
 
     try {
       await this.chunkSwitchPromise;
@@ -950,24 +981,10 @@ export class StructureManager {
     return this.visibleStructureCount;
   }
 
-  private updateVisibleStructures(): void {
-    if (this.isUpdatingVisibleStructures) {
-      this.hasPendingVisibleStructuresUpdate = true;
-      return;
-    }
-
-    this.isUpdatingVisibleStructures = true;
-    void this.performVisibleStructuresUpdate()
-      .catch((error) => {
-        console.error("Failed to update visible structures", error);
-      })
-      .finally(() => {
-        this.isUpdatingVisibleStructures = false;
-        if (this.hasPendingVisibleStructuresUpdate) {
-          this.hasPendingVisibleStructuresUpdate = false;
-          this.updateVisibleStructures();
-        }
-      });
+  private updateVisibleStructures(): Promise<void> {
+    return this.runVisibleStructuresUpdate().catch((error) => {
+      console.error("Failed to update visible structures", error);
+    });
   }
 
   private resolveStructureAttachmentsForRender(structure: StructureInfo): CosmeticAttachmentTemplate[] {

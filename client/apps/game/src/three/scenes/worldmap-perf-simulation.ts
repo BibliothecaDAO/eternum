@@ -5,7 +5,7 @@ import type GUI from "lil-gui";
 /**
  * Configuration for the performance simulation helper
  */
-export interface WorldmapPerfSimulationConfig {
+interface WorldmapPerfSimulationConfig {
   guiFolder: GUI;
   getSimulateAllExplored: () => boolean;
   setSimulateAllExplored: (value: boolean) => void;

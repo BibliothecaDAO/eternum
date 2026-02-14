@@ -1,4 +1,5 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
+import { connectWithControllerRetry, pickPrimaryConnector } from "@/hooks/context/controller-connect";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/design-system/atoms/button";
 import { useConnect } from "@starknet-react/core";
@@ -10,32 +11,34 @@ interface ControllerProps {
 }
 
 export const Controller = ({ className = "" }: ControllerProps) => {
-  const { connect, connectors, isPending } = useConnect();
+  const { connectAsync, connectors, isPending } = useConnect();
   const { connector, account, accountName, setAccountName } = useAccountStore((state) => state);
 
-  const connectWallet = () => {
+  const connectWallet = useCallback(async () => {
     try {
       console.log("Attempting to connect wallet...");
-      const connectorToUse = connectors[0];
+      const connectorToUse = pickPrimaryConnector(connectors);
       if (!connectorToUse) {
         console.error("No Starknet connectors available for Cartridge login");
         return;
       }
-      connect({ connector: connectorToUse });
+
+      await connectWithControllerRetry(connectAsync, connectorToUse);
       console.log("Wallet connected successfully.");
+
       if (connector) {
         connector.controller.username()?.then((name) => setAccountName(name));
       }
     } catch (error) {
       console.error("Failed to connect wallet:", error);
     }
-  };
+  }, [connectAsync, connector, connectors, setAccountName]);
 
   const handleConnect = useCallback(() => {
-    if (!account) {
-      connectWallet();
+    if (!account && !isPending) {
+      void connectWallet();
     }
-  }, [connector, account, connectWallet]);
+  }, [account, connectWallet, isPending]);
 
   useEffect(() => {
     if (!connector || !connector!.controller) return;
@@ -45,7 +48,7 @@ export const Controller = ({ className = "" }: ControllerProps) => {
     } catch (error) {
       console.error("Failed to get username:", error);
     }
-  }, [connector, account]);
+  }, [account, connector, setAccountName]);
 
   const handleInventoryClick = useCallback(() => {
     if (!connector?.controller) {

@@ -1,10 +1,13 @@
 import { marketplaceCollections } from "@/config";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/$collection")({
   head: ({ params }) => {
     const { collection } = params;
-    const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+    const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+      ? marketplaceCollections[collection]
+      : undefined;
     const collectionName = collectionConfig?.name || collection;
 
     return {

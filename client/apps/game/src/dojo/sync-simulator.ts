@@ -239,7 +239,7 @@ function generateFakeEntity(config: SyncSimulatorConfig, existingIds: Set<string
   };
 }
 
-export class SyncSimulator {
+class SyncSimulator {
   private config: SyncSimulatorConfig;
   private stats: SimulatorStats;
   private intervalId: ReturnType<typeof setInterval> | null = null;

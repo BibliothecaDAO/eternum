@@ -16,7 +16,7 @@ import TextInput from "@/ui/design-system/atoms/text-input";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
-import { displayAddress } from "@/ui/utils/utils";
+import type { Chain } from "@contracts";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
@@ -24,33 +24,20 @@ import { toast } from "sonner";
 
 import { hash } from "starknet";
 
-import { LandingWorldSelector } from "./landing-world-selector";
-import { useLandingWorldSelection } from "../hooks/use-landing-world-selection";
-
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
-const WORLD_CONFIG_QUERY = `SELECT "mmr_config.mmr_token_address" AS mmr_token_address FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const CHAIN_OPTIONS: Chain[] = ["slot", "mainnet"];
+const DEFAULT_CHAIN: Chain = "slot";
+const MAINNET_COMING_SOON = true;
+const SLOT_MMR_TOKEN_ADDRESS = "0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49";
+const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain";
 
-const parseMaybeHexToBigInt = (v: unknown): bigint | null => {
-  if (v == null) return null;
-  if (typeof v === "bigint") return v;
-  if (typeof v === "number") return BigInt(v);
-  if (typeof v === "string") {
-    try {
-      if (v.startsWith("0x") || v.startsWith("0X")) return BigInt(v);
-      return BigInt(v);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+const GLOBAL_RPC_BY_CHAIN: Partial<Record<Chain, string>> = {
+  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9",
 };
 
-const toHexString = (value: bigint | number | string): string => {
-  if (typeof value === "string") {
-    return value.startsWith("0x") ? value : `0x${BigInt(value).toString(16)}`;
-  }
-  return `0x${BigInt(value).toString(16)}`;
+const MMR_TOKEN_BY_CHAIN: Partial<Record<Chain, string>> = {
+  slot: SLOT_MMR_TOKEN_ADDRESS,
 };
 
 export const LandingPlayer = () => {
@@ -63,12 +50,28 @@ export const LandingPlayer = () => {
   const hasDisplayName = Boolean(displayName);
   const playerId = playerAddress ?? "";
 
-  // World selection for player section
-  const worldSelection = useLandingWorldSelection({ storageKeyPrefix: "player" });
+  const [selectedChain, setSelectedChain] = useState<Chain>(DEFAULT_CHAIN);
 
   // MMR state
   const [playerMMR, setPlayerMMR] = useState<bigint | null>(null);
   const [isLoadingMMR, setIsLoadingMMR] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedChain = window.localStorage.getItem(MMR_CHAIN_STORAGE_KEY);
+    if (storedChain && CHAIN_OPTIONS.includes(storedChain as Chain)) {
+      if (storedChain === "mainnet" && MAINNET_COMING_SOON) {
+        setSelectedChain("slot");
+        return;
+      }
+      setSelectedChain(storedChain as Chain);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(MMR_CHAIN_STORAGE_KEY, selectedChain);
+  }, [selectedChain]);
 
   // Avatar management
   const [avatarPrompt, setAvatarPrompt] = useState("");
@@ -97,7 +100,7 @@ export const LandingPlayer = () => {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }, [myAvatar?.nextResetAt]);
 
-  // Fetch player MMR from the current world
+  // Fetch global player MMR from the selected chain
   useEffect(() => {
     if (!playerAddress) {
       setPlayerMMR(null);
@@ -105,8 +108,10 @@ export const LandingPlayer = () => {
       return;
     }
 
-    const worldName = worldSelection.selectedWorld;
-    if (!worldName) {
+    const rpcUrl = GLOBAL_RPC_BY_CHAIN[selectedChain];
+    const mmrTokenAddress = MMR_TOKEN_BY_CHAIN[selectedChain];
+
+    if (!rpcUrl || !mmrTokenAddress) {
       setPlayerMMR(null);
       setIsLoadingMMR(false);
       return;
@@ -114,29 +119,11 @@ export const LandingPlayer = () => {
 
     let cancelled = false;
     const fetchMMR = async () => {
-      const toriiUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
-      const rpcUrl = `https://api.cartridge.gg/x/${worldName}/katana`;
-
       setIsLoadingMMR(true);
       setPlayerMMR(null);
 
       try {
-        // 1. Fetch MMR token address from WorldConfig
-        const configUrl = `${toriiUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
-        const configResponse = await fetch(configUrl);
-        if (!configResponse.ok || cancelled) {
-          if (!cancelled) setIsLoadingMMR(false);
-          return;
-        }
-        const [configRow] = (await configResponse.json()) as Record<string, unknown>[];
-        const mmrTokenAddressRaw = parseMaybeHexToBigInt(configRow?.mmr_token_address);
-        if (!mmrTokenAddressRaw || mmrTokenAddressRaw === 0n || cancelled) {
-          if (!cancelled) setIsLoadingMMR(false);
-          return;
-        }
-        const mmrTokenAddress = toHexString(mmrTokenAddressRaw);
-
-        // 2. Fetch player's MMR via JSON-RPC
+        // Fetch player's global MMR via JSON-RPC.
         const rpcResponse = await fetch(rpcUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -186,7 +173,7 @@ export const LandingPlayer = () => {
     return () => {
       cancelled = true;
     };
-  }, [playerAddress, worldSelection.selectedWorld]);
+  }, [playerAddress, selectedChain]);
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formattedMMR = useMemo(() => {
@@ -282,22 +269,40 @@ export const LandingPlayer = () => {
 
   return (
     <section className="w-full mb-2 max-w-3xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-4xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:max-w-5xl xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-6xl 2xl:p-8">
-      {/* World Selector */}
+      {/* Chain Selector */}
       <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
-        <LandingWorldSelector
-          selectedChain={worldSelection.selectedChain}
-          selectedWorld={worldSelection.selectedWorld}
-          availableWorlds={worldSelection.availableWorlds}
-          isLoading={worldSelection.isLoading}
-          isCheckingAvailability={worldSelection.isCheckingAvailability}
-          onChainChange={worldSelection.setSelectedChain}
-          onWorldChange={worldSelection.setSelectedWorld}
-        />
-        {worldSelection.selectedWorld && (
-          <p className="mt-2 text-xs text-gold/60">
-            Showing data from: <span className="font-semibold text-gold">{worldSelection.selectedWorld}</span>
-          </p>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs text-white/60">Chain:</span>
+          <div className="flex gap-1">
+            {CHAIN_OPTIONS.map((chain) => {
+              const isComingSoon = MAINNET_COMING_SOON && chain === "mainnet";
+              const isSelected = selectedChain === chain;
+
+              return (
+                <button
+                  key={chain}
+                  type="button"
+                  disabled={isComingSoon}
+                  onClick={() => setSelectedChain(chain)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/70 ${
+                    isComingSoon
+                      ? "cursor-not-allowed border border-white/10 bg-white/5 text-white/40"
+                      : isSelected
+                        ? "border border-gold/60 bg-gold/30 text-gold"
+                        : "border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
+                  }`}
+                >
+                  <span>{chain}</span>
+                  {isComingSoon && <span className="ml-2 text-[10px] normal-case text-gold/50">Coming soon</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-gold/60">
+          MMR is global and shared across all worlds on{" "}
+          <span className="font-semibold text-gold capitalize">{selectedChain}</span>.
+        </p>
       </div>
 
       {/* Avatar Management Section */}
@@ -510,7 +515,8 @@ export const LandingPlayer = () => {
                   <span className="text-4xl font-bold text-gold">{formattedMMR}</span>
                 </div>
                 <p className="text-sm text-gold/60">
-                  Your ranking score for {worldSelection.selectedWorld || "this world"}
+                  Your global ranking score on{" "}
+                  <span className="font-semibold text-gold capitalize">{selectedChain}</span>
                 </p>
               </>
             ) : (

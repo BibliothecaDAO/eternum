@@ -1,0 +1,17 @@
+[world]
+description = "World factory world."
+name = "world_factory"
+seed = "wfactory_3"
+
+[env]
+rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+account_address = "0x5081bf3216bc7ad4e01d553b7ee32e2fd8972ed154b5d1adf392ddc357139b6"
+keystore_path = "~/.snaccounts/oz-sepolia.key"
+world_address = "0x014b1dd288bcc6568da0896c18e805c501b7e38713e5cd576906fe3ae0fb8962"
+world_block = 2717793
+
+[namespace]
+default = "wf"
+
+[writers]
+"wf" = ["wf-factory"]
