@@ -66,13 +66,17 @@ export default defineConfig({
           text: "Realms",
           collapsed: true,
           link: "/blitz/realms/realm",
-          items: [{ text: "Buildings", link: "/blitz/realms/buildings" }],
+          items: [
+            { text: "Realms", link: "/blitz/realms/realm" },
+            { text: "Buildings", link: "/blitz/realms/buildings" },
+          ],
         },
         {
           text: "Materials",
           collapsed: true,
           link: "/blitz/materials/resources",
           items: [
+            { text: "Resources", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
             { text: "Production Automation", link: "/blitz/materials/automation" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
@@ -85,6 +89,7 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/military/armies",
           items: [
+            { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
             { text: "Damage", link: "/blitz/military/damage" },
@@ -94,7 +99,10 @@ export default defineConfig({
           text: "World Map & Movement",
           collapsed: true,
           link: "/blitz/worldmap-movement/worldmap",
-          items: [{ text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" }],
+          items: [
+            { text: "The World Map", link: "/blitz/worldmap-movement/worldmap" },
+            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
+          ],
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },
