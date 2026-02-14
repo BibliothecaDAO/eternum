@@ -3,6 +3,11 @@ import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IntroSection } from "@/components/sections/IntroSection";
 import { generateMetaTags } from "@/lib/og-image";
 
+const HexExplorerSection = lazy(() =>
+  import("@/components/hex-explorer/HexExplorerSection").then((module) => ({
+    default: module.HexExplorerSection,
+  }))
+);
 const AgentNativeSection = lazy(() =>
   import("@/components/sections/AgentNativeSection").then((module) => ({
     default: module.AgentNativeSection,
@@ -89,6 +94,11 @@ function HomePage() {
     <>
       <div id="hero">
         <IntroSection />
+      </div>
+      <div id="hex-explorer">
+        <DeferredSection eager>
+          <HexExplorerSection />
+        </DeferredSection>
       </div>
       <div id="agent-native">
         <DeferredSection eager>

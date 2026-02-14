@@ -1366,6 +1366,21 @@
   .similar-scroll-card {
     @apply block border border-border bg-card/70 p-4 transition-all hover:border-primary/60 hover:-translate-y-0.5;
   }
+
+  .hex-grid-texture {
+    position: relative;
+  }
+
+  .hex-grid-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97'%3E%3Cpath d='M28 0 L56 16.5 L56 49.5 L28 66 L0 49.5 L0 16.5 Z' fill='none' stroke='white' stroke-width='0.5'/%3E%3Cpath d='M28 66 L56 82.5 L56 97 M28 66 L0 82.5 L0 97' fill='none' stroke='white' stroke-width='0.5'/%3E%3Cpath d='M56 16.5 L56 0 M0 16.5 L0 0' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+    background-size: 56px 97px;
+  }
 }
 
 @keyframes hero-ember-drift {

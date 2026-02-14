@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -261,37 +262,70 @@ export function TopBar() {
               </nav>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                {pageSections.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="rune"
-                        size="sm"
-                        className="lg:hidden px-2"
-                        aria-label="Open section navigation"
-                      >
-                        <Menu className="h-4 w-4" />
-                        <span className="ml-1">Sections</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      {pageSections.map((section) => (
-                        <DropdownMenuItem
-                          key={section.id}
-                          onSelect={(event) => {
-                            event.preventDefault();
-                            scrollToSection(section.href);
-                          }}
-                        >
-                          {section.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                {/* Mobile nav menu — visible below xl */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="rune"
+                      size="sm"
+                      className="xl:hidden px-2"
+                      aria-label="Open navigation menu"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem asChild>
+                      <Link to="/games" className="w-full">Games</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/eternum" className="w-full">Eternum</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/blitz" className="w-full">Blitz</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/scroll" className="w-full">Scroll</Link>
+                    </DropdownMenuItem>
 
-                {/* Social links */}
-                <div className="hidden sm:flex items-center gap-1">
+                    {pageSections.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {pageSections.map((section) => (
+                          <DropdownMenuItem
+                            key={section.id}
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              scrollToSection(section.href);
+                            }}
+                          >
+                            {section.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </>
+                    )}
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <a href="https://twitter.com/LordsRealms" target="_blank" rel="noopener noreferrer" className="w-full">
+                        Twitter
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="https://discord.gg/realmsworld" target="_blank" rel="noopener noreferrer" className="w-full">
+                        Discord
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="https://github.com/BibliothecaDAO" target="_blank" rel="noopener noreferrer" className="w-full">
+                        GitHub
+                      </a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Social links — desktop only (in mobile menu above) */}
+                <div className="hidden xl:flex items-center gap-1">
                   <a
                     href="https://twitter.com/LordsRealms"
                     target="_blank"
