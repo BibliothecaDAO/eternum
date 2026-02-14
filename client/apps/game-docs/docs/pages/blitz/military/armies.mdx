@@ -1,11 +1,6 @@
 import {
-  RealmDefenseSlotsTable,
-  WorldStructureDefenseSlotsTable,
   BlitzWorldStructureDefenseSlotsTable,
 } from "@/components/DefendingArmies";
-import BlitzTroopsLimitTable from "@/components/BlitzTroopsLimitTable";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { formatNumberWithCommas } from "@/utils/formatting";
 
 # ⚔️ Armies
 
@@ -14,11 +9,59 @@ import { formatNumberWithCommas } from "@/utils/formatting";
 Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
 manage their positioning and engagement opportunities.
 
-Each Realm has a limited number of guard and field armies. The number of armies can be increased by upgrading the Realm
-level as explained in the [Realms](/blitz/realms/realm) section. Each military building constructed also increases total
-field armies by 1 (up to a maximum of **+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy
-armies from the Military tab in the Local view. The maximum size of an army is
-**{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
+## Army Strength and Deployment
+
+Blitz uses a strength-based deployment system that determines how many troops can be deployed based on Realm level and
+troop tier.
+
+### Army Strength Calculation
+
+Army strength is calculated as: **Army_Strength = Troop_Amount × Tier_Strength**
+
+Where Tier Strength values are:
+- **T1**: 1
+- **T2**: 3
+- **T3**: 9
+
+### Deployment Caps
+
+Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed:
+
+| Realm Level | Deployment Cap |
+|-------------|----------------|
+| Settlement  | 3,000          |
+| City        | 15,000         |
+| Kingdom     | 45,000         |
+| Empire      | 90,000         |
+
+### Maximum Army Size
+
+The maximum number of troops in a single army depends on both the deployment cap and the troop tier, calculated as:
+
+**Max_Army_Size = (Deployment_Cap / Tier_Strength) × Tier_Modifier**
+
+Where Tier Modifiers are:
+- **T1**: 0.5
+- **T2**: 1.0
+- **T3**: 1.5
+
+**Examples:**
+- A Kingdom (45,000 cap) deploying T2 troops: (45,000 / 3) × 1.0 = **15,000 T2 troops** per army
+- A City (15,000 cap) deploying T3 troops: (15,000 / 9) × 1.5 = **2,500 T3 troops** per army
+- An Empire (90,000 cap) deploying T1 troops: (90,000 / 1) × 0.5 = **45,000 T1 troops** per army
+
+### Army Slots
+
+The number of field and guard army slots depends on the Realm level:
+
+| Realm Level | Field Army Slots | Guard Army Slots |
+|-------------|------------------|------------------|
+| Settlement  | 1                | 1                |
+| City        | 3                | 2                |
+| Kingdom     | 5                | 3                |
+| Empire      | 8                | 4                |
+
+Lords can deploy armies from the Military tab in the Local view.
 
 ## Field Armies
 
@@ -47,10 +90,6 @@ Guard armies do not appear on the world map; instead, they occupy defense slots 
 view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
 opening up the Details tab.
 
-Unlike Realms, World Structures have a static number of defense slots:
-
-<BlitzWorldStructureDefenseSlotsTable />
-
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/create-guard.gif" alt="Create Army" />
   <em>Flow to create guard in the client</em>
@@ -67,4 +106,12 @@ then right-clicking the target hex.
   <em>Attack field army with structure</em>
 </div>
 
-<BlitzTroopsLimitTable />
+## World Structure Deployment
+
+World Structures (Camps, Essence Rifts, and Hyperstructures) can only have guard armies deployed to them—field armies
+cannot be created from these structures.
+
+- **Camps & Essence Rifts**: Use Settlement-level deployment caps and army slots (1 guard slot)
+- **Hyperstructures**: Use Empire-level deployment caps and army slots (4 guard slots)
+
+<BlitzWorldStructureDefenseSlotsTable />

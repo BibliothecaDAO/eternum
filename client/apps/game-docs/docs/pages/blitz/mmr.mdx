@@ -1,0 +1,60 @@
+---
+title: Blitz MMR
+description: How Blitz Matchmaking Rating works and how updates are claimed
+---
+
+# 📈 Blitz MMR
+
+Blitz MMR (Matchmaking Rating) is an onchain skill rating that tracks player performance across rated Blitz games. It is
+enabled on a per-world basis; if a world has MMR disabled, no ratings are tracked.
+
+## What MMR Measures
+
+MMR is a **persistent rating** intended to reflect long-term performance rather than a single match outcome. After a
+game ends, the system updates each eligible player’s MMR based on:
+
+- Your **final rank** in the match
+- Your **expected performance** relative to the lobby’s median MMR
+- Lobby size scaling (larger lobbies produce more stable deltas)
+
+## Eligibility (Who Gets Rated)
+
+Only players who are:
+
+- **Registered** in the match, and
+- Have **non-zero recorded points**
+
+are included in the rated update.
+
+## How the Update Is Calculated (High Level)
+
+Blitz uses a percentile-based update that compares:
+
+- **Expected percentile** (from a logistic curve around the lobby median), vs.
+- **Actual percentile** (from your finishing rank)
+
+The resulting delta is capped (diminishing returns) and includes a small mean-regression term toward the configured
+distribution mean.
+
+> Implementation note: the onchain calculator follows an 8-step formula including median MMR, expected/actual
+> percentile, capped delta, split-lobby adjustment, and mean regression.
+
+## Claim / Update Flow (Commit + Claim)
+
+MMR updates are applied after the match completes via a single action in the client:
+
+1. **Finalize ranking** for the match (MMR cannot update until final ranking exists).
+2. Open **Social → MMR**.
+3. Click **Update MMR**.
+
+When you click Update MMR, the client:
+
+- Fetches current MMR values for eligible players from the MMR token contract
+- Sorts players by current MMR (lowest → highest) as required by the commit call
+- Submits a single onchain transaction to commit the game’s MMR update and apply new ratings
+
+Once committed, the update cannot be run again for that match.
+
+## Where to View MMR
+
+If enabled, the **Social → MMR** tab displays a table of player addresses/names and their current MMR values.
