@@ -31,6 +31,7 @@ import {
   RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
+  ResourceBalanceRow,
   SeasonEnded,
   StoryEventData,
   StructureDetails,
@@ -64,6 +65,7 @@ import {
 } from "./leaderboard-helpers";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
+import { RESOURCE_QUERIES } from "./resource";
 import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
 import { STORY_QUERIES } from "./story";
@@ -382,6 +384,29 @@ export class SqlApi {
   }
 
   /**
+   * Fetch resource balances for a set of entity IDs from the s1_eternum-Resource table.
+   * Selects only *_BALANCE columns (29 cols) instead of the full table (218 cols).
+   * SQL queries always return arrays.
+   */
+  async fetchResourceBalances(entityIds: number[]): Promise<ResourceBalanceRow[]> {
+    if (entityIds.length === 0) return [];
+    const query = RESOURCE_QUERIES.RESOURCE_BALANCES.replace("{entityIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances");
+  }
+
+  /**
+   * Fetch resource balances AND production building counts for a set of entity IDs.
+   * Returns rows with both *_BALANCE hex columns and *_PRODUCTION.building_count integers.
+   */
+  async fetchResourceBalancesAndProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
+    if (entityIds.length === 0) return [];
+    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_AND_PRODUCTION.replace("{entityIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances and production");
+  }
+
+  /**
    * Fetch season ended info from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */
@@ -595,6 +620,24 @@ export class SqlApi {
   async fetchAllArmiesMapData(): Promise<ArmyMapDataRaw[]> {
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_ARMIES_MAP_DATA);
     return await fetchWithErrorHandling<ArmyMapDataRaw>(url, "Failed to fetch all armies map data");
+  }
+
+  /**
+   * Fetch occupied building positions for a set of structure entity IDs.
+   * Returns inner_col, inner_row, category for each building placed at these structures.
+   */
+  async fetchBuildingsByStructures(
+    entityIds: number[],
+  ): Promise<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }[]> {
+    if (entityIds.length === 0) return [];
+    const query = `SELECT outer_entity_id, inner_col, inner_row, category FROM \`s1_eternum-Building\` WHERE outer_entity_id IN (${entityIds.join(",")})`;
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<{
+      outer_entity_id: number;
+      inner_col: number;
+      inner_row: number;
+      category: number;
+    }>(url, "Failed to fetch buildings by structures");
   }
 
   /**

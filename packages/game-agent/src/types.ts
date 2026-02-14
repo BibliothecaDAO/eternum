@@ -32,6 +32,26 @@ export interface GameAction {
 }
 
 /**
+ * Describes a single parameter for an action definition.
+ */
+export interface ActionParamSchema {
+  name: string;
+  type: "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint";
+  description: string;
+  required?: boolean;
+}
+
+/**
+ * Declarative definition of a game action — its type, description, and expected parameters.
+ * Used to generate rich tool descriptions so the LLM knows exactly what params each action needs.
+ */
+export interface ActionDefinition {
+  type: string;
+  description: string;
+  params: ActionParamSchema[];
+}
+
+/**
  * Result of executing an action on chain.
  */
 export interface ActionResult {
@@ -59,6 +79,8 @@ export interface GameAgentConfig<TState extends WorldState = WorldState> {
   dataDir: string;
   model?: Model<any>;
   tickIntervalMs?: number;
+  /** Custom tick prompt formatter. Receives full state, returns prompt string for the agent. */
+  formatTickPrompt?: (state: TState) => string;
 }
 
 export interface RuntimeConfigChange {

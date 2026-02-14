@@ -8,6 +8,7 @@ const ENV_KEYS = [
   "WORLD_ADDRESS",
   "MANIFEST_PATH",
   "CHAIN_ID",
+  "CHAIN",
   "SESSION_BASE_PATH",
   "TICK_INTERVAL_MS",
   "LOOP_ENABLED",
@@ -97,15 +98,140 @@ describe("loadConfig", () => {
     expect(loadConfig().gameName).toBe("eternum");
   });
 
-  it("uses ETERNUM_AGENT_HOME defaults when explicit paths are absent", () => {
+  it("derives chain ID from RPC_URL when CHAIN_ID is not set", () => {
+    delete process.env.CHAIN_ID;
+    process.env.CHAIN = "slot";
+    process.env.RPC_URL = "https://api.cartridge.gg/x/my-test-world/katana/rpc/v0_9";
+
+    const cfg = loadConfig();
+    // Should be derived from URL slug, not the static KATANA fallback
+    expect(cfg.chainId).not.toBe("0x4b4154414e41");
+    expect(cfg.chainId.startsWith("0x")).toBe(true);
+  });
+
+  it("falls back to static chain ID when RPC_URL has no recognizable pattern", () => {
+    delete process.env.CHAIN_ID;
+    process.env.CHAIN = "slot";
+    process.env.RPC_URL = "http://localhost:5050";
+
+    const cfg = loadConfig();
+    expect(cfg.chainId).toBe("0x4b4154414e41"); // KATANA fallback
+  });
+
+  it("explicit CHAIN_ID takes precedence over RPC_URL derivation", () => {
+    process.env.CHAIN_ID = "0xcustom";
+    process.env.RPC_URL = "https://api.cartridge.gg/x/my-world/katana";
+
+    const cfg = loadConfig();
+    expect(cfg.chainId).toBe("0xcustom");
+  });
+
+  // === ETERNUM_AGENT_HOME cascading defaults ===
+
+  it("derives dataDir from ETERNUM_AGENT_HOME when DATA_DIR is absent", () => {
     process.env.ETERNUM_AGENT_HOME = "/tmp/eternum-home";
-    delete process.env.MANIFEST_PATH;
+    delete process.env.DATA_DIR;
+
+    const cfg = loadConfig();
+    expect(cfg.dataDir).toBe("/tmp/eternum-home/data");
+  });
+
+  it("derives sessionBasePath from ETERNUM_AGENT_HOME when SESSION_BASE_PATH is absent", () => {
+    process.env.ETERNUM_AGENT_HOME = "/tmp/eternum-home";
+    delete process.env.SESSION_BASE_PATH;
+
+    const cfg = loadConfig();
+    expect(cfg.sessionBasePath).toBe("/tmp/eternum-home/.cartridge");
+  });
+
+  it("uses ~/.eternum-agent as default ETERNUM_AGENT_HOME when unset", () => {
+    delete process.env.ETERNUM_AGENT_HOME;
     delete process.env.DATA_DIR;
     delete process.env.SESSION_BASE_PATH;
 
     const cfg = loadConfig();
-    expect(cfg.manifestPath).toBe("/tmp/eternum-home/manifest.json");
+    const home = require("node:os").homedir();
+    expect(cfg.dataDir).toBe(path.join(home, ".eternum-agent", "data"));
+    expect(cfg.sessionBasePath).toBe(path.join(home, ".eternum-agent", ".cartridge"));
+  });
+
+  it("ETERNUM_AGENT_HOME supports tilde expansion", () => {
+    process.env.ETERNUM_AGENT_HOME = "~/my-agent";
+    delete process.env.DATA_DIR;
+    delete process.env.SESSION_BASE_PATH;
+
+    const cfg = loadConfig();
+    const home = require("node:os").homedir();
+    expect(cfg.dataDir).toBe(path.join(home, "my-agent", "data"));
+    expect(cfg.sessionBasePath).toBe(path.join(home, "my-agent", ".cartridge"));
+  });
+
+  // === DATA_DIR explicit override takes precedence ===
+
+  it("DATA_DIR overrides ETERNUM_AGENT_HOME-derived dataDir", () => {
+    process.env.ETERNUM_AGENT_HOME = "/tmp/eternum-home";
+    process.env.DATA_DIR = "/custom/data";
+
+    const cfg = loadConfig();
+    expect(cfg.dataDir).toBe("/custom/data");
+  });
+
+  it("SESSION_BASE_PATH overrides ETERNUM_AGENT_HOME-derived sessionBasePath", () => {
+    process.env.ETERNUM_AGENT_HOME = "/tmp/eternum-home";
+    process.env.SESSION_BASE_PATH = "/custom/sessions";
+
+    const cfg = loadConfig();
+    expect(cfg.sessionBasePath).toBe(path.resolve("/custom/sessions"));
+  });
+
+  // === DATA_DIR resolves to absolute path ===
+
+  it("DATA_DIR resolves relative paths to absolute", () => {
+    process.env.DATA_DIR = "relative/data";
+
+    const cfg = loadConfig();
+    expect(path.isAbsolute(cfg.dataDir)).toBe(true);
+    expect(cfg.dataDir).toBe(path.resolve("relative/data"));
+  });
+
+  // === ETERNUM_AGENT_HOME visibility: dataDir and sessionBasePath stay consistent ===
+
+  it("dataDir and sessionBasePath share the same ETERNUM_AGENT_HOME root", () => {
+    process.env.ETERNUM_AGENT_HOME = "/shared/root";
+    delete process.env.DATA_DIR;
+    delete process.env.SESSION_BASE_PATH;
+
+    const cfg = loadConfig();
+    // Both should be under /shared/root
+    expect(cfg.dataDir.startsWith("/shared/root/")).toBe(true);
+    expect(cfg.sessionBasePath.startsWith("/shared/root/")).toBe(true);
+  });
+
+  // === Edge cases ===
+
+  it("ETERNUM_AGENT_HOME with trailing slash works correctly", () => {
+    process.env.ETERNUM_AGENT_HOME = "/tmp/eternum-home/";
+    delete process.env.DATA_DIR;
+
+    const cfg = loadConfig();
+    // Should not double-slash
     expect(cfg.dataDir).toBe("/tmp/eternum-home/data");
-    expect(cfg.sessionBasePath).toBe("/tmp/eternum-home/.cartridge");
+  });
+
+  it("ETERNUM_AGENT_HOME with whitespace is trimmed", () => {
+    process.env.ETERNUM_AGENT_HOME = "  /tmp/eternum-home  ";
+    delete process.env.DATA_DIR;
+
+    const cfg = loadConfig();
+    expect(cfg.dataDir).toBe("/tmp/eternum-home/data");
+  });
+
+  it("empty ETERNUM_AGENT_HOME falls back to default", () => {
+    process.env.ETERNUM_AGENT_HOME = "";
+    delete process.env.DATA_DIR;
+
+    const cfg = loadConfig();
+    const home = require("node:os").homedir();
+    expect(cfg.dataDir).toBe(path.join(home, ".eternum-agent", "data"));
   });
 });

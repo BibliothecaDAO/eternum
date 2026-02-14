@@ -2,7 +2,7 @@ import type { Agent, AgentEvent } from "@mariozechner/pi-agent-core";
 import { TUI, ProcessTerminal, Container, Text, Markdown } from "@mariozechner/pi-tui";
 import type { TickLoop } from "@bibliothecadao/game-agent";
 
-export interface AppState {
+interface AppState {
   agent: Agent;
   ticker: TickLoop;
 }
@@ -117,6 +117,12 @@ export function createApp(state: AppState) {
   return {
     tui,
     terminal,
+    addSystemMessage(msg: string) {
+      const text = new Text();
+      text.text = `[System] ${msg}`;
+      chat.addChild(text);
+      tui.requestRender();
+    },
     dispose() {
       unsubscribe();
       tui.stop();
