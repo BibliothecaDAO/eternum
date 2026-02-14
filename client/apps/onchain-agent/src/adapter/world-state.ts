@@ -1128,58 +1128,59 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
       lines.push(`Structures (actions: ${getStructureActions().join(", ")})`);
       for (const e of myStructures) {
         lines.push(formatEntityLine(e));
-        // Per-structure resources
+        // Per-structure resources (skip zero/empty)
         if (e.resources && e.resources.size > 0) {
-          const resParts = Array.from(e.resources.entries()).map(([k, v]) => `${k}: ${fmtNum(v)}`);
-          lines.push(`    Resources: ${resParts.join(", ")}`);
+          const resParts = Array.from(e.resources.entries())
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => `${k}: ${fmtNum(v)}`);
+          if (resParts.length > 0) {
+            lines.push(`    Resources: ${resParts.join(", ")}`);
+          }
         }
-        // Per-structure production buildings
-        if (e.productionBuildings && e.productionBuildings.length > 0) {
-          lines.push(`    Buildings: ${e.productionBuildings.join(", ")}`);
-        }
-        // Building slots
+        // Building slots — merged with building list (no separate "Buildings" line)
         if (e.buildingSlots) {
           const { used, total, buildings } = e.buildingSlots;
           const free = total - used;
           lines.push(
-            `    Slots: ${used}/${total} used (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`,
+            `    Slots: ${used}/${total} (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`,
           );
         }
-        // Free building slots (direction paths the agent can use for create_building)
-        if (e.freeSlots && e.freeSlots.length > 0) {
-          lines.push(`    Free building paths (${e.freeSlots.length}): ${e.freeSlots.join(",")}`);
+        // Free building paths — only show when there are actually free slots
+        if (e.freeSlots && e.freeSlots.length > 0 && e.buildingSlots && e.buildingSlots.total - e.buildingSlots.used > 0) {
+          lines.push(`    Free paths: ${e.freeSlots.join(",")}`);
         }
-        // Population
+        // Population — only show when near capacity or full
         if (e.population) {
           const { current, capacity } = e.population;
-          lines.push(
-            `    Population: ${current}/${capacity}${current >= capacity ? " FULL — build WorkersHut for +6 capacity" : ""}`,
-          );
+          if (current >= capacity) {
+            lines.push(`    Pop: ${current}/${capacity} FULL — build WorkersHut for +6`);
+          } else if (current >= capacity * 0.8) {
+            lines.push(`    Pop: ${current}/${capacity}`);
+          }
         }
-        // Next realm upgrade
+        // Next realm upgrade — only for non-max realms
         if (e.nextUpgrade) {
-          lines.push(`    Next upgrade → ${e.nextUpgrade.name}: ${e.nextUpgrade.cost}`);
-        } else if (e.nextUpgrade === null) {
-          lines.push(`    Level: MAX (Empire)`);
+          lines.push(`    Upgrade → ${e.nextUpgrade.name}: ${e.nextUpgrade.cost}`);
         }
-        // Armies
-        if (e.armies) {
+        // Armies count
+        if (e.armies && e.armies.current > 0) {
           lines.push(`    Armies: ${e.armies.current}`);
         }
-        // Guard slots
+        // Guard slots — only show occupied slots
         if (e.guardSlots) {
-          const slotParts = e.guardSlots.map((s) => `${s.slot}: ${s.troops}`);
-          lines.push(`    Guard slots: ${slotParts.join(" | ")}`);
+          const occupied = e.guardSlots.filter((s) => s.troops !== "empty");
+          if (occupied.length > 0) {
+            lines.push(`    Guards: ${occupied.map((s) => `${s.slot}: ${s.troops}`).join(" | ")}`);
+          }
         }
         // Troop reserves
         if (e.troopsInReserve && e.troopsInReserve.length > 0) {
-          lines.push(`    Troop reserves: ${e.troopsInReserve.join(", ")}`);
+          lines.push(`    Reserves: ${e.troopsInReserve.join(", ")}`);
         }
-        // Last attack/defense on this structure
+        // Last attack/defense
         if (e.lastAttack) {
           const ago = formatTimeAgo(e.lastAttack.timestamp);
-          const pos = e.lastAttack.pos ? ` from (${e.lastAttack.pos.x},${e.lastAttack.pos.y})` : "";
-          lines.push(`    ⚔ Last attacked by #${e.lastAttack.attackerId}${pos} ${ago}`);
+          lines.push(`    ⚔ Attacked by #${e.lastAttack.attackerId} ${ago}`);
         }
       }
     }
