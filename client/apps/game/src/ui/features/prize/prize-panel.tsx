@@ -13,7 +13,10 @@ import Trophy from "lucide-react/dist/esm/icons/trophy";
 import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { dojoConfig } from "../../../../dojo-config";
+import { env } from "../../../../env";
 import { ClaimBlitzPrizeButton } from "./components/claim-blitz-prize-button";
+import { commitAndClaimMMR } from "./utils/mmr-utils";
 import { WinnersTable } from "./components/winners-table";
 
 type RegisteredPlayer = { address: bigint; points: bigint };
@@ -23,9 +26,14 @@ export const PrizePanel = () => {
     account: { account },
     setup: {
       components,
-      systemCalls: { blitz_prize_player_rank, blitz_prize_claim_no_game, uuid },
+      systemCalls: { blitz_prize_player_rank, blitz_prize_claim_no_game, uuid, commit_and_claim_game_mmr },
     },
   } = useDojo();
+
+  // Get RPC URL from config for MMR
+  const rpcUrl = useMemo(() => {
+    return dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
+  }, []);
 
   // Global final trial (if any)
   const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);
@@ -73,6 +81,25 @@ export const PrizePanel = () => {
     () => (worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined),
     [worldCfgEntities, components.WorldConfig],
   );
+
+  // MMR config
+  const mmrEnabled = Boolean(worldCfg?.mmr_config?.enabled);
+  const mmrMinPlayers = Number(worldCfg?.mmr_config?.min_players ?? 6);
+  const mmrTokenAddress = useMemo(() => {
+    const addr = worldCfg?.mmr_config?.mmr_token_address as unknown as bigint | undefined;
+    if (!addr || addr === 0n) return undefined;
+    return toHexString(addr);
+  }, [worldCfg?.mmr_config?.mmr_token_address]);
+
+  // Check if MMR has already been committed (game_median is non-zero)
+  const mmrGameMetaEntities = useEntityQuery([Has(components.MMRGameMeta)]);
+  const isMMRCommitted = useMemo(() => {
+    const mmrGameMeta = mmrGameMetaEntities[0]
+      ? getComponentValue(components.MMRGameMeta, mmrGameMetaEntities[0])
+      : undefined;
+    const gameMedian = mmrGameMeta?.game_median as bigint | undefined;
+    return gameMedian !== undefined && gameMedian !== 0n;
+  }, [mmrGameMetaEntities, components.MMRGameMeta]);
 
   // All registered players (by registration status), regardless of points
   const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
@@ -269,12 +296,43 @@ export const PrizePanel = () => {
           players_list: chunk,
         });
       }
-      setStatus("Done");
-      toast("Submitted blitz rankings", { description: `Ranking reference ${String(trialId)} updated.` });
-    } catch (e: any) {
+
+      // After ranking completes, also commit and claim MMR if enabled
+      const shouldUpdateMMR =
+        mmrEnabled && mmrTokenAddress && !isMMRCommitted && registeredPlayers.length >= mmrMinPlayers;
+      if (shouldUpdateMMR) {
+        setStatus("Updating MMR...");
+        try {
+          const registeredPlayerBigints = registeredPlayers.map((p) => p.address);
+          const sortedAddresses = await commitAndClaimMMR({
+            registeredPlayers: registeredPlayerBigints,
+            mmrTokenAddress,
+            rpcUrl,
+            commitAndClaimGameMmr: commit_and_claim_game_mmr,
+            signer: account,
+            onStatusChange: setStatus,
+          });
+          setStatus("Done");
+          toast("Submitted blitz rankings and MMR update", {
+            description: `Ranking finalized and MMR updated for ${sortedAddresses.length} players.`,
+          });
+        } catch (mmrError: unknown) {
+          console.error("MMR update failed (ranking succeeded):", mmrError);
+          setStatus("Done (MMR update failed)");
+          const errorMessage = mmrError instanceof Error ? mmrError.message : String(mmrError);
+          toast("Submitted blitz rankings", {
+            description: `Ranking finalized. MMR update failed: ${errorMessage}`,
+          });
+        }
+      } else {
+        setStatus("Done");
+        toast("Submitted blitz rankings", { description: `Ranking reference ${String(trialId)} updated.` });
+      }
+    } catch (e: unknown) {
       console.error(e);
       setStatus("Failed");
-      toast("❌ Blitz ranking failed", { description: e?.message || String(e) });
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      toast("❌ Blitz ranking failed", { description: errorMessage });
     } finally {
       setIsSubmitting(false);
     }

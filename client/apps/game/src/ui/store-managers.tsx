@@ -1,9 +1,6 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { POLLING_INTERVALS } from "@/config/polling";
-import { useActiveStructureSync } from "@/hooks/helpers/use-active-structure-sync";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
@@ -24,7 +21,6 @@ import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
@@ -445,7 +441,6 @@ const PlayerStructuresStoreManager = () => {
   // Sync structure-scoped models (Resource, StructureBuildings, ProductionBoostBonus)
   // scoped to only the player's own structures
   usePlayerStructureSync();
-  useActiveStructureSync();
 
   useEffect(() => {
     setPlayerStructures(playerStructures);
@@ -457,26 +452,22 @@ const PlayerStructuresStoreManager = () => {
 const ButtonStateStoreManager = () => {
   const {
     account: { account },
-    setup: { components },
   } = useDojo();
-  const mode = useGameModeConfig();
 
   const setDisableButtons = useUIStore((state) => state.setDisableButtons);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
-  const structureInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components),
-    [structureEntityId, account.address, components, mode],
+  const structureIsMine = useMemo(
+    () => playerStructures.some((structure) => structure.entityId === structureEntityId),
+    [playerStructures, structureEntityId],
   );
 
-  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
-
-  const seasonHasStarted = useMemo(() => env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000, []);
-
   useEffect(() => {
+    const seasonHasStarted = env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000;
     const disableButtons = !structureIsMine || account.address === "0x0" || !seasonHasStarted;
     setDisableButtons(disableButtons);
-  }, [setDisableButtons, structureIsMine, account.address, seasonHasStarted]);
+  }, [setDisableButtons, structureIsMine, account.address]);
 
   return null;
 };
@@ -559,30 +550,6 @@ const SeasonTimerStoreManager = () => {
   return null;
 };
 
-const MinigameStoreManager = () => {
-  const minigameStore = useMinigameStore.getState();
-
-  const { data: minigames } = useMiniGames({});
-
-  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
-
-  const { data: settingsMetadata } = useGameSettingsMetadata({
-    gameAddresses: minigameAddresses,
-  });
-
-  useEffect(() => {
-    if (minigames) {
-      minigameStore.setMinigames(minigames);
-    }
-
-    if (settingsMetadata) {
-      minigameStore.setSettingsMetadata(settingsMetadata);
-    }
-  }, [minigames, settingsMetadata, minigameStore]);
-
-  return null;
-};
-
 /**
  * Manager component that syncs army and structure data with scene-specific shortcut managers
  * This replaces the old centralized ShortcutManager approach
@@ -617,7 +584,6 @@ const SelectableArmiesStoreManager = () => {
 export const StoreManagers = () => {
   return (
     <>
-      <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
       <RelicsStoreManager />
       <AutoRegisterPointsStoreManager />

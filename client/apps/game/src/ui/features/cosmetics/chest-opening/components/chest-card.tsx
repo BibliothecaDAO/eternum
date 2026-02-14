@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { MergedNftData } from "../utils/types";
 import { CHEST_OPENING_ENABLED } from "./index";
 
-export interface ChestCardProps {
+interface ChestCardProps {
   chest: MergedNftData;
   onSelect?: () => void;
   onOpen?: () => void;

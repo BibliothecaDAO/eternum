@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { insertPrefetchQueueItem } from "./worldmap-prefetch-queue";
+import {
+  insertPrefetchQueueItem,
+  prunePrefetchQueueByFetchKey,
+  shouldProcessPrefetchQueueItem,
+} from "./worldmap-prefetch-queue";
 
 interface Item {
   chunkKey: string;
@@ -53,5 +57,97 @@ describe("insertPrefetchQueueItem", () => {
     });
 
     expect(queue.map((item) => item.chunkKey)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("prunePrefetchQueueByFetchKey", () => {
+  it("drops queue items that are no longer desired", () => {
+    const queue: Item[] = [
+      { chunkKey: "a", fetchKey: "area-a", priority: 1, fetchTiles: true },
+      { chunkKey: "b", fetchKey: "area-b", priority: 1, fetchTiles: true },
+      { chunkKey: "c", fetchKey: "area-c", priority: 1, fetchTiles: true },
+    ];
+
+    prunePrefetchQueueByFetchKey(queue, new Set(["area-b", "area-c"]));
+
+    expect(queue.map((item) => item.fetchKey)).toEqual(["area-b", "area-c"]);
+  });
+});
+
+describe("shouldProcessPrefetchQueueItem", () => {
+  it("returns false when worldmap is switched off", () => {
+    expect(
+      shouldProcessPrefetchQueueItem({
+        item: { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true },
+        isSwitchedOff: true,
+        desiredFetchKeys: new Set(["area-a"]),
+        fetchedFetchKeys: new Set(),
+        pendingFetchKeys: new Set(),
+        pinnedAreaKeys: new Set(),
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false when fetch key is no longer desired", () => {
+    expect(
+      shouldProcessPrefetchQueueItem({
+        item: { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true },
+        isSwitchedOff: false,
+        desiredFetchKeys: new Set(["area-b"]),
+        fetchedFetchKeys: new Set(),
+        pendingFetchKeys: new Set(),
+        pinnedAreaKeys: new Set(),
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false when area is already pinned/pending/fetched", () => {
+    const item = { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true };
+
+    expect(
+      shouldProcessPrefetchQueueItem({
+        item,
+        isSwitchedOff: false,
+        desiredFetchKeys: new Set(["area-a"]),
+        fetchedFetchKeys: new Set(["area-a"]),
+        pendingFetchKeys: new Set(),
+        pinnedAreaKeys: new Set(),
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldProcessPrefetchQueueItem({
+        item,
+        isSwitchedOff: false,
+        desiredFetchKeys: new Set(["area-a"]),
+        fetchedFetchKeys: new Set(),
+        pendingFetchKeys: new Set(["area-a"]),
+        pinnedAreaKeys: new Set(),
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldProcessPrefetchQueueItem({
+        item,
+        isSwitchedOff: false,
+        desiredFetchKeys: new Set(["area-a"]),
+        fetchedFetchKeys: new Set(),
+        pendingFetchKeys: new Set(),
+        pinnedAreaKeys: new Set(["area-a"]),
+      }),
+    ).toBe(false);
+  });
+
+  it("returns true for relevant queue items", () => {
+    expect(
+      shouldProcessPrefetchQueueItem({
+        item: { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true },
+        isSwitchedOff: false,
+        desiredFetchKeys: new Set(["area-a"]),
+        fetchedFetchKeys: new Set(),
+        pendingFetchKeys: new Set(),
+        pinnedAreaKeys: new Set(),
+      }),
+    ).toBe(true);
   });
 });

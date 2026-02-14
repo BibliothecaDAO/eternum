@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ControllerConnector } from "@cartridge/connector";
 import { useAccount, useConnect } from "@starknet-react/core";
 
-export interface UseCartridgeUsernameReturn {
+interface UseCartridgeUsernameReturn {
   username: string | undefined;
   isLoading: boolean;
   address: string | undefined;

@@ -3,6 +3,7 @@ import { Account } from "starknet";
 import type { AccountInterface } from "starknet";
 
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
+import { connectWithControllerRetry, pickPrimaryConnector } from "@/hooks/context/controller-connect";
 import { useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -11,7 +12,7 @@ import type { SetupResult } from "@/init/bootstrap";
 import { getActiveWorld, setActiveWorldName } from "@/runtime/world";
 import { useAccount, useConnect } from "@starknet-react/core";
 
-import type { BootstrapTask, EagerBootstrapState } from "./use-eager-bootstrap";
+import type { EagerBootstrapState } from "./use-eager-bootstrap";
 import { useEagerBootstrap } from "./use-eager-bootstrap";
 
 /**
@@ -26,7 +27,7 @@ export type OnboardingPhase =
   | "settlement" // User picks realm/blitz setup (bootstrap complete, account connected)
   | "ready"; // All done, can enter game
 
-export type UnifiedOnboardingState = {
+type UnifiedOnboardingState = {
   // Current phase (what UI to show)
   phase: OnboardingPhase;
 
@@ -64,7 +65,7 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
 
   // Account state from starknet-react
   const { isConnected, isConnecting } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connectAsync, connectors } = useConnect();
   const controllerAccount = useControllerAccount();
   const setAccountName = useAccountStore((state) => state.setAccountName);
   const { username: cartridgeUsername } = useCartridgeUsername();
@@ -138,14 +139,16 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   const connectWallet = useCallback(() => {
     if (isConnected || isConnecting) return;
 
-    const primaryConnector = connectors[0];
+    const primaryConnector = pickPrimaryConnector(connectors);
     if (!primaryConnector) {
       console.error("Unable to connect wallet: no connectors available");
       return;
     }
 
-    connect({ connector: primaryConnector });
-  }, [connect, connectors, isConnected, isConnecting]);
+    void connectWithControllerRetry(connectAsync, primaryConnector).catch((error) => {
+      console.error("Unable to connect wallet:", error);
+    });
+  }, [connectAsync, connectors, isConnected, isConnecting]);
 
   const spectate = useCallback(() => {
     console.log("[useUnifiedOnboarding] spectate() called");
@@ -257,5 +260,3 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     setupResult: bootstrap.setupResult,
   };
 };
-
-export type { BootstrapTask };

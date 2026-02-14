@@ -28,15 +28,12 @@ export const deployMMRToken = async () => {
 
   // Read environment variables for constructor
   const defaultAdmin = process.env.MMR_DEFAULT_ADMIN;
-  const gameContract = process.env.MMR_GAME_CONTRACT;
   const upgrader = process.env.MMR_UPGRADER;
 
   if (!defaultAdmin) {
     throw new Error("MMR_DEFAULT_ADMIN environment variable is not set");
   }
-  if (!gameContract) {
-    throw new Error("MMR_GAME_CONTRACT environment variable is not set");
-  }
+
   if (!upgrader) {
     throw new Error("MMR_UPGRADER environment variable is not set");
   }
@@ -44,13 +41,12 @@ export const deployMMRToken = async () => {
   console.log(`╔═════════════════════════════════════════════════════════════════╗`.cyan);
   console.log(`║ Constructor Parameters:                                         ║`.cyan);
   console.log(`║   Default Admin: ${defaultAdmin.slice(0, 20)}...`.white);
-  console.log(`║   Game Contract: ${gameContract.slice(0, 20)}...`.white);
   console.log(`║   Upgrader:      ${upgrader.slice(0, 20)}...`.white);
   console.log(`╚═════════════════════════════════════════════════════════════════╝`.cyan);
   console.log("\n");
 
   // Deploy MMR Token contract
-  const mmrTokenAddress = await deployMMRTokenContract(defaultAdmin, gameContract, upgrader);
+  const mmrTokenAddress = await deployMMRTokenContract(defaultAdmin, upgrader);
 
   console.log(`\n\n 🎮 Deployed MMR Token contract: ${toHex(mmrTokenAddress)}`);
 

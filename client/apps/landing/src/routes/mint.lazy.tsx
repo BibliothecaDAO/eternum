@@ -5,7 +5,6 @@ import { SelectNftActions } from "@/components/modules/select-nft-actions";
 import { TypeH3 } from "@/components/typography/type-h3";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress, seasonPassAddress } from "@/config";
 import useNftSelection from "@/hooks/use-nft-selection";
 import { displayAddress, trimAddress } from "@/lib/utils";
@@ -19,7 +18,7 @@ import Bug from "lucide-react/dist/esm/icons/bug";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import PartyPopper from "lucide-react/dist/esm/icons/party-popper";
 import Send from "lucide-react/dist/esm/icons/send";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   Pagination,
@@ -358,78 +357,74 @@ function MintSeasonPasses() {
                 <span>Please note: It may take up to a minute for newly minted Season Passes to show up.</span>
               </div>
             )}
-            <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-              {/* Show allMinted message only if no filters are active */}
-              {allMinted && Object.keys(selectedFilters).length === 0 && (
-                <div className="mb-4 flex items-center gap-3 rounded-lg border border-lime-300 bg-lime-50 p-4 text-lime-800 shadow-sm">
-                  <PartyPopper className="h-6 w-6 text-lime-600" />
-                  <span className="font-semibold">Congratulations! All your Realms have Season Passes minted.</span>
-                </div>
-              )}
+            {/* Show allMinted message only if no filters are active */}
+            {allMinted && Object.keys(selectedFilters).length === 0 && (
+              <div className="mb-4 flex items-center gap-3 rounded-lg border border-lime-300 bg-lime-50 p-4 text-lime-800 shadow-sm">
+                <PartyPopper className="h-6 w-6 text-lime-600" />
+                <span className="font-semibold">Congratulations! All your Realms have Season Passes minted.</span>
+              </div>
+            )}
 
-              {/* Show message if filters result in no realms */}
-              {augmentedAndSortedRealms.length === 0 && Object.keys(selectedFilters).length > 0 && !loading && (
-                <div className="text-center py-6 text-muted-foreground">No realms match the selected filters.</div>
-              )}
+            {/* Show message if filters result in no realms */}
+            {augmentedAndSortedRealms.length === 0 && Object.keys(selectedFilters).length > 0 && !loading && (
+              <div className="text-center py-6 text-muted-foreground">No realms match the selected filters.</div>
+            )}
 
-              {/* --- Top Action Bar (sm+) --- */}
-              {/* Only show action bar if there are *filtered* and *augmented* realms eligible for minting */}
-              {augmentedAndSortedRealms.some((realm) => !realm.seasonPassMinted) && totalSelectedNfts > 0 && (
-                <div className="hidden sm:flex sticky top-0 z-20 bg-background justify-between items-center p-2  border-gold/15 border rounded-2xl">
-                  <div className="flex items-center gap-4 w-auto">
-                    {(() => {
-                      // Calculate eligible based on *currently displayed* augmented realms
-                      const eligibleTokenIds = augmentedAndSortedRealms
-                        .filter((realm) => !realm.seasonPassMinted)
-                        .map((realm) => realm.tokenId);
+            {/* --- Top Action Bar (sm+) --- */}
+            {/* Only show action bar if there are *filtered* and *augmented* realms eligible for minting */}
+            {augmentedAndSortedRealms.some((realm) => !realm.seasonPassMinted) && totalSelectedNfts > 0 && (
+              <div className="hidden sm:flex sticky top-0 z-20 bg-background justify-between items-center p-2  border-gold/15 border rounded-2xl">
+                <div className="flex items-center gap-4 w-auto">
+                  {(() => {
+                    // Calculate eligible based on *currently displayed* augmented realms
+                    const eligibleTokenIds = augmentedAndSortedRealms
+                      .filter((realm) => !realm.seasonPassMinted)
+                      .map((realm) => realm.tokenId);
 
-                      console.log("eligibleTokenIds", eligibleTokenIds);
+                    const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
 
-                      const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
+                    return (
+                      <SelectNftActions
+                        totalSelectedNfts={totalSelectedNfts}
+                        // Pass only eligible IDs from the *currently displayed* set
+                        selectBatchNfts={(contract, ids) => selectBatchNftsFiltered(contract, ids)}
+                        deselectAllNfts={deselectAllNfts}
+                        contractAddress={contractAddress}
+                        eligibleTokenIds={eligibleTokenIds}
+                        totalEligibleNfts={eligibleTokenIds.length}
+                      />
+                    );
+                  })()}
 
-                      return (
-                        <SelectNftActions
-                          totalSelectedNfts={totalSelectedNfts}
-                          // Pass only eligible IDs from the *currently displayed* set
-                          selectBatchNfts={(contract, ids) => selectBatchNftsFiltered(contract, ids)}
-                          deselectAllNfts={deselectAllNfts}
-                          contractAddress={contractAddress}
-                          eligibleTokenIds={eligibleTokenIds}
-                          totalEligibleNfts={eligibleTokenIds.length}
-                        />
-                      );
-                    })()}
-
-                    <div className="whitespace-nowrap">
-                      {" "}
-                      {/* Selected Count */}
-                      <TypeH3>{totalSelectedNfts} Selected</TypeH3>
-                    </div>
+                  <div className="whitespace-nowrap">
+                    {" "}
+                    {/* Selected Count */}
+                    <TypeH3>{totalSelectedNfts} Selected</TypeH3>
                   </div>
-
-                  <Button
-                    disabled={totalSelectedNfts < 1}
-                    onClick={() => setIsOpen(true)}
-                    variant="cta"
-                    className="w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200
-                                font-sans hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]"
-                  >
-                    <Send className="!h-4 !w-4" />
-                    Claim {totalSelectedNfts > 0 ? `${totalSelectedNfts} ` : ""}Season Pass
-                    {totalSelectedNfts > 1 ? "es" : ""}
-                  </Button>
                 </div>
-              )}
-              {/* --- End Top Action Bar --- */}
 
-              {/* Use augmentedAndSortedRealms for the grid */}
-              <RealmsGrid
-                isNftSelected={isNftSelected}
-                toggleNftSelection={toggleNftSelection}
-                realms={paginatedRealms ?? []} // Use paginated data
-                onSeasonPassStatusChange={handleSeasonPassStatusChange}
-              />
-            </Suspense>
+                <Button
+                  disabled={totalSelectedNfts < 1}
+                  onClick={() => setIsOpen(true)}
+                  variant="cta"
+                  className="w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200
+                              font-sans hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]"
+                >
+                  <Send className="!h-4 !w-4" />
+                  Claim {totalSelectedNfts > 0 ? `${totalSelectedNfts} ` : ""}Season Pass
+                  {totalSelectedNfts > 1 ? "es" : ""}
+                </Button>
+              </div>
+            )}
+            {/* --- End Top Action Bar --- */}
+
+            {/* Use augmentedAndSortedRealms for the grid */}
+            <RealmsGrid
+              isNftSelected={isNftSelected}
+              toggleNftSelection={toggleNftSelection}
+              realms={paginatedRealms ?? []} // Use paginated data
+              onSeasonPassStatusChange={handleSeasonPassStatusChange}
+            />
           </div>
         </div>
 

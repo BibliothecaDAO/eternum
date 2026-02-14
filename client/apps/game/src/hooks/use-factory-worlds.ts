@@ -5,7 +5,7 @@ import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "./fact
 
 const FACTORY_QUERY = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
 
-export interface FactoryWorld {
+interface FactoryWorld {
   name: string;
   chain: Chain;
 }

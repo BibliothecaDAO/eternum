@@ -18,8 +18,34 @@ export const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 gltfLoader.setMeshoptDecoder(MeshoptDecoder());
 
-export function isAddressEqualToAccount(address: bigint): boolean {
-  return BigInt(address) === BigInt(ContractAddress(useStore.getState().account?.address || "0"));
+const normalizeAddressToBigInt = (address: unknown): bigint | undefined => {
+  if (typeof address === "bigint") {
+    return address;
+  }
+
+  if (typeof address === "string") {
+    const normalized = address.trim();
+    if (normalized.length === 0) {
+      return undefined;
+    }
+    try {
+      return BigInt(normalized);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+};
+
+export function isAddressEqualToAccount(address: bigint | string | null | undefined): boolean {
+  const normalizedAddress = normalizeAddressToBigInt(address);
+  if (normalizedAddress === undefined) {
+    return false;
+  }
+
+  const normalizedAccount = normalizeAddressToBigInt(useStore.getState().account?.address) ?? 0n;
+  return normalizedAddress === normalizedAccount;
 }
 
 export function loggedInAccount(): ContractAddress {

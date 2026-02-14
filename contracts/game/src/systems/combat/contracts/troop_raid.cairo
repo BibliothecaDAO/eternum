@@ -31,7 +31,7 @@ pub mod troop_raid_systems {
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
-        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, VillageRaidImmunity,
     };
     use crate::models::troop::{ExplorerTroops, GuardImpl, GuardTroops, TroopsImpl, TroopsTrait};
     use crate::models::weight::Weight;
@@ -324,13 +324,38 @@ pub mod troop_raid_systems {
 
             // steal resources
             if raid_success {
+                // check village raid resource immunity
+                let is_village = guarded_structure.category == StructureCategory::Village.into();
+                let troop_resources_only = if is_village {
+                    let immunity: VillageRaidImmunity = world.read_model(structure_id);
+                    if immunity.last_raided_at.is_non_zero() {
+                        let immunity_end = immunity.last_raided_at + battle_config.village_raid_immunity_ticks.into();
+                        current_tick < immunity_end
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+
                 let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
                 iResourceTransferImpl::structure_to_troop_raid_instant(
-                    ref world, structure_id, ref structure_weight, explorer_id, ref explorer_weight, steal_resources,
+                    ref world,
+                    structure_id,
+                    ref structure_weight,
+                    explorer_id,
+                    ref explorer_weight,
+                    steal_resources,
+                    troop_resources_only,
                 );
                 structure_weight.store(ref world, structure_id);
                 explorer_weight.store(ref world, explorer_id);
+
+                // update village raid immunity timestamp
+                if is_village {
+                    world.write_model(@VillageRaidImmunity { village_id: structure_id, last_raided_at: current_tick });
+                }
 
                 // grant raid achievement
                 let explorer_structure_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(

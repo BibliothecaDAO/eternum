@@ -8,13 +8,39 @@ We expect all contributors to foster a welcoming and inclusive environment.
 
 ## Getting Started
 
-1. **Fork the repository**: Click the "Fork" button in the top-right corner of the repository to create your own copy.
-2. **Clone your fork**: Clone your forked repository to your local machine with
-   `git clone https://github.com/BibliothecaDAO/eternum.git`.
-3. **Create a branch**: To keep your changes organized, create a new branch with a descriptive name, such as
-   `git checkout -b new-feature-name`.
-4. **Sync your fork**: Regularly synchronize your fork with the upstream repository to stay up-to-date with the latest
-   changes.
+1. **Fork the repository** (GitHub UI).
+2. **Clone your fork** to your machine.
+3. **Create a branch** for your change.
+4. **Sync from upstream** regularly to reduce merge conflicts.
+
+### Quickstart (developer)
+
+From the repo root:
+
+```bash
+pnpm install
+pnpm run build:packages
+```
+
+Common dev commands:
+
+- Game: `pnpm dev`
+- Docs site: `pnpm dev:docs`
+- Lint: `pnpm lint`
+- Tests: `pnpm test`
+
+### Docs contributions
+
+There are two doc “homes”:
+
+- **Docs site (player + dev docs):** `client/apps/game-docs/docs/pages/`
+- **Repo docs (architecture/notes):** `docs/`
+
+If you change docs, please run the docs dev server locally:
+
+```bash
+pnpm dev:docs
+```
 
 ## Reporting Issues
 

@@ -1,4 +1,6 @@
+import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -30,9 +32,14 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import type { VillageIconKey } from "@/config/game-modes";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
-import { configManager, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
+  Position,
+  setEntityNameLocalStorage,
+} from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   ClientComponents,
@@ -50,8 +57,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
 import Castle from "lucide-react/dist/esm/icons/castle";
-import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
@@ -520,6 +527,16 @@ const StructureListItem = memo(
 
     const liveStructure = useComponentValue(components.Structure, entityKey as any);
     const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
+    const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, entityKey as any);
+    const { currentArmiesTick } = useBlockTimestamp();
+
+    const activeRelicEffects = useMemo(() => {
+      const structureRelics = productionBoostBonus
+        ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
+        : [];
+      const armyRelics = liveStructure ? getStructureArmyRelicEffects(liveStructure, currentArmiesTick) : [];
+      return [...structureRelics, ...armyRelics];
+    }, [productionBoostBonus, liveStructure, currentArmiesTick]);
 
     const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
     const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
@@ -579,14 +596,14 @@ const StructureListItem = memo(
           >
             <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
           </button>
-          <div className="flex flex-1 items-center gap-2">
+          <div className="flex flex-1 min-w-0 items-center gap-2">
             {structure.groupColor && (
               <span
-                className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
+                className={`h-2 w-2 shrink-0 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
               />
             )}
             <span
-              className={`text-sm font-semibold ${
+              className={`truncate text-sm font-semibold ${
                 structure.groupColor
                   ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
                   : "text-gold"
@@ -595,13 +612,25 @@ const StructureListItem = memo(
               {structure.displayName}
             </span>
             {showInfoLine && (
-              <span className="text-xxs text-gold/70">
+              <span className="shrink-0 whitespace-nowrap text-xxs text-gold/70">
                 {infoLineLabel} • {capacityDisplay}
               </span>
             )}
           </div>
+          {activeRelicEffects.length > 0 && (
+            <div className="flex items-center gap-0.5 shrink-0">
+              {activeRelicEffects.map((effect) => {
+                const resourceId = Number(effect.id);
+                return (
+                  <div key={resourceId} className="rounded border border-relic2/30 bg-relic/10 p-0.5">
+                    <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" withTooltip />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {structure.category === StructureType.Realm && (
-            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
+            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto shrink-0" />
           )}
         </div>
       </div>
@@ -1109,11 +1138,14 @@ export const LeftCommandSidebar = memo(() => {
     prevChatOpen.current = isChatOpen;
   }, [isChatOpen, setView, view]);
 
+  // listen to structure updates
+  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
   const structureInfo = useMemo(() => {
     // Include structureNameVersion to refresh cached info when renames happen locally.
     void structureNameVersion;
     return mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components);
-  }, [structureEntityId, account.address, components, structureNameVersion, mode]);
+  }, [structureEntityId, structure, account.address, components, structureNameVersion, mode]);
 
   const isRealmOrVillage = useMemo(
     () =>

@@ -11,6 +11,34 @@ import { env } from "../../../../../env";
 
 type PlayerMMR = { address: bigint; mmr: bigint };
 
+// MMR Tier definitions
+type MMRTier = {
+  name: string;
+  minMMR: number;
+  maxMMR: number;
+  color: string;
+};
+
+const MMR_TIERS: MMRTier[] = [
+  { name: "Elite", minMMR: 2850, maxMMR: Infinity, color: "text-purple-400" },
+  { name: "Master", minMMR: 2400, maxMMR: 2850, color: "text-red-400" },
+  { name: "Diamond", minMMR: 1950, maxMMR: 2400, color: "text-cyan-400" },
+  { name: "Platinum", minMMR: 1500, maxMMR: 1950, color: "text-emerald-400" },
+  { name: "Gold", minMMR: 1050, maxMMR: 1500, color: "text-yellow-400" },
+  { name: "Silver", minMMR: 600, maxMMR: 1050, color: "text-gray-300" },
+  { name: "Bronze", minMMR: 150, maxMMR: 600, color: "text-orange-400" },
+  { name: "Iron", minMMR: 0, maxMMR: 150, color: "text-stone-500" },
+];
+
+const getMMRTier = (mmr: number): MMRTier => {
+  for (const tier of MMR_TIERS) {
+    if (mmr >= tier.minMMR) {
+      return tier;
+    }
+  }
+  return MMR_TIERS[MMR_TIERS.length - 1]; // Iron as fallback
+};
+
 // Batch size for JSON-RPC calls
 const BATCH_SIZE = 20;
 
@@ -209,17 +237,23 @@ export const BlitzMMRTable = () => {
             <tr className="text-gold/70 border-b border-gold/10">
               <th className="text-left py-2 px-2">#</th>
               <th className="text-left py-2 px-2">Player</th>
+              <th className="text-center py-2 px-2">Tier</th>
               <th className="text-right py-2 px-2">MMR</th>
             </tr>
           </thead>
           <tbody>
-            {playerMMRs.map((player, idx) => (
-              <tr key={toHexString(player.address)} className="border-b border-gold/5 hover:bg-gold/5">
-                <td className="py-2 px-2 text-gold/50">{idx + 1}</td>
-                <td className="py-2 px-2 text-gold/80">{getPlayerDisplayName(player.address)}</td>
-                <td className="py-2 px-2 text-right text-gold font-medium">{formatMMR(player.mmr)}</td>
-              </tr>
-            ))}
+            {playerMMRs.map((player, idx) => {
+              const mmrValue = Number(player.mmr / 10n ** 18n);
+              const tier = getMMRTier(mmrValue);
+              return (
+                <tr key={toHexString(player.address)} className="border-b border-gold/5 hover:bg-gold/5">
+                  <td className="py-2 px-2 text-gold/50">{idx + 1}</td>
+                  <td className="py-2 px-2 text-gold/80">{getPlayerDisplayName(player.address)}</td>
+                  <td className={`py-2 px-2 text-center font-medium ${tier.color}`}>{tier.name}</td>
+                  <td className="py-2 px-2 text-right text-gold font-medium">{formatMMR(player.mmr)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

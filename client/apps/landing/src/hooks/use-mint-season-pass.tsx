@@ -28,7 +28,6 @@ export const useMintSeasonPass = () => {
 
   const _mint = useCallback(
     async (token_ids: string[], recipient?: string) => {
-      console.log(token_ids);
       const tokenIdsNumberArray: number[] = token_ids.map((tokenId) => parseInt(tokenId, 16));
       if (account && canMint) {
         setIsMinting(true);

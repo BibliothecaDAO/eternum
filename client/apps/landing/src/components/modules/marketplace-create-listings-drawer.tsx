@@ -78,10 +78,11 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
 
   const { data: activeMarketOrder } = useQuery({
     queryKey: ["activeMarketOrders", tokens?.[0]?.contract_address, tokens.map((t) => t.token_id.toString())],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       fetchActiveMarketOrders(
         tokens?.[0]?.contract_address, //needs to be changed for multipl collections
         tokens.map((t) => t.token_id.toString()),
+        { signal },
       ),
     refetchInterval: 30_000,
   });
@@ -111,7 +112,6 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
   const handleBulkList = async () => {
     try {
       const tokensToProcess = tokens.filter((token) => tokenPrices[token.token_id.toString()]);
-      console.log(tokensToProcess);
       if (tokensToProcess.length === 0) return;
 
       await marketplaceActions.listItems({

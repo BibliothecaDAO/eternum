@@ -1,6 +1,6 @@
-export type StructureVisibilityBucket = "mine" | "ally" | "enemy";
+type StructureVisibilityBucket = "mine" | "ally" | "enemy";
 
-export interface StructureOwnershipState {
+interface StructureOwnershipState {
   isMine: boolean;
   isAlly: boolean;
 }

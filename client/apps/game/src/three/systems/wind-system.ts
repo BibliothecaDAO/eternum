@@ -16,7 +16,7 @@ import { Vector2 } from "three";
  * - Storm weather increases base speed and gust frequency
  */
 
-export interface WindState {
+interface WindState {
   /** Normalized wind direction (x, z plane) */
   direction: Vector2;
   /** Wind speed 0-1, where 0 = calm, 1 = storm-force */

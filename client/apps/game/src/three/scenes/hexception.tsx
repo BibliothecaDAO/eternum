@@ -33,6 +33,7 @@ import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { IS_FLAT_MODE } from "@/ui/config";
+import { HEXCEPTION_GRID_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -1090,6 +1091,14 @@ export default class HexceptionScene extends HexagonScene {
         matrices.length = 0;
       }
       console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
+            detail: { col: this.centerColRow[0], row: this.centerColRow[1] },
+          }),
+        );
+      }
     });
   }
 

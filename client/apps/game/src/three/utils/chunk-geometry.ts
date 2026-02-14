@@ -1,11 +1,11 @@
 import { getWorldPositionForHex } from "./utils";
 
-export interface ChunkRenderSize {
+interface ChunkRenderSize {
   width: number;
   height: number;
 }
 
-export interface ChunkBounds {
+interface ChunkBounds {
   minCol: number;
   maxCol: number;
   minRow: number;
@@ -35,13 +35,15 @@ export function getRenderBounds(
   chunkSize: number,
 ): ChunkBounds {
   const { row: chunkCenterRow, col: chunkCenterCol } = getChunkCenter(startRow, startCol, chunkSize);
-  const halfWidth = renderSize.width / 2;
-  const halfHeight = renderSize.height / 2;
+  const width = Math.max(0, Math.floor(renderSize.width));
+  const height = Math.max(0, Math.floor(renderSize.height));
+  const minCol = chunkCenterCol - Math.floor(width / 2);
+  const minRow = chunkCenterRow - Math.floor(height / 2);
   return {
-    minCol: chunkCenterCol - halfWidth,
-    maxCol: chunkCenterCol + halfWidth,
-    minRow: chunkCenterRow - halfHeight,
-    maxRow: chunkCenterRow + halfHeight,
+    minCol,
+    maxCol: minCol + width - 1,
+    minRow,
+    maxRow: minRow + height - 1,
   };
 }
 
@@ -74,4 +76,34 @@ export function isHexWithinRenderBounds(
 ): boolean {
   const bounds = getRenderBounds(startRow, startCol, renderSize, chunkSize);
   return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
+}
+
+interface ChunkKeyOverlapInput {
+  chunkKeys: Iterable<string>;
+  col: number;
+  row: number;
+  renderSize: ChunkRenderSize;
+  chunkSize: number;
+}
+
+/**
+ * Return cached chunk keys whose render windows include the provided hex.
+ * This is used to invalidate every overlapping render cache, not just the
+ * chunk that contains the hex by stride coordinates.
+ */
+export function getChunkKeysContainingHexInRenderBounds(input: ChunkKeyOverlapInput): string[] {
+  const matches: string[] = [];
+
+  for (const chunkKey of input.chunkKeys) {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      continue;
+    }
+
+    if (isHexWithinRenderBounds(input.col, input.row, startRow, startCol, input.renderSize, input.chunkSize)) {
+      matches.push(chunkKey);
+    }
+  }
+
+  return matches;
 }

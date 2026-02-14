@@ -27,7 +27,8 @@ use crate::models::structure::{
     StructureTroopGuardStoreImpl,
 };
 use crate::models::troop::{
-    ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops, TroopsImpl,
+    ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops,
+    TroopsImpl,
 };
 use crate::models::weight::{Weight, WeightImpl};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
@@ -96,10 +97,12 @@ pub impl iGuardImpl of iGuardTrait {
         // update troop count
         troops.count += amount;
 
-        // ensure structure troop count does not exceed max count
+        // ensure structure troop count does not exceed max army size
+        let max_army_size: u128 = troop_limit_config.max_army_size(structure_base.level, troops.tier).into();
         assert!(
-            troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
-            "reached limit of structure guard troop count",
+            troops.count <= max_army_size * RESOURCE_PRECISION,
+            "reached limit of structure guard troop count. max: {}",
+            max_army_size,
         );
 
         // update guard slot and structure
@@ -180,16 +183,19 @@ pub impl iExplorerImpl of iExplorerTrait {
         troop_amount: u128,
         troop_stamina_config: TroopStaminaConfig,
         troop_limit_config: TroopLimitConfig,
+        structure_level: u8,
         current_tick: u64,
     ) -> ExplorerTroops {
         // set explorer as occupier of tile
         let tile_occupier = IMapImpl::get_troop_occupier(owner, troop_type, troop_tier);
         IMapImpl::occupy(ref world, ref tile, tile_occupier, explorer_id);
 
-        // ensure explorer amount does not exceed max
+        // ensure explorer amount does not exceed max army size
+        let max_army_size: u128 = troop_limit_config.max_army_size(structure_level, troop_tier).into();
         assert!(
-            troop_amount <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
-            "reached limit of explorers amount per army",
+            troop_amount <= max_army_size * RESOURCE_PRECISION,
+            "reached limit of explorers amount per army. max: {}",
+            max_army_size,
         );
 
         // set troop stamina
@@ -483,7 +489,7 @@ pub enum TroopRaidOutcome {
 
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
-    fn random_amount(seed: u256, salt: u128, lower_bound: u32, upper_bound: u32, world: WorldStorage) -> u128 {
+    fn random_amount(seed: u256, salt: u128, lower_bound: u16, upper_bound: u16, world: WorldStorage) -> u128 {
         let range: u128 = (upper_bound - lower_bound).into();
         let mut troop_amount: u128 = rng_library::get_dispatcher(@world).get_random_in_range(seed, salt, range);
         troop_amount += lower_bound.into();
@@ -681,6 +687,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             troop_amount,
             troop_stamina_config,
             troop_limit_config,
+            3, // agents use max level (Empire) — bounded by agents_troop_upper_bound instead
             current_tick,
         );
 

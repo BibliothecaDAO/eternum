@@ -28,7 +28,6 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
       order_ids: selectedPasses.map((pass) => BigInt(pass.order_id ?? 0)),
       totalPrice: BigInt(parseEther(totalPrice.toString())),
     });
-    console.log("Purchasing passes:", selectedPasses);
     // After successful purchase:
     clearSelection();
     onOpenChange(false);

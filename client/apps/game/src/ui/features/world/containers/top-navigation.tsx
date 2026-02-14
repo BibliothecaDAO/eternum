@@ -20,7 +20,7 @@ export const TopNavigation = memo(() => {
         <LatestFeaturesWindow />
         <TransactionWindow />
         <TransferAutomationPopup />
-        <ExplorationAutomationWindow />
+        {/* <ExplorationAutomationWindow /> */}
         <ArmyCreationPopupManager />
       </div>
     </>
