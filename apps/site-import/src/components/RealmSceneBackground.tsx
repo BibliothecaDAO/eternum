@@ -1,52 +1,27 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-function createMobiusStripGeometry(
-  segmentsU: number,
-  segmentsV: number,
-  radius: number,
-  halfWidth: number
-) {
-  const vertexCount = (segmentsU + 1) * (segmentsV + 1);
-  const positions = new Float32Array(vertexCount * 3);
-  const indices: number[] = [];
+/* ── Font atlas: real ASCII characters rendered to canvas ── */
+const ASCII_CHARS = " .:-=+*#%@";
+const CHAR_COUNT = ASCII_CHARS.length;
 
-  let cursor = 0;
-  for (let i = 0; i <= segmentsU; i++) {
-    const u = (i / segmentsU) * Math.PI * 2;
-    const cosU = Math.cos(u);
-    const sinU = Math.sin(u);
-    const cosHalfU = Math.cos(u * 0.5);
-    const sinHalfU = Math.sin(u * 0.5);
-
-    for (let j = 0; j <= segmentsV; j++) {
-      const v = ((j / segmentsV) * 2 - 1) * halfWidth;
-      const radial = radius + v * cosHalfU;
-
-      positions[cursor++] = radial * cosU;
-      positions[cursor++] = v * sinHalfU;
-      positions[cursor++] = radial * sinU;
-    }
+function createFontAtlas(): HTMLCanvasElement {
+  const cW = 32;
+  const cH = 48;
+  const canvas = document.createElement("canvas");
+  canvas.width = cW * CHAR_COUNT;
+  canvas.height = cH;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.font = `bold 38px "Courier New", "Courier", monospace`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  for (let i = 0; i < CHAR_COUNT; i++) {
+    ctx.fillText(ASCII_CHARS[i], i * cW + cW / 2, cH / 2);
   }
-
-  for (let i = 0; i < segmentsU; i++) {
-    for (let j = 0; j < segmentsV; j++) {
-      const a = i * (segmentsV + 1) + j;
-      const b = a + 1;
-      const c = (i + 1) * (segmentsV + 1) + j;
-      const d = c + 1;
-
-      indices.push(a, c, b);
-      indices.push(b, c, d);
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-
-  return geometry;
+  return canvas;
 }
 
 export function RealmSceneBackground() {
@@ -56,732 +31,512 @@ export function RealmSceneBackground() {
     const container = containerRef.current;
     if (!container) return;
 
-    const prefersReducedMotion = window.matchMedia(
+    const isSmall = window.innerWidth < 768;
+    const motionScale = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
-    ).matches;
-    const isSmallViewport = window.innerWidth < 768;
+    ).matches
+      ? 0.15
+      : 1;
 
-    const particleCount = isSmallViewport ? 600 : 1600;
-    const streamCount = isSmallViewport ? 140 : 350;
-    const pulseRingCount = isSmallViewport ? 3 : 5;
-    const motionScale = prefersReducedMotion ? 0.15 : 1;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
 
+    /* ── Renderer ── */
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x09070a, 12, 45);
+    scene.background = new THREE.Color(0x020805);
+    scene.fog = new THREE.FogExp2(0x020805, 0.014);
 
-    const camera = new THREE.PerspectiveCamera(
-      58,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100
-    );
-    camera.position.set(0, 1.4, 8);
+    const camera = new THREE.PerspectiveCamera(65, W / H, 0.1, 200);
+    camera.position.set(0, 0.3, 5);
 
     const renderer = new THREE.WebGLRenderer({
-      antialias: !isSmallViewport,
-      alpha: true,
+      antialias: !isSmall,
+      alpha: false,
       powerPreference: "high-performance",
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
+    renderer.setSize(W, H);
     container.appendChild(renderer.domElement);
 
-    const sceneTarget = new THREE.WebGLRenderTarget(
-      window.innerWidth,
-      window.innerHeight,
-      { depthBuffer: true, stencilBuffer: false }
-    );
+    /* ── Off-screen render target ── */
+    const sceneTarget = new THREE.WebGLRenderTarget(W, H, {
+      depthBuffer: true,
+      stencilBuffer: false,
+    });
     sceneTarget.texture.minFilter = THREE.LinearFilter;
     sceneTarget.texture.magFilter = THREE.LinearFilter;
 
+    /* ── Font atlas texture ── */
+    const fontTexture = new THREE.CanvasTexture(createFontAtlas());
+    fontTexture.minFilter = THREE.LinearFilter;
+    fontTexture.magFilter = THREE.LinearFilter;
+
+    /* ── ASCII post-processing ── */
     const postScene = new THREE.Scene();
     const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-    // --- Enhanced ASCII shader with richer glyphs + bloom ---
-    const asciiPassMaterial = new THREE.ShaderMaterial({
-      transparent: true,
+    const cellW = isSmall ? 5.0 : 7.0;
+    const cellAspect = 1.7; // height / width
+
+    const asciiMaterial = new THREE.ShaderMaterial({
       uniforms: {
         tScene: { value: sceneTarget.texture },
-        resolution: {
-          value: new THREE.Vector2(window.innerWidth, window.innerHeight),
-        },
-        asciiCellSize: { value: isSmallViewport ? 8.5 : 10.5 },
-        tint: { value: new THREE.Color("#f0c98d") },
-        bgTint: { value: new THREE.Color("#09070a") },
+        tFont: { value: fontTexture },
+        resolution: { value: new THREE.Vector2(W, H) },
+        cellSize: { value: cellW },
+        charCount: { value: CHAR_COUNT },
+        cellAspect: { value: cellAspect },
         time: { value: 0 },
         fadeIn: { value: 0 },
       },
-      vertexShader: `
+      vertexShader: /* glsl */ `
         varying vec2 vUv;
         void main() {
           vUv = uv;
           gl_Position = vec4(position.xy, 0.0, 1.0);
         }
       `,
-      fragmentShader: `
+      fragmentShader: /* glsl */ `
         varying vec2 vUv;
-
         uniform sampler2D tScene;
+        uniform sampler2D tFont;
         uniform vec2 resolution;
-        uniform float asciiCellSize;
-        uniform vec3 tint;
-        uniform vec3 bgTint;
+        uniform float cellSize;
+        uniform float charCount;
+        uniform float cellAspect;
         uniform float time;
         uniform float fadeIn;
 
-        float stroke(vec2 p, vec2 a, vec2 b, float width) {
-          vec2 pa = p - a;
-          vec2 ba = b - a;
-          float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-          float dist = length(pa - ba * h);
-          return 1.0 - smoothstep(width, width + 0.015, dist);
-        }
-
-        float box(vec2 p, vec2 center, vec2 half_size) {
-          vec2 d = abs(p - center) - half_size;
-          return 1.0 - smoothstep(0.0, 0.04, max(d.x, d.y));
-        }
-
-        float circle(vec2 p, vec2 center, float r, float width) {
-          float d = abs(length(p - center) - r);
-          return 1.0 - smoothstep(width, width + 0.02, d);
-        }
-
-        float glyphMask(float lum, vec2 p) {
-          float mask = 0.0;
-
-          if (lum < 0.12) {
-            // Dense: hash/grid
-            mask = max(mask, stroke(p, vec2(0.14, 0.12), vec2(0.86, 0.88), 0.05));
-            mask = max(mask, stroke(p, vec2(0.86, 0.12), vec2(0.14, 0.88), 0.05));
-            mask = max(mask, stroke(p, vec2(0.16, 0.35), vec2(0.84, 0.35), 0.05));
-            mask = max(mask, stroke(p, vec2(0.16, 0.65), vec2(0.84, 0.65), 0.05));
-            mask = max(mask, stroke(p, vec2(0.5, 0.1), vec2(0.5, 0.9), 0.04));
-          } else if (lum < 0.24) {
-            // Runic: angular brackets
-            mask = max(mask, stroke(p, vec2(0.2, 0.15), vec2(0.5, 0.5), 0.048));
-            mask = max(mask, stroke(p, vec2(0.5, 0.5), vec2(0.2, 0.85), 0.048));
-            mask = max(mask, stroke(p, vec2(0.8, 0.15), vec2(0.5, 0.5), 0.048));
-            mask = max(mask, stroke(p, vec2(0.5, 0.5), vec2(0.8, 0.85), 0.048));
-          } else if (lum < 0.38) {
-            // X cross
-            mask = max(mask, stroke(p, vec2(0.18, 0.2), vec2(0.82, 0.8), 0.048));
-            mask = max(mask, stroke(p, vec2(0.82, 0.2), vec2(0.18, 0.8), 0.048));
-            mask = max(mask, stroke(p, vec2(0.2, 0.5), vec2(0.8, 0.5), 0.048));
-          } else if (lum < 0.50) {
-            // Diamond
-            mask = max(mask, stroke(p, vec2(0.5, 0.12), vec2(0.88, 0.5), 0.044));
-            mask = max(mask, stroke(p, vec2(0.88, 0.5), vec2(0.5, 0.88), 0.044));
-            mask = max(mask, stroke(p, vec2(0.5, 0.88), vec2(0.12, 0.5), 0.044));
-            mask = max(mask, stroke(p, vec2(0.12, 0.5), vec2(0.5, 0.12), 0.044));
-          } else if (lum < 0.62) {
-            // Plus
-            mask = max(mask, stroke(p, vec2(0.2, 0.5), vec2(0.8, 0.5), 0.048));
-            mask = max(mask, stroke(p, vec2(0.5, 0.2), vec2(0.5, 0.8), 0.048));
-          } else if (lum < 0.76) {
-            // Slash
-            mask = max(mask, stroke(p, vec2(0.2, 0.25), vec2(0.8, 0.75), 0.044));
-          } else if (lum < 0.88) {
-            // Small circle
-            mask = circle(p, vec2(0.5), 0.18, 0.045);
-          } else {
-            // Dot
-            mask = 1.0 - smoothstep(0.06, 0.09, distance(p, vec2(0.5)));
-          }
-
-          return mask;
-        }
-
         void main() {
+          float cW = cellSize;
+          float cH = cellSize * cellAspect;
           vec2 pixel = vUv * resolution;
-          vec2 cell = floor(pixel / asciiCellSize);
-          vec2 center = (cell + 0.5) * asciiCellSize;
-          vec2 sampleUv = center / resolution;
+          vec2 cell = floor(pixel / vec2(cW, cH));
 
-          vec4 sceneSample = texture2D(tScene, sampleUv);
-          float lum = dot(sceneSample.rgb, vec3(0.2126, 0.7152, 0.0722));
+          // Scene sample at cell center
+          vec2 center = (cell + 0.5) * vec2(cW, cH);
+          vec4 sc = texture2D(tScene, center / resolution);
+          float lum = dot(sc.rgb, vec3(0.2126, 0.7152, 0.0722));
 
-          // Bloom: sample neighbors and add soft glow
+          // Bloom: average neighboring cells
           float bloom = 0.0;
           for (float ox = -1.0; ox <= 1.0; ox += 1.0) {
             for (float oy = -1.0; oy <= 1.0; oy += 1.0) {
-              vec2 nUv = (center + vec2(ox, oy) * asciiCellSize) / resolution;
-              vec4 ns = texture2D(tScene, nUv);
-              bloom += dot(ns.rgb, vec3(0.2126, 0.7152, 0.0722)) * ns.a;
+              vec2 nUv = (center + vec2(ox * cW, oy * cH)) / resolution;
+              bloom += dot(texture2D(tScene, nUv).rgb, vec3(0.2126, 0.7152, 0.0722));
             }
           }
-          bloom = bloom / 9.0;
-          float bloomStrength = smoothstep(0.25, 0.7, bloom) * 0.35;
+          bloom /= 9.0;
+          float bloomGlow = smoothstep(0.08, 0.45, bloom) * 0.6;
 
-          vec2 local = fract(pixel / asciiCellSize);
-          float glyph = glyphMask(lum, local);
+          // Character index from luminance
+          float charIdx = floor(clamp(lum * (charCount - 1.0), 0.0, charCount - 1.0));
 
-          // Dual scan: horizontal + vertical subtle
-          float scanH = 0.90 + 0.10 * sin((cell.y + time * 8.0) * 0.35);
-          float scanV = 0.96 + 0.04 * sin((cell.x + time * 5.0) * 0.25);
-          float scan = scanH * scanV;
+          // Glitch: ~2% of cells show random character
+          float glitchSeed = fract(sin(dot(cell, vec2(12.9898, 78.233)) + floor(time * 6.0)) * 43758.5453);
+          float glitchActive = step(0.98, glitchSeed);
+          float glitchChar = floor(fract(sin(dot(cell, vec2(63.7, 97.2)) + time) * 43758.5453) * charCount);
+          charIdx = mix(charIdx, glitchChar, glitchActive);
 
-          vec3 shaded = mix(bgTint, sceneSample.rgb * tint, 0.72);
-          vec3 glyphColor = shaded * (0.42 + 0.58 * scan);
-          // Bloom adds warm haze around bright areas
-          vec3 bloomColor = tint * bloomStrength;
-          vec3 finalColor = mix(bgTint * 0.85, glyphColor + bloomColor, glyph * sceneSample.a);
-          float alpha = max(sceneSample.a * 0.62, glyph * sceneSample.a);
-          // Bloom also slightly lifts alpha in bright zones
-          alpha = min(1.0, alpha + bloomStrength * 0.2);
+          // Local UV within cell
+          vec2 local = fract(pixel / vec2(cW, cH));
 
-          gl_FragColor = vec4(finalColor, alpha * fadeIn);
+          // Sample font atlas
+          vec2 fontUv = vec2(
+            (charIdx + local.x) / charCount,
+            local.y
+          );
+          float charMask = texture2D(tFont, fontUv).r;
+
+          // Suppress in very dark areas
+          charMask *= smoothstep(0.02, 0.06, lum);
+
+          // Scan lines
+          float scanH = 0.85 + 0.15 * sin(cell.y * 0.6 + time * 2.5);
+          float scanV = 0.95 + 0.05 * sin(cell.x * 0.3 + time * 1.8);
+
+          // Color from scene with bloom
+          vec3 charColor = sc.rgb * (0.8 + lum * 0.8) * scanH * scanV;
+          charColor += sc.rgb * bloomGlow;
+
+          // Subtle cell grid
+          float border = smoothstep(0.94, 1.0, max(local.x, local.y));
+          vec3 bgColor = vec3(0.008, 0.016, 0.012) + vec3(0.004) * border;
+
+          vec3 finalColor = mix(bgColor, charColor, charMask);
+
+          // Vignette
+          vec2 vc = vUv - 0.5;
+          float vignette = 1.0 - dot(vc, vc) * 0.5;
+          finalColor *= vignette;
+
+          // Slight dim for text readability
+          finalColor *= 1.0;
+
+          gl_FragColor = vec4(finalColor * fadeIn, 1.0);
         }
       `,
     });
 
-    const asciiPassQuad = new THREE.Mesh(
+    const asciiQuad = new THREE.Mesh(
       new THREE.PlaneGeometry(2, 2),
-      asciiPassMaterial
+      asciiMaterial
     );
-    postScene.add(asciiPassQuad);
+    postScene.add(asciiQuad);
 
-    // --- Lighting ---
-    const ambient = new THREE.AmbientLight(0xc9b189, 0.78);
+    /* ══════════════════════════════════════════
+       3D SCENE: Agent Consciousness Tunnel
+       ══════════════════════════════════════════ */
+
+    // Lighting
+    const ambient = new THREE.AmbientLight(0x112222, 0.4);
     scene.add(ambient);
 
-    const rim = new THREE.DirectionalLight(0xd19a48, 1.15);
-    rim.position.set(4, 8, 6);
-    scene.add(rim);
+    /* ── Tunnel rings ── */
+    const ringCount = isSmall ? 18 : 30;
+    const tunnelLength = 65;
+    const tunnelRadius = 4.2;
 
-    const fill = new THREE.DirectionalLight(0x5d6b9a, 0.4);
-    fill.position.set(-6, -2, -4);
-    scene.add(fill);
-
-    // --- Point light at center for inner glow ---
-    const coreLight = new THREE.PointLight(0xe4a34a, 0.6, 8, 2);
-    coreLight.position.set(0, 0, 0);
-    scene.add(coreLight);
-
-    // --- Star particles with vortex motion ---
-    const starsGeometry = new THREE.BufferGeometry();
-    const starsPosition = new Float32Array(particleCount * 3);
-    const starsColor = new Float32Array(particleCount * 3);
-    const starsSizes = new Float32Array(particleCount);
-    const starsAngles = new Float32Array(particleCount); // for vortex
-    const starsRadii = new Float32Array(particleCount);
-    const starsHeights = new Float32Array(particleCount);
-    const starsVortexSpeed = new Float32Array(particleCount);
-    const emberColor = new THREE.Color("#e4a34a");
-    const ashColor = new THREE.Color("#8fa0cf");
-
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
-      const r = 2.5 + Math.random() * 16;
-      const a = Math.random() * Math.PI * 2;
-      const h = (Math.random() - 0.5) * 14;
-
-      starsPosition[i3] = Math.cos(a) * r;
-      starsPosition[i3 + 1] = h;
-      starsPosition[i3 + 2] = Math.sin(a) * r;
-
-      starsAngles[i] = a;
-      starsRadii[i] = r;
-      starsHeights[i] = h;
-      // Closer stars orbit faster — vortex feel
-      starsVortexSpeed[i] = (0.02 + 0.06 / (1 + r * 0.3)) * (0.8 + Math.random() * 0.4);
-
-      const mix = Math.random();
-      const tintColor = emberColor.clone().lerp(ashColor, mix);
-      starsColor[i3] = tintColor.r;
-      starsColor[i3 + 1] = tintColor.g;
-      starsColor[i3 + 2] = tintColor.b;
-
-      starsSizes[i] = 0.02 + Math.pow(Math.random(), 3) * 0.14;
-    }
-
-    starsGeometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(starsPosition, 3)
-    );
-    starsGeometry.setAttribute("color", new THREE.BufferAttribute(starsColor, 3));
-    starsGeometry.setAttribute("size", new THREE.BufferAttribute(starsSizes, 1));
-
-    const starsMaterial = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexColors: true,
-      uniforms: {
-        time: { value: 0 },
-        pixelRatio: { value: renderer.getPixelRatio() },
-      },
-      vertexShader: `
-        attribute float size;
-        varying vec3 vColor;
-        varying float vSize;
-        uniform float time;
-        uniform float pixelRatio;
-
-        void main() {
-          vColor = color;
-          vSize = size;
-          vec3 pos = position;
-          pos.y += sin(time * 0.3 + position.x * 0.5) * 0.1;
-          pos.x += cos(time * 0.2 + position.z * 0.3) * 0.08;
-          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-          gl_PointSize = size * pixelRatio * (200.0 / -mvPosition.z);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vColor;
-        varying float vSize;
-        uniform float time;
-
-        void main() {
-          float d = length(gl_PointCoord - vec2(0.5));
-          if (d > 0.5) discard;
-          float glow = 1.0 - smoothstep(0.0, 0.5, d);
-          glow = pow(glow, 1.6);
-          float twinkle = 0.7 + 0.3 * sin(time * 2.5 + vSize * 500.0);
-          gl_FragColor = vec4(vColor * glow * twinkle * 1.1, glow * 0.9);
-        }
-      `,
-    });
-
-    const stars = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(stars);
-
-    // --- Energy stream particles spiraling inward ---
-    const streamGeometry = new THREE.BufferGeometry();
-    const streamPositions = new Float32Array(streamCount * 3);
-    const streamColors = new Float32Array(streamCount * 3);
-    const streamSizes = new Float32Array(streamCount);
-    const hotEmber = new THREE.Color("#f5a623");
-    const coolBrass = new THREE.Color("#c9935a");
-    const arcaneBlue = new THREE.Color("#7b8fd4");
-
-    const streamData = Array.from({ length: streamCount }, () => ({
-      progress: Math.random(),
-      speed: 0.07 + Math.random() * 0.12,
-      angle: Math.random() * Math.PI * 2,
-      angleSpeed: 1.0 + Math.random() * 1.5,
-      height: (Math.random() - 0.5) * 1.8,
-      outerRadius: 4.5 + Math.random() * 4.0,
-      colorType: Math.random(), // 0-0.6 ember, 0.6-1.0 arcane
-    }));
-
-    for (let i = 0; i < streamCount; i++) {
-      const s = streamData[i];
-      const color =
-        s.colorType < 0.6
-          ? hotEmber.clone().lerp(coolBrass, Math.random())
-          : arcaneBlue.clone().lerp(coolBrass, Math.random() * 0.4);
-      streamColors[i * 3] = color.r;
-      streamColors[i * 3 + 1] = color.g;
-      streamColors[i * 3 + 2] = color.b;
-      streamSizes[i] = 0.03 + Math.random() * 0.07;
-    }
-
-    streamGeometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(streamPositions, 3)
-    );
-    streamGeometry.setAttribute(
-      "color",
-      new THREE.BufferAttribute(streamColors, 3)
-    );
-    streamGeometry.setAttribute(
-      "size",
-      new THREE.BufferAttribute(streamSizes, 1)
-    );
-
-    const streamMaterial = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexColors: true,
-      uniforms: {
-        pixelRatio: { value: renderer.getPixelRatio() },
-        time: { value: 0 },
-      },
-      vertexShader: `
-        attribute float size;
-        varying vec3 vColor;
-        varying float vAlpha;
-        uniform float pixelRatio;
-
-        void main() {
-          vColor = color;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float dist = length(position.xz);
-          vAlpha = smoothstep(0.3, 2.5, dist);
-          gl_PointSize = size * pixelRatio * (140.0 / -mvPosition.z);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vColor;
-        varying float vAlpha;
-        uniform float time;
-
-        void main() {
-          float d = length(gl_PointCoord - vec2(0.5));
-          if (d > 0.5) discard;
-          float glow = 1.0 - smoothstep(0.0, 0.5, d);
-          glow = pow(glow, 1.8);
-          // Streaky elongation feel via slight pulse
-          float pulse = 0.85 + 0.15 * sin(time * 6.0 + gl_PointCoord.x * 8.0);
-          gl_FragColor = vec4(vColor * 1.5 * pulse, glow * vAlpha * 0.75);
-        }
-      `,
-    });
-
-    const streamPoints = new THREE.Points(streamGeometry, streamMaterial);
-    scene.add(streamPoints);
-
-    // --- Pulse rings that expand outward from center ---
-    const pulseRings: {
+    const rings: {
       mesh: THREE.Mesh;
-      material: THREE.MeshBasicMaterial;
-      progress: number;
+      mat: THREE.MeshBasicMaterial;
+      z: number;
       speed: number;
-      delay: number;
     }[] = [];
 
-    for (let i = 0; i < pulseRingCount; i++) {
-      const geo = new THREE.TorusGeometry(1, 0.015, 8, 120);
+    for (let i = 0; i < ringCount; i++) {
+      const t = i / (ringCount - 1);
+      const z = -2 - t * tunnelLength;
+
+      const geo = new THREE.TorusGeometry(
+        tunnelRadius,
+        0.06 + (1 - t) * 0.04, // thicker near camera
+        4,
+        isSmall ? 32 : 64
+      );
+
+      // Color: warm amber near → cool cyan far
+      const color = new THREE.Color().lerpColors(
+        new THREE.Color("#c08030"),
+        new THREE.Color("#30a0b0"),
+        t
+      );
+
       const mat = new THREE.MeshBasicMaterial({
-        color: "#e4a34a",
+        color,
         transparent: true,
-        opacity: 0,
-        side: THREE.DoubleSide,
+        opacity: 0.7 + (1 - t) * 0.3,
       });
-      const ring = new THREE.Mesh(geo, mat);
-      ring.rotation.set(-0.6, 0.1, 0);
-      scene.add(ring);
-      pulseRings.push({
-        mesh: ring,
-        material: mat,
-        progress: i / pulseRingCount, // Stagger start
-        speed: 0.15 + Math.random() * 0.05,
-        delay: i * (1 / pulseRingCount),
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.z = z;
+      scene.add(mesh);
+      rings.push({
+        mesh,
+        mat,
+        z,
+        speed: 0.08 + Math.random() * 0.25,
       });
     }
 
-    // --- Centerpiece ---
-    const centerpieceGroup = new THREE.Group();
-    scene.add(centerpieceGroup);
+    /* ── Data particles streaming through tunnel ── */
+    const particleCount = isSmall ? 500 : 1000;
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(particleCount * 3);
+    const pCol = new Float32Array(particleCount * 3);
+    const pSize = new Float32Array(particleCount);
 
-    const mobiusGeometry = createMobiusStripGeometry(
-      isSmallViewport ? 120 : 180,
-      isSmallViewport ? 12 : 20,
-      2.25,
-      isSmallViewport ? 0.28 : 0.36
-    );
+    const colGreen = new THREE.Color("#00ff88");
+    const colCyan = new THREE.Color("#00ccff");
+    const colAmber = new THREE.Color("#ff8800");
 
-    // Color cycling targets
-    const mobiusEmissiveA = new THREE.Color("#4a2008"); // deep ember
-    const mobiusEmissiveB = new THREE.Color("#1a2848"); // deep arcane
-    const mobiusColorA = new THREE.Color("#b28a57"); // warm brass
-    const mobiusColorB = new THREE.Color("#8a95b8"); // cool steel
+    interface ParticleData {
+      progress: number;
+      speed: number;
+      angle: number;
+      angleSpeed: number;
+      radius: number;
+    }
 
-    const mobiusMaterial = new THREE.MeshStandardMaterial({
-      color: mobiusColorA.clone(),
-      emissive: mobiusEmissiveA.clone(),
-      emissiveIntensity: 0.5,
-      roughness: 0.28,
-      metalness: 0.8,
+    const pData: ParticleData[] = [];
+    for (let i = 0; i < particleCount; i++) {
+      const p: ParticleData = {
+        progress: Math.random(),
+        speed: 0.002 + Math.random() * 0.007,
+        angle: Math.random() * Math.PI * 2,
+        angleSpeed: 0.5 + Math.random() * 2.0,
+        radius: 0.3 + Math.random() * (tunnelRadius - 0.8),
+      };
+      pData.push(p);
+
+      const rnd = Math.random();
+      const color =
+        rnd < 0.5
+          ? colGreen.clone().lerp(colCyan, Math.random())
+          : rnd < 0.85
+            ? colCyan.clone()
+            : colAmber.clone();
+      pCol[i * 3] = color.r;
+      pCol[i * 3 + 1] = color.g;
+      pCol[i * 3 + 2] = color.b;
+      pSize[i] = 0.02 + Math.random() * 0.06;
+    }
+
+    pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+    pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
+    pGeo.setAttribute("size", new THREE.BufferAttribute(pSize, 1));
+
+    const pMat = new THREE.ShaderMaterial({
       transparent: true,
-      opacity: 0.85,
-      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexColors: true,
+      uniforms: {
+        pixelRatio: { value: renderer.getPixelRatio() },
+        time: { value: 0 },
+      },
+      vertexShader: /* glsl */ `
+        attribute float size;
+        varying vec3 vColor;
+        uniform float pixelRatio;
+        void main() {
+          vColor = color;
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = size * pixelRatio * (160.0 / -mv.z);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        varying vec3 vColor;
+        uniform float time;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float glow = 1.0 - smoothstep(0.0, 0.5, d);
+          glow = pow(glow, 1.5);
+          gl_FragColor = vec4(vColor * glow * 2.0, glow * 0.95);
+        }
+      `,
     });
-    const mobiusStrip = new THREE.Mesh(mobiusGeometry, mobiusMaterial);
-    const baseRotation = new THREE.Euler(0.82, 0.2, 0.38);
-    mobiusStrip.rotation.copy(baseRotation);
-    centerpieceGroup.add(mobiusStrip);
 
-    const mobiusEdgesGeometry = new THREE.EdgesGeometry(mobiusGeometry, 24);
-    const mobiusEdgesMaterial = new THREE.LineBasicMaterial({
-      color: "#d8893d",
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    /* ── Neural core ── */
+    const coreGroup = new THREE.Group();
+    coreGroup.position.z = -tunnelLength * 0.5;
+    scene.add(coreGroup);
+
+    const coreSphereGeo = new THREE.IcosahedronGeometry(0.7, 2);
+    const coreSphereMat = new THREE.MeshBasicMaterial({
+      color: "#00ffcc",
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.5,
     });
-    const mobiusEdges = new THREE.LineSegments(
-      mobiusEdgesGeometry,
-      mobiusEdgesMaterial
-    );
-    mobiusStrip.add(mobiusEdges);
+    const coreSphere = new THREE.Mesh(coreSphereGeo, coreSphereMat);
+    coreGroup.add(coreSphere);
 
-    const runeRingGeometry = new THREE.RingGeometry(2.8, 3.05, 80);
-    const runeRingMaterial = new THREE.MeshBasicMaterial({
-      color: "#7f5a2e",
-      transparent: true,
-      opacity: 0.2,
-      side: THREE.DoubleSide,
-    });
-    const runeRing = new THREE.Mesh(runeRingGeometry, runeRingMaterial);
-    runeRing.rotation.set(-0.95, 0.2, 0.18);
-    runeRing.position.set(0, -0.2, -0.45);
-    centerpieceGroup.add(runeRing);
-
-    const warHaloGeometry = new THREE.TorusGeometry(3.1, 0.035, 12, 180);
-    const warHaloMaterial = new THREE.MeshBasicMaterial({
-      color: "#cb7d2e",
+    const coreWireGeo = new THREE.IcosahedronGeometry(1.1, 1);
+    const coreWireMat = new THREE.MeshBasicMaterial({
+      color: "#00ddff",
+      wireframe: true,
       transparent: true,
       opacity: 0.4,
     });
-    const warHalo = new THREE.Mesh(warHaloGeometry, warHaloMaterial);
-    warHalo.rotation.set(1.02, 0.2, 0.05);
-    centerpieceGroup.add(warHalo);
+    const coreWire = new THREE.Mesh(coreWireGeo, coreWireMat);
+    coreGroup.add(coreWire);
 
-    const arcaneHaloGeometry = new THREE.TorusGeometry(3.45, 0.03, 10, 160);
-    const arcaneHaloMaterial = new THREE.MeshBasicMaterial({
-      color: "#6b79b8",
+    // Outer orbit ring around core
+    const coreRingGeo = new THREE.TorusGeometry(1.8, 0.025, 4, 48);
+    const coreRingMat = new THREE.MeshBasicMaterial({
+      color: "#40ffaa",
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.35,
     });
-    const arcaneHalo = new THREE.Mesh(arcaneHaloGeometry, arcaneHaloMaterial);
-    arcaneHalo.rotation.set(0.6, -0.15, 1.12);
-    centerpieceGroup.add(arcaneHalo);
+    const coreRing = new THREE.Mesh(coreRingGeo, coreRingMat);
+    coreGroup.add(coreRing);
 
-    const glyphShardCount = isSmallViewport ? 40 : 90;
-    const glyphShardGeometry = new THREE.TetrahedronGeometry(
-      isSmallViewport ? 0.05 : 0.065,
-      0
-    );
-    const glyphShardMaterial = new THREE.MeshStandardMaterial({
-      color: "#d89a52",
-      emissive: "#3a1a08",
-      emissiveIntensity: 0.4,
-      roughness: 0.25,
-      metalness: 0.6,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const glyphShards = new THREE.InstancedMesh(
-      glyphShardGeometry,
-      glyphShardMaterial,
-      glyphShardCount
-    );
-    const glyphShardData = Array.from({ length: glyphShardCount }, () => ({
-      radius: 2.6 + Math.random() * 1.5,
-      angle: Math.random() * Math.PI * 2,
-      speed: 0.14 + Math.random() * 0.26,
-      height: (Math.random() - 0.5) * 2.8,
-      tilt: (Math.random() - 0.5) * 1.2,
-      phase: Math.random() * Math.PI * 2,
-    }));
-    const glyphShardDummy = new THREE.Object3D();
-    centerpieceGroup.add(glyphShards);
+    const coreLight = new THREE.PointLight(0x00ff88, 4.0, 60, 1.2);
+    coreGroup.add(coreLight);
 
-    // --- Pointer & camera state ---
+    /* ── Pulse waves (travel from core toward camera) ── */
+    const pulseCount = isSmall ? 3 : 5;
+    const pulses: {
+      mesh: THREE.Mesh;
+      mat: THREE.MeshBasicMaterial;
+      progress: number;
+      speed: number;
+    }[] = [];
+
+    for (let i = 0; i < pulseCount; i++) {
+      const geo = new THREE.TorusGeometry(
+        tunnelRadius * 0.7,
+        0.04,
+        4,
+        isSmall ? 32 : 64
+      );
+      const mat = new THREE.MeshBasicMaterial({
+        color: "#00ffaa",
+        transparent: true,
+        opacity: 0,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      scene.add(mesh);
+      pulses.push({
+        mesh,
+        mat,
+        progress: i / pulseCount,
+        speed: 0.06 + Math.random() * 0.04,
+      });
+    }
+
+    /* ── Pointer tracking ── */
     const pointer = new THREE.Vector2(0, 0);
-    const onPointerMove = (event: PointerEvent) => {
-      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-      pointer.y = (event.clientY / window.innerHeight) * 2 - 1;
+    const onPointerMove = (e: PointerEvent) => {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
     };
 
-    // --- Animation loop ---
+    /* ── Animation ── */
     let rafId = 0;
     const clock = new THREE.Clock();
-    const lerpColor = (a: THREE.Color, b: THREE.Color, t: number, out: THREE.Color) => {
-      out.r = a.r + (b.r - a.r) * t;
-      out.g = a.g + (b.g - a.g) * t;
-      out.b = a.b + (b.b - a.b) * t;
-    };
 
     const animate = () => {
-      const elapsed = clock.getElapsedTime();
+      const t = clock.getElapsedTime();
+      const fadeIn = Math.min(t / 2.0, 1);
 
-      // Cinematic fade-in over 2.5s
-      const fadeIn = Math.min(elapsed / 2.5, 1);
-      asciiPassMaterial.uniforms.fadeIn.value = fadeIn;
-      asciiPassMaterial.uniforms.time.value = elapsed;
+      asciiMaterial.uniforms.time.value = t;
+      asciiMaterial.uniforms.fadeIn.value = fadeIn;
+      pMat.uniforms.time.value = t;
 
-      // --- Vortex star field ---
-      starsMaterial.uniforms.time.value = elapsed;
-      const starPosAttr = starsGeometry.attributes.position as THREE.BufferAttribute;
+      // Tunnel rings: rotate + breathe
+      for (const ring of rings) {
+        ring.mesh.rotation.z = t * ring.speed * motionScale;
+        const breathe = 1 + Math.sin(t * 0.5 + ring.z * 0.08) * 0.03;
+        ring.mesh.scale.set(breathe, breathe, 1);
+      }
+
+      // Particles: spiral flow through tunnel
+      const posAttr = pGeo.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < particleCount; i++) {
-        starsAngles[i] += starsVortexSpeed[i] * motionScale;
-        const r = starsRadii[i];
-        const a = starsAngles[i];
-        const i3 = i * 3;
-        starPosAttr.array[i3] = Math.cos(a) * r;
-        starPosAttr.array[i3 + 1] = starsHeights[i] + Math.sin(elapsed * 0.2 + i * 0.01) * 0.15;
-        starPosAttr.array[i3 + 2] = Math.sin(a) * r;
+        const pd = pData[i];
+        pd.progress += pd.speed * motionScale;
+        if (pd.progress > 1) pd.progress -= 1;
+
+        const z = -2 - pd.progress * tunnelLength;
+        const angle = pd.angle + pd.progress * pd.angleSpeed * 4;
+        const r = pd.radius * (1 - pd.progress * 0.35);
+
+        posAttr.array[i * 3] = Math.cos(angle) * r;
+        posAttr.array[i * 3 + 1] = Math.sin(angle) * r;
+        posAttr.array[i * 3 + 2] = z;
       }
-      starPosAttr.needsUpdate = true;
+      posAttr.needsUpdate = true;
 
-      // --- Energy streams ---
-      streamMaterial.uniforms.time.value = elapsed;
-      const streamPosAttr = streamGeometry.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < streamCount; i++) {
-        const s = streamData[i];
-        s.progress += s.speed * 0.009 * motionScale;
-        if (s.progress > 1) {
-          s.progress = 0;
-          s.angle = Math.random() * Math.PI * 2;
-          s.height = (Math.random() - 0.5) * 1.8;
-        }
-        const t = s.progress;
-        const radius = s.outerRadius * (1 - t * t);
-        const angle = s.angle + t * s.angleSpeed * 5;
-        const i3 = i * 3;
-        streamPosAttr.array[i3] = Math.cos(angle) * radius;
-        streamPosAttr.array[i3 + 1] =
-          s.height * (1 - t) + Math.sin(elapsed * 0.9 + i * 0.08) * 0.18;
-        streamPosAttr.array[i3 + 2] = Math.sin(angle) * radius;
-      }
-      streamPosAttr.needsUpdate = true;
+      // Core animation
+      coreGroup.rotation.y = t * 0.4 * motionScale;
+      coreGroup.rotation.x = Math.sin(t * 0.25) * 0.15 * motionScale;
+      const corePulse = 0.8 + Math.sin(t * 1.0) * 0.3;
+      coreSphere.scale.setScalar(corePulse);
+      coreSphereMat.opacity = 0.35 + Math.sin(t * 1.0) * 0.25;
+      coreWire.rotation.y = t * 0.6 * motionScale;
+      coreWire.rotation.z = t * 0.35 * motionScale;
+      coreRing.rotation.z = t * 0.8 * motionScale;
+      coreRing.rotation.x = Math.sin(t * 0.3) * 0.2;
+      coreLight.intensity = 3.5 + Math.sin(t * 1.0) * 2.0;
 
-      // --- Pulse rings ---
-      for (const pr of pulseRings) {
-        pr.progress += pr.speed * 0.008 * motionScale;
-        if (pr.progress > 1) pr.progress = 0;
+      // Core light color cycle: green → cyan
+      const lc = (Math.sin(t * 0.2) + 1) * 0.5;
+      coreLight.color.setRGB(0, 1 - lc * 0.3, 0.53 + lc * 0.47);
 
-        const t = pr.progress;
-        const scale = 0.5 + t * 6; // expand from 0.5 to 6.5
-        pr.mesh.scale.set(scale, scale, scale);
-        // Fade: rise quickly, fall slowly
-        const fade = t < 0.15 ? t / 0.15 : Math.max(0, 1 - (t - 0.15) / 0.85);
-        pr.material.opacity = fade * 0.35;
-        // Shift color from ember → arcane as ring expands
-        const hue = t;
-        pr.material.color.setRGB(
-          0.89 * (1 - hue) + 0.42 * hue,
-          0.64 * (1 - hue) + 0.56 * hue,
-          0.14 * (1 - hue) + 0.83 * hue
+      // Pulse waves: travel from core toward camera
+      for (const pulse of pulses) {
+        pulse.progress += pulse.speed * 0.008 * motionScale;
+        if (pulse.progress > 1) pulse.progress -= 1;
+
+        const coreZ = -tunnelLength * 0.5;
+        const pz = coreZ + pulse.progress * (tunnelLength * 0.55);
+        pulse.mesh.position.z = pz;
+
+        const fade =
+          pulse.progress < 0.1
+            ? pulse.progress / 0.1
+            : Math.max(0, 1 - (pulse.progress - 0.1) / 0.9);
+        pulse.mat.opacity = fade * 0.35;
+
+        // Color shift: cyan → green as it approaches
+        pulse.mat.color.setHSL(
+          0.42 + pulse.progress * 0.08,
+          0.85,
+          0.5
         );
+
+        const scale = 0.4 + pulse.progress * 0.7;
+        pulse.mesh.scale.set(scale, scale, 1);
       }
 
-      // --- Centerpiece ---
-      centerpieceGroup.rotation.y = elapsed * 0.22 * motionScale;
-      centerpieceGroup.rotation.z =
-        Math.sin(elapsed * 0.34) * 0.12 * motionScale;
+      // Camera: subtle response to pointer + auto drift
+      const autoX = Math.sin(t * 0.12) * 0.4 * motionScale;
+      const autoY = Math.cos(t * 0.1) * 0.2 * motionScale;
+      const targetX = pointer.x * 1.0 + autoX;
+      const targetY = -pointer.y * 0.6 + 0.3 + autoY;
+      camera.position.x += (targetX - camera.position.x) * 0.025;
+      camera.position.y += (targetY - camera.position.y) * 0.025;
+      camera.lookAt(0, 0, -25);
 
-      // Möbius color cycling: ember ↔ arcane
-      const colorCycle = (Math.sin(elapsed * 0.15) + 1) * 0.5; // 0-1, ~20s period
-      lerpColor(mobiusColorA, mobiusColorB, colorCycle, mobiusMaterial.color);
-      lerpColor(mobiusEmissiveA, mobiusEmissiveB, colorCycle, mobiusMaterial.emissive);
-
-      // Breathing glow
-      const breathe = 0.5 + Math.sin(elapsed * 0.6) * 0.3;
-      mobiusMaterial.emissiveIntensity = breathe;
-
-      // Edge brightness pulse synced with breathe
-      mobiusEdgesMaterial.opacity = 0.5 + Math.sin(elapsed * 0.6) * 0.3;
-
-      mobiusStrip.rotation.x =
-        baseRotation.x + Math.sin(elapsed * 0.55) * 0.1 * motionScale;
-      mobiusStrip.rotation.y =
-        baseRotation.y + Math.cos(elapsed * 0.45) * 0.09 * motionScale;
-      mobiusStrip.rotation.z =
-        baseRotation.z + Math.sin(elapsed * 0.75) * 0.08 * motionScale;
-      mobiusStrip.position.y = Math.sin(elapsed * 0.72) * 0.1 * motionScale;
-
-      // Halo pulse
-      warHaloMaterial.opacity = 0.3 + Math.sin(elapsed * 0.8) * 0.2;
-      arcaneHaloMaterial.opacity = 0.2 + Math.sin(elapsed * 0.6 + 1.5) * 0.15;
-      runeRingMaterial.opacity = 0.15 + Math.sin(elapsed * 0.4) * 0.1;
-
-      runeRing.rotation.z = elapsed * 0.06 * motionScale;
-      warHalo.rotation.z = elapsed * 0.14 * motionScale;
-      arcaneHalo.rotation.z = -elapsed * 0.1 * motionScale;
-
-      // Core light pulse
-      coreLight.intensity = 0.5 + Math.sin(elapsed * 0.6) * 0.35;
-      // Core light color shift matching Möbius
-      lerpColor(
-        new THREE.Color("#e4a34a"),
-        new THREE.Color("#7b8fd4"),
-        colorCycle,
-        coreLight.color
-      );
-
-      // Glyph shards
-      glyphShardMaterial.emissiveIntensity = 0.4 + Math.sin(elapsed * 0.9) * 0.25;
-
-      for (let i = 0; i < glyphShardCount; i++) {
-        const shard = glyphShardData[i];
-        const angle = shard.angle + elapsed * shard.speed * motionScale;
-        // Bob height with individual phase
-        const bob = Math.sin(elapsed * 0.9 + shard.phase) * 0.25 * motionScale;
-        glyphShardDummy.position.set(
-          Math.cos(angle) * shard.radius,
-          shard.height + bob,
-          Math.sin(angle) * shard.radius
-        );
-        glyphShardDummy.rotation.set(
-          angle * 0.7,
-          angle + shard.tilt,
-          Math.sin(elapsed * 0.7 + shard.phase) * 0.7
-        );
-        glyphShardDummy.updateMatrix();
-        glyphShards.setMatrixAt(i, glyphShardDummy.matrix);
-      }
-      glyphShards.instanceMatrix.needsUpdate = true;
-
-      // Camera: auto-orbit + pointer
-      const autoOrbitX = Math.sin(elapsed * 0.1) * 0.7 * motionScale;
-      const autoOrbitY = Math.cos(elapsed * 0.08) * 0.3 * motionScale;
-      const targetX = pointer.x * 0.5 + autoOrbitX;
-      const targetY = -pointer.y * 0.3 + 1.4 + autoOrbitY;
-      camera.position.x += (targetX - camera.position.x) * 0.035;
-      camera.position.y += (targetY - camera.position.y) * 0.035;
-      camera.lookAt(0, 0, 0);
-
+      // Render
       renderer.setRenderTarget(sceneTarget);
       renderer.render(scene, camera);
       renderer.setRenderTarget(null);
       renderer.render(postScene, postCamera);
-      rafId = window.requestAnimationFrame(animate);
+      rafId = requestAnimationFrame(animate);
     };
+
     animate();
 
+    /* ── Resize ── */
     const onResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      sceneTarget.setSize(window.innerWidth, window.innerHeight);
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(w, h);
+      sceneTarget.setSize(w, h);
       const dpr = Math.min(window.devicePixelRatio, 1.5);
       renderer.setPixelRatio(dpr);
-      starsMaterial.uniforms.pixelRatio.value = dpr;
-      streamMaterial.uniforms.pixelRatio.value = dpr;
-      asciiPassMaterial.uniforms.resolution.value.set(
-        window.innerWidth,
-        window.innerHeight
-      );
+      pMat.uniforms.pixelRatio.value = dpr;
+      asciiMaterial.uniforms.resolution.value.set(w, h);
     };
 
     window.addEventListener("resize", onResize);
     window.addEventListener("pointermove", onPointerMove);
 
+    /* ── Cleanup ── */
     return () => {
-      window.cancelAnimationFrame(rafId);
+      cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
 
-      starsGeometry.dispose();
-      starsMaterial.dispose();
-      streamGeometry.dispose();
-      streamMaterial.dispose();
-      mobiusGeometry.dispose();
-      mobiusMaterial.dispose();
-      mobiusEdgesGeometry.dispose();
-      mobiusEdgesMaterial.dispose();
-      runeRingGeometry.dispose();
-      runeRingMaterial.dispose();
-      warHaloGeometry.dispose();
-      warHaloMaterial.dispose();
-      arcaneHaloGeometry.dispose();
-      arcaneHaloMaterial.dispose();
-      glyphShardGeometry.dispose();
-      glyphShardMaterial.dispose();
-      for (const pr of pulseRings) {
-        pr.mesh.geometry.dispose();
-        pr.material.dispose();
+      for (const ring of rings) {
+        ring.mesh.geometry.dispose();
+        ring.mat.dispose();
+      }
+      pGeo.dispose();
+      pMat.dispose();
+      coreSphereGeo.dispose();
+      coreSphereMat.dispose();
+      coreWireGeo.dispose();
+      coreWireMat.dispose();
+      coreRingGeo.dispose();
+      coreRingMat.dispose();
+      for (const pulse of pulses) {
+        pulse.mesh.geometry.dispose();
+        pulse.mat.dispose();
       }
       sceneTarget.dispose();
-      asciiPassQuad.geometry.dispose();
-      asciiPassMaterial.dispose();
+      fontTexture.dispose();
+      asciiQuad.geometry.dispose();
+      asciiMaterial.dispose();
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };

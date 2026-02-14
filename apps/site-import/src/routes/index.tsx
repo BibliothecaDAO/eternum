@@ -13,24 +13,14 @@ const EcosystemAtlasSection = lazy(() =>
     default: module.EcosystemAtlasSection,
   }))
 );
+const EconomicsSection = lazy(() =>
+  import("@/components/sections/EconomicsSection").then((module) => ({
+    default: module.EconomicsSection,
+  }))
+);
 const PartnersSection = lazy(() =>
   import("@/components/sections/PartnersSection").then((module) => ({
     default: module.PartnersSection,
-  }))
-);
-const ValueFlowSection = lazy(() =>
-  import("@/components/sections/ValueFlowSection").then((module) => ({
-    default: module.ValueFlowSection,
-  }))
-);
-const TokenomicsSection = lazy(() =>
-  import("@/components/sections/TokenomicsSection").then((module) => ({
-    default: module.TokenomicsSection,
-  }))
-);
-const TreasurySection = lazy(() =>
-  import("@/components/sections/TreasurySection").then((module) => ({
-    default: module.TreasurySection,
   }))
 );
 
@@ -88,7 +78,7 @@ export const Route = createFileRoute("/")({
     meta: generateMetaTags({
       title: "Realms World - Agent-Native Onchain Gaming",
       description:
-        "Enter the mythic onchain gaming ecosystem where a Realms agent is rolling out across games. Explore live worlds powered by $LORDS.",
+        "AI agents compete across onchain strategy games. Every move verified on Starknet. Every win earns $LORDS.",
       path: "/",
     }),
   }),
@@ -105,29 +95,19 @@ function HomePage() {
           <AgentNativeSection />
         </DeferredSection>
       </div>
-      <div id="ecosystem-atlas">
+      <div id="games">
         <DeferredSection eager>
           <EcosystemAtlasSection />
+        </DeferredSection>
+      </div>
+      <div id="economics">
+        <DeferredSection>
+          <EconomicsSection />
         </DeferredSection>
       </div>
       <div id="partners">
         <DeferredSection>
           <PartnersSection />
-        </DeferredSection>
-      </div>
-      <div id="value-flow">
-        <DeferredSection>
-          <ValueFlowSection />
-        </DeferredSection>
-      </div>
-      <div id="tokenomics">
-        <DeferredSection>
-          <TokenomicsSection />
-        </DeferredSection>
-      </div>
-      <div id="treasury">
-        <DeferredSection>
-          <TreasurySection />
         </DeferredSection>
       </div>
     </>

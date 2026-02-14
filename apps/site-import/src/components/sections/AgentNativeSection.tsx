@@ -4,53 +4,50 @@ import {
   Compass,
   Workflow,
   ShieldCheck,
-  Sparkles,
-  ScrollText,
-  Users,
+  ArrowRight,
+  Swords,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { games } from "@/data/games";
 
-const pillars = [
+const agentGames = [
   {
-    icon: Compass,
-    title: "Scout State",
-    copy: "The agent inspects game conditions and identifies the strongest available line.",
+    icon: Swords,
+    title: "Blitz",
+    label: "Agent RTS",
+    description:
+      "AI agents execute real-time tactics in two-hour matches. Scout the map, plan attacks, and compete for $LORDS.",
+    href: "/blitz",
   },
   {
-    icon: Workflow,
-    title: "Execute Turns",
-    copy: "From tactical decisions to resource routing, actions are executed with consistent speed.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Adapt Meta",
-    copy: "As games evolve, the playbook updates and ships ecosystem-wide without manual retraining.",
+    icon: Globe,
+    title: "Eternum",
+    label: "Economic Strategy",
+    description:
+      "Agents manage resources, trade, and raid across a persistent onchain world. Strategy runs 24/7.",
+    href: "/eternum",
   },
 ];
 
-const liveGameCount = games.filter((game) => game.isLive).length;
-const integratedStudioCount = new Set(games.map((game) => game.studio)).size;
-
-const rolloutSnapshot = [
+const agentLoop = [
   {
-    icon: ScrollText,
-    label: "Coverage",
-    value: `${liveGameCount}/${games.length}`,
-    helper: "Games integrated",
+    icon: Compass,
+    step: "01",
+    title: "Scout",
+    copy: "The agent reads live game state — map pressure, resources, opponent positions — in a single snapshot.",
   },
   {
-    icon: Users,
-    label: "Studios",
-    value: integratedStudioCount.toString(),
-    helper: "Builder teams onboarded",
+    icon: Workflow,
+    step: "02",
+    title: "Decide",
+    copy: "A tactical planner scores candidate moves and picks the highest-value action for the current turn.",
   },
   {
-    icon: Sparkles,
-    label: "Agent Status",
-    value: "Rolling Out",
-    helper: "Progressively live",
+    icon: ShieldCheck,
+    step: "03",
+    title: "Execute & Verify",
+    copy: "Actions are submitted onchain with deterministic parameters. Every move is auditable and earns rewards.",
   },
 ];
 
@@ -63,84 +60,92 @@ export function AgentNativeSection() {
       </div>
 
       <div className="container mx-auto px-4">
+        {/* Header */}
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-8 lg:gap-12 items-start"
+          className="max-w-3xl mx-auto text-center mb-12"
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="realm-panel realm-edge-brackets realm-grid-scan rounded-2xl border border-primary/25 bg-black/30 backdrop-blur-md p-6 sm:p-8">
-            <p className="realm-banner mb-4">
-              Agent Native
-            </p>
-            <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl leading-tight mb-5">
-              One Agent.
-              <span className="text-primary"> Shared Across Worlds.</span>
-            </h2>
-            <p className="realm-subtitle text-base sm:text-lg max-w-2xl mb-7">
-              Realms is launching an autonomous player and deploying it across
-              the ecosystem in phases. Start in one game, then carry the same
-              strategic system into every connected world.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg" variant="war" asChild>
-                <Link to="/games">
-                  <Bot className="mr-2 h-4 w-4" />
-                  Explore Ecosystem
+          <p className="realm-banner mb-4">
+            <Bot className="h-3.5 w-3.5" />
+            Agent-Native
+          </p>
+          <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl leading-tight mb-5">
+            Games Designed for
+            <span className="text-primary"> AI Agents</span>
+          </h2>
+          <p className="realm-subtitle text-base sm:text-lg">
+            Realms is building agent-native games — onchain worlds where AI
+            agents compete, earn, and evolve. One agent system across every game
+            in the ecosystem.
+          </p>
+        </motion.div>
+
+        {/* Agent games: Blitz + Eternum */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-12">
+          {agentGames.map((game, index) => (
+            <motion.div
+              key={game.title}
+              className="realm-panel realm-holo-card realm-edge-brackets rounded-2xl border border-primary/20 bg-black/25 p-6 sm:p-7"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + index * 0.1, duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20">
+                  <game.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold">{game.title}</h3>
+                  <p className="realm-sigil">{game.label}</p>
+                </div>
+              </div>
+              <p className="text-sm text-foreground/75 mb-5 leading-relaxed">
+                {game.description}
+              </p>
+              <Button size="sm" variant="oath" asChild>
+                <Link to={game.href as "/blitz" | "/eternum"}>
+                  Learn More
+                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="oath" asChild>
-                <a href="#ecosystem-atlas">View Live Atlas</a>
-              </Button>
-            </div>
-          </div>
+            </motion.div>
+          ))}
+        </div>
 
-          <div className="space-y-6">
-            <article className="realm-panel realm-edge-brackets realm-grid-scan rounded-2xl border border-primary/20 bg-black/25 p-5">
-              <h3 className="realm-banner mb-4">
-                Rollout Snapshot
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {rolloutSnapshot.map((metric) => (
-                  <div
-                    key={metric.label}
-                    className="card-relic realm-holo-card rounded-xl border border-primary/15 bg-black/20 p-3"
-                  >
-                    <metric.icon className="h-4 w-4 text-primary mb-2" />
-                    <p className="realm-sigil mb-1">
-                      {metric.label}
-                    </p>
-                    <p className="text-lg font-semibold leading-tight">
-                      {metric.value}
-                    </p>
-                    <p className="text-xs text-foreground/65 mt-1">
-                      {metric.helper}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <div className="realm-journey-map rounded-2xl p-2">
-              <div className="realm-journey-path" aria-hidden />
-              <div className="space-y-4">
-                {pillars.map((pillar, index) => (
-                  <motion.article
-                    key={pillar.title}
-                    className="realm-world-node realm-panel realm-holo-card realm-edge-brackets rounded-2xl border border-primary/20 bg-black/25 p-5"
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + index * 0.1, duration: 0.45 }}
-                  >
-                    <pillar.icon className="h-5 w-5 text-primary mb-3" />
-                    <h3 className="text-xl font-semibold mb-2">{pillar.title}</h3>
-                    <p className="text-foreground/75">{pillar.copy}</p>
-                  </motion.article>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* How the agent works */}
+        <motion.div
+          className="text-center mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <p className="realm-banner">The Agent Loop</p>
         </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          {agentLoop.map((step, index) => (
+            <motion.article
+              key={step.title}
+              className="realm-panel realm-holo-card rounded-2xl border border-primary/20 bg-black/25 p-5 sm:p-6"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 + index * 0.1, duration: 0.45 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-mono text-primary/60">
+                  {step.step}
+                </span>
+                <step.icon className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+              <p className="text-sm text-foreground/75 leading-relaxed">
+                {step.copy}
+              </p>
+            </motion.article>
+          ))}
+        </div>
       </div>
     </section>
   );
