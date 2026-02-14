@@ -790,7 +790,7 @@
     "limit": {
       "guardResurrectionDelay": 600,
       "mercenariesTroopLowerBound": 800,
-      "mercenariesTroopUpperBound": 1600,
+      "mercenariesTroopUpperBound": 1000,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000,
       "settlementDeploymentCap": 3000,
