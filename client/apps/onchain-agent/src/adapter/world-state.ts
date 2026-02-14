@@ -38,22 +38,10 @@ export interface EternumEntity {
   stamina?: number;
   isInBattle?: boolean;
   troopSummary?: string;
-  neighborTiles?: {
-    direction: string;
-    dirId: number;
-    explored: boolean;
-    occupied: boolean;
-    biome?: string;
-    occupant?: string; // e.g. "Realm L2", "Explorer Knight T1", "Chest", "Quest"
-    occupantId?: number;
-  }[];
-
   // Battle history — parsed from already-fetched raw SQL fields
   lastAttack?: { attackerId: number; timestamp: number; pos?: { x: number; y: number } };
   lastDefense?: { defenderId: number; timestamp: number; pos?: { x: number; y: number } };
 
-  // Owned entities only
-  actions?: string[];
 }
 
 /**
@@ -86,6 +74,7 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
     yours: boolean;
     timestamp: number;
   }[];
+  tileMap: Map<string, { biome: number; occupierType: number; occupierId: number }>;
 }
 
 /** Visibility radius (in hexes) around each owned entity. */
@@ -238,14 +227,7 @@ function buildGuardSlots(raw: any): { slot: string; troops: string }[] {
   return slots;
 }
 
-// Max explorer armies per structure type
-const MAX_ARMIES: Record<string, number> = {
-  Realm: 1,
-  Village: 1,
-  Hyperstructure: 0,
-  Bank: 0,
-  Mine: 0,
-};
+// Army limits are dynamic (realm level + military buildings). We only track current count from actual data.
 
 /** Build a human-readable troop summary like "150 Knight T2". */
 function buildTroopSummary(raw: any): string | undefined {
@@ -561,6 +543,89 @@ function hexNeighbors(x: number, y: number): { dir: string; dirId: number; x: nu
   ];
 }
 
+/** BFS to collect all hex positions within `radius` steps of (cx, cy). */
+function hexTilesInRadius(cx: number, cy: number, radius: number): Set<string> {
+  const visited = new Set<string>();
+  visited.add(`${cx},${cy}`);
+  let frontier: { x: number; y: number }[] = [{ x: cx, y: cy }];
+  for (let r = 0; r < radius; r++) {
+    const next: { x: number; y: number }[] = [];
+    for (const pos of frontier) {
+      for (const n of hexNeighbors(pos.x, pos.y)) {
+        const key = `${n.x},${n.y}`;
+        if (!visited.has(key)) {
+          visited.add(key);
+          next.push({ x: n.x, y: n.y });
+        }
+      }
+    }
+    frontier = next;
+  }
+  return visited;
+}
+
+const OPERATING_AREA_RADIUS = 3;
+
+/** Build the operating area section for the tick prompt. */
+function buildOperatingArea(
+  ownedEntities: EternumEntity[],
+  tileMap: Map<string, { biome: number; occupierType: number; occupierId: number }>,
+): string | null {
+  if (ownedEntities.length === 0) return null;
+
+  // Collect all tiles within radius of every owned entity
+  const areaTiles = new Set<string>();
+  const ownedPositions = new Set<string>();
+  for (const e of ownedEntities) {
+    ownedPositions.add(`${e.position.x},${e.position.y}`);
+    const tiles = hexTilesInRadius(e.position.x, e.position.y, OPERATING_AREA_RADIUS);
+    for (const key of tiles) areaTiles.add(key);
+  }
+
+  // Categorize tiles
+  const unexplored: string[] = [];
+  const enemyStructures: string[] = [];
+  const enemyArmies: string[] = [];
+  const claimable: string[] = [];
+  let exploredEmptyCount = 0;
+
+  for (const key of areaTiles) {
+    if (ownedPositions.has(key)) continue; // already shown in My Entities
+    const tile = tileMap.get(key);
+    if (!tile || tile.biome === 0) {
+      unexplored.push(`(${key})`);
+      continue;
+    }
+    if (tile.occupierType === 0) {
+      exploredEmptyCount++;
+      continue;
+    }
+    const name = OCCUPIER_NAMES[tile.occupierType] ?? `Type${tile.occupierType}`;
+    const label = `${name}${tile.occupierId ? ` #${tile.occupierId}` : ""} @(${key})`;
+    // Bandits occupy structures with occupierType matching structure types (1-14)
+    // Armies are types 15-32
+    if (tile.occupierType >= 15 && tile.occupierType <= 32) {
+      enemyArmies.push(label);
+    } else {
+      // Could be player-owned or bandit-occupied structure
+      enemyStructures.push(label);
+    }
+  }
+
+  const lines: string[] = [`### Operating Area (radius ${OPERATING_AREA_RADIUS} around all entities, ${areaTiles.size} tiles)`];
+  if (unexplored.length > 0) {
+    lines.push(`  Unexplored (${unexplored.length}): ${unexplored.join(", ")}`);
+  }
+  if (enemyStructures.length > 0) {
+    lines.push(`  Structures: ${enemyStructures.join(", ")}`);
+  }
+  if (enemyArmies.length > 0) {
+    lines.push(`  Armies: ${enemyArmies.join(", ")}`);
+  }
+  lines.push(`  Explored empty: ${exploredEmptyCount} tiles`);
+  return lines.join("\n");
+}
+
 /** Parse latest_attacker fields from raw SQL data into a battle info object. */
 function parseLastAttack(raw: any): EternumEntity["lastAttack"] {
   const id = Number(raw.latest_attacker_id ?? 0);
@@ -581,25 +646,28 @@ function parseLastDefense(raw: any): EternumEntity["lastDefense"] {
   return { defenderId: id, timestamp: ts, pos: x != null && y != null ? { x, y } : undefined };
 }
 
-function getStructureActions(structureType: string): string[] {
-  const base = ["addGuard", "deleteGuard"];
-  switch (structureType) {
-    case "Realm":
-      return [...base, "createExplorer", "upgradeRealm", "build", "sendResources"];
-    case "Hyperstructure":
-      return [...base, "contribute"];
-    case "Bank":
-      return [...base, "buyResources", "sellResources"];
-    case "Mine":
-    case "Village":
-      return base;
-    default:
-      return base;
-  }
+/** Actions available on structures — displayed once per section, not per entity. */
+function getStructureActions(): string[] {
+  return [
+    "create_building", "destroy_building", "pause_production", "resume_production",
+    "create_explorer", "delete_explorer", "upgrade_realm",
+    "add_guard", "delete_guard", "swap_explorer_to_guard", "swap_guard_to_explorer",
+    "send_resources", "pickup_resources", "claim_arrivals",
+    "create_order", "accept_order", "cancel_order",
+    "buy_resources", "sell_resources",
+    "contribute_hyperstructure",
+  ];
 }
 
+/** Actions available on armies — displayed once per section, not per entity. */
 function getArmyActions(): string[] {
-  return ["move", "explore", "travel", "attackExplorer", "attackGuard", "raid"];
+  return [
+    "travel_explorer", "explore", "move_explorer",
+    "attack_explorer", "attack_guard", "guard_attack_explorer", "raid",
+    "add_to_explorer", "delete_explorer",
+    "swap_explorer_to_explorer", "swap_explorer_to_guard", "swap_guard_to_explorer",
+    "pickup_resources",
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -697,10 +765,9 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       buildingSlots,
       population,
       nextUpgrade: owned && stType === "Realm" ? getNextUpgrade(level) : undefined,
-      armies: owned ? { current: 0, max: MAX_ARMIES[stType] ?? 0 } : undefined, // current filled below
+      armies: owned ? { current: 0, max: 0 } : undefined, // current filled below from actual army data
       lastAttack: parseLastAttack(s),
       lastDefense: parseLastDefense(s),
-      actions: owned ? getStructureActions(stType) : undefined,
     };
   });
 
@@ -722,7 +789,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       troopSummary: buildTroopSummary(a),
       lastAttack: parseLastAttack(a),
       lastDefense: parseLastDefense(a),
-      actions: owned ? getArmyActions() : undefined,
+      // actions moved to section header
     };
   });
 
@@ -747,29 +814,6 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       biome: Number(t.biome ?? 0),
       occupierType: Number(t.occupier_type ?? 0),
       occupierId: Number(t.occupier_id ?? 0),
-    });
-  }
-
-  // For each owned army, compute neighbor tile details.
-  for (const army of armyEntities) {
-    if (!army.isOwned) continue;
-    const neighbors = hexNeighbors(army.position.x, army.position.y);
-    army.neighborTiles = neighbors.map((n) => {
-      const key = `${n.x},${n.y}`;
-      const tile = tileMap.get(key);
-      const explored = tile ? tile.biome > 0 : false;
-      const occupierType = tile?.occupierType ?? 0;
-      const occupierId = tile?.occupierId ?? 0;
-      const occupied = occupierType > 0;
-      return {
-        direction: n.dir,
-        dirId: n.dirId,
-        explored,
-        occupied,
-        biome: explored ? (BIOME_NAMES[tile!.biome] ?? `Biome${tile!.biome}`) : undefined,
-        occupant: occupied ? (OCCUPIER_NAMES[occupierType] ?? `Type${occupierType}`) : undefined,
-        occupantId: occupied ? occupierId : undefined,
-      };
     });
   }
 
@@ -1002,6 +1046,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       totalPlayers: Number((leaderboardView as any)?.totalPlayers ?? 0),
     },
     recentBattles,
+    tileMap,
   };
 }
 
@@ -1017,16 +1062,14 @@ function formatEntityLine(e: EternumEntity): string {
         ? ` | guard: ${fmtNum(e.guardStrength)}`
         : "";
     const owner = e.isOwned ? "MINE" : e.ownerName || shortAddr(e.owner);
-    const acts = e.actions ? ` | actions: ${e.actions.join(", ")}` : "";
     const lvlName = REALM_LEVEL_NAMES[e.level ?? 0] ?? `L${e.level}`;
-    return `  [${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0}(${lvlName}) owner=${owner} pos=(${e.position.x},${e.position.y})${guard}${acts}`;
+    return `  [${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0}(${lvlName}) owner=${owner} pos=(${e.position.x},${e.position.y})${guard}`;
   }
   // army
   const owner = e.isOwned ? "MINE" : e.ownerName || shortAddr(e.owner);
   const troops = e.troopSummary ?? "no troops";
   const battle = e.isInBattle ? " IN BATTLE" : "";
-  const acts = e.actions ? ` | actions: ${e.actions.join(", ")}` : "";
-  return `  [Army] id=${e.entityId} ${troops} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=(${e.position.x},${e.position.y})${battle}${acts}`;
+  return `  [Army] id=${e.entityId} ${troops} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=(${e.position.x},${e.position.y})${battle}`;
 }
 
 /** Format a unix timestamp as a relative time string like "5m ago" or "2h ago". */
@@ -1082,7 +1125,7 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
   if (myStructures.length > 0 || myArmies.length > 0) {
     const lines = ["### My Entities"];
     if (myStructures.length > 0) {
-      lines.push("Structures:");
+      lines.push(`Structures (actions: ${getStructureActions().join(", ")})`);
       for (const e of myStructures) {
         lines.push(formatEntityLine(e));
         // Per-structure resources
@@ -1121,7 +1164,7 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
         }
         // Armies
         if (e.armies) {
-          lines.push(`    Armies: ${e.armies.current}/${e.armies.max}`);
+          lines.push(`    Armies: ${e.armies.current}`);
         }
         // Guard slots
         if (e.guardSlots) {
@@ -1141,33 +1184,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
       }
     }
     if (myArmies.length > 0) {
-      lines.push("Armies:");
-      const shownTiles = new Set<string>();
+      lines.push(`Armies (actions: ${getArmyActions().join(", ")})`);
       for (const e of myArmies) {
         lines.push(formatEntityLine(e));
-        // Show neighbor tile details for owned armies (skip tiles already shown by another army)
-        if (e.neighborTiles && e.neighborTiles.length > 0) {
-          const neighbors = hexNeighbors(e.position.x, e.position.y);
-          const tileParts: string[] = [];
-          for (let i = 0; i < e.neighborTiles.length; i++) {
-            const t = e.neighborTiles[i];
-            const coord = `${neighbors[i].x},${neighbors[i].y}`;
-            if (shownTiles.has(coord)) continue;
-            shownTiles.add(coord);
-            let label = `${t.dirId}:${t.direction}`;
-            if (!t.explored) {
-              label += "(unexplored)";
-            } else if (t.occupied && t.occupant) {
-              label += `(${t.occupant}${t.occupantId ? ` #${t.occupantId}` : ""})`;
-            } else {
-              label += t.biome ? `(${t.biome})` : "(empty)";
-            }
-            tileParts.push(label);
-          }
-          if (tileParts.length > 0) {
-            lines.push(`    Neighbors: ${tileParts.join(", ")}`);
-          }
-        }
         // Last attack/defense on this army
         if (e.lastAttack) {
           const ago = formatTimeAgo(e.lastAttack.timestamp);
@@ -1179,6 +1198,13 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     sections.push(lines.join("\n"));
   } else {
     sections.push("### My Entities\n  None visible");
+  }
+
+  // Operating area — unified minimap around all owned entities
+  const ownedEntities = state.entities.filter((e) => e.isOwned);
+  const operatingArea = buildOperatingArea(ownedEntities, state.tileMap);
+  if (operatingArea) {
+    sections.push(operatingArea);
   }
 
   // Nearby entities (not mine)
@@ -1228,10 +1254,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
 
   // Instructions
   sections.push(`### Actions
-1. Review your entities above — actions listed per entity show what you can do
+1. Review your entities above — available actions are listed per section (Structures, Armies)
 2. Use \`execute_action\` to act (use \`list_actions\` to look up params)
-3. Use \`observe_game\` only if you need raw detail not shown above
-4. Update your task files and reflection as needed`);
+3. Update your task files and learnings as needed`);
 
   const result = sections.join("\n\n");
 
