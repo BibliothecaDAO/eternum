@@ -74,8 +74,8 @@ export const ProposalListItem = ({
         <div className="flex flex-shrink-0 flex-col items-end gap-2">
           <Progress
             value={progressValue}
-            className="w-full bg-red-500/60 sm:w-32"
-            indicatorColor="bg-green-500"
+            className="w-full bg-destructive/60 sm:w-32"
+            indicatorColor="bg-success"
           />
 
           <div className="text-muted-foreground text-sm">

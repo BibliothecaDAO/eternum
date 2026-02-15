@@ -154,7 +154,7 @@ function RouteComponent() {
           </Button>
         </div>
         {selectedAsset === "Ethereum" && !l1Address && (
-          <Alert className="mb-4 rounded border-yellow-600">
+          <Alert className="mb-4 rounded border-warning">
             <TriangleAlert className="h-5 w-5" />
             <AlertTitle className="text-lg">
               Your Ethereum wallet is not connected
@@ -172,7 +172,7 @@ function RouteComponent() {
           </Alert>
         )}
         {selectedAsset === "Starknet" && !l2Address && (
-          <Alert className="mb-4 rounded border-yellow-600">
+          <Alert className="mb-4 rounded border-warning">
             <TriangleAlert className="h-5 w-5" />
             <AlertTitle className="text-lg">
               Your Starknet wallet is not connected

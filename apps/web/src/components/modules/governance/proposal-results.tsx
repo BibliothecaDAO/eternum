@@ -7,29 +7,29 @@ export const ProposalResults = ({ proposal }: { proposal: Proposal }) => {
     <div className="flex flex-col flex-wrap gap-2">
       <Badge
         variant="outline"
-        className="flex justify-between border-green-600 bg-green-400/10 py-2 hover:bg-green-700"
+        className="flex justify-between border-success bg-success/10 py-2 hover:bg-success/20"
       >
         <span className="flex items-center">
-          <CheckCircle2 className="mr-2 h-5 w-5 text-green-500" /> Yes:
+          <CheckCircle2 className="mr-2 h-5 w-5 text-success" /> Yes:
         </span>
         <span className="text-lg font-bold">{proposal.scores_1 || 0}</span>
       </Badge>
 
       <Badge
         variant="outline"
-        className="flex justify-between border-red-500 bg-red-300/20 py-2 hover:bg-red-700"
+        className="flex justify-between border-destructive bg-destructive/10 py-2 hover:bg-destructive/20"
       >
         <span className="flex items-center">
-          <XCircle className="mr-2 h-5 w-5 text-red-500" /> No:
+          <XCircle className="mr-2 h-5 w-5 text-destructive" /> No:
         </span>
         <span className="text-lg font-bold">{proposal.scores_2 || 0}</span>
       </Badge>
       <Badge
         variant="outline"
-        className="flex justify-between border-gray-500 bg-gray-100/20 py-2 hover:bg-gray-500"
+        className="flex justify-between border-muted-foreground bg-muted/20 py-2 hover:bg-muted"
       >
         <span className="flex items-center">
-          <MinusCircle className="mr-2 h-5 w-5 text-gray-500" /> Abstain:
+          <MinusCircle className="mr-2 h-5 w-5 text-muted-foreground" /> Abstain:
         </span>
         <span className="text-lg font-bold">{proposal.scores_3 || 0}</span>
       </Badge>

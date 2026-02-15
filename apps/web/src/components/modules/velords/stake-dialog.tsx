@@ -188,8 +188,8 @@ export function StakeDialog({
             {isLockExpired ? "Create New $LORDS Lock" : "$LORDS Staking"}
           </DialogTitle>
           {isLockExpired && (
-            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="mb-4 p-3 bg-warning/10 border border-warning rounded-md">
+              <p className="text-sm text-warning-foreground">
                 Your previous lock has expired. You can create a new lock or withdraw your Lords.
               </p>
             </div>
