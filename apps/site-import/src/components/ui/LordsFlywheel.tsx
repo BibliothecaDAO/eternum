@@ -5,26 +5,40 @@ import { Gamepad2, Coins, Lock, RefreshCw } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
+interface FlywheelMetrics {
+  weeklyRewards?: string;
+  lordsLocked?: string;
+  currentAPY?: string;
+}
+
+interface FlywheelProps {
+  metrics?: FlywheelMetrics;
+}
+
 const STEPS = [
   {
     icon: Gamepad2,
     label: "Play",
-    detail: "LORDS spent to enter matches and compete",
+    detail: "LORDS spent in matches",
+    metricKey: null as keyof FlywheelMetrics | null,
   },
   {
     icon: Coins,
     label: "Fees",
-    detail: "Game revenue collected from player activity",
+    detail: "Weekly game revenue",
+    metricKey: "weeklyRewards" as keyof FlywheelMetrics | null,
   },
   {
     icon: Lock,
     label: "Stake",
-    detail: "Lock LORDS as veLORDS for protocol revenue",
+    detail: "Locked as veLORDS",
+    metricKey: "lordsLocked" as keyof FlywheelMetrics | null,
   },
   {
     icon: RefreshCw,
     label: "Earn",
-    detail: "veLORDS holders receive weekly game fees",
+    detail: "Staking yield",
+    metricKey: "currentAPY" as keyof FlywheelMetrics | null,
   },
 ];
 
@@ -70,7 +84,7 @@ function chevronAt(screenDeg: number) {
 
 const ARROW_DEGS = [315, 45, 135, 225];
 
-export function LordsFlywheel() {
+export function LordsFlywheel({ metrics }: FlywheelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const nodesRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -371,6 +385,8 @@ export function LordsFlywheel() {
             const { x, y } = nodePositions[i];
             const leftPct = (x / 400) * 100;
             const topPct = (y / 400) * 100;
+            const metricValue =
+              step.metricKey && metrics?.[step.metricKey];
 
             return (
               <div
@@ -382,17 +398,22 @@ export function LordsFlywheel() {
                 style={{
                   left: `${leftPct}%`,
                   top: `${topPct}%`,
-                  width: "clamp(120px, 26%, 150px)",
+                  width: "clamp(120px, 28%, 160px)",
                 }}
               >
                 <div className="fw-node-card flex flex-col items-center rounded-xl border border-primary/20 bg-black/70 backdrop-blur-md px-3 py-3">
-                  <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 border border-primary/25 mb-2">
-                    <step.icon className="h-5.5 w-5.5 text-primary" />
+                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/25 mb-2">
+                    <step.icon className="h-5 w-5 text-primary" />
                   </div>
                   <p className="text-sm font-bold leading-tight tracking-wide">
                     {step.label}
                   </p>
-                  <p className="text-xs text-foreground/60 leading-snug mt-1">
+                  {metricValue && (
+                    <p className="text-base font-bold text-primary tabular-nums mt-1">
+                      {metricValue}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-foreground/50 leading-snug mt-1">
                     {step.detail}
                   </p>
                 </div>
@@ -405,26 +426,35 @@ export function LordsFlywheel() {
       {/* ── Mobile: vertical linear flow ── */}
       <div className="md:hidden">
         <div className="flex flex-col gap-4">
-          {STEPS.map((step, index) => (
-            <div key={step.label} className="flex items-start gap-4">
-              <div className="relative flex flex-col items-center">
-                <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 border border-primary/25 shrink-0">
-                  <step.icon className="h-5 w-5 text-primary" />
+          {STEPS.map((step, index) => {
+            const metricValue =
+              step.metricKey && metrics?.[step.metricKey];
+            return (
+              <div key={step.label} className="flex items-start gap-4">
+                <div className="relative flex flex-col items-center">
+                  <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 border border-primary/25 shrink-0">
+                    <step.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  {index < STEPS.length - 1 && (
+                    <div className="w-px h-8 bg-gradient-to-b from-primary/30 to-primary/10 mt-1.5" />
+                  )}
                 </div>
-                {index < STEPS.length - 1 && (
-                  <div className="w-px h-8 bg-gradient-to-b from-primary/30 to-primary/10 mt-1.5" />
-                )}
+                <div className="pt-2">
+                  <p className="text-base font-bold leading-tight">
+                    {step.label}
+                  </p>
+                  {metricValue && (
+                    <p className="text-sm font-bold text-primary tabular-nums mt-0.5">
+                      {metricValue}
+                    </p>
+                  )}
+                  <p className="text-sm text-foreground/60 leading-snug mt-1">
+                    {step.detail}
+                  </p>
+                </div>
               </div>
-              <div className="pt-2">
-                <p className="text-base font-bold leading-tight">
-                  {step.label}
-                </p>
-                <p className="text-sm text-foreground/60 leading-snug mt-1">
-                  {step.detail}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           <div className="flex items-center gap-2.5 pl-[3.25rem] text-sm text-primary/55">
             <RefreshCw className="h-3.5 w-3.5" />
             <span className="uppercase tracking-[0.12em]">

@@ -89,6 +89,14 @@ export const Route = createFileRoute("/")({
   }),
 });
 
+function SectionDivider() {
+  return (
+    <div className="relative h-px mx-auto max-w-5xl">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+    </div>
+  );
+}
+
 function HomePage() {
   return (
     <>
@@ -100,21 +108,25 @@ function HomePage() {
           <HexExplorerSection />
         </DeferredSection>
       </div>
+      <SectionDivider />
       <div id="agent-native">
         <DeferredSection eager>
           <AgentNativeSection />
         </DeferredSection>
       </div>
+      <SectionDivider />
       <div id="games">
         <DeferredSection eager>
           <EcosystemAtlasSection />
         </DeferredSection>
       </div>
+      <SectionDivider />
       <div id="economics">
         <DeferredSection>
           <EconomicsSection />
         </DeferredSection>
       </div>
+      <SectionDivider />
       <div id="partners">
         <DeferredSection>
           <PartnersSection />

@@ -10,10 +10,8 @@ const partnerRoles: Record<string, string> = {
 
 export function PartnersSection() {
   return (
-    <section className="realm-section relative overflow-hidden py-16 sm:py-20">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-      </div>
+    <section className="realm-section relative overflow-hidden">
+      <div className="absolute inset-0 -z-10" />
 
       <div className="container mx-auto px-4">
         <motion.div
@@ -45,7 +43,7 @@ export function PartnersSection() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold">{partner.name}</p>
-                  <p className="text-xs text-foreground/60">
+                  <p className="text-xs text-foreground/70">
                     {partnerRoles[partner.name] ?? "Ecosystem Partner"}
                   </p>
                 </div>

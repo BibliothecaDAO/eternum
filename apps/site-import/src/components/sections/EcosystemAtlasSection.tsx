@@ -46,7 +46,7 @@ const blitzFeatures = [
 
 export function EcosystemAtlasSection() {
   return (
-    <section className="realm-section relative py-20 sm:py-24">
+    <section className="realm-section relative">
       <div className="absolute inset-0 -z-10">
         <div className="absolute left-[15%] top-0 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
       </div>
@@ -158,7 +158,7 @@ export function EcosystemAtlasSection() {
                     <p className="text-xs font-semibold leading-tight">
                       {feature.label}
                     </p>
-                    <p className="text-[10px] text-foreground/60 leading-tight">
+                    <p className="text-[10px] text-foreground/80 leading-tight">
                       {feature.detail}
                     </p>
                   </div>
@@ -190,7 +190,7 @@ export function EcosystemAtlasSection() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <p className="flex items-center gap-2 text-sm text-foreground/60">
+          <p className="flex items-center gap-2 text-sm text-foreground/80">
             <Users className="h-3.5 w-3.5" />
             {totalPlayers.toLocaleString()}+ players across {liveCount} live
             worlds built by {studioCount} studios
@@ -223,7 +223,7 @@ export function EcosystemAtlasSection() {
                       Live
                     </span>
                   ) : (
-                    <span className="realm-sigil text-foreground/50">
+                    <span className="realm-sigil text-foreground/65">
                       Coming Soon
                     </span>
                   )}
@@ -240,7 +240,7 @@ export function EcosystemAtlasSection() {
                 )}
 
                 <h3 className="text-xl font-semibold mb-1.5">{game.title}</h3>
-                <p className="text-xs text-foreground/70 mb-2.5 line-clamp-2">
+                <p className="text-xs text-foreground/80 mb-2.5 line-clamp-2">
                   {game.description}
                 </p>
 
@@ -254,7 +254,7 @@ export function EcosystemAtlasSection() {
                       {genre}
                     </span>
                   ))}
-                  <span className="realm-sigil text-[9px] text-foreground/60">
+                  <span className="realm-sigil text-[9px] text-foreground/80">
                     {game.studio}
                   </span>
                 </div>
@@ -274,7 +274,7 @@ export function EcosystemAtlasSection() {
                   <Link
                     to="/games/$slug"
                     params={{ slug: game.slug }}
-                    className="inline-flex items-center text-xs text-foreground/60 hover:text-primary transition-colors"
+                    className="inline-flex items-center text-xs text-foreground/80 hover:text-primary transition-colors"
                   >
                     Details <ArrowUpRight className="ml-1 h-3 w-3" />
                   </Link>

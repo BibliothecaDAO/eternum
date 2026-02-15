@@ -341,7 +341,7 @@
 
 @layer components {
   .realm-section {
-    @apply relative py-16 sm:py-24;
+    @apply relative py-20 sm:py-28;
   }
 
   .realm-section::before {
@@ -395,7 +395,7 @@
   }
 
   .realm-subtitle {
-    @apply text-foreground/80;
+    @apply text-foreground/85;
   }
 
   .realm-sigil {

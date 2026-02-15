@@ -173,7 +173,7 @@ function IntroSectionContent() {
                   }}
                 >
                   <stat.icon className="h-4 w-4 text-primary" />
-                  <p className="text-[10px] uppercase tracking-[0.14em] text-foreground/60">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-foreground/70">
                     {stat.label}
                   </p>
                   <p className="text-sm font-semibold text-foreground leading-tight">

@@ -307,6 +307,12 @@ export function TopBar() {
 
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
+                      <a href="https://account.realms.world" target="_blank" rel="noopener noreferrer" className="w-full">
+                        Account
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
                       <a href="https://twitter.com/LordsRealms" target="_blank" rel="noopener noreferrer" className="w-full">
                         Twitter
                       </a>
@@ -363,6 +369,12 @@ export function TopBar() {
                     <DeferredHeaderApyValue />
                   </span>
                 </div>
+
+                <Button variant="oath" size="sm" asChild>
+                  <a href="https://account.realms.world" target="_blank" rel="noopener noreferrer">
+                    Account
+                  </a>
+                </Button>
               </div>
             </div>
           </div>

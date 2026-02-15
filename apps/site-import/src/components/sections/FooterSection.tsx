@@ -58,9 +58,7 @@ export function FooterSection() {
   const liveGameCount = games.filter((game) => game.isLive).length;
   const totalGameCount = games.length;
 
-  // Fetch live data
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
-
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
   const totalTreasuryValue = treasuryBalance
@@ -70,35 +68,34 @@ export function FooterSection() {
       treasuryBalance.USDC.usdValue
     : 0;
 
-  // Key metrics
   const keyMetrics = [
     {
       icon: Coins,
       label: "Market Cap",
+      sublabel: "LORDS",
       value: lordsInfo?.price?.marketCapUsd
         ? `$${(parseFloat(lordsInfo.price.marketCapUsd) / 1000000).toFixed(1)}M`
-        : "Loading...",
-      color: "text-green-500",
+        : "...",
     },
     {
       icon: TrendingUp,
       label: "veLORDS APY",
+      sublabel: "Staking",
       value: <DeferredApyValue />,
-      color: "text-blue-500",
     },
     {
       icon: Users,
       label: "DAO Treasury",
+      sublabel: "Multi-asset",
       value: totalTreasuryValue
         ? `$${(totalTreasuryValue / 1000000).toFixed(1)}M`
-        : "Loading...",
-      color: "text-purple-500",
+        : "...",
     },
     {
       icon: Gamepad2,
       label: "Game Coverage",
+      sublabel: "Live / Total",
       value: `${liveGameCount}/${totalGameCount}`,
-      color: "text-orange-500",
     },
   ];
 
@@ -151,46 +148,57 @@ export function FooterSection() {
   ];
 
   return (
-    <footer className="relative mt-24 bg-gradient-to-b from-background to-background/50">
-      {/* Decorative top border */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+    <footer className="relative realm-section hex-grid-texture overflow-hidden">
+      {/* Atmospheric top wash */}
+      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-[var(--realm-accent-brass)]/[0.03] to-transparent pointer-events-none" />
 
-      <div className="container mx-auto px-4">
-        {/* Key Metrics Section */}
+      <div className="container relative mx-auto px-4">
+        {/* Key Metrics */}
         <motion.div
-          className="py-12 grid grid-cols-2 md:grid-cols-4 gap-6 realm-panel p-6"
-          initial={{ opacity: 0, y: 20 }}
+          className="realm-panel p-2 sm:p-3"
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.7 }}
           viewport={{ once: true }}
         >
-          {keyMetrics.map((metric, index) => (
-            <motion.div
-              key={metric.label}
-              className="text-center card-relic"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <metric.icon className={`w-8 h-8 mx-auto mb-2 ${metric.color}`} />
-              <div className="text-2xl font-bold">{metric.value}</div>
-              <div className="text-sm text-muted-foreground">
-                {metric.label}
-              </div>
-            </motion.div>
-          ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+            {keyMetrics.map((metric, index) => (
+              <motion.div
+                key={metric.label}
+                className="relative group text-center py-5 px-3 rounded-lg border border-[var(--realm-border-etched)]/50 bg-gradient-to-b from-[var(--realm-bg-smoke)]/30 to-transparent transition-all duration-300 hover:border-[var(--realm-accent-brass)]/50 hover:bg-[var(--realm-bg-smoke)]/40"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                viewport={{ once: true }}
+              >
+                <metric.icon className="w-5 h-5 mx-auto mb-2 text-[var(--realm-accent-brass)]/70 group-hover:text-[var(--realm-accent-brass)] transition-colors" />
+                <div className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight">
+                  {metric.value}
+                </div>
+                <div
+                  className="text-[10px] uppercase tracking-[0.18em] mt-1 text-[var(--realm-accent-brass)]/60"
+                  style={{ fontFamily: "var(--font-ui)" }}
+                >
+                  {metric.label}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
-        <div className="border-t border-border/50 mt-4" />
+        {/* Divider with glow */}
+        <div className="relative my-10">
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--realm-border-etched)]/60 to-transparent" />
+          <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-24 h-2 bg-[var(--realm-accent-brass)]/10 blur-md rounded-full" />
+        </div>
 
         {/* Main Footer Content */}
-        <div className="py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div className="pb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-8">
             {/* Brand Column */}
             <motion.div
-              className="lg:col-span-1 space-y-6"
-              initial={{ opacity: 0, x: -20 }}
+              className="lg:col-span-2 space-y-6"
+              initial={{ opacity: 0, x: -16 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
@@ -199,29 +207,30 @@ export function FooterSection() {
                 <img
                   src="/rw-logo.svg"
                   alt="Realms World"
-                  className="w-20 mb-4"
+                  className="w-16 mb-5 opacity-90"
                 />
-                <h3 className="realm-title text-2xl font-bold mb-2">Realms World</h3>
-                <p className="text-muted-foreground">
-                  Building the future of onchain gaming with $LORDS
+                <h3 className="realm-title text-3xl mb-3">Realms World</h3>
+                <p className="text-muted-foreground leading-relaxed max-w-sm">
+                  The autonomous onchain gaming ecosystem powered by $LORDS.
+                  Built by BibliothecaDAO.
                 </p>
               </div>
 
               {/* Social Links */}
-              <div className="flex space-x-4">
+              <div className="flex gap-2">
                 {socials.map((social) => (
                   <motion.a
                     key={social.id}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/20 transition-all"
-                    whileHover={{ scale: 1.1 }}
+                    className="w-9 h-9 rounded-lg border border-[var(--realm-border-etched)]/50 bg-[var(--realm-bg-smoke)]/30 flex items-center justify-center text-muted-foreground hover:text-[var(--realm-accent-brass)] hover:border-[var(--realm-accent-brass)]/50 hover:bg-[var(--realm-bg-smoke)]/50 transition-all duration-200"
+                    whileHover={{ scale: 1.08, y: -1 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <svg
                       viewBox="0 0 24 24"
-                      className="w-5 h-5 fill-current"
+                      className="w-4 h-4 fill-current"
                       aria-hidden="true"
                     >
                       <path d={social.icon} />
@@ -237,13 +246,18 @@ export function FooterSection() {
               <motion.div
                 key={section.title}
                 className="space-y-4"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: sectionIndex * 0.1 }}
+                transition={{ duration: 0.5, delay: 0.1 + sectionIndex * 0.08 }}
                 viewport={{ once: true }}
               >
-                <h4 className="font-bold text-lg">{section.title}</h4>
-                <ul className="space-y-3">
+                <h4
+                  className="text-[11px] uppercase tracking-[0.2em] text-[var(--realm-accent-brass)]/70 mb-4"
+                  style={{ fontFamily: "var(--font-ui)" }}
+                >
+                  {section.title}
+                </h4>
+                <ul className="space-y-2.5">
                   {section.links.map((link) => {
                     const Icon = link.icon;
                     return (
@@ -252,9 +266,9 @@ export function FooterSection() {
                           href={link.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group"
+                          className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-[var(--realm-accent-brass)] transition-colors duration-200 group"
                         >
-                          <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                          <Icon className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
                           <span>{link.label}</span>
                         </a>
                       </li>
@@ -267,40 +281,43 @@ export function FooterSection() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="py-6 border-t border-border/50">
+        <div className="py-5 border-t border-[var(--realm-border-etched)]/40">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>© {new Date().getFullYear()} BibliothecaDAO</span>
-              <span className="hidden md:inline">•</span>
-              <span className="hidden md:inline">
-                Building the future of onchain gaming
+            <div
+              className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/60"
+              style={{ fontFamily: "var(--font-ui)" }}
+            >
+              <span>&copy; {new Date().getFullYear()} BibliothecaDAO</span>
+              <span className="hidden md:inline text-[var(--realm-border-etched)]">
+                /
               </span>
+              <span className="hidden md:inline">Onchain since 2021</span>
             </div>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 text-xs text-muted-foreground/50">
               <a
                 href="/scroll"
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
               >
                 Scroll
               </a>
               <a
                 href="#"
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
               >
-                Privacy Policy
+                Privacy
               </a>
               <a
                 href="#"
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
               >
-                Terms of Service
+                Terms
               </a>
               <a
                 href="https://status.realms.world"
-                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200 flex items-center gap-1.5"
               >
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                All Systems Operational
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_6px_var(--realm-accent-brass)]" />
+                Operational
               </a>
             </div>
           </div>

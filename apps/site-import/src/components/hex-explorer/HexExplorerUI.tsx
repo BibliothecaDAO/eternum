@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import type { AgentData, FeatureHexData, PixelCoord } from "./types";
+import { featureColor as featureUIColor } from "./colors";
 import { Link } from "@tanstack/react-router";
 
 interface HexExplorerUIProps {
@@ -178,17 +179,3 @@ function FeatureLink({
   );
 }
 
-function featureUIColor(type: FeatureHexData["type"]): string {
-  switch (type) {
-    case "game":
-      return "#c8a855";
-    case "lore":
-      return "#7a6aaa";
-    case "agent":
-      return "#7a6aaa";
-    case "token":
-      return "#c8a855";
-    case "community":
-      return "#7a6aaa";
-  }
-}
