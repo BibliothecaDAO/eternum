@@ -3,3 +3,93 @@
 }
 @tailwind components;
 @tailwind utilities;
+
+/* Realms Theme — Global Overrides */
+:root {
+  --realm-bg-void: #141520;
+  --realm-bg-smoke: #1e2030;
+  --realm-surface-iron: #332f28;
+  --realm-surface-slate: #383a4a;
+  --realm-accent-ember: #c4874a;
+  --realm-accent-brass: #c9b06a;
+  --realm-accent-arcane: #8088b8;
+  --realm-border-etched: #564e3e;
+  --realm-border-strong: #6b6250;
+}
+
+/* Body font */
+body {
+  font-family: 'Rajdhani', sans-serif !important;
+}
+
+/* Headings use Cinzel */
+.vocs_Content h1,
+.vocs_Content h2,
+.vocs_Content h3,
+.vocs_Content h4,
+.vocs_Content h5,
+.vocs_Content h6,
+h1, h2, h3, h4 {
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.02em;
+}
+
+/* Code blocks */
+code, pre, .vocs_Code {
+  font-family: 'Source Code Pro', monospace !important;
+}
+
+/* Sidebar styling */
+.vocs_Sidebar {
+  background-color: var(--realm-bg-void) !important;
+  border-right-color: var(--realm-border-etched) !important;
+}
+
+.vocs_Sidebar a {
+  font-family: 'Rajdhani', sans-serif !important;
+}
+
+/* Navigation */
+.vocs_NavBar, .vocs_Header {
+  background-color: var(--realm-bg-void) !important;
+  border-bottom-color: var(--realm-border-etched) !important;
+}
+
+/* Content area */
+.vocs_Content {
+  color: #e8e4dc;
+}
+
+.vocs_Content a {
+  color: var(--realm-accent-brass) !important;
+}
+
+.vocs_Content a:hover {
+  color: var(--realm-accent-ember) !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--realm-bg-void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--realm-border-etched);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--realm-border-strong);
+}
+
+/* Table overflow for mobile */
+.vocs_Content table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

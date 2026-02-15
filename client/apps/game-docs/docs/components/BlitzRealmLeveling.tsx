@@ -18,7 +18,7 @@ export const BlitzRealmLeveling = () => {
   // Updated table cell style to prevent wrapping
   const tableCellStyle = {
     padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
+    borderBottom: "1px solid #564e3e",
     backgroundColor: "rgba(30, 20, 10, 0.3)",
     verticalAlign: "middle" as const,
     whiteSpace: "nowrap" as const,

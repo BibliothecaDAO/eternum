@@ -46,7 +46,7 @@ export const BlitzBuildingCard = ({
       padding: "0.75rem",
       marginBottom: "1rem",
       borderRadius: "0.375rem",
-      border: `1px solid #8b5a2b`,
+      border: `1px solid #564e3e`,
       backgroundColor: colors.background.dark,
     },
     header: {
@@ -61,7 +61,7 @@ export const BlitzBuildingCard = ({
       alignItems: "center",
       gap: "0.5rem",
       fontWeight: "bold",
-      color: "#f6c297",
+      color: "#c9b06a",
     },
     content: {
       display: "flex",
@@ -104,7 +104,7 @@ export const BlitzBuildingCard = ({
     costsTitle: {
       fontWeight: "bold",
       fontSize: "0.875rem",
-      color: "#f6c297",
+      color: "#c9b06a",
       marginBottom: "0.375rem",
     },
     modeHeader: {
@@ -140,7 +140,7 @@ export const BlitzBuildingCard = ({
           {resourceId && <ResourceIcon id={resourceId} name={resourceName} size="lg" />}
           {title}
         </div>
-        <div style={{ fontSize: "0.75rem", color: "#a89986" }}>ID: {buildingType}</div>
+        <div style={{ fontSize: "0.75rem", color: "#8088b8" }}>ID: {buildingType}</div>
       </div>
 
       <div style={styles.content}>

@@ -171,11 +171,11 @@ const ResourceProbability = () => {
       case "rare":
         return "#c19a49"; // bronze gold
       case "epic":
-        return "#d4af37"; // darker gold
+        return "#c4874a"; // darker gold
       case "legendary":
-        return "#e5c687"; // pale gold
+        return "#c9b06a"; // pale gold
       default:
-        return "#dfc296"; // light gold
+        return "#c9b06a"; // light gold
     }
   };
 

@@ -118,7 +118,7 @@ export const TroopTiers = () => {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(20, 15, 10, 0.5)",
+      backgroundColor: "rgba(30, 32, 48, 0.6)",
     },
     troopImageStyle: {
       width: "100%",
@@ -172,7 +172,7 @@ export const TroopTiers = () => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = "none";
                           target.parentElement!.innerHTML = `
-                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(20, 15, 10, 0.5); color: #dfc296; flex-direction: column; padding: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(30, 32, 48, 0.6); color: #c9b06a; flex-direction: column; padding: 8px;">
                               <div>Image not available</div>
                               <div><code>${troopTypeTierImages(tier, type)}</code></div>
                             </div>

@@ -115,7 +115,7 @@ const componentStyles = {
 const getRarityColor = (rarity: string): string => {
   switch (rarity) {
     case "Food":
-      return "#e5c687"; // pale gold
+      return "#c9b06a"; // pale gold
     case "Special":
       return "#c0c0c0"; // silver
     case "Common":
@@ -125,15 +125,15 @@ const getRarityColor = (rarity: string): string => {
     case "Rare":
       return "#c19a49"; // bronze gold
     case "Epic":
-      return "#d4af37"; // darker gold
+      return "#c4874a"; // darker gold
     case "Legendary":
-      return "#e5c687"; // pale gold
+      return "#c9b06a"; // pale gold
     case "Mythic":
-      return "#dfc296"; // light gold
+      return "#c9b06a"; // light gold
     case "Units & Transport":
       return "#8c7853"; // bronze
     default:
-      return "#dfc296"; // default gold
+      return "#c9b06a"; // default gold
   }
 };
 

@@ -22,19 +22,27 @@ export default defineConfig({
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
   ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
+  head: {
+    link: [
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
+      },
+    ],
+  },
   theme: {
     colorScheme: "dark",
     variables: {
       color: {
-        textAccent: "#f6c297",
-        background: "#14100d",
-        backgroundDark: "#14100d",
-        noteBackground: "#14100d",
+        textAccent: "#c9b06a",
+        background: "#141520",
+        backgroundDark: "#141520",
+        noteBackground: "#1e2030",
       },
     },
   },
   font: {
-    google: "Open Sans",
+    google: "Rajdhani",
   },
 
   title: "Realms Docs",

@@ -70,17 +70,17 @@ const getResourceName = (id: number): string => {
 const getGroupColor = (groupName: string): string => {
   switch (groupName) {
     case "Food":
-      return "#e5c687"; // pale gold
+      return "#c9b06a"; // pale gold
     case "Special":
     case "Tokens":
       return "#c0c0c0"; // silver
     case "Resources":
-      return "#dfc296"; // default gold
+      return "#c9b06a"; // default gold
     case "Transport":
     case "Military Units":
       return "#8c7853"; // bronze
     default:
-      return "#dfc296"; // default gold
+      return "#c9b06a"; // default gold
   }
 };
 
@@ -226,7 +226,7 @@ export const BlitzWeightTable = () => {
         </thead>
         <tbody>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #dfc296` }}>Resources</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c9b06a` }}>Resources</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {blitzResources.map((resource) => (
@@ -240,7 +240,7 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #e5c687` }}>Food</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c9b06a` }}>Food</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {foodResources.map((resource) => (

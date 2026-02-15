@@ -143,7 +143,7 @@ export default function ResourceTable() {
                         {inputs.map((input) => (
                           <div key={input.resource} style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>{getResourceName(input.resource)}:</span>
-                            <span style={{ color: "#dfc296" }}>{formatAmount(input.amount)}</span>
+                            <span style={{ color: "#c9b06a" }}>{formatAmount(input.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -191,7 +191,7 @@ export default function ResourceTable() {
                       {foodInput ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <span>{getResourceName(foodInput.resource)}</span>
-                          <span style={{ color: "#dfc296" }}>{formatAmount(foodInput.amount)}</span>
+                          <span style={{ color: "#c9b06a" }}>{formatAmount(foodInput.amount)}</span>
                         </div>
                       ) : (
                         "-"
