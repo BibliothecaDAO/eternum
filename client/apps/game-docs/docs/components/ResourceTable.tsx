@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-import { formatAmount, section, table } from "./styles";
+import { colors, formatAmount, section, table } from "./styles";
 
 export default function ResourceTable() {
   const config = ETERNUM_CONFIG();
@@ -143,7 +143,7 @@ export default function ResourceTable() {
                         {inputs.map((input) => (
                           <div key={input.resource} style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>{getResourceName(input.resource)}:</span>
-                            <span style={{ color: "#c9b06a" }}>{formatAmount(input.amount)}</span>
+                            <span style={{ color: colors.primary }}>{formatAmount(input.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -191,7 +191,7 @@ export default function ResourceTable() {
                       {foodInput ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <span>{getResourceName(foodInput.resource)}</span>
-                          <span style={{ color: "#c9b06a" }}>{formatAmount(foodInput.amount)}</span>
+                          <span style={{ color: colors.primary }}>{formatAmount(foodInput.amount)}</span>
                         </div>
                       ) : (
                         "-"

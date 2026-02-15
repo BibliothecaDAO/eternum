@@ -1,5 +1,5 @@
 import { GUARD_SLOT_NAMES } from "@bibliothecadao/types";
-import { section, table } from "./styles";
+import { colors, section, table } from "./styles";
 
 // Component 2: Defense Slots by Realm Level
 export const RealmDefenseSlotsTable = () => {
@@ -29,9 +29,9 @@ export const RealmDefenseSlotsTable = () => {
             {defenseSlots.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.slots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.slots}</td>
                 <td style={table.cell}>{item.slotName}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.slots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.slots}</td>
               </tr>
             ))}
           </tbody>
@@ -69,8 +69,8 @@ export const BlitzRealmDefenseSlotsTable = () => {
             {defenseSlots.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.fieldSlots}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.fieldSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.guardSlots}</td>
                 <td style={table.cell}>{item.slotName}</td>
               </tr>
             ))}
@@ -107,8 +107,8 @@ export const WorldStructureDefenseSlotsTable = () => {
             {worldStructures.map((item) => (
               <tr key={item.structure}>
                 <td style={table.cell}>{item.structure}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.guardSlots}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.fieldSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.fieldSlots}</td>
               </tr>
             ))}
           </tbody>
@@ -143,7 +143,7 @@ export const BlitzWorldStructureDefenseSlotsTable = () => {
             {worldStructures.map((item) => (
               <tr key={item.structure}>
                 <td style={table.cell}>{item.structure}</td>
-                <td style={{ ...table.cell, color: "#c9b06a", fontWeight: "bold" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.guardSlots}</td>
               </tr>
             ))}
           </tbody>

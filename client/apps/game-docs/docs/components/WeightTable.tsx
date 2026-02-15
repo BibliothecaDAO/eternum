@@ -70,17 +70,17 @@ const getResourceName = (id: number): string => {
 const getGroupColor = (groupName: string): string => {
   switch (groupName) {
     case "Food":
-      return "#c9b06a"; // pale gold
+      return colors.secondary;
     case "Special":
     case "Tokens":
-      return "#c0c0c0"; // silver
+      return colors.arcane;
     case "Resources":
-      return "#c9b06a"; // default gold
+      return colors.primary;
     case "Transport":
     case "Military Units":
-      return "#8c7853"; // bronze
+      return colors.borderDark;
     default:
-      return "#c9b06a"; // default gold
+      return colors.primary;
   }
 };
 
@@ -95,13 +95,14 @@ const componentStyles = {
   resourceItemStyle: {
     display: "flex",
     alignItems: "center",
-    gap: "0.25rem",
+    gap: "0.3rem",
     padding: "0.25rem 0.5rem",
-    backgroundColor: "rgba(40, 30, 25, 0.6)",
-    borderRadius: "0.25rem",
+    backgroundColor: colors.background.dark,
+    borderRadius: "0.35rem",
     fontSize: "0.75rem",
     whiteSpace: "nowrap" as const,
     minWidth: "fit-content",
+    border: `1px solid ${colors.border}`,
   },
   weightStyle: {
     marginLeft: "auto",
@@ -226,7 +227,7 @@ export const BlitzWeightTable = () => {
         </thead>
         <tbody>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c9b06a` }}>Resources</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.primary}` }}>Resources</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {blitzResources.map((resource) => (
@@ -240,7 +241,7 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c9b06a` }}>Food</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.secondary}` }}>Food</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {foodResources.map((resource) => (
@@ -254,7 +255,7 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #8c7853` }}>Transport</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.borderDark}` }}>Transport</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {transportResources.map((resource) => (
@@ -268,7 +269,7 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #8c7853` }}>Military Units</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.borderDark}` }}>Military Units</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {troopResources.map((resource) => (
@@ -282,7 +283,7 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c0c0c0` }}>Special</td>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.arcane}` }}>Special</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 <div key={ResourcesIds.Essence} style={componentStyles.resourceItemStyle}>

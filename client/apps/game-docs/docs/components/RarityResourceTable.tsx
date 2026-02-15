@@ -98,11 +98,12 @@ const componentStyles = {
   resourceItemStyle: {
     display: "flex",
     alignItems: "center",
-    gap: "0.25rem",
-    padding: "0.125rem 0.25rem",
-    backgroundColor: "rgba(40, 30, 25, 0.6)",
-    borderRadius: "0.25rem",
+    gap: "0.3rem",
+    padding: "0.2rem 0.35rem",
+    backgroundColor: colors.background.dark,
+    borderRadius: "0.35rem",
     fontSize: "0.75rem",
+    border: `1px solid ${colors.border}`,
   },
   rarityCellStyle: {
     ...table.cell,
@@ -115,25 +116,25 @@ const componentStyles = {
 const getRarityColor = (rarity: string): string => {
   switch (rarity) {
     case "Food":
-      return "#c9b06a"; // pale gold
+      return colors.secondary;
     case "Special":
-      return "#c0c0c0"; // silver
+      return colors.arcane;
     case "Common":
-      return "#aa6c39"; // copper
+      return colors.primary;
     case "Uncommon":
-      return "#b78d4b"; // tan gold
+      return colors.secondary;
     case "Rare":
-      return "#c19a49"; // bronze gold
+      return colors.primary;
     case "Epic":
-      return "#c4874a"; // darker gold
+      return colors.arcane;
     case "Legendary":
-      return "#c9b06a"; // pale gold
+      return colors.primary;
     case "Mythic":
-      return "#c9b06a"; // light gold
+      return colors.secondary;
     case "Units & Transport":
-      return "#8c7853"; // bronze
+      return colors.borderDark;
     default:
-      return "#c9b06a"; // default gold
+      return colors.primary;
   }
 };
 

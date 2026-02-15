@@ -87,9 +87,8 @@ code, pre, .vocs_Code {
   background: var(--realm-border-strong);
 }
 
-/* Table overflow for mobile */
+/* Table defaults (avoid skewed layout) */
 .vocs_Content table {
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  border-collapse: collapse;
 }

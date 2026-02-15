@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { RESOURCE_RARITY, ResourcesIds, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-import { colors } from "./styles";
+import { colors, section, table } from "./styles";
 
 const isMilitary = (id: number): boolean => {
   if (id === ResourcesIds.Knight) return true;
@@ -23,64 +23,25 @@ const formatAmount = (amount: number): string => {
 
 // Common styles shared between components
 const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#c9b06a",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
+  sectionStyle: section.wrapper,
+  subtitleStyle: section.subtitle,
   tableStyle: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
+    ...table.table,
     fontSize: "0.85rem",
-    minWidth: "fit-content",
   },
   tableWrapperStyle: {
-    width: "100%",
-    overflowX: "auto" as const,
-    borderRadius: "0.5rem",
-    border: "1px solid #564e3e",
+    ...table.container,
     scrollbarWidth: "thin" as const,
-    scrollbarColor: "#8b4513 #2d1b13",
   },
-  headerCellStyle: {
-    padding: "0.5rem",
-    backgroundColor: "rgba(60, 40, 20, 0.5)",
-    color: "#c9b06a",
-    fontWeight: "bold",
-    textAlign: "left" as const,
-    borderBottom: "1px solid #6b6250",
-    whiteSpace: "nowrap" as const,
-  },
-  cellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #564e3e",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    whiteSpace: "nowrap" as const,
-  },
+  headerCellStyle: table.headerCell,
+  cellStyle: table.cell,
   resourceCellStyle: {
-    padding: "0.8rem",
-    borderBottom: "1px solid #564e3e",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    whiteSpace: "nowrap" as const,
+    ...table.resourceCell,
     minWidth: "200px",
   },
   productionCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #564e3e",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    color: "#c9b06a",
-    whiteSpace: "nowrap" as const,
+    ...table.cell,
+    color: colors.primary,
   },
   resourceGroupStyle: {
     display: "flex",
@@ -92,12 +53,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "0.25rem",
-    padding: "0.125rem 0.25rem",
-    backgroundColor: "rgba(40, 30, 25, 0.6)",
-    borderRadius: "0.25rem",
+    padding: "0.2rem 0.35rem",
+    backgroundColor: colors.background.dark,
+    borderRadius: "0.35rem",
     fontSize: "0.75rem",
     whiteSpace: "nowrap" as const,
     minWidth: "fit-content",
+    border: `1px solid ${colors.border}`,
   },
 };
 

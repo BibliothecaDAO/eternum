@@ -1,26 +1,24 @@
 import ResourceIcon from "@/components/ResourceIcon";
-import { formatAmount, section, table } from "@/components/styles";
+import { colors, formatAmount, section, table } from "@/components/styles";
 
 export const BlitzRealmLeveling = () => {
   // Resource item style matching the original component
   const resourceItemStyle = {
     display: "flex",
     alignItems: "center",
-    gap: "0.25rem",
-    padding: "0.125rem 0.25rem",
-    backgroundColor: "rgba(40, 30, 25, 0.6)",
-    borderRadius: "0.25rem",
+    gap: "0.35rem",
+    padding: "0.2rem 0.4rem",
+    backgroundColor: colors.background.dark,
+    borderRadius: "0.35rem",
     fontSize: "0.85rem",
     whiteSpace: "nowrap" as const,
     minWidth: "fit-content",
+    border: `1px solid ${colors.border}`,
   };
 
   // Updated table cell style to prevent wrapping
   const tableCellStyle = {
-    padding: "0.5rem",
-    borderBottom: "1px solid #564e3e",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
+    ...table.cell,
     whiteSpace: "nowrap" as const,
   };
 

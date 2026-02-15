@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-import { formatAmount, section, table } from "./styles";
+import { colors, formatAmount, section, table } from "./styles";
 
 export const RealmLeveling = () => {
   const config = ETERNUM_CONFIG();
@@ -32,11 +32,12 @@ export const RealmLeveling = () => {
   const resourceItemStyle = {
     display: "flex",
     alignItems: "center",
-    gap: "0.25rem",
-    padding: "0.125rem 0.25rem",
-    backgroundColor: "rgba(40, 30, 25, 0.6)",
-    borderRadius: "0.25rem",
+    gap: "0.35rem",
+    padding: "0.2rem 0.4rem",
+    backgroundColor: colors.background.dark,
+    borderRadius: "0.35rem",
     fontSize: "0.85rem",
+    border: `1px solid ${colors.border}`,
   };
 
   return (
