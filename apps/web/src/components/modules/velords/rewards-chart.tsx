@@ -82,24 +82,26 @@ export function VeLordsRewardsChart({
       : undefined;
 
     // Find the date range
-    const timestamps = data.map((item) =>
-      typeof item.timestamp === "number"
-        ? item.timestamp
-        : new Date(item.timestamp).getTime() / 1000,
-    );
+    const timestamps = data
+      .map((item) =>
+        typeof item.timestamp === "number"
+          ? item.timestamp
+          : new Date(item.timestamp).getTime() / 1000,
+      )
+      .filter((timestamp): timestamp is number => Number.isFinite(timestamp));
+    if (timestamps.length === 0) return [];
     const minTimestamp = Math.min(...timestamps);
     const maxTimestamp = Math.max(...timestamps);
 
+    interface WeeklyRewardRow {
+      week: string;
+      amounts: Record<string, number>;
+      total_amount: number;
+      apy: number;
+    }
+
     // Generate all weeks in the range
-    const allWeeks: Record<
-      string,
-      {
-        week: string;
-        amounts: Record<string, number>;
-        total_amount: number;
-        apy: number;
-      }
-    > = {};
+    const allWeeks: Partial<Record<string, WeeklyRewardRow>> = {};
 
     // Pre-populate all weeks with zero values
     for (
@@ -123,23 +125,32 @@ export function VeLordsRewardsChart({
         typeof item.timestamp === "number"
           ? item.timestamp
           : new Date(item.timestamp).getTime() / 1000;
+      if (!Number.isFinite(timestamp)) return;
 
       const weekStart = Math.floor(timestamp / 604800) * 604800;
       const week = new Date(weekStart * 1000).toISOString().split("T")[0];
+      allWeeks[week] ??= {
+        week,
+        amounts: {},
+        total_amount: 0,
+        apy: 0,
+      };
 
       const formattedAmount = Number(formatUnits(BigInt(item.amount), 18));
       const senderLabel = getVelordsSourceLabel(item.sender);
 
-      allWeeks[week].amounts[senderLabel] =
-        (allWeeks[week].amounts[senderLabel] || 0) + formattedAmount;
-      allWeeks[week].total_amount += formattedAmount;
-      allWeeks[week].apy =
+      const weekData = allWeeks[week];
+      weekData.amounts[senderLabel] = (weekData.amounts[senderLabel] || 0) + formattedAmount;
+      weekData.total_amount += formattedAmount;
+      weekData.apy =
         totalSupply && totalSupply > 0
-          ? ((allWeeks[week].total_amount * 52) / totalSupply) * 100
+          ? ((weekData.total_amount * 52) / totalSupply) * 100
           : 0;
     });
 
-    return Object.values(allWeeks).sort((a, b) => a.week.localeCompare(b.week));
+    return Object.values(allWeeks)
+      .filter((row): row is WeeklyRewardRow => row !== undefined)
+      .sort((a, b) => a.week.localeCompare(b.week));
   }, [data, totalSupplyRaw]);
 
   const allSenderLabels = useMemo(
