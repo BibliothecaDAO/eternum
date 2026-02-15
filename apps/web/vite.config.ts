@@ -60,10 +60,10 @@ export default defineConfig({
       "@realms-world/db",
       "@realms-world/constants",
       "zod",
-    ],
-    external: [
       /^@reown\//,
       /^@walletconnect\//,
+    ],
+    external: [
       "wagmi",
       "@starknet-io/starknet-types-08",
     ],
