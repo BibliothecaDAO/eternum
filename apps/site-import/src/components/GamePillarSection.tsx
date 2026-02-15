@@ -57,7 +57,7 @@ const fadeUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.5, ease: "easeOut" as const },
   },
 };
 
@@ -76,7 +76,7 @@ const centerHexVariant = {
   visible: {
     scale: 1,
     opacity: 1,
-    transition: { duration: 0.45, ease: "easeOut" },
+    transition: { duration: 0.45, ease: "easeOut" as const },
   },
 };
 
@@ -85,7 +85,7 @@ const surroundHexVariant = {
   visible: {
     scale: 1,
     opacity: 1,
-    transition: { duration: 0.35, ease: "easeOut" },
+    transition: { duration: 0.35, ease: "easeOut" as const },
   },
 };
 
