@@ -62,7 +62,7 @@ const BLITZ_REWARDS_CHEST_ITEMS = [
     type: "Realm Skin",
     troopType: "N/A",
     drawChance: 10.98,
-    image: "",
+    image: "/images/nft-images/0x3021101.png",
   },
   {
     epochItemNumber: 18,

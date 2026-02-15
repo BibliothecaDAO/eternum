@@ -44,10 +44,10 @@ export const RealmDefenseSlotsTable = () => {
 // Component 2b: Blitz Defense Slots by Realm Level
 export const BlitzRealmDefenseSlotsTable = () => {
   const defenseSlots = [
-    { level: "Settlement", slots: 1, slotName: GUARD_SLOT_NAMES[0] },
-    { level: "City", slots: 2, slotName: GUARD_SLOT_NAMES[1] },
-    { level: "Kingdom", slots: 3, slotName: GUARD_SLOT_NAMES[2] },
-    { level: "Empire", slots: 4, slotName: GUARD_SLOT_NAMES[3] },
+    { level: "Settlement", fieldSlots: 1, guardSlots: 1, slotName: GUARD_SLOT_NAMES[0] },
+    { level: "City", fieldSlots: 3, guardSlots: 2, slotName: GUARD_SLOT_NAMES[1] },
+    { level: "Kingdom", fieldSlots: 5, guardSlots: 3, slotName: GUARD_SLOT_NAMES[2] },
+    { level: "Empire", fieldSlots: 8, guardSlots: 4, slotName: GUARD_SLOT_NAMES[3] },
   ];
 
   return (
@@ -69,8 +69,8 @@ export const BlitzRealmDefenseSlotsTable = () => {
             {defenseSlots.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.slots}</td>
-                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.slots}</td>
+                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.fieldSlots}</td>
+                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.guardSlots}</td>
                 <td style={table.cell}>{item.slotName}</td>
               </tr>
             ))}

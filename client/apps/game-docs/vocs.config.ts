@@ -5,6 +5,9 @@ import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 export default defineConfig({
   vite: {
     publicDir: path.resolve(__dirname, "../../public"),
+    server: {
+      allowedHosts: true,
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./docs"),
@@ -38,6 +41,7 @@ export default defineConfig({
   sidebar: [
     {
       text: "Overview",
+      link: "/overview/introduction",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
         { text: "Cartridge Controller", link: "/overview/controller" },
@@ -47,6 +51,7 @@ export default defineConfig({
           collapsed: true,
           link: "/overview/chests/loot-chests",
           items: [
+            { text: "Loot Chests", link: "/overview/chests/loot-chests" },
             { text: "Chest Contents", link: "/overview/chests/contents" },
             { text: "Cosmetic Items", link: "/overview/chests/cosmetics" },
           ],
@@ -58,6 +63,7 @@ export default defineConfig({
     },
     {
       text: "Blitz",
+      link: "/blitz/key-concepts",
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
         { text: "Game Entry", link: "/blitz/game-entry" },
@@ -76,7 +82,7 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/materials/resources",
           items: [
-            { text: "Resources", link: "/blitz/materials/resources" },
+            { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
             { text: "Production Automation", link: "/blitz/materials/automation" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
@@ -113,6 +119,7 @@ export default defineConfig({
     },
     {
       text: "Eternum (Season 1 - Concluded)",
+      link: "/eternum/key-concepts",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
         { text: "Game Entry", link: "/eternum/game-entry" },
@@ -165,6 +172,7 @@ export default defineConfig({
     {
       text: "Development",
       collapsed: true,
+      link: "/development/getting-started",
       items: [
         { text: "Getting Started", link: "/development/getting-started" },
         { text: "Client", link: "/development/client" },
@@ -177,6 +185,7 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
+      link: "/changelog/31-january-2026",
       items: [
         { text: "31 January 2026", link: "/changelog/31-january-2026" },
         { text: "8 December 2025", link: "/changelog/8-december-2025" },

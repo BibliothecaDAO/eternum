@@ -7,7 +7,7 @@ description: How $LORDS prizes are calculated and distributed in Blitz
 
 Blitz distributes **$LORDS** to players at the end of every game based on their final rank. The system adapts to lobby
 size, the ratio of entry fees to sponsored prizes, and how many players actually score — so payouts stay fair whether
-there are 10 or 120 players in a match.
+there are 2 or 24 players in a match.
 
 ## Prize Pool Composition
 
@@ -133,39 +133,6 @@ prize(i) = (weight(i) / Σ) × P
 Players ranked beyond position `W` receive **0 $LORDS**. If multiple players share the same rank (tied scores), their
 combined prize for that rank range is split equally among them.
 
-### Worked Example
-
-Using the
-[prize calculator spreadsheet](https://docs.google.com/spreadsheets/d/1qoj9VroZYwrr67JYtczKcrDrbeHwQGpaIsD-PIRpg6E/edit?usp=sharing):
-
-| Parameter                | Value             |
-| ------------------------ | ----------------- |
-| Players (N)              | 106               |
-| Entry cost               | 250 $LORDS        |
-| Fee pool (70%)           | 18,550 $LORDS     |
-| Sponsorship              | 15,000 $LORDS     |
-| **Total prize pool (P)** | **33,550 $LORDS** |
-| Decay parameter (s)      | ≈ 0.863           |
-| Winner count (W)         | 13                |
-
-| Rank | Norm Weight | Prize ($LORDS) | Multiplier |
-| ---- | ----------- | -------------- | ---------- |
-| 1st  | 16.1%       | 2,074          | 8.3×       |
-| 2nd  | 13.9%       | 1,789          | 7.2×       |
-| 3rd  | 12.0%       | 1,543          | 6.2×       |
-| 5th  | 8.9%        | 1,148          | 4.6×       |
-| 10th | 4.3%        | 548            | 2.2×       |
-| 13th | 2.7%        | 352            | 1.4×       |
-
-> The **Multiplier** column shows how many times the entry fee (250 $LORDS) the player receives back. Even 13th place
-> earns 1.4× their buy-in in this scenario.
-
-### Multi-Game Series
-
-When Blitz games run as a series (multiple sequential games), the prize pool parameters are recalculated per game. The
-spreadsheet linked above simulates a 5-game series showing how the decay parameter, winner count, and individual payouts
-shift as lobby composition and sponsorship levels change across games.
-
 ## NFT Rewards
 
 In addition to $LORDS, players may receive NFT rewards:
@@ -180,16 +147,6 @@ In addition to $LORDS, players may receive NFT rewards:
 
 See [Loot Chests](/overview/chests/loot-chests) for details on chest contents.
 
-### Elite Invite NFTs
-
-Top-ranked players may also receive an **Elite Invite NFT**:
-
-- In games with **≤ 132 players**: the top 50% of ranked players receive an Elite Invite
-- In games with **> 132 players**: the top **66 players** receive one
-
-If multiple players share a rank that crosses the threshold, none of those tied players receive the NFT — this prevents
-supply from exceeding the intended cap.
-
 ## Claiming Prizes
 
 Prize distribution is **permissionless** — anyone can submit the ranked player list to trigger payouts. The process:
@@ -201,9 +158,3 @@ Prize distribution is **permissionless** — anyone can submit the ranked player
 
 If only **one player** registered for a game, they receive a full refund of their entry fee with no fee split applied.
 
-## Prize Calculator
-
-You can simulate prize distributions for different scenarios using the
-[Prize Calculator Spreadsheet](https://docs.google.com/spreadsheets/d/1qoj9VroZYwrr67JYtczKcrDrbeHwQGpaIsD-PIRpg6E/edit?usp=sharing).
-All **green** and **blue** cells are editable — adjust player count, entry fees, sponsorship amounts, and game count to
-see how payouts change.
