@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Bebas+Neue&family=Inconsolata:wght@200..900&display=swap');
 
 @import 'tailwindcss';
 
@@ -39,10 +39,15 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  --font-display: var(--font-display);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -119,6 +124,10 @@
       --border: oklch(0.8606 0.0321 84.5881);
       --input: oklch(0.8606 0.0321 84.5881);
       --ring: oklch(0.6180 0.0778 65.5444);
+      --success: oklch(0.59 0.15 142);
+      --success-foreground: oklch(1.0 0 0);
+      --warning: oklch(0.75 0.12 85);
+      --warning-foreground: oklch(0.35 0.06 60);
       --chart-1: oklch(0.6180 0.0778 65.5444);
       --chart-2: oklch(0.5604 0.0624 68.5805);
       --chart-3: oklch(0.4851 0.0570 72.6827);
@@ -132,10 +141,11 @@
       --sidebar-accent-foreground: oklch(0.3760 0.0225 64.3434);
       --sidebar-border: oklch(0.8606 0.0321 84.5881);
       --sidebar-ring: oklch(0.6180 0.0778 65.5444);
-      --font-sans: Space Grotesk, serif;
-      --font-serif: Space Grotesk, serif;
-      --font-mono: IBM Plex Mono, monospace;
-      --radius: 0.25rem;
+      --font-sans: Inconsolata, monospace;
+      --font-serif: Bebas Neue, sans-serif;
+      --font-mono: Inconsolata, monospace;
+      --font-display: Doto, monospace;
+      --radius: 0.5rem;
       --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
       --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
       --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
@@ -165,6 +175,10 @@
       --border: oklch(0.3795 0.0181 57.1280);
       --input: oklch(0.3795 0.0181 57.1280);
       --ring: oklch(0.7264 0.0581 66.6967);
+      --success: oklch(0.55 0.15 145);
+      --success-foreground: oklch(0.95 0.02 140);
+      --warning: oklch(0.65 0.12 85);
+      --warning-foreground: oklch(0.95 0.02 80);
       --chart-1: oklch(0.7264 0.0581 66.6967);
       --chart-2: oklch(0.6777 0.0624 64.7755);
       --chart-3: oklch(0.6180 0.0778 65.5444);
@@ -178,10 +192,11 @@
       --sidebar-accent-foreground: oklch(0.9239 0.0190 83.0636);
       --sidebar-border: oklch(0.3795 0.0181 57.1280);
       --sidebar-ring: oklch(0.7264 0.0581 66.6967);
-      --font-sans: Space Grotesk, serif;
-      --font-serif: Space Grotesk, serif;
-      --font-mono: IBM Plex Mono, monospace;
-      --radius: 0.25rem;
+      --font-sans: Inconsolata, monospace;
+      --font-serif: Bebas Neue, sans-serif;
+      --font-mono: Inconsolata, monospace;
+      --font-display: Doto, monospace;
+      --radius: 0.5rem;
       --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
       --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
       --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
@@ -199,6 +214,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-serif);
   }
 }
 
@@ -222,7 +240,7 @@
 
 ::-webkit-scrollbar-thumb,
 .table-scroll::-webkit-scrollbar-thumb {
-  @apply bg-black dark:bg-white/70;
+  @apply bg-foreground/50;
   border-radius: 0.15em;
 }
 
@@ -238,6 +256,6 @@
 
 ::-webkit-scrollbar-thumb:horizontal,
 .table-scroll::-webkit-scrollbar-thumb:horizontal {
-  @apply bg-black dark:bg-white/70;
+  @apply bg-foreground/50;
   border-radius: 0.15em;
 }

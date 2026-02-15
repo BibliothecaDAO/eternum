@@ -13,7 +13,7 @@ export const Breadcrumbs = () => {
       <ul className="flex gap-2 items-center">
         {matchesWithCrumbs.map((match, i) => (
           <li className="flex gap-2">
-            <Link className="text-blue-700" from={match.fullPath}>
+            <Link className="text-primary" from={match.fullPath}>
               {match.loaderData?.crumb}
             </Link>
             {i + 1 < matchesWithCrumbs.length ? (

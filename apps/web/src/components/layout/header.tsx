@@ -155,7 +155,7 @@ export function Header() {
                         toast({
                           description: (
                             <div className="flex items-center gap-2">
-                              <Check className="text-green-500" />
+                              <Check className="text-success" />
                               <span>Address copied to clipboard</span>
                             </div>
                           ),

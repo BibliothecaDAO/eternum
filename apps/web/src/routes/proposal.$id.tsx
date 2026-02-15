@@ -112,19 +112,19 @@ function RouteComponent() {
     ) {
       return {
         label: "Passed",
-        className: "text-green-500 border-green-500",
+        className: "text-success border-success",
         icon: CheckCircle2,
       };
     } else if ((proposal.scores_total ?? 0) < 1500) {
       return {
         label: "Quorum not met",
-        className: "text-sm text-gray-500 border-gray-500",
+        className: "text-sm text-muted-foreground border-muted-foreground",
         icon: XCircle,
       };
     } else {
       return {
         label: "Failed",
-        className: "border-red-500 text-red-500",
+        className: "border-destructive text-destructive",
         icon: MinusCircle,
       };
     }

@@ -8,8 +8,8 @@ export const Route = createFileRoute("/coming-soon/")({
 function RouteComponent() {
   return (
     <div className="to-background via-background-sidebar from-secondary flex h-screen items-center justify-center bg-gradient-to-r">
-      <Card className="rounded bg-white bg-opacity-80 p-12 text-center shadow-lg">
-        <h1 className="mb-4 text-5xl font-bold">Coming Soon</h1>
+      <Card className="rounded bg-card p-12 text-center shadow-lg">
+        <h1 className="font-display mb-4 text-5xl font-bold">Coming Soon</h1>
         <p className="text-xl">
           We're working hard to bring you an amazing new experience. Stay tuned!
         </p>

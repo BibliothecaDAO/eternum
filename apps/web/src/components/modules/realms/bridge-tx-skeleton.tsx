@@ -19,10 +19,10 @@ const BridgeTransactionHistorySkeleton: React.FC = () => {
             <div className="flex w-full justify-between px-2">
               <div className="flex flex-col justify-center">
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-300" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
                 </div>
                 <span className="text-muted-foreground text-sm">
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-300" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted" />
                 </span>
               </div>
               <div className="flex flex-col items-end justify-end">
@@ -30,36 +30,36 @@ const BridgeTransactionHistorySkeleton: React.FC = () => {
                   {[...Array(3)].map((_, idx) => (
                     <Badge
                       variant="outline"
-                      className="h-4 w-8 animate-pulse bg-gray-300"
+                      className="h-4 w-8 animate-pulse bg-muted"
                       key={idx}
                     />
                   ))}
                   <Badge
                     key="more"
-                    className="h-4 w-8 animate-pulse bg-gray-300"
+                    className="h-4 w-8 animate-pulse bg-muted"
                   />
                 </div>
                 <span className="text-muted-foreground">
-                  <div className="h-4 w-20 animate-pulse rounded bg-gray-300" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-muted" />
                 </span>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-col space-y-1 py-2">
-              <span className={cn("text-yellow-500")}>
-                <div className="h-4 w-20 animate-pulse rounded bg-gray-300" />
+              <span className={cn("text-warning")}>
+                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
               </span>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-24 animate-pulse rounded bg-gray-300" />
+                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
                 <ArrowRight />
-                <div className="h-4 w-24 animate-pulse rounded bg-gray-300" />
+                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
               </div>
               <div className="mt-2 flex items-center gap-2">
                 {[...Array(2)].map((_, idx) => (
                   <Button
                     variant="outline"
-                    className="h-8 w-24 animate-pulse bg-gray-300"
+                    className="h-8 w-24 animate-pulse bg-muted"
                     key={idx}
                   />
                 ))}

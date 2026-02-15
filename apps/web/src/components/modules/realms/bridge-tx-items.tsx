@@ -99,7 +99,7 @@ const BridgeTransactionItems = () => {
                         e.stopPropagation();
                         await handleCompleteWithdraw(transaction);
                       }}
-                      className="z-20 mt-2 rounded border-green-500"
+                      className="z-20 mt-2 rounded border-success"
                       disabled={isWithdrawPending}
                     >
                       Complete Withdraw
@@ -114,7 +114,7 @@ const BridgeTransactionItems = () => {
               <div className="flex flex-col space-y-1 py-2">
                 <span
                   className={cn(
-                    isCompleted ? "text-green-500" : "text-yellow-500",
+                    isCompleted ? "text-success" : "text-warning",
                   )}
                 >
                   {isCompleted ? "Completed" : "In Progress"}

@@ -33,25 +33,25 @@ export function MarkdownRenderer({
       components={{
         h1: ({ _node, ...props }) => (
           <h1
-            className="mb-4 mt-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-3xl"
+            className="font-serif mb-4 mt-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-3xl"
             {...props}
           />
         ),
         h2: ({ _node, ...props }) => (
           <h2
-            className="mb-4 mt-6 scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight first:mt-0"
+            className="font-serif mb-4 mt-6 scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight first:mt-0"
             {...props}
           />
         ),
         h3: ({ _node, ...props }) => (
           <h3
-            className="mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight"
+            className="font-serif mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight"
             {...props}
           />
         ),
         h4: ({ _node, ...props }) => (
           <h4
-            className="mb-4 mt-6 scroll-m-20 text-lg font-semibold tracking-tight"
+            className="font-serif mb-4 mt-6 scroll-m-20 text-lg font-semibold tracking-tight"
             {...props}
           />
         ),

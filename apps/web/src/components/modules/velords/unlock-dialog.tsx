@@ -179,7 +179,7 @@ export function UnlockDialog({
                         )}
                       </div>
                       {!isLockExpired && (
-                        <div className="text-xs text-red-300/60">
+                        <div className="text-xs text-destructive">
                           Penalty: {formatEther(BigInt(penalty))} LORDS (
                           {(
                             (Number(penalty) / Number(ownerLordsLock.amount)) *

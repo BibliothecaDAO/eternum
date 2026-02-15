@@ -34,7 +34,7 @@ export const ReadMore = ({ id, text, amountOfWords = 24 }: ReadMoreProps) => {
             {endText}
           </span>
           <span
-            className="ml-2 text-violet-400"
+            className="ml-2 text-primary"
             role="button"
             tabIndex={0}
             aria-expanded={isExpanded}
