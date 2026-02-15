@@ -29,23 +29,19 @@ interface EthplorerToken {
   rawBalance: string;
 }
 
+interface TokenBalance {
+  amount: number;
+  usdValue: number;
+}
+
 interface TokenTotals {
-  LORDS: {
-    amount: number;
-    usdValue: number;
-  };
-  WETH: {
-    amount: number;
-    usdValue: number;
-  };
-  ETH: {
-    amount: number;
-    usdValue: number;
-  };
-  USDC: {
-    amount: number;
-    usdValue: number;
-  };
+  LORDS: TokenBalance;
+  WETH: TokenBalance;
+  ETH: TokenBalance;
+  USDC: TokenBalance;
+  STRK: TokenBalance;
+  EKUBO: TokenBalance;
+  SURVIVOR: TokenBalance;
 }
 
 export async function getTreasuryBalance(): Promise<TokenTotals> {
@@ -69,7 +65,10 @@ export async function getTreasuryBalance(): Promise<TokenTotals> {
       LORDS: { amount: 0, usdValue: 0 },
       WETH: { amount: 0, usdValue: 0 },
       ETH: { amount: 0, usdValue: 0 },
-      USDC: { amount: 0, usdValue: 0 }
+      USDC: { amount: 0, usdValue: 0 },
+      STRK: { amount: 0, usdValue: 0 },
+      EKUBO: { amount: 0, usdValue: 0 },
+      SURVIVOR: { amount: 0, usdValue: 0 },
     };
 
     // Sum up all balances
@@ -87,19 +86,10 @@ export async function getTreasuryBalance(): Promise<TokenTotals> {
         const balance = parseFloat(token.rawBalance) / Math.pow(10, decimals);
         const usdValue = balance * parseFloat(token.tokenInfo.price?.rate || '0');
 
-        switch (symbol) {
-          case 'LORDS':
-            totals.LORDS.amount += balance;
-            totals.LORDS.usdValue += usdValue;
-            break;
-          case 'WETH':
-            totals.WETH.amount += balance;
-            totals.WETH.usdValue += usdValue;
-            break;
-          case 'USDC':
-            totals.USDC.amount += balance;
-            totals.USDC.usdValue += usdValue;
-            break;
+        if (symbol in totals && symbol !== 'ETH') {
+          const key = symbol as keyof TokenTotals;
+          totals[key].amount += balance;
+          totals[key].usdValue += usdValue;
         }
       });
     });

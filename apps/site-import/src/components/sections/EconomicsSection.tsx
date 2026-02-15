@@ -36,11 +36,9 @@ function EconomicsSectionContent() {
   ).toFixed(1);
   const marketPercentage = (100 - parseFloat(treasuryPercentage)).toFixed(1);
 
-  const totalTreasuryBalance =
-    (treasuryBalance?.LORDS.usdValue ?? 0) +
-    (treasuryBalance?.ETH.usdValue ?? 0) +
-    (treasuryBalance?.WETH.usdValue ?? 0) +
-    (treasuryBalance?.USDC.usdValue ?? 0);
+  const totalTreasuryBalance = treasuryBalance
+    ? Object.values(treasuryBalance).reduce((sum, t) => sum + t.usdValue, 0)
+    : 0;
 
   const treasuryData = [
     {
@@ -60,12 +58,30 @@ function EconomicsSectionContent() {
       color: "bg-blue-500",
     },
     {
+      name: "STRK",
+      value: treasuryBalance?.STRK.usdValue ?? 0,
+      amount: treasuryBalance?.STRK.amount ?? 0,
+      color: "bg-purple-500",
+    },
+    {
+      name: "EKUBO",
+      value: treasuryBalance?.EKUBO.usdValue ?? 0,
+      amount: treasuryBalance?.EKUBO.amount ?? 0,
+      color: "bg-cyan-500",
+    },
+    {
+      name: "SURVIVOR",
+      value: treasuryBalance?.SURVIVOR.usdValue ?? 0,
+      amount: treasuryBalance?.SURVIVOR.amount ?? 0,
+      color: "bg-red-500",
+    },
+    {
       name: "USDC",
       value: treasuryBalance?.USDC.usdValue ?? 0,
       amount: treasuryBalance?.USDC.amount ?? 0,
       color: "bg-green-500",
     },
-  ];
+  ].filter((asset) => asset.value > 0 || asset.amount > 0);
 
   const heroMetrics = [
     {
