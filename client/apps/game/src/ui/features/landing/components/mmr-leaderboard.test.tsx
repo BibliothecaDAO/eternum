@@ -147,4 +147,16 @@ describe("MMRLeaderboard", () => {
     );
     expect(slotQuery.toLowerCase()).toContain(`lower(id) like '%:${slotToken}:%'`);
   });
+
+  it("shows the MMR tier column on landing entries", async () => {
+    await act(async () => {
+      root.render(<MMRLeaderboard />);
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain("Tier");
+      expect(container.textContent).toContain("Iron");
+    });
+  });
 });
