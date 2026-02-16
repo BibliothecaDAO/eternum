@@ -38,8 +38,6 @@ const serializeContractCalldataEntry = (contract: ManifestContract): any[] => {
   if (initCalldataCount > 0) {
     entry.push(...(contract.init_calldata || []));
   }
-  entry.push(0);
-  entry.push(0);
   return entry;
 };
 
@@ -67,12 +65,10 @@ export const generateFactoryCalldata = (
   manifest: ManifestData,
   version: string,
   namespace: string,
-  maxActions = 20,
   defaultNamespaceWriterAll = true,
 ): FactoryConfigCalldataParts => {
   const base: any[] = [];
   base.push(version);
-  base.push(maxActions);
   base.push(manifest.world.class_hash);
   const namespaceByteArray = byteArray.byteArrayFromString(namespace);
   base.push(namespaceByteArray);

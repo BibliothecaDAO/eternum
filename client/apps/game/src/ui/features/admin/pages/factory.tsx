@@ -496,13 +496,13 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       }
 
       setParsedManifest(manifest);
-      const calldata = generateFactoryCalldata(manifest, version, namespace, maxActions, defaultNamespaceWriterAll);
+      const calldata = generateFactoryCalldata(manifest, version, namespace, defaultNamespaceWriterAll);
       setGeneratedConfigCalldata(calldata);
     } catch {
       setParsedManifest(null);
       setGeneratedConfigCalldata(null);
     }
-  }, [manifestJson, version, namespace, maxActions, defaultNamespaceWriterAll]);
+  }, [manifestJson, version, namespace, defaultNamespaceWriterAll]);
 
   // Generate new world name
   const handleGenerateWorldName = () => {
@@ -768,7 +768,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       const result = await account.execute({
         contractAddress: factoryAddress,
         entrypoint: "create_game",
-        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
+        calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
       });
 
       setTx({ status: "success", hash: result.transaction_hash });
@@ -799,7 +799,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       const result = await account.execute({
         contractAddress: factoryAddress,
         entrypoint: "create_game",
-        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
+        calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
       });
       setTx({ status: "success", hash: result.transaction_hash });
       await account.waitForTransaction(result.transaction_hash);
@@ -851,7 +851,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         const result = await account.execute({
           contractAddress: factoryAddress,
           entrypoint: "create_game",
-          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
+          calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
         });
         setTx({ status: "success", hash: result.transaction_hash });
 
