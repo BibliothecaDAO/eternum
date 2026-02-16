@@ -4,11 +4,12 @@ import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { syncEntitiesDebounced } from "@/dojo/sync";
 import { sqlApi } from "@/services/api";
 import { padHexAddressTo66 } from "@/ui/utils/utils";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
 import { useAccountStore } from "../store/use-account-store";
+import { useUIStore } from "../store/use-ui-store";
 import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
@@ -27,7 +28,7 @@ export const usePlayerStructureSync = () => {
     setup,
   } = useDojo();
 
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const subscriptionRef = useRef<{ cancel: () => void } | null>(null);
   const syncedStructureIds = useRef<Set<number>>(new Set());
