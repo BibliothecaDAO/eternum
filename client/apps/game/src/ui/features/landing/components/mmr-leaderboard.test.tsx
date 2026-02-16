@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MMRLeaderboard } from "./mmr-leaderboard";
 
 vi.mock("@/ui/utils/utils", () => ({
@@ -138,8 +139,14 @@ describe("MMRLeaderboard", () => {
     expect(slotUrl).toBeDefined();
 
     const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";
+    const slotToken = (MMR_TOKEN_BY_CHAIN.slot ?? "").toLowerCase();
+
+    expect(slotToken.length).toBeGreaterThan(0);
     expect(slotQuery.toLowerCase()).toContain(
-      "lower(id) like '%:0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49:%'",
+      "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0xselector', '0x')",
+    );
+    expect(slotQuery.toLowerCase()).toContain(
+      `lower(id) like '%:${slotToken}:%'`,
     );
   });
 });

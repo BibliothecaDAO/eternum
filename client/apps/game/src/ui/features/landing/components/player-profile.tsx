@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-player-avatar";
 import TextInput from "@/ui/design-system/atoms/text-input";
 
+import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
@@ -29,15 +30,10 @@ const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
 const CHAIN_OPTIONS: Chain[] = ["slot", "mainnet"];
 const DEFAULT_CHAIN: Chain = "slot";
 const MAINNET_COMING_SOON = true;
-const SLOT_MMR_TOKEN_ADDRESS = "0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49";
 const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain";
 
 const GLOBAL_RPC_BY_CHAIN: Partial<Record<Chain, string>> = {
   slot: "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9",
-};
-
-const MMR_TOKEN_BY_CHAIN: Partial<Record<Chain, string>> = {
-  slot: SLOT_MMR_TOKEN_ADDRESS,
 };
 
 export const LandingPlayer = () => {

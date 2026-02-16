@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { hash } from "starknet";
 
+import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import type { Chain } from "@contracts";
 
@@ -12,20 +13,10 @@ const SEARCH_DEBOUNCE_MS = 250;
 const PAGE_SIZE = 25;
 const MMR_DECIMALS = 10n ** 18n;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
-const SLOT_MMR_TOKEN_ADDRESS = "0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49";
 
 type SortBy = "rank" | "timestamp" | "delta";
 
 const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
-
-const GLOBAL_TORII_BY_CHAIN: Record<"mainnet" | "slot", string> = {
-  mainnet: "https://api.cartridge.gg/x/eternum-global-mainnet/torii",
-  slot: "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
-};
-
-const MMR_TOKEN_BY_CHAIN: Partial<Record<Chain, string>> = {
-  slot: SLOT_MMR_TOKEN_ADDRESS,
-};
 
 interface GlobalMMRRow {
   player_address?: string;
