@@ -12,6 +12,8 @@ import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@biblio
 import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
@@ -44,6 +46,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const mode = useGameModeConfig();
 
   const { currentArmiesTick } = useBlockTimestamp();
+  const liveExplorerTroops = useComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(armyEntityId)]));
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
@@ -106,10 +109,11 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
-    const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
+    const staminaSourceTroops = liveExplorerTroops?.troops ?? explorer.troops;
+    const stamina = StaminaManager.getStamina(staminaSourceTroops, currentArmiesTick);
     const maxStamina = StaminaManager.getMaxStamina(
-      explorer.troops.category as TroopType,
-      explorer.troops.tier as TroopTier,
+      staminaSourceTroops.category as TroopType,
+      staminaSourceTroops.tier as TroopTier,
     );
 
     const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
@@ -129,7 +133,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId, mode, currentArmiesTick]);
+  }, [explorer, structure, components, userAddress, armyEntityId, mode, currentArmiesTick, liveExplorerTroops]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;

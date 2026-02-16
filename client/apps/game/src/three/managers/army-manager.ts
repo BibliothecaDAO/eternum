@@ -13,7 +13,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
-import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
+import { Biome, configManager } from "@bibliothecadao/eternum";
 import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -54,6 +54,7 @@ import { MAX_INSTANCES } from "../constants/army-constants";
 import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
 import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 import { waitForVisualSettle } from "./manager-update-convergence";
+import { type ArmyStaminaBoosts, projectArmyCurrentStamina, ZERO_ARMY_STAMINA_BOOSTS } from "./army-stamina";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -341,6 +342,32 @@ export class ArmyManager {
 
     // Start initial cleanup after 60 seconds
     this.cleanupTimeout = setTimeout(cleanup, 60000);
+  }
+
+  private getArmyStaminaBoosts(entityId: ID): ArmyStaminaBoosts {
+    if (!this.components?.ExplorerTroops) {
+      return { ...ZERO_ARMY_STAMINA_BOOSTS };
+    }
+
+    try {
+      const explorer = getComponentValue(
+        this.components.ExplorerTroops,
+        getEntityIdFromKeys([BigInt(entityId)]),
+      ) as
+        | {
+            troops?: {
+              boosts?: Partial<ArmyStaminaBoosts> | null;
+            };
+          }
+        | undefined;
+
+      return {
+        ...ZERO_ARMY_STAMINA_BOOSTS,
+        ...(explorer?.troops?.boosts ?? {}),
+      };
+    } catch {
+      return { ...ZERO_ARMY_STAMINA_BOOSTS };
+    }
   }
 
   // Debug army spawner state
@@ -1320,34 +1347,16 @@ export class ArmyManager {
           attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
         }
 
-        // Calculate current stamina using the pending update data
+        // Calculate current stamina using pending on-chain values and live boosts if available.
         const { currentArmiesTick } = getBlockTimestamp();
-        const updatedStamina = Number(
-          StaminaManager.getStamina(
-            {
-              category: params.category,
-              tier: params.tier,
-              count: BigInt(pendingUpdate.troopCount),
-              stamina: {
-                amount: BigInt(pendingUpdate.onChainStamina.amount),
-                updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
-              },
-              // todo: add boosts
-              boosts: {
-                incr_stamina_regen_percent_num: 0,
-                incr_stamina_regen_tick_count: 0,
-                incr_explore_reward_percent_num: 0,
-                incr_explore_reward_end_tick: 0,
-                incr_damage_dealt_percent_num: 0,
-                incr_damage_dealt_end_tick: 0,
-                decr_damage_gotten_percent_num: 0,
-                decr_damage_gotten_end_tick: 0,
-              },
-              battle_cooldown_end: 0,
-            },
-            currentArmiesTick,
-          ).amount,
-        );
+        const updatedStamina = projectArmyCurrentStamina({
+          troopCategory: params.category,
+          troopTier: params.tier,
+          troopCount: pendingUpdate.troopCount,
+          onChainStamina: pendingUpdate.onChainStamina,
+          currentArmiesTick,
+          boosts: this.getArmyStaminaBoosts(params.entityId),
+        });
 
         // Use pending update data instead of initial data
         finalTroopCount = pendingUpdate.troopCount;
@@ -2336,32 +2345,15 @@ ${
 
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
-      // Calculate current stamina using StaminaManager with the last known stamina values
-      const updatedStamina = Number(
-        StaminaManager.getStamina(
-          {
-            category: army.category,
-            tier: army.tier,
-            count: BigInt(army.troopCount),
-            stamina: {
-              amount: BigInt(army.onChainStamina.amount),
-              updated_tick: BigInt(army.onChainStamina.updatedTick),
-            },
-            boosts: {
-              incr_stamina_regen_percent_num: 0,
-              incr_stamina_regen_tick_count: 0,
-              incr_explore_reward_percent_num: 0,
-              incr_explore_reward_end_tick: 0,
-              incr_damage_dealt_percent_num: 0,
-              incr_damage_dealt_end_tick: 0,
-              decr_damage_gotten_percent_num: 0,
-              decr_damage_gotten_end_tick: 0,
-            },
-            battle_cooldown_end: 0,
-          },
-          currentArmiesTick,
-        ).amount,
-      );
+      // Calculate current stamina using last on-chain values plus active boosts.
+      const updatedStamina = projectArmyCurrentStamina({
+        troopCategory: army.category,
+        troopTier: army.tier,
+        troopCount: army.troopCount,
+        onChainStamina: army.onChainStamina,
+        currentArmiesTick,
+        boosts: this.getArmyStaminaBoosts(entityId),
+      });
 
       // Update cached army data with new stamina
       army.currentStamina = updatedStamina;
@@ -2502,33 +2494,16 @@ ${
     // Update cached army data
     army.troopCount = update.troopCount;
 
-    // Calculate current stamina using StaminaManager
+    // Calculate current stamina using on-chain stamina and active boosts.
     const { currentArmiesTick } = getBlockTimestamp();
-    army.currentStamina = Number(
-      StaminaManager.getStamina(
-        {
-          category: army.category,
-          tier: army.tier,
-          count: BigInt(update.troopCount),
-          stamina: {
-            amount: BigInt(update.onChainStamina.amount),
-            updated_tick: BigInt(update.onChainStamina.updatedTick),
-          },
-          boosts: {
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-          },
-          battle_cooldown_end: 0,
-        },
-        currentArmiesTick,
-      ).amount,
-    );
+    army.currentStamina = projectArmyCurrentStamina({
+      troopCategory: army.category,
+      troopTier: army.tier,
+      troopCount: update.troopCount,
+      onChainStamina: update.onChainStamina,
+      currentArmiesTick,
+      boosts: this.getArmyStaminaBoosts(update.entityId),
+    });
 
     army.troopCount = update.troopCount;
 
