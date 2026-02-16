@@ -15,7 +15,7 @@ contracts = [
     "ERC1155:0x029d220775540033dc56462fcc7d24527d2121eefde783ec84166fb0bc34f57b", # vault fees
     "ERC1155:0x0494d3df4d14119d5516929c9457a74f35abc04de697974c5e064cd8415e11d8", # vault positions
     "ERC20:0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5",   # mock lords
-    "ERC20:0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49",    # mmr token
+    "ERC20:0x00065804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef",    # mmr token
 ]
 
 [sql]
