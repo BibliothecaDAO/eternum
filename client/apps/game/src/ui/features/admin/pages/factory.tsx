@@ -93,7 +93,6 @@ type ConfigPreset = "sandbox" | "blitz-slot";
 
 // Maximum hours in the future that a game start time can be set
 const MAX_START_TIME_HOURS = 50_000;
-const CONFIG_CALL_DELAY_MS = 2000;
 
 // Storage keys and cooldowns moved to ../constants and ../utils/storage
 
@@ -711,24 +710,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     }
   };
 
-  const buildContractConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
-    calldata.contractChunks.map((chunk) => ({ entrypoint: "set_factory_config_contracts", calldata: chunk }));
-
-  const buildModelConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
-    calldata.modelChunks.map((chunk) => ({ entrypoint: "set_factory_config_models", calldata: chunk }));
-
-  const buildEventConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
-    calldata.eventChunks.map((chunk) => ({ entrypoint: "set_factory_config_events", calldata: chunk }));
-
-  const buildLibraryConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
-    calldata.libraryChunks.map((chunk) => ({ entrypoint: "set_factory_config_libraries", calldata: chunk }));
-
   const buildAllConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] => [
     { entrypoint: "set_factory_config", calldata: calldata.base },
-    ...buildContractConfigCalls(calldata),
-    ...buildModelConfigCalls(calldata),
-    ...buildEventConfigCalls(calldata),
-    ...buildLibraryConfigCalls(calldata),
+    { entrypoint: "set_factory_config_contracts", calldata: calldata.contracts },
+    { entrypoint: "set_factory_config_models", calldata: calldata.models },
+    { entrypoint: "set_factory_config_events", calldata: calldata.events },
+    { entrypoint: "set_factory_config_libraries", calldata: calldata.libraries },
   ];
 
   const executeFactoryConfigCalls = async (calls: FactoryConfigCall[]): Promise<boolean> => {
@@ -738,8 +725,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
     try {
       let lastHash: string | undefined;
-      for (let callIndex = 0; callIndex < calls.length; callIndex++) {
-        const call = calls[callIndex];
+      for (const call of calls) {
         const result = await account.execute({
           contractAddress: factoryAddress,
           entrypoint: call.entrypoint,
@@ -748,10 +734,6 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         lastHash = result.transaction_hash;
         setTx({ status: "running", hash: lastHash });
         await account.waitForTransaction(lastHash);
-
-        if (callIndex < calls.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, CONFIG_CALL_DELAY_MS));
-        }
       }
 
       setTx({ status: "success", hash: lastHash });
@@ -2435,8 +2417,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                         <span>Set Configuration</span>
                       </button>
                       <p className="text-xs text-slate-500">
-                        Splits contracts, models, events, and libraries into chunks of 50 items and sends each call
-                        with a 2 second delay.
+                        Sends full contracts, models, events, and libraries arrays in one call per setter.
                       </p>
                     </div>
 

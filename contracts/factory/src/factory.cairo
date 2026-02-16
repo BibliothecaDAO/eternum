@@ -13,7 +13,8 @@
 #[dojo::contract]
 pub mod factory {
     use core::num::traits::Zero;
-    use dojo::model::ModelStorage;
+    use dojo::model::{Model, ModelStorage};
+    use dojo::storage::dojo_store::DojoStore;
     use dojo::utils::bytearray_hash;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
@@ -30,10 +31,6 @@ pub mod factory {
     mod errors {
         pub const DEPLOYMENT_ALREADY_COMPLETED: felt252 = 'deployment already completed';
         pub const NOT_CONFIG_OWNER: felt252 = 'not config owner';
-        pub const INVALID_CONTRACTS_START_INDEX: felt252 = 'invalid contracts start index';
-        pub const INVALID_MODELS_START_INDEX: felt252 = 'invalid models start index';
-        pub const INVALID_EVENTS_START_INDEX: felt252 = 'invalid events start index';
-        pub const INVALID_LIBRARIES_START_INDEX: felt252 = 'invalid libraries start index';
         pub const NOT_SERIES_OWNER: felt252 = 'not series owner';
         pub const CONFIG_NOT_INITIALIZED: felt252 = 'config not initialized';
         pub const SERIES_DOES_NOT_EXIST: felt252 = 'series does not exist';
@@ -142,177 +139,61 @@ pub mod factory {
                 factory_world
                     .write_model(@FactoryConfigOwner { version, contract_address: caller });
             }
-
-            let existing_config: FactoryConfig = factory_world.read_model(version);
-
-            factory_world
-                .write_model(
-                    @FactoryConfig {
-                        version,
-                        max_actions,
-                        world_class_hash,
-                        default_namespace,
-                        default_namespace_writer_all,
-                        contracts: existing_config.contracts,
-                        models: existing_config.models,
-                        events: existing_config.events,
-                        libraries: existing_config.libraries,
-                    },
-                );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("max_actions"), max_actions,
+            );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("world_class_hash"), world_class_hash,
+            );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("default_namespace"), default_namespace,
+            );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world,
+                version,
+                selector!("default_namespace_writer_all"),
+                default_namespace_writer_all,
+            );
         }
 
         fn set_factory_config_contracts(
             ref self: ContractState,
             version: felt252,
-            start_index: usize,
             contracts: Array<FactoryConfigContract>,
         ) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
-            let config: FactoryConfig = factory_world.read_model(version);
-
-            let mut next_contracts = if start_index == 0 {
-                array![]
-            } else {
-                let existing_contracts = config.contracts.clone();
-                assert(
-                    existing_contracts.len() == start_index, errors::INVALID_CONTRACTS_START_INDEX,
-                );
-                existing_contracts
-            };
-
-            for contract in contracts.span() {
-                next_contracts.append(*contract);
-            }
-
-            factory_world
-                .write_model(
-                    @FactoryConfig {
-                        version,
-                        max_actions: config.max_actions,
-                        world_class_hash: config.world_class_hash,
-                        default_namespace: config.default_namespace,
-                        default_namespace_writer_all: config.default_namespace_writer_all,
-                        contracts: next_contracts,
-                        models: config.models,
-                        events: config.events,
-                        libraries: config.libraries,
-                    },
-                );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("contracts"), contracts,
+            );
         }
 
-        fn set_factory_config_models(
-            ref self: ContractState, version: felt252, start_index: usize, models: Array<ClassHash>,
-        ) {
+        fn set_factory_config_models(ref self: ContractState, version: felt252, models: Array<ClassHash>) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
-            let config: FactoryConfig = factory_world.read_model(version);
-
-            let mut next_models = if start_index == 0 {
-                array![]
-            } else {
-                let existing_models = config.models.clone();
-                assert(
-                    existing_models.len() == start_index, errors::INVALID_MODELS_START_INDEX,
-                );
-                existing_models
-            };
-
-            for model in models.span() {
-                next_models.append(*model);
-            }
-
-            factory_world
-                .write_model(
-                    @FactoryConfig {
-                        version,
-                        max_actions: config.max_actions,
-                        world_class_hash: config.world_class_hash,
-                        default_namespace: config.default_namespace,
-                        default_namespace_writer_all: config.default_namespace_writer_all,
-                        contracts: config.contracts,
-                        models: next_models,
-                        events: config.events,
-                        libraries: config.libraries,
-                    },
-                );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("models"), models,
+            );
         }
 
-        fn set_factory_config_events(
-            ref self: ContractState, version: felt252, start_index: usize, events: Array<ClassHash>,
-        ) {
+        fn set_factory_config_events(ref self: ContractState, version: felt252, events: Array<ClassHash>) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
-            let config: FactoryConfig = factory_world.read_model(version);
-
-            let mut next_events = if start_index == 0 {
-                array![]
-            } else {
-                let existing_events = config.events.clone();
-                assert(
-                    existing_events.len() == start_index, errors::INVALID_EVENTS_START_INDEX,
-                );
-                existing_events
-            };
-
-            for event in events.span() {
-                next_events.append(*event);
-            }
-
-            factory_world
-                .write_model(
-                    @FactoryConfig {
-                        version,
-                        max_actions: config.max_actions,
-                        world_class_hash: config.world_class_hash,
-                        default_namespace: config.default_namespace,
-                        default_namespace_writer_all: config.default_namespace_writer_all,
-                        contracts: config.contracts,
-                        models: config.models,
-                        events: next_events,
-                        libraries: config.libraries,
-                    },
-                );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("events"), events,
+            );
         }
 
         fn set_factory_config_libraries(
             ref self: ContractState,
             version: felt252,
-            start_index: usize,
             libraries: Array<FactoryConfigLibrary>,
         ) {
             self.assert_config_owner(version);
             let mut factory_world = self.world_default();
-            let config: FactoryConfig = factory_world.read_model(version);
-
-            let mut next_libraries = if start_index == 0 {
-                array![]
-            } else {
-                let existing_libraries = config.libraries.clone();
-                assert(
-                    existing_libraries.len() == start_index, errors::INVALID_LIBRARIES_START_INDEX,
-                );
-                existing_libraries
-            };
-
-            for library in libraries.span() {
-                next_libraries.append(library.clone());
-            }
-
-            factory_world
-                .write_model(
-                    @FactoryConfig {
-                        version,
-                        max_actions: config.max_actions,
-                        world_class_hash: config.world_class_hash,
-                        default_namespace: config.default_namespace,
-                        default_namespace_writer_all: config.default_namespace_writer_all,
-                        contracts: config.contracts,
-                        models: config.models,
-                        events: config.events,
-                        libraries: next_libraries,
-                    },
-                );
+            FactoryConfigUtilImpl::set_member(
+                ref factory_world, version, selector!("libraries"), libraries,
+            );
         }
 
         fn create_game(
@@ -608,6 +489,21 @@ pub mod factory {
             let mut factory_world = self.world_default();
             let mmr_registration: MMRRegistration = factory_world.read_model(addr);
             return mmr_registration.version;
+        }
+    }
+
+    #[generate_trait]
+    impl FactoryConfigUtilImpl of FactoryConfigUtilTrait {
+        fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
+            world: dojo::world::WorldStorage, version: felt252, selector: felt252,
+        ) -> T {
+            world.read_member(Model::<FactoryConfig>::ptr_from_keys(version), selector)
+        }
+
+        fn set_member<
+            T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>,
+        >(ref world: dojo::world::WorldStorage, version: felt252, selector: felt252, value: T) {
+            world.write_member(Model::<FactoryConfig>::ptr_from_keys(version), selector, value)
         }
     }
 

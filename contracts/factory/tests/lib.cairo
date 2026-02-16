@@ -7,9 +7,8 @@ use dojo_snf_test::{
 use fake_lib::{IFakeLibDispatcherTrait, IFakeLibLibraryDispatcher};
 use fake_world::{IMyContractDispatcher, IMyContractDispatcherTrait, ModelA};
 use snforge_std::{CheatSpan, DeclareResultTrait, cheat_caller_address, declare};
-use starknet::ClassHash;
 use world_factory::factory_models::{
-    FactoryConfig, FactoryConfigContract, FactoryConfigLibrary, FactoryDeploymentCursor,
+    FactoryConfig, FactoryDeploymentCursor,
 };
 use world_factory::interface::{IWorldFactoryDispatcher, IWorldFactoryDispatcherTrait};
 use world_factory::world_models::{WorldContract, WorldDeployed};
@@ -54,73 +53,10 @@ fn set_factory_config_full(factory: IWorldFactoryDispatcher, config: FactoryConf
             config.default_namespace.clone(),
             config.default_namespace_writer_all,
         );
-    factory.set_factory_config_contracts(config.version, 0, config.contracts.clone());
-    factory.set_factory_config_models(config.version, 0, config.models.clone());
-    factory.set_factory_config_events(config.version, 0, config.events.clone());
-    factory.set_factory_config_libraries(config.version, 0, config.libraries.clone());
-}
-
-fn set_factory_config_arrays_chunked(factory: IWorldFactoryDispatcher, config: FactoryConfig) {
-    let mut first_contracts: Array<FactoryConfigContract> = array![];
-    let mut second_contracts: Array<FactoryConfigContract> = array![];
-    let mut contract_idx: usize = 0;
-    for contract in config.contracts.span() {
-        if contract_idx % 2_usize == 0 {
-            first_contracts.append(*contract);
-        } else {
-            second_contracts.append(*contract);
-        }
-        contract_idx += 1;
-    }
-
-    let mut first_models: Array<ClassHash> = array![];
-    let mut second_models: Array<ClassHash> = array![];
-    let mut model_idx: usize = 0;
-    for model in config.models.span() {
-        if model_idx % 2_usize == 0 {
-            first_models.append(*model);
-        } else {
-            second_models.append(*model);
-        }
-        model_idx += 1;
-    }
-
-    let mut first_events: Array<ClassHash> = array![];
-    let mut second_events: Array<ClassHash> = array![];
-    let mut event_idx: usize = 0;
-    for event in config.events.span() {
-        if event_idx % 2_usize == 0 {
-            first_events.append(*event);
-        } else {
-            second_events.append(*event);
-        }
-        event_idx += 1;
-    }
-
-    let mut first_libraries: Array<FactoryConfigLibrary> = array![];
-    let mut second_libraries: Array<FactoryConfigLibrary> = array![];
-    let mut library_idx: usize = 0;
-    for library in config.libraries.span() {
-        if library_idx % 2_usize == 0 {
-            first_libraries.append(library.clone());
-        } else {
-            second_libraries.append(library.clone());
-        }
-        library_idx += 1;
-    }
-
-    factory.set_factory_config_contracts(config.version, 0, first_contracts.clone());
-    factory.set_factory_config_contracts(config.version, first_contracts.len(), second_contracts.clone());
-
-    factory.set_factory_config_models(config.version, 0, first_models.clone());
-    factory.set_factory_config_models(config.version, first_models.len(), second_models.clone());
-
-    factory.set_factory_config_events(config.version, 0, first_events.clone());
-    factory.set_factory_config_events(config.version, first_events.len(), second_events.clone());
-
-    factory.set_factory_config_libraries(config.version, 0, first_libraries.clone());
-    factory
-        .set_factory_config_libraries(config.version, first_libraries.len(), second_libraries.clone());
+    factory.set_factory_config_contracts(config.version, config.contracts.clone());
+    factory.set_factory_config_models(config.version, config.models.clone());
+    factory.set_factory_config_events(config.version, config.events.clone());
+    factory.set_factory_config_libraries(config.version, config.libraries.clone());
 }
 
 #[test]
@@ -296,130 +232,4 @@ fn test_factory_deploy_and_confirm_world_deployed() {
     let fake_lib = IFakeLibLibraryDispatcher { class_hash: fake_lib_class_hash };
     let result = fake_lib.func_1();
     assert!(result == 42);
-}
-
-#[test]
-fn test_factory_config_arrays_chunked() {
-    let (factory, factory_world) = deploy_factory();
-
-    let fake_world_resources = fake_world::declare_fake_world();
-
-    let world_class_hash = declare("world").unwrap().contract_class().class_hash;
-
-    let default_namespace: ByteArray = "ns";
-
-    let factory_config = FactoryConfig {
-        version: 1,
-        max_actions: 5,
-        world_class_hash: *world_class_hash,
-        default_namespace,
-        default_namespace_writer_all: true,
-        contracts: fake_world_resources.contracts.clone(),
-        models: fake_world_resources.models.clone(),
-        events: fake_world_resources.events.clone(),
-        libraries: fake_world_resources.libraries.clone(),
-    };
-
-    factory
-        .set_factory_config(
-            factory_config.version,
-            factory_config.max_actions,
-            factory_config.world_class_hash,
-            factory_config.default_namespace.clone(),
-            factory_config.default_namespace_writer_all,
-        );
-
-    set_factory_config_arrays_chunked(factory, factory_config.clone());
-
-    let config: FactoryConfig = factory_world.read_model(1);
-    assert!(config.contracts.len() == factory_config.contracts.len());
-    assert!(config.models.len() == factory_config.models.len());
-    assert!(config.events.len() == factory_config.events.len());
-    assert!(config.libraries.len() == factory_config.libraries.len());
-}
-
-#[test]
-#[should_panic(expected: 'invalid contracts start index')]
-fn test_factory_config_contracts_chunk_start_index_validation() {
-    let (factory, _factory_world) = deploy_factory();
-
-    let world_class_hash = declare("world").unwrap().contract_class().class_hash;
-
-    factory
-        .set_factory_config(
-            1,
-            5,
-            *world_class_hash,
-            "ns",
-            true,
-        );
-
-    let empty_contracts: Array<FactoryConfigContract> = array![];
-    factory.set_factory_config_contracts(1, 1, empty_contracts);
-}
-
-#[test]
-#[should_panic(expected: 'invalid models start index')]
-fn test_factory_config_models_chunk_start_index_validation() {
-    let (factory, _factory_world) = deploy_factory();
-
-    let fake_world_resources = fake_world::declare_fake_world();
-    let world_class_hash = declare("world").unwrap().contract_class().class_hash;
-
-    factory
-        .set_factory_config(
-            1,
-            5,
-            *world_class_hash,
-            "ns",
-            true,
-        );
-
-    let mut chunk: Array<ClassHash> = array![];
-    for model in fake_world_resources.models.span() {
-        chunk.append(*model);
-        break;
-    }
-
-    factory.set_factory_config_models(1, 1, chunk);
-}
-
-#[test]
-#[should_panic(expected: 'invalid events start index')]
-fn test_factory_config_events_chunk_start_index_validation() {
-    let (factory, _factory_world) = deploy_factory();
-
-    let world_class_hash = declare("world").unwrap().contract_class().class_hash;
-
-    factory
-        .set_factory_config(
-            1,
-            5,
-            *world_class_hash,
-            "ns",
-            true,
-        );
-
-    let empty_events: Array<ClassHash> = array![];
-    factory.set_factory_config_events(1, 1, empty_events);
-}
-
-#[test]
-#[should_panic(expected: 'invalid libraries start index')]
-fn test_factory_config_libraries_chunk_start_index_validation() {
-    let (factory, _factory_world) = deploy_factory();
-
-    let world_class_hash = declare("world").unwrap().contract_class().class_hash;
-
-    factory
-        .set_factory_config(
-            1,
-            5,
-            *world_class_hash,
-            "ns",
-            true,
-        );
-
-    let empty_libraries: Array<FactoryConfigLibrary> = array![];
-    factory.set_factory_config_libraries(1, 1, empty_libraries);
 }

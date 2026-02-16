@@ -45,32 +45,40 @@ pub trait IWorldFactory<T> {
         default_namespace_writer_all: bool,
     );
 
-    /// Appends contract registration entries for a config version, starting at `start_index`.
+    /// Sets the contracts list for a config version.
     ///
-    /// If `start_index` is 0, the contracts list is reset before appending.
+    /// # Arguments
+    ///
+    /// * `version` - The configuration version key.
+    /// * `contracts` - Full contracts list.
     fn set_factory_config_contracts(
-        ref self: T, version: felt252, start_index: usize, contracts: Array<FactoryConfigContract>,
+        ref self: T, version: felt252, contracts: Array<FactoryConfigContract>,
     );
 
-    /// Appends model registration entries for a config version, starting at `start_index`.
+    /// Sets the models list for a config version.
     ///
-    /// If `start_index` is 0, the model list is reset before appending.
-    fn set_factory_config_models(
-        ref self: T, version: felt252, start_index: usize, models: Array<ClassHash>,
-    );
+    /// # Arguments
+    ///
+    /// * `version` - The configuration version key.
+    /// * `models` - Full models list.
+    fn set_factory_config_models(ref self: T, version: felt252, models: Array<ClassHash>);
 
-    /// Appends event registration entries for a config version, starting at `start_index`.
+    /// Sets the events list for a config version.
     ///
-    /// If `start_index` is 0, the events list is reset before appending.
-    fn set_factory_config_events(
-        ref self: T, version: felt252, start_index: usize, events: Array<ClassHash>,
-    );
+    /// # Arguments
+    ///
+    /// * `version` - The configuration version key.
+    /// * `events` - Full events list.
+    fn set_factory_config_events(ref self: T, version: felt252, events: Array<ClassHash>);
 
-    /// Appends library registration entries for a config version, starting at `start_index`.
+    /// Sets the libraries list for a config version.
     ///
-    /// If `start_index` is 0, the libraries list is reset before appending.
+    /// # Arguments
+    ///
+    /// * `version` - The configuration version key.
+    /// * `libraries` - Full libraries list.
     fn set_factory_config_libraries(
-        ref self: T, version: felt252, start_index: usize, libraries: Array<FactoryConfigLibrary>,
+        ref self: T, version: felt252, libraries: Array<FactoryConfigLibrary>,
     );
 }
 

@@ -23,20 +23,11 @@ interface ManifestData {
 export interface FactoryConfigCalldataParts {
   base: any[];
   contracts: any[];
-  contractChunks: any[][];
   models: any[];
-  modelChunks: any[][];
   events: any[];
-  eventChunks: any[][];
   libraries: any[];
-  libraryChunks: any[][];
   all: any[];
 }
-
-export const CONTRACT_CONFIG_CHUNK_SIZE = 50;
-export const MODEL_CONFIG_CHUNK_SIZE = 50;
-export const EVENT_CONFIG_CHUNK_SIZE = 50;
-export const LIBRARY_CONFIG_CHUNK_SIZE = 50;
 
 const serializeContractCalldataEntry = (contract: ManifestContract): any[] => {
   const entry: any[] = [];
@@ -95,49 +86,17 @@ export const generateFactoryCalldata = (
     contracts.push(...entry);
   }
 
-  const contractChunks: any[][] = [];
-  for (let start = 0; start < manifest.contracts.length; start += CONTRACT_CONFIG_CHUNK_SIZE) {
-    const chunkContracts = manifest.contracts.slice(start, start + CONTRACT_CONFIG_CHUNK_SIZE);
-    const chunkEntries = chunkContracts.map((contract) => serializeContractCalldataEntry(contract));
-    const chunkCalldata = [version, start, chunkContracts.length];
-    for (const chunkEntry of chunkEntries) {
-      chunkCalldata.push(...chunkEntry);
-    }
-    contractChunks.push(chunkCalldata);
-  }
-  if (contractChunks.length === 0) {
-    contractChunks.push([version, 0, 0]);
-  }
-
   const models: any[] = [];
   const modelClassHashes = manifest.models.map((model) => model.class_hash);
   models.push(version);
   models.push(modelClassHashes.length);
   for (const modelClassHash of modelClassHashes) models.push(modelClassHash);
 
-  const modelChunks: any[][] = [];
-  for (let start = 0; start < modelClassHashes.length; start += MODEL_CONFIG_CHUNK_SIZE) {
-    const chunk = modelClassHashes.slice(start, start + MODEL_CONFIG_CHUNK_SIZE);
-    modelChunks.push([version, start, chunk.length, ...chunk]);
-  }
-  if (modelChunks.length === 0) {
-    modelChunks.push([version, 0, 0]);
-  }
-
   const events: any[] = [];
   const eventClassHashes = manifest.events.map((event) => event.class_hash);
   events.push(version);
   events.push(eventClassHashes.length);
   for (const eventClassHash of eventClassHashes) events.push(eventClassHash);
-
-  const eventChunks: any[][] = [];
-  for (let start = 0; start < eventClassHashes.length; start += EVENT_CONFIG_CHUNK_SIZE) {
-    const chunk = eventClassHashes.slice(start, start + EVENT_CONFIG_CHUNK_SIZE);
-    eventChunks.push([version, start, chunk.length, ...chunk]);
-  }
-  if (eventChunks.length === 0) {
-    eventChunks.push([version, 0, 0]);
-  }
 
   const libs = manifest.libraries ?? [];
   const libraryEntries = libs.map((lib) => serializeLibraryCalldataEntry(lib));
@@ -148,30 +107,12 @@ export const generateFactoryCalldata = (
     libraries.push(...entry);
   }
 
-  const libraryChunks: any[][] = [];
-  for (let start = 0; start < libs.length; start += LIBRARY_CONFIG_CHUNK_SIZE) {
-    const chunkLibs = libs.slice(start, start + LIBRARY_CONFIG_CHUNK_SIZE);
-    const chunkEntries = chunkLibs.map((lib) => serializeLibraryCalldataEntry(lib));
-    const chunkCalldata = [version, start, chunkLibs.length];
-    for (const chunkEntry of chunkEntries) {
-      chunkCalldata.push(...chunkEntry);
-    }
-    libraryChunks.push(chunkCalldata);
-  }
-  if (libraryChunks.length === 0) {
-    libraryChunks.push([version, 0, 0]);
-  }
-
   return {
     base,
     contracts,
-    contractChunks,
     models,
-    modelChunks,
     events,
-    eventChunks,
     libraries,
-    libraryChunks,
     all: [...base, ...contracts, ...models, ...events, ...libraries],
   };
 };
