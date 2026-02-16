@@ -26,7 +26,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
-import { GameIsOverModal } from "../components/game-is-over-modal";
 import { GameReviewModal } from "../components/game-review-modal";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 
@@ -432,7 +431,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
 
   // Review flow state
-  const [gameOverWorld, setGameOverWorld] = useState<WorldSelection | null>(null);
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
   const [upcomingGames, setUpcomingGames] = useState<GameData[]>([]);
   const [endedGames, setEndedGames] = useState<GameData[]>([]);
@@ -500,7 +498,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
-    setGameOverWorld(null);
     setReviewWorld(selection);
   }, []);
 
@@ -522,20 +519,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, [queryClient]);
 
   const dismissReviewForWorld = useCallback((world: WorldSelection | null) => {
-    if (!world?.chain) return;
-    setGameReviewDismissed(world.chain, world.name);
+    if (!world?.chain || !world.worldAddress) return;
+    setGameReviewDismissed(world.chain, world.worldAddress);
   }, []);
-
-  const handleCloseGameOverModal = useCallback(() => {
-    dismissReviewForWorld(gameOverWorld);
-    setGameOverWorld(null);
-  }, [dismissReviewForWorld, gameOverWorld]);
-
-  const handleReviewFromGameOver = useCallback(() => {
-    if (!gameOverWorld) return;
-    setReviewWorld(gameOverWorld);
-    setGameOverWorld(null);
-  }, [gameOverWorld]);
 
   const handleCloseReviewModal = useCallback(() => {
     dismissReviewForWorld(reviewWorld);
@@ -545,7 +531,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const handleReturnHomeFromReview = useCallback(() => {
     dismissReviewForWorld(reviewWorld);
     setReviewWorld(null);
-    setGameOverWorld(null);
 
     if (activeTab !== "play") {
       const params = new URLSearchParams(searchParams);
@@ -576,15 +561,16 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   useEffect(() => {
     if (activeTab !== "play") return;
-    if (entryModalOpen || gameOverWorld || reviewWorld) return;
+    if (entryModalOpen || reviewWorld) return;
     if (endedGames.length === 0) return;
 
     const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
     if (!candidate) return;
-    if (isGameReviewDismissed(candidate.chain, candidate.name)) return;
+    if (!candidate.worldAddress) return;
+    if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
 
-    setGameOverWorld({ name: candidate.name, chain: candidate.chain });
-  }, [activeTab, endedGames, entryModalOpen, gameOverWorld, reviewWorld]);
+    setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
+  }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -611,7 +597,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            disabled={entryModalOpen || Boolean(gameOverWorld) || Boolean(reviewWorld)}
+            disabled={entryModalOpen || Boolean(reviewWorld)}
             onUpcomingGamesResolved={handleUpcomingGamesResolved}
             onEndedGamesResolved={handleEndedGamesResolved}
           />
@@ -636,15 +622,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
           isSpectateMode={isSpectateMode}
           isForgeMode={isForgeMode}
           numHyperstructuresLeft={numHyperstructuresLeft}
-        />
-      )}
-
-      {gameOverWorld && (
-        <GameIsOverModal
-          isOpen={Boolean(gameOverWorld)}
-          worldName={gameOverWorld.name}
-          onReview={handleReviewFromGameOver}
-          onClose={handleCloseGameOverModal}
         />
       )}
 

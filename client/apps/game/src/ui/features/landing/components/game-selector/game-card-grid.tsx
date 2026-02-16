@@ -92,6 +92,7 @@ type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
 export interface GameData {
   name: string;
   chain: Chain;
+  worldAddress: string | null;
   worldKey: string;
   status: "checking" | "ok" | "fail";
   gameStatus: GameStatus;
@@ -108,6 +109,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
 
   return [
     game.worldKey,
+    game.worldAddress ?? "",
     game.status,
     game.gameStatus,
     game.startMainAt ?? "",
@@ -486,6 +488,7 @@ export const UnifiedGameGrid = ({
         return {
           name: world.name,
           chain: world.chain,
+          worldAddress: world.worldAddress ?? null,
           worldKey,
           status,
           gameStatus,
@@ -668,14 +671,18 @@ export const UnifiedGameGrid = ({
               <GameCard
                 key={game.worldKey}
                 game={game}
-                onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
-                onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                onPlay={() => onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })}
+                onSpectate={() => onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })}
+                onSeeScore={
+                  onSeeScore
+                    ? () => onSeeScore({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    : undefined
+                }
                 onForgeHyperstructures={
                   onForgeHyperstructures
                     ? () =>
                         onForgeHyperstructures(
-                          { name: game.name, chain: game.chain },
+                          { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
                           game.config?.numHyperstructuresLeft ?? 0,
                         )
                     : undefined
@@ -692,14 +699,20 @@ export const UnifiedGameGrid = ({
               <div key={game.worldKey} className="flex-shrink-0 w-[320px]">
                 <GameCard
                   game={game}
-                  onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
-                  onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                  onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                  onPlay={() => onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })}
+                  onSpectate={() =>
+                    onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                  }
+                  onSeeScore={
+                    onSeeScore
+                      ? () => onSeeScore({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                      : undefined
+                  }
                   onForgeHyperstructures={
                     onForgeHyperstructures
                       ? () =>
                           onForgeHyperstructures(
-                            { name: game.name, chain: game.chain },
+                            { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
                             game.config?.numHyperstructuresLeft ?? 0,
                           )
                       : undefined
