@@ -1,7 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
-import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
+import { ensureStructureSynced, getEntitiesFromTorii, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -35,9 +35,11 @@ import {
   ArmyActionManager,
   BattleEventSystemUpdate,
   ChestSystemUpdate,
+  DEFAULT_COORD_ALT,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
+  getTileAt,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -134,6 +136,7 @@ import {
   recordChunkDiagnosticsEvent,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
+import { collectMissingExplorerIdsInBounds } from "./worldmap-explorer-hydration";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -3598,6 +3601,9 @@ export default class WorldmapScene extends HexagonScene {
         minRow + FELT_CENTER(),
         maxRow + FELT_CENTER(),
       );
+
+      await this.hydrateExplorerTroopsForBounds(minCol, maxCol, minRow, maxRow);
+
       // Only add to the fetched cache if the render area is still pinned (still relevant)
       if (this.pinnedRenderAreas.has(fetchKey)) {
         this.fetchedChunks.add(fetchKey);
@@ -3618,6 +3624,45 @@ export default class WorldmapScene extends HexagonScene {
       this.pendingChunks.delete(fetchKey);
       this.endToriiFetch();
     }
+  }
+
+  private async hydrateExplorerTroopsForBounds(
+    minCol: number,
+    maxCol: number,
+    minRow: number,
+    maxRow: number,
+  ): Promise<void> {
+    const components = this.dojo.components as SetupResult["components"];
+    if (!components?.ExplorerTroops) {
+      return;
+    }
+
+    const feltCenter = FELT_CENTER();
+    const missingExplorerIds = collectMissingExplorerIdsInBounds({
+      bounds: { minCol, maxCol, minRow, maxRow },
+      readTile: (col, row) =>
+        getTileAt(
+          components as Parameters<typeof getTileAt>[0],
+          DEFAULT_COORD_ALT,
+          col + feltCenter,
+          row + feltCenter,
+        ),
+      hasExplorer: (entityId) => {
+        const explorerEntity = getEntityIdFromKeys([BigInt(entityId)]);
+        return getComponentValue(components.ExplorerTroops, explorerEntity) !== undefined;
+      },
+    });
+
+    if (missingExplorerIds.length === 0) {
+      return;
+    }
+
+    await getEntitiesFromTorii(
+      this.dojo.network.toriiClient,
+      this.dojo.network.contractComponents as unknown as Parameters<typeof getEntitiesFromTorii>[1],
+      missingExplorerIds,
+      ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
+    );
   }
 
   private touchMatrixCache(chunkKey: string) {
