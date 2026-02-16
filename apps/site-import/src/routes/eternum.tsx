@@ -147,7 +147,7 @@ function EternumPage() {
           preload="metadata"
           poster="/og.jpg"
         >
-          <source src="/videos/eternum-stub.mp4" type="video/mp4" />
+          <source src="/eternum.mp4" type="video/mp4" />
         </video>
 
         <HexGridBackground
