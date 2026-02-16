@@ -5,6 +5,8 @@ export type MMRTier = {
   color: string;
 };
 
+export const MMR_TOKEN_DECIMALS = 10n ** 18n;
+
 export const MMR_TIERS: MMRTier[] = [
   { name: "Elite", minMMR: 2850, maxMMR: Infinity, color: "text-purple-400" },
   { name: "Master", minMMR: 2400, maxMMR: 2850, color: "text-red-400" },
@@ -16,6 +18,8 @@ export const MMR_TIERS: MMRTier[] = [
   { name: "Iron", minMMR: 0, maxMMR: 150, color: "text-stone-500" },
 ];
 
+const toMmrInteger = (mmrRaw: bigint): number => Number(mmrRaw / MMR_TOKEN_DECIMALS);
+
 export const getMMRTier = (mmr: number): MMRTier => {
   for (const tier of MMR_TIERS) {
     if (mmr >= tier.minMMR) {
@@ -25,3 +29,5 @@ export const getMMRTier = (mmr: number): MMRTier => {
 
   return MMR_TIERS[MMR_TIERS.length - 1];
 };
+
+export const getMMRTierFromRaw = (mmrRaw: bigint): MMRTier => getMMRTier(toMmrInteger(mmrRaw));

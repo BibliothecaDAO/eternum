@@ -5,28 +5,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { hash } from "starknet";
 
+import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
-import { getMMRTier } from "@/ui/utils/mmr-tiers";
+import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import type { Chain } from "@contracts";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const PAGE_SIZE = 25;
-const MMR_DECIMALS = 10n ** 18n;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
-const SLOT_MMR_TOKEN_ADDRESS = "0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49";
 
 type SortBy = "rank" | "timestamp" | "delta";
 
 const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
-
-const GLOBAL_TORII_BY_CHAIN: Record<"mainnet" | "slot", string> = {
-  mainnet: "https://api.cartridge.gg/x/eternum-global-mainnet/torii",
-  slot: "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
-};
-
-const MMR_TOKEN_BY_CHAIN: Partial<Record<Chain, string>> = {
-  slot: SLOT_MMR_TOKEN_ADDRESS,
-};
 
 interface GlobalMMRRow {
   player_address?: string;
@@ -112,17 +102,8 @@ const escapeLikeTerm = (value: string): string =>
 const formatIntegerString = (value: string): string => value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 const formatMMR = (mmr: bigint): string => {
-  const integer = mmr / MMR_DECIMALS;
+  const integer = mmr / MMR_TOKEN_DECIMALS;
   return formatIntegerString(integer.toString());
-};
-
-const getMMRDisplayTier = (mmr: bigint) => {
-  const integer = mmr / MMR_DECIMALS;
-  if (integer > BigInt(Number.MAX_SAFE_INTEGER)) {
-    return getMMRTier(Number.MAX_SAFE_INTEGER);
-  }
-
-  return getMMRTier(Number(integer));
 };
 
 const formatDelta = (delta: bigint): string => {
@@ -579,15 +560,15 @@ export const MMRLeaderboard = () => {
                 <tr className="text-left text-sm text-gold/60">
                   <th className="px-6 py-4 font-medium">Rank</th>
                   <th className="px-6 py-4 font-medium">Player</th>
-                  <th className="px-6 py-4 text-right font-medium">Tier</th>
                   <th className="px-6 py-4 text-right font-medium">MMR</th>
+                  <th className="px-6 py-4 text-right font-medium">Tier</th>
                   <th className="px-6 py-4 text-right font-medium">Delta</th>
                   <th className="px-6 py-4 text-right font-medium">Last Update</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
                 {state.entries.map((entry) => {
-                  const mmrTier = getMMRDisplayTier(entry.newMmr);
+                  const tier = getMMRTierFromRaw(entry.newMmr);
 
                   return (
                     <tr key={`${entry.address}-${entry.eventId}`} className="transition-colors hover:bg-gold/5">
@@ -595,8 +576,8 @@ export const MMRLeaderboard = () => {
                       <td className="px-6 py-4 font-medium text-gold">
                         <MaybeController address={entry.address} className="font-medium text-gold" />
                       </td>
-                      <td className={`px-6 py-4 text-right font-medium ${mmrTier.color}`}>{mmrTier.name}</td>
                       <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
+                      <td className={`px-6 py-4 text-right font-medium ${tier.color}`}>{tier.name}</td>
                       <td
                         className={`px-6 py-4 text-right font-medium ${
                           entry.delta >= 0n ? "text-emerald-300" : "text-red-300"

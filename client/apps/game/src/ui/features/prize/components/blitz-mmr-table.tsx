@@ -1,5 +1,5 @@
-import { getMMRTier } from "@/ui/utils/mmr-tiers";
 import { displayAddress } from "@/ui/utils/utils";
+import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import { getAddressName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -176,7 +176,7 @@ export const BlitzMMRTable = () => {
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formatMMR = (mmr: bigint): string => {
-    const mmrValue = mmr / 10n ** 18n;
+    const mmrValue = mmr / MMR_TOKEN_DECIMALS;
     return mmrValue.toString();
   };
 
@@ -216,8 +216,7 @@ export const BlitzMMRTable = () => {
           </thead>
           <tbody>
             {playerMMRs.map((player, idx) => {
-              const mmrValue = Number(player.mmr / 10n ** 18n);
-              const tier = getMMRTier(mmrValue);
+              const tier = getMMRTierFromRaw(player.mmr);
               return (
                 <tr key={toHexString(player.address)} className="border-b border-gold/5 hover:bg-gold/5">
                   <td className="py-2 px-2 text-gold/50">{idx + 1}</td>
