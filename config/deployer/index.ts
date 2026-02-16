@@ -2,7 +2,7 @@ import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest } from "@contracts";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
-import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "../utils/environment";
+import { logNetwork, saveConfigJsonFromConfigTsFile, type GameType, type NetworkType } from "../utils/environment";
 import { type Chain } from "../utils/utils";
 import { GameConfigDeployer, nodeReadConfig } from "./config";
 import { withBatching } from "./tx-batcher";
@@ -17,6 +17,14 @@ const {
 
 // =============== SETUP ETERNUM CONFIG ===============
 
+const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
+const gameType = process.argv[2] as GameType;
+if (!gameType || !VALID_GAME_TYPES.includes(gameType)) {
+  console.error(`Usage: bun run ./deployer/index.ts <game_type>`);
+  console.error(`  game_type must be one of: ${VALID_GAME_TYPES.join(", ")}`);
+  process.exit(1);
+}
+
 // prompt user to confirm non-local deployment
 confirmNonLocalDeployment(VITE_PUBLIC_CHAIN!);
 
@@ -30,8 +38,8 @@ const options = {
 };
 const account = new Account(options);
 
-await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType);
-const configuration = await nodeReadConfig(VITE_PUBLIC_CHAIN! as Chain);
+await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType, gameType);
+const configuration = await nodeReadConfig(VITE_PUBLIC_CHAIN! as Chain, gameType);
 export const config = new GameConfigDeployer(configuration, VITE_PUBLIC_CHAIN! as NetworkType);
 
 // Deploy configurations

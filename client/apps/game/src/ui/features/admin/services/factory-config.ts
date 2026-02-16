@@ -33,7 +33,7 @@ export interface FactoryConfigCalldataParts {
   all: any[];
 }
 
-export const CONTRACT_CONFIG_CHUNK_SIZE = 50;
+export const CONTRACT_CONFIG_CHUNK_SIZE = 10;
 export const MODEL_CONFIG_CHUNK_SIZE = 50;
 export const EVENT_CONFIG_CHUNK_SIZE = 50;
 export const LIBRARY_CONFIG_CHUNK_SIZE = 50;
@@ -64,7 +64,12 @@ const resolveLibraryName = (lib: { tag?: string; version?: string; name?: string
   }
 };
 
-const serializeLibraryCalldataEntry = (lib: { class_hash: string; tag?: string; version?: string; name?: string }): any[] => {
+const serializeLibraryCalldataEntry = (lib: {
+  class_hash: string;
+  tag?: string;
+  version?: string;
+  name?: string;
+}): any[] => {
   const libVersion = lib.version || "";
   const libName = resolveLibraryName(lib);
   const nameByteArray = byteArray.byteArrayFromString(libName);

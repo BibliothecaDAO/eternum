@@ -492,6 +492,8 @@ export interface Config {
     relicDiscoveryIntervalSeconds: number;
     relicHexDistanceFromCenter: number;
     relicChestRelicsPerChest: number;
+    bitcoinMineWinProbability: number;
+    bitcoinMineFailProbability: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
