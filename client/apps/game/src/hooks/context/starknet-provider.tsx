@@ -1,11 +1,18 @@
-import { getActiveWorld, normalizeRpcUrl } from "@/runtime/world";
+import {
+  WORLD_SELECTION_CHANGED_EVENT,
+  getActiveWorld,
+  normalizeRpcUrl,
+  patchManifestWithFactory,
+  resolveChain,
+} from "@/runtime/world";
+import { Chain as GameChain, getGameManifest } from "@contracts";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
-import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
+import { Chain as StarknetChain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { constants, shortString } from "starknet";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
@@ -23,18 +30,12 @@ const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
-const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
 const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-
-const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
-const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
-
-// ==============================================
 
 type DerivedChain = {
   kind: "slot" | "mainnet" | "sepolia";
@@ -69,37 +70,57 @@ const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
   }
 };
 
-const baseRpcUrl = isLocal ? KATANA_RPC_URL : dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
-const rpcUrl = normalizeRpcUrl(baseRpcUrl);
+type RuntimeConnectorConfig = {
+  connectorKey: string;
+  isLocal: boolean;
+  resolvedChain: DerivedChain;
+  resolvedChainId: string;
+  rpcUrl: string;
+  policyManifest: Record<string, unknown>;
+};
 
-console.log("baseRpcUrl", baseRpcUrl);
+const getRuntimeConnectorConfig = (): RuntimeConnectorConfig => {
+  const selectedChain = resolveChain(env.VITE_PUBLIC_CHAIN as GameChain);
+  const isLocal = selectedChain === "local";
+  const isSlot = selectedChain === "slot";
+  const isSlottest = selectedChain === "slottest";
+  const activeWorld = getActiveWorld();
 
-const derivedChain = isLocal ? null : deriveChainFromRpcUrl(rpcUrl);
-const fallbackChain: DerivedChain = isSlot
-  ? { kind: "slot", chainId: SLOT_CHAIN_ID }
-  : isSlottest
-    ? { kind: "slot", chainId: SLOT_CHAIN_ID_TEST }
-    : env.VITE_PUBLIC_CHAIN === "mainnet"
-      ? { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN }
-      : { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
-const resolvedChain = derivedChain ?? fallbackChain;
-const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
-const chain_id = resolvedChainId;
+  const baseRpcUrl = isLocal ? KATANA_RPC_URL : activeWorld?.rpcUrl || dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
+  const rpcUrl = normalizeRpcUrl(baseRpcUrl);
 
-const controller = new ControllerConnector({
-  errorDisplayMode: "notification",
-  propagateSessionErrors: true,
-  // chain_id,
-  chains: [
-    {
-      rpcUrl,
-    },
-  ],
-  defaultChainId: resolvedChainId,
-  policies: buildPolicies(dojoConfig.manifest),
-  slot,
-  namespace,
-});
+  const derivedChain = isLocal ? null : deriveChainFromRpcUrl(rpcUrl);
+  const fallbackChain: DerivedChain = isSlot
+    ? { kind: "slot", chainId: SLOT_CHAIN_ID }
+    : isSlottest
+      ? { kind: "slot", chainId: SLOT_CHAIN_ID_TEST }
+      : selectedChain === "mainnet"
+        ? { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN }
+        : { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+  const resolvedChain = derivedChain ?? fallbackChain;
+  const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
+
+  let policyManifest = dojoConfig.manifest as Record<string, unknown>;
+  const baseManifest = getGameManifest(selectedChain);
+  if (activeWorld?.contractsBySelector && activeWorld.worldAddress) {
+    policyManifest = patchManifestWithFactory(
+      baseManifest as Record<string, unknown>,
+      activeWorld.worldAddress,
+      activeWorld.contractsBySelector,
+    ) as Record<string, unknown>;
+  }
+
+  const connectorKey = [selectedChain, activeWorld?.name ?? "none", resolvedChainId, rpcUrl].join(":");
+
+  return {
+    connectorKey,
+    isLocal,
+    resolvedChain,
+    resolvedChainId,
+    rpcUrl,
+    policyManifest,
+  };
+};
 
 const katanaLocalChain = {
   id: BigInt(KATANA_CHAIN_ID),
@@ -127,7 +148,7 @@ const katanaLocalChain = {
       http: [],
     },
   },
-} as const satisfies Chain;
+} as const satisfies StarknetChain;
 
 // Custom QueryClient with game-appropriate defaults
 // - Disable refetchOnWindowFocus to prevent surprise refetch storms when alt-tabbing
@@ -144,34 +165,81 @@ const queryClient = new QueryClient({
 });
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
-  const rpc = useCallback(() => {
-    return { nodeUrl: rpcUrl };
+  const [selectionVersion, setSelectionVersion] = useState(0);
+
+  useEffect(() => {
+    const onWorldSelectionChanged = () => {
+      setSelectionVersion((current) => current + 1);
+    };
+
+    window.addEventListener(WORLD_SELECTION_CHANGED_EVENT, onWorldSelectionChanged);
+    window.addEventListener("storage", onWorldSelectionChanged);
+    return () => {
+      window.removeEventListener(WORLD_SELECTION_CHANGED_EVENT, onWorldSelectionChanged);
+      window.removeEventListener("storage", onWorldSelectionChanged);
+    };
   }, []);
 
+  const runtimeConfig = useMemo(() => {
+    // Explicit refresh trigger from world-selection events.
+    void selectionVersion;
+    return getRuntimeConnectorConfig();
+  }, [selectionVersion]);
+  const providerKey = `${runtimeConfig.connectorKey}:${selectionVersion}`;
+
+  const controllerConnector = useMemo(() => {
+    void selectionVersion;
+    void runtimeConfig.connectorKey;
+    return new ControllerConnector({
+      errorDisplayMode: "notification",
+      propagateSessionErrors: true,
+      chains: [
+        {
+          rpcUrl: runtimeConfig.rpcUrl,
+        },
+      ],
+      defaultChainId: runtimeConfig.resolvedChainId,
+      policies: buildPolicies(runtimeConfig.policyManifest),
+      slot,
+      namespace,
+    });
+  }, [
+    runtimeConfig.connectorKey,
+    runtimeConfig.policyManifest,
+    runtimeConfig.resolvedChainId,
+    runtimeConfig.rpcUrl,
+    selectionVersion,
+  ]);
+
+  const rpc = useCallback(() => {
+    return { nodeUrl: runtimeConfig.rpcUrl };
+  }, [runtimeConfig.rpcUrl]);
+
   const { connectors: predeployedConnectors } = usePredeployedAccounts({
-    rpc: rpcUrl,
+    rpc: runtimeConfig.rpcUrl,
     id: "katana",
     name: "Katana",
   });
 
   const paymasterRpc = useCallback(() => {
-    return { nodeUrl: rpcUrl };
-  }, []);
+    return { nodeUrl: runtimeConfig.rpcUrl };
+  }, [runtimeConfig.rpcUrl]);
 
   return (
     <StarknetConfig
+      key={providerKey}
       chains={
-        isLocal
+        runtimeConfig.isLocal
           ? [katanaLocalChain]
-          : resolvedChain.kind === "slot"
-            ? [getSlotChain(resolvedChain.chainId)]
-            : resolvedChain.kind === "mainnet"
+          : runtimeConfig.resolvedChain.kind === "slot"
+            ? [getSlotChain(runtimeConfig.resolvedChain.chainId)]
+            : runtimeConfig.resolvedChain.kind === "mainnet"
               ? [mainnet]
               : [sepolia]
       }
       provider={jsonRpcProvider({ rpc })}
-      paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
-      connectors={isLocal ? predeployedConnectors : [controller as unknown as Connector]}
+      paymasterProvider={runtimeConfig.isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
+      connectors={runtimeConfig.isLocal ? predeployedConnectors : [controllerConnector as unknown as Connector]}
       explorer={voyager}
       autoConnect
       queryClient={queryClient}
