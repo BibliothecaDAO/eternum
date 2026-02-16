@@ -142,4 +142,16 @@ describe("MMRLeaderboard", () => {
       "lower(id) like '%:0x013a8a080e0a1ab15f8d6ca97866ab0e4904a89af67f1de79bc83c720f46bc49:%'",
     );
   });
+
+  it("shows the MMR tier column on landing entries", async () => {
+    await act(async () => {
+      root.render(<MMRLeaderboard />);
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain("Tier");
+      expect(container.textContent).toContain("Iron");
+    });
+  });
 });

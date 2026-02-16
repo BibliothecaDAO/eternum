@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
@@ -16,8 +17,8 @@ import { toast } from "sonner";
 import { dojoConfig } from "../../../../dojo-config";
 import { env } from "../../../../env";
 import { ClaimBlitzPrizeButton } from "./components/claim-blitz-prize-button";
-import { commitAndClaimMMR } from "./utils/mmr-utils";
 import { WinnersTable } from "./components/winners-table";
+import { commitAndClaimMMR } from "./utils/mmr-utils";
 
 type RegisteredPlayer = { address: bigint; points: bigint };
 type SubmissionPhase =
@@ -43,12 +44,13 @@ type MmrRetryState = {
 
 export const PrizePanel = () => {
   const {
-    account: { account },
     setup: {
       components,
       systemCalls: { blitz_prize_player_rank, blitz_prize_claim_no_game, uuid, commit_and_claim_game_mmr },
     },
   } = useDojo();
+
+  const account = useAccountStore((state) => state.account);
 
   // Get RPC URL from config for MMR
   const rpcUrl = useMemo(() => {
@@ -73,11 +75,13 @@ export const PrizePanel = () => {
     [trialEntities, components.PlayersRankTrial],
   );
   const myTrial = useMemo(() => {
-    const mine = trials.filter((t) => String(t.owner).toLowerCase() === String(account.address).toLowerCase());
+    if (!account?.address) return undefined;
+    const connectedAddress = String(account.address).toLowerCase();
+    const mine = trials.filter((t) => String(t.owner).toLowerCase() === connectedAddress);
     if (mine.length === 0) return undefined;
     // pick the latest by trial_id
     return mine.toSorted((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
-  }, [trials, account.address]);
+  }, [trials, account?.address]);
   const finalTrial = useMemo(() => {
     if (!finalTrialId) return undefined;
     return trials.find((t) => (t.trial_id as bigint) === finalTrialId);
@@ -270,6 +274,7 @@ export const PrizePanel = () => {
     submission.phase === "preparing" || submission.phase === "submitting_ranks" || submission.phase === "updating_mmr";
 
   const submitBlockedReason = useMemo(() => {
+    if (!account) return "Connect your wallet to submit rankings.";
     if (rankingCompleted) return "Ranking is already complete.";
     if (!rankingWindowOpen && !singleRegistrantNoGame) {
       return `Submission opens once ${timelineSubjectLower} and grace period end.`;
@@ -286,6 +291,7 @@ export const PrizePanel = () => {
     rankingWindowOpen,
     singleRegistrantNoGame,
     timelineSubjectLower,
+    account,
     registeredAddresses.length,
     registeredPlayers.length,
   ]);
@@ -317,6 +323,16 @@ export const PrizePanel = () => {
   ]);
 
   const handleStartOrContinue = async () => {
+    if (!account) {
+      setSubmission({
+        phase: "error",
+        errorStage: "validation",
+        errorMessage: "Connect your wallet to submit rankings.",
+        message: "Submission blocked.",
+      });
+      return;
+    }
+
     if (submitBlockedReason) {
       setSubmission({
         phase: "error",
@@ -448,18 +464,25 @@ export const PrizePanel = () => {
 
   const submitButtonDisabled = isSubmissionPending || Boolean(submitBlockedReason);
   const canRetryMMR =
-    hasFinal && mmrEnabled && Boolean(mmrTokenAddress) && !isMMRCommitted && registeredPlayers.length >= mmrMinPlayers;
-  const mmrRetryBlockedReason = !hasFinal
-    ? "MMR update is available once rankings are finalized."
-    : !mmrEnabled
-      ? "MMR is disabled in this world."
-      : !mmrTokenAddress
-        ? "MMR token is not configured."
-        : isMMRCommitted
-          ? "MMR was already updated."
-          : registeredPlayers.length < mmrMinPlayers
-            ? `Need at least ${mmrMinPlayers} ranked players for MMR.`
-            : null;
+    Boolean(account) &&
+    hasFinal &&
+    mmrEnabled &&
+    Boolean(mmrTokenAddress) &&
+    !isMMRCommitted &&
+    registeredPlayers.length >= mmrMinPlayers;
+  const mmrRetryBlockedReason = !account
+    ? "Connect your wallet to update MMR."
+    : !hasFinal
+      ? "MMR update is available once rankings are finalized."
+      : !mmrEnabled
+        ? "MMR is disabled in this world."
+        : !mmrTokenAddress
+          ? "MMR token is not configured."
+          : isMMRCommitted
+            ? "MMR was already updated."
+            : registeredPlayers.length < mmrMinPlayers
+              ? `Need at least ${mmrMinPlayers} ranked players for MMR.`
+              : null;
   const submissionStageLabel =
     submission.phase === "preparing"
       ? "Preparing"
@@ -511,7 +534,7 @@ export const PrizePanel = () => {
   );
 
   const handleRetryMMR = async () => {
-    if (!canRetryMMR || !mmrTokenAddress) {
+    if (!canRetryMMR || !mmrTokenAddress || !account) {
       setMmrRetry({
         phase: "error",
         message: mmrRetryBlockedReason ?? "MMR update is unavailable.",
@@ -572,7 +595,11 @@ export const PrizePanel = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
                 <span>Ranking Reference</span>
                 <div className="flex items-center gap-4 text-gold/80">
-                  <span className="font-mono">Total Pot: {formatTokenAmount(finalTotalPot)}</span>
+                  <span className="font-mono inline-flex items-center gap-1">
+                    <span>Total Pot:</span>
+                    <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                    <span>{formatTokenAmount(finalTotalPot)}</span>
+                  </span>
                 </div>
               </div>
               <WinnersTable />
@@ -693,7 +720,11 @@ export const PrizePanel = () => {
                 <span>Current Ranking Progress</span>
                 <div className="flex items-center gap-4">
                   <span className="font-mono text-gold/80">Ref: {String(myTrialId)}</span>
-                  <span className="text-gold/80 font-medium">Total Pot: {formatTokenAmount(myTotalPot)}</span>
+                  <span className="text-gold/80 font-medium inline-flex items-center gap-1">
+                    <span>Total Pot:</span>
+                    <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                    <span>{formatTokenAmount(myTotalPot)}</span>
+                  </span>
                 </div>
               </div>
               <WinnersTable trialId={myTrialId} />
