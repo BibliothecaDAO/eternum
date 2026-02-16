@@ -11,7 +11,7 @@ import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Chain } from "@contracts";
 import { useQueryClient } from "@tanstack/react-query";
@@ -101,6 +101,24 @@ export interface GameData {
   isRegistered: boolean | null;
   config: WorldConfigMeta | null;
 }
+
+const buildGameResolutionSignature = (game: GameData): string => {
+  const registrationValue = game.isRegistered === null ? "null" : game.isRegistered ? "1" : "0";
+  const config = game.config;
+
+  return [
+    game.worldKey,
+    game.status,
+    game.gameStatus,
+    game.startMainAt ?? "",
+    game.endAt ?? "",
+    game.registrationCount ?? "",
+    registrationValue,
+    config?.devModeOn ? "1" : "0",
+    config?.mmrEnabled ? "1" : "0",
+    config?.numHyperstructuresLeft ?? "",
+  ].join(":");
+};
 
 interface GameCardProps {
   game: GameData;
@@ -557,9 +575,16 @@ export const UnifiedGameGrid = ({
     };
   }, [games]);
 
+  const resolvedGamesSignature = useMemo(() => games.map((game) => buildGameResolutionSignature(game)).join("|"), [games]);
+  const lastResolvedGamesSignatureRef = useRef<string | null>(null);
+
   useEffect(() => {
-    onGamesResolved?.(games);
-  }, [games, onGamesResolved]);
+    if (!onGamesResolved) return;
+    if (lastResolvedGamesSignatureRef.current === resolvedGamesSignature) return;
+
+    lastResolvedGamesSignatureRef.current = resolvedGamesSignature;
+    onGamesResolved(games);
+  }, [games, onGamesResolved, resolvedGamesSignature]);
 
   return (
     <div className={cn("relative", className)}>
