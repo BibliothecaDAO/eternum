@@ -53,7 +53,9 @@ describe("ToriiStreamManager", () => {
     const cancelFirst = vi.fn();
     const cancelSecond = vi.fn();
 
-    syncMock.mockImplementationOnce(async () => firstSwitch.promise).mockImplementationOnce(async () => secondSwitch.promise);
+    syncMock
+      .mockImplementationOnce(async () => firstSwitch.promise)
+      .mockImplementationOnce(async () => secondSwitch.promise);
 
     const manager = new ToriiStreamManager({
       client: {} as any,

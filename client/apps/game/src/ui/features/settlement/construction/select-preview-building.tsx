@@ -593,14 +593,29 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const recommendedArmyType = useMemo<ArmyTypeLabel | null>(() => {
     const recommended = armyGroups.find((group) => group.isRecommended);
-    return recommended ? recommended.armyType : null;
+    if (recommended) return recommended.armyType;
+
+    if (armyGroups.length === 0) return null;
+
+    const bestBonusGroup = armyGroups.reduce<ArmyGroup | null>((best, group) => {
+      if (!best) return group;
+      const bestBonus = best.bonus ?? 1;
+      const groupBonus = group.bonus ?? 1;
+      return groupBonus > bestBonus ? group : best;
+    }, null);
+
+    return bestBonusGroup?.armyType ?? armyGroups[0].armyType;
   }, [armyGroups]);
 
   const [selectedTab, setSelectedTab] = useState(1);
   const [selectedArmyType, setSelectedArmyType] = useState<ArmyTypeLabel | null>(null);
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set());
+  const previousEntityIdRef = useRef(entityId);
 
   useEffect(() => {
+    const hasRealmChanged = previousEntityIdRef.current !== entityId;
+    previousEntityIdRef.current = entityId;
+
     if (armyGroups.length === 0) {
       if (selectedArmyType !== null) {
         setSelectedArmyType(null);
@@ -608,12 +623,15 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       return;
     }
 
-    if (selectedArmyType && armyGroups.some((group) => group.armyType === selectedArmyType)) {
+    const selectedArmyTypeExists =
+      selectedArmyType !== null && armyGroups.some((group) => group.armyType === selectedArmyType);
+
+    if (!hasRealmChanged && selectedArmyTypeExists) {
       return;
     }
 
     setSelectedArmyType(recommendedArmyType ?? armyGroups[0].armyType);
-  }, [armyGroups, recommendedArmyType, selectedArmyType]);
+  }, [armyGroups, entityId, recommendedArmyType, selectedArmyType]);
 
   const checkBalance = useCallback(
     (cost: any) =>

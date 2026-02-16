@@ -93,42 +93,42 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
   return (
     <div
-      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto"
+      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-hidden"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
       {isStructure ? (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
           <StructureBannerEntityDetail
             structureEntityId={occupierEntityId}
             maxInventory={14}
             showButtons={false}
-            className="h-full"
+            className="h-full min-h-0"
             {...sharedDetailProps}
           />
-          <EntityDetailSection compact tone="highlight" className="h-full flex">
+          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
             <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       ) : isChest ? (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
-          <EntityDetailSection compact tone="highlight" className="h-full flex">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
+          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
             <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
           </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="h-full flex">
+          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
             <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       ) : isQuest ? (
-        <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
+        <QuestEntityDetail questEntityId={occupierEntityId} className="h-full min-h-0" {...sharedDetailProps} />
       ) : (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
           <ArmyBannerEntityDetail
             armyEntityId={occupierEntityId}
             showButtons={false}
-            className="h-full"
+            className="h-full min-h-0"
             {...sharedDetailProps}
           />
-          <EntityDetailSection compact tone="highlight" className="h-full flex">
+          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
             <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
