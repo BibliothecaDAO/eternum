@@ -23,11 +23,59 @@ interface ManifestData {
 export interface FactoryConfigCalldataParts {
   base: any[];
   contracts: any[];
+  contractChunks: any[][];
   models: any[];
+  modelChunks: any[][];
   events: any[];
+  eventChunks: any[][];
   libraries: any[];
+  libraryChunks: any[][];
   all: any[];
 }
+
+export const CONTRACT_CONFIG_CHUNK_SIZE = 10;
+export const MODEL_CONFIG_CHUNK_SIZE = 50;
+export const EVENT_CONFIG_CHUNK_SIZE = 50;
+export const LIBRARY_CONFIG_CHUNK_SIZE = 50;
+
+const serializeContractCalldataEntry = (contract: ManifestContract): any[] => {
+  const entry: any[] = [];
+  entry.push(contract.selector);
+  entry.push(contract.class_hash);
+  const initCalldataCount = contract.init_calldata?.length || 0;
+  entry.push(initCalldataCount);
+  if (initCalldataCount > 0) {
+    entry.push(...(contract.init_calldata || []));
+  }
+  entry.push(0);
+  entry.push(0);
+  return entry;
+};
+
+const resolveLibraryName = (lib: { tag?: string; version?: string; name?: string }): string => {
+  if (lib.name) return lib.name;
+  if (!lib.tag) return "";
+  try {
+    const afterNs = lib.tag.includes("-") ? lib.tag.split("-").slice(1).join("-") : lib.tag;
+    const suffix = lib.version ? `_v${lib.version}` : "";
+    return afterNs.endsWith(suffix) ? afterNs.slice(0, afterNs.length - suffix.length) : afterNs;
+  } catch {
+    return lib.tag;
+  }
+};
+
+const serializeLibraryCalldataEntry = (lib: {
+  class_hash: string;
+  tag?: string;
+  version?: string;
+  name?: string;
+}): any[] => {
+  const libVersion = lib.version || "";
+  const libName = resolveLibraryName(lib);
+  const nameByteArray = byteArray.byteArrayFromString(libName);
+  const versionByteArray = byteArray.byteArrayFromString(libVersion);
+  return [lib.class_hash, nameByteArray, versionByteArray];
+};
 
 export const generateFactoryCalldata = (
   manifest: ManifestData,
@@ -45,58 +93,90 @@ export const generateFactoryCalldata = (
   base.push(defaultNamespaceWriterAll ? 1 : 0);
 
   const contracts: any[] = [];
+  const contractEntries = manifest.contracts.map((contract) => serializeContractCalldataEntry(contract));
   contracts.push(version);
   contracts.push(manifest.contracts.length);
-  for (const contract of manifest.contracts) {
-    contracts.push(contract.selector);
-    contracts.push(contract.class_hash);
-    const initCalldataCount = contract.init_calldata?.length || 0;
-    contracts.push(initCalldataCount);
-    if (initCalldataCount > 0) contracts.push(...(contract.init_calldata || []));
-    contracts.push(0);
-    contracts.push(0);
+  for (const entry of contractEntries) {
+    contracts.push(...entry);
+  }
+
+  const contractChunks: any[][] = [];
+  for (let start = 0; start < manifest.contracts.length; start += CONTRACT_CONFIG_CHUNK_SIZE) {
+    const chunkContracts = manifest.contracts.slice(start, start + CONTRACT_CONFIG_CHUNK_SIZE);
+    const chunkEntries = chunkContracts.map((contract) => serializeContractCalldataEntry(contract));
+    const chunkCalldata = [version, start, chunkContracts.length];
+    for (const chunkEntry of chunkEntries) {
+      chunkCalldata.push(...chunkEntry);
+    }
+    contractChunks.push(chunkCalldata);
+  }
+  if (contractChunks.length === 0) {
+    contractChunks.push([version, 0, 0]);
   }
 
   const models: any[] = [];
+  const modelClassHashes = manifest.models.map((model) => model.class_hash);
   models.push(version);
-  models.push(manifest.models.length);
-  for (const model of manifest.models) models.push(model.class_hash);
+  models.push(modelClassHashes.length);
+  for (const modelClassHash of modelClassHashes) models.push(modelClassHash);
+
+  const modelChunks: any[][] = [];
+  for (let start = 0; start < modelClassHashes.length; start += MODEL_CONFIG_CHUNK_SIZE) {
+    const chunk = modelClassHashes.slice(start, start + MODEL_CONFIG_CHUNK_SIZE);
+    modelChunks.push([version, start, chunk.length, ...chunk]);
+  }
+  if (modelChunks.length === 0) {
+    modelChunks.push([version, 0, 0]);
+  }
 
   const events: any[] = [];
+  const eventClassHashes = manifest.events.map((event) => event.class_hash);
   events.push(version);
-  events.push(manifest.events.length);
-  for (const event of manifest.events) events.push(event.class_hash);
+  events.push(eventClassHashes.length);
+  for (const eventClassHash of eventClassHashes) events.push(eventClassHash);
+
+  const eventChunks: any[][] = [];
+  for (let start = 0; start < eventClassHashes.length; start += EVENT_CONFIG_CHUNK_SIZE) {
+    const chunk = eventClassHashes.slice(start, start + EVENT_CONFIG_CHUNK_SIZE);
+    eventChunks.push([version, start, chunk.length, ...chunk]);
+  }
+  if (eventChunks.length === 0) {
+    eventChunks.push([version, 0, 0]);
+  }
 
   const libs = manifest.libraries ?? [];
+  const libraryEntries = libs.map((lib) => serializeLibraryCalldataEntry(lib));
   const libraries: any[] = [];
   libraries.push(version);
   libraries.push(libs.length);
-  for (const lib of libs) {
-    const classHash = lib.class_hash;
-    let libName = lib.name || "";
-    const libVersion = lib.version || "";
-    if (!libName && lib.tag) {
-      try {
-        const afterNs = lib.tag.includes("-") ? lib.tag.split("-").slice(1).join("-") : lib.tag;
-        const suffix = libVersion ? `_v${libVersion}` : "";
-        libName = afterNs.endsWith(suffix) ? afterNs.slice(0, afterNs.length - suffix.length) : afterNs;
-      } catch {
-        libName = lib.tag!;
-      }
+  for (const entry of libraryEntries) {
+    libraries.push(...entry);
+  }
+
+  const libraryChunks: any[][] = [];
+  for (let start = 0; start < libs.length; start += LIBRARY_CONFIG_CHUNK_SIZE) {
+    const chunkLibs = libs.slice(start, start + LIBRARY_CONFIG_CHUNK_SIZE);
+    const chunkEntries = chunkLibs.map((lib) => serializeLibraryCalldataEntry(lib));
+    const chunkCalldata = [version, start, chunkLibs.length];
+    for (const chunkEntry of chunkEntries) {
+      chunkCalldata.push(...chunkEntry);
     }
-    const nameByteArray = byteArray.byteArrayFromString(libName || "");
-    const versionByteArray = byteArray.byteArrayFromString(libVersion || "");
-    libraries.push(classHash);
-    libraries.push(nameByteArray);
-    libraries.push(versionByteArray);
+    libraryChunks.push(chunkCalldata);
+  }
+  if (libraryChunks.length === 0) {
+    libraryChunks.push([version, 0, 0]);
   }
 
   return {
     base,
     contracts,
+    contractChunks,
     models,
+    modelChunks,
     events,
+    eventChunks,
     libraries,
+    libraryChunks,
     all: [...base, ...contracts, ...models, ...events, ...libraries],
   };
 };

@@ -18,6 +18,7 @@ const envSchema = z.object({
 
   // Version and chain info
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
+  VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("eternum"),
 
   VITE_PUBLIC_SLOT: z.string(),
   VITE_PUBLIC_GAME_TORII: z.string().url(),

@@ -6,30 +6,21 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { EternumProvider } from "@bibliothecadao/provider";
 import type { Config as EternumConfig } from "@bibliothecadao/types";
 import {
-  SetResourceFactoryConfig,
   setAgentConfig,
   setBattleConfig,
   setBlitzRegistrationConfig,
-  setBuildingConfig,
   setCapacityConfig,
   setDiscoverableVillageSpawnResourcesConfig,
   setFactoryAddress as setFactoryAddressConfig,
   setGameModeConfig,
-  setHyperstructureConfig,
   setMMRConfig,
-  setRealmUpgradeConfig,
   setResourceBridgeFeesConfig,
   setSeasonConfig,
-  setSettlementConfig,
-  setSpeedConfig,
-  setStartingResourcesConfig,
   setStructureMaxLevelConfig,
   setTradeConfig,
-  setTroopConfig,
   setVRFConfig,
   setVictoryPointsConfig,
   setVillageControllersConfig,
-  setWeightConfig,
   setWorldConfig,
   setupGlobals,
 } from "@config-deployer/config";
@@ -88,10 +79,13 @@ import {
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 type AutoDeployState = { current: number; total: number; status: "running" | "stopping" };
+type FactoryConfigCall = { entrypoint: string; calldata: any[] };
 type ConfigPreset = "sandbox" | "blitz-slot";
+type GameMode = "blitz" | "eternum";
 
 // Maximum hours in the future that a game start time can be set
 const MAX_START_TIME_HOURS = 50_000;
+const CONFIG_CALL_DELAY_MS = 2000;
 
 // Storage keys and cooldowns moved to ../constants and ../utils/storage
 
@@ -382,6 +376,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
   const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
   const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
+  const activeGameMode: GameMode = (env.VITE_PUBLIC_GAME_TYPE as GameMode) ?? "eternum";
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -709,94 +704,66 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     }
   };
 
-  const executeFactoryConfigCall = async (entrypoint: string, calldata: any[]) => {
-    if (!account || !factoryAddress || !generatedConfigCalldata) return;
+  const buildContractConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
+    calldata.contractChunks.map((chunk) => ({ entrypoint: "set_factory_config_contracts", calldata: chunk }));
+
+  const buildModelConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
+    calldata.modelChunks.map((chunk) => ({ entrypoint: "set_factory_config_models", calldata: chunk }));
+
+  const buildEventConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
+    calldata.eventChunks.map((chunk) => ({ entrypoint: "set_factory_config_events", calldata: chunk }));
+
+  const buildLibraryConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] =>
+    calldata.libraryChunks.map((chunk) => ({ entrypoint: "set_factory_config_libraries", calldata: chunk }));
+
+  const buildAllConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] => [
+    { entrypoint: "set_factory_config", calldata: calldata.base },
+    ...buildContractConfigCalls(calldata),
+    ...buildModelConfigCalls(calldata),
+    ...buildEventConfigCalls(calldata),
+    ...buildLibraryConfigCalls(calldata),
+  ];
+
+  const executeFactoryConfigCalls = async (calls: FactoryConfigCall[]): Promise<boolean> => {
+    if (!account || !factoryAddress || calls.length === 0) return false;
 
     setTx({ status: "running" });
 
     try {
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint,
-        calldata,
-      });
+      let lastHash: string | undefined;
+      for (let callIndex = 0; callIndex < calls.length; callIndex++) {
+        const call = calls[callIndex];
+        const result = await account.execute({
+          contractAddress: factoryAddress,
+          entrypoint: call.entrypoint,
+          calldata: call.calldata,
+        });
+        lastHash = result.transaction_hash;
+        setTx({ status: "running", hash: lastHash });
+        await account.waitForTransaction(lastHash);
 
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
+        if (callIndex < calls.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, CONFIG_CALL_DELAY_MS));
+        }
+      }
+
+      setTx({ status: "success", hash: lastHash });
+      return true;
     } catch (err: any) {
       setTx({ status: "error", error: err.message });
+      return false;
     }
   };
 
-  // Execute base config only
-  const handleSetConfigBase = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config", generatedConfigCalldata.base);
-  };
-
-  const handleSetConfigContracts = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_contracts", generatedConfigCalldata.contracts);
-  };
-
-  const handleSetConfigModels = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_models", generatedConfigCalldata.models);
-  };
-
-  const handleSetConfigEvents = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_events", generatedConfigCalldata.events);
-  };
-
-  const handleSetConfigLibraries = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_libraries", generatedConfigCalldata.libraries);
-  };
-
-  // Execute all config calls in one multicall
+  // Execute all config calls in sequence.
   const handleSetConfigAll = async () => {
-    if (!account || !factoryAddress || !generatedConfigCalldata) return;
+    if (!generatedConfigCalldata) return;
 
-    setTx({ status: "running" });
-
-    try {
-      const result = await account.execute([
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config",
-          calldata: generatedConfigCalldata.base,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_contracts",
-          calldata: generatedConfigCalldata.contracts,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_models",
-          calldata: generatedConfigCalldata.models,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_events",
-          calldata: generatedConfigCalldata.events,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_libraries",
-          calldata: generatedConfigCalldata.libraries,
-        },
-      ]);
-
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
-
+    const success = await executeFactoryConfigCalls(buildAllConfigCalls(generatedConfigCalldata));
+    if (success) {
       if (worldName) {
         markWorldAsConfigured(worldName);
       }
-    } catch (err: any) {
-      setTx({ status: "error", error: err.message });
     }
   };
 
@@ -826,50 +793,25 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     }
   };
 
-  // Execute both set_config and deploy in multicall
+  // Execute full config then deploy.
   const handleSetConfigAndDeploy = async () => {
     if (!account || !generatedConfigCalldata || !factoryAddress || !worldName) return;
 
-    setTx({ status: "running" });
-
     console.log("Generated Config Calldata:", generatedConfigCalldata);
+
+    const configSuccess = await executeFactoryConfigCalls(buildAllConfigCalls(generatedConfigCalldata));
+    if (!configSuccess) return;
+
+    setTx({ status: "running" });
 
     try {
       const worldNameFelt = shortString.encodeShortString(worldName);
       const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute([
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config",
-          calldata: generatedConfigCalldata.base,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_contracts",
-          calldata: generatedConfigCalldata.contracts,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_models",
-          calldata: generatedConfigCalldata.models,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_events",
-          calldata: generatedConfigCalldata.events,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_libraries",
-          calldata: generatedConfigCalldata.libraries,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "create_game",
-          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
-        },
-      ]);
-
+      const result = await account.execute({
+        contractAddress: factoryAddress,
+        entrypoint: "create_game",
+        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
+      });
       setTx({ status: "success", hash: result.transaction_hash });
       await account.waitForTransaction(result.transaction_hash);
 
@@ -1054,37 +996,39 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                 {/* Deploy Section - Always Visible */}
                 <div className="space-y-6 p-6 bg-gradient-to-br from-black/40 to-black/20 rounded-2xl border-2 border-gold/20 shadow-sm">
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Config Presets</label>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          onClick={() => applyConfigPreset("sandbox")}
-                          className={`text-left rounded-xl border p-4 transition-all ${
-                            activeConfigPreset === "sandbox"
-                              ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
-                              : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
-                          }`}
-                        >
-                          <p className="text-sm font-semibold text-gold">SANDBOX (dev mode 72hrs)</p>
-                          <p className="mt-1 text-xs text-gold/60">Sets Dev Mode ON and game duration to 72 hours.</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => applyConfigPreset("blitz-slot")}
-                          className={`text-left rounded-xl border p-4 transition-all ${
-                            activeConfigPreset === "blitz-slot"
-                              ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
-                              : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
-                          }`}
-                        >
-                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
-                          <p className="mt-1 text-xs text-gold/60">
-                            Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
-                          </p>
-                        </button>
+                    {activeGameMode === "blitz" && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Config Presets</label>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <button
+                            type="button"
+                            onClick={() => applyConfigPreset("sandbox")}
+                            className={`text-left rounded-xl border p-4 transition-all ${
+                              activeConfigPreset === "sandbox"
+                                ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
+                                : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-gold">SANDBOX (dev mode 72hrs)</p>
+                            <p className="mt-1 text-xs text-gold/60">Sets Dev Mode ON and game duration to 72 hours.</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyConfigPreset("blitz-slot")}
+                            className={`text-left rounded-xl border p-4 transition-all ${
+                              activeConfigPreset === "blitz-slot"
+                                ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
+                                : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
+                            <p className="mt-1 text-xs text-gold/60">
+                              Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
+                            </p>
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-gold/90 uppercase tracking-wide">Game Name</label>
@@ -1437,6 +1381,24 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                           )}
                                         </div>
 
+                                        {/* Game Mode indicator (read-only, determined by VITE_PUBLIC_GAME_TYPE) */}
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-gold/70">Game Mode</label>
+                                          <div className="flex items-center gap-3">
+                                            <span className="px-4 py-1.5 text-xs font-semibold rounded-md border bg-gold/20 border-gold/40 text-gold">
+                                              {activeGameMode.charAt(0).toUpperCase() + activeGameMode.slice(1)}
+                                            </span>
+                                          </div>
+                                          <p className="text-[10px] text-gold/60">
+                                            Config loaded from{" "}
+                                            <span className="font-mono">
+                                              {activeGameMode}.{env.VITE_PUBLIC_CHAIN}.json
+                                            </span>
+                                            . Change via <span className="font-mono">VITE_PUBLIC_GAME_TYPE</span> env
+                                            var.
+                                          </p>
+                                        </div>
+
                                         {/* startMainAt override */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                           <div className="space-y-1">
@@ -1602,593 +1564,637 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               <p className="text-[11px] text-red-600">{startSettlingAtErrors[name]}</p>
                                             )}
                                           </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">Dev Mode</label>
-                                            <div className="flex items-center gap-2">
-                                              <input
-                                                id={`dev-mode-${name}`}
-                                                type="checkbox"
-                                                checked={
-                                                  Object.prototype.hasOwnProperty.call(devModeOverrides, name)
-                                                    ? !!devModeOverrides[name]
-                                                    : devModeOn
-                                                }
-                                                onChange={(e) =>
-                                                  setDevModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
-                                                }
-                                                className="h-4 w-4 accent-blue-600"
-                                              />
-                                              <label htmlFor={`dev-mode-${name}`} className="text-xs text-gold/90">
-                                                Enable developer mode for this world
-                                              </label>
+                                        </div>
+
+                                        {/* Blitz-only configuration */}
+                                        {activeGameMode === "blitz" && (
+                                          <>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">Dev Mode</label>
+                                                <div className="flex items-center gap-2">
+                                                  <input
+                                                    id={`dev-mode-${name}`}
+                                                    type="checkbox"
+                                                    checked={
+                                                      Object.prototype.hasOwnProperty.call(devModeOverrides, name)
+                                                        ? !!devModeOverrides[name]
+                                                        : devModeOn
+                                                    }
+                                                    onChange={(e) =>
+                                                      setDevModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
+                                                    }
+                                                    className="h-4 w-4 accent-blue-600"
+                                                  />
+                                                  <label htmlFor={`dev-mode-${name}`} className="text-xs text-gold/90">
+                                                    Enable developer mode for this world
+                                                  </label>
+                                                </div>
+                                                <p className="text-[10px] text-gold/60">
+                                                  Controls in-game dev features.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">MMR System</label>
+                                                <div className="flex items-center gap-2">
+                                                  <input
+                                                    id={`mmr-enabled-${name}`}
+                                                    type="checkbox"
+                                                    checked={
+                                                      Object.prototype.hasOwnProperty.call(mmrEnabledOverrides, name)
+                                                        ? !!mmrEnabledOverrides[name]
+                                                        : mmrEnabledOn
+                                                    }
+                                                    onChange={(e) =>
+                                                      setMmrEnabledOverrides((p) => ({
+                                                        ...p,
+                                                        [name]: e.target.checked,
+                                                      }))
+                                                    }
+                                                    className="h-4 w-4 accent-blue-600"
+                                                  />
+                                                  <label
+                                                    htmlFor={`mmr-enabled-${name}`}
+                                                    className="text-xs text-gold/90"
+                                                  >
+                                                    Enable MMR tracking for this world
+                                                  </label>
+                                                </div>
+                                                <p className="text-[10px] text-gold/60">
+                                                  Tracks player skill ratings across Blitz games.
+                                                </p>
+                                              </div>
                                             </div>
-                                            <p className="text-[10px] text-gold/60">Controls in-game dev features.</p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">MMR System</label>
-                                            <div className="flex items-center gap-2">
-                                              <input
-                                                id={`mmr-enabled-${name}`}
-                                                type="checkbox"
-                                                checked={
-                                                  Object.prototype.hasOwnProperty.call(mmrEnabledOverrides, name)
-                                                    ? !!mmrEnabledOverrides[name]
-                                                    : mmrEnabledOn
-                                                }
-                                                onChange={(e) =>
-                                                  setMmrEnabledOverrides((p) => ({ ...p, [name]: e.target.checked }))
-                                                }
-                                                className="h-4 w-4 accent-blue-600"
-                                              />
-                                              <label htmlFor={`mmr-enabled-${name}`} className="text-xs text-gold/90">
-                                                Enable MMR tracking for this world
-                                              </label>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Game Duration (hours)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  value={
+                                                    Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
+                                                      ? Number(durationHoursOverrides[name] || 0)
+                                                      : Number(durationHours || 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setDurationHoursOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: Number(e.target.value || 0),
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
+                                                />
+                                                <p className="text-[10px] text-gold/60">
+                                                  Applies to season.durationSeconds.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Game Duration (minutes)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  max={59}
+                                                  value={
+                                                    Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
+                                                      ? Number(durationMinutesOverrides[name] || 0)
+                                                      : baseDurationMinutes
+                                                  }
+                                                  onChange={(e) =>
+                                                    setDurationMinutesOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
+                                                />
+                                                <p className="text-[10px] text-gold/60">
+                                                  0–59 minutes (added to hours).
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Factory Address Override
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  placeholder={
+                                                    factoryAddress || (eternumConfig as any)?.factory_address || "0x..."
+                                                  }
+                                                  value={
+                                                    factoryAddressOverrides[name] ??
+                                                    (factoryAddress || (eternumConfig as any)?.factory_address || "")
+                                                  }
+                                                  onChange={(e) =>
+                                                    setFactoryAddressOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                                <p className="text-[10px] text-gold/60">
+                                                  Used by set_factory_address when configuring this world.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Single Realm Mode
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                  <input
+                                                    id={`single-realm-mode-${name}`}
+                                                    type="checkbox"
+                                                    checked={
+                                                      Object.prototype.hasOwnProperty.call(
+                                                        singleRealmModeOverrides,
+                                                        name,
+                                                      )
+                                                        ? !!singleRealmModeOverrides[name]
+                                                        : !!eternumConfig.settlement?.single_realm_mode
+                                                    }
+                                                    onChange={(e) =>
+                                                      setSingleRealmModeOverrides((p) => ({
+                                                        ...p,
+                                                        [name]: e.target.checked,
+                                                      }))
+                                                    }
+                                                    className="h-4 w-4 accent-blue-600"
+                                                  />
+                                                  <label
+                                                    htmlFor={`single-realm-mode-${name}`}
+                                                    className="text-xs text-gold/90"
+                                                  >
+                                                    Enable single realm mode for this world
+                                                  </label>
+                                                </div>
+                                                <p className="text-[10px] text-gold/60">
+                                                  Controls settlement spawning behavior.
+                                                </p>
+                                              </div>
                                             </div>
-                                            <p className="text-[10px] text-gold/60">
-                                              Tracks player skill ratings across Blitz games.
-                                            </p>
-                                          </div>
-                                        </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Game Duration (hours)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              value={
-                                                Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
-                                                  ? Number(durationHoursOverrides[name] || 0)
-                                                  : Number(durationHours || 0)
-                                              }
-                                              onChange={(e) =>
-                                                setDurationHoursOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: Number(e.target.value || 0),
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
-                                            />
-                                            <p className="text-[10px] text-gold/60">
-                                              Applies to season.durationSeconds.
-                                            </p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Game Duration (minutes)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              max={59}
-                                              value={
-                                                Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
-                                                  ? Number(durationMinutesOverrides[name] || 0)
-                                                  : baseDurationMinutes
-                                              }
-                                              onChange={(e) =>
-                                                setDurationMinutesOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
-                                            />
-                                            <p className="text-[10px] text-gold/60">0–59 minutes (added to hours).</p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Factory Address Override
-                                            </label>
-                                            <input
-                                              type="text"
-                                              placeholder={
-                                                factoryAddress || (eternumConfig as any)?.factory_address || "0x..."
-                                              }
-                                              value={
-                                                factoryAddressOverrides[name] ??
-                                                (factoryAddress || (eternumConfig as any)?.factory_address || "")
-                                              }
-                                              onChange={(e) =>
-                                                setFactoryAddressOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                            <p className="text-[10px] text-gold/60">
-                                              Used by set_factory_address when configuring this world.
-                                            </p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Single Realm Mode
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                              <input
-                                                id={`single-realm-mode-${name}`}
-                                                type="checkbox"
-                                                checked={
-                                                  Object.prototype.hasOwnProperty.call(singleRealmModeOverrides, name)
-                                                    ? !!singleRealmModeOverrides[name]
-                                                    : !!eternumConfig.settlement?.single_realm_mode
-                                                }
-                                                onChange={(e) =>
-                                                  setSingleRealmModeOverrides((p) => ({
-                                                    ...p,
-                                                    [name]: e.target.checked,
-                                                  }))
-                                                }
-                                                className="h-4 w-4 accent-blue-600"
-                                              />
-                                              <label
-                                                htmlFor={`single-realm-mode-${name}`}
-                                                className="text-xs text-gold/90"
-                                              >
-                                                Enable single realm mode for this world
-                                              </label>
+                                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Blitz Registration Fee Amount
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  placeholder={defaultBlitzRegistration.amount}
+                                                  value={
+                                                    blitzFeeAmountOverrides[name] ?? defaultBlitzRegistration.amount
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBlitzFeeAmountOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                                <p className="text-[10px] text-gold/60">
+                                                  Default: {defaultBlitzRegistration.amount} with precision{" "}
+                                                  {defaultBlitzRegistration.precision}.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Fee Precision (decimals)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(defaultBlitzRegistration.precision)}
+                                                  value={
+                                                    blitzFeePrecisionOverrides[name] ??
+                                                    String(defaultBlitzRegistration.precision)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBlitzFeePrecisionOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                                <p className="text-[10px] text-gold/60">
+                                                  Default: {defaultBlitzRegistration.precision} decimals.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Blitz Registration Fee Token
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  placeholder={defaultBlitzRegistration.token || "0x..."}
+                                                  value={
+                                                    blitzFeeTokenOverrides[name] ??
+                                                    (defaultBlitzRegistration.token ||
+                                                      (eternumConfig as any)?.blitz?.registration?.fee_token ||
+                                                      "")
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                                <p className="text-[10px] text-gold/60">
+                                                  Default: {defaultBlitzRegistration.token}. Leave empty for default.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Registration Count Max
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder="30"
+                                                  value={
+                                                    registrationCountMaxOverrides[name] ??
+                                                    String(
+                                                      (eternumConfig as any)?.blitz?.registration
+                                                        ?.registration_count_max ?? 30,
+                                                    )
+                                                  }
+                                                  onChange={(e) =>
+                                                    setRegistrationCountMaxOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                                <p className="text-[10px] text-gold/60">Default: 30.</p>
+                                              </div>
                                             </div>
-                                            <p className="text-[10px] text-gold/60">
-                                              Controls settlement spawning behavior.
-                                            </p>
-                                          </div>
-                                        </div>
 
-                                        {/* Blitz Registration Fee Configuration */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Blitz Registration Fee Amount
-                                            </label>
-                                            <input
-                                              type="text"
-                                              placeholder={defaultBlitzRegistration.amount}
-                                              value={blitzFeeAmountOverrides[name] ?? defaultBlitzRegistration.amount}
-                                              onChange={(e) =>
-                                                setBlitzFeeAmountOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                            <p className="text-[10px] text-gold/60">
-                                              Default: {defaultBlitzRegistration.amount} with precision{" "}
-                                              {defaultBlitzRegistration.precision}.
-                                            </p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Fee Precision (decimals)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(defaultBlitzRegistration.precision)}
-                                              value={
-                                                blitzFeePrecisionOverrides[name] ??
-                                                String(defaultBlitzRegistration.precision)
-                                              }
-                                              onChange={(e) =>
-                                                setBlitzFeePrecisionOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                            <p className="text-[10px] text-gold/60">
-                                              Default: {defaultBlitzRegistration.precision} decimals.
-                                            </p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Blitz Registration Fee Token
-                                            </label>
-                                            <input
-                                              type="text"
-                                              placeholder={defaultBlitzRegistration.token || "0x..."}
-                                              value={
-                                                blitzFeeTokenOverrides[name] ??
-                                                (defaultBlitzRegistration.token ||
-                                                  (eternumConfig as any)?.blitz?.registration?.fee_token ||
-                                                  "")
-                                              }
-                                              onChange={(e) =>
-                                                setBlitzFeeTokenOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                            <p className="text-[10px] text-gold/60">
-                                              Default: {defaultBlitzRegistration.token}. Leave empty for default.
-                                            </p>
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Registration Count Max
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder="30"
-                                              value={
-                                                registrationCountMaxOverrides[name] ??
-                                                String(
-                                                  (eternumConfig as any)?.blitz?.registration?.registration_count_max ??
-                                                    30,
-                                                )
-                                              }
-                                              onChange={(e) =>
-                                                setRegistrationCountMaxOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                            <p className="text-[10px] text-gold/60">Default: 30.</p>
-                                          </div>
-                                        </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Blitz Fee Recipient
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  placeholder={
+                                                    (eternumConfig as any)?.blitz?.registration?.fee_recipient ||
+                                                    "0x..."
+                                                  }
+                                                  value={
+                                                    blitzFeeRecipientOverrides[name] ??
+                                                    ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBlitzFeeRecipientOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Registration Delay (seconds)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.blitz?.registration
+                                                      ?.registration_delay_seconds ?? 60,
+                                                  )}
+                                                  value={
+                                                    registrationDelaySecondsOverrides[name] ??
+                                                    String(
+                                                      (eternumConfig as any)?.blitz?.registration
+                                                        ?.registration_delay_seconds ?? 60,
+                                                    )
+                                                  }
+                                                  onChange={(e) =>
+                                                    setRegistrationDelaySecondsOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Registration Period (seconds)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.blitz?.registration
+                                                      ?.registration_period_seconds ?? 600,
+                                                  )}
+                                                  value={
+                                                    registrationPeriodSecondsOverrides[name] ??
+                                                    String(
+                                                      (eternumConfig as any)?.blitz?.registration
+                                                        ?.registration_period_seconds ?? 600,
+                                                    )
+                                                  }
+                                                  onChange={(e) =>
+                                                    setRegistrationPeriodSecondsOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                            </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Blitz Fee Recipient
-                                            </label>
-                                            <input
-                                              type="text"
-                                              placeholder={
-                                                (eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."
-                                              }
-                                              value={
-                                                blitzFeeRecipientOverrides[name] ??
-                                                ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
-                                              }
-                                              onChange={(e) =>
-                                                setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Registration Delay (seconds)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.blitz?.registration
-                                                  ?.registration_delay_seconds ?? 60,
-                                              )}
-                                              value={
-                                                registrationDelaySecondsOverrides[name] ??
-                                                String(
-                                                  (eternumConfig as any)?.blitz?.registration
-                                                    ?.registration_delay_seconds ?? 60,
-                                                )
-                                              }
-                                              onChange={(e) =>
-                                                setRegistrationDelaySecondsOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Registration Period (seconds)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.blitz?.registration
-                                                  ?.registration_period_seconds ?? 600,
-                                              )}
-                                              value={
-                                                registrationPeriodSecondsOverrides[name] ??
-                                                String(
-                                                  (eternumConfig as any)?.blitz?.registration
-                                                    ?.registration_period_seconds ?? 600,
-                                                )
-                                              }
-                                              onChange={(e) =>
-                                                setRegistrationPeriodSecondsOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                        </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Bridge Close After End (seconds)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
+                                                  )}
+                                                  value={
+                                                    seasonBridgeCloseAfterEndSecondsOverrides[name] ??
+                                                    String(
+                                                      (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
+                                                    )
+                                                  }
+                                                  onChange={(e) =>
+                                                    setSeasonBridgeCloseAfterEndSecondsOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Point Registration Close (seconds)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.season
+                                                      ?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                                  )}
+                                                  value={
+                                                    seasonPointRegistrationCloseAfterEndSecondsOverrides[name] ??
+                                                    String(
+                                                      (eternumConfig as any)?.season
+                                                        ?.pointRegistrationCloseAfterEndSeconds ?? 0,
+                                                    )
+                                                  }
+                                                  onChange={(e) =>
+                                                    setSeasonPointRegistrationCloseAfterEndSecondsOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                            </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Bridge Close After End (seconds)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0,
-                                              )}
-                                              value={
-                                                seasonBridgeCloseAfterEndSecondsOverrides[name] ??
-                                                String((eternumConfig as any)?.season?.bridgeCloseAfterEndSeconds ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setSeasonBridgeCloseAfterEndSecondsOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Point Registration Close (seconds)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.season?.pointRegistrationCloseAfterEndSeconds ??
-                                                  0,
-                                              )}
-                                              value={
-                                                seasonPointRegistrationCloseAfterEndSecondsOverrides[name] ??
-                                                String(
-                                                  (eternumConfig as any)?.season
-                                                    ?.pointRegistrationCloseAfterEndSeconds ?? 0,
-                                                )
-                                              }
-                                              onChange={(e) =>
-                                                setSeasonPointRegistrationCloseAfterEndSecondsOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                        </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Settlement Center
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String((eternumConfig as any)?.settlement?.center ?? 0)}
+                                                  value={
+                                                    settlementCenterOverrides[name] ??
+                                                    String((eternumConfig as any)?.settlement?.center ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setSettlementCenterOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Settlement Base Distance
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.settlement?.base_distance ?? 0,
+                                                  )}
+                                                  value={
+                                                    settlementBaseDistanceOverrides[name] ??
+                                                    String((eternumConfig as any)?.settlement?.base_distance ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setSettlementBaseDistanceOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Settlement Subsequent Distance
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.settlement?.subsequent_distance ?? 0,
+                                                  )}
+                                                  value={
+                                                    settlementSubsequentDistanceOverrides[name] ??
+                                                    String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setSettlementSubsequentDistanceOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                            </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Settlement Center
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String((eternumConfig as any)?.settlement?.center ?? 0)}
-                                              value={
-                                                settlementCenterOverrides[name] ??
-                                                String((eternumConfig as any)?.settlement?.center ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setSettlementCenterOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Settlement Base Distance
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.settlement?.base_distance ?? 0,
-                                              )}
-                                              value={
-                                                settlementBaseDistanceOverrides[name] ??
-                                                String((eternumConfig as any)?.settlement?.base_distance ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setSettlementBaseDistanceOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Settlement Subsequent Distance
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.settlement?.subsequent_distance ?? 0,
-                                              )}
-                                              value={
-                                                settlementSubsequentDistanceOverrides[name] ??
-                                                String((eternumConfig as any)?.settlement?.subsequent_distance ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setSettlementSubsequentDistanceOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                        </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Trade Max Count
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String((eternumConfig as any)?.trade?.maxCount ?? 0)}
+                                                  value={
+                                                    tradeMaxCountOverrides[name] ??
+                                                    String((eternumConfig as any)?.trade?.maxCount ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setTradeMaxCountOverrides((p) => ({ ...p, [name]: e.target.value }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Battle Grace Ticks
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.battle?.graceTickCount ?? 0,
+                                                  )}
+                                                  value={
+                                                    battleGraceTickCountOverrides[name] ??
+                                                    String((eternumConfig as any)?.battle?.graceTickCount ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBattleGraceTickCountOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Battle Hyperstructure Grace Ticks
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.battle?.graceTickCountHyp ?? 0,
+                                                  )}
+                                                  value={
+                                                    battleGraceTickCountHypOverrides[name] ??
+                                                    String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBattleGraceTickCountHypOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                            </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Trade Max Count
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String((eternumConfig as any)?.trade?.maxCount ?? 0)}
-                                              value={
-                                                tradeMaxCountOverrides[name] ??
-                                                String((eternumConfig as any)?.trade?.maxCount ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setTradeMaxCountOverrides((p) => ({ ...p, [name]: e.target.value }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Battle Grace Ticks
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String((eternumConfig as any)?.battle?.graceTickCount ?? 0)}
-                                              value={
-                                                battleGraceTickCountOverrides[name] ??
-                                                String((eternumConfig as any)?.battle?.graceTickCount ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setBattleGraceTickCountOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Battle Hyperstructure Grace Ticks
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.battle?.graceTickCountHyp ?? 0,
-                                              )}
-                                              value={
-                                                battleGraceTickCountHypOverrides[name] ??
-                                                String((eternumConfig as any)?.battle?.graceTickCountHyp ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setBattleGraceTickCountHypOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Battle Delay (seconds)
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String((eternumConfig as any)?.battle?.delaySeconds ?? 0)}
-                                              value={
-                                                battleDelaySecondsOverrides[name] ??
-                                                String((eternumConfig as any)?.battle?.delaySeconds ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setBattleDelaySecondsOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Agent Max Current
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.agent?.max_current_count ?? 0,
-                                              )}
-                                              value={
-                                                agentMaxCurrentCountOverrides[name] ??
-                                                String((eternumConfig as any)?.agent?.max_current_count ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setAgentMaxCurrentCountOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gold/70">
-                                              Agent Max Lifetime
-                                            </label>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              placeholder={String(
-                                                (eternumConfig as any)?.agent?.max_lifetime_count ?? 0,
-                                              )}
-                                              value={
-                                                agentMaxLifetimeCountOverrides[name] ??
-                                                String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)
-                                              }
-                                              onChange={(e) =>
-                                                setAgentMaxLifetimeCountOverrides((p) => ({
-                                                  ...p,
-                                                  [name]: e.target.value,
-                                                }))
-                                              }
-                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                            />
-                                          </div>
-                                        </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Battle Delay (seconds)
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.battle?.delaySeconds ?? 0,
+                                                  )}
+                                                  value={
+                                                    battleDelaySecondsOverrides[name] ??
+                                                    String((eternumConfig as any)?.battle?.delaySeconds ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setBattleDelaySecondsOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Agent Max Current
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.agent?.max_current_count ?? 0,
+                                                  )}
+                                                  value={
+                                                    agentMaxCurrentCountOverrides[name] ??
+                                                    String((eternumConfig as any)?.agent?.max_current_count ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setAgentMaxCurrentCountOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <label className="text-xs font-semibold text-gold/70">
+                                                  Agent Max Lifetime
+                                                </label>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  step={1}
+                                                  placeholder={String(
+                                                    (eternumConfig as any)?.agent?.max_lifetime_count ?? 0,
+                                                  )}
+                                                  value={
+                                                    agentMaxLifetimeCountOverrides[name] ??
+                                                    String((eternumConfig as any)?.agent?.max_lifetime_count ?? 0)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setAgentMaxLifetimeCountOverrides((p) => ({
+                                                      ...p,
+                                                      [name]: e.target.value,
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                                />
+                                              </div>
+                                            </div>
+                                          </>
+                                        )}
 
                                         <div className="flex items-center gap-2">
                                           <button
@@ -2267,6 +2273,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   name,
                                                 );
 
+                                                const worldGameMode = activeGameMode;
                                                 const configForWorld = buildWorldConfigForFactory({
                                                   baseConfig: eternumConfig as any,
                                                   defaults: {
@@ -2281,6 +2288,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   overrides: {
                                                     startMainAt: selectedStart,
                                                     startSettlingAt: selectedSettling,
+                                                    gameMode: worldGameMode,
                                                     devModeOn: hasDevOverride ? !!devModeOverrides[name] : undefined,
                                                     mmrEnabled: hasMmrOverride
                                                       ? !!mmrEnabledOverrides[name]
@@ -2342,15 +2350,15 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                 await setStructureMaxLevelConfig(ctx);
                                                 await setupGlobals(ctx);
                                                 await setCapacityConfig(ctx);
-                                                await setSpeedConfig(ctx);
-                                                await setHyperstructureConfig(ctx);
-                                                await setSettlementConfig(ctx);
-                                                await setStartingResourcesConfig(ctx);
-                                                await setWeightConfig(ctx);
-                                                await setRealmUpgradeConfig(ctx);
-                                                await setTroopConfig(ctx);
-                                                await setBuildingConfig(ctx);
-                                                await SetResourceFactoryConfig(ctx);
+                                                // await setSpeedConfig(ctx);
+                                                // await setHyperstructureConfig(ctx);
+                                                // await setSettlementConfig(ctx);
+                                                // await setStartingResourcesConfig(ctx);
+                                                // await setWeightConfig(ctx);
+                                                // await setRealmUpgradeConfig(ctx);
+                                                // await setTroopConfig(ctx);
+                                                // await setBuildingConfig(ctx);
+                                                // await SetResourceFactoryConfig(ctx);
                                                 // await setResourceBridgeWtlConfig(ctx);
 
                                                 const receipt = await localProvider.endBatch({ flush: true });
@@ -2476,50 +2484,19 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        onClick={handleSetConfigBase}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Base
-                      </button>
-                      <button
-                        onClick={handleSetConfigContracts}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Contracts
-                      </button>
-                      <button
-                        onClick={handleSetConfigModels}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Models
-                      </button>
-                      <button
-                        onClick={handleSetConfigEvents}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Events
-                      </button>
-                      <button
-                        onClick={handleSetConfigLibraries}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors sm:col-span-1"
-                      >
-                        Set Libraries
-                      </button>
+                    <div className="space-y-2">
                       <button
                         onClick={handleSetConfigAll}
                         disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 sm:col-span-1"
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                       >
                         {tx.status === "running" && getTxStatusIcon()}
-                        <span>Set All</span>
+                        <span>Set Configuration</span>
                       </button>
+                      <p className="text-xs text-slate-500">
+                        Splits contracts, models, events, and libraries into chunks of 50 items and sends each call
+                        with a 2 second delay.
+                      </p>
                     </div>
 
                     {/* Transaction Status for Set Configuration */}
