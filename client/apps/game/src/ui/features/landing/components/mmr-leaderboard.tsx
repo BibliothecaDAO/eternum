@@ -7,11 +7,11 @@ import { hash } from "starknet";
 
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
+import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import type { Chain } from "@contracts";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const PAGE_SIZE = 25;
-const MMR_DECIMALS = 10n ** 18n;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
 
 type SortBy = "rank" | "timestamp" | "delta";
@@ -102,7 +102,7 @@ const escapeLikeTerm = (value: string): string =>
 const formatIntegerString = (value: string): string => value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 const formatMMR = (mmr: bigint): string => {
-  const integer = mmr / MMR_DECIMALS;
+  const integer = mmr / MMR_TOKEN_DECIMALS;
   return formatIntegerString(integer.toString());
 };
 
@@ -561,30 +561,36 @@ export const MMRLeaderboard = () => {
                   <th className="px-6 py-4 font-medium">Rank</th>
                   <th className="px-6 py-4 font-medium">Player</th>
                   <th className="px-6 py-4 text-right font-medium">MMR</th>
+                  <th className="px-6 py-4 text-right font-medium">Tier</th>
                   <th className="px-6 py-4 text-right font-medium">Delta</th>
                   <th className="px-6 py-4 text-right font-medium">Last Update</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
-                {state.entries.map((entry) => (
-                  <tr key={`${entry.address}-${entry.eventId}`} className="transition-colors hover:bg-gold/5">
-                    <td className="px-6 py-4 text-gold/50">#{entry.rank}</td>
-                    <td className="px-6 py-4 font-medium text-gold">
-                      <MaybeController address={entry.address} className="font-medium text-gold" />
-                    </td>
-                    <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
-                    <td
-                      className={`px-6 py-4 text-right font-medium ${
-                        entry.delta >= 0n ? "text-emerald-300" : "text-red-300"
-                      }`}
-                    >
-                      {formatDelta(entry.delta)}
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm text-gold/70">
-                      {formatEventTimestamp(entry.updatedAtSeconds)}
-                    </td>
-                  </tr>
-                ))}
+                {state.entries.map((entry) => {
+                  const tier = getMMRTierFromRaw(entry.newMmr);
+
+                  return (
+                    <tr key={`${entry.address}-${entry.eventId}`} className="transition-colors hover:bg-gold/5">
+                      <td className="px-6 py-4 text-gold/50">#{entry.rank}</td>
+                      <td className="px-6 py-4 font-medium text-gold">
+                        <MaybeController address={entry.address} className="font-medium text-gold" />
+                      </td>
+                      <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
+                      <td className={`px-6 py-4 text-right font-medium ${tier.color}`}>{tier.name}</td>
+                      <td
+                        className={`px-6 py-4 text-right font-medium ${
+                          entry.delta >= 0n ? "text-emerald-300" : "text-red-300"
+                        }`}
+                      >
+                        {formatDelta(entry.delta)}
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm text-gold/70">
+                        {formatEventTimestamp(entry.updatedAtSeconds)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

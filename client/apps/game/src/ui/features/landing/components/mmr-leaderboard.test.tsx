@@ -145,8 +145,6 @@ describe("MMRLeaderboard", () => {
     expect(slotQuery.toLowerCase()).toContain(
       "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0xselector', '0x')",
     );
-    expect(slotQuery.toLowerCase()).toContain(
-      `lower(id) like '%:${slotToken}:%'`,
-    );
+    expect(slotQuery.toLowerCase()).toContain(`lower(id) like '%:${slotToken}:%'`);
   });
 });

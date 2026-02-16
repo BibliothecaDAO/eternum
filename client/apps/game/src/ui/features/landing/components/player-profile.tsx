@@ -17,6 +17,7 @@ import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
+import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import type { Chain } from "@contracts";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
@@ -174,8 +175,13 @@ export const LandingPlayer = () => {
   // Format MMR for display (convert from token units with 18 decimals)
   const formattedMMR = useMemo(() => {
     if (playerMMR === null) return null;
-    const mmrValue = playerMMR / 10n ** 18n;
+    const mmrValue = playerMMR / MMR_TOKEN_DECIMALS;
     return mmrValue.toString();
+  }, [playerMMR]);
+
+  const playerTier = useMemo(() => {
+    if (playerMMR === null || playerMMR <= 0n) return null;
+    return getMMRTierFromRaw(playerMMR);
   }, [playerMMR]);
 
   const handleGenerateAvatar = useCallback(async () => {
@@ -510,6 +516,13 @@ export const LandingPlayer = () => {
                   <span className="text-lg text-gold/70">Your MMR:</span>
                   <span className="text-4xl font-bold text-gold">{formattedMMR}</span>
                 </div>
+                {playerTier && (
+                  <div
+                    className={`rounded-full border border-white/10 bg-black/30 px-4 py-1 text-sm font-semibold ${playerTier.color}`}
+                  >
+                    {playerTier.name}
+                  </div>
+                )}
                 <p className="text-sm text-gold/60">
                   Your global ranking score on{" "}
                   <span className="font-semibold text-gold capitalize">{selectedChain}</span>
