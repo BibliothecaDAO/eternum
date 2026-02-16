@@ -296,7 +296,7 @@ const PlayTabContent = ({
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
-  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => void;
+  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
