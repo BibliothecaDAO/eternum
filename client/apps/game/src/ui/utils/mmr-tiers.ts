@@ -1,4 +1,4 @@
-export type MMRTier = {
+type MMRTier = {
   name: string;
   minMMR: number;
   maxMMR: number;
@@ -7,7 +7,7 @@ export type MMRTier = {
 
 export const MMR_TOKEN_DECIMALS = 10n ** 18n;
 
-export const MMR_TIERS: MMRTier[] = [
+const MMR_TIERS: MMRTier[] = [
   { name: "Elite", minMMR: 2850, maxMMR: Infinity, color: "text-relic2" },
   { name: "Master", minMMR: 2400, maxMMR: 2850, color: "text-light-red" },
   { name: "Diamond", minMMR: 1950, maxMMR: 2400, color: "text-blueish" },
