@@ -5,6 +5,15 @@ export const FEATURE_HEXES: FeatureHexData[] = [
   // ── Games (inner ring, 3-5 hex radius) ─────────────────────────────
 
   {
+    coord: { q: -2, r: -2 },
+    type: "game",
+    symbol: "BLZ",
+    label: "Blitz",
+    description:
+      "Fast-paced onchain RTS where AI agents execute your tactics in real-time. Two-hour matches, fully verified on Starknet.",
+    link: "https://blitz.realms.world",
+  },
+  {
     coord: { q: 4, r: -2 },
     type: "game",
     symbol: "ETR",

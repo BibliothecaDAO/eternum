@@ -16,6 +16,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { games } from "@/data/games";
+import { Link } from "@tanstack/react-router";
 
 function DeferredApyValue() {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -125,7 +126,7 @@ export function FooterSection() {
         },
         {
           label: "Twitter",
-          href: "https://twitter.com/LordsRealms",
+          href: "https://x.com/LootRealms",
           icon: ExternalLink,
         },
       ],
@@ -294,24 +295,24 @@ export function FooterSection() {
               <span className="hidden md:inline">Onchain since 2021</span>
             </div>
             <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 text-xs text-muted-foreground/50">
-              <a
-                href="/scroll"
+              <Link
+                to="/scroll"
                 className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
               >
                 Scroll
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to="/privacy"
                 className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
               >
                 Privacy
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to="/terms"
                 className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
               >
                 Terms
-              </a>
+              </Link>
               <a
                 href="https://status.realms.world"
                 className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200 flex items-center gap-1.5"

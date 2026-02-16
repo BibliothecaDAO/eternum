@@ -313,7 +313,7 @@ export function TopBar() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <a href="https://twitter.com/LordsRealms" target="_blank" rel="noopener noreferrer" className="w-full">
+                      <a href="https://x.com/LootRealms" target="_blank" rel="noopener noreferrer" className="w-full">
                         Twitter
                       </a>
                     </DropdownMenuItem>
@@ -333,7 +333,7 @@ export function TopBar() {
                 {/* Social links — desktop only (in mobile menu above) */}
                 <div className="hidden xl:flex items-center gap-1">
                   <a
-                    href="https://twitter.com/LordsRealms"
+                    href="https://x.com/LootRealms"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"

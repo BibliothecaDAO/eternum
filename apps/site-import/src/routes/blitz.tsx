@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { generateMetaTags } from "@/lib/og-image";
 import { Button } from "@/components/ui/button";
@@ -221,10 +221,10 @@ function BlitzPage() {
                 className="shadow-lg shadow-primary/20 text-base px-8"
                 asChild
               >
-                <Link to="/games">
+                <a href="https://blitz.realms.world" target="_blank" rel="noopener noreferrer">
                   Enter Blitz
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                </a>
               </Button>
 
               <Button size="lg" variant="oath" className="text-base px-8" asChild>
@@ -459,10 +459,10 @@ function BlitzPage() {
                     className="text-base px-6"
                     asChild
                   >
-                    <Link to="/games">
+                    <a href="https://blitz.realms.world" target="_blank" rel="noopener noreferrer">
                       Build Your Agent
                       <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                    </a>
                   </Button>
                 </motion.div>
               </motion.div>
@@ -590,10 +590,10 @@ function BlitzPage() {
                     className="shadow-lg shadow-primary/20 text-base px-8"
                     asChild
                   >
-                    <Link to="/games">
+                    <a href="https://blitz.realms.world" target="_blank" rel="noopener noreferrer">
                       Enter Blitz
                       <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                    </a>
                   </Button>
                 </div>
               </HexCTAFrame>

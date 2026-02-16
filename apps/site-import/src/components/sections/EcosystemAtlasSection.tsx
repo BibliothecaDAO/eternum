@@ -131,10 +131,10 @@ export function EcosystemAtlasSection() {
                     className="shadow-lg shadow-primary/20"
                     asChild
                   >
-                    <Link to="/blitz">
+                    <a href="https://blitz.realms.world" target="_blank" rel="noopener noreferrer">
                       Enter Blitz
                       <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                    </a>
                   </Button>
                   <Button size="lg" variant="oath" asChild>
                     <Link to="/blitz">Learn More</Link>
