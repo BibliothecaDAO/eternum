@@ -44,11 +44,11 @@ interface GameReviewModalProps {
 
 const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const SHARE_CARD_DIMENSIONS = BLITZ_CARD_DIMENSIONS;
-const SHARE_PREVIEW_MAX_WIDTH = 700;
-const SHARE_CARD_ASPECT_RATIO = `${SHARE_CARD_DIMENSIONS.width} / ${SHARE_CARD_DIMENSIONS.height}`;
+const SHARE_PREVIEW_MAX_WIDTH = SHARE_CARD_DIMENSIONS.width;
+const EXPORT_STAGE_PADDING_X = 36;
+const EXPORT_STAGE_PADDING_Y = 24;
 const SHARE_FRAME_STYLE: CSSProperties = {
   maxWidth: `${SHARE_PREVIEW_MAX_WIDTH}px`,
-  aspectRatio: SHARE_CARD_ASPECT_RATIO,
 };
 const PERSONAL_CARD_PREVIEW_STYLE: CSSProperties = {
   maxWidth: `${SHARE_PREVIEW_MAX_WIDTH}px`,
@@ -139,7 +139,7 @@ const LeaderboardStep = ({ data }: { data: GameReviewData }) => {
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
-      <div className="space-y-2 overflow-hidden">
+      <div className="space-y-2">
         {data.topPlayers.length === 0 ? (
           <div className="rounded-xl border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
             Leaderboard data is not available yet.
@@ -431,7 +431,17 @@ export const GameReviewModal = ({
   }, [data, nextGame]);
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "stats";
-  const isStepShareable = currentStep === "stats" || currentStep === "leaderboard" || currentStep === "personal";
+  const isStepShareable = useMemo(() => {
+    if (currentStep === "stats" || currentStep === "leaderboard") {
+      return true;
+    }
+
+    if (currentStep === "personal") {
+      return Boolean(data?.personalScore);
+    }
+
+    return false;
+  }, [currentStep, data?.personalScore]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -502,20 +512,59 @@ export const GameReviewModal = ({
         currentStep === "personal"
           ? ((captureRef.current.querySelector(".blitz-card-root") as HTMLElement | null) ?? captureRef.current)
           : captureRef.current;
+      const captureRect = captureNode.getBoundingClientRect();
+      const captureWidth = Math.max(1, Math.round(captureRect.width));
+      const captureHeight = Math.max(1, Math.round(captureRect.height));
+      const exportWidth = captureWidth + EXPORT_STAGE_PADDING_X * 2;
+      const exportHeight = captureHeight + EXPORT_STAGE_PADDING_Y * 2;
 
-      const dataUrl = await toPng(captureNode, {
+      const pixelRatio = 2;
+      const captureDataUrl = await toPng(captureNode, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio,
         backgroundColor: "#050505",
-        canvasWidth: SHARE_CARD_DIMENSIONS.width,
-        canvasHeight: SHARE_CARD_DIMENSIONS.height,
+        canvasWidth: captureWidth,
+        canvasHeight: captureHeight,
         style: {
-          width: `${SHARE_CARD_DIMENSIONS.width}px`,
-          height: `${SHARE_CARD_DIMENSIONS.height}px`,
+          width: `${captureWidth}px`,
+          height: `${captureHeight}px`,
+          margin: "0",
         },
       });
 
-      const blob = await fetch(dataUrl).then((response) => response.blob());
+      const capturedImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Failed to decode captured step image."));
+        image.src = captureDataUrl;
+      });
+
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = exportWidth * pixelRatio;
+      exportCanvas.height = exportHeight * pixelRatio;
+
+      const context = exportCanvas.getContext("2d");
+      if (!context) {
+        throw new Error("Unable to create export canvas.");
+      }
+
+      context.fillStyle = "#050505";
+      context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+      const offsetX = ((exportWidth - captureWidth) / 2) * pixelRatio;
+      const offsetY = ((exportHeight - captureHeight) / 2) * pixelRatio;
+      context.drawImage(capturedImage, offsetX, offsetY, captureWidth * pixelRatio, captureHeight * pixelRatio);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        exportCanvas.toBlob((canvasBlob) => {
+          if (!canvasBlob) {
+            reject(new Error("Unable to encode PNG export."));
+            return;
+          }
+
+          resolve(canvasBlob);
+        }, "image/png");
+      });
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       toast.success("Step image copied to clipboard.");
     } catch (caughtError) {
@@ -527,13 +576,13 @@ export const GameReviewModal = ({
   }, [currentStep, isStepShareable]);
 
   const shareMessage = useMemo(() => {
-    if (!data) return "";
+    if (!data || !isStepShareable) return "";
     return buildStepShareMessage({
       step: currentStep,
       data,
       nextGame,
     });
-  }, [currentStep, data, nextGame]);
+  }, [currentStep, data, isStepShareable, nextGame]);
 
   const handleShareOnX = useCallback(() => {
     if (!shareMessage) return;
@@ -598,7 +647,7 @@ export const GameReviewModal = ({
               {currentStep === "stats" && (
                 <div
                   ref={captureRef}
-                  className="mx-auto flex w-full flex-col overflow-hidden rounded-xl border border-gold/25 bg-[#0a0a0a] p-4"
+                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-[#0a0a0a] p-4"
                   style={SHARE_FRAME_STYLE}
                 >
                   <GameStatsStep worldName={data.worldName} stats={data.stats} />
@@ -608,7 +657,7 @@ export const GameReviewModal = ({
               {currentStep === "leaderboard" && (
                 <div
                   ref={captureRef}
-                  className="mx-auto flex w-full flex-col overflow-hidden rounded-xl border border-gold/25 bg-[#0a0a0a] p-4"
+                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-[#0a0a0a] p-4"
                   style={SHARE_FRAME_STYLE}
                 >
                   <LeaderboardStep data={data} />

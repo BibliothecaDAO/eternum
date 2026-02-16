@@ -9,6 +9,7 @@ import type { Chain } from "@contracts";
 import { getGameManifest } from "@contracts";
 import { getContractByName } from "@dojoengine/core";
 import { SqlApi, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { Account, AccountInterface, Call } from "starknet";
 
 import { env } from "../../../env";
@@ -16,6 +17,7 @@ import { env } from "../../../env";
 const FORMATTED_WORLD_ID = "0x000000000000000000000000ffffffff";
 const RANKING_BATCH_SIZE = 200;
 const LEADERBOARD_FETCH_LIMIT = 1000;
+const RESOURCE_PRECISION_BIGINT = BigInt(RESOURCE_PRECISION);
 
 const REVIEW_BATTLE_AND_CREATION_QUERY = `
   SELECT
@@ -82,6 +84,110 @@ const parseNumeric = (value: unknown): number => {
   }
 
   return 0;
+};
+
+const parseBigIntValue = (value: unknown): bigint | null => {
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    return BigInt(Math.trunc(value));
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    try {
+      if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
+        return BigInt(trimmed);
+      }
+
+      if (/^[+-]?\d+$/.test(trimmed)) {
+        return BigInt(trimmed);
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+};
+
+const parseInteger = (value: unknown): number | null => {
+  const bigintValue = parseBigIntValue(value);
+  if (bigintValue == null) {
+    return null;
+  }
+
+  const asNumber = Number(bigintValue);
+  return Number.isFinite(asNumber) ? asNumber : null;
+};
+
+const parseScaledAmount = (value: unknown): number => {
+  const bigintValue = parseBigIntValue(value);
+  if (bigintValue != null) {
+    const whole = bigintValue / RESOURCE_PRECISION_BIGINT;
+    const remainder = bigintValue % RESOURCE_PRECISION_BIGINT;
+    const wholeAsNumber = Number(whole);
+    const remainderAsNumber = Number(remainder) / RESOURCE_PRECISION;
+
+    const combined = wholeAsNumber + remainderAsNumber;
+    if (Number.isFinite(combined)) {
+      return combined;
+    }
+  }
+
+  return parseNumeric(value) / RESOURCE_PRECISION;
+};
+
+const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 1 | 2 | 3 | null => {
+  if (value == null) return null;
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 1) {
+      return parseTroopTier(entries[0][0], usesZeroBasedEncoding);
+    }
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed.toUpperCase();
+    if (normalized === "T1") return 1;
+    if (normalized === "T2") return 2;
+    if (normalized === "T3") return 3;
+
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        return parseTroopTier(JSON.parse(trimmed), usesZeroBasedEncoding);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  const numericTier = parseInteger(value);
+  if (numericTier == null) {
+    return null;
+  }
+
+  if (usesZeroBasedEncoding) {
+    if (numericTier === 0) return 1;
+    if (numericTier === 1) return 2;
+    if (numericTier === 2) return 3;
+    return null;
+  }
+
+  if (numericTier === 1 || numericTier === 2 || numericTier === 3) {
+    return numericTier;
+  }
+
+  return null;
 };
 
 const parseAddress = (value: unknown): string | null => {
@@ -256,17 +362,22 @@ const fetchStoryStats = async (toriiSqlBaseUrl: string): Promise<Pick<
   let totalT2TroopsCreated = 0;
   let totalT3TroopsCreated = 0;
 
+  const numericTiers = rows
+    .map((row) => parseInteger(row.explorer_create_tier))
+    .filter((tier): tier is number => tier !== null);
+  const usesZeroBasedTierEncoding = numericTiers.includes(0);
+
   for (const row of rows) {
     const storyType = typeof row.story === "string" ? row.story : null;
 
     if (storyType === "BattleStory") {
-      totalDeadTroops += parseNumeric(row.battle_attacker_troops_lost) + parseNumeric(row.battle_defender_troops_lost);
+      totalDeadTroops += parseScaledAmount(row.battle_attacker_troops_lost) + parseScaledAmount(row.battle_defender_troops_lost);
       continue;
     }
 
     if (storyType === "ExplorerCreateStory") {
-      const troopTier = parseNumeric(row.explorer_create_tier);
-      const troopAmount = parseNumeric(row.explorer_create_amount);
+      const troopTier = parseTroopTier(row.explorer_create_tier, usesZeroBasedTierEncoding);
+      const troopAmount = parseScaledAmount(row.explorer_create_amount);
 
       if (troopTier === 1) totalT1TroopsCreated += troopAmount;
       if (troopTier === 2) totalT2TroopsCreated += troopAmount;
