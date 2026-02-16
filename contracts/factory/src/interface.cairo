@@ -1,5 +1,5 @@
 use starknet::{ClassHash, ContractAddress};
-use crate::factory_models::{FactoryConfigContract, FactoryConfigLibrary};
+use crate::factory_models::{FactoryConfigContractData, FactoryConfigLibraryData};
 
 /// Interface for the world factory.
 #[starknet::interface]
@@ -14,11 +14,13 @@ pub trait IWorldFactory<T> {
     /// # Arguments
     ///
     /// * `name` - The name of the world.
+    /// * `max_actions` - Max actions performed in this `create_game` transaction.
     /// * `factory_config_version` - The version of the factory configuration set using the
     /// `set_config` entrypoint.
     fn create_game(
         ref self: T,
         game_name: felt252,
+        max_actions: u64,
         factory_config_version: felt252,
         series_name: felt252,
         series_game_number: u16,
@@ -32,14 +34,12 @@ pub trait IWorldFactory<T> {
     /// # Arguments
     ///
     /// * `version` - The configuration version key.
-    /// * `max_actions` - Max actions performed per `create_game` transaction.
     /// * `world_class_hash` - Class hash for world deployment.
     /// * `default_namespace` - Default namespace used for registration.
     /// * `default_namespace_writer_all` - Whether to grant namespace writer to all contracts.
     fn set_factory_config(
         ref self: T,
         version: felt252,
-        max_actions: u64,
         world_class_hash: ClassHash,
         default_namespace: ByteArray,
         default_namespace_writer_all: bool,
@@ -52,7 +52,7 @@ pub trait IWorldFactory<T> {
     /// * `version` - The configuration version key.
     /// * `contracts` - Full contracts list.
     fn set_factory_config_contracts(
-        ref self: T, version: felt252, contracts: Array<FactoryConfigContract>,
+        ref self: T, version: felt252, contracts: Array<FactoryConfigContractData>,
     );
 
     /// Sets the models list for a config version.
@@ -78,7 +78,7 @@ pub trait IWorldFactory<T> {
     /// * `version` - The configuration version key.
     /// * `libraries` - Full libraries list.
     fn set_factory_config_libraries(
-        ref self: T, version: felt252, libraries: Array<FactoryConfigLibrary>,
+        ref self: T, version: felt252, libraries: Array<FactoryConfigLibraryData>,
     );
 }
 
