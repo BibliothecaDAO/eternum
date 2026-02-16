@@ -71,19 +71,17 @@ interface BiomeSummaryCardProps {
 export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(
     () =>
-      unoccupiedTileTroopTypes
-        .map((troopType) => {
-          const config = unoccupiedTileTroopConfig[troopType];
-          const bonus = configManager.getBiomeCombatBonus(troopType, biome);
-          const styles = getQuadrantBonusStyles(bonus);
-          return {
-            troopType,
-            config,
-            bonus,
-            styles,
-          };
-        })
-        .toSorted((a, b) => a.bonus - b.bonus),
+      unoccupiedTileTroopTypes.map((troopType) => {
+        const config = unoccupiedTileTroopConfig[troopType];
+        const bonus = configManager.getBiomeCombatBonus(troopType, biome);
+        const styles = getQuadrantBonusStyles(bonus);
+        return {
+          troopType,
+          config,
+          bonus,
+          styles,
+        };
+      }),
     [biome],
   );
 
