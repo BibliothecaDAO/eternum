@@ -679,7 +679,8 @@ const LocalTilePanel = () => {
                                   {consumedBy.length > 0 ? (
                                     <div className="grid grid-cols-3 gap-2">
                                       {consumedBy.map((resourceId) => {
-                                        const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                                        const name =
+                                          findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
                                         return (
                                           <div
                                             key={resourceId}
