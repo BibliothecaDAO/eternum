@@ -591,7 +591,7 @@ export class ClientConfigManager {
     const { strength, modifier } = tierParams[tier];
     const modifierPrecision = 100;
     if (strength === 0) return 0;
-    return (deploymentCap * modifierPrecision * strength) / modifier;
+    return Math.floor((deploymentCap * modifier) / (strength * modifierPrecision));
   }
 
   getCombatConfig() {

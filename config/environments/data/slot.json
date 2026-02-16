@@ -790,7 +790,7 @@
     "limit": {
       "guardResurrectionDelay": 600,
       "mercenariesTroopLowerBound": 800,
-      "mercenariesTroopUpperBound": 1600,
+      "mercenariesTroopUpperBound": 1500,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000,
       "settlementDeploymentCap": 3000,
@@ -1476,15 +1476,15 @@
     },
     {
       "resource": 26,
-      "amount": 3000
+      "amount": 1500
     },
     {
       "resource": 29,
-      "amount": 3000
+      "amount": 1500
     },
     {
       "resource": 32,
-      "amount": 3000
+      "amount": 1500
     }
   ],
   "villageStartingResources": [],
@@ -3263,7 +3263,7 @@
       "contracts": [
         {
           "address": "0x22b347318c17f3cdb805295f46b07b28f1d1ca8dc5e355a67197ddb39d84aa2",
-          "class_hash": "0x235d6e8b3c3202b5e0a3d3b4653e3680208cb8a17086036b53a3f2809478acf",
+          "class_hash": "0x15527f9f5501d4211e878e611c1d7b189ca1612f4a79e6322e28b1b1b011c48",
           "init_calldata": [],
           "tag": "s1_eternum-agent_discovery_systems",
           "selector": "0x39779154845217b9230e347a39ab6e47e8f2d46c1fd80c6996d13988857d770",
@@ -3740,7 +3740,7 @@
         },
         {
           "address": "0x11b2c8ff3833b152020eb78c88d10b1b2e9dfe7f9f77cce414833c80bedb376",
-          "class_hash": "0x557e300144bdc07cc4fbc49d9858f5666ed5ddb63fb3c2a2655793b2ef7ece3",
+          "class_hash": "0x34adc7e042857829dbede14c56fd8bdf633c734061fc4b99d36b29fb12c6179",
           "init_calldata": [],
           "tag": "s1_eternum-bank_systems",
           "selector": "0x44475a775d79049bbe99567b7c00a1e4d8d582cade61a8aec07ca3bb234f6e6",
@@ -3992,7 +3992,7 @@
         },
         {
           "address": "0x497b04337f49f4c80f8f3f6ebd205dd34abcab2a12f83e64dd26c25639f6b46",
-          "class_hash": "0x15f4c153d7a5d2e016b9d4b275268f1326ab27a2869507c3ed2720315adf395",
+          "class_hash": "0x7df3f649b507f097124a45b5246bf2fb54dac11c59a4dd8b7c2027670f5aed7",
           "init_calldata": [],
           "tag": "s1_eternum-blitz_realm_systems",
           "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",
@@ -6492,7 +6492,7 @@
         },
         {
           "address": "0x2ab0f73ea069f899189a3a44c320580b59c6dbe6d23a1c0c63b7a558e37984e",
-          "class_hash": "0x2391048cf6aa25e076271c250fb93f4ef6519c73c67452b20479928e8b31c6d",
+          "class_hash": "0x4e49678d60952356dbc2b6aec2704032e52856eb74a4b931e6083506e04072f",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_discovery_systems",
           "selector": "0x4de7ee78f9f01b8f7b98c172552cc0f7b81c8706ffc85e7b831021e820420d1",
@@ -7526,7 +7526,7 @@
         },
         {
           "address": "0x1e00979c39dfd68d69b450ced3f4b770c66420aa5fa046b3ad60e82a45c4459",
-          "class_hash": "0x5ea4c8463c30d70dddd3d5fa269cfb9b4398c92a6dcf80e4ce75b0ec576a001",
+          "class_hash": "0x1fdfbac61bb8f7ca913c4b7a29be9ea1f2d2b563e45f29d97f1ce671961814",
           "init_calldata": [],
           "tag": "s1_eternum-mine_discovery_systems",
           "selector": "0x567d970e2796f641f9a9c23fa16378ddaee5c8a7d27ac4e3edbd4dfa25a1743",
@@ -12404,7 +12404,7 @@
         },
         {
           "address": "0x163ee6a5d563f0df42ef26a0a7513702eae3c2bc152d1386a288fab21650cb3",
-          "class_hash": "0x5f7c03a4610592fdc3915a7e251d51c8432f34ab02da24fbbe5fc38c76b2eb6",
+          "class_hash": "0x7679d73ab8d89298713d0ca147736ea62228910c55fd16f09ac8a0bf5b63790",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
           "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",
@@ -13911,7 +13911,7 @@
         },
         {
           "address": "0x29e76d7efc71fad9724696c299cc5ed9ac3d94e5e776c7749918720779d918a",
-          "class_hash": "0x40f6bd38653e49c18508a7c9445cfeda546ea5f42c5fecc04f1bf568ce03cfc",
+          "class_hash": "0x467cb9aa06420ac94d190698f9cb8dddbb0f01678d174cec5565e481aa5522b",
           "init_calldata": [],
           "tag": "s1_eternum-village_discovery_systems",
           "selector": "0x52ecb1dffcd93e8b7f1379f426b123cc1de850735306874424bf8fe817f3862",
