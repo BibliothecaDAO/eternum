@@ -99,11 +99,15 @@ import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
+  resolveArmySelectionStartPosition,
   resolveArmyTabSelectionPosition,
+  resolvePendingArmyMovementFallbackDelayMs,
+  resolvePendingArmyMovementFallbackScheduleDelayMs,
   shouldAcceptArmyTabSelectionAttempt,
   shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
+import { removeAllArmyHexEntriesForEntity } from "./worldmap-army-hex-cache";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveDuplicateTileUpdateActions,
@@ -1660,19 +1664,34 @@ export default class WorldmapScene extends HexagonScene {
     this.schedulePendingArmyMovementFallback(entityId);
   }
 
-  private schedulePendingArmyMovementFallback(entityId: ID): void {
+  private schedulePendingArmyMovementFallback(entityId: ID, retryDelayMs?: number): void {
     const existingFallback = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (existingFallback) {
       clearTimeout(existingFallback);
     }
 
+    const fallbackDelayMs = resolvePendingArmyMovementFallbackScheduleDelayMs({
+      staleAfterMs: this.stalePendingArmyMovementMs,
+      retryDelayMs,
+    });
+
     const fallbackTimeout = setTimeout(() => {
+      this.pendingArmyMovementFallbackTimeouts.delete(entityId);
+
       if (!this.pendingArmyMovements.has(entityId)) {
-        this.pendingArmyMovementFallbackTimeouts.delete(entityId);
         return;
       }
 
-      if (!this.shouldClearPendingArmyMovementNow(entityId)) {
+      const nowMs = Date.now();
+      if (!this.shouldClearPendingArmyMovementNow(entityId, nowMs)) {
+        const nextRetryDelayMs = resolvePendingArmyMovementFallbackDelayMs({
+          pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
+          nowMs,
+          staleAfterMs: this.stalePendingArmyMovementMs,
+          minRetryDelayMs: 16,
+        });
+
+        this.schedulePendingArmyMovementFallback(entityId, nextRetryDelayMs);
         return;
       }
 
@@ -1682,7 +1701,7 @@ export default class WorldmapScene extends HexagonScene {
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
       }
-    }, this.stalePendingArmyMovementMs);
+    }, fallbackDelayMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
   }
@@ -1695,12 +1714,23 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  private getRenderedArmyNormalizedPosition(entityId: ID): HexPosition | undefined {
+    const army = this.armyManager.getArmies().find((candidate) => Number(candidate.entityId) === Number(entityId));
+    if (!army) {
+      return undefined;
+    }
+
+    const normalized = army.hexCoords.getNormalized();
+    return { col: normalized.x, row: normalized.y };
+  }
+
   private onArmySelection(
     selectedEntityId: ID,
     playerAddress: ContractAddress,
-    options?: { deferDuringChunkTransition?: boolean },
+    options?: { deferDuringChunkTransition?: boolean; startPositionHint?: HexPosition },
   ): boolean {
     const deferDuringChunkTransition = options?.deferDuringChunkTransition ?? true;
+    const startPositionHint = options?.startPositionHint;
 
     // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(selectedEntityId)) {
@@ -1763,6 +1793,26 @@ export default class WorldmapScene extends HexagonScene {
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const renderedManagerPosition = this.getRenderedArmyNormalizedPosition(selectedEntityId);
+    const trackedArmyPosition = this.armiesPositions.get(selectedEntityId);
+    if (
+      import.meta.env.DEV &&
+      renderedManagerPosition &&
+      trackedArmyPosition &&
+      (renderedManagerPosition.col !== trackedArmyPosition.col || renderedManagerPosition.row !== trackedArmyPosition.row)
+    ) {
+      console.warn(
+        `[DEBUG] Army ${selectedEntityId} position mismatch during selection (manager=${renderedManagerPosition.col},${renderedManagerPosition.row} tracked=${trackedArmyPosition.col},${trackedArmyPosition.row})`,
+      );
+    }
+    const selectedArmyPosition = resolveArmySelectionStartPosition({
+      renderedManagerPosition,
+      selectionHintPosition: startPositionHint,
+      trackedArmyPosition,
+    });
+    const selectedArmyStartContractPosition = selectedArmyPosition
+      ? new Position({ x: selectedArmyPosition.col, y: selectedArmyPosition.row }).getContract()
+      : undefined;
 
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
@@ -1772,6 +1822,14 @@ export default class WorldmapScene extends HexagonScene {
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
+      selectedArmyStartContractPosition
+        ? {
+            startPositionOverride: {
+              col: selectedArmyStartContractPosition.x,
+              row: selectedArmyStartContractPosition.y,
+            },
+          }
+        : undefined,
     );
 
     const paths = actionPaths.getPaths();
@@ -1784,7 +1842,7 @@ export default class WorldmapScene extends HexagonScene {
     const selectedArmyData = this.armyManager
       .getArmies()
       .find((army) => Number(army.entityId) === Number(selectedEntityId));
-    const armyPosition = this.armiesPositions.get(selectedEntityId);
+    const armyPosition = selectedArmyPosition;
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
@@ -2404,22 +2462,19 @@ export default class WorldmapScene extends HexagonScene {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.armiesPositions.get(entityId);
+
+    const removedPositions = removeAllArmyHexEntriesForEntity({
+      armyHexes: this.armyHexes,
+      entityId,
+    });
+    for (const removedPos of removedPositions) {
+      gameWorkerManager.updateArmyHex(removedPos.col, removedPos.row, null);
+      this.invalidateAllChunkCachesContainingHex(removedPos.col, removedPos.row);
+    }
 
     // Update army position
     this.armiesPositions.set(entityId, newPos);
     this.armyLastUpdateAt.set(entityId, Date.now());
-
-    // Remove from old position if it changed
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-    }
 
     // Add to new position
     if (!this.armyHexes.has(newPos.col)) {
@@ -4517,7 +4572,7 @@ export default class WorldmapScene extends HexagonScene {
         y: army.position.row,
       }).getNormalized();
       const resolvedPosition = resolveArmyTabSelectionPosition({
-        renderedArmyPosition: this.armiesPositions.get(army.entityId),
+        renderedArmyPosition: this.getRenderedArmyNormalizedPosition(army.entityId),
         selectableArmyNormalizedPosition: {
           col: selectableArmyNormalizedPosition.x,
           row: selectableArmyNormalizedPosition.y,
@@ -4539,6 +4594,7 @@ export default class WorldmapScene extends HexagonScene {
       this.handleHexSelection(resolvedPosition, true);
       let selectionSucceeded = this.onArmySelection(army.entityId, account, {
         deferDuringChunkTransition: false,
+        startPositionHint: resolvedPosition,
       });
 
       if (!selectionSucceeded) {
@@ -4555,6 +4611,7 @@ export default class WorldmapScene extends HexagonScene {
 
         selectionSucceeded = this.onArmySelection(army.entityId, account, {
           deferDuringChunkTransition: false,
+          startPositionHint: resolvedPosition,
         });
       }
 

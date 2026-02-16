@@ -3,6 +3,12 @@ interface ResolveArmyTabSelectionPositionInput {
   selectableArmyNormalizedPosition: { col: number; row: number };
 }
 
+interface ResolveArmySelectionStartPositionInput {
+  renderedManagerPosition?: { col: number; row: number };
+  selectionHintPosition?: { col: number; row: number };
+  trackedArmyPosition?: { col: number; row: number };
+}
+
 interface ShouldAcceptArmyTabSelectionAttemptInput {
   hasPendingMovement: boolean;
   selectionSucceeded: boolean;
@@ -21,6 +27,18 @@ interface ShouldClearPendingArmyMovementInput {
   staleAfterMs: number;
 }
 
+interface ResolvePendingArmyMovementFallbackDelayInput {
+  pendingMovementStartedAtMs?: number;
+  nowMs: number;
+  staleAfterMs: number;
+  minRetryDelayMs?: number;
+}
+
+interface ResolvePendingArmyMovementFallbackScheduleDelayInput {
+  staleAfterMs: number;
+  retryDelayMs?: number;
+}
+
 /**
  * Tab cycling should prioritize the position currently rendered in the worldmap.
  * Fallback to selectable-army snapshot coordinates when render state is unavailable.
@@ -34,6 +52,28 @@ export function resolveArmyTabSelectionPosition(input: ResolveArmyTabSelectionPo
   }
 
   return input.selectableArmyNormalizedPosition;
+}
+
+/**
+ * Action origin should prefer the freshest position source.
+ * Use rendered manager coordinates first, then explicit selection hints,
+ * then tracked map cache as a last fallback.
+ */
+export function resolveArmySelectionStartPosition(input: ResolveArmySelectionStartPositionInput):
+  | {
+      col: number;
+      row: number;
+    }
+  | undefined {
+  if (input.renderedManagerPosition) {
+    return input.renderedManagerPosition;
+  }
+
+  if (input.selectionHintPosition) {
+    return input.selectionHintPosition;
+  }
+
+  return input.trackedArmyPosition;
 }
 
 /**
@@ -67,4 +107,31 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
   }
 
   return input.nowMs - input.pendingMovementStartedAtMs >= input.staleAfterMs;
+}
+
+/**
+ * Compute how long to wait before retrying stale-pending fallback checks.
+ * Returns 0 when pending state is already stale and can be cleared now.
+ */
+export function resolvePendingArmyMovementFallbackDelayMs(input: ResolvePendingArmyMovementFallbackDelayInput): number {
+  if (input.pendingMovementStartedAtMs === undefined) {
+    return 0;
+  }
+
+  const elapsedMs = input.nowMs - input.pendingMovementStartedAtMs;
+  const remainingMs = input.staleAfterMs - elapsedMs;
+  if (remainingMs <= 0) {
+    return 0;
+  }
+
+  return Math.max(input.minRetryDelayMs ?? 1, remainingMs);
+}
+
+/**
+ * Use the stale timeout for first scheduling and retry delay for subsequent checks.
+ */
+export function resolvePendingArmyMovementFallbackScheduleDelayMs(
+  input: ResolvePendingArmyMovementFallbackScheduleDelayInput,
+): number {
+  return input.retryDelayMs ?? input.staleAfterMs;
 }

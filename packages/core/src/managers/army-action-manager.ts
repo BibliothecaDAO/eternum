@@ -20,6 +20,8 @@ import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths"
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
+import { resolveArmyOccupancyAtContractHex } from "./utils/army-occupancy";
+import { resolveArmyActionStartPosition } from "./utils/army-start-position";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 
 export class ArmyActionManager {
@@ -143,11 +145,15 @@ export class ArmyActionManager {
     currentDefaultTick: number,
     currentArmiesTick: number,
     playerAddress: ContractAddress,
+    options?: { startPositionOverride?: HexPosition },
   ): ActionPaths {
     const armyStamina = Number(this.staminaManager.getStamina(currentArmiesTick).amount);
 
     const troopType = this._getTroopType();
-    const startPos = this._getCurrentPosition();
+    const startPos = resolveArmyActionStartPosition({
+      componentPosition: this._getCurrentPosition(),
+      overridePosition: options?.startPositionOverride,
+    });
     // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
@@ -165,9 +171,14 @@ export class ArmyActionManager {
     const neighbors = getNeighborHexes(startPos.col, startPos.row);
     for (const { col, row } of neighbors) {
       const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const isArmyMine =
-        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner === playerAddress || false;
+      const { hasArmy, isArmyMine } = resolveArmyOccupancyAtContractHex({
+        armyHexes,
+        contractCol: col,
+        contractRow: row,
+        feltCenter: this.FELT_CENTER,
+        selectedArmyId: this.entityId,
+        playerAddress,
+      });
       const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const isStructureMine =
@@ -233,7 +244,14 @@ export class ArmyActionManager {
         lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored =
           exploredHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
-        const hasArmy = armyHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
+        const { hasArmy } = resolveArmyOccupancyAtContractHex({
+          armyHexes,
+          contractCol: current.col,
+          contractRow: current.row,
+          feltCenter: this.FELT_CENTER,
+          selectedArmyId: this.entityId,
+          playerAddress,
+        });
         const hasStructure =
           structureHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
         const hasChest = chestHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
@@ -251,7 +269,14 @@ export class ArmyActionManager {
           if (nextDistance > maxHex) continue;
 
           const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-          const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
+          const { hasArmy } = resolveArmyOccupancyAtContractHex({
+            armyHexes,
+            contractCol: col,
+            contractRow: row,
+            feltCenter: this.FELT_CENTER,
+            selectedArmyId: this.entityId,
+            playerAddress,
+          });
           const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
           const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;

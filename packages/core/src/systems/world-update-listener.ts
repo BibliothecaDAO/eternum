@@ -328,11 +328,6 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              // maybe don't use mapdatastore here since these are all available from the tile listener
-              const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
-              const normalizedOwnerStructureId =
-                currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
-
               const entityId = this.resolveEntityId(currentState.explorer_id as ID | undefined, update.entity, () => {
                 const componentState = getComponentValue(this.setup.components.ExplorerTroops, update.entity) as
                   | { explorer_id?: ID }
@@ -345,19 +340,30 @@ export class WorldUpdateListener {
                 return;
               }
 
-              return {
-                entityId,
-                troopCount: divideByPrecision(Number(currentState.troops.count)),
-                onChainStamina: {
-                  amount: BigInt(currentState.troops.stamina.amount),
-                  updatedTick: Number(currentState.troops.stamina.updated_tick),
-                },
-                ownerStructureId: normalizedOwnerStructureId,
-                hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
-                ownerAddress: owner?.address || 0n,
-                ownerName: owner?.ownerName || "",
-                battleCooldownEnd: currentState.troops.battle_cooldown_end,
-              };
+              // Keep explorer-troops updates ordered per entity to prevent stale positions
+              // from arriving after newer updates during async owner resolution.
+              const result = await this.processSequentialUpdate(entityId, async () => {
+                // maybe don't use mapdatastore here since these are all available from the tile listener
+                const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
+                const normalizedOwnerStructureId =
+                  currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
+
+                return {
+                  entityId,
+                  troopCount: divideByPrecision(Number(currentState.troops.count)),
+                  onChainStamina: {
+                    amount: BigInt(currentState.troops.stamina.amount),
+                    updatedTick: Number(currentState.troops.stamina.updated_tick),
+                  },
+                  ownerStructureId: normalizedOwnerStructureId,
+                  hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
+                  ownerAddress: owner?.address || 0n,
+                  ownerName: owner?.ownerName || "",
+                  battleCooldownEnd: currentState.troops.battle_cooldown_end,
+                };
+              });
+
+              return result || undefined;
             }
           },
           false,

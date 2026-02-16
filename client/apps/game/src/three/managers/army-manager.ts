@@ -48,6 +48,7 @@ import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
+import { clearArmyMoveRequest, registerArmyMoveRequest, shouldApplyArmyMoveRequest } from "./army-move-sequencing";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
@@ -115,6 +116,7 @@ export class ArmyManager {
   private pendingRenderChunkKey: string | null = null;
   private pendingRenderOptions: { force?: boolean; transitionToken?: number } | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
+  private moveRequestByEntity: Map<ID, number> = new Map();
   private lastKnownVisibleHexes: Map<ID, { col: number; row: number }> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
@@ -1493,6 +1495,7 @@ export class ArmyManager {
 
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
+    const moveRequest = registerArmyMoveRequest(this.moveRequestByEntity, entityId);
 
     const numericEntityId = this.toNumericId(entityId);
     const startPos = armyData.hexCoords.getNormalized();
@@ -1507,6 +1510,9 @@ export class ArmyManager {
     const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
     const workerPath = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
+    if (!shouldApplyArmyMoveRequest(this.moveRequestByEntity, entityId, moveRequest)) {
+      return;
+    }
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
 
     // Convert path to world positions
@@ -1584,6 +1590,7 @@ export class ArmyManager {
     // console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
 
     this.armyPaths.delete(entityId);
+    clearArmyMoveRequest(this.moveRequestByEntity, entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
@@ -2474,6 +2481,8 @@ ${
       return;
     }
 
+    this.reconcilePositionFromExplorerTroopsUpdate(update, army);
+
     // Log troop count diff and play visual FX for battle damage/healing
     const previousCount = army.troopCount;
     const newCount = update.troopCount;
@@ -2600,6 +2609,34 @@ ${
     this.updateArmyPointIcon(army, position);
   }
 
+  private reconcilePositionFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate, army: ArmyData): void {
+    const positionUpdate = update as ExplorerTroopsSystemUpdate & {
+      hexCoords?: { col: number; row: number };
+    };
+    if (!positionUpdate.hexCoords) {
+      return;
+    }
+
+    const incomingPosition = new Position({
+      x: positionUpdate.hexCoords.col,
+      y: positionUpdate.hexCoords.row,
+    });
+    const incomingNormalized = incomingPosition.getNormalized();
+    const currentNormalized = army.hexCoords.getNormalized();
+    if (incomingNormalized.x === currentNormalized.x && incomingNormalized.y === currentNormalized.y) {
+      return;
+    }
+
+    // ExplorerTroops updates can arrive even when tile updates are missed during rapid
+    // chunk/bounds switches; reconcile render-side position to avoid stale interactivity.
+    void this.moveArmy(update.entityId, incomingPosition).catch((error) => {
+      console.warn(
+        `[ArmyManager] Failed to reconcile position from ExplorerTroops update for army ${update.entityId}:`,
+        error,
+      );
+    });
+  }
+
   public destroy() {
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
@@ -2649,6 +2686,7 @@ ${
     this.movingArmySourceBuckets.clear();
     this.chunkToArmies.clear();
     this.movementCompleteListeners.clear();
+    this.moveRequestByEntity.clear();
 
     // Clear path visualization
     this.pathRenderer.clearAll();
