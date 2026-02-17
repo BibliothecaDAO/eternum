@@ -67,10 +67,19 @@ pre,
   transition:
     opacity 0.2s,
     transform 0.25s;
+  --vocs_Icon_size: 12px !important;
 }
 
 .vocs_Sidebar_sectionCollapse:hover {
   opacity: 1;
+}
+
+/* Ensure chevron parent button wrapper is visible and clickable */
+.vocs_Sidebar_sectionHeader > div[role="button"] {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  cursor: pointer;
 }
 
 .vocs_Sidebar_sectionTitle {
@@ -164,8 +173,16 @@ pre,
 }
 
 /* Scoped table-layout: fixed for specific tables */
+.vocs_Content .table-fixed-layout table,
+.table-fixed-layout table.vocs_Table,
 .table-fixed-layout table {
   table-layout: fixed !important;
+}
+
+/* Widen first column slightly for text to fit on one line */
+.table-first-col-wide td:first-child,
+.table-first-col-wide th:first-child {
+  white-space: nowrap;
 }
 
 /* Force last column to fill remaining space in simple markdown tables */
