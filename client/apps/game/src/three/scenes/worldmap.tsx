@@ -4126,7 +4126,6 @@ export default class WorldmapScene extends HexagonScene {
 
     const oldChunk = this.currentChunk;
     const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-    this.currentChunk = chunkKey;
     const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
     const hasFiniteOldChunkCoordinates =
       oldChunkCoordinates !== null &&
@@ -4203,6 +4202,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
 
     // Ensure visibility state is fresh before manager renders

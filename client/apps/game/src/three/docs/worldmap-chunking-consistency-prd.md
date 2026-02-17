@@ -15,6 +15,8 @@
 | U1     | 2026-02-17 00:00 | Codex  | Initial detailed PRD with milestones, TDD slices, acceptance gates, and rollout plan. |
 | U2     | 2026-02-17 00:00 | Codex  | M0 progress update: added deterministic async harness + chunk orchestration fixture seams, and replaced two regex-based scene tests with behavior coverage. |
 | U3     | 2026-02-17 00:00 | Codex  | M0 progress update: extracted diagnostics baseline capture helper with tests and added pre-M1 runtime baseline runbook; live runtime snapshot capture remains pending. |
+| U4     | 2026-02-17 23:10 | Codex  | M0 completion update: captured live pre-M1 runtime diagnostics and persisted `.context/worldmap-pre-m1-baseline.json` + `.context/worldmap-pre-m1-baseline.png`. |
+| U5     | 2026-02-17 23:15 | Codex  | M1 completion update: added failing-then-green behavior tests for `performChunkSwitch` success/fetch-failure/stale suppression, and moved chunk authority write to commit phase in `worldmap.tsx`. |
 
 ## Executive Summary
 
@@ -268,6 +270,13 @@ Exit Criteria:
 
 1. Soak passes with no critical chunk-consistency incidents.
 2. Performance envelope remains within NFR thresholds.
+
+## Milestone Status Snapshot
+
+| Milestone | Status | Date (UTC) | Evidence |
+| --------- | ------ | ---------- | -------- |
+| M0 | Completed | 2026-02-17 | Runtime baseline artifact captured: `.context/worldmap-pre-m1-baseline.json` with `pre-m1-start`/`pre-m1-end` snapshots. |
+| M1 | Completed | 2026-02-17 | `performChunkSwitch` behavior tests green in `src/three/scenes/worldmap-chunk-orchestration-fixture.test.ts`; chunk authority write moved to commit phase in `src/three/scenes/worldmap.tsx`. |
 
 ## TDD Execution Plan
 

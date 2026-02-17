@@ -166,7 +166,22 @@ Validation command executed:
 
 Status:
 
-1. Pending live capture in a running worldmap dev session.
+1. Completed on 2026-02-17 (UTC) in a live worldmap dev session.
+
+Artifacts:
+
+1. `.context/worldmap-pre-m1-baseline.json`
+2. `.context/worldmap-pre-m1-baseline.png`
+
+Captured summary (`pre-m1-start` -> `pre-m1-end`):
+
+1. `transitionStarted`: `0` -> `1`
+2. `transitionCommitted`: `0` -> `1`
+3. `transitionRolledBack`: `0` -> `0`
+4. `tileFetchStarted`: `0` -> `4`
+5. `tileFetchFailed`: `0` -> `0`
+6. `refreshRequested`: `0` -> `91`
+7. `switchDurationMsMax`: `0` -> `1708.5999999046326`
 
 Steps:
 
@@ -180,7 +195,12 @@ Steps:
    2. `const snapshot = window.getWorldmapChunkDiagnostics?.();`
 5. Persist the snapshot to a local artifact file (recommended: `.context/worldmap-pre-m1-baseline.json`) for milestone comparison.
 
+Validation commands executed:
+
+1. `export PATH=/Users/os/.nvm/versions/node/v22.22.0/bin:$PATH && corepack pnpm --dir client/apps/game dev --host 127.0.0.1 --port 4173`
+2. `node .context/browser-run/capture-pre-m1.js`
+
 ## Next M0 Work Items
 
-1. Execute the runtime runbook above and save a concrete pre-M1 baseline snapshot artifact.
-2. Finalize M0 close checklist and mark milestone status in PRD update log.
+1. M0 close checklist complete.
+2. Status reflected in PRD update log; next active milestone is M1 hardening.
