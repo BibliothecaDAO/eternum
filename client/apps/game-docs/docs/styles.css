@@ -54,21 +54,13 @@ pre,
   font-family: "Exo 2", sans-serif !important;
 }
 
-/* Make sidebar chevrons visible, aligned to right edge, and make whole bar toggle */
+/* Sidebar chevrons: align right, visible, and keep header clickable */
 .vocs_Sidebar_sectionHeader {
   cursor: pointer !important;
-  position: relative;
-  overflow: visible;
-}
-
-/* For collapsible sections, the button overlay captures clicks across the whole row */
-.vocs_Sidebar_sectionHeader:has(> div[role="button"]) {
-  padding-right: 1.75rem;
-}
-
-.vocs_Sidebar_sectionHeader:has(> div[role="button"]) > a.vocs_Sidebar_item,
-.vocs_Sidebar_sectionHeader:has(> div[role="button"]) > a.vocs_Sidebar_sectionTitleLink {
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .vocs_Sidebar_sectionCollapse {
@@ -84,18 +76,6 @@ pre,
 
 .vocs_Sidebar_sectionCollapse:hover {
   opacity: 1;
-}
-
-/* Force chevron to the right edge and make the whole header clickable */
-.vocs_Sidebar_sectionHeader > div[role="button"] {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 0.5rem;
-  cursor: pointer;
-  z-index: 2;
 }
 
 .vocs_Sidebar_sectionTitle {
@@ -203,6 +183,9 @@ pre,
 /* Deployment caps: fixed layout with balanced column widths */
 .table-deployment-caps table {
   table-layout: fixed !important;
+  width: calc(100% + 2.5cm) !important;
+  max-width: none !important;
+  margin-right: -2.5cm;
 }
 
 .table-deployment-caps th:nth-child(1),
