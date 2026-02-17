@@ -54,21 +54,21 @@ pre,
   font-family: "Exo 2", sans-serif !important;
 }
 
-/* Make sidebar chevrons visible, aligned to right edge, and clickable */
+/* Make sidebar chevrons visible, aligned to right edge, and make whole bar toggle */
 .vocs_Sidebar_sectionHeader {
   cursor: pointer !important;
   position: relative;
-  padding-right: 1.6rem;
   overflow: visible;
 }
 
-/* Keep link from pushing chevron out of view */
-.vocs_Sidebar_sectionHeader > a.vocs_Sidebar_item,
-.vocs_Sidebar_sectionHeader > a.vocs_Sidebar_sectionTitleLink {
-  display: block;
-  min-width: 0;
-  width: auto;
-  margin-right: 0.25rem;
+/* For collapsible sections, the button overlay captures clicks across the whole row */
+.vocs_Sidebar_sectionHeader:has(> div[role="button"]) {
+  padding-right: 1.75rem;
+}
+
+.vocs_Sidebar_sectionHeader:has(> div[role="button"]) > a.vocs_Sidebar_item,
+.vocs_Sidebar_sectionHeader:has(> div[role="button"]) > a.vocs_Sidebar_sectionTitleLink {
+  pointer-events: none;
 }
 
 .vocs_Sidebar_sectionCollapse {
@@ -86,18 +86,16 @@ pre,
   opacity: 1;
 }
 
-/* Force chevron to the right edge of the sidebar item */
+/* Force chevron to the right edge and make the whole header clickable */
 .vocs_Sidebar_sectionHeader > div[role="button"] {
   position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  inset: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
   cursor: pointer;
-  flex-shrink: 0;
+  z-index: 2;
 }
 
 .vocs_Sidebar_sectionTitle {
@@ -200,6 +198,31 @@ pre,
 .table-first-col-wide td:first-child,
 .table-first-col-wide th:first-child {
   white-space: nowrap;
+}
+
+/* Deployment caps: fixed layout with balanced column widths */
+.table-deployment-caps table {
+  table-layout: fixed !important;
+}
+
+.table-deployment-caps th:nth-child(1),
+.table-deployment-caps td:nth-child(1) {
+  width: 24%;
+}
+
+.table-deployment-caps th:nth-child(2),
+.table-deployment-caps td:nth-child(2) {
+  width: 24%;
+}
+
+.table-deployment-caps th:nth-child(3),
+.table-deployment-caps td:nth-child(3) {
+  width: 24%;
+}
+
+.table-deployment-caps th:nth-child(4),
+.table-deployment-caps td:nth-child(4) {
+  width: 28%;
 }
 
 /* Force last column to fill remaining space in simple markdown tables */
