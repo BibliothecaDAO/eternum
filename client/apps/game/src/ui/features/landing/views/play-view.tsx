@@ -571,8 +571,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSpectate={handleSpectate}
             onForgeHyperstructures={handleForgeHyperstructures}
             onSeeScore={handleSeeScore}
-            onForgeHyperstructures={handleForgeHyperstructures}
-            onSeeScore={handleSeeScore}
             onRegistrationComplete={handleRegistrationComplete}
           />
         );
