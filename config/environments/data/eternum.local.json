@@ -713,7 +713,9 @@
     "questFindFailProbability": 99,
     "relicDiscoveryIntervalSeconds": 300,
     "relicHexDistanceFromCenter": 10,
-    "relicChestRelicsPerChest": 3
+    "relicChestRelicsPerChest": 3,
+    "bitcoinMineWinProbability": 200,
+    "bitcoinMineFailProbability": 9800
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
@@ -729,7 +731,10 @@
     "5": "18446744073709551615",
     "6": "18446744073709551615",
     "7": "18446744073709551615",
-    "8": "18446744073709551615"
+    "8": "18446744073709551615",
+    "9": "18446744073709551615",
+    "10": "18446744073709551615",
+    "11": "18446744073709551615"
   },
   "speed": {
     "donkey": 0,

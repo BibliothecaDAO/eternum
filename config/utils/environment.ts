@@ -1,4 +1,5 @@
 export type NetworkType = "local" | "sepolia" | "slot" | "slottest" | "mainnet";
+export type GameType = "blitz" | "eternum";
 
 import fs from "fs";
 
@@ -18,12 +19,12 @@ function extractContractAddressFromManifest(manifest: any, tag: string): string 
   }
 }
 
-export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
-  const CONFIGURATION_FILE = `../environments/${chain}`;
+export async function saveConfigJsonFromConfigTsFile(chain: NetworkType, gameType: GameType) {
+  const CONFIGURATION_FILE = `../environments/${gameType}.${chain}`;
   const configurationJson: any = (await import(CONFIGURATION_FILE)).default;
 
   const dataDir = "./environments/data";
-  const targetPath = `${dataDir}/${chain}.json`;
+  const targetPath = `${dataDir}/${gameType}.${chain}.json`;
 
   // Compute prev_prize_distribution_address based on previous file and current manifest
   let prevSaved: string | null = null;

@@ -10,7 +10,7 @@
     "max_spawn_lords_amount": 35
   },
   "village": {
-    "village_pass_nft_address": "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
+    "village_pass_nft_address": "0x5c7d2d225fcd746a797f0a6adf16312b03be896fa0d13da7c6870e76c06ba35",
     "village_mint_initial_recipient": "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83"
   },
   "resources": {
@@ -92,15 +92,15 @@
       "9": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 11,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "10": [],
@@ -128,15 +128,15 @@
       "19": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 5,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "20": [],
@@ -144,15 +144,15 @@
       "22": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 7,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "23": [],
@@ -170,7 +170,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "27": [
@@ -184,11 +184,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 11,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -206,11 +206,11 @@
         },
         {
           "resource": 11,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 9,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -224,7 +224,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "30": [
@@ -238,11 +238,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 5,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -260,11 +260,11 @@
         },
         {
           "resource": 5,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 19,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -278,7 +278,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "33": [
@@ -292,11 +292,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 7,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -314,11 +314,11 @@
         },
         {
           "resource": 7,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 22,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -489,28 +489,10 @@
       ],
       "27": [],
       "28": [],
-      "29": [
-        {
-          "resource": 35,
-          "amount": 2
-        },
-        {
-          "resource": 23,
-          "amount": 0.5
-        }
-      ],
+      "29": [],
       "30": [],
       "31": [],
-      "32": [
-        {
-          "resource": 35,
-          "amount": 2
-        },
-        {
-          "resource": 23,
-          "amount": 0.5
-        }
-      ],
+      "32": [],
       "33": [],
       "34": [],
       "35": [],
@@ -731,7 +713,9 @@
     "questFindFailProbability": 99,
     "relicDiscoveryIntervalSeconds": 300,
     "relicHexDistanceFromCenter": 10,
-    "relicChestRelicsPerChest": 3
+    "relicChestRelicsPerChest": 3,
+    "bitcoinMineWinProbability": 200,
+    "bitcoinMineFailProbability": 9800
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
@@ -747,10 +731,13 @@
     "5": "18446744073709551615",
     "6": "18446744073709551615",
     "7": "18446744073709551615",
-    "8": "18446744073709551615"
+    "8": "18446744073709551615",
+    "9": "18446744073709551615",
+    "10": "18446744073709551615",
+    "11": "18446744073709551615"
   },
   "speed": {
-    "donkey": 9,
+    "donkey": 0,
     "army": 1
   },
   "battle": {
@@ -774,7 +761,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 10,
+      "staminaBonusValue": 0,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -782,17 +769,17 @@
       "staminaDefenseReq": 40,
       "staminaExploreWheatCost": 0.06,
       "staminaExploreFishCost": 0,
-      "staminaExploreStaminaCost": 30,
+      "staminaExploreStaminaCost": 0,
       "staminaTravelWheatCost": 0.03,
       "staminaTravelFishCost": 0,
-      "staminaTravelStaminaCost": 20
+      "staminaTravelStaminaCost": 0
     },
     "limit": {
       "explorerMaxPartyCount": 10,
       "explorerAndGuardMaxTroopCount": 100000,
       "guardResurrectionDelay": 600,
-      "mercenariesTroopLowerBound": 1000,
-      "mercenariesTroopUpperBound": 2000,
+      "mercenariesTroopLowerBound": 100,
+      "mercenariesTroopUpperBound": 200,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000
     }
@@ -931,42 +918,28 @@
       "1": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         },
         {
           "resource": 3,
-          "amount": 60
-        }
-      ],
-      "2": [
-        {
-          "resource": 23,
-          "amount": 60
-        },
-        {
-          "resource": 3,
-          "amount": 90
-        },
-        {
-          "resource": 4,
-          "amount": 60
+          "amount": 30
         }
       ],
       "3": [],
       "4": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         },
         {
           "resource": 3,
-          "amount": 60
+          "amount": 30
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         }
       ],
       "6": [
@@ -976,11 +949,11 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 60
         },
         {
           "resource": 2,
-          "amount": 60
+          "amount": 30
         }
       ],
       "7": [
@@ -990,15 +963,15 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "8": [],
@@ -1009,34 +982,34 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "10": [],
       "11": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 11,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1051,15 +1024,15 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "14": [],
@@ -1072,19 +1045,19 @@
       "21": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 5,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1096,19 +1069,19 @@
       "24": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 7,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1124,7 +1097,7 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 60
         }
       ],
       "28": [
@@ -1134,11 +1107,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "29": [
@@ -1148,15 +1121,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 11,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 11,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1170,15 +1143,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 11,
           "amount": 720
         },
         {
-          "resource": 9,
+          "resource": 11,
           "amount": 360
+        },
+        {
+          "resource": 9,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1192,11 +1165,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "32": [
@@ -1206,15 +1179,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 5,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 5,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1228,15 +1201,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 5,
           "amount": 720
         },
         {
-          "resource": 19,
+          "resource": 5,
           "amount": 360
+        },
+        {
+          "resource": 19,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1250,11 +1223,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "35": [
@@ -1264,15 +1237,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 7,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 7,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1286,15 +1259,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 7,
           "amount": 720
         },
         {
-          "resource": 22,
+          "resource": 7,
           "amount": 360
+        },
+        {
+          "resource": 22,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1304,7 +1277,7 @@
       "37": [
         {
           "resource": 23,
-          "amount": 20
+          "amount": 30
         }
       ],
       "38": []
@@ -1314,45 +1287,39 @@
       "1": [
         {
           "resource": 23,
-          "amount": 160
-        }
-      ],
-      "2": [
-        {
-          "resource": 23,
-          "amount": 480
+          "amount": 90
         }
       ],
       "3": [],
       "4": [
         {
           "resource": 23,
-          "amount": 160
+          "amount": 90
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         }
       ],
       "6": [
         {
           "resource": 23,
-          "amount": 480
+          "amount": 300
         }
       ],
       "7": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "8": [],
       "9": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "10": [],
@@ -1361,7 +1328,7 @@
       "13": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "14": [],
@@ -1380,13 +1347,13 @@
       "27": [
         {
           "resource": 23,
-          "amount": 240
+          "amount": 180
         }
       ],
       "28": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "29": [],
@@ -1394,7 +1361,7 @@
       "31": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "32": [],
@@ -1402,7 +1369,7 @@
       "34": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "35": [],
@@ -1410,7 +1377,7 @@
       "37": [
         {
           "resource": 23,
-          "amount": 20
+          "amount": 30
         }
       ],
       "38": []
@@ -1420,9 +1387,148 @@
   "hyperstructures": {
     "hyperstructureInitializationShardsCost": {
       "resource": 24,
-      "amount": 0
+      "amount": 500
     },
-    "hyperstructureConstructionCost": []
+    "hyperstructureConstructionCost": [
+      {
+        "resource_type": 3,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 1,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 2,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 4,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 6,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 8,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 5,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 11,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 7,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 15,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 14,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 20,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 13,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 12,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 16,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 21,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 18,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 17,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 10,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 19,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 9,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 22,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 23,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      }
+    ]
   },
   "victoryPoints": {
     "pointsForWin": "0",
@@ -1436,7 +1542,7 @@
     "startSettlingAt": 0,
     "startMainAfterSeconds": 60,
     "startMainAt": 0,
-    "durationSeconds": 7776000,
+    "durationSeconds": 2592000,
     "bridgeCloseAfterEndSeconds": 604800,
     "pointRegistrationCloseAfterEndSeconds": 600
   },
@@ -1462,7 +1568,7 @@
   "startingResources": [
     {
       "resource": 35,
-      "amount": 500
+      "amount": 1000
     },
     {
       "resource": 23,
@@ -1515,59 +1621,35 @@
     "1": [
       {
         "resource": 23,
-        "amount": 200
+        "amount": 1
       },
       {
         "resource": 35,
-        "amount": 1200
-      },
-      {
-        "resource": 38,
-        "amount": 200
+        "amount": 1
       }
     ],
     "2": [
       {
         "resource": 23,
-        "amount": 400
+        "amount": 2
       },
       {
         "resource": 35,
-        "amount": 3600
-      },
-      {
-        "resource": 38,
-        "amount": 1200
-      },
-      {
-        "resource": 3,
-        "amount": 400
+        "amount": 2
       }
     ],
     "3": [
       {
         "resource": 23,
-        "amount": 800
+        "amount": 3
       },
       {
         "resource": 35,
-        "amount": 7200
-      },
-      {
-        "resource": 38,
-        "amount": 4800
+        "amount": 3
       },
       {
         "resource": 3,
-        "amount": 1200
-      },
-      {
-        "resource": 2,
-        "amount": 600
-      },
-      {
-        "resource": 4,
-        "amount": 600
+        "amount": 3
       }
     ]
   },
@@ -1621,155 +1703,179 @@
       "fee_amount": "10000000000000000000",
       "registration_count_max": 5000,
       "registration_delay_seconds": 20,
-      "registration_period_seconds": 1,
+      "registration_period_seconds": 120,
       "entry_token_class_hash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
       "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,
-      "collectible_cosmetics_address": "0x1239517c8c0905b95cf5ef83ec88ca03c1fd9ff7097f40a6bfca0f27962b565",
-      "collectible_timelock_address": "0x332c3f38d6e2ab4f53faa14c93b33831bcf45e5738c418b609b86ed951281bd"
+      "collectible_cosmetics_address": "0x5c20061d00b112e3433846b999f0aff290a0e2ac52cabb81264a150d6a863be",
+      "collectible_timelock_address": "0x3c05fc7e5c799872a06b10026b8887da7e262ee1fe16a5035524dfddd2ca046"
     }
   },
   "setup": {
-    "chain": "slottest",
+    "chain": "local",
     "addresses": {
-      "Collectibles: Realms: Cosmetic Items": "0x1239517c8c0905b95cf5ef83ec88ca03c1fd9ff7097f40a6bfca0f27962b565",
-      "Collectibles: Timelock Maker": "0x332c3f38d6e2ab4f53faa14c93b33831bcf45e5738c418b609b86ed951281bd",
+      "Collectibles: Timelock Maker": "0x3c05fc7e5c799872a06b10026b8887da7e262ee1fe16a5035524dfddd2ca046",
+      "Collectibles: Realms: Cosmetic Items": "0x5c20061d00b112e3433846b999f0aff290a0e2ac52cabb81264a150d6a863be",
       "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
-      "seasonPass": "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
-      "realms": "0x56502f7cf5847c0a4d4d0d0a37fa02e104d637f278564ce2e85fcd9edd7d27a",
-      "lords": "0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa",
+      "seasonPass": "0x58a1714d738ac2dd2c06e949d573c14ff1e49f40e5c5f1a983a1e486f233d26",
+      "realms": "0x79a5a6da4bbf73eb75aa64e0e037b5142c29fb17990b8e1493a5b0c32f290ec",
+      "lords": "0x5485590ba1002bde234f91bc36c8c53b4e1e4a380b0124203309c2f5f14189b",
       "strk": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
-      "villagePass": "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
+      "villagePass": "0x5c7d2d225fcd746a797f0a6adf16312b03be896fa0d13da7c6870e76c06ba35",
+      "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
       "lootChests": "",
-      "marketplace": "",
       "resources": {
         "STONE": [
           1,
-          "0x1d0e42592e69ce773e4af49ebc806e8e4b18d68349675a720b310f524bc1047"
+          "0x71843023d1b7f297d175b1d0edcd554dd834b42dbc9d7fa02ba09a233eee529"
         ],
         "COAL": [
           2,
-          "0x116e5c167e15ce74d6ceabab3ee1d654ba7d715cc3e313f0a7644460d930647"
+          "0x20ad02ce479ed93abb98c432550aa81bed57902d8de648100049f764797d862"
         ],
         "WOOD": [
           3,
-          "0x78b36df795c5fc301613901a5f16a875b51cc24dbab6f15ea595ce97eef57b8"
+          "0x7beb6a690c41d190d3519d22eb13dad545a0e51e5d7f44c633c379e97220416"
         ],
         "COPPER": [
           4,
-          "0x3db58bdf0d85bcb352e6af446d9baae05ded478a389ae8c8afee15abfbb4663"
+          "0x29f7fd8343d5a2f7fb8da78efcf9e3cea508ccaf943e6fdd96d48c1909367b0"
         ],
         "IRONWOOD": [
           5,
-          "0x60c29b99b24ab147a389c23876ea6ca2a10da8cc469ac6b5c7f5ad904b7c448"
+          "0x53ba77ca1381698b3ff3f60743a6489e03fb67c218d0210addccb8c2fca99b7"
         ],
         "OBSIDIAN": [
           6,
-          "0x67caa1f9b080285d7c7bf4dacb85cd735146035820da93e0f41c96a25487709"
+          "0x3b63447de410e1b2a3a9397e58922fc56c4d8baa1b4b4326e6c94fdf9d80748"
         ],
         "GOLD": [
           7,
-          "0x43640fb73f8ba75a85d4f8f77feb901a0408737beca17eafd1a99aa9431a43d"
+          "0x184ce3dd232fb65e602f767203116e532baeebe58538a2138d470b19596a249"
         ],
         "SILVER": [
           8,
-          "0x196619024411e0dbee1114d3f8a5bd8735b4444f779dfe70c59d844fe2fa0fa"
+          "0x26921e9c25ecb0ab4545afc91cb6a27d911419b4d65b33c09fb58e6f903e7d7"
         ],
         "MITHRAL": [
           9,
-          "0x4b9c53ccd696ef2e0c14098c9aef16180e763edf15d0e94ee74767b6fcc9893"
+          "0x5adee9c1caa16b1d26e39964d0eda2344c8045c184186954ecb5a661e29218f"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0xa282d7a73ceb77ffa0093b8015d643d3641ea54c4ea7b87167285bc3dacca4"
+          "0xb9bd867cd68c03b1d98bad6df9f5911c54fe2e60832e6b37295073ae26a611"
         ],
         "COLDIRON": [
           11,
-          "0x421f00ccffc49ec3492776510c186154e0c3bea3d72b9d7feee1d8ab2caa96f"
+          "0x2d95845865bd0e8da18d0dcdf483d56c5df5da25913460ec0cc617d5672c80f"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x7d69078dd90f2de3718c4ff7f96a73c6e33b0724e9b392874e7ef57564d2a92"
+          "0x4c131b14c1dd3707faf298d8784c50b546050cb61daaeff8fe410240f07828f"
         ],
         "RUBY": [
           13,
-          "0x3d770ad570a0bb8a94b682a6a261019d3c894952f1593e0b81de9a31ae1735f"
+          "0x4aee5c94cd67db9897e34e660cb4a9ae4e31d612a35f589f088004327a84a82"
         ],
         "DIAMONDS": [
           14,
-          "0x5f66baa2e4a5cd71d0840d0c1cfe4be9275b8b52b543094aee1fa533de4c5b7"
+          "0x7bfb8b274c005ae9787a091482b0838c4b4d743f6a620c80f074216f059d25a"
         ],
         "HARTWOOD": [
           15,
-          "0x7ff3a618a5ab2976446ba4109010bfa941cf4ad00ba49be1599b7b91cc854ce"
+          "0x38931912e2145b883c0d0c08335fdf1c6ff33355dfb1e0d559ad5f43b1b9e02"
         ],
         "IGNIUM": [
           16,
-          "0x680a194c725eccf0c1e4cff0ad8886f947bf012636ef01dcd6e633fb6d048f"
+          "0x10c9c62b6aa663f29ff79acf4274a983c4a05a56e8a8e7ec40ab86800e01c7d"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x5462ffbc95fb5e99a774a0b218f933e0d2e16c94d10bcd062d4d03e3a4a9e9a"
+          "0x3b41c8538e1c81364f1c05486fd145571a3a5d8cd9f93932fe0ba7fa04dd7b"
         ],
         "TRUEICE": [
           18,
-          "0x79a9030ce1cafd32b025c745c920604c0381a74c8609c76b7e93cd25fe1103a"
+          "0x71a455a47d170a3d5c2019af836e09025c1e7bd19df24d7be21bdee1282d393"
         ],
         "ADAMANTINE": [
           19,
-          "0x7bf7916746082090c07707ce63d4740aef667d4e6478844187e315f2c4c3e33"
+          "0x7f95bcbd7e2ab88385abca80ebb09bcbf83307fffcc8335450852742fdc605e"
         ],
         "SAPPHIRE": [
           20,
-          "0x7cd99ce1dc8ab26473d35ddee6fa2389a2e22f0435686155c2f2bf62a9b0e2"
+          "0x4ffbcc49017f5eb1d1bee77f2639830e19fc6f267072e7cc0f9043a85c3656d"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x3b03aea5ed81397478d50b2b67401f38557d2e6e14eb3b1caebab21d8459daf"
+          "0x6121b7db01eb76cbf9e7a82e39482eb43a9c46763b0f9dceedeafffc76ae1d0"
         ],
         "DRAGONHIDE": [
           22,
-          "0x420f281f9c469e5315024702724dfb1f6bd53bfe4f0eacff9233f916d57663c"
+          "0x3e4ff6bb8944d7ed9bb04f104418b5d86cb611b278ea5e456431c76043f22a3"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0xa2f3f8da01fc3c71aa698f19f774d4a2af7702d73bfde7c4c93ae787e6f359"
+          "0x39c3e96f883c19b015e00be268c2a9a0ab6496a9e65ca00fbc9f1ff246040e2"
         ],
         "DONKEY": [
           25,
-          "0x9c3db60be8614b358f65bf69175b1d4c8c153c6d26f421c508d0e20b2e2967"
+          "0x15f8eda4eecb8e714e7fc8f10a20b5a197fc533106c27d1bebcbfaa19c32e6c"
         ],
         "KNIGHT": [
           26,
-          "0x2da183da89cae4c22e249e7df3d9149895e5cebe1f7ca5d3ada783fb1b19374"
+          "0x565c4dc540435a55226d321e6ed4d0fed4f7735af909b1618faeb5e0b48312f"
+        ],
+        "KNIGHT2": [
+          27,
+          "0x6af8bfcbf5e6e86499ebc4db370bbb6aa863cf2de26accba0ad3778cf385011"
+        ],
+        "KNIGHT3": [
+          28,
+          "0x57a13e02d693fe0e436c7e8d45b60aea57d8accb10b994250cfa6975083793a"
         ],
         "CROSSBOWMAN": [
-          27,
-          "0xfbbbff48d55f0e5938222734d461f87372d1d7378e00d258192483c7bbe0b9"
+          29,
+          "0x3fd04a889d992ae6357ac007a4f5fa1f3deba057dcd206190fb31e66cd4cd5f"
+        ],
+        "CROSSBOWMAN2": [
+          30,
+          "0x16a992d7a137910ba31ff62f9daca5f18e20a04e1195ef5a77561f556a529b7"
+        ],
+        "CROSSBOWMAN3": [
+          31,
+          "0x7bdd7e4da83df0e0d3ef9655cc3f832c1a2b54846ddc59d23f8cc8096a9075b"
         ],
         "PALADIN": [
-          28,
-          "0x65a779057c56ed3dbe525d8a8f29a1f12c75ee60a50086740e634dd9d119e8b"
+          32,
+          "0x428bd86426e31cef335a42a3e1f8ed81a5345fda7d52a4e3a95ca79dc852fc0"
+        ],
+        "PALADIN2": [
+          33,
+          "0x735786ef55d5f3c341f5d3ff9100d721d96725b1deec3d8823ffb5bc6ddec2b"
+        ],
+        "PALADIN3": [
+          34,
+          "0x4c029fdd8fcf08c349056482536016635b4aaaafc6a705164d924086be9010f"
         ],
         "WHEAT": [
-          29,
-          "0x39e8ab3446f491dd6778b2c7367bcc643d593894a7a31c9b07cde4eff3486dd"
+          35,
+          "0xc43535f7635323d3022cd1a54d693e75159f9eb62ba779af6d63ec5baba895"
         ],
         "FISH": [
-          30,
-          "0x2aeea125cf76145d164d61f4e350fdb39df473d5663ee3577052b4565395296"
+          36,
+          "0x3754e5c9b8509dd71624361546eff9e977792cdb60af606388ffd542f353a5d"
         ],
         "LORDS": [
-          31,
-          "0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa"
+          37,
+          "0x5485590ba1002bde234f91bc36c8c53b4e1e4a380b0124203309c2f5f14189b"
         ]
       }
     },
     "manifest": {
       "world": {
         "class_hash": "0x7bc7b264612d3ac261df0a6d72a6b73c84b9386ef0095dd340d42afc01bb53c",
-        "address": "0x53951166ecdc7d836488d6db16de4f0cf3982506433a2f0ce2fbb2ffaf88565",
-        "seed": "s1_eternum_slot_a12345",
+        "address": "0x73950062abfeceb350d84787e2ec61b174f71db3bafbe26ef87a7e8bae37b55",
+        "seed": "s1_eternum",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -3246,7 +3352,7 @@
       },
       "contracts": [
         {
-          "address": "0x716c2e86bb5d62ec338a74a4bcd7cafe8eaaefc591ef3ff25dd5ec7582b6c9",
+          "address": "0x742005f320c893da4de1e3dccd44ae3d837a1bb1747f02ebc98c1eea7173120",
           "class_hash": "0x11afa3c21ac3b6529777149b8377c7e66f14aba74d2d1204bf070e538f61a4",
           "abi": [
             {
@@ -3723,8 +3829,8 @@
           ]
         },
         {
-          "address": "0x7736530edbb784962231994ed2feb9a4332eb0b9465972ceca09f9468d4fb7",
-          "class_hash": "0x3e9f2f8a6325114c23744c6a814a4c93f253f06860e0d4f381940efd0a5ce5d",
+          "address": "0x759a9b16267c42c5ccb53de43f3bbb92b7c9fe55fc2a9512a3e69b31821ad19",
+          "class_hash": "0x4217c752c563eca16bb139c42058f861ef70542bd25035ab0c9b436e7ae502",
           "abi": [
             {
               "type": "impl",
@@ -3975,8 +4081,8 @@
           ]
         },
         {
-          "address": "0x520b960e69dfeef23ce12731ff93b69bbbadcdfdcf6e456ec171fc94a863931",
-          "class_hash": "0x1527c48e09612baa2c2ace19131ab597305661a4761b942c1f90063e3562a14",
+          "address": "0x652255b131468ec44c8182b2ed1c4c0e596e3c3591a056778268376bbb9d81",
+          "class_hash": "0x7cd53e657c4ba7269e0ba39fb0b8a26df37b313583b60ce8d58e5a2abc06325",
           "abi": [
             {
               "type": "impl",
@@ -4226,7 +4332,7 @@
           ]
         },
         {
-          "address": "0x7b66ee9ccb3b5f9246c578db57740dbd2260689dc08b02cd114ba192bde3311",
+          "address": "0xde4125644d96b4143dec080254b8365879843ddbb8fa17ffa1c6edf60f5919",
           "class_hash": "0x60c230eeb0c3a4301a4b82d4ba26752c7f3265867b4df070e0be2fe544822a8",
           "abi": [
             {
@@ -5990,7 +6096,7 @@
           ]
         },
         {
-          "address": "0x156af2eeb97e5b74b93a0a39c19f88c70cb3b777cc45510d571bd2ffe708ed4",
+          "address": "0x71a9375ccf3773d622ff49b2af636a33466bc4546bcb6dad1b5937127599a10",
           "class_hash": "0x4a6d0c11782b55765d0fb1e522e2acd50f36a4860e01f48083a326b52e8a280",
           "abi": [
             {
@@ -6204,7 +6310,7 @@
           ]
         },
         {
-          "address": "0x6267ffefe1327cda44fd05d40789f3a00771ed035c27fc78b763a5ed4996e85",
+          "address": "0x4d4734b828d41ed879dbedc452c6e59b3e148e81692bc5fd0db1c997aa647e6",
           "class_hash": "0x4e08b04c4918701a9e99713ceac5538b1e26d31a1f297356d1128f523bcadb0",
           "abi": [
             {
@@ -6473,8 +6579,8 @@
           ]
         },
         {
-          "address": "0x19fa8ba48989858b2fe753d1974950b505a62512f62363c4e1f0abbd58989a1",
-          "class_hash": "0x285841825e88919d1129f37e2bf24d71eeedfddaed544754bf52a45da23dec",
+          "address": "0x45a2c58a5ba50f8babea81d5d2a934c8e31f876104732fdacc06601e4c825cb",
+          "class_hash": "0x3df793308784707f3db909e025ef99ac57a019e14e04866667cba8fa3483353",
           "abi": [
             {
               "type": "impl",
@@ -6950,7 +7056,7 @@
           ]
         },
         {
-          "address": "0x377c7728a871e1964ff29bbb2d29681bc4c089cc3e6acd6f7db969b0b82b2ec",
+          "address": "0x11825a5d57f30e8f887f08aa088c04c5d9e6bb1c719b9cb5b8b47d466d89a33",
           "class_hash": "0x5c9b43a309db0ace943f6c7a47f6188e0241dbe194d020b82fc16ffff7f8e13",
           "abi": [
             {
@@ -7266,7 +7372,7 @@
           ]
         },
         {
-          "address": "0x486ad8da48e942aabf68ba85a504885d34c8c9c27bc47ed9d38cf3d70994be0",
+          "address": "0x15406fec11e1b8923f404233a3188a5f0003bea8ad8193a0cf82a5996eacb5e",
           "class_hash": "0x1e1ba79ac7fa5cea76109584a036b3205fdd101acaa6b1c0dcf644a824312c",
           "abi": [
             {
@@ -7507,8 +7613,8 @@
           ]
         },
         {
-          "address": "0x48bb0e4d24407efa2ad87e801614e6de537360063c9b58f033af29592c43b1f",
-          "class_hash": "0x7d88be9d002f497cbead10bcc53c5692fe516d98b8328cc3d8c4c6d57fc34fa",
+          "address": "0x16af24be075c5059ca9f0c6f1c9c213745e1d8b54ecd5f0493999670bc347ec",
+          "class_hash": "0x1dfb68e93e4795b31e343713d42a27d5c8faa79e820e2517ed1a351da550698",
           "abi": [
             {
               "type": "impl",
@@ -7984,7 +8090,7 @@
           ]
         },
         {
-          "address": "0x542fd76898e40ac4e1c6f759596da2ecacfa261a739c6e3d3a97a7ed4ca23ea",
+          "address": "0x3e51f15013cc8fbdad7d7582bcaf39ae03008a36db9f2a387263a21cbd037c7",
           "class_hash": "0x2f2e9e898349130105c403b3cba2b1ea942a69e67fd39ebe65a573936c32fda",
           "abi": [
             {
@@ -8184,7 +8290,7 @@
           ]
         },
         {
-          "address": "0x24b7c71c44c2038685a3046773a8343027382bc57c0709f878f2702df9aa36f",
+          "address": "0x5e4e492975d6b993cd39613eac0c4e546f0fe9822496c61d3c8440d6a910a3f",
           "class_hash": "0x62f9bb4475843a269260c75eb61ca6b5cbf385e175eb7ba337c65b134ac8614",
           "abi": [
             {
@@ -8405,8 +8511,8 @@
           ]
         },
         {
-          "address": "0x5b0c52a04263234cdfd6d71ba78f1cd47c8318fedefe58a109f9cfc9e3aea8b",
-          "class_hash": "0x2c759caeb986cd29a20a259bfab30ad1ef9155cdd73c89b61a1f3c8b1814c47",
+          "address": "0x749eb8fc7f75c57d74bbd2792a45c3915831b98e3172d3eeaf55035b10b8b87",
+          "class_hash": "0x4750ed9a4073808f768f37a963b05f037674b1dd9335097a9d20695ceac002f",
           "abi": [
             {
               "type": "impl",
@@ -8639,7 +8745,7 @@
           ]
         },
         {
-          "address": "0x6b4df5c65763872534c4d3d064022ee1e22929b9dafdeef9cb4e679256a0555",
+          "address": "0x46e6b81809ac95e5829e03b852eb36f246f03dfb906bd834e25fd7df0737353",
           "class_hash": "0x2ea02511b59660d4e1fd7062fe7e190fdd82e448b7015af7cc616ca9b84d408",
           "abi": [
             {
@@ -9236,7 +9342,7 @@
           ]
         },
         {
-          "address": "0x6cd3458c8eeb19e61e8e8823234de73f72468bc2837c361514b0720f5f1685f",
+          "address": "0x1dbc2ae120d26097a8a534ddc158b7567c09844993493a813fb5fe587dae422",
           "class_hash": "0x73b33fba72807c1ec9432f95a04b1a79d9ee3d29aea7dd8f5cc442959077e80",
           "abi": [
             {
@@ -9817,7 +9923,7 @@
           ]
         },
         {
-          "address": "0x33785d0e1aa7a7703ed4bd46b43f2771d7d9d3f56ca5b80bd109121a051a392",
+          "address": "0x654cc8ea21bc5c544aa7ddd4306e64b199a670b40405667e75f792ee057dbfb",
           "class_hash": "0x12274c20ffbc975fa023cc52d8bec1993af2705b580b2d779a55a38851636ba",
           "abi": [
             {
@@ -10073,7 +10179,7 @@
           ]
         },
         {
-          "address": "0x91e732ac1f43f0ba354d135e2da4218a2473695c3a75d8ff9cf8546567666e",
+          "address": "0x505827a54cc9d14722a4a1acf8c144f549a4166c77d3ecd13f23273c33ace74",
           "class_hash": "0x6897dbcf6821841d460a819278f9006f96ab9bf6be9fd6814fcc97e35cd3ce2",
           "abi": [
             {
@@ -10307,7 +10413,7 @@
           ]
         },
         {
-          "address": "0x52faa720e197969d103eac7d963c1c6c38926b2cdd8bfbb92d6c26536755d60",
+          "address": "0x34ee44d4c40ea35af49e1a35d2dfa4ef8312932cb5d17e6cfc0962ff0ba163b",
           "class_hash": "0x3b6e58ff2690f9894f48d8f094ec5e36f10d345c51d3741617215dbb1a31d93",
           "abi": [
             {
@@ -10784,8 +10890,8 @@
           ]
         },
         {
-          "address": "0x12609af1a1a73c3c00560b725f1eac893ae00fd44a0f4fe2bff9bf9d434832e",
-          "class_hash": "0xda6453f689e15368c0aa9409049d1a99c08862db1a49336f9a4ed3fc6a2aa9",
+          "address": "0x7b635c67a39b9281a738ce7aa18185935dedbc5137541a3738ed54b40b758f3",
+          "class_hash": "0x4d600165473ab4262bd6ffa8b2b75be8e891b085beab32f831113aec83a38bb",
           "abi": [
             {
               "type": "impl",
@@ -11041,7 +11147,7 @@
           ]
         },
         {
-          "address": "0x7fc6a30d90f2224a2d4d6b3f693943907f0ef6f9365c7c62924447d5a73c81c",
+          "address": "0x4b42aed78fdaf674257d19d5c85967fc3fc5a2717e6f01d832059a4de96a36e",
           "class_hash": "0x1d917a501fcc09f7e93f346467d9811c84e4f557730618cd39fe24472ab785b",
           "abi": [
             {
@@ -11329,7 +11435,7 @@
           ]
         },
         {
-          "address": "0x207d2f9585db8682585388e53a16ab8d68e098a901e5b9ab6447fbe599e938b",
+          "address": "0x781af0fddcc8c0965350a3b586f97e5df7e6d11a71ffe12735f01942eca3ddf",
           "class_hash": "0xd23bfa9bc8b2e8400aed633f5c48b3561fe9d6a872d5bd59b24588d893f177",
           "abi": [
             {
@@ -11724,7 +11830,7 @@
           ]
         },
         {
-          "address": "0x3d1774ecfff335cd2327689217ce0b0fa560cb3c0e2f45738c307beeaff573e",
+          "address": "0x35c70dbef99aa59a7e0c0eb6b9ab8d6746b096b706073098ed004c5636d99d8",
           "class_hash": "0x7831a5d86c235f0167a4ad140e5ff40bd1efb901c73971255b94a95208db96e",
           "abi": [
             {
@@ -11919,7 +12025,7 @@
           ]
         },
         {
-          "address": "0x3aebbbd96534acd69256a4358aa15be0353045a01dee4c8bb466622fc70edfc",
+          "address": "0x704eb34710c875e56a78bc7fca2f151993ebf550c5c026ad2042ca216226579",
           "class_hash": "0x78f70ba05b3b9afc909333edaf8cf754ac2ea5174f7f9565710baf721cf4e37",
           "abi": [
             {
@@ -12119,7 +12225,7 @@
           ]
         },
         {
-          "address": "0x398d128b3174ea93f0a1bb08065493d5931c5e54cd1720ee4e9d7544f4af08b",
+          "address": "0x5408c7bb1171a6005aa6440bd377c1fb053809a9fe77cf6e1d262a8053cfc42",
           "class_hash": "0x5be03adb8a7a6ae0c79d733324959cbc5dfcc9051e0e2aacda3006dcd64b592",
           "abi": [
             {
@@ -12356,7 +12462,7 @@
           ]
         },
         {
-          "address": "0xe0c0cee294ed12519b069b58e6952bed0fd7dc44be4cde95c6a29fdb2f9104",
+          "address": "0x54ff59f59530d81652c8e20b7470cf53edbb50c552712e3b0461caa2da2c520",
           "class_hash": "0x15f8cdd7fd24beab128f8e65af56e2261fcbc8a225dd40d14531a661a3d224d",
           "abi": [
             {
@@ -12622,8 +12728,8 @@
           ]
         },
         {
-          "address": "0x7148cb15b7328489852ac31d13632afc40ed59909bbd21ebecb4341b975eef9",
-          "class_hash": "0x6311e234cdb5616a0428d7cf9dc44c2ef2662eec2c72197d706d22a3710b420",
+          "address": "0xfbbdbe60ff2e8004c2bdada93ffc89c4652541368dee08f0d96f1f613c2229",
+          "class_hash": "0x1e6f6d0cd4a1ac3dfd9c71e2001955035b26ee0967009247248d44dd4ddc3ce",
           "abi": [
             {
               "type": "impl",
@@ -12725,11 +12831,7 @@
               "name": "s1_eternum::models::troop::GuardSlot",
               "variants": [
                 {
-                  "name": "Delta",
-                  "type": "()"
-                },
-                {
-                  "name": "Charlie",
+                  "name": "Alpha",
                   "type": "()"
                 },
                 {
@@ -12737,7 +12839,11 @@
                   "type": "()"
                 },
                 {
-                  "name": "Alpha",
+                  "name": "Charlie",
+                  "type": "()"
+                },
+                {
+                  "name": "Delta",
                   "type": "()"
                 }
               ]
@@ -12942,8 +13048,8 @@
           ]
         },
         {
-          "address": "0x1dbc87b5112f3a9ae21c72f687aa4a8e88819b08e0e3563401d517064e033ea",
-          "class_hash": "0x3b55e94daeaaf67269c0d979f90a54c00b6355c2f604ded1c1d0deb17d60aa0",
+          "address": "0x2bfc8d7a34048ad82ec3bd4bd65793201f96a3c830ee9cbc52240bea315c308",
+          "class_hash": "0x45c893aa6e248df1b06e1360ee7992af5bd02cbb76aafa54615e1b208c75308",
           "abi": [
             {
               "type": "impl",
@@ -13005,11 +13111,7 @@
               "name": "s1_eternum::models::troop::GuardSlot",
               "variants": [
                 {
-                  "name": "Delta",
-                  "type": "()"
-                },
-                {
-                  "name": "Charlie",
+                  "name": "Alpha",
                   "type": "()"
                 },
                 {
@@ -13017,7 +13119,11 @@
                   "type": "()"
                 },
                 {
-                  "name": "Alpha",
+                  "name": "Charlie",
+                  "type": "()"
+                },
+                {
+                  "name": "Delta",
                   "type": "()"
                 }
               ]
@@ -13413,7 +13519,7 @@
           ]
         },
         {
-          "address": "0x31bd71bd129ef2cfca5c585f97e9ff9252e00125ebb455cfcb5eba598268f9f",
+          "address": "0x65b51cbd16aabd1b5ab965b0735ac01a1a262cc35fbb5fc032c9dc3d57f8d08",
           "class_hash": "0x24c4c0ca1ad17c1541dc49230f76254d02a0144923584047508d583836ee0ad",
           "abi": [
             {
@@ -13719,7 +13825,7 @@
           ]
         },
         {
-          "address": "0x78242df5daa6fa57efff4c96ce3194ce501f0a21e5c18205aec1026135cea56",
+          "address": "0x47c2635e3a183689301400b1ae9df631ef7bc2f6e7252791bcf205b5d677e4f",
           "class_hash": "0x6b649c4f5c48e4161b5e49251f47d7fa396b3074562fec488088a688f0260bd",
           "abi": [
             {
@@ -14196,8 +14302,8 @@
           ]
         },
         {
-          "address": "0x7de6a5285158fa02c065fc3f436ce0e8ab0c05f03f08ad32f17d98b5bf28ce8",
-          "class_hash": "0x3081c2782460c080662cb301c5c8791e7bf638d7ad87ee4fd3149637be416e0",
+          "address": "0x44865cb00e60f7a23260f9a69a5c2b4aa595875d5ad69f3056864dcfccfae35",
+          "class_hash": "0x5833017b6164c6310f11052e86ff28f80858a833651448bec09285f0c286553",
           "abi": [
             {
               "type": "impl",
@@ -14448,8 +14554,8 @@
           ]
         },
         {
-          "address": "0x5f381fa50f3350866b142fc5d46dc725bed7539ad4274e73a1248c264c223c6",
-          "class_hash": "0x71db859274d4587ca254f08dffc59bdb2b904e9806a915b03b3cb287a892cf5",
+          "address": "0x5aa91186b233c07d4f15dfa52d3b52b538f30360051d939bc9d594608a0c8ae",
+          "class_hash": "0x238a3f689448bddc438f1c4d9fb00cd73e56ebb144d374d2eb686a5deb28282",
           "abi": [
             {
               "type": "impl",
@@ -14925,7 +15031,7 @@
           ]
         },
         {
-          "address": "0x49b43abee686296d3395fc62ab731f1e237f838ffe798b1c5e1440d523faa3d",
+          "address": "0x3f27f226e04eb34354953e103c749f98c0a0c07827452848a5d79d68ba08fb2",
           "class_hash": "0x69618c05c9218ddb1031167a168a6bbf398288b1eab248201953112cce0e0f9",
           "abi": [
             {
@@ -16373,7 +16479,7 @@
           "version": "0_1_0"
         },
         {
-          "class_hash": "0x68d6fb5fce718909d5acdc77a16c2014d3b521f2b6e74b8841a02d8ef3ce02a",
+          "class_hash": "0x5a044f711de8963fa237db0c16f3e441da86709cfcb913989988de0883a22fb",
           "abi": [
             {
               "type": "impl",
@@ -17014,7 +17120,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x54269746563f2f56c38da022e36b34fb0ac42434b6d6c2f5c867bb5b84cdcce",
+          "class_hash": "0x384965a924a72a2e7aa463aea6d48a38442e33b24752555425f9a3ed9c739ec",
           "tag": "s1_eternum-PlayersRankTrial",
           "selector": "0x581bc5fb791ddad41dbb2252cb52432a17cca50cbfc5573818d6e22376c72be"
         },
@@ -17298,7 +17404,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x7c6301cb611525c3cb30886afd9c69e3fd29f0264cb8a4d96d7af132b319e9f",
+          "class_hash": "0x47759bfa4a230565459875ddb225c7de7164179d4c02e358c5d613967511a55",
           "tag": "s1_eternum-StoryEvent",
           "selector": "0x6b9bb187e0946522eb890cc2148826a81a2030e8a34dbc5607ee6dfdda50dd8"
         },

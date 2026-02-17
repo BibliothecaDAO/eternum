@@ -944,6 +944,8 @@ export const setupGlobals = async (config: Config) => {
     camp_find_probability: config.config.exploration.campFindProbability,
     camp_find_fail_probability: config.config.exploration.campFindFailProbability,
     holysite_find_probability: config.config.exploration.holysiteFindProbability,
+    bitcoin_mine_win_probability: config.config.exploration.bitcoinMineWinProbability,
+    bitcoin_mine_fail_probability: config.config.exploration.bitcoinMineFailProbability,
     holysite_find_fail_probability: config.config.exploration.holysiteFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
@@ -966,6 +968,10 @@ export const setupGlobals = async (config: Config) => {
     (mapCalldata.holysite_find_fail_probability /
       (mapCalldata.holysite_find_fail_probability + mapCalldata.holysite_find_probability)) *
     100;
+  const bitcoinMineFindFailRate =
+    (mapCalldata.bitcoin_mine_fail_probability /
+      (mapCalldata.bitcoin_mine_fail_probability + mapCalldata.bitcoin_mine_win_probability)) *
+    100;
   const agentFindFailRate =
     (mapCalldata.agent_find_fail_probability /
       (mapCalldata.agent_find_fail_probability + mapCalldata.agent_find_probability)) *
@@ -982,6 +988,7 @@ export const setupGlobals = async (config: Config) => {
     │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
     │  ${chalk.gray("Camp Find Fail Probability:")} ${chalk.white(campFindFailRate) + "%"}
     │  ${chalk.gray("Holy Site Find Fail Probability:")} ${chalk.white(holysiteFindFailRate) + "%"}
+    │  ${chalk.gray("Bitcoin Mine Find Fail Probability:")} ${chalk.white(bitcoinMineFindFailRate) + "%"}
     │  ${chalk.gray("Agent Find Fail Probability:")} ${chalk.white(agentFindFailRate) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
@@ -1080,6 +1087,7 @@ export const setCapacityConfig = async (config: Config) => {
     bank_structure_capacity: config.config.carryCapacityGram[CapacityConfig.BankStructure],
     holysite_capacity: config.config.carryCapacityGram[CapacityConfig.HolySiteStructure],
     camp_capacity: config.config.carryCapacityGram[CapacityConfig.CampStructure],
+    bitcoin_mine_capacity: config.config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
     troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
     donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
     storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
@@ -1099,6 +1107,7 @@ export const setCapacityConfig = async (config: Config) => {
     { name: "Bank", value: calldata.bank_structure_capacity },
     { name: "Holy Site", value: calldata.holysite_capacity },
     { name: "Camp", value: calldata.camp_capacity },
+    { name: "Bitcoin Mine", value: calldata.bitcoin_mine_capacity },
     { name: "Troops", value: calldata.troop_capacity },
     { name: "Donkeys", value: calldata.donkey_capacity },
     {
@@ -1526,7 +1535,11 @@ export const setGameModeConfig = async (config: Config) => {
     signer: config.account,
     blitz_mode_on: config.config.blitz.mode.on,
   });
-  console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
+  console.log(
+    chalk.green(`\n    ✔ Game mode configured to ${config.config.blitz.mode.on} `) +
+      chalk.gray(gameModeTx.statusReceipt) +
+      "\n",
+  );
 };
 
 export const setFactoryAddress = async (config: Config) => {
@@ -2053,36 +2066,16 @@ export const addLiquidity = async (config: Config) => {
   }
 };
 
-export const nodeReadConfig = async (chain: Chain) => {
+export const nodeReadConfig = async (chain: Chain, gameType: string) => {
   if (!fs) {
     throw new Error("nodeReadConfig is only available in Node.js environment");
   }
 
   try {
-    let path = "./environments/data";
-    switch (chain) {
-      case "sepolia":
-        path += "/sepolia.json"; // as any to avoid type errors
-        break;
-      case "mainnet":
-        path += "/mainnet.json";
-        break;
-      case "slot":
-        path += "/slot.json";
-        break;
-      case "slottest":
-        path += "/slottest.json";
-        break;
-      case "local":
-        path += "/local.json";
-        break;
-      default:
-        throw new Error(`Invalid chain: ${chain}`);
-    }
-
+    const path = `./environments/data/${gameType}.${chain}.json`;
     const config = JSON.parse(fs.readFileSync(path, "utf8"));
     return config.configuration as any; // as any to avoid type errors
   } catch (error) {
-    throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
+    throw new Error(`Failed to load configuration for ${gameType} on chain ${chain}: ${error}`);
   }
 };
