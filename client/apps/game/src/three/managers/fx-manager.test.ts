@@ -13,7 +13,7 @@ describe("FXManager", () => {
     const scene = new THREE.Scene();
     const fxManager = new FXManager(scene, 1);
 
-    const { instance } = fxManager.playFxAtCoords("travel", 0, 0, 0, 1, "Traveling", true);
+    const { instance } = fxManager.playFxAtCoords("travel", 0, 0, 0, 1, undefined, true);
 
     expect(instance).toBeDefined();
 

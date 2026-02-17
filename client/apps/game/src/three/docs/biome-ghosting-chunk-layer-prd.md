@@ -148,23 +148,23 @@ Impact:
 
 ### Functional Requirements
 
-| ID | Requirement | Priority |
-| --- | --- | --- |
-| FR-1 | Torii bounds switching must be latest-wins and serialized; stale switches must not mutate active stream state. | P0 |
-| FR-2 | `toriiBoundsAreaKey` must always represent the currently active Torii bounds subscription. | P0 |
-| FR-3 | Terrain cache invalidation for a hex update must cover all cached chunk views whose render bounds include that hex. | P0 |
-| FR-4 | Re-entering any previously visible area after rapid chunk traversal must render biome terrain without blank hex artifacts. | P0 |
-| FR-5 | Hydrated refresh flow must reconcile terrain even when tile data already exists in `exploredTiles`. | P1 |
-| FR-6 | On detected terrain/entity divergence, self-heal refresh must converge within one refresh cycle. | P1 |
+| ID   | Requirement                                                                                                                | Priority |
+| ---- | -------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-1 | Torii bounds switching must be latest-wins and serialized; stale switches must not mutate active stream state.             | P0       |
+| FR-2 | `toriiBoundsAreaKey` must always represent the currently active Torii bounds subscription.                                 | P0       |
+| FR-3 | Terrain cache invalidation for a hex update must cover all cached chunk views whose render bounds include that hex.        | P0       |
+| FR-4 | Re-entering any previously visible area after rapid chunk traversal must render biome terrain without blank hex artifacts. | P0       |
+| FR-5 | Hydrated refresh flow must reconcile terrain even when tile data already exists in `exploredTiles`.                        | P1       |
+| FR-6 | On detected terrain/entity divergence, self-heal refresh must converge within one refresh cycle.                           | P1       |
 
 ### Non-Functional Requirements
 
-| ID | Requirement | Priority |
-| --- | --- | --- |
-| NFR-1 | No chunk switch p95 regression greater than 10% from baseline. | P0 |
-| NFR-2 | No growth in leaked subscriptions or orphaned pending switch promises in 20-minute stress run. | P0 |
-| NFR-3 | Add diagnostics for bounds switch races, stale switch drops, cache invalidation fanout, and terrain-zero recovery events. | P0 |
-| NFR-4 | Keep steady-state frame-time p95 regression within 5%. | P1 |
+| ID    | Requirement                                                                                                               | Priority |
+| ----- | ------------------------------------------------------------------------------------------------------------------------- | -------- |
+| NFR-1 | No chunk switch p95 regression greater than 10% from baseline.                                                            | P0       |
+| NFR-2 | No growth in leaked subscriptions or orphaned pending switch promises in 20-minute stress run.                            | P0       |
+| NFR-3 | Add diagnostics for bounds switch races, stale switch drops, cache invalidation fanout, and terrain-zero recovery events. | P0       |
+| NFR-4 | Keep steady-state frame-time p95 regression within 5%.                                                                    | P1       |
 
 ## Proposed Solution
 
@@ -299,12 +299,12 @@ Dashboards and alerts:
 
 ## Risks and Mitigations
 
-| Risk | Severity | Mitigation |
-| --- | --- | --- |
-| Overlap invalidation increases refresh cost | Medium | Invalidate only cached chunks whose render bounds contain updated hex; track fanout metrics and cap if necessary. |
-| Serialized switching increases switch latency | Medium | Keep coalescing latest target and drop intermediate stale requests. |
-| Added reconciliation introduces extra refreshes | Low | Gate by explicit divergence checks and cooldown. |
-| Hidden edge cases in legacy listeners | Medium | Add targeted integration tests with synthetic delayed callbacks. |
+| Risk                                            | Severity | Mitigation                                                                                                        |
+| ----------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| Overlap invalidation increases refresh cost     | Medium   | Invalidate only cached chunks whose render bounds contain updated hex; track fanout metrics and cap if necessary. |
+| Serialized switching increases switch latency   | Medium   | Keep coalescing latest target and drop intermediate stale requests.                                               |
+| Added reconciliation introduces extra refreshes | Low      | Gate by explicit divergence checks and cooldown.                                                                  |
+| Hidden edge cases in legacy listeners           | Medium   | Add targeted integration tests with synthetic delayed callbacks.                                                  |
 
 ## Open Questions
 
@@ -318,4 +318,3 @@ Dashboards and alerts:
 2. No observed case of units visible on blank hex after rapid cross-chunk camera movement.
 3. Bounds subscription diagnostics show no persistent active-area mismatch.
 4. Regression tests for stale switch and overlap invalidation pass in CI.
-

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveRefreshCompletionActions,
+  resolveDuplicateTileUpdateMode,
+  resolveDuplicateTileUpdateActions,
+  resolveRefreshExecutionPlan,
+  resolveRefreshRunningActions,
+  shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
   shouldForceRefreshForDuplicateTileUpdate,
   shouldRunShortcutForceFallback,
@@ -194,6 +200,180 @@ describe("resolveRefreshExecutionToken", () => {
   });
 });
 
+describe("resolveRefreshExecutionPlan", () => {
+  it("applies scheduled work when token is current", () => {
+    expect(resolveRefreshExecutionPlan(9, 9)).toEqual({
+      shouldApplyScheduled: true,
+      shouldRecordSuperseded: false,
+      executionToken: 9,
+    });
+  });
+
+  it("executes latest token and marks superseded when scheduled token is stale", () => {
+    expect(resolveRefreshExecutionPlan(7, 9)).toEqual({
+      shouldApplyScheduled: false,
+      shouldRecordSuperseded: true,
+      executionToken: 9,
+    });
+  });
+
+  it("preserves newer scheduled token while still marking superseded", () => {
+    expect(resolveRefreshExecutionPlan(10, 9)).toEqual({
+      shouldApplyScheduled: false,
+      shouldRecordSuperseded: true,
+      executionToken: 10,
+    });
+  });
+});
+
+describe("resolveRefreshRunningActions", () => {
+  it("requests reschedule when currently scheduled token is stale", () => {
+    expect(resolveRefreshRunningActions(7, 9)).toEqual({
+      shouldMarkRerunRequested: true,
+      shouldRescheduleTimer: true,
+    });
+  });
+
+  it("skips timer reschedule when scheduled token is current", () => {
+    expect(resolveRefreshRunningActions(9, 9)).toEqual({
+      shouldMarkRerunRequested: true,
+      shouldRescheduleTimer: false,
+    });
+  });
+
+  it("skips timer reschedule when scheduled token is newer than latest", () => {
+    expect(resolveRefreshRunningActions(10, 9)).toEqual({
+      shouldMarkRerunRequested: true,
+      shouldRescheduleTimer: false,
+    });
+  });
+});
+
+describe("resolveRefreshCompletionActions", () => {
+  it("schedules rerun when a newer request exists", () => {
+    expect(
+      resolveRefreshCompletionActions({
+        appliedToken: 7,
+        latestToken: 9,
+        rerunRequested: false,
+      }),
+    ).toEqual({
+      hasNewerRequest: true,
+      shouldScheduleRerun: true,
+      shouldClearRerunRequested: true,
+    });
+  });
+
+  it("schedules rerun when explicit rerun was requested", () => {
+    expect(
+      resolveRefreshCompletionActions({
+        appliedToken: 9,
+        latestToken: 9,
+        rerunRequested: true,
+      }),
+    ).toEqual({
+      hasNewerRequest: false,
+      shouldScheduleRerun: true,
+      shouldClearRerunRequested: true,
+    });
+  });
+
+  it("does not schedule rerun when no newer request or rerun flag exists", () => {
+    expect(
+      resolveRefreshCompletionActions({
+        appliedToken: 9,
+        latestToken: 9,
+        rerunRequested: false,
+      }),
+    ).toEqual({
+      hasNewerRequest: false,
+      shouldScheduleRerun: false,
+      shouldClearRerunRequested: false,
+    });
+  });
+});
+
+describe("shouldRequestTileRefreshForStructureBoundsChange", () => {
+  const renderSize = { width: 48, height: 48 };
+  const chunkSize = 24;
+
+  it("returns false when current chunk is null", () => {
+    expect(
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: "null",
+        isChunkTransitioning: false,
+        oldHex: { col: 0, row: 0 },
+        newHex: { col: 1, row: 1 },
+        renderSize,
+        chunkSize,
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false while chunk transition is active", () => {
+    expect(
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: "0,0",
+        isChunkTransitioning: true,
+        oldHex: { col: 0, row: 0 },
+        newHex: { col: 1, row: 1 },
+        renderSize,
+        chunkSize,
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false for malformed current chunk key", () => {
+    expect(
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: "bad-key",
+        isChunkTransitioning: false,
+        oldHex: { col: 0, row: 0 },
+        newHex: { col: 1, row: 1 },
+        renderSize,
+        chunkSize,
+      }),
+    ).toBe(false);
+  });
+
+  it("returns true when old or new hex falls inside render bounds", () => {
+    expect(
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: "0,0",
+        isChunkTransitioning: false,
+        oldHex: { col: 0, row: 0 },
+        newHex: { col: 100, row: 100 },
+        renderSize,
+        chunkSize,
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: "0,0",
+        isChunkTransitioning: false,
+        oldHex: { col: 100, row: 100 },
+        newHex: { col: 0, row: 0 },
+        renderSize,
+        chunkSize,
+      }),
+    ).toBe(true);
+  });
+
+  it("returns false when both old and new hex are outside render bounds", () => {
+    expect(
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: "0,0",
+        isChunkTransitioning: false,
+        oldHex: { col: 100, row: 100 },
+        newHex: { col: 200, row: 200 },
+        renderSize,
+        chunkSize,
+      }),
+    ).toBe(false);
+  });
+});
+
 describe("shouldForceShortcutNavigationRefresh", () => {
   it("forces refresh for instant shortcut camera jump", () => {
     expect(
@@ -337,6 +517,126 @@ describe("shouldForceRefreshForDuplicateTileUpdate", () => {
         isVisibleInCurrentChunk: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("resolveDuplicateTileUpdateActions", () => {
+  it("keeps offscreen duplicate updates in cache-reconcile mode without forcing immediate refresh", () => {
+    expect(
+      resolveDuplicateTileUpdateActions({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: false,
+      }),
+    ).toEqual({
+      shouldInvalidateCaches: true,
+      shouldRequestRefresh: false,
+    });
+  });
+
+  it("forces refresh when duplicate update is visible in active chunk", () => {
+    expect(
+      resolveDuplicateTileUpdateActions({
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toEqual({
+      shouldInvalidateCaches: true,
+      shouldRequestRefresh: true,
+    });
+  });
+
+  it("does nothing when update is not a duplicate tile add", () => {
+    expect(
+      resolveDuplicateTileUpdateActions({
+        removeExplored: false,
+        tileAlreadyKnown: false,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      }),
+    ).toEqual({
+      shouldInvalidateCaches: false,
+      shouldRequestRefresh: false,
+    });
+  });
+});
+
+describe("resolveDuplicateTileUpdateMode", () => {
+  it.each([
+    {
+      name: "duplicate tile is visible and stable",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "invalidate_and_refresh",
+    },
+    {
+      name: "duplicate tile is offscreen",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: false,
+      },
+      expected: "invalidate_only",
+    },
+    {
+      name: "duplicate tile arrives during chunk transition",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: true,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "invalidate_only",
+    },
+    {
+      name: "duplicate tile arrives with null chunk",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "null",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "invalidate_only",
+    },
+    {
+      name: "update is not a duplicate add",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: false,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "none",
+    },
+    {
+      name: "update removes explored tile",
+      input: {
+        removeExplored: true,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "none",
+    },
+  ])("resolves matrix mode when $name", ({ input, expected }) => {
+    expect(resolveDuplicateTileUpdateMode(input)).toBe(expected);
   });
 });
 

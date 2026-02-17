@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bottom Right Panel Laptop Mockup</title>
+    <style>
+      :root {
+        --bg-1: #0a1118;
+        --bg-2: #151a24;
+        --gold: #f2c66d;
+        --gold-muted: rgba(242, 198, 109, 0.68);
+        --panel-border: rgba(242, 198, 109, 0.22);
+        --panel-bg: rgba(4, 5, 7, 0.78);
+        --chip-bg: rgba(16, 18, 24, 0.72);
+        --danger: #f37f7f;
+        --good: #99d6a6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      }
+
+      body {
+        position: relative;
+        overflow: hidden;
+        color: var(--gold);
+        background:
+          radial-gradient(circle at 82% 82%, rgba(230, 166, 73, 0.16), transparent 40%),
+          radial-gradient(circle at 18% 18%, rgba(64, 103, 161, 0.2), transparent 44%),
+          linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      }
+
+      body::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 26px 26px;
+        opacity: 0.22;
+        pointer-events: none;
+      }
+
+      .meta {
+        position: absolute;
+        left: 16px;
+        top: 14px;
+        z-index: 2;
+        display: inline-flex;
+        gap: 10px;
+        align-items: center;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      .meta span {
+        display: inline-flex;
+        align-items: center;
+        height: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        border-radius: 999px;
+        padding: 0 10px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .hud-root {
+        position: absolute;
+        inset: 0;
+        padding: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+        pointer-events: none;
+      }
+
+      .panel-shell {
+        position: relative;
+        pointer-events: auto;
+      }
+
+      .tab-strip {
+        position: absolute;
+        right: 8px;
+        bottom: calc(100% + 8px);
+        display: flex;
+        gap: 8px;
+      }
+
+      .tab {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid rgba(242, 198, 109, 0.35);
+        background: rgba(0, 0, 0, 0.62);
+        color: var(--gold-muted);
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        line-height: 1;
+      }
+
+      .tab.active {
+        border-color: rgba(242, 198, 109, 0.85);
+        color: var(--gold);
+        box-shadow: 0 4px 14px rgba(242, 198, 109, 0.22);
+      }
+
+      .panel {
+        border: 1px solid var(--panel-border);
+        border-radius: 12px 12px 0 0;
+        overflow: hidden;
+        width: var(--panel-width);
+        height: var(--panel-height);
+        background: var(--panel-bg);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.44);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-header {
+        height: 36px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 10px;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: var(--gold-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .panel-action {
+        border: 1px solid rgba(242, 198, 109, 0.52);
+        border-radius: 999px;
+        padding: 0 10px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: var(--gold);
+        background: rgba(0, 0, 0, 0.45);
+      }
+
+      .panel-content {
+        flex: 1;
+        min-height: 0;
+        padding: 8px;
+      }
+
+      .before .tab {
+        width: 40px;
+        height: 40px;
+      }
+
+      .after .tab {
+        width: 44px;
+        height: 44px;
+      }
+
+      .before .panel-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .after .panel-content {
+        overflow: hidden;
+      }
+
+      .card {
+        border: 1px solid rgba(242, 198, 109, 0.18);
+        border-radius: 9px;
+        background: rgba(14, 16, 20, 0.7);
+        padding: 8px;
+      }
+
+      .card-title {
+        margin: 0 0 6px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--gold-muted);
+      }
+
+      .split {
+        display: grid;
+        gap: 8px;
+      }
+
+      .split.two {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .chip {
+        border-radius: 7px;
+        border: 1px solid rgba(242, 198, 109, 0.2);
+        background: var(--chip-bg);
+        padding: 3px 6px;
+        font-size: 10px;
+        line-height: 1.2;
+      }
+
+      .chip.danger {
+        border-color: rgba(243, 127, 127, 0.42);
+        color: #ffd6d6;
+      }
+
+      .chip.good {
+        border-color: rgba(153, 214, 166, 0.42);
+        color: #d7f4dc;
+      }
+
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        margin-bottom: 5px;
+      }
+
+      .label {
+        color: var(--gold-muted);
+      }
+
+      .value {
+        color: var(--gold);
+        font-weight: 700;
+      }
+
+      .value.good {
+        color: var(--good);
+      }
+
+      .value.danger {
+        color: var(--danger);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .btn {
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid rgba(242, 198, 109, 0.28);
+        background: rgba(25, 26, 30, 0.8);
+        color: var(--gold);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .btn.warn {
+        border-color: rgba(243, 127, 127, 0.48);
+        color: #ffd5d5;
+      }
+
+      .before.local .state-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .after.local .state-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .after.local .full {
+        grid-column: 1 / -1;
+      }
+
+      .before.world-structure .state-body,
+      .before.world-army .state-body {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 8px;
+        min-height: 0;
+      }
+
+      .after.world-structure .state-body,
+      .after.world-army .state-body {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 8px;
+        min-height: 0;
+      }
+
+      .before.world-biome .state-body,
+      .after.world-biome .state-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .tab-footer {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .tab-btn {
+        height: 36px;
+        border: 1px solid rgba(242, 198, 109, 0.3);
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: rgba(20, 22, 26, 0.72);
+        font-size: 13px;
+      }
+
+      .after .tab-btn {
+        min-height: 44px;
+      }
+
+      .warning-banner {
+        border: 1px solid rgba(243, 127, 127, 0.46);
+        background: rgba(120, 25, 25, 0.35);
+        border-radius: 8px;
+        padding: 6px 8px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="meta">
+      <span id="metaVariant"></span>
+      <span id="metaState"></span>
+      <span id="metaSize"></span>
+    </div>
+    <main class="hud-root">
+      <div id="mock" class="panel-shell"></div>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const variant = params.get("variant") === "before" ? "before" : "after";
+      const state = params.get("state") || "local-structure";
+
+      const stateClass = state
+        .replace("local-structure", "local")
+        .replace("world-structure", "world-structure")
+        .replace("world-army", "world-army")
+        .replace("world-biome", "world-biome");
+
+      const root = document.getElementById("mock");
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      const beforePanelWidth =
+        viewportWidth >= 1024 ? Math.round(viewportWidth * 0.27) : Math.round(viewportWidth * 0.37);
+      const afterPanelWidth =
+        viewportWidth >= 1280
+          ? Math.round(viewportWidth * 0.32)
+          : viewportWidth >= 1024
+            ? Math.round(viewportWidth * 0.36)
+            : Math.round(viewportWidth * 0.44);
+
+      const beforePanelHeight = Math.round(viewportHeight * 0.35);
+      const afterPanelHeight = Math.max(284, Math.min(344, Math.round(viewportHeight * 0.4)));
+
+      document.documentElement.style.setProperty(
+        "--panel-width",
+        `${variant === "before" ? beforePanelWidth : afterPanelWidth}px`,
+      );
+      document.documentElement.style.setProperty(
+        "--panel-height",
+        `${variant === "before" ? beforePanelHeight : afterPanelHeight}px`,
+      );
+
+      const metaVariant = document.getElementById("metaVariant");
+      const metaState = document.getElementById("metaState");
+      const metaSize = document.getElementById("metaSize");
+      metaVariant.textContent = variant === "before" ? "Before" : "After";
+      metaState.textContent = state.replace(/-/g, " ");
+      metaSize.textContent = `${viewportWidth}x${viewportHeight}`;
+
+      const biomeCard = (compact) => `
+        <div class="card">
+          <p class="card-title">Biome</p>
+          <div class="stat-row"><span class="label">Type</span><span class="value">Taiga</span></div>
+          <div class="chip-row" style="margin-bottom:${compact ? "6px" : "10px"}">
+            <span class="chip good">Knights +15%</span>
+            <span class="chip">Crossbowmen 0%</span>
+            <span class="chip danger">Paladins -10%</span>
+          </div>
+          <button class="btn" style="${compact ? "height:44px;" : ""}">Battle Sim</button>
+        </div>
+      `;
+
+      const localBefore = `
+        <div class="state-body">
+          <div class="warning-banner">Production Paused</div>
+          <div class="card">
+            <p class="card-title">Produces Per Sec</p>
+            <div class="stat-row"><span class="label">Wood</span><span class="value good">+42</span></div>
+            <div class="chip-row"><span class="chip">Consumed by: Armory</span><span class="chip">Workshop</span><span class="chip">Siege Forge</span></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Population</p>
+            <div class="chip-row"><span class="chip">Cost +12</span><span class="chip">Capacity +24</span><span class="chip">Labor +8%</span></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Consumes Per Sec</p>
+            <div class="chip-row"><span class="chip danger">-7 Stone</span><span class="chip danger">-5 Wheat</span><span class="chip danger">-2 Fish</span><span class="chip danger">-2 Ore</span><span class="chip danger">-1 Essence</span></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Build Cost</p>
+            <div class="chip-row"><span class="chip">2.4k/2.4k Wood</span><span class="chip danger">1.1k/1.3k Stone</span><span class="chip">740/740 Iron</span><span class="chip">250/250 Wheat</span><span class="chip">90/90 Fish</span><span class="chip">50/50 Essence</span></div>
+          </div>
+          <div class="actions">
+            <button class="btn">+ Production</button>
+            <button class="btn">Resume</button>
+            <button class="btn warn">Delete</button>
+          </div>
+        </div>
+      `;
+
+      const localAfter = `
+        <div class="state-body">
+          <div class="card full">
+            <p class="card-title">Tile Output + Population</p>
+            <div class="split two">
+              <div>
+                <div class="stat-row"><span class="label">Produces</span><span class="value good">+42 Wood/s</span></div>
+                <div class="chip-row"><span class="chip">Armory</span><span class="chip">Workshop</span></div>
+              </div>
+              <div>
+                <div class="stat-row"><span class="label">Population</span><span class="value">+24 cap</span></div>
+                <div class="chip-row"><span class="chip">Cost +12</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <p class="card-title">Consumes</p>
+            <div class="chip-row"><span class="chip danger">-7 Stone</span><span class="chip danger">-5 Wheat</span><span class="chip danger">-2 Fish</span></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Build Cost</p>
+            <div class="chip-row"><span class="chip">2.4k/2.4k Wood</span><span class="chip danger">1.1k/1.3k Stone</span><span class="chip">740/740 Iron</span></div>
+          </div>
+          <div class="actions full">
+            <button class="btn">+ Production</button>
+            <button class="btn">Pause</button>
+            <button class="btn warn">Delete</button>
+          </div>
+        </div>
+      `;
+
+      const worldStructureBefore = `
+        <div class="state-body">
+          <div class="card">
+            <p class="card-title">Structure #9921</p>
+            <div class="stat-row"><span class="label">Owner</span><span class="value">Delabrousse</span></div>
+            <div class="stat-row"><span class="label">Type</span><span class="value">Realm</span></div>
+            <div class="chip-row"><span class="chip">Guards 6/8</span><span class="chip">Relics 5 active</span><span class="chip">Inventory 14/14</span><span class="chip">Food 1.5k</span><span class="chip">Ore 980</span><span class="chip">Wood 3.4k</span><span class="chip">Stone 2.1k</span><span class="chip">Labor 550</span></div>
+            <div class="tab-footer"><div class="tab-btn">🛡️</div><div class="tab-btn">🏭</div><div class="tab-btn">🪙</div></div>
+          </div>
+          ${biomeCard(false)}
+        </div>
+      `;
+
+      const worldStructureAfter = `
+        <div class="state-body">
+          <div class="card">
+            <p class="card-title">Structure #9921</p>
+            <div class="stat-row"><span class="label">Owner</span><span class="value">Delabrousse</span></div>
+            <div class="stat-row"><span class="label">Type</span><span class="value">Realm</span></div>
+            <div class="chip-row"><span class="chip">Guards 6/8</span><span class="chip">Relics 2 active</span><span class="chip">Inv 10 shown</span></div>
+            <div class="chip-row"><span class="chip">Food 1.5k</span><span class="chip">Ore 980</span><span class="chip">Wood 3.4k</span><span class="chip">Stone 2.1k</span></div>
+            <div class="tab-footer"><div class="tab-btn">🛡️</div><div class="tab-btn">🏭</div><div class="tab-btn">🪙</div></div>
+          </div>
+          ${biomeCard(true)}
+        </div>
+      `;
+
+      const worldArmyBefore = `
+        <div class="state-body">
+          <div class="card">
+            <p class="card-title">Army #4512</p>
+            <div class="stat-row"><span class="label">Owner</span><span class="value">Delabrousse</span></div>
+            <div class="stat-row"><span class="label">Status</span><span class="value">You</span></div>
+            <div class="chip-row"><span class="chip">Knights 340</span><span class="chip">Crossbowmen 220</span><span class="chip">Paladins 90</span></div>
+            <div class="chip-row"><span class="chip danger">⚠ Missing 130 Wheat</span><span class="chip danger">⚠ Missing 50 Fish</span><span class="chip">Stamina 112/180</span><span class="chip">Relics 6 attached</span><span class="chip">Damage +12%</span><span class="chip">Reduction +8%</span></div>
+            <button class="btn warn" style="margin-top:8px">Delete Army</button>
+          </div>
+          ${biomeCard(false)}
+        </div>
+      `;
+
+      const worldArmyAfter = `
+        <div class="state-body">
+          <div class="card">
+            <p class="card-title">Army #4512</p>
+            <div class="stat-row"><span class="label">Owner</span><span class="value">Delabrousse</span></div>
+            <div class="stat-row"><span class="label">Troops</span><span class="value">340 / 220 / 90</span></div>
+            <div class="chip-row"><span class="chip">Stamina 112/180</span><span class="chip danger">Missing 130 Wheat</span><span class="chip">2 active effects</span></div>
+            <div class="chip-row"><span class="chip">Relic slots 10 shown</span></div>
+            <button class="btn warn" style="margin-top:6px">Delete Army</button>
+          </div>
+          ${biomeCard(true)}
+        </div>
+      `;
+
+      const worldBiomeBefore = `
+        <div class="state-body">
+          ${biomeCard(false)}
+          <div class="card">
+            <p class="card-title">Tile Intel</p>
+            <div class="chip-row"><span class="chip">Quadrant A: Snow ridge</span><span class="chip">Quadrant B: Frozen lake</span><span class="chip">Quadrant C: Pine line</span><span class="chip">Quadrant D: Cliff choke</span><span class="chip">Travel cost +2</span><span class="chip">Scout risk: medium</span></div>
+          </div>
+        </div>
+      `;
+
+      const worldBiomeAfter = `
+        <div class="state-body">
+          ${biomeCard(true)}
+          <div class="card">
+            <p class="card-title">Tile Intel</p>
+            <div class="chip-row"><span class="chip">Travel +2</span><span class="chip">Risk medium</span><span class="chip">4 tactical quadrants known</span></div>
+          </div>
+        </div>
+      `;
+
+      const stateMap = {
+        "local-structure": { before: localBefore, after: localAfter, title: "Structure Tile · (7, 4)" },
+        "world-structure": {
+          before: worldStructureBefore,
+          after: worldStructureAfter,
+          title: "Structure Tile · (128, -73)",
+        },
+        "world-army": { before: worldArmyBefore, after: worldArmyAfter, title: "Army Tile · (42, 9)" },
+        "world-biome": { before: worldBiomeBefore, after: worldBiomeAfter, title: "Biome Tile · (15, -21)" },
+      };
+
+      const content = stateMap[state]?.[variant] || localAfter;
+      const title = stateMap[state]?.title || "Tile";
+
+      root.className = `panel-shell ${variant} ${stateClass}`;
+      root.innerHTML = `
+        <div class="tab-strip">
+          <div class="tab active">?</div>
+          <div class="tab">⬢</div>
+        </div>
+        <section class="panel">
+          <header class="panel-header">
+            <p class="panel-title">${title}</p>
+            <span class="panel-action">Re-sync</span>
+          </header>
+          <div class="panel-content">
+            <div class="state-body-wrap">${content}</div>
+          </div>
+        </section>
+      `;
+    </script>
+  </body>
+</html>
