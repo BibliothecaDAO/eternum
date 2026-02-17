@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: Test-driven cleanup program for `client/apps/game/src/three`
-- Status: Draft v1
+- Status: Completed v1
 - Owner: Three.js Team
 - Created: 2026-02-17
 - Last Updated: 2026-02-17
@@ -19,6 +19,7 @@
 | U5     | 2026-02-17 23:25 | Codex  | Added S4 prefetch queue processing guard extraction (`resolvePrefetchQueueProcessingPlan`) with switch-off state coverage and worldmap queue-loop wiring updates. |
 | U6     | 2026-02-17 04:20 | Codex  | Added S5 army visibility bounds rule extraction via `resolveArmyVisibilityBoundsDecision`, expanded source/destination bound-edge tests, and wired `army-manager.ts` through the extracted decision helper. |
 | U7     | 2026-02-17 04:25 | Codex  | Added S6 army movement stale-clear policy extraction via `resolvePendingArmyMovementSelectionPlan` and `resolvePendingArmyMovementFallbackPlan`, expanded stale-clear policy tests, and wired `worldmap.tsx` pending-movement selection/fallback paths through extracted helpers. |
+| U8     | 2026-02-17 04:48 | Codex  | Completed S8/S9 renderer guardrail extraction with new pure helpers in `game-renderer-policy.ts` (`resolveLabelRenderIntervalMs`, `resolveLabelRenderDecision`, `shouldEnablePostProcessingConfig`, `resolvePostProcessingEffectPlan`), wired `game-renderer.ts` through those helpers, and added policy tests. Updated sprint execution status through M4 close. |
 
 ## Executive Summary
 
@@ -311,4 +312,6 @@ Exit Criteria:
 | 2026-02-17 | M1        | In Progress | S4 added prefetch queue processing-plan extraction via `resolvePrefetchQueueProcessingPlan`, covering switch-off clear/skip behavior plus concurrency/queue guards, and wired `worldmap.tsx` queue processing through the helper. Red phase validated by missing helper failure, then green with targeted and full suite runs; `pnpm --dir client/apps/game test src/three` passes (`25` files, `149` tests). |
 | 2026-02-17 | M2        | In Progress | S5 added army source/destination bounds decision extraction via `resolveArmyVisibilityBoundsDecision` and expanded movement-visibility tests to cover inclusive edges and explicit destination/source/none outcomes. Red phase verified by missing helper failure, then green with targeted and full suite runs; `pnpm --dir client/apps/game test src/three` passes (`25` files, `154` tests). |
 | 2026-02-17 | M2        | In Progress | S6 extracted army movement stale-clear policy into scene helpers (`resolvePendingArmyMovementSelectionPlan`, `resolvePendingArmyMovementFallbackPlan`) with red-phase missing-helper verification, expanded policy tests for no-op/block/clear/delete-fallback outcomes, and worldmap pending-selection/fallback wiring updates. Targeted and full suites pass; `pnpm --dir client/apps/game test src/three` passes (`25` files, `160` tests). |
-| 2026-02-17 | M3-M4     | Planned   | Next slices remain as defined in backlog and milestones. |
+| 2026-02-17 | M2        | Completed | S7 ownership-bucket refresh gating is live and test-covered via `shouldRefreshVisibleStructures` in `structure-update-policy.ts`, including `structure-manager.ts` call-site wiring and policy tests. |
+| 2026-02-17 | M3        | Completed | S8/S9 completed with test-first renderer guardrail extraction into `game-renderer-policy.ts`: label cadence interval/decision policy and post-processing config/effect gate policy. `game-renderer-policy.test.ts` added (`13` tests). Red phase validated with missing-module failure, then green targeted run. |
+| 2026-02-17 | M4        | Completed | Final module verification run completed; `pnpm --dir client/apps/game test src/three` passes (`26` files, `173` tests). Residual risk: behavior is policy-covered but `game-renderer` integration remains lightly exercised by unit tests compared to worldmap/manager policy seams. |
