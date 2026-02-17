@@ -1,6 +1,6 @@
 import { toPng } from "html-to-image";
 
-export type CopyElementAsPngResult = "copied" | "downloaded";
+type CopyElementAsPngResult = "copied" | "downloaded";
 
 interface CopyElementAsPngOptions {
   element: HTMLElement;
