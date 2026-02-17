@@ -90,6 +90,8 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
+  [StructureType.HolySite]: BuildingType.ResourceLabor,
+  [StructureType.Camp]: BuildingType.ResourceLabor,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -246,6 +248,8 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
     [StructureType.Village]: isBlitz
       ? [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp]
       : [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
+    [StructureType.HolySite]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Castle],
+    [StructureType.Camp]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp],
   };
 }
 

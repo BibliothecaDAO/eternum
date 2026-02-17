@@ -40,6 +40,7 @@ const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
   [ResourcesIds.PaladinT3]: "resource.collect.stone",
   [ResourcesIds.Wheat]: "resource.collect.wheat",
   [ResourcesIds.Fish]: "resource.collect.fish",
+  [ResourcesIds.Research]: "resource.collect.diamonds",
   [ResourcesIds.Lords]: "resource.collect.lords",
   [ResourcesIds.Essence]: "resource.collect.diamonds",
   [ResourcesIds.StaminaRelic1]: "relic.chest",
