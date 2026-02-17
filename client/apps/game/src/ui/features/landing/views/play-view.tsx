@@ -20,7 +20,7 @@ import {
   Trophy,
   RefreshCw,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
@@ -90,10 +90,12 @@ const WRITTEN_GUIDES = [
 const LearnContent = ({
   onSelectGame,
   onSpectate,
+  onSeeScore,
   onRegistrationComplete,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
+  onSeeScore: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
 }) => (
   <div className="flex flex-col gap-4">
@@ -185,6 +187,7 @@ const LearnContent = ({
       <UnifiedGameGrid
         onSelectGame={onSelectGame}
         onSpectate={onSpectate}
+        onSeeScore={onSeeScore}
         onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
         hideHeader
@@ -293,7 +296,6 @@ const PlayTabContent = ({
   onRefresh,
   isRefreshing = false,
   disabled = false,
-  onUpcomingGamesResolved,
   onEndedGamesResolved,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
@@ -304,7 +306,6 @@ const PlayTabContent = ({
   onRefresh: () => void;
   isRefreshing?: boolean;
   disabled?: boolean;
-  onUpcomingGamesResolved?: (games: GameData[]) => void;
   onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
   return (
@@ -380,7 +381,6 @@ const PlayTabContent = ({
               hideLegend
               layout="vertical"
               sortRegisteredFirst
-              onGamesResolved={onUpcomingGamesResolved}
             />
           </div>
         </div>
@@ -432,7 +432,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
-  const [upcomingGames, setUpcomingGames] = useState<GameData[]>([]);
   const [endedGames, setEndedGames] = useState<GameData[]>([]);
 
   // Refresh state
@@ -543,21 +542,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setModal(<SignInPromptModal />, true);
   }, [setModal]);
 
-  const handleUpcomingGamesResolved = useCallback((games: GameData[]) => {
-    setUpcomingGames(games);
-  }, []);
-
   const handleEndedGamesResolved = useCallback((games: GameData[]) => {
     setEndedGames(games);
   }, []);
-
-  const nextUpcomingGame = useMemo(() => {
-    if (upcomingGames.length === 0) return null;
-    if (!reviewWorld?.chain) return upcomingGames[0] ?? null;
-
-    const sameChain = upcomingGames.find((game) => game.chain === reviewWorld.chain);
-    return sameChain ?? upcomingGames[0] ?? null;
-  }, [reviewWorld?.chain, upcomingGames]);
 
   useEffect(() => {
     if (activeTab !== "play") return;
@@ -579,6 +566,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
           <LearnContent
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
+            onSeeScore={handleSeeScore}
             onRegistrationComplete={handleRegistrationComplete}
           />
         );
@@ -598,7 +586,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
             disabled={entryModalOpen || Boolean(reviewWorld)}
-            onUpcomingGamesResolved={handleUpcomingGamesResolved}
             onEndedGamesResolved={handleEndedGamesResolved}
           />
         );
@@ -629,7 +616,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
         <GameReviewModal
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}
-          nextGame={nextUpcomingGame}
+          nextGame={null}
           onClose={handleCloseReviewModal}
           onReturnHome={handleReturnHomeFromReview}
           onRegistrationComplete={handleRegistrationComplete}

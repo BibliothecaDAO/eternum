@@ -1,20 +1,20 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import {
-  useWorldsAvailability,
   getAvailabilityStatus,
   getWorldKey,
+  useWorldsAvailability,
   type WorldConfigMeta,
 } from "@/hooks/use-world-availability";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import type { Chain } from "@contracts";
 import { useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -604,7 +604,10 @@ export const UnifiedGameGrid = ({
     };
   }, [games]);
 
-  const resolvedGamesSignature = useMemo(() => games.map((game) => buildGameResolutionSignature(game)).join("|"), [games]);
+  const resolvedGamesSignature = useMemo(
+    () => games.map((game) => buildGameResolutionSignature(game)).join("|"),
+    [games],
+  );
   const lastResolvedGamesSignatureRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -697,11 +700,16 @@ export const UnifiedGameGrid = ({
               <GameCard
                 key={game.worldKey}
                 game={game}
-                onPlay={() => onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })}
-                onSpectate={() => onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })}
+                onPlay={() =>
+                  onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                }
+                onSpectate={() =>
+                  onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                }
                 onSeeScore={
                   onSeeScore
-                    ? () => onSeeScore({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    ? () =>
+                        onSeeScore({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                     : undefined
                 }
                 onForgeHyperstructures={
@@ -725,13 +733,20 @@ export const UnifiedGameGrid = ({
               <div key={game.worldKey} className="flex-shrink-0 w-[320px]">
                 <GameCard
                   game={game}
-                  onPlay={() => onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })}
+                  onPlay={() =>
+                    onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                  }
                   onSpectate={() =>
                     onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                   }
                   onSeeScore={
                     onSeeScore
-                      ? () => onSeeScore({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                      ? () =>
+                          onSeeScore({
+                            name: game.name,
+                            chain: game.chain,
+                            worldAddress: game.worldAddress ?? undefined,
+                          })
                       : undefined
                   }
                   onForgeHyperstructures={

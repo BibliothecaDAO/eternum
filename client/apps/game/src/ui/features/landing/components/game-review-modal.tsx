@@ -1,5 +1,4 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
 import {
   finalizeGameRankingAndMMR,
   type GameReviewData,
@@ -20,14 +19,13 @@ import {
   Shield,
   Swords,
   Trophy,
-  Users,
   X,
 } from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
-import { type GameData, type WorldSelection } from "./game-selector/game-card-grid";
+import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
 import { ScoreCardContent } from "./score-card-modal";
 
 type ReviewStepId = "stats" | "leaderboard" | "personal" | "finalize" | "next-game";
@@ -36,6 +34,7 @@ interface GameReviewModalProps {
   isOpen: boolean;
   world: WorldSelection | null;
   nextGame: GameData | null;
+  showUpcomingGamesStep?: boolean;
   onClose: () => void;
   onReturnHome: () => void;
   onRegistrationComplete: () => void;
@@ -270,120 +269,26 @@ const FinalizeStep = ({
   );
 };
 
-const getStageLabel = (stage: RegistrationStage): string => {
-  switch (stage) {
-    case "obtaining-token":
-      return "Obtaining token...";
-    case "waiting-for-token":
-      return "Confirming...";
-    case "registering":
-      return "Registering...";
-    case "done":
-      return "Registered!";
-    case "error":
-      return "Failed";
-    default:
-      return "Register";
-  }
-};
-
-const NextGameStep = ({
-  worldName,
-  nextGame,
-  playerAddress,
-  onRegistrationComplete,
-  onRequireSignIn,
-}: {
-  worldName: string;
-  nextGame: GameData;
-  playerAddress: string | null;
-  onRegistrationComplete: () => void;
-  onRequireSignIn: () => void;
-}) => {
-  const isUpcoming = nextGame.gameStatus === "upcoming";
-  const isOngoing = nextGame.gameStatus === "ongoing";
-  const canRegisterPeriod = isUpcoming || (isOngoing && (nextGame.config?.devModeOn ?? false));
-
-  const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
-    worldName: nextGame.name,
-    chain: nextGame.chain,
-    config: nextGame.config,
-    isRegistered: nextGame.isRegistered === true,
-    enabled: nextGame.status === "ok" && canRegisterPeriod,
-  });
-
-  useEffect(() => {
-    if (registrationStage === "done") {
-      toast.success("Registration successful!", {
-        description: `You are now registered for ${nextGame.name}`,
-      });
-      onRegistrationComplete();
-    }
-  }, [nextGame.name, onRegistrationComplete, registrationStage]);
-
-  const handleRegister = useCallback(async () => {
-    if (!playerAddress) {
-      onRequireSignIn();
-      return;
-    }
-
-    if (registrationStage === "done" || nextGame.isRegistered) return;
-
-    try {
-      await register();
-    } catch (caughtError) {
-      console.error("Next game registration failed", caughtError);
-    }
-  }, [nextGame.isRegistered, onRequireSignIn, playerAddress, register, registrationStage]);
-
-  const showRegistered = nextGame.isRegistered || registrationStage === "done";
-
-  const registerButtonLabel = !playerAddress
-    ? "Register"
-    : isRegistering
-      ? getStageLabel(registrationStage)
-      : showRegistered
-        ? "Registered"
-        : registrationStage === "error"
-          ? "Retry Register"
-          : canRegister
-            ? "Register"
-            : "Registration Closed";
-
-  const registerButtonDisabled =
-    isRegistering || (Boolean(playerAddress) && (showRegistered || !canRegister || !canRegisterPeriod));
-
+const UpcomingGamesStep = ({ worldName, onRegistrationComplete }: { worldName: string; onRegistrationComplete: () => void }) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-gold">
-        <Users className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Next Upcoming Game</h3>
+      <div className="space-y-1">
+        <h3 className="font-serif text-xl text-gold">Upcoming Games</h3>
+        <p className="text-xs uppercase tracking-wider text-gold/60">Finished Game: {worldName}</p>
       </div>
-      <p className="text-xs uppercase tracking-wider text-gold/60">Finished Game: {worldName}</p>
 
-      <div className="rounded-xl border border-gold/20 bg-black/20 p-4">
-        <p className="text-sm uppercase tracking-wider text-gold/60">Next Game</p>
-        <p className="mt-1 text-lg font-semibold text-white">{nextGame.name}</p>
-        <p className="text-xs text-white/60">
-          {nextGame.registrationCount ?? 0} players • {nextGame.chain === "mainnet" ? "Mainnet" : "Slot"}
-        </p>
-
-        <Button
-          onClick={handleRegister}
-          variant="gold"
-          className="mt-4 w-full justify-center !px-4 !py-2.5"
-          forceUppercase={false}
-          disabled={registerButtonDisabled}
-        >
-          {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {registerButtonLabel}
-        </Button>
-
-        {feeAmount > 0n && canRegister && !showRegistered && !isRegistering && (
-          <p className="mt-2 text-center text-[11px] text-gold/60">Fee required for registration</p>
-        )}
-
-        {registrationStage === "error" && error && <p className="mt-2 text-center text-[11px] text-red-400">{error}</p>}
+      <div className="max-h-[440px] overflow-y-auto rounded-xl border border-gold/20 bg-black/20 p-3">
+        <UnifiedGameGrid
+          onSelectGame={() => undefined}
+          onSpectate={() => undefined}
+          onRegistrationComplete={onRegistrationComplete}
+          devModeFilter={false}
+          statusFilter="upcoming"
+          hideHeader
+          hideLegend
+          layout="vertical"
+          sortRegisteredFirst
+        />
       </div>
     </div>
   );
@@ -393,6 +298,7 @@ export const GameReviewModal = ({
   isOpen,
   world,
   nextGame,
+  showUpcomingGamesStep = false,
   onClose,
   onReturnHome,
   onRegistrationComplete,
@@ -402,7 +308,6 @@ export const GameReviewModal = ({
   const worldChain = world?.chain;
 
   const account = useAccountStore((state) => state.account);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
 
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
@@ -423,12 +328,12 @@ export const GameReviewModal = ({
       ordered.push("personal");
     }
     ordered.push("finalize");
-    if (nextGame) {
+    if (showUpcomingGamesStep) {
       ordered.push("next-game");
     }
 
     return ordered;
-  }, [data, nextGame]);
+  }, [data, showUpcomingGamesStep]);
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "stats";
   const isStepShareable = useMemo(() => {
@@ -696,13 +601,10 @@ export const GameReviewModal = ({
                 </div>
               )}
 
-              {currentStep === "next-game" && nextGame && (
-                <NextGameStep
+              {currentStep === "next-game" && showUpcomingGamesStep && (
+                <UpcomingGamesStep
                   worldName={data.worldName}
-                  nextGame={nextGame}
-                  playerAddress={playerAddress}
                   onRegistrationComplete={onRegistrationComplete}
-                  onRequireSignIn={onRequireSignIn}
                 />
               )}
             </div>

@@ -6,10 +6,25 @@ interface GameIsOverModalProps {
   worldName: string;
   onReview: () => void;
   onClose: () => void;
+  title?: string;
+  description?: string;
+  reviewLabel?: string;
+  closeLabel?: string;
 }
 
-export const GameIsOverModal = ({ isOpen, worldName, onReview, onClose }: GameIsOverModalProps) => {
+export const GameIsOverModal = ({
+  isOpen,
+  worldName,
+  onReview,
+  onClose,
+  title = "Game Is Over",
+  description,
+  reviewLabel = "Review",
+  closeLabel = "Close",
+}: GameIsOverModalProps) => {
   if (!isOpen) return null;
+
+  const bodyText = description ?? `${worldName} has ended. Open the game review to see what happened.`;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -29,8 +44,8 @@ export const GameIsOverModal = ({ isOpen, worldName, onReview, onClose }: GameIs
             <Trophy className="h-6 w-6 text-gold" />
           </div>
 
-          <h2 className="text-center font-serif text-2xl text-gold">Game Is Over</h2>
-          <p className="mt-2 text-center text-sm text-gold/70">{worldName} has ended. Open the game review to see what happened.</p>
+          <h2 className="text-center font-serif text-2xl text-gold">{title}</h2>
+          <p className="mt-2 text-center text-sm text-gold/70">{bodyText}</p>
 
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <Button
@@ -39,7 +54,7 @@ export const GameIsOverModal = ({ isOpen, worldName, onReview, onClose }: GameIs
               className="w-full justify-center !px-4 !py-2.5"
               forceUppercase={false}
             >
-              Review
+              {reviewLabel}
             </Button>
             <Button
               onClick={onClose}
@@ -47,7 +62,7 @@ export const GameIsOverModal = ({ isOpen, worldName, onReview, onClose }: GameIs
               className="w-full justify-center !px-4 !py-2.5"
               forceUppercase={false}
             >
-              Close
+              {closeLabel}
             </Button>
           </div>
         </div>
