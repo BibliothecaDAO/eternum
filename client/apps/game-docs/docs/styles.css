@@ -54,7 +54,7 @@ pre,
   font-family: "Exo 2", sans-serif !important;
 }
 
-/* Sidebar chevrons: align right, visible, and keep header clickable */
+/* Sidebar chevrons: align right and visible */
 .vocs_Sidebar_sectionHeader {
   cursor: pointer !important;
   display: flex;
@@ -181,11 +181,16 @@ pre,
 }
 
 /* Deployment caps: fixed layout with balanced column widths */
-.table-deployment-caps table {
-  table-layout: fixed !important;
+.table-deployment-caps {
+  display: block;
   width: calc(100% + 2.5cm) !important;
   max-width: none !important;
   margin-right: -2.5cm;
+}
+
+.table-deployment-caps table {
+  table-layout: fixed !important;
+  width: 100% !important;
 }
 
 .table-deployment-caps th:nth-child(1),

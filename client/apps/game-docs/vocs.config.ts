@@ -29,6 +29,36 @@ export default defineConfig({
         href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
       },
     ],
+    script: [
+      {
+        children: `
+(function () {
+  function bindSidebarToggles() {
+    const headers = document.querySelectorAll('.vocs_Sidebar_sectionHeader');
+    headers.forEach((header) => {
+      const chevron = header.querySelector('.vocs_Sidebar_sectionCollapse');
+      const toggleBtn = header.querySelector('div[role="button"]');
+      if (!chevron || !toggleBtn) return;
+
+      header.addEventListener('click', (e) => {
+        // If user clicked the chevron button itself, let Vocs handle it.
+        if (e.target.closest('.vocs_Sidebar_sectionCollapse')) return;
+        // Toggle instead of navigating for collapsible sections.
+        e.preventDefault();
+        toggleBtn.click();
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindSidebarToggles);
+  } else {
+    bindSidebarToggles();
+  }
+})();
+        `.trim(),
+      },
+    ],
   },
   theme: {
     colorScheme: "dark",
@@ -57,6 +87,7 @@ export default defineConfig({
         {
           text: "Loot Chests",
           collapsed: true,
+          link: "/overview/chests/loot-chests",
           items: [
             { text: "Loot Chests", link: "/overview/chests/loot-chests" },
             { text: "Chest Contents", link: "/overview/chests/contents" },
@@ -78,6 +109,7 @@ export default defineConfig({
         {
           text: "Realms",
           collapsed: true,
+          link: "/blitz/realms/realm",
           items: [
             { text: "Realms", link: "/blitz/realms/realm" },
             { text: "Buildings", link: "/blitz/realms/buildings" },
@@ -86,6 +118,7 @@ export default defineConfig({
         {
           text: "Materials",
           collapsed: true,
+          link: "/blitz/materials/resources",
           items: [
             { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
@@ -98,6 +131,7 @@ export default defineConfig({
         {
           text: "Military",
           collapsed: true,
+          link: "/blitz/military/armies",
           items: [
             { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
@@ -108,6 +142,7 @@ export default defineConfig({
         {
           text: "World Map & Movement",
           collapsed: true,
+          link: "/blitz/worldmap-movement/worldmap",
           items: [
             { text: "The World Map", link: "/blitz/worldmap-movement/worldmap" },
             { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
@@ -131,6 +166,7 @@ export default defineConfig({
           text: "Realms & Villages",
           link: "/eternum/realm-and-villages/realm",
           collapsed: true,
+          link: "/eternum/realm-and-villages/realm",
           items: [
             { text: "Villages", link: "/eternum/realm-and-villages/villages" },
             { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
@@ -141,6 +177,7 @@ export default defineConfig({
           text: "Materials",
           link: "/eternum/resources/resources",
           collapsed: true,
+          link: "/eternum/resources/resources",
           items: [
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
@@ -153,6 +190,7 @@ export default defineConfig({
           text: "Military",
           link: "/eternum/military/armies",
           collapsed: true,
+          link: "/eternum/military/armies",
           items: [
             { text: "Troop Tiers", link: "/eternum/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
@@ -164,6 +202,7 @@ export default defineConfig({
           text: "World Map & Movement",
           link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
+          link: "/eternum/worldmap-movement/worldmap",
           items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
@@ -175,6 +214,7 @@ export default defineConfig({
     {
       text: "Development",
       collapsed: true,
+      link: "/development/getting-started",
       items: [
         { text: "Getting Started", link: "/development/getting-started" },
         { text: "Client", link: "/development/client" },
@@ -187,6 +227,7 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
+      link: "/changelog/31-january-2026",
       items: [
         { text: "31 January 2026", link: "/changelog/31-january-2026" },
         { text: "8 December 2025", link: "/changelog/8-december-2025" },
