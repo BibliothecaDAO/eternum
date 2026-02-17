@@ -34,6 +34,7 @@ import {
   TROOP_AGENTS_TROOP_LOWER_BOUND,
   TROOP_AGENTS_TROOP_UPPER_BOUND,
   TROOP_BASE_DAMAGE,
+  TROOP_CITY_DEPLOYMENT_CAP,
   TROOP_DAMAGE_BETA_LARGE,
   TROOP_DAMAGE_BETA_SMALL,
   TROOP_DAMAGE_BIOME_BONUS_NUM,
@@ -41,15 +42,12 @@ import {
   TROOP_DAMAGE_DELTA,
   TROOP_DAMAGE_RAID_PERCENT_NUM,
   TROOP_DAMAGE_SCALING_FACTOR,
-  TROOP_CITY_DEPLOYMENT_CAP,
   TROOP_EMPIRE_DEPLOYMENT_CAP,
-  TROOP_TIER_MODIFIER,
-  TROOP_TIER_STRENGTH,
   TROOP_EXPLORE_FISH_COST,
   TROOP_EXPLORE_STAMINA_COST,
   TROOP_EXPLORE_WHEAT_COST,
-  TROOP_KINGDOM_DEPLOYMENT_CAP,
   TROOP_GUARD_RESURRECTION_DELAY,
+  TROOP_KINGDOM_DEPLOYMENT_CAP,
   TROOP_MERCENARIES_TROOP_LOWER_BOUND,
   TROOP_MERCENARIES_TROOP_UPPER_BOUND,
   TROOP_SETTLEMENT_DEPLOYMENT_CAP,
@@ -61,6 +59,8 @@ import {
   TROOP_STAMINA_MAX,
   TROOP_T2_DAMAGE_MULTIPLIER,
   TROOP_T3_DAMAGE_MULTIPLIER,
+  TROOP_TIER_MODIFIER,
+  TROOP_TIER_STRENGTH,
   TROOP_TRAVEL_FISH_COST,
   TROOP_TRAVEL_STAMINA_COST,
   TROOP_TRAVEL_WHEAT_COST,
@@ -108,6 +108,9 @@ export const RELIC_DISCOVERY_INTERVAL_SECONDS = 5 * ONE_MINUTE_IN_SECONDS; // 5 
 export const RELIC_HEX_DISTANCE_FROM_CENTER = 10;
 export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 
+export const BITCOIN_MINE_WIN_PROBABILITY = 200; // 200/10000 = 2%
+export const BITCOIN_MINE_FAIL_PROBABILITY = 9800; // 9800/10000 = 98%
+
 export const AGENT_FIND_PROBABILITY = 0; // 0/100 = 0%
 export const AGENT_FIND_FAIL_PROBABILITY = 100; // 100/100 = 100%
 
@@ -148,6 +151,7 @@ export const QUEST_GAME_LEVELS = [
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
 export const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 1; // 1 minute
 export const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3; // 3 minutes
+export const BITCOIN_PHASE_SECONDS = ONE_MINUTE_IN_SECONDS * 10; // 10 minutes
 
 // ----- Speed ----- //
 // @dev: Seconds per km
@@ -324,6 +328,8 @@ export const EternumGlobalConfig: Config = {
     campFindFailProbability: CAMP_FIND_FAIL_PROBABILITY,
     holysiteFindProbability: HOLYSITE_FIND_PROBABILITY,
     holysiteFindFailProbability: HOLYSITE_FIND_FAIL_PROBABILITY,
+    bitcoinMineWinProbability: BITCOIN_MINE_WIN_PROBABILITY,
+    bitcoinMineFailProbability: BITCOIN_MINE_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
@@ -340,6 +346,7 @@ export const EternumGlobalConfig: Config = {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
     deliveryTickIntervalInSeconds: DELIVERY_TICK_INTERVAL_SECONDS,
+    bitcoinPhaseInSeconds: BITCOIN_PHASE_SECONDS,
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
@@ -350,6 +357,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfig.FragmentMineStructure]: 18446744073709551615n, // max
     [CapacityConfig.HolySiteStructure]: 18446744073709551615n, // max
     [CapacityConfig.CampStructure]: 18446744073709551615n, // max
+    [CapacityConfig.BitcoinMineStructure]: 18446744073709551615n, // max
     [CapacityConfig.Donkey]: 50 * 1000, // 500 kg per donkey
     // 10_000 gr per army
     [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count

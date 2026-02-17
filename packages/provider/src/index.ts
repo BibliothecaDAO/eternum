@@ -22,8 +22,8 @@ import {
 import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
 import { BatchedTransactionDetail, TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
-export { TransactionType, BatchedTransactionDetail } from "./types";
-export { TransactionCostCategory, CATEGORY_BATCH_LIMITS, getTransactionCategory } from "./batch-config";
+export { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
+export { BatchedTransactionDetail, TransactionType } from "./types";
 type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
@@ -2607,6 +2607,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       camp_find_fail_probability,
       holysite_find_probability,
       holysite_find_fail_probability,
+      bitcoin_mine_win_probability,
+      bitcoin_mine_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -2630,6 +2632,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         camp_find_fail_probability,
         holysite_find_probability,
         holysite_find_fail_probability,
+        bitcoin_mine_win_probability,
+        bitcoin_mine_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -2881,6 +2885,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       bank_structure_capacity,
       holysite_capacity,
       camp_capacity,
+      bitcoin_mine_capacity,
       signer,
     } = props;
 
@@ -2892,6 +2897,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         troop_capacity,
         donkey_capacity,
         storehouse_boost_capacity,
+
         realm_capacity,
         village_capacity,
         hyperstructure_capacity,
@@ -2899,6 +2905,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         bank_structure_capacity,
         holysite_capacity,
         camp_capacity,
+        bitcoin_mine_capacity,
       ],
     });
   }
@@ -2939,12 +2946,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
-    const { tick_interval_in_seconds, delivery_tick_interval_in_seconds, signer } = props;
+    const { tick_interval_in_seconds, delivery_tick_interval_in_seconds, bitcoin_phase_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_tick_config",
-      calldata: [tick_interval_in_seconds, delivery_tick_interval_in_seconds],
+      calldata: [tick_interval_in_seconds, delivery_tick_interval_in_seconds, bitcoin_phase_in_seconds],
     });
   }
 

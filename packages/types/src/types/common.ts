@@ -492,11 +492,14 @@ export interface Config {
     relicDiscoveryIntervalSeconds: number;
     relicHexDistanceFromCenter: number;
     relicChestRelicsPerChest: number;
+    bitcoinMineWinProbability: number;
+    bitcoinMineFailProbability: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
     deliveryTickIntervalInSeconds: number;
+    bitcoinPhaseInSeconds: number;
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
