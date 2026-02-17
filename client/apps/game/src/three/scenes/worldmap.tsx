@@ -85,7 +85,6 @@ import {
   getChunkKeysContainingHexInRenderBounds,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
-  isHexWithinRenderBounds,
 } from "../utils/chunk-geometry";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
@@ -111,6 +110,7 @@ import {
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
+  shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
@@ -118,6 +118,7 @@ import {
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -768,13 +769,24 @@ export default class WorldmapScene extends HexagonScene {
           );
         }
 
-        if (positions && !countChanged) {
+        const structureTileActions = resolveStructureTileUpdateActions({
+          hasPositions: Boolean(positions),
+          countChanged,
+        });
+
+        if (structureTileActions.shouldScheduleTileRefresh && positions) {
           this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
         }
 
-        if (countChanged) {
+        if (structureTileActions.shouldUpdateTotalStructures) {
           this.totalStructures = newCount;
+        }
+
+        if (structureTileActions.shouldClearCache) {
           this.clearCache();
+        }
+
+        if (structureTileActions.shouldRefreshVisibleChunks) {
           this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
         }
       }),
@@ -2637,19 +2649,16 @@ export default class WorldmapScene extends HexagonScene {
     oldHex?: { col: number; row: number } | null,
     newHex?: { col: number; row: number } | null,
   ): void {
-    if (this.currentChunk === "null" || this.isChunkTransitioning) {
-      return;
-    }
-
-    const [startRow, startCol] = this.currentChunk.split(",").map(Number);
-    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
-      return;
-    }
-
-    const affectsBounds = (hex?: { col: number; row: number } | null) =>
-      hex ? isHexWithinRenderBounds(hex.col, hex.row, startRow, startCol, this.renderChunkSize, this.chunkSize) : false;
-
-    if (affectsBounds(oldHex) || affectsBounds(newHex)) {
+    if (
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: this.currentChunk,
+        isChunkTransitioning: this.isChunkTransitioning,
+        oldHex,
+        newHex,
+        renderSize: this.renderChunkSize,
+        chunkSize: this.chunkSize,
+      })
+    ) {
       this.requestChunkRefresh(true);
     }
   }

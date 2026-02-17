@@ -302,5 +302,5 @@ Exit Criteria:
 | Date       | Milestone | Status    | Notes |
 | ---------- | --------- | --------- | ----- |
 | 2026-02-17 | M0        | Completed | `src/three` tests now run in `node` env via `environmentMatchGlobs`; fixed node-only test assumptions and hoisted mock issues; `pnpm --dir client/apps/game test src/three` passes (`24` files, `121` tests). |
-| 2026-02-17 | M1        | In Progress | Slice S1 continued with red-green-refactor extraction of chunk refresh token decisions into `worldmap-chunk-transition` helpers (`resolveRefreshExecutionPlan`, `resolveRefreshRunningActions`, `resolveRefreshCompletionActions`) and wiring in `worldmap.tsx`; targeted and full `src/three` suites pass (`24` files, `130` tests). |
+| 2026-02-17 | M1        | In Progress | Slice S1 continued with red-green-refactor extraction of worldmap refresh and structure-update decisions into policy helpers (`resolveRefreshExecutionPlan`, `resolveRefreshRunningActions`, `resolveRefreshCompletionActions`, `shouldRequestTileRefreshForStructureBoundsChange`, `resolveStructureTileUpdateActions`) and wiring in `worldmap.tsx`; targeted and full `src/three` suites pass (`25` files, `138` tests). |
 | 2026-02-17 | M2-M4     | Planned   | Next slices remain as defined in backlog and milestones. |
