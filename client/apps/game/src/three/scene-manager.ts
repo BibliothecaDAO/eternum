@@ -1,5 +1,10 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import {
+  resolvePendingTransitionStart,
+  resolveSceneSwitchRequest,
+  resolveTransitionFinalizePlan,
+} from "./scene-manager-transition-policy";
 import { SceneName } from "./types";
 
 export class SceneManager {
@@ -28,42 +33,57 @@ export class SceneManager {
 
   switchScene(sceneName: SceneName) {
     const scene = this.scenes.get(sceneName);
-    if (!scene) return;
+    const decision = resolveSceneSwitchRequest({
+      requestedSceneName: sceneName,
+      hasRequestedScene: Boolean(scene),
+      transitionRequestToken: this.transitionRequestToken,
+      transitionInProgress: this.transitionInProgress,
+      pendingSceneName: this.pendingSceneName,
+    });
 
-    this.transitionRequestToken += 1;
-    this.pendingSceneName = sceneName;
+    this.transitionRequestToken = decision.nextTransitionRequestToken;
+    this.pendingSceneName = decision.nextPendingSceneName;
 
-    if (this.transitionInProgress) return;
+    if (!decision.shouldStartPendingTransition) return;
     this.startPendingTransition();
   }
 
   private startPendingTransition() {
     const pendingSceneName = this.pendingSceneName;
-    if (!pendingSceneName) return;
+    const pendingScene = pendingSceneName ? this.scenes.get(pendingSceneName) : undefined;
+    const decision = resolvePendingTransitionStart({
+      pendingSceneName,
+      hasPendingScene: Boolean(pendingScene),
+      transitionRequestToken: this.transitionRequestToken,
+    });
 
-    const pendingScene = this.scenes.get(pendingSceneName);
-    if (!pendingScene) {
-      this.pendingSceneName = undefined;
+    this.pendingSceneName = decision.nextPendingSceneName;
+    const sceneNameToTransition = decision.sceneNameToTransition;
+    const transitionToken = decision.transitionToken;
+    if (!decision.shouldStartTransition) return;
+    if (!pendingScene || !sceneNameToTransition || transitionToken === undefined) {
       return;
     }
-
-    const transitionToken = this.transitionRequestToken;
-    this.pendingSceneName = undefined;
 
     const previousScene = this.currentScene ? this.scenes.get(this.currentScene) : undefined;
     previousScene?.onSwitchOff();
 
     this.transitionInProgress = true;
     this.transitionManager.fadeOut(async () => {
-      await this.completeTransition(pendingSceneName, pendingScene, transitionToken);
+      await this.completeTransition(sceneNameToTransition, pendingScene, transitionToken);
     });
   }
 
   private async completeTransition(sceneName: SceneName, scene: HexagonScene, transitionToken: number) {
-    const isSuperseded = () => transitionToken !== this.transitionRequestToken;
+    const resolveFinalizePlan = () =>
+      resolveTransitionFinalizePlan({
+        transitionToken,
+        latestTransitionRequestToken: this.transitionRequestToken,
+        hasPendingScene: Boolean(this.pendingSceneName),
+      });
 
     try {
-      if (isSuperseded()) return;
+      if (resolveFinalizePlan().isSuperseded) return;
 
       this._updateCurrentScene(sceneName);
       if (scene.setup) {
@@ -72,14 +92,15 @@ export class SceneManager {
     } catch (error) {
       console.error(`[SceneManager] Failed to set up scene ${sceneName}`, error);
     } finally {
-      if (!isSuperseded()) {
+      const finalizePlan = resolveFinalizePlan();
+      if (finalizePlan.shouldRunPostSetupEffects) {
         this.moveCameraForScene();
         this.transitionManager.fadeIn();
       }
 
       this.transitionInProgress = false;
 
-      if (this.pendingSceneName) {
+      if (finalizePlan.shouldStartPendingTransition) {
         this.startPendingTransition();
       }
     }

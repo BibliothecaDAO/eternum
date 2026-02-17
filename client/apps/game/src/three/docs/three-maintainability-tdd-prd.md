@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: Maintainability hardening program for `client/apps/game/src/three` using strict TDD.
-- Status: In Progress (M2)
+- Status: In Progress (M3)
 - Owner: Three.js Team
 - Created: 2026-02-17
 - Last Updated: 2026-02-17
@@ -19,6 +19,8 @@
 | U5     | 2026-02-17 00:00 | Codex  | Started M1 with RED/GREEN lifecycle hardening slice: `onSwitchOff()` now detaches `urlChanged`; `requestChunkRefresh()` now no-ops when switched off; updated lifecycle tests and re-ran `src/three` gate. |
 | U6     | 2026-02-17 00:00 | Codex  | Added explicit switch/unmount lifecycle policy tests and extracted idempotent URL listener lifecycle resolver; wired worldmap setup/switch-off/destroy through policy and re-ran `src/three` gate. |
 | U7     | 2026-02-17 00:00 | Codex  | Completed M2 RED/GREEN transition serialization slice: added superseded/collapsed rapid-toggle tests in `scene-manager.test.ts`, implemented request-token + latest-pending transition sequencing in `scene-manager.ts`, and re-ran targeted + `src/three` module gate tests. |
+| U8     | 2026-02-17 00:00 | Codex  | Began M3 RED/GREEN maintainability seam slice: added `scene-manager-transition-policy` tests + module, refactored `scene-manager.ts` through policy decisions, fixed README architecture reference drift, and reduced `src/three` lint errors from `182` to `178`. |
+| U9     | 2026-02-17 00:00 | Codex  | Continued M3 seam extraction in `worldmap.tsx`: added `worldmap-chunk-switch-delay-policy` test/module, routed chunk-switch delay gating through policy, and removed one touched-file lint violation in `worldmap.tsx` (`shouldApplyScheduled` unused) to reduce `src/three` lint errors from `178` to `177`. |
 
 ## Executive Summary
 
@@ -261,3 +263,6 @@ Non-functional requirements:
 | 2026-02-17 | M1        | In Progress | Added switch/unmount sequence coverage via `worldmap-lifecycle-policy.test.ts` (`3` tests), extracted `worldmap-lifecycle-policy.ts`, and routed url-listener lifecycle through policy for idempotent setup/switch-off/destroy behavior. Tests passing (`src/three` `29` files / `182` tests). |
 | 2026-02-17 | M2        | In Progress | RED verified in `scene-manager.test.ts`: new superseded-transition and rapid-toggle coalescing specs fail on existing lock-only behavior (`2` failing assertions). |
 | 2026-02-17 | M2        | Completed | GREEN shipped via `scene-manager.ts` transition request token + latest-pending queue; stale fade callbacks now skip setup/fade-in and chain the authoritative pending transition. Tests passing: targeted `scene-manager` (`3/3`) and module gate `pnpm --dir client/apps/game test src/three` (`29` files / `184` tests). |
+| 2026-02-17 | M3        | Started | RED verified for new maintainability seam: `scene-manager-transition-policy.test.ts` initially failed due missing module (`Failed to load url ./scene-manager-transition-policy`). |
+| 2026-02-17 | M3        | In Progress | GREEN shipped: extracted `scene-manager-transition-policy.ts`, routed `scene-manager.ts` switch/pending/finalize decisions through policy, updated README architecture reference, and fixed `chunk-geometry.test.ts` sorting lint issues. Gates: `pnpm --dir client/apps/game test src/three` (`30` files / `192` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `178` errors (baseline `182`). |
+| 2026-02-17 | M3        | In Progress | RED/GREEN chunk-switch delay seam completed: `worldmap-chunk-switch-delay-policy.test.ts` failed first on missing module, then passed after extracting `worldmap-chunk-switch-delay-policy.ts` and routing `worldmap.tsx` delay gating through it. Gates: `pnpm --dir client/apps/game test src/three` (`31` files / `196` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `177` errors (baseline `182`). |

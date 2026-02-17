@@ -24,7 +24,7 @@ and HUD.
 - Managers are under `managers/`, utilities under `utils/`, effects under `effects/`.
 - Toggle graphics via `GraphicsSettings` in `ui/config.tsx`; low skips post-processing.
 
-See `ARCHITECTURE.md` for a deeper map of scenes, managers, and data flow.
+See the **Architecture overview** section in this README for a deeper map of scenes, managers, and data flow.
 
 ## Architecture overview
 

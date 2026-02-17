@@ -120,6 +120,7 @@ import {
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
+import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -3818,16 +3819,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
-    if (!this.hasChunkSwitchAnchor || !this.lastChunkSwitchPosition) {
-      return false;
-    }
-
-    const chunkWorldWidth = this.chunkSize * HEX_SIZE * Math.sqrt(3);
-    const chunkWorldDepth = this.chunkSize * HEX_SIZE * 1.5;
-    const dx = Math.abs(cameraPosition.x - this.lastChunkSwitchPosition.x);
-    const dz = Math.abs(cameraPosition.z - this.lastChunkSwitchPosition.z);
-
-    return dx < chunkWorldWidth * this.chunkSwitchPadding && dz < chunkWorldDepth * this.chunkSwitchPadding;
+    return shouldDelayWorldmapChunkSwitch({
+      hasChunkSwitchAnchor: this.hasChunkSwitchAnchor,
+      lastChunkSwitchPosition: this.lastChunkSwitchPosition,
+      cameraPosition,
+      chunkSize: this.chunkSize,
+      hexSize: HEX_SIZE,
+      chunkSwitchPadding: this.chunkSwitchPadding,
+    });
   }
 
   private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
@@ -3958,7 +3957,7 @@ export default class WorldmapScene extends HexagonScene {
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const latestToken = this.chunkRefreshRequestToken;
     const refreshExecutionPlan = resolveRefreshExecutionPlan(scheduledToken, latestToken);
-    const { shouldApplyScheduled, executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
+    const { executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
 
     if (shouldRecordSuperseded) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
