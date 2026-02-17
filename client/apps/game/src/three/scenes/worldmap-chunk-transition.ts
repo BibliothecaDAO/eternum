@@ -44,6 +44,17 @@ interface DuplicateTileUpdateActions {
   shouldRequestRefresh: boolean;
 }
 
+interface RefreshExecutionPlan {
+  shouldApplyScheduled: boolean;
+  shouldRecordSuperseded: boolean;
+  executionToken: number;
+}
+
+interface RefreshRunningActions {
+  shouldMarkRerunRequested: boolean;
+  shouldRescheduleTimer: boolean;
+}
+
 /**
  * Resolve chunk-switch side effects after hydration completes.
  * Keeps behavior deterministic for success, failure, and stale transitions.
@@ -139,6 +150,32 @@ export function shouldRescheduleRefreshToken(scheduledToken: number, latestToken
  */
 export function resolveRefreshExecutionToken(scheduledToken: number, latestToken: number): number {
   return scheduledToken < latestToken ? latestToken : scheduledToken;
+}
+
+/**
+ * Resolve refresh token execution behavior for latest-wins refresh scheduling.
+ */
+export function resolveRefreshExecutionPlan(scheduledToken: number, latestToken: number): RefreshExecutionPlan {
+  const shouldApplyScheduled = shouldApplyRefreshToken(scheduledToken, latestToken);
+  const executionToken = shouldApplyScheduled
+    ? scheduledToken
+    : resolveRefreshExecutionToken(scheduledToken, latestToken);
+
+  return {
+    shouldApplyScheduled,
+    shouldRecordSuperseded: !shouldApplyScheduled,
+    executionToken,
+  };
+}
+
+/**
+ * Resolve actions when a refresh request arrives while a refresh is already running.
+ */
+export function resolveRefreshRunningActions(scheduledToken: number, latestToken: number): RefreshRunningActions {
+  return {
+    shouldMarkRerunRequested: true,
+    shouldRescheduleTimer: shouldRescheduleRefreshToken(scheduledToken, latestToken),
+  };
 }
 
 /**

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveDuplicateTileUpdateActions,
+  resolveRefreshExecutionPlan,
+  resolveRefreshRunningActions,
   shouldForceShortcutNavigationRefresh,
   shouldForceRefreshForDuplicateTileUpdate,
   shouldRunShortcutForceFallback,
@@ -192,6 +194,55 @@ describe("resolveRefreshExecutionToken", () => {
 
   it("keeps scheduled token when it is current", () => {
     expect(resolveRefreshExecutionToken(9, 9)).toBe(9);
+  });
+});
+
+describe("resolveRefreshExecutionPlan", () => {
+  it("applies scheduled work when token is current", () => {
+    expect(resolveRefreshExecutionPlan(9, 9)).toEqual({
+      shouldApplyScheduled: true,
+      shouldRecordSuperseded: false,
+      executionToken: 9,
+    });
+  });
+
+  it("executes latest token and marks superseded when scheduled token is stale", () => {
+    expect(resolveRefreshExecutionPlan(7, 9)).toEqual({
+      shouldApplyScheduled: false,
+      shouldRecordSuperseded: true,
+      executionToken: 9,
+    });
+  });
+
+  it("preserves newer scheduled token while still marking superseded", () => {
+    expect(resolveRefreshExecutionPlan(10, 9)).toEqual({
+      shouldApplyScheduled: false,
+      shouldRecordSuperseded: true,
+      executionToken: 10,
+    });
+  });
+});
+
+describe("resolveRefreshRunningActions", () => {
+  it("requests reschedule when currently scheduled token is stale", () => {
+    expect(resolveRefreshRunningActions(7, 9)).toEqual({
+      shouldMarkRerunRequested: true,
+      shouldRescheduleTimer: true,
+    });
+  });
+
+  it("skips timer reschedule when scheduled token is current", () => {
+    expect(resolveRefreshRunningActions(9, 9)).toEqual({
+      shouldMarkRerunRequested: true,
+      shouldRescheduleTimer: false,
+    });
+  });
+
+  it("skips timer reschedule when scheduled token is newer than latest", () => {
+    expect(resolveRefreshRunningActions(10, 9)).toEqual({
+      shouldMarkRerunRequested: true,
+      shouldRescheduleTimer: false,
+    });
   });
 });
 

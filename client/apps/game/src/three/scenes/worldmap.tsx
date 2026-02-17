@@ -107,12 +107,11 @@ import {
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveDuplicateTileUpdateActions,
-  resolveRefreshExecutionToken,
+  resolveRefreshExecutionPlan,
+  resolveRefreshRunningActions,
   resolveChunkSwitchActions,
-  shouldApplyRefreshToken,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
-  shouldRescheduleRefreshToken,
   shouldRunManagerUpdate,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
@@ -3903,12 +3902,10 @@ export default class WorldmapScene extends HexagonScene {
 
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const latestToken = this.chunkRefreshRequestToken;
-    const shouldApplyScheduled = shouldApplyRefreshToken(scheduledToken, latestToken);
-    const executionToken = shouldApplyScheduled
-      ? scheduledToken
-      : resolveRefreshExecutionToken(scheduledToken, latestToken);
+    const refreshExecutionPlan = resolveRefreshExecutionPlan(scheduledToken, latestToken);
+    const { shouldApplyScheduled, executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
 
-    if (!shouldApplyScheduled) {
+    if (shouldRecordSuperseded) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
       this.emitZoomHardeningTelemetry("refresh_superseded", {
         scheduledToken,
@@ -3918,8 +3915,9 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (this.chunkRefreshRunning) {
-      this.chunkRefreshRerunRequested = true;
-      if (shouldRescheduleRefreshToken(scheduledToken, this.chunkRefreshRequestToken)) {
+      const runningActions = resolveRefreshRunningActions(scheduledToken, this.chunkRefreshRequestToken);
+      this.chunkRefreshRerunRequested = runningActions.shouldMarkRerunRequested;
+      if (runningActions.shouldRescheduleTimer) {
         this.emitZoomHardeningTelemetry("refresh_rescheduled", {
           scheduledToken,
           latestToken: this.chunkRefreshRequestToken,
