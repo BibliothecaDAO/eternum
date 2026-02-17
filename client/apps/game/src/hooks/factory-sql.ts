@@ -84,7 +84,11 @@ const normalizeAddress = (value: unknown): string | null => {
     if (!trimmed) return null;
     try {
       const asBigInt =
-        trimmed.startsWith("0x") || trimmed.startsWith("0X") ? BigInt(trimmed) : /^[0-9]+$/.test(trimmed) ? BigInt(trimmed) : null;
+        trimmed.startsWith("0x") || trimmed.startsWith("0X")
+          ? BigInt(trimmed)
+          : /^[0-9]+$/.test(trimmed)
+            ? BigInt(trimmed)
+            : null;
       if (asBigInt == null || asBigInt <= 0n) return null;
       return `0x${asBigInt.toString(16)}`;
     } catch {
@@ -107,7 +111,7 @@ const normalizeAddress = (value: unknown): string | null => {
  * Pull the world contract address from a factory row.
  */
 export const extractContractAddress = (row: Record<string, unknown>): string | null => {
-  const direct = row.contract_address ?? row["data.contract_address"];
+  const direct = row.contract_address ?? row["data.address"];
   const normalizedDirect = normalizeAddress(direct);
   if (normalizedDirect) {
     return normalizedDirect;

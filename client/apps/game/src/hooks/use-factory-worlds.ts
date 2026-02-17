@@ -3,7 +3,7 @@ import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
 import { decodePaddedFeltAscii, extractContractAddress, extractNameFelt, fetchFactoryRows } from "./factory-sql";
 
-const FACTORY_QUERY = `SELECT name, contract_address FROM [wf-WorldDeployed] LIMIT 1000;`;
+const FACTORY_QUERY = `SELECT name, address FROM [wf-WorldDeployed] LIMIT 1000;`;
 
 interface FactoryWorld {
   name: string;
