@@ -57,6 +57,17 @@ pre,
 /* Make sidebar chevrons clickable and visually indicate toggle */
 .vocs_Sidebar_sectionHeader {
   cursor: pointer !important;
+  gap: 0.25rem;
+  overflow: visible;
+}
+
+/* Keep link from pushing chevron out of view */
+.vocs_Sidebar_sectionHeader > a.vocs_Sidebar_item,
+.vocs_Sidebar_sectionHeader > a.vocs_Sidebar_sectionTitleLink {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-right: 0.25rem;
 }
 
 .vocs_Sidebar_sectionCollapse {
@@ -80,6 +91,7 @@ pre,
   align-items: center;
   padding: 0.25rem;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .vocs_Sidebar_sectionTitle {
@@ -183,6 +195,12 @@ pre,
 .table-first-col-wide td:first-child,
 .table-first-col-wide th:first-child {
   white-space: nowrap;
+}
+
+/* Deployment caps: slightly wider columns while keeping full width */
+.table-deployment-caps th,
+.table-deployment-caps td {
+  width: calc(25% + 15px);
 }
 
 /* Force last column to fill remaining space in simple markdown tables */
