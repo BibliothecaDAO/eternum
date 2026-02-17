@@ -5,6 +5,7 @@ import { SceneName } from "./types";
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;
   private scenes = new Map<SceneName, HexagonScene>();
+  private transitionInProgress = false;
   constructor(private transitionManager: TransitionManager) {}
 
   getCurrentScene() {
@@ -24,12 +25,15 @@ export class SceneManager {
   }
 
   switchScene(sceneName: SceneName) {
+    if (this.transitionInProgress) return;
+
     const scene = this.scenes.get(sceneName);
     if (!scene) return;
 
     const previousScene = this.scenes.get(this.currentScene!);
     previousScene?.onSwitchOff();
 
+    this.transitionInProgress = true;
     this.transitionManager.fadeOut(async () => {
       this._updateCurrentScene(sceneName);
 
@@ -42,6 +46,7 @@ export class SceneManager {
       } finally {
         this.moveCameraForScene();
         this.transitionManager.fadeIn();
+        this.transitionInProgress = false;
       }
     });
   }

@@ -338,6 +338,9 @@ export default class WorldmapScene extends HexagonScene {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
   };
+  private readonly urlChangedHandler = () => {
+    this.clearSelection();
+  };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
@@ -918,9 +921,7 @@ export default class WorldmapScene extends HexagonScene {
       });
     }
 
-    window.addEventListener("urlChanged", () => {
-      this.clearSelection();
-    });
+    window.addEventListener("urlChanged", this.urlChangedHandler);
   }
 
   private setupCameraZoomHandler() {
@@ -4007,6 +4008,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async updateVisibleChunks(force: boolean = false, options?: { reason?: "default" | "shortcut" }): Promise<boolean> {
+    if (this.isSwitchedOff) {
+      return false;
+    }
+
     await waitForChunkTransitionToSettle(
       () => this.globalChunkSwitchPromise,
       (error) => console.warn(`Previous global chunk switch failed:`, error),
@@ -4479,6 +4484,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
+    this.onSwitchOff();
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
     if (this.hexGridFrameHandle !== null) {
@@ -4501,6 +4507,7 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.removeEventListener("urlChanged", this.urlChangedHandler);
     this.clearCache();
 
     // Clean up selection pulse manager
