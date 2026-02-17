@@ -52,7 +52,7 @@ import { AdminHeader } from "../components/admin-header";
 import {
   CARTRIDGE_API_BASE,
   DEFAULT_NAMESPACE,
-  DEFAULT_VERSION,
+  getDefaultVersion,
   FACTORY_ADDRESSES,
   getDefaultBlitzRegistrationConfig,
   getDefaultMaxActionsForChain,
@@ -291,7 +291,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   } = useFactorySeries(currentChain as Chain, account?.address ?? null);
 
   const [factoryAddress, setFactoryAddress] = useState<string>("");
-  const [version, setVersion] = useState<string>(DEFAULT_VERSION);
+  const [version, setVersion] = useState<string>(getDefaultVersion(env.VITE_PUBLIC_GAME_TYPE ?? "eternum"));
   const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
   const [worldName, setWorldName] = useState<string>("");
   const [seriesName, setSeriesName] = useState<string>("");
@@ -2445,7 +2445,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                         onChange={(e) => setVersion(e.target.value)}
                         className="w-full px-4 py-3 bg-black/40 border-2 border-gold/20 hover:border-gold/40 focus:border-gold/60 rounded-xl text-gold focus:outline-none transition-all"
                       />
-                      {version !== DEFAULT_VERSION && (
+                      {version !== getDefaultVersion(activeGameMode) && (
                         <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                           <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                           <p className="text-xs text-amber-800">
