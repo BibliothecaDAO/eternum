@@ -24,6 +24,10 @@ vi.mock("@bibliothecadao/eternum", () => ({
   calculateDistance: () => 0,
 }));
 
+vi.mock("@bibliothecadao/types", () => ({
+  ContractAddress: (value: string) => value,
+}));
+
 vi.mock("../constants", () => ({
   HEX_SIZE: 1,
 }));
