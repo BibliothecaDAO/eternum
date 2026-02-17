@@ -356,7 +356,7 @@ export default class WorldmapScene extends HexagonScene {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
     const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents as
+    const contractComponents = this.dojo.network?.contractComponents as unknown as
       | Parameters<typeof ensureStructureSynced>[2]
       | undefined;
 
