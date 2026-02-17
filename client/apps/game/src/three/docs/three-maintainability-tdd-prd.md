@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: Maintainability hardening program for `client/apps/game/src/three` using strict TDD.
-- Status: In Progress (M3)
+- Status: Completed (M3)
 - Owner: Three.js Team
 - Created: 2026-02-17
 - Last Updated: 2026-02-17
@@ -21,6 +21,7 @@
 | U7     | 2026-02-17 00:00 | Codex  | Completed M2 RED/GREEN transition serialization slice: added superseded/collapsed rapid-toggle tests in `scene-manager.test.ts`, implemented request-token + latest-pending transition sequencing in `scene-manager.ts`, and re-ran targeted + `src/three` module gate tests. |
 | U8     | 2026-02-17 00:00 | Codex  | Began M3 RED/GREEN maintainability seam slice: added `scene-manager-transition-policy` tests + module, refactored `scene-manager.ts` through policy decisions, fixed README architecture reference drift, and reduced `src/three` lint errors from `182` to `178`. |
 | U9     | 2026-02-17 00:00 | Codex  | Continued M3 seam extraction in `worldmap.tsx`: added `worldmap-chunk-switch-delay-policy` test/module, routed chunk-switch delay gating through policy, and removed one touched-file lint violation in `worldmap.tsx` (`shouldApplyScheduled` unused) to reduce `src/three` lint errors from `178` to `177`. |
+| U10    | 2026-02-17 00:00 | Codex  | Completed M3 closeout verification: removed remaining touched-file lint blockers in `worldmap.tsx` (`no-non-null-asserted-optional-chain` + `no-explicit-any`), re-ran `src/three` module gates (`31` files / `196` tests), and reduced lint errors from `177` to `173` (baseline `182`). |
 
 ## Executive Summary
 
@@ -266,3 +267,4 @@ Non-functional requirements:
 | 2026-02-17 | M3        | Started | RED verified for new maintainability seam: `scene-manager-transition-policy.test.ts` initially failed due missing module (`Failed to load url ./scene-manager-transition-policy`). |
 | 2026-02-17 | M3        | In Progress | GREEN shipped: extracted `scene-manager-transition-policy.ts`, routed `scene-manager.ts` switch/pending/finalize decisions through policy, updated README architecture reference, and fixed `chunk-geometry.test.ts` sorting lint issues. Gates: `pnpm --dir client/apps/game test src/three` (`30` files / `192` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `178` errors (baseline `182`). |
 | 2026-02-17 | M3        | In Progress | RED/GREEN chunk-switch delay seam completed: `worldmap-chunk-switch-delay-policy.test.ts` failed first on missing module, then passed after extracting `worldmap-chunk-switch-delay-policy.ts` and routing `worldmap.tsx` delay gating through it. Gates: `pnpm --dir client/apps/game test src/three` (`31` files / `196` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `177` errors (baseline `182`). |
+| 2026-02-17 | M3        | Completed | Final M3 verification completed: touched `src/three` files lint-clean, module gate passing (`31` files / `196` tests), and quality gate improved to `173` lint errors vs baseline `182` with no touched-file regressions. |

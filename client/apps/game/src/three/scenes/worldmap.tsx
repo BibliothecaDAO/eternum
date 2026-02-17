@@ -354,6 +354,13 @@ export default class WorldmapScene extends HexagonScene {
   private simulateAllExplored: boolean = false;
   private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
+    const toriiClient = this.dojo.network?.toriiClient;
+    const contractComponents = this.dojo.network?.contractComponents as Parameters<typeof ensureStructureSynced>[2] | undefined;
+
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
 
     const previousCursor = document.body.style.cursor;
     document.body.style.cursor = "wait";
@@ -361,9 +368,9 @@ export default class WorldmapScene extends HexagonScene {
     try {
       const accountAddress = useAccountStore.getState().account?.address;
       await ensureStructureSynced(
-        this.dojo.components as SetupResult["components"],
-        this.dojo.network?.toriiClient!,
-        this.dojo.network?.contractComponents as any,
+        components,
+        toriiClient,
+        contractComponents,
         structureId,
         { col: contractCoords.x, row: contractCoords.y },
         accountAddress,
@@ -2429,11 +2436,14 @@ export default class WorldmapScene extends HexagonScene {
         const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
         if (resolvedStructureId) {
           try {
-            const components = this.dojo.components as any;
+            const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
             const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
-            const structure = getComponentValue(components.Structure, structureEntity);
-            if (structure?.owner) {
-              actualOwnerAddress = BigInt(structure.owner);
+            const structureComponent = components.Structure;
+            if (structureComponent) {
+              const structure = getComponentValue(structureComponent, structureEntity);
+              if (structure?.owner) {
+                actualOwnerAddress = BigInt(structure.owner);
+              }
             }
           } catch {
             // Fall through with 0n if ECS lookup fails
@@ -3506,9 +3516,9 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private addWorldUpdateSubscription(unsub: any) {
+  private addWorldUpdateSubscription(unsub: unknown) {
     if (typeof unsub === "function") {
-      this.worldUpdateUnsubscribes.push(unsub);
+      this.worldUpdateUnsubscribes.push(unsub as () => void);
     }
   }
 
