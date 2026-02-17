@@ -17,6 +17,7 @@ import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
+import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
 import {
   getMMRTierFromRaw,
   getNextTier,
@@ -29,7 +30,9 @@ import { toHexString } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { motion, AnimatePresence } from "framer-motion";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Copy from "lucide-react/dist/esm/icons/copy";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Share2 from "lucide-react/dist/esm/icons/share-2";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
@@ -142,6 +145,8 @@ export const LandingPlayer = () => {
   // MMR state
   const [playerMMR, setPlayerMMR] = useState<bigint | null>(null);
   const [isLoadingMMR, setIsLoadingMMR] = useState(false);
+  const profileCardRef = useRef<HTMLDivElement>(null);
+  const [isCopyingProfileCard, setIsCopyingProfileCard] = useState(false);
 
   const rpcUrl = useMemo(() => {
     if (selectedChain === "slot") {
@@ -392,6 +397,61 @@ export const LandingPlayer = () => {
   const canSelectFromGallery = Boolean(playerAddress && hasDisplayName);
   const tierHex = getTierHex(playerTier);
   const nextTierHex = getTierHex(nextTier);
+  const mmrShareLabel = useMemo(() => {
+    if (!formattedMMR) return null;
+    const parsed = Number(formattedMMR);
+    if (Number.isFinite(parsed)) {
+      return parsed.toLocaleString();
+    }
+    return formattedMMR;
+  }, [formattedMMR]);
+
+  const profileShareMessage = useMemo(() => {
+    const shareName = (displayName || "Anonymous").trim();
+    const tierLabel = playerTier?.name ?? "Unranked";
+    const mmrLabel = mmrShareLabel ? `${mmrShareLabel} MMR` : "No MMR yet";
+    const profileUrl =
+      typeof window !== "undefined"
+        ? new URL("/profile", window.location.origin).toString()
+        : "https://blitz.realms.world/profile";
+
+    return `My Realms Blitz profile\n\nPlayer: ${shareName}\nTier: ${tierLabel}\nMMR: ${mmrLabel}\n${profileUrl}\n\n#RealmsBlitz #Eternum`;
+  }, [displayName, mmrShareLabel, playerTier?.name]);
+
+  const handleCopyProfilePng = useCallback(async () => {
+    if (!profileCardRef.current) {
+      toast.error("Profile card is still loading.");
+      return;
+    }
+
+    setIsCopyingProfileCard(true);
+    try {
+      const result = await copyElementAsPng({
+        element: profileCardRef.current,
+        filename: `realms-profile-${Date.now()}.png`,
+        backgroundColor: "#030d14",
+        pixelRatio: 2,
+      });
+
+      if (result === "copied") {
+        toast.success("Profile image copied to clipboard!");
+      } else {
+        toast.info("Clipboard not available; downloaded image instead.");
+      }
+    } catch (error) {
+      console.error("Failed to copy profile image", error);
+      toast.error("Copy failed. Please try again.");
+    } finally {
+      setIsCopyingProfileCard(false);
+    }
+  }, []);
+
+  const handleShareProfileOnX = useCallback(() => {
+    const didOpen = openShareOnX(profileShareMessage);
+    if (!didOpen) {
+      toast.error("Sharing is not supported in this environment.");
+    }
+  }, [profileShareMessage]);
 
   // --- Not connected state ---
   if (!playerAddress) {
@@ -422,174 +482,199 @@ export const LandingPlayer = () => {
   return (
     <section className="w-full mb-2 max-w-3xl space-y-3 overflow-y-auto rounded-2xl border border-white/[0.08] bg-black/50 p-5 text-white/90 backdrop-blur-xl max-h-[70vh] sm:max-w-4xl sm:space-y-4 sm:p-6 sm:max-h-[72vh] xl:max-h-[70vh] xl:max-w-5xl xl:p-7 2xl:max-h-[86vh] 2xl:max-w-6xl 2xl:p-8">
       {/* ═══ HERO PLAYER CARD ═══ */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06]">
-        {/* Tier-colored ambient glow */}
-        <div
-          className="absolute -top-20 -right-20 h-56 w-56 rounded-full blur-[100px] opacity-20 transition-colors duration-700"
-          style={{ backgroundColor: tierHex }}
-        />
-        <div
-          className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-[80px] opacity-10 transition-colors duration-700"
-          style={{ backgroundColor: tierHex }}
-        />
+      <div className="space-y-3">
+        <div ref={profileCardRef} className="relative overflow-hidden rounded-2xl border border-white/[0.06]">
+          {/* Tier-colored ambient glow */}
+          <div
+            className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full blur-[100px] opacity-20 transition-colors duration-700"
+            style={{ backgroundColor: tierHex }}
+          />
+          <div
+            className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-[80px] opacity-10 transition-colors duration-700"
+            style={{ backgroundColor: tierHex }}
+          />
 
-        {/* Fine diagonal line texture */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(223,170,84,0.6) 8px, rgba(223,170,84,0.6) 9px)",
-          }}
-        />
+          {/* Fine diagonal line texture */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.02]"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(223,170,84,0.6) 8px, rgba(223,170,84,0.6) 9px)",
+            }}
+          />
 
-        <div className="relative p-5 sm:p-6 xl:p-7">
-          <div className="flex flex-col sm:flex-row gap-5 sm:gap-7">
-            {/* Avatar */}
-            <motion.div
-              className="relative flex-shrink-0 mx-auto sm:mx-0 group"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            >
-              <div
-                className="absolute -inset-1 rounded-xl opacity-30 blur-md transition-opacity duration-500 group-hover:opacity-50"
-                style={{ backgroundColor: tierHex }}
-              />
-              <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-xl overflow-hidden border border-white/10 bg-brown/40">
-                {isLoadingAvatarOrAccount ? (
-                  <div className="h-full w-full flex items-center justify-center bg-white/[0.03]">
-                    <Loader2 className="w-6 h-6 animate-spin text-gold/60" />
+          <div className="relative p-5 sm:p-6 xl:p-7">
+            <div className="flex flex-col sm:flex-row gap-5 sm:gap-7">
+              {/* Avatar */}
+              <motion.div
+                className="relative flex-shrink-0 mx-auto sm:mx-0 group"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                <div
+                  className="absolute -inset-1 rounded-xl opacity-30 blur-md transition-opacity duration-500 group-hover:opacity-50"
+                  style={{ backgroundColor: tierHex }}
+                />
+                <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-xl overflow-hidden border border-white/10 bg-brown/40">
+                  {isLoadingAvatarOrAccount ? (
+                    <div className="h-full w-full flex items-center justify-center bg-white/[0.03]">
+                      <Loader2 className="w-6 h-6 animate-spin text-gold/60" />
+                    </div>
+                  ) : (
+                    <img
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      src={currentAvatarUrl}
+                      alt="Your avatar"
+                    />
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Identity + Rank */}
+              <div className="flex-1 flex flex-col justify-center text-center sm:text-left gap-3">
+                {/* Name + Chain */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <motion.h2
+                    className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    {displayName || "Anonymous"}
+                  </motion.h2>
+                  <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                    {CHAIN_OPTIONS.map((chain) => {
+                      const isComingSoon = MAINNET_COMING_SOON && chain === "mainnet";
+                      const isSelected = selectedChain === chain;
+
+                      return (
+                        <button
+                          key={chain}
+                          type="button"
+                          disabled={isComingSoon}
+                          onClick={() => setSelectedChain(chain)}
+                          className={`rounded-md px-2 py-0.5 text-[10px] font-medium capitalize transition-all duration-150 ${
+                            isComingSoon
+                              ? "cursor-not-allowed text-white/20"
+                              : isSelected
+                                ? "bg-white/[0.08] text-white/70"
+                                : "text-white/30 hover:text-white/50"
+                          }`}
+                        >
+                          {chain}
+                          {isComingSoon && <span className="ml-1 text-[9px] text-white/15">soon</span>}
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <img
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    src={currentAvatarUrl}
-                    alt="Your avatar"
-                  />
-                )}
-              </div>
-            </motion.div>
-
-            {/* Identity + Rank */}
-            <div className="flex-1 flex flex-col justify-center text-center sm:text-left gap-3">
-              {/* Name + Chain */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <motion.h2
-                  className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                >
-                  {displayName || "Anonymous"}
-                </motion.h2>
-                <div className="flex items-center gap-1.5 justify-center sm:justify-start">
-                  {CHAIN_OPTIONS.map((chain) => {
-                    const isComingSoon = MAINNET_COMING_SOON && chain === "mainnet";
-                    const isSelected = selectedChain === chain;
-
-                    return (
-                      <button
-                        key={chain}
-                        type="button"
-                        disabled={isComingSoon}
-                        onClick={() => setSelectedChain(chain)}
-                        className={`rounded-md px-2 py-0.5 text-[10px] font-medium capitalize transition-all duration-150 ${
-                          isComingSoon
-                            ? "cursor-not-allowed text-white/20"
-                            : isSelected
-                              ? "bg-white/[0.08] text-white/70"
-                              : "text-white/30 hover:text-white/50"
-                        }`}
-                      >
-                        {chain}
-                        {isComingSoon && <span className="ml-1 text-[9px] text-white/15">soon</span>}
-                      </button>
-                    );
-                  })}
                 </div>
-              </div>
 
-              {/* MMR + Tier */}
-              {isLoadingMMR ? (
-                <div className="flex items-center gap-2 justify-center sm:justify-start">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gold/40 border-t-transparent" />
-                  <span className="text-sm text-white/30">Loading rank...</span>
-                </div>
-              ) : playerMMR !== null && playerMMR > 0n ? (
-                <div className="space-y-3">
-                  {/* MMR value + tier badge */}
-                  <div className="flex items-baseline gap-3 justify-center sm:justify-start">
-                    <span className="text-4xl sm:text-5xl font-black tracking-tighter" style={{ color: tierHex }}>
-                      {formattedMMR && <AnimatedMMR value={formattedMMR} />}
-                    </span>
-                    <span className="text-xs font-medium uppercase tracking-widest text-white/30">MMR</span>
-                    {playerTier && (
-                      <motion.span
-                        className="relative ml-1 rounded-md border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider"
-                        style={{
-                          color: tierHex,
-                          borderColor: `${tierHex}30`,
-                          backgroundColor: `${tierHex}0a`,
-                        }}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, delay: 0.3 }}
-                      >
-                        {/* Shimmer effect */}
-                        <span
-                          className="absolute inset-0 rounded-md animate-[shimmer_3s_ease-in-out_infinite] opacity-0"
+                {/* MMR + Tier */}
+                {isLoadingMMR ? (
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gold/40 border-t-transparent" />
+                    <span className="text-sm text-white/30">Loading rank...</span>
+                  </div>
+                ) : playerMMR !== null && playerMMR > 0n ? (
+                  <div className="space-y-3">
+                    {/* MMR value + tier badge */}
+                    <div className="flex items-baseline gap-3 justify-center sm:justify-start">
+                      <span className="text-4xl sm:text-5xl font-black tracking-tighter" style={{ color: tierHex }}>
+                        {formattedMMR && <AnimatedMMR value={formattedMMR} />}
+                      </span>
+                      <span className="text-xs font-medium uppercase tracking-widest text-white/30">MMR</span>
+                      {playerTier && (
+                        <motion.span
+                          className="relative ml-1 rounded-md border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider"
                           style={{
-                            background: `linear-gradient(110deg, transparent 30%, ${tierHex}15 50%, transparent 70%)`,
-                            backgroundSize: "200% 100%",
+                            color: tierHex,
+                            borderColor: `${tierHex}30`,
+                            backgroundColor: `${tierHex}0a`,
                           }}
-                        />
-                        <span className="relative">{playerTier.name}</span>
-                      </motion.span>
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3, delay: 0.3 }}
+                        >
+                          {/* Shimmer effect */}
+                          <span
+                            className="absolute inset-0 rounded-md animate-[shimmer_3s_ease-in-out_infinite] opacity-0"
+                            style={{
+                              background: `linear-gradient(110deg, transparent 30%, ${tierHex}15 50%, transparent 70%)`,
+                              backgroundSize: "200% 100%",
+                            }}
+                          />
+                          <span className="relative">{playerTier.name}</span>
+                        </motion.span>
+                      )}
+                    </div>
+
+                    {/* Progress to next tier */}
+                    {nextTier && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-white/30">
+                            {mmrInteger.toLocaleString()} / {nextTier.minMMR.toLocaleString()}
+                          </span>
+                          <span style={{ color: `${nextTierHex}80` }}>{nextTier.name}</span>
+                        </div>
+                        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                          <motion.div
+                            className="absolute inset-y-0 left-0 rounded-full"
+                            style={{
+                              background: `linear-gradient(90deg, ${tierHex}, ${nextTierHex})`,
+                            }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${tierProgress * 100}%` }}
+                            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                          />
+                          {/* Glow on tip */}
+                          <motion.div
+                            className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full blur-sm"
+                            style={{ backgroundColor: nextTierHex }}
+                            initial={{ left: 0, opacity: 0 }}
+                            animate={{ left: `${tierProgress * 100}%`, opacity: 0.6 }}
+                            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {!nextTier && playerTier?.name === "Elite" && (
+                      <p className="text-[11px] text-white/25 italic">Peak rank achieved</p>
                     )}
                   </div>
-
-                  {/* Progress to next tier */}
-                  {nextTier && (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-white/30">
-                          {mmrInteger.toLocaleString()} / {nextTier.minMMR.toLocaleString()}
-                        </span>
-                        <span style={{ color: `${nextTierHex}80` }}>{nextTier.name}</span>
-                      </div>
-                      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-                        <motion.div
-                          className="absolute inset-y-0 left-0 rounded-full"
-                          style={{
-                            background: `linear-gradient(90deg, ${tierHex}, ${nextTierHex})`,
-                          }}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${tierProgress * 100}%` }}
-                          transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                        />
-                        {/* Glow on tip */}
-                        <motion.div
-                          className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full blur-sm"
-                          style={{ backgroundColor: nextTierHex }}
-                          initial={{ left: 0, opacity: 0 }}
-                          animate={{ left: `${tierProgress * 100}%`, opacity: 0.6 }}
-                          transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {!nextTier && playerTier?.name === "Elite" && (
-                    <p className="text-[11px] text-white/25 italic">Peak rank achieved</p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <span className="text-lg text-white/40">No MMR yet</span>
-                  <p className="text-xs text-white/25">Play a Blitz round to earn your rank</p>
-                </div>
-              )}
+                ) : (
+                  <div className="space-y-1">
+                    <span className="text-lg text-white/40">No MMR yet</span>
+                    <p className="text-xs text-white/25">Play a Blitz round to earn your rank</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            onClick={handleCopyProfilePng}
+            variant="gold"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+            isLoading={isCopyingProfileCard}
+            disabled={isCopyingProfileCard}
+          >
+            <Copy className="h-4 w-4" />
+            <span>{isCopyingProfileCard ? "Preparing image..." : "Copy PNG"}</span>
+          </Button>
+          <Button
+            onClick={handleShareProfileOnX}
+            variant="outline"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share on X</span>
+          </Button>
         </div>
       </div>
 
