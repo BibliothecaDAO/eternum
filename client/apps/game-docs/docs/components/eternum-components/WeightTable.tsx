@@ -131,9 +131,7 @@ export const WeightTable = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        Material Weights
-      </div>
+      <div style={section.accentedTitle}>Material Weights</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>

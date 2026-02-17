@@ -61,8 +61,7 @@ export const HyperstructureRings = () => {
           <code style={{ color: colors.primary }}>r</code> — Number of Hyperstructure rings
         </li>
         <li>
-          <code style={{ color: colors.primary }}>P</code> — Number of players (Lords) registered to play in the
-          session
+          <code style={{ color: colors.primary }}>P</code> — Number of players (Lords) registered to play in the session
         </li>
       </ul>
 
@@ -97,8 +96,7 @@ export const HyperstructureRings = () => {
         }}
       >
         <li>
-          <code style={{ color: colors.primary }}>H</code> — Number of Hyperstructures in ring{" "}
-          <strong>r</strong>
+          <code style={{ color: colors.primary }}>H</code> — Number of Hyperstructures in ring <strong>r</strong>
         </li>
         <li>
           <code style={{ color: colors.primary }}>r</code> — Ring number (1, 2, 3, etc.)

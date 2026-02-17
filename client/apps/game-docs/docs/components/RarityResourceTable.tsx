@@ -147,37 +147,33 @@ const RarityResourceTable = () => {
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
-          <tr>
-            <th style={table.headerCell}>Rarity</th>
-            <th style={table.headerCell}>Materials</th>
-          </tr>
-        </thead>
-        <tbody>
-          {RESOURCE_RARITIES.map((category) => {
-            const rarityColor = getRarityColor(category.rarity);
+            <tr>
+              <th style={table.headerCell}>Rarity</th>
+              <th style={table.headerCell}>Materials</th>
+            </tr>
+          </thead>
+          <tbody>
+            {RESOURCE_RARITIES.map((category) => {
+              const rarityColor = getRarityColor(category.rarity);
 
-            return (
-              <tr key={category.rarity}>
-                <td
-                  style={componentStyles.rarityCellStyle}
-                >
-                  {category.rarity}
-                </td>
-                <td style={table.cell}>
-                  <div style={componentStyles.resourcesGroupStyle}>
-                    {category.resources.map((resource) => (
-                      <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                        <ResourceIcon name={resource.name} id={resource.id} size="sm" />
-                        <span style={{ color: colors.text.light }}>{resource.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              return (
+                <tr key={category.rarity}>
+                  <td style={componentStyles.rarityCellStyle}>{category.rarity}</td>
+                  <td style={table.cell}>
+                    <div style={componentStyles.resourcesGroupStyle}>
+                      {category.resources.map((resource) => (
+                        <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                          <ResourceIcon name={resource.name} id={resource.id} size="sm" />
+                          <span style={{ color: colors.text.light }}>{resource.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

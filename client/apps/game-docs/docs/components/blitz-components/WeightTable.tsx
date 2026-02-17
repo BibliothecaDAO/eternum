@@ -154,9 +154,7 @@ export const BlitzWeightTable = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        Material Weights
-      </div>
+      <div style={section.accentedTitle}>Material Weights</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
@@ -166,76 +164,76 @@ export const BlitzWeightTable = () => {
             </tr>
           </thead>
           <tbody>
-          <tr>
-            <td style={componentStyles.categoryHeaderStyle}>Resources</td>
-            <td style={table.cell}>
-              <div style={componentStyles.resourcesGroupStyle}>
-                {blitzResources.map((resource) => (
-                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
-                    <span style={{ color: colors.text.light }}>{resource.name}</span>
-                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
-                  </div>
-                ))}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style={componentStyles.categoryHeaderStyle}>Food</td>
-            <td style={table.cell}>
-              <div style={componentStyles.resourcesGroupStyle}>
-                {foodResources.map((resource) => (
-                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
-                    <span style={{ color: colors.text.light }}>{resource.name}</span>
-                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
-                  </div>
-                ))}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style={componentStyles.categoryHeaderStyle}>Transport</td>
-            <td style={table.cell}>
-              <div style={componentStyles.resourcesGroupStyle}>
-                {transportResources.map((resource) => (
-                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
-                    <span style={{ color: colors.text.light }}>{resource.name}</span>
-                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
-                  </div>
-                ))}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style={componentStyles.categoryHeaderStyle}>Military Units</td>
-            <td style={table.cell}>
-              <div style={componentStyles.resourcesGroupStyle}>
-                {troopResources.map((resource) => (
-                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
-                    <span style={{ color: colors.text.light }}>{resource.name}</span>
-                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
-                  </div>
-                ))}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style={componentStyles.categoryHeaderStyle}>Special</td>
-            <td style={table.cell}>
-              <div style={componentStyles.resourcesGroupStyle}>
-                <div key={ResourcesIds.Essence} style={componentStyles.resourceItemStyle}>
-                  <ResourceIcon id={ResourcesIds.Essence} name="Essence" size="md" />
-                  <span style={{ color: colors.text.light }}>Essence</span>
-                  <span style={componentStyles.weightStyle}>0.1 kg</span>
+            <tr>
+              <td style={componentStyles.categoryHeaderStyle}>Resources</td>
+              <td style={table.cell}>
+                <div style={componentStyles.resourcesGroupStyle}>
+                  {blitzResources.map((resource) => (
+                    <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                      <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                      <span style={{ color: colors.text.light }}>{resource.name}</span>
+                      <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+            <tr>
+              <td style={componentStyles.categoryHeaderStyle}>Food</td>
+              <td style={table.cell}>
+                <div style={componentStyles.resourcesGroupStyle}>
+                  {foodResources.map((resource) => (
+                    <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                      <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                      <span style={{ color: colors.text.light }}>{resource.name}</span>
+                      <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                    </div>
+                  ))}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style={componentStyles.categoryHeaderStyle}>Transport</td>
+              <td style={table.cell}>
+                <div style={componentStyles.resourcesGroupStyle}>
+                  {transportResources.map((resource) => (
+                    <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                      <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                      <span style={{ color: colors.text.light }}>{resource.name}</span>
+                      <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                    </div>
+                  ))}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style={componentStyles.categoryHeaderStyle}>Military Units</td>
+              <td style={table.cell}>
+                <div style={componentStyles.resourcesGroupStyle}>
+                  {troopResources.map((resource) => (
+                    <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                      <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                      <span style={{ color: colors.text.light }}>{resource.name}</span>
+                      <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                    </div>
+                  ))}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style={componentStyles.categoryHeaderStyle}>Special</td>
+              <td style={table.cell}>
+                <div style={componentStyles.resourcesGroupStyle}>
+                  <div key={ResourcesIds.Essence} style={componentStyles.resourceItemStyle}>
+                    <ResourceIcon id={ResourcesIds.Essence} name="Essence" size="md" />
+                    <span style={{ color: colors.text.light }}>Essence</span>
+                    <span style={componentStyles.weightStyle}>0.1 kg</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div style={componentStyles.weightStyle}>
         {/* DRAFTING NOTE: Hardcoded table for Blitz mode - replace with dynamic data when config is updated. Essence icon is a placeholder. */}

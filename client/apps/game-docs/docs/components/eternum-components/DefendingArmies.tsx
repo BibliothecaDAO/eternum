@@ -1,7 +1,6 @@
 import { GUARD_SLOT_NAMES } from "@bibliothecadao/types";
 import { colors, section, table } from "../styles";
 
-
 export const RealmDefenseSlotsTable = () => {
   const defenseSlots = [
     { level: "Settlement", slots: 1, slotName: GUARD_SLOT_NAMES[0] },
