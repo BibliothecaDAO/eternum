@@ -120,6 +120,7 @@ import {
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
+import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -127,6 +128,7 @@ import {
   shouldProcessPrefetchQueueItem,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
+import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
   createWorldmapChunkDiagnostics,
@@ -338,6 +340,10 @@ export default class WorldmapScene extends HexagonScene {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
   };
+  private isUrlChangedListenerAttached = false;
+  private readonly urlChangedHandler = () => {
+    this.clearSelection();
+  };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
@@ -348,6 +354,15 @@ export default class WorldmapScene extends HexagonScene {
   private simulateAllExplored: boolean = false;
   private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
+    const toriiClient = this.dojo.network?.toriiClient;
+    const contractComponents = this.dojo.network?.contractComponents as unknown as
+      | Parameters<typeof ensureStructureSynced>[2]
+      | undefined;
+
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
 
     const previousCursor = document.body.style.cursor;
     document.body.style.cursor = "wait";
@@ -355,9 +370,9 @@ export default class WorldmapScene extends HexagonScene {
     try {
       const accountAddress = useAccountStore.getState().account?.address;
       await ensureStructureSynced(
-        this.dojo.components as SetupResult["components"],
-        this.dojo.network?.toriiClient!,
-        this.dojo.network?.contractComponents as any,
+        components,
+        toriiClient,
+        contractComponents,
         structureId,
         { col: contractCoords.x, row: contractCoords.y },
         accountAddress,
@@ -917,10 +932,6 @@ export default class WorldmapScene extends HexagonScene {
         },
       });
     }
-
-    window.addEventListener("urlChanged", () => {
-      this.clearSelection();
-    });
   }
 
   private setupCameraZoomHandler() {
@@ -1998,6 +2009,7 @@ export default class WorldmapScene extends HexagonScene {
 
   async setup() {
     this.isSwitchedOff = false;
+    this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -2113,6 +2125,7 @@ export default class WorldmapScene extends HexagonScene {
 
   onSwitchOff() {
     this.isSwitchedOff = true;
+    this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
 
@@ -2424,11 +2437,14 @@ export default class WorldmapScene extends HexagonScene {
         const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
         if (resolvedStructureId) {
           try {
-            const components = this.dojo.components as any;
+            const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
             const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
-            const structure = getComponentValue(components.Structure, structureEntity);
-            if (structure?.owner) {
-              actualOwnerAddress = BigInt(structure.owner);
+            const structureComponent = components.Structure;
+            if (structureComponent) {
+              const structure = getComponentValue(structureComponent, structureEntity);
+              if (structure?.owner) {
+                actualOwnerAddress = BigInt(structure.owner);
+              }
             }
           } catch {
             // Fall through with 0n if ECS lookup fails
@@ -3501,9 +3517,9 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private addWorldUpdateSubscription(unsub: any) {
+  private addWorldUpdateSubscription(unsub: unknown) {
     if (typeof unsub === "function") {
-      this.worldUpdateUnsubscribes.push(unsub);
+      this.worldUpdateUnsubscribes.push(unsub as () => void);
     }
   }
 
@@ -3814,16 +3830,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
-    if (!this.hasChunkSwitchAnchor || !this.lastChunkSwitchPosition) {
-      return false;
-    }
-
-    const chunkWorldWidth = this.chunkSize * HEX_SIZE * Math.sqrt(3);
-    const chunkWorldDepth = this.chunkSize * HEX_SIZE * 1.5;
-    const dx = Math.abs(cameraPosition.x - this.lastChunkSwitchPosition.x);
-    const dz = Math.abs(cameraPosition.z - this.lastChunkSwitchPosition.z);
-
-    return dx < chunkWorldWidth * this.chunkSwitchPadding && dz < chunkWorldDepth * this.chunkSwitchPadding;
+    return shouldDelayWorldmapChunkSwitch({
+      hasChunkSwitchAnchor: this.hasChunkSwitchAnchor,
+      lastChunkSwitchPosition: this.lastChunkSwitchPosition,
+      cameraPosition,
+      chunkSize: this.chunkSize,
+      hexSize: HEX_SIZE,
+      chunkSwitchPadding: this.chunkSwitchPadding,
+    });
   }
 
   private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
@@ -3905,6 +3919,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public requestChunkRefresh(force: boolean = false) {
+    if (this.isSwitchedOff) {
+      return;
+    }
+
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     if (force) {
       this.pendingChunkRefreshForce = true;
@@ -3950,7 +3968,7 @@ export default class WorldmapScene extends HexagonScene {
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const latestToken = this.chunkRefreshRequestToken;
     const refreshExecutionPlan = resolveRefreshExecutionPlan(scheduledToken, latestToken);
-    const { shouldApplyScheduled, executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
+    const { executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
 
     if (shouldRecordSuperseded) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
@@ -4007,6 +4025,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async updateVisibleChunks(force: boolean = false, options?: { reason?: "default" | "shortcut" }): Promise<boolean> {
+    if (this.isSwitchedOff) {
+      return false;
+    }
+
     await waitForChunkTransitionToSettle(
       () => this.globalChunkSwitchPromise,
       (error) => console.warn(`Previous global chunk switch failed:`, error),
@@ -4479,6 +4501,8 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
+    this.onSwitchOff();
+    this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
     if (this.hexGridFrameHandle !== null) {
@@ -4512,6 +4536,23 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     super.destroy();
+  }
+
+  private syncUrlChangedListenerLifecycle(phase: "setup" | "switchOff" | "destroy"): void {
+    const listenerDecision = resolveUrlChangedListenerLifecycle({
+      phase,
+      isUrlChangedListenerAttached: this.isUrlChangedListenerAttached,
+    });
+
+    if (listenerDecision.shouldAttach) {
+      window.addEventListener("urlChanged", this.urlChangedHandler);
+    }
+
+    if (listenerDecision.shouldDetach) {
+      window.removeEventListener("urlChanged", this.urlChangedHandler);
+    }
+
+    this.isUrlChangedListenerAttached = listenerDecision.nextIsUrlChangedListenerAttached;
   }
 
   /**

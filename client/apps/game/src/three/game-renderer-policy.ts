@@ -63,8 +63,7 @@ export function resolveLabelRenderIntervalMs(view: LabelRenderView, isMobileDevi
 export function resolveLabelRenderDecision(input: LabelRenderDecisionInput): LabelRenderDecision {
   const labelsActiveChanged = input.labelsActive !== input.lastLabelsActive;
   const nextLabelsDirty = input.labelsDirty || labelsActiveChanged;
-  const shouldRenderOnInterval =
-    input.labelsActive && input.now - input.lastLabelRenderTime >= input.intervalMs;
+  const shouldRenderOnInterval = input.labelsActive && input.now - input.lastLabelRenderTime >= input.intervalMs;
 
   if (nextLabelsDirty || shouldRenderOnInterval) {
     return {

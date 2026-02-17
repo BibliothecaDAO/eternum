@@ -1,11 +1,11 @@
-export interface ArmyRenderBounds {
+interface ArmyRenderBounds {
   minCol: number;
   maxCol: number;
   minRow: number;
   maxRow: number;
 }
 
-export interface ArmyHexPosition {
+interface ArmyHexPosition {
   col: number;
   row: number;
 }
@@ -16,7 +16,7 @@ interface ResolveArmyVisibilityBoundsDecisionInput {
   source?: ArmyHexPosition;
 }
 
-export interface ArmyVisibilityBoundsDecision {
+interface ArmyVisibilityBoundsDecision {
   shouldRemainVisible: boolean;
   visibleBy: "destination" | "source" | "none";
 }
