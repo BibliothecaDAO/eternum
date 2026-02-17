@@ -1,28 +1,43 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
-
-const worldmapSource = readFileSync(path.resolve(__dirname, "worldmap.tsx"), "utf8");
+import { createWorldmapUpdateExploredHexFixture } from "./worldmap-update-explored-hex-fixture";
 
 describe("Worldmap updateExploredHex integration wiring", () => {
-  it("computes duplicate reconcile plan from unified decision input", () => {
-    const computesBiomeDelta =
-      /const hasBiomeDelta\s*=\s*!removeExplored && tileAlreadyKnown && existingBiome !== biome;/.test(worldmapSource);
-    const computesReconcilePlan =
-      /const duplicateTilePlan = resolveDuplicateTileReconcilePlan\(duplicateTileDecisionInput\);/.test(worldmapSource);
+  it("triggers immediate chunk refresh when duplicate reconcile strategy is immediate", async () => {
+    const fixture = createWorldmapUpdateExploredHexFixture();
 
-    expect(computesBiomeDelta).toBe(true);
-    expect(computesReconcilePlan).toBe(true);
+    await fixture.applyDuplicateReconcilePlan({
+      shouldInvalidateCaches: true,
+      refreshStrategy: "immediate",
+    });
+
+    expect(fixture.invalidateCalls).toBe(1);
+    expect(fixture.updateVisibleChunksCalls).toEqual([true]);
+    expect(fixture.requestChunkRefreshCalls).toEqual([]);
   });
 
-  it("runs immediate refresh for immediate strategy and defers otherwise", () => {
-    const hasImmediateRefreshBranch =
-      /if\s*\(duplicateTilePlan\.refreshStrategy === "immediate"\)\s*\{\s*void this\.updateVisibleChunks\(true\)/s.test(
-        worldmapSource,
-      );
-    const hasDeferredRefreshBranch = /else\s*\{\s*this\.requestChunkRefresh\(true\);\s*\}/s.test(worldmapSource);
+  it("requests deferred chunk refresh when duplicate reconcile strategy is deferred", async () => {
+    const fixture = createWorldmapUpdateExploredHexFixture();
 
-    expect(hasImmediateRefreshBranch).toBe(true);
-    expect(hasDeferredRefreshBranch).toBe(true);
+    await fixture.applyDuplicateReconcilePlan({
+      shouldInvalidateCaches: true,
+      refreshStrategy: "deferred",
+    });
+
+    expect(fixture.invalidateCalls).toBe(1);
+    expect(fixture.updateVisibleChunksCalls).toEqual([]);
+    expect(fixture.requestChunkRefreshCalls).toEqual([true]);
+  });
+
+  it("does not request any refresh when duplicate reconcile strategy is none", async () => {
+    const fixture = createWorldmapUpdateExploredHexFixture();
+
+    await fixture.applyDuplicateReconcilePlan({
+      shouldInvalidateCaches: false,
+      refreshStrategy: "none",
+    });
+
+    expect(fixture.invalidateCalls).toBe(0);
+    expect(fixture.updateVisibleChunksCalls).toEqual([]);
+    expect(fixture.requestChunkRefreshCalls).toEqual([]);
   });
 });

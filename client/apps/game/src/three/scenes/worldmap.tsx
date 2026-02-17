@@ -135,6 +135,12 @@ import {
   recordChunkDiagnosticsEvent,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
+import {
+  captureChunkDiagnosticsBaseline,
+  cloneChunkDiagnosticsBaselines,
+  snapshotChunkDiagnostics as snapshotChunkDiagnosticsState,
+  type WorldmapChunkDiagnosticsBaselineEntry,
+} from "./worldmap-chunk-diagnostics-baseline";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -151,12 +157,6 @@ type ToriiBoundsCounterKey =
   | "structureBuildings"
   | "explorerTiles"
   | "explorerTroops";
-
-interface WorldmapChunkDiagnosticsBaselineEntry {
-  label: string;
-  capturedAtMs: number;
-  diagnostics: WorldmapChunkDiagnostics;
-}
 
 type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkDiagnostics?: () => {
@@ -4346,26 +4346,18 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private snapshotChunkDiagnostics(): WorldmapChunkDiagnostics {
-    return {
-      ...this.chunkDiagnostics,
-    };
+    return snapshotChunkDiagnosticsState(this.chunkDiagnostics);
   }
 
   private captureChunkDiagnosticsBaseline(label: string = "manual"): WorldmapChunkDiagnosticsBaselineEntry {
-    const safeLabel = label.trim() || "manual";
-    const entry: WorldmapChunkDiagnosticsBaselineEntry = {
-      label: safeLabel,
-      capturedAtMs: Date.now(),
-      diagnostics: this.snapshotChunkDiagnostics(),
-    };
-    this.chunkDiagnosticsBaselines.push(entry);
-    if (this.chunkDiagnosticsBaselines.length > 20) {
-      this.chunkDiagnosticsBaselines.shift();
-    }
-    return {
-      ...entry,
-      diagnostics: { ...entry.diagnostics },
-    };
+    const result = captureChunkDiagnosticsBaseline({
+      baselines: this.chunkDiagnosticsBaselines,
+      diagnostics: this.chunkDiagnostics,
+      label,
+      maxEntries: 20,
+    });
+    this.chunkDiagnosticsBaselines = result.baselines;
+    return result.captured;
   }
 
   private resetChunkDiagnostics(): void {
@@ -4378,10 +4370,7 @@ export default class WorldmapScene extends HexagonScene {
   > {
     return {
       diagnostics: this.snapshotChunkDiagnostics(),
-      baselines: this.chunkDiagnosticsBaselines.map((entry) => ({
-        ...entry,
-        diagnostics: { ...entry.diagnostics },
-      })),
+      baselines: cloneChunkDiagnosticsBaselines(this.chunkDiagnosticsBaselines),
       currentChunk: this.currentChunk,
       chunkTransitionToken: this.chunkTransitionToken,
       chunkRefreshRequestToken: this.chunkRefreshRequestToken,
