@@ -621,7 +621,7 @@ button {
 .endgame-backdrop-texture {
   background:
     radial-gradient(circle at 50% 0%, rgba(223, 170, 84, 0.14), transparent 52%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.35)), url("/images/hex-bg.png");
+    linear-gradient(180deg, rgba(1, 1, 1, 0.2), rgba(12, 10, 8, 0.35)), url("/images/hex-bg.png");
   background-size:
     auto,
     auto,
@@ -634,7 +634,7 @@ button {
 .endgame-surface {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(180deg, rgba(14, 12, 10, 0.98), rgba(6, 6, 7, 0.98)), rgba(8, 7, 6, 0.96);
+  background: linear-gradient(180deg, rgba(20, 16, 13, 0.98), rgba(12, 10, 8, 0.98)), rgba(1, 1, 1, 0.96);
 }
 
 .endgame-surface::before {

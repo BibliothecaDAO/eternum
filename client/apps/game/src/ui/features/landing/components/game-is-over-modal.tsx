@@ -31,7 +31,7 @@ export const GameIsOverModal = ({
       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
       <div className="pointer-events-none absolute inset-0 endgame-backdrop-texture" />
 
-      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-gold/35 shadow-[0_24px_90px_rgba(0,0,0,0.72)]">
+      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"
@@ -45,7 +45,7 @@ export const GameIsOverModal = ({
             <div className="endgame-header-ornament" />
           </div>
 
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-gold/35 bg-gold/10 shadow-[0_0_24px_rgba(223,170,84,0.2)]">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-gold/35 bg-gold/10 shadow-lg shadow-gold/25">
             <Trophy className="h-7 w-7 text-gold" />
           </div>
 
@@ -58,7 +58,7 @@ export const GameIsOverModal = ({
             <Button
               onClick={onReview}
               variant="gold"
-              className="w-full justify-center !px-4 !py-2.5 shadow-[0_8px_20px_rgba(223,170,84,0.18)]"
+              className="w-full justify-center !px-4 !py-2.5 shadow-lg shadow-gold/20"
               forceUppercase={false}
             >
               {reviewLabel}

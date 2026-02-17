@@ -203,25 +203,25 @@ const GameStatsStep = ({ worldName, stats }: { worldName: string; stats: GameRev
 const getRankTheme = (rank: number) => {
   if (rank === 1) {
     return {
-      cardClass: "border-yellow-400/45 bg-yellow-400/5 ring-1 ring-yellow-400/20",
-      rankClass: "text-yellow-300",
-      pointsClass: "border-yellow-400/45 bg-yellow-400/15 text-yellow-300",
+      cardClass: "border-gold/45 bg-gold/10 ring-1 ring-gold/20",
+      rankClass: "text-gold",
+      pointsClass: "border-gold/45 bg-gold/15 text-gold",
       showCrown: true,
     };
   }
   if (rank === 2) {
     return {
-      cardClass: "border-slate-200/30 bg-slate-100/[0.03]",
-      rankClass: "text-slate-200/80",
-      pointsClass: "border-slate-200/30 bg-slate-100/[0.08] text-slate-100/85",
+      cardClass: "border-light-pink/30 bg-light-pink/5",
+      rankClass: "text-light-pink/90",
+      pointsClass: "border-light-pink/35 bg-light-pink/10 text-lightest",
       showCrown: false,
     };
   }
   if (rank === 3) {
     return {
-      cardClass: "border-amber-700/45 bg-amber-900/10",
-      rankClass: "text-amber-500/90",
-      pointsClass: "border-amber-700/45 bg-amber-900/20 text-amber-400",
+      cardClass: "border-orange/40 bg-orange/10",
+      rankClass: "text-orange/90",
+      pointsClass: "border-orange/45 bg-orange/20 text-orange",
       showCrown: false,
     };
   }
@@ -354,7 +354,7 @@ const FinalizeStep = ({
       </div>
 
       {!hasSigner && (
-        <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">
+        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
           Connect a wallet to finalize ranking and MMR.
         </div>
       )}
@@ -554,7 +554,7 @@ export const GameReviewModal = ({
       const captureDataUrl = await toPng(captureNode, {
         cacheBust: true,
         pixelRatio,
-        backgroundColor: "#050505",
+        backgroundColor: "#010101",
         canvasWidth: captureWidth,
         canvasHeight: captureHeight,
         style: {
@@ -580,7 +580,7 @@ export const GameReviewModal = ({
         throw new Error("Unable to create export canvas.");
       }
 
-      context.fillStyle = "#050505";
+      context.fillStyle = "#010101";
       context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
       const offsetX = ((exportWidth - captureWidth) / 2) * pixelRatio;
@@ -645,7 +645,7 @@ export const GameReviewModal = ({
       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
       <div className="pointer-events-none absolute inset-0 endgame-backdrop-texture" />
 
-      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 flex max-h-[84vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/35 shadow-[0_24px_90px_rgba(0,0,0,0.72)]">
+      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 flex max-h-[84vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
         <div className="border-b border-gold/20 px-4 py-3.5 sm:px-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -692,7 +692,7 @@ export const GameReviewModal = ({
             </div>
           ) : error || !data ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-center">
-              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
+              <div className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2 text-sm text-lightest">
                 Failed to load game review data.
               </div>
               <Button onClick={() => void refetch()} variant="outline" forceUppercase={false}>
@@ -784,7 +784,7 @@ export const GameReviewModal = ({
               <Button
                 onClick={handleNextStep}
                 variant="gold"
-                className="gap-2 !px-3 !py-2 shadow-[0_8px_20px_rgba(223,170,84,0.16)]"
+                className="gap-2 !px-3 !py-2 shadow-lg shadow-gold/20"
                 forceUppercase={false}
                 disabled={isLoading || Boolean(error)}
               >
