@@ -122,6 +122,7 @@ import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-p
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
+  resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
@@ -2940,12 +2941,26 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private processPrefetchQueue(): void {
-    if (this.isSwitchedOff) {
+    const initialPlan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: this.isSwitchedOff,
+      queueLength: this.prefetchQueue.length,
+      activePrefetches: this.activePrefetches,
+      maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+    });
+
+    if (initialPlan.shouldClearQueuedPrefetchState) {
       this.clearQueuedPrefetchState();
       return;
     }
 
-    while (this.activePrefetches < this.maxConcurrentPrefetches && this.prefetchQueue.length > 0) {
+    while (
+      resolvePrefetchQueueProcessingPlan({
+        isSwitchedOff: this.isSwitchedOff,
+        queueLength: this.prefetchQueue.length,
+        activePrefetches: this.activePrefetches,
+        maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+      }).shouldProcessNextQueueItem
+    ) {
       const item = this.prefetchQueue.shift();
       if (!item) {
         return;
