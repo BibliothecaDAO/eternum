@@ -237,9 +237,7 @@ export function shouldRequestTileRefreshForStructureBoundsChange(input: Structur
   const maxRow = minRow + height - 1;
 
   const affectsBounds = (hex?: { col: number; row: number } | null): boolean =>
-    Boolean(
-      hex && hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow,
-    );
+    Boolean(hex && hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow);
 
   return affectsBounds(input.oldHex) || affectsBounds(input.newHex);
 }

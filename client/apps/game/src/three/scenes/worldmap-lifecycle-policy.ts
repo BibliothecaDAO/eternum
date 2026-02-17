@@ -1,11 +1,11 @@
-export type WorldmapLifecyclePhase = "setup" | "switchOff" | "destroy";
+type WorldmapLifecyclePhase = "setup" | "switchOff" | "destroy";
 
-export interface UrlChangedListenerLifecycleInput {
+interface UrlChangedListenerLifecycleInput {
   phase: WorldmapLifecyclePhase;
   isUrlChangedListenerAttached: boolean;
 }
 
-export interface UrlChangedListenerLifecycleDecision {
+interface UrlChangedListenerLifecycleDecision {
   shouldAttach: boolean;
   shouldDetach: boolean;
   nextIsUrlChangedListenerAttached: boolean;

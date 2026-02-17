@@ -16,23 +16,17 @@ describe("SceneManager transition baseline", () => {
 
     const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
 
-    sceneManager.addScene(
-      SceneName.WorldMap,
-      {
-        setup: vi.fn(async () => {}),
-        onSwitchOff: vi.fn(),
-        moveCameraToURLLocation: vi.fn(),
-      } as unknown as HexagonScene,
-    );
+    sceneManager.addScene(SceneName.WorldMap, {
+      setup: vi.fn(async () => {}),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
 
-    sceneManager.addScene(
-      SceneName.Hexception,
-      {
-        setup: vi.fn(async () => {}),
-        onSwitchOff: vi.fn(),
-        moveCameraToURLLocation: vi.fn(),
-      } as unknown as HexagonScene,
-    );
+    sceneManager.addScene(SceneName.Hexception, {
+      setup: vi.fn(async () => {}),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
 
     sceneManager.switchScene(SceneName.WorldMap);
     sceneManager.switchScene(SceneName.Hexception);
@@ -54,23 +48,17 @@ describe("SceneManager transition baseline", () => {
     const worldMapSetup = vi.fn(async () => {});
     const hexSetup = vi.fn(async () => {});
 
-    sceneManager.addScene(
-      SceneName.WorldMap,
-      {
-        setup: worldMapSetup,
-        onSwitchOff: vi.fn(),
-        moveCameraToURLLocation: vi.fn(),
-      } as unknown as HexagonScene,
-    );
+    sceneManager.addScene(SceneName.WorldMap, {
+      setup: worldMapSetup,
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
 
-    sceneManager.addScene(
-      SceneName.Hexception,
-      {
-        setup: hexSetup,
-        onSwitchOff: vi.fn(),
-        moveCameraToURLLocation: vi.fn(),
-      } as unknown as HexagonScene,
-    );
+    sceneManager.addScene(SceneName.Hexception, {
+      setup: hexSetup,
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
 
     sceneManager.switchScene(SceneName.WorldMap);
     sceneManager.switchScene(SceneName.Hexception);
@@ -104,23 +92,17 @@ describe("SceneManager transition baseline", () => {
     const worldMapSetup = vi.fn(async () => {});
     const hexSetup = vi.fn(async () => {});
 
-    sceneManager.addScene(
-      SceneName.WorldMap,
-      {
-        setup: worldMapSetup,
-        onSwitchOff: vi.fn(),
-        moveCameraToURLLocation: vi.fn(),
-      } as unknown as HexagonScene,
-    );
+    sceneManager.addScene(SceneName.WorldMap, {
+      setup: worldMapSetup,
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
 
-    sceneManager.addScene(
-      SceneName.Hexception,
-      {
-        setup: hexSetup,
-        onSwitchOff: vi.fn(),
-        moveCameraToURLLocation: vi.fn(),
-      } as unknown as HexagonScene,
-    );
+    sceneManager.addScene(SceneName.Hexception, {
+      setup: hexSetup,
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
 
     sceneManager.switchScene(SceneName.WorldMap);
     sceneManager.switchScene(SceneName.Hexception);

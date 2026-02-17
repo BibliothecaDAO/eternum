@@ -1,6 +1,6 @@
 import { SceneName } from "./types";
 
-export interface SceneSwitchRequestInput {
+interface SceneSwitchRequestInput {
   requestedSceneName: SceneName;
   hasRequestedScene: boolean;
   transitionRequestToken: number;
@@ -8,32 +8,32 @@ export interface SceneSwitchRequestInput {
   pendingSceneName: SceneName | undefined;
 }
 
-export interface SceneSwitchRequestDecision {
+interface SceneSwitchRequestDecision {
   shouldStartPendingTransition: boolean;
   nextTransitionRequestToken: number;
   nextPendingSceneName: SceneName | undefined;
 }
 
-export interface PendingTransitionStartInput {
+interface PendingTransitionStartInput {
   pendingSceneName: SceneName | undefined;
   hasPendingScene: boolean;
   transitionRequestToken: number;
 }
 
-export interface PendingTransitionStartDecision {
+interface PendingTransitionStartDecision {
   shouldStartTransition: boolean;
   sceneNameToTransition: SceneName | undefined;
   transitionToken: number | undefined;
   nextPendingSceneName: SceneName | undefined;
 }
 
-export interface TransitionFinalizePlanInput {
+interface TransitionFinalizePlanInput {
   transitionToken: number;
   latestTransitionRequestToken: number;
   hasPendingScene: boolean;
 }
 
-export interface TransitionFinalizePlan {
+interface TransitionFinalizePlan {
   isSuperseded: boolean;
   shouldRunPostSetupEffects: boolean;
   shouldStartPendingTransition: boolean;
@@ -56,9 +56,7 @@ export const resolveSceneSwitchRequest = (input: SceneSwitchRequestInput): Scene
   };
 };
 
-export const resolvePendingTransitionStart = (
-  input: PendingTransitionStartInput,
-): PendingTransitionStartDecision => {
+export const resolvePendingTransitionStart = (input: PendingTransitionStartInput): PendingTransitionStartDecision => {
   if (!input.pendingSceneName) {
     return {
       shouldStartTransition: false,
@@ -85,9 +83,7 @@ export const resolvePendingTransitionStart = (
   };
 };
 
-export const resolveTransitionFinalizePlan = (
-  input: TransitionFinalizePlanInput,
-): TransitionFinalizePlan => {
+export const resolveTransitionFinalizePlan = (input: TransitionFinalizePlanInput): TransitionFinalizePlan => {
   const isSuperseded = input.transitionToken !== input.latestTransitionRequestToken;
 
   return {

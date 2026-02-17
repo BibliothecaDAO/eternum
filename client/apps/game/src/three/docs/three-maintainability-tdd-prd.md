@@ -10,19 +10,19 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change |
-| ------ | ---------------- | ------ | ------ |
-| U1     | 2026-02-17 00:00 | Codex  | Created TDD PRD from maintainability review findings, with milestones, slice backlog, and test gates. |
-| U2     | 2026-02-17 00:00 | Codex  | Marked milestone M0 as started and updated execution log. |
-| U3     | 2026-02-17 00:00 | Codex  | Added M0 RED baseline tests (`scene-manager.test.ts`, `worldmap-lifecycle.test.ts`) and recorded fail-first behavior matrix. |
-| U4     | 2026-02-17 00:00 | Codex  | Implemented GREEN pass for baseline slices (scene transition lock + worldmap lifecycle safeguards); targeted + `src/three` test gates passing. |
-| U5     | 2026-02-17 00:00 | Codex  | Started M1 with RED/GREEN lifecycle hardening slice: `onSwitchOff()` now detaches `urlChanged`; `requestChunkRefresh()` now no-ops when switched off; updated lifecycle tests and re-ran `src/three` gate. |
-| U6     | 2026-02-17 00:00 | Codex  | Added explicit switch/unmount lifecycle policy tests and extracted idempotent URL listener lifecycle resolver; wired worldmap setup/switch-off/destroy through policy and re-ran `src/three` gate. |
-| U7     | 2026-02-17 00:00 | Codex  | Completed M2 RED/GREEN transition serialization slice: added superseded/collapsed rapid-toggle tests in `scene-manager.test.ts`, implemented request-token + latest-pending transition sequencing in `scene-manager.ts`, and re-ran targeted + `src/three` module gate tests. |
-| U8     | 2026-02-17 00:00 | Codex  | Began M3 RED/GREEN maintainability seam slice: added `scene-manager-transition-policy` tests + module, refactored `scene-manager.ts` through policy decisions, fixed README architecture reference drift, and reduced `src/three` lint errors from `182` to `178`. |
+| Update | Date (UTC)       | Author | Change                                                                                                                                                                                                                                                                                                        |
+| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1     | 2026-02-17 00:00 | Codex  | Created TDD PRD from maintainability review findings, with milestones, slice backlog, and test gates.                                                                                                                                                                                                         |
+| U2     | 2026-02-17 00:00 | Codex  | Marked milestone M0 as started and updated execution log.                                                                                                                                                                                                                                                     |
+| U3     | 2026-02-17 00:00 | Codex  | Added M0 RED baseline tests (`scene-manager.test.ts`, `worldmap-lifecycle.test.ts`) and recorded fail-first behavior matrix.                                                                                                                                                                                  |
+| U4     | 2026-02-17 00:00 | Codex  | Implemented GREEN pass for baseline slices (scene transition lock + worldmap lifecycle safeguards); targeted + `src/three` test gates passing.                                                                                                                                                                |
+| U5     | 2026-02-17 00:00 | Codex  | Started M1 with RED/GREEN lifecycle hardening slice: `onSwitchOff()` now detaches `urlChanged`; `requestChunkRefresh()` now no-ops when switched off; updated lifecycle tests and re-ran `src/three` gate.                                                                                                    |
+| U6     | 2026-02-17 00:00 | Codex  | Added explicit switch/unmount lifecycle policy tests and extracted idempotent URL listener lifecycle resolver; wired worldmap setup/switch-off/destroy through policy and re-ran `src/three` gate.                                                                                                            |
+| U7     | 2026-02-17 00:00 | Codex  | Completed M2 RED/GREEN transition serialization slice: added superseded/collapsed rapid-toggle tests in `scene-manager.test.ts`, implemented request-token + latest-pending transition sequencing in `scene-manager.ts`, and re-ran targeted + `src/three` module gate tests.                                 |
+| U8     | 2026-02-17 00:00 | Codex  | Began M3 RED/GREEN maintainability seam slice: added `scene-manager-transition-policy` tests + module, refactored `scene-manager.ts` through policy decisions, fixed README architecture reference drift, and reduced `src/three` lint errors from `182` to `178`.                                            |
 | U9     | 2026-02-17 00:00 | Codex  | Continued M3 seam extraction in `worldmap.tsx`: added `worldmap-chunk-switch-delay-policy` test/module, routed chunk-switch delay gating through policy, and removed one touched-file lint violation in `worldmap.tsx` (`shouldApplyScheduled` unused) to reduce `src/three` lint errors from `178` to `177`. |
-| U10    | 2026-02-17 00:00 | Codex  | Completed M3 closeout verification: removed remaining touched-file lint blockers in `worldmap.tsx` (`no-non-null-asserted-optional-chain` + `no-explicit-any`), re-ran `src/three` module gates (`31` files / `196` tests), and reduced lint errors from `177` to `173` (baseline `182`). |
-| U11    | 2026-02-17 08:05 | Codex  | Completed M4 hardening closeout: re-ran module + quality gates, recorded final verification snapshot, and published residual-risk follow-up backlog. |
+| U10    | 2026-02-17 00:00 | Codex  | Completed M3 closeout verification: removed remaining touched-file lint blockers in `worldmap.tsx` (`no-non-null-asserted-optional-chain` + `no-explicit-any`), re-ran `src/three` module gates (`31` files / `196` tests), and reduced lint errors from `177` to `173` (baseline `182`).                     |
+| U11    | 2026-02-17 08:05 | Codex  | Completed M4 hardening closeout: re-ran module + quality gates, recorded final verification snapshot, and published residual-risk follow-up backlog.                                                                                                                                                          |
 
 ## Executive Summary
 
@@ -138,12 +138,12 @@ Exit criteria:
 
 ### M0 RED Behavior Matrix (2026-02-17)
 
-| Slice | Test | Expected behavior (spec) | Current outcome |
-| ----- | ---- | ------------------------ | --------------- |
-| S4    | `src/three/scene-manager.test.ts` | `switchScene()` does not start a new fade transition while a prior fade callback is still pending. | Fails: `fadeOut` invoked twice on rapid toggle. |
-| S3    | `src/three/scenes/worldmap-lifecycle.test.ts` | `urlChanged` listener uses stable handler identity and is removed during teardown. | Fails: anonymous add listener, no corresponding remove. |
-| S1    | `src/three/scenes/worldmap-lifecycle.test.ts` | `updateVisibleChunks()` short-circuits when scene is switched off. | Fails: no early `isSwitchedOff` guard at method entry. |
-| S2    | `src/three/scenes/worldmap-lifecycle.test.ts` | `destroy()` reuses `onSwitchOff()` cleanup path for teardown symmetry. | Fails: `destroy()` does not invoke shared switch-off cleanup. |
+| Slice | Test                                          | Expected behavior (spec)                                                                           | Current outcome                                               |
+| ----- | --------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| S4    | `src/three/scene-manager.test.ts`             | `switchScene()` does not start a new fade transition while a prior fade callback is still pending. | Fails: `fadeOut` invoked twice on rapid toggle.               |
+| S3    | `src/three/scenes/worldmap-lifecycle.test.ts` | `urlChanged` listener uses stable handler identity and is removed during teardown.                 | Fails: anonymous add listener, no corresponding remove.       |
+| S1    | `src/three/scenes/worldmap-lifecycle.test.ts` | `updateVisibleChunks()` short-circuits when scene is switched off.                                 | Fails: no early `isSwitchedOff` guard at method entry.        |
+| S2    | `src/three/scenes/worldmap-lifecycle.test.ts` | `destroy()` reuses `onSwitchOff()` cleanup path for teardown symmetry.                             | Fails: `destroy()` does not invoke shared switch-off cleanup. |
 
 ### M1: Worldmap Lifecycle Safety (1-2 days)
 
@@ -241,8 +241,8 @@ Non-functional requirements:
 1. New lifecycle/transition tests are present and passing.
 2. Every production change in this iteration links to a failing-first test in commit/PR notes.
 3. `pnpm --dir client/apps/game test src/three` passes.
-4. `pnpm --dir client/apps/game exec eslint src/three` shows measurable improvement versus baseline or an agreed
-   debt budget with no regressions in touched files.
+4. `pnpm --dir client/apps/game exec eslint src/three` shows measurable improvement versus baseline or an agreed debt
+   budget with no regressions in touched files.
 5. README/doc references match existing files.
 
 ## Risks and Mitigations
@@ -256,38 +256,45 @@ Non-functional requirements:
 
 ## Execution Log
 
-| Date       | Milestone | Status  | Notes |
-| ---------- | --------- | ------- | ----- |
-| 2026-02-17 | M0        | Started | Kickoff confirmed; begin lifecycle-spec baseline tests (`scene-manager.test.ts`, `worldmap-lifecycle.test.ts`). |
-| 2026-02-17 | M0        | In Progress | RED baseline captured: targeted lifecycle/transition tests fail for intended missing guards/serialization/teardown symmetry (`4` failing assertions). |
-| 2026-02-17 | M0        | In Progress | GREEN iteration applied: `scene-manager.ts` transition-in-flight guard; `worldmap.tsx` switched-off early-return, stable/removable `urlChanged` handler, `destroy()` reuses `onSwitchOff()`. Tests: targeted (`2` files / `4` tests) and module gate (`28` files / `177` tests) passing. |
-| 2026-02-17 | M1        | In Progress | RED/GREEN slice completed: added lifecycle assertions for switch-off listener teardown and switched-off refresh guard; implemented `onSwitchOff()` listener detach + `requestChunkRefresh()` early return; tests passing (`worldmap-lifecycle` `5/5`, `src/three` `28` files / `179` tests). |
-| 2026-02-17 | M1        | In Progress | Added switch/unmount sequence coverage via `worldmap-lifecycle-policy.test.ts` (`3` tests), extracted `worldmap-lifecycle-policy.ts`, and routed url-listener lifecycle through policy for idempotent setup/switch-off/destroy behavior. Tests passing (`src/three` `29` files / `182` tests). |
-| 2026-02-17 | M2        | In Progress | RED verified in `scene-manager.test.ts`: new superseded-transition and rapid-toggle coalescing specs fail on existing lock-only behavior (`2` failing assertions). |
-| 2026-02-17 | M2        | Completed | GREEN shipped via `scene-manager.ts` transition request token + latest-pending queue; stale fade callbacks now skip setup/fade-in and chain the authoritative pending transition. Tests passing: targeted `scene-manager` (`3/3`) and module gate `pnpm --dir client/apps/game test src/three` (`29` files / `184` tests). |
-| 2026-02-17 | M3        | Started | RED verified for new maintainability seam: `scene-manager-transition-policy.test.ts` initially failed due missing module (`Failed to load url ./scene-manager-transition-policy`). |
-| 2026-02-17 | M3        | In Progress | GREEN shipped: extracted `scene-manager-transition-policy.ts`, routed `scene-manager.ts` switch/pending/finalize decisions through policy, updated README architecture reference, and fixed `chunk-geometry.test.ts` sorting lint issues. Gates: `pnpm --dir client/apps/game test src/three` (`30` files / `192` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `178` errors (baseline `182`). |
+| Date       | Milestone | Status      | Notes                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------- | --------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-17 | M0        | Started     | Kickoff confirmed; begin lifecycle-spec baseline tests (`scene-manager.test.ts`, `worldmap-lifecycle.test.ts`).                                                                                                                                                                                                                                                                                                                   |
+| 2026-02-17 | M0        | In Progress | RED baseline captured: targeted lifecycle/transition tests fail for intended missing guards/serialization/teardown symmetry (`4` failing assertions).                                                                                                                                                                                                                                                                             |
+| 2026-02-17 | M0        | In Progress | GREEN iteration applied: `scene-manager.ts` transition-in-flight guard; `worldmap.tsx` switched-off early-return, stable/removable `urlChanged` handler, `destroy()` reuses `onSwitchOff()`. Tests: targeted (`2` files / `4` tests) and module gate (`28` files / `177` tests) passing.                                                                                                                                          |
+| 2026-02-17 | M1        | In Progress | RED/GREEN slice completed: added lifecycle assertions for switch-off listener teardown and switched-off refresh guard; implemented `onSwitchOff()` listener detach + `requestChunkRefresh()` early return; tests passing (`worldmap-lifecycle` `5/5`, `src/three` `28` files / `179` tests).                                                                                                                                      |
+| 2026-02-17 | M1        | In Progress | Added switch/unmount sequence coverage via `worldmap-lifecycle-policy.test.ts` (`3` tests), extracted `worldmap-lifecycle-policy.ts`, and routed url-listener lifecycle through policy for idempotent setup/switch-off/destroy behavior. Tests passing (`src/three` `29` files / `182` tests).                                                                                                                                    |
+| 2026-02-17 | M2        | In Progress | RED verified in `scene-manager.test.ts`: new superseded-transition and rapid-toggle coalescing specs fail on existing lock-only behavior (`2` failing assertions).                                                                                                                                                                                                                                                                |
+| 2026-02-17 | M2        | Completed   | GREEN shipped via `scene-manager.ts` transition request token + latest-pending queue; stale fade callbacks now skip setup/fade-in and chain the authoritative pending transition. Tests passing: targeted `scene-manager` (`3/3`) and module gate `pnpm --dir client/apps/game test src/three` (`29` files / `184` tests).                                                                                                        |
+| 2026-02-17 | M3        | Started     | RED verified for new maintainability seam: `scene-manager-transition-policy.test.ts` initially failed due missing module (`Failed to load url ./scene-manager-transition-policy`).                                                                                                                                                                                                                                                |
+| 2026-02-17 | M3        | In Progress | GREEN shipped: extracted `scene-manager-transition-policy.ts`, routed `scene-manager.ts` switch/pending/finalize decisions through policy, updated README architecture reference, and fixed `chunk-geometry.test.ts` sorting lint issues. Gates: `pnpm --dir client/apps/game test src/three` (`30` files / `192` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `178` errors (baseline `182`).          |
 | 2026-02-17 | M3        | In Progress | RED/GREEN chunk-switch delay seam completed: `worldmap-chunk-switch-delay-policy.test.ts` failed first on missing module, then passed after extracting `worldmap-chunk-switch-delay-policy.ts` and routing `worldmap.tsx` delay gating through it. Gates: `pnpm --dir client/apps/game test src/three` (`31` files / `196` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `177` errors (baseline `182`). |
-| 2026-02-17 | M3        | Completed | Final M3 verification completed: touched `src/three` files lint-clean, module gate passing (`31` files / `196` tests), and quality gate improved to `173` lint errors vs baseline `182` with no touched-file regressions. |
-| 2026-02-17 | M4        | Completed | Hardening closeout verification rerun: `pnpm --dir client/apps/game test src/three` passing (`31` files / `196` tests) and `pnpm --dir client/apps/game exec eslint src/three` stable at `173` errors (baseline `182`, net `-9`). Final residual risks and ranked extraction backlog documented below. |
+| 2026-02-17 | M3        | Completed   | Final M3 verification completed: touched `src/three` files lint-clean, module gate passing (`31` files / `196` tests), and quality gate improved to `173` lint errors vs baseline `182` with no touched-file regressions.                                                                                                                                                                                                         |
+| 2026-02-17 | M4        | Completed   | Hardening closeout verification rerun: `pnpm --dir client/apps/game test src/three` passing (`31` files / `196` tests) and `pnpm --dir client/apps/game exec eslint src/three` stable at `173` errors (baseline `182`, net `-9`). Final residual risks and ranked extraction backlog documented below.                                                                                                                            |
 
 ## M4 Closeout Report (2026-02-17)
 
 Final verification snapshot:
 
 1. Module gate: `pnpm --dir client/apps/game test src/three` passes (`31` files / `196` tests).
-2. Quality gate: `pnpm --dir client/apps/game exec eslint src/three` reports `173` errors (baseline `182`, net improvement `-9`).
-3. Milestone commitment check: M0-M4 objectives completed with RED/GREEN evidence logged in this PRD update history and execution log.
+2. Quality gate: `pnpm --dir client/apps/game exec eslint src/three` reports `173` errors (baseline `182`, net
+   improvement `-9`).
+3. Milestone commitment check: M0-M4 objectives completed with RED/GREEN evidence logged in this PRD update history and
+   execution log.
 
 Residual risks:
 
-1. Lint debt remains concentrated in legacy large files (`worldmap.tsx`, `game-renderer.ts`, manager layer) and can slow future extractions.
-2. Transition and lifecycle policies are unit-covered, but higher-level integration scenarios (multi-scene rapid toggle + async manager callbacks) remain relatively thin.
-3. Large-file ownership remains uneven, so refactor conflicts and behavior drift risk increase under parallel feature work.
+1. Lint debt remains concentrated in legacy large files (`worldmap.tsx`, `game-renderer.ts`, manager layer) and can slow
+   future extractions.
+2. Transition and lifecycle policies are unit-covered, but higher-level integration scenarios (multi-scene rapid
+   toggle + async manager callbacks) remain relatively thin.
+3. Large-file ownership remains uneven, so refactor conflicts and behavior drift risk increase under parallel feature
+   work.
 
 Ranked follow-up backlog:
 
-1. P0: Add integration-style scene lifecycle regression tests that combine rapid scene toggles with async manager callbacks.
+1. P0: Add integration-style scene lifecycle regression tests that combine rapid scene toggles with async manager
+   callbacks.
 2. P1: Continue lint debt burn-down in top-three high-risk files using touched-file-only budgets per PR.
-3. P1: Extract one additional worldmap lifecycle orchestration seam (`destroy`/switch-off side-effect ordering) into a dedicated policy module.
+3. P1: Extract one additional worldmap lifecycle orchestration seam (`destroy`/switch-off side-effect ordering) into a
+   dedicated policy module.
 4. P2: Add lightweight CI guard that fails when `src/three` lint error count rises above current baseline (`173`).
