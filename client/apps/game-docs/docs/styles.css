@@ -54,17 +54,18 @@ pre,
   font-family: "Exo 2", sans-serif !important;
 }
 
-/* Make sidebar chevrons clickable and visually indicate toggle */
+/* Make sidebar chevrons visible, aligned to right edge, and clickable */
 .vocs_Sidebar_sectionHeader {
   cursor: pointer !important;
-  gap: 0.25rem;
+  position: relative;
+  padding-right: 1.6rem;
   overflow: visible;
 }
 
 /* Keep link from pushing chevron out of view */
 .vocs_Sidebar_sectionHeader > a.vocs_Sidebar_item,
 .vocs_Sidebar_sectionHeader > a.vocs_Sidebar_sectionTitleLink {
-  flex: 1;
+  display: block;
   min-width: 0;
   width: auto;
   margin-right: 0.25rem;
@@ -72,9 +73,9 @@ pre,
 
 .vocs_Sidebar_sectionCollapse {
   cursor: pointer !important;
-  padding: 0.35rem !important;
+  padding: 0.2rem !important;
   color: var(--realm-accent-brass) !important;
-  opacity: 0.7;
+  opacity: 0.85;
   transition:
     opacity 0.2s,
     transform 0.25s;
@@ -85,17 +86,21 @@ pre,
   opacity: 1;
 }
 
-/* Ensure chevron parent button wrapper is visible and clickable */
+/* Force chevron to the right edge of the sidebar item */
 .vocs_Sidebar_sectionHeader > div[role="button"] {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0.25rem;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .vocs_Sidebar_sectionTitle {
-  flex: 1 !important;
   cursor: pointer !important;
 }
 
@@ -195,12 +200,6 @@ pre,
 .table-first-col-wide td:first-child,
 .table-first-col-wide th:first-child {
   white-space: nowrap;
-}
-
-/* Deployment caps: slightly wider columns while keeping full width */
-.table-deployment-caps th,
-.table-deployment-caps td {
-  width: calc(25% + 15px);
 }
 
 /* Force last column to fill remaining space in simple markdown tables */
