@@ -17,6 +17,7 @@
 | U3     | 2026-02-17 23:08 | Codex  | Added S2 duplicate tile refresh/invalidation decision matrix coverage and helper extraction notes. |
 | U4     | 2026-02-17 23:12 | Codex  | Added S3 army selection recovery queue in-flight guard coverage and worldmap wiring updates. |
 | U5     | 2026-02-17 23:25 | Codex  | Added S4 prefetch queue processing guard extraction (`resolvePrefetchQueueProcessingPlan`) with switch-off state coverage and worldmap queue-loop wiring updates. |
+| U6     | 2026-02-17 04:20 | Codex  | Added S5 army visibility bounds rule extraction via `resolveArmyVisibilityBoundsDecision`, expanded source/destination bound-edge tests, and wired `army-manager.ts` through the extracted decision helper. |
 
 ## Executive Summary
 
@@ -307,4 +308,5 @@ Exit Criteria:
 | 2026-02-17 | M0        | Completed | `src/three` tests now run in `node` env via `environmentMatchGlobs`; fixed node-only test assumptions and hoisted mock issues; `pnpm --dir client/apps/game test src/three` passes (`24` files, `121` tests). |
 | 2026-02-17 | M1        | In Progress | S1 continued with red-green-refactor extraction of worldmap refresh and structure-update decisions into policy helpers (`resolveRefreshExecutionPlan`, `resolveRefreshRunningActions`, `resolveRefreshCompletionActions`, `shouldRequestTileRefreshForStructureBoundsChange`, `resolveStructureTileUpdateActions`); S2 duplicate-tile refresh/invalidation matrix was formalized via `resolveDuplicateTileUpdateMode`; S3 queue conditions added `recoveryInFlight` gating via `shouldQueueArmySelectionRecovery` and worldmap retry-path wiring. Targeted and full `src/three` suites pass (`25` files, `145` tests). |
 | 2026-02-17 | M1        | In Progress | S4 added prefetch queue processing-plan extraction via `resolvePrefetchQueueProcessingPlan`, covering switch-off clear/skip behavior plus concurrency/queue guards, and wired `worldmap.tsx` queue processing through the helper. Red phase validated by missing helper failure, then green with targeted and full suite runs; `pnpm --dir client/apps/game test src/three` passes (`25` files, `149` tests). |
-| 2026-02-17 | M2-M4     | Planned   | Next slices remain as defined in backlog and milestones. |
+| 2026-02-17 | M2        | In Progress | S5 added army source/destination bounds decision extraction via `resolveArmyVisibilityBoundsDecision` and expanded movement-visibility tests to cover inclusive edges and explicit destination/source/none outcomes. Red phase verified by missing helper failure, then green with targeted and full suite runs; `pnpm --dir client/apps/game test src/three` passes (`25` files, `154` tests). |
+| 2026-02-17 | M3-M4     | Planned   | Next slices remain as defined in backlog and milestones. |
