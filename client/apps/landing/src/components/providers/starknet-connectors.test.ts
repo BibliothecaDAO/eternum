@@ -7,7 +7,9 @@ describe("starknet connector configuration", () => {
     const options = getInjectedConnectorsOptions();
 
     expect(options.includeRecommended).toBe("always");
-    expect(options.recommended.map((connector) => connector.id)).toEqual(expect.arrayContaining(["argentX", "braavos"]));
+    expect(options.recommended.map((connector) => connector.id)).toEqual(
+      expect.arrayContaining(["argentX", "braavos"]),
+    );
   });
 
   it("includes non-cartridge connectors when cartridge-only mode is disabled", () => {

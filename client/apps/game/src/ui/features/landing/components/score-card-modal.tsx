@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Copy, X, Loader2, Share2 } from "lucide-react";
 
@@ -12,6 +11,7 @@ import {
   type BlitzHighlightPlayer,
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
+import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
 import {
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
@@ -114,18 +114,8 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
   );
 
   const handleCopyImage = useCallback(async () => {
-    if (typeof window === "undefined") {
-      toast.error("Copying the image is not supported in this environment.");
-      return;
-    }
-
     if (!highlightPlayer || !cardRef.current) {
       toast.error("Your highlight card is still loading.");
-      return;
-    }
-
-    if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
-      toast.error("Copying images is not supported in this browser.");
       return;
     }
 
@@ -139,37 +129,20 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
       }
 
       const { width, height } = BLITZ_CARD_DIMENSIONS;
-      const fontReady =
-        typeof document !== "undefined" && "fonts" in document ? document.fonts.ready.catch(() => undefined) : null;
-      const waiters = fontReady ? [fontReady] : [];
-      await Promise.all(waiters);
-
-      const dataUrl = await toPng(cardNode, {
-        cacheBust: true,
-        pixelRatio: 2,
+      const result = await copyElementAsPng({
+        element: cardNode,
+        filename: `realms-highlight-${worldName}-${Date.now()}.png`,
         backgroundColor: "#030d14",
+        pixelRatio: 2,
         canvasWidth: width,
         canvasHeight: height,
-        style: {
-          width: `${width}px`,
-          height: `${height}px`,
-        },
+        renderWidth: width,
+        renderHeight: height,
       });
 
-      const blob = await fetch(dataUrl).then((response) => response.blob());
-      const clipboardItem = new ClipboardItem({ "image/png": blob });
-
-      try {
-        await navigator.clipboard.write([clipboardItem]);
+      if (result === "copied") {
         toast.success("Copied highlight image to clipboard!");
-      } catch {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `realms-highlight-${worldName}-${Date.now()}.png`;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+      } else {
         toast.info("Clipboard not available; downloaded image instead.");
       }
     } catch (caughtError) {
@@ -186,15 +159,10 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
       return;
     }
 
-    const shareIntent = new URL("https://twitter.com/intent/tweet");
-    shareIntent.searchParams.set("text", shareMessage);
-
-    if (typeof window === "undefined") {
+    const didOpen = openShareOnX(shareMessage);
+    if (!didOpen) {
       toast.error("Sharing is not supported in this environment.");
-      return;
     }
-
-    window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
   }, [highlightPlayer, shareMessage]);
 
   const handleCopyMessage = useCallback(() => {
