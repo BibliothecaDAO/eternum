@@ -18,6 +18,7 @@ import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
 import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
+import { toHexString } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
@@ -25,6 +26,8 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
 import { hash } from "starknet";
+import { dojoConfig } from "../../../../../dojo-config";
+import { env } from "../../../../../env";
 
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
@@ -33,8 +36,23 @@ const DEFAULT_CHAIN: Chain = "slot";
 const MAINNET_COMING_SOON = true;
 const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain";
 
-const GLOBAL_RPC_BY_CHAIN: Partial<Record<Chain, string>> = {
+const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
   slot: "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9",
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
 };
 
 export const LandingPlayer = () => {
@@ -52,6 +70,15 @@ export const LandingPlayer = () => {
   // MMR state
   const [playerMMR, setPlayerMMR] = useState<bigint | null>(null);
   const [isLoadingMMR, setIsLoadingMMR] = useState(false);
+
+  const rpcUrl = useMemo(() => {
+    if (selectedChain === "slot") {
+      return dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL || RPC_FALLBACK_BY_CHAIN.slot;
+    }
+    return RPC_FALLBACK_BY_CHAIN[selectedChain];
+  }, [selectedChain]);
+
+  const mmrTokenAddress = useMemo(() => MMR_TOKEN_BY_CHAIN[selectedChain], [selectedChain]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -105,9 +132,6 @@ export const LandingPlayer = () => {
       return;
     }
 
-    const rpcUrl = GLOBAL_RPC_BY_CHAIN[selectedChain];
-    const mmrTokenAddress = MMR_TOKEN_BY_CHAIN[selectedChain];
-
     if (!rpcUrl || !mmrTokenAddress) {
       setPlayerMMR(null);
       setIsLoadingMMR(false);
@@ -120,47 +144,60 @@ export const LandingPlayer = () => {
       setPlayerMMR(null);
 
       try {
-        // Fetch player's global MMR via JSON-RPC.
-        const rpcResponse = await fetch(rpcUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        let normalizedPlayerAddress = playerAddress;
+        try {
+          normalizedPlayerAddress = toHexString(BigInt(playerAddress));
+        } catch {
+          // Keep the original address if normalization fails.
+        }
+
+        // Fetch player's global MMR via JSON-RPC using the same call shape as Blitz MMR tab.
+        const batchRequest = [
+          {
             jsonrpc: "2.0",
-            id: 1,
+            id: 0,
             method: "starknet_call",
             params: [
               {
                 contract_address: mmrTokenAddress,
                 entry_point_selector: GET_PLAYER_MMR_SELECTOR,
-                calldata: [playerAddress],
+                calldata: [normalizedPlayerAddress],
               },
-              "pending",
+              "pre_confirmed",
             ],
-          }),
+          },
+        ];
+
+        const rpcResponse = await fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(batchRequest),
         });
 
-        if (!rpcResponse.ok || cancelled) {
-          if (!cancelled) setIsLoadingMMR(false);
-          return;
+        if (!rpcResponse.ok) {
+          throw new Error(`RPC request failed: ${rpcResponse.status}`);
         }
 
         const rpcResult = await rpcResponse.json();
         if (cancelled) return;
 
-        if (rpcResult.error || !rpcResult.result) {
-          setIsLoadingMMR(false);
+        const resultsArray = Array.isArray(rpcResult) ? rpcResult : [rpcResult];
+        const result = resultsArray.find((entry: { id?: number }) => entry?.id === 0) ?? resultsArray[0];
+
+        if (result?.error || !result?.result) {
           return;
         }
 
         // u256 is returned as two felts [low, high]
-        const low = BigInt(rpcResult.result[0] || "0");
-        const high = BigInt(rpcResult.result[1] || "0");
+        const resultArray = result.result as string[];
+        const low = BigInt(resultArray[0] || "0");
+        const high = BigInt(resultArray[1] || "0");
         const mmr = low + (high << 128n);
 
         setPlayerMMR(mmr);
-        setIsLoadingMMR(false);
       } catch (e) {
         console.warn("Failed to fetch player MMR:", e);
+      } finally {
         if (!cancelled) setIsLoadingMMR(false);
       }
     };
@@ -170,7 +207,7 @@ export const LandingPlayer = () => {
     return () => {
       cancelled = true;
     };
-  }, [playerAddress, selectedChain]);
+  }, [mmrTokenAddress, playerAddress, rpcUrl]);
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formattedMMR = useMemo(() => {
@@ -199,9 +236,9 @@ export const LandingPlayer = () => {
       toast.success("Avatar generated successfully!");
       setLastGeneratedImages(result.imageUrls ?? []);
       setAvatarPrompt("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to generate avatar:", error);
-      toast.error(error?.message || "Failed to generate avatar. Please try again.");
+      toast.error(getErrorMessage(error, "Failed to generate avatar. Please try again."));
     }
   }, [avatarPrompt, generateAvatar, hasReachedDailyLimit]);
 
@@ -229,9 +266,9 @@ export const LandingPlayer = () => {
       try {
         await selectAvatar.mutateAsync(imageUrl);
         toast.success("Avatar updated.");
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to set avatar:", error);
-        toast.error(error?.message || "Failed to set avatar. Please try again.");
+        toast.error(getErrorMessage(error, "Failed to set avatar. Please try again."));
       }
     },
     [hasDisplayName, myAvatar?.avatarUrl, playerAddress, selectAvatar],
@@ -379,7 +416,7 @@ export const LandingPlayer = () => {
 
                     {generateAvatar.isError && (
                       <div className="text-xs text-red-400 bg-red-900/20 border border-red-700/30 rounded px-2 py-1.5">
-                        {(generateAvatar.error as any)?.message || "Failed to generate avatar"}
+                        {getErrorMessage(generateAvatar.error, "Failed to generate avatar")}
                       </div>
                     )}
 
