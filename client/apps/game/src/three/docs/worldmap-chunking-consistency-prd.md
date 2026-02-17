@@ -17,6 +17,7 @@
 | U3     | 2026-02-17 00:00 | Codex  | M0 progress update: extracted diagnostics baseline capture helper with tests and added pre-M1 runtime baseline runbook; live runtime snapshot capture remains pending. |
 | U4     | 2026-02-17 23:10 | Codex  | M0 completion update: captured live pre-M1 runtime diagnostics and persisted `.context/worldmap-pre-m1-baseline.json` + `.context/worldmap-pre-m1-baseline.png`. |
 | U5     | 2026-02-17 23:15 | Codex  | M1 completion update: added failing-then-green behavior tests for `performChunkSwitch` success/fetch-failure/stale suppression, and moved chunk authority write to commit phase in `worldmap.tsx`. |
+| U6     | 2026-02-17 23:40 | Codex  | M2 completion update: added manager convergence behavior tests, aligned manager startup chunk authority to `null`, and enforced transition-token + target-chunk invariants across army/structure/chest manager updates. |
 
 ## Executive Summary
 
@@ -277,6 +278,7 @@ Exit Criteria:
 | --------- | ------ | ---------- | -------- |
 | M0 | Completed | 2026-02-17 | Runtime baseline artifact captured: `.context/worldmap-pre-m1-baseline.json` with `pre-m1-start`/`pre-m1-end` snapshots. |
 | M1 | Completed | 2026-02-17 | `performChunkSwitch` behavior tests green in `src/three/scenes/worldmap-chunk-orchestration-fixture.test.ts`; chunk authority write moved to commit phase in `src/three/scenes/worldmap.tsx`. |
+| M2 | Completed | 2026-02-17 | Manager convergence coverage added in `src/three/managers/manager-update-convergence.test.ts`; startup chunk authority aligned in `src/three/managers/army-manager.ts`, `src/three/managers/chest-manager.ts`, and `src/three/managers/structure-manager.ts`; targeted manager/scene tests green (`manager-update-convergence`, `worldmap-chunk-orchestration-fixture`, `worldmap-chunk-transition`). |
 
 ## TDD Execution Plan
 
