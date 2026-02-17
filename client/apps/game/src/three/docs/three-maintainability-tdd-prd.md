@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: Maintainability hardening program for `client/apps/game/src/three` using strict TDD.
-- Status: In Progress (M0)
+- Status: In Progress (M1)
 - Owner: Three.js Team
 - Created: 2026-02-17
 - Last Updated: 2026-02-17
@@ -16,6 +16,8 @@
 | U2     | 2026-02-17 00:00 | Codex  | Marked milestone M0 as started and updated execution log. |
 | U3     | 2026-02-17 00:00 | Codex  | Added M0 RED baseline tests (`scene-manager.test.ts`, `worldmap-lifecycle.test.ts`) and recorded fail-first behavior matrix. |
 | U4     | 2026-02-17 00:00 | Codex  | Implemented GREEN pass for baseline slices (scene transition lock + worldmap lifecycle safeguards); targeted + `src/three` test gates passing. |
+| U5     | 2026-02-17 00:00 | Codex  | Started M1 with RED/GREEN lifecycle hardening slice: `onSwitchOff()` now detaches `urlChanged`; `requestChunkRefresh()` now no-ops when switched off; updated lifecycle tests and re-ran `src/three` gate. |
+| U6     | 2026-02-17 00:00 | Codex  | Added explicit switch/unmount lifecycle policy tests and extracted idempotent URL listener lifecycle resolver; wired worldmap setup/switch-off/destroy through policy and re-ran `src/three` gate. |
 
 ## Executive Summary
 
@@ -254,3 +256,5 @@ Non-functional requirements:
 | 2026-02-17 | M0        | Started | Kickoff confirmed; begin lifecycle-spec baseline tests (`scene-manager.test.ts`, `worldmap-lifecycle.test.ts`). |
 | 2026-02-17 | M0        | In Progress | RED baseline captured: targeted lifecycle/transition tests fail for intended missing guards/serialization/teardown symmetry (`4` failing assertions). |
 | 2026-02-17 | M0        | In Progress | GREEN iteration applied: `scene-manager.ts` transition-in-flight guard; `worldmap.tsx` switched-off early-return, stable/removable `urlChanged` handler, `destroy()` reuses `onSwitchOff()`. Tests: targeted (`2` files / `4` tests) and module gate (`28` files / `177` tests) passing. |
+| 2026-02-17 | M1        | In Progress | RED/GREEN slice completed: added lifecycle assertions for switch-off listener teardown and switched-off refresh guard; implemented `onSwitchOff()` listener detach + `requestChunkRefresh()` early return; tests passing (`worldmap-lifecycle` `5/5`, `src/three` `28` files / `179` tests). |
+| 2026-02-17 | M1        | In Progress | Added switch/unmount sequence coverage via `worldmap-lifecycle-policy.test.ts` (`3` tests), extracted `worldmap-lifecycle-policy.ts`, and routed url-listener lifecycle through policy for idempotent setup/switch-off/destroy behavior. Tests passing (`src/three` `29` files / `182` tests). |

@@ -30,4 +30,18 @@ describe("Worldmap lifecycle baseline", () => {
     const destroyCallsOnSwitchOff = /destroy\(\)\s*\{\s*this\.onSwitchOff\(\);/s.test(worldmapSource);
     expect(destroyCallsOnSwitchOff).toBe(true);
   });
+
+  it("detaches urlChanged listener when switching off to avoid inactive-scene callbacks", () => {
+    const onSwitchOffSection = /onSwitchOff\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*public deleteArmy/s.exec(worldmapSource)?.[1] ?? "";
+    const onSwitchOffDetachesUrlChanged = /this\.syncUrlChangedListenerLifecycle\("switchOff"\)/.test(onSwitchOffSection);
+
+    expect(onSwitchOffDetachesUrlChanged).toBe(true);
+  });
+
+  it("short-circuits requestChunkRefresh when the worldmap scene is switched off", () => {
+    const requestChunkRefreshHasSwitchedOffGuard =
+      /requestChunkRefresh\([^)]*\)\s*\{\s*if\s*\(this\.isSwitchedOff\)\s*\{\s*return;\s*\}/s.test(worldmapSource);
+
+    expect(requestChunkRefreshHasSwitchedOffGuard).toBe(true);
+  });
 });

@@ -127,6 +127,7 @@ import {
   shouldProcessPrefetchQueueItem,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
+import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
   createWorldmapChunkDiagnostics,
@@ -338,6 +339,7 @@ export default class WorldmapScene extends HexagonScene {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
   };
+  private isUrlChangedListenerAttached = false;
   private readonly urlChangedHandler = () => {
     this.clearSelection();
   };
@@ -921,7 +923,6 @@ export default class WorldmapScene extends HexagonScene {
       });
     }
 
-    window.addEventListener("urlChanged", this.urlChangedHandler);
   }
 
   private setupCameraZoomHandler() {
@@ -1999,6 +2000,7 @@ export default class WorldmapScene extends HexagonScene {
 
   async setup() {
     this.isSwitchedOff = false;
+    this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -2114,6 +2116,7 @@ export default class WorldmapScene extends HexagonScene {
 
   onSwitchOff() {
     this.isSwitchedOff = true;
+    this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
 
@@ -3906,6 +3909,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public requestChunkRefresh(force: boolean = false) {
+    if (this.isSwitchedOff) {
+      return;
+    }
+
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     if (force) {
       this.pendingChunkRefreshForce = true;
@@ -4485,6 +4492,7 @@ export default class WorldmapScene extends HexagonScene {
 
   destroy() {
     this.onSwitchOff();
+    this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
     if (this.hexGridFrameHandle !== null) {
@@ -4507,7 +4515,6 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
-    window.removeEventListener("urlChanged", this.urlChangedHandler);
     this.clearCache();
 
     // Clean up selection pulse manager
@@ -4519,6 +4526,23 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     super.destroy();
+  }
+
+  private syncUrlChangedListenerLifecycle(phase: "setup" | "switchOff" | "destroy"): void {
+    const listenerDecision = resolveUrlChangedListenerLifecycle({
+      phase,
+      isUrlChangedListenerAttached: this.isUrlChangedListenerAttached,
+    });
+
+    if (listenerDecision.shouldAttach) {
+      window.addEventListener("urlChanged", this.urlChangedHandler);
+    }
+
+    if (listenerDecision.shouldDetach) {
+      window.removeEventListener("urlChanged", this.urlChangedHandler);
+    }
+
+    this.isUrlChangedListenerAttached = listenerDecision.nextIsUrlChangedListenerAttached;
   }
 
   /**
