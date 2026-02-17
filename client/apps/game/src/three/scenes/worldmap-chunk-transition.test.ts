@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveRefreshCompletionActions,
@@ -373,6 +374,52 @@ describe("shouldRequestTileRefreshForStructureBoundsChange", () => {
         chunkSize,
       }),
     ).toBe(false);
+  });
+
+  it("keeps structure bounds decisions in parity with canonical getRenderBounds edges", () => {
+    const cases = [
+      { currentChunk: "0,0", renderSize: { width: 48, height: 48 }, chunkSize: 24 },
+      { currentChunk: "24,-24", renderSize: { width: 49, height: 49 }, chunkSize: 24 },
+      { currentChunk: "72,48", renderSize: { width: 80, height: 65 }, chunkSize: 24 },
+    ];
+
+    cases.forEach(({ currentChunk, renderSize, chunkSize }) => {
+      const [startRow, startCol] = currentChunk.split(",").map(Number);
+      const bounds = getRenderBounds(startRow, startCol, renderSize, chunkSize);
+
+      expect(
+        shouldRequestTileRefreshForStructureBoundsChange({
+          currentChunk,
+          isChunkTransitioning: false,
+          oldHex: { col: bounds.minCol, row: bounds.minRow },
+          newHex: undefined,
+          renderSize,
+          chunkSize,
+        }),
+      ).toBe(true);
+
+      expect(
+        shouldRequestTileRefreshForStructureBoundsChange({
+          currentChunk,
+          isChunkTransitioning: false,
+          oldHex: undefined,
+          newHex: { col: bounds.maxCol, row: bounds.maxRow },
+          renderSize,
+          chunkSize,
+        }),
+      ).toBe(true);
+
+      expect(
+        shouldRequestTileRefreshForStructureBoundsChange({
+          currentChunk,
+          isChunkTransitioning: false,
+          oldHex: { col: bounds.minCol - 1, row: bounds.minRow },
+          newHex: { col: bounds.maxCol + 1, row: bounds.maxRow + 1 },
+          renderSize,
+          chunkSize,
+        }),
+      ).toBe(false);
+    });
   });
 });
 

@@ -122,6 +122,11 @@ import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeSta
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import {
+  getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
+  getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  getRenderFetchBoundsForChunk as getCanonicalRenderFetchBoundsForChunk,
+} from "./worldmap-chunk-bounds";
+import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
   resolvePrefetchQueueProcessingPlan,
@@ -2763,34 +2768,14 @@ export default class WorldmapScene extends HexagonScene {
    * Key by Torii "super-area" so overlapping render windows coalesce.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const stride = this.chunkSize;
-    const superAreaStrides = WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides;
-
-    const chunkRowIdx = startRow / stride;
-    const chunkColIdx = startCol / stride;
-
-    const areaRowIdx = Math.floor(chunkRowIdx / superAreaStrides) * superAreaStrides;
-    const areaColIdx = Math.floor(chunkColIdx / superAreaStrides) * superAreaStrides;
-
-    return `${areaRowIdx * stride},${areaColIdx * stride}`;
+    return getCanonicalRenderAreaKeyForChunk(chunkKey, this.chunkSize, WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides);
   }
 
   /**
    * Compute integer fetch bounds that fully cover the render area for a chunk key.
    */
   private getRenderFetchBounds(chunkKey: string): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
-    const halfWidth = this.renderChunkSize.width / 2;
-    const halfHeight = this.renderChunkSize.height / 2;
-
-    return {
-      minCol: Math.floor(centerCol - halfWidth),
-      maxCol: Math.floor(centerCol + halfWidth - 1),
-      minRow: Math.floor(centerRow - halfHeight),
-      maxRow: Math.floor(centerRow + halfHeight - 1),
-    };
+    return getCanonicalRenderFetchBoundsForChunk(chunkKey, this.renderChunkSize, this.chunkSize);
   }
 
   /**
@@ -2802,24 +2787,12 @@ export default class WorldmapScene extends HexagonScene {
     minRow: number;
     maxRow: number;
   } {
-    const [areaStartRow, areaStartCol] = areaKey.split(",").map(Number);
-    const stride = this.chunkSize;
-    const superAreaStrides = WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides;
-
-    const firstCenter = this.getChunkCenter(areaStartRow, areaStartCol);
-    const lastChunkStartRow = areaStartRow + (superAreaStrides - 1) * stride;
-    const lastChunkStartCol = areaStartCol + (superAreaStrides - 1) * stride;
-    const lastCenter = this.getChunkCenter(lastChunkStartRow, lastChunkStartCol);
-
-    const halfWidth = this.renderChunkSize.width / 2;
-    const halfHeight = this.renderChunkSize.height / 2;
-
-    return {
-      minCol: Math.floor(firstCenter.col - halfWidth),
-      maxCol: Math.floor(lastCenter.col + halfWidth - 1),
-      minRow: Math.floor(firstCenter.row - halfHeight),
-      maxRow: Math.floor(lastCenter.row + halfHeight - 1),
-    };
+    return getCanonicalRenderFetchBoundsForArea(
+      areaKey,
+      this.renderChunkSize,
+      this.chunkSize,
+      WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides,
+    );
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {

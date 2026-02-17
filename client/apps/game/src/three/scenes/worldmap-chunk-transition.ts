@@ -1,3 +1,5 @@
+import { getRenderFetchBoundsForChunk } from "./worldmap-chunk-bounds";
+
 interface ChunkSwitchDecisionInput {
   fetchSucceeded: boolean;
   isCurrentTransition: boolean;
@@ -235,14 +237,11 @@ export function shouldRequestTileRefreshForStructureBoundsChange(input: Structur
     return false;
   }
 
-  const width = Math.max(0, Math.floor(input.renderSize.width));
-  const height = Math.max(0, Math.floor(input.renderSize.height));
-  const centerRow = Math.round(startRow + input.chunkSize / 2);
-  const centerCol = Math.round(startCol + input.chunkSize / 2);
-  const minCol = centerCol - Math.floor(width / 2);
-  const maxCol = minCol + width - 1;
-  const minRow = centerRow - Math.floor(height / 2);
-  const maxRow = minRow + height - 1;
+  const { minCol, maxCol, minRow, maxRow } = getRenderFetchBoundsForChunk(
+    input.currentChunk,
+    input.renderSize,
+    input.chunkSize,
+  );
 
   const affectsBounds = (hex?: { col: number; row: number } | null): boolean =>
     Boolean(hex && hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow);
