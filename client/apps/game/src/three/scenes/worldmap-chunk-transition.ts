@@ -34,6 +34,7 @@ interface ShortcutForceFallbackDecisionInput {
 interface DuplicateTileRefreshDecisionInput {
   removeExplored: boolean;
   tileAlreadyKnown: boolean;
+  hasBiomeDelta?: boolean;
   currentChunk: string;
   isChunkTransitioning: boolean;
   isVisibleInCurrentChunk: boolean;
@@ -42,6 +43,13 @@ interface DuplicateTileRefreshDecisionInput {
 interface DuplicateTileUpdateActions {
   shouldInvalidateCaches: boolean;
   shouldRequestRefresh: boolean;
+}
+
+type DuplicateTileRefreshStrategy = "none" | "deferred" | "immediate";
+
+interface DuplicateTileReconcilePlan {
+  shouldInvalidateCaches: boolean;
+  refreshStrategy: DuplicateTileRefreshStrategy;
 }
 
 type DuplicateTileUpdateMode = "none" | "invalidate_only" | "invalidate_and_refresh";
@@ -259,6 +267,22 @@ export function shouldRunShortcutForceFallback(input: ShortcutForceFallbackDecis
 }
 
 /**
+ * Biome-delta duplicate tile updates should bypass debounced refresh flow and
+ * trigger immediate reconciliation while chunk state is stable.
+ */
+export function shouldRunImmediateDuplicateTileRefresh(input: DuplicateTileRefreshDecisionInput): boolean {
+  if (input.removeExplored || !input.tileAlreadyKnown) {
+    return false;
+  }
+
+  if (input.currentChunk === "null" || input.isChunkTransitioning) {
+    return false;
+  }
+
+  return input.hasBiomeDelta === true;
+}
+
+/**
  * Duplicate tile updates can indicate a missed visual apply while data state is
  * already present. Force a chunk refresh only when the duplicate touches the
  * active visible chunk and no transition is in progress.
@@ -270,6 +294,11 @@ export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRef
 
   if (!input.tileAlreadyKnown) {
     return false;
+  }
+
+  // Biome delta on a known tile indicates stale visual state; force immediate reconcile.
+  if (shouldRunImmediateDuplicateTileRefresh(input)) {
+    return true;
   }
 
   if (input.currentChunk === "null" || input.isChunkTransitioning) {
@@ -319,6 +348,34 @@ export function resolveDuplicateTileUpdateActions(
         shouldRequestRefresh: true,
       };
   }
+}
+
+/**
+ * Resolve the full duplicate-tile reconcile plan, including whether refresh
+ * should be immediate or deferred through chunk refresh scheduling.
+ */
+export function resolveDuplicateTileReconcilePlan(
+  input: DuplicateTileRefreshDecisionInput,
+): DuplicateTileReconcilePlan {
+  const actions = resolveDuplicateTileUpdateActions(input);
+  if (!actions.shouldInvalidateCaches) {
+    return {
+      shouldInvalidateCaches: false,
+      refreshStrategy: "none",
+    };
+  }
+
+  if (!actions.shouldRequestRefresh) {
+    return {
+      shouldInvalidateCaches: true,
+      refreshStrategy: "none",
+    };
+  }
+
+  return {
+    shouldInvalidateCaches: true,
+    refreshStrategy: shouldRunImmediateDuplicateTileRefresh(input) ? "immediate" : "deferred",
+  };
 }
 
 /**
