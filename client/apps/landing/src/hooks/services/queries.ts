@@ -330,6 +330,77 @@ WITH limited_active_orders AS (
     WHERE 1=1
       {traitFilters}
   `,
+  /* Listed-only path when no trait filters are active.
+     Avoids metadata/token joins in the paging stage so listings still show
+     even if token metadata rows are delayed in the indexer. */
+  ALL_COLLECTION_TOKENS_LISTED_NO_TRAITS: `
+    WITH active_orders AS (
+      SELECT
+        printf('0x%064x', mo."order.token_id") AS token_id_hex,
+        mo."order.price" AS price_hex,
+        mo."order.expiration" AS expiration,
+        mo."order.owner" AS order_owner,
+        mo.order_id
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.collection_id" = {collectionId}
+        AND mo."order.expiration" > strftime('%s','now')
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+    ),
+    paged AS (
+      SELECT a.token_id_hex
+      FROM active_orders a
+      {listedOrderByPaged}
+      {limitOffsetClause}
+    ),
+    tokens_latest AS (
+      SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata
+      FROM tokens
+      WHERE contract_address = '{contractAddress}'
+        AND token_id IN (SELECT token_id_hex FROM paged)
+      GROUP BY token_id
+    ),
+    owners AS (
+      SELECT substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex,
+             MIN(tb.account_address) AS account_address
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
+        AND substr(tb.token_id, instr(tb.token_id, ':') + 1) IN (SELECT token_id_hex FROM paged)
+      GROUP BY substr(tb.token_id, instr(tb.token_id, ':') + 1)
+    )
+    SELECT
+      a.token_id_hex,
+      substr(a.token_id_hex, 3) AS token_id,
+      1 AS is_listed,
+      o.account_address AS token_owner,
+      a.price_hex,
+      a.expiration,
+      a.order_owner,
+      a.order_id,
+      NULL AS balance,
+      t.name,
+      t.symbol,
+      t.metadata,
+      '{contractAddress}' AS contract_address
+    FROM paged p
+    JOIN active_orders a ON a.token_id_hex = p.token_id_hex
+    LEFT JOIN tokens_latest t ON t.token_id = a.token_id_hex
+    LEFT JOIN owners o ON o.token_id_hex = a.token_id_hex
+    {listedOrderByFinal}
+  `,
+  ALL_COLLECTION_TOKENS_LISTED_NO_TRAITS_COUNT: `
+    WITH active_orders AS (
+      SELECT printf('0x%064x', mo."order.token_id") AS token_id_hex
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.collection_id" = {collectionId}
+        AND mo."order.expiration" > strftime('%s','now')
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+    )
+    SELECT COUNT(*) AS total_count
+    FROM active_orders
+  `,
   /* Full view: split-page (listed slice + unlisted slice via tokens),
      apply trait filters before slicing, then hydrate metadata. */
   ALL_COLLECTION_TOKENS_FULL_PAGED: `

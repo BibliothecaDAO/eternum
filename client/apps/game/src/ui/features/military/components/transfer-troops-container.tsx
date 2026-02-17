@@ -151,9 +151,9 @@ export const TransferTroopsContainer = ({
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
-    const level = selectedStructure?.base?.level ?? 0;
+    const level = selectedStructure?.base?.level ?? targetStructure?.base?.level ?? 0;
     return configManager.getMaxArmySize(level, tier) || null;
-  }, [targetExplorerTroops?.troops?.tier, selectedStructure?.base?.level]);
+  }, [targetExplorerTroops?.troops?.tier, selectedStructure?.base?.level, targetStructure?.base?.level]);
 
   const directionLabel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {

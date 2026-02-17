@@ -64,7 +64,6 @@ export const useChestContent = (debugMode: boolean = false, timestamp: number) =
   useEffect(() => {
     // Debug mode: return all chest assets
     if (debugMode) {
-      console.log("Debug mode enabled - returning all chest assets");
       setChestContent(getAllChestAssets());
       return;
     }

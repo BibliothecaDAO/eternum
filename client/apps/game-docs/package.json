@@ -13,6 +13,7 @@
   "dependencies": {
     "@bibliothecadao/types": "workspace:*",
     "fast-glob": "^3.3.3",
+    "fumadocs-core": "^16.5.4",
     "fumadocs-mdx": "^11.6.0",
     "gray-matter": "^4.0.3",
     "remark": "^15.0.1",

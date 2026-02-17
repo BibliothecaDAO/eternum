@@ -138,7 +138,16 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
               <td className="py-2 pr-4">{r.rank}</td>
               <td className="py-2 pr-4">{getPlayerDisplayName(r.player)}</td>
               <td className="py-2 pr-4">{formatPoints(r.points)}</td>
-              <td className="py-2 pr-4">{formatTokenAmount(r.prizeShare)}</td>
+              <td className="py-2 pr-4">
+                {typeof r.prizeShare === "bigint" ? (
+                  <span className="inline-flex items-center gap-1">
+                    <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                    <span>{formatTokenAmount(r.prizeShare)}</span>
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </td>
               <td className="py-2 pr-4">{r.paid ? "Claimed" : "Unclaimed"}</td>
             </tr>
           ))}

@@ -228,9 +228,9 @@ export const STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Copper, amount: 60 },
   { resource: ResourcesIds.Donkey, amount: 200 },
   // 3,000, tokenized troops. Only one troop type will be selected
-  { resource: ResourcesIds.Knight, amount: 3_000 },
-  { resource: ResourcesIds.Crossbowman, amount: 3_000 },
-  { resource: ResourcesIds.Paladin, amount: 3_000 },
+  { resource: ResourcesIds.Knight, amount: 1_500 },
+  { resource: ResourcesIds.Crossbowman, amount: 1_500 },
+  { resource: ResourcesIds.Paladin, amount: 1_500 },
 ];
 
 export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [

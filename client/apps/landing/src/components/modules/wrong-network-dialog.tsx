@@ -26,9 +26,6 @@ export const WrongNetworkDialog = () => {
       setIsWrongNetwork(false);
       return;
     }
-    console.log(import.meta.env.VITE_PUBLIC_CHAIN);
-    console.log(chain.id);
-    console.log(account);
     setIsWrongNetwork(
       import.meta.env.VITE_PUBLIC_CHAIN === "sepolia"
         ? bigintToStringHex(chainId) === bigintToStringHex(mainnet.id)

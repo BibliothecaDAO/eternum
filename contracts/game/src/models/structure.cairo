@@ -340,22 +340,27 @@ pub impl StructureImpl of StructureTrait {
         structure.metadata = metadata;
         match category {
             StructureCategory::Realm => {
+                structure.base.level = 0;
                 structure.base.troop_max_explorer_count = 1;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },
             StructureCategory::Hyperstructure => {
+                structure.base.level = 3;
                 structure.base.troop_max_explorer_count = 0;
                 structure.base.troop_max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::Bank => {
+                structure.base.level = 3;
                 structure.base.troop_max_explorer_count = 0;
                 structure.base.troop_max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::FragmentMine => {
+                structure.base.level = 0;
                 structure.base.troop_max_explorer_count = 0;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
             StructureCategory::Village => { // todo: check if this is correct
+                structure.base.level = 0;
                 structure.base.troop_max_explorer_count = 1;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },

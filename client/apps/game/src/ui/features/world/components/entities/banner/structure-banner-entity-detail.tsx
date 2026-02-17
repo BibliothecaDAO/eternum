@@ -41,7 +41,6 @@ const StructureBannerEntityDetailContent = memo(
     structureEntityId,
     className,
     maxInventory = Infinity,
-    showButtons = false,
     compact = true,
     variant,
   }: StructureBannerEntityDetailContentProps) => {
@@ -111,7 +110,7 @@ const StructureBannerEntityDetailContent = memo(
         Number(rawCategory) as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
-    const bodyTextClass = compact ? "text-xs" : "text-sm";
+    const inventoryLimit = compact && variant === "banner" ? Math.min(maxInventory, 10) : maxInventory;
     const labelTextClass = compact ? "text-xxs" : "text-xs";
     const headerTitleClass = compact ? "text-sm" : "text-base";
     const headerMetaClass = compact ? "text-xxs" : "text-xs";
@@ -120,10 +119,13 @@ const StructureBannerEntityDetailContent = memo(
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
 
     return (
-      <EntityDetailSection compact={compact} className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3 text-gold">
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
+      <EntityDetailSection
+        compact={compact}
+        className={cn("flex h-full min-h-0 flex-col gap-1.5 overflow-hidden", className)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2 text-gold">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
               {ownerAvatarUrl ? (
                 <img className="h-full w-full object-cover" src={ownerAvatarUrl} alt={`${ownerDisplayName} avatar`} />
               ) : (
@@ -159,9 +161,9 @@ const StructureBannerEntityDetailContent = memo(
           <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
         )}
 
-        <Tabs variant="inventory" className="flex flex-1 flex-col gap-3">
-          <Tabs.Panels className="flex-1">
-            <Tabs.Panel className="flex flex-col gap-2">
+        <Tabs variant="inventory" className="flex min-h-0 flex-1 flex-col gap-2">
+          <Tabs.Panels className="flex-1 min-h-0">
+            <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
               {showHyperstructureVP && (
                 <HyperstructureVPDisplay
                   realmCount={hyperstructureRealmCount}
@@ -194,7 +196,7 @@ const StructureBannerEntityDetailContent = memo(
                       entityType={EntityType.STRUCTURE}
                       allowRelicActivation={isMine}
                       variant="tight"
-                      maxItems={maxInventory}
+                      maxItems={inventoryLimit}
                     />
                   ) : (
                     <p className="text-xxs text-gold/60 italic">No resources stored.</p>
@@ -204,7 +206,7 @@ const StructureBannerEntityDetailContent = memo(
             </Tabs.Panel>
 
             {showProductionTab && (
-              <Tabs.Panel className="flex flex-col gap-2 pt-4 pl-2">
+              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
                 {resources ? (
                   <StructureProductionPanel
                     structure={structure}
@@ -223,7 +225,7 @@ const StructureBannerEntityDetailContent = memo(
             )}
 
             {!showBalanceInline && (
-              <Tabs.Panel className="flex flex-col gap-2">
+              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
                 {resources ? (
                   <CompactEntityInventory
                     resources={resources}
@@ -233,7 +235,7 @@ const StructureBannerEntityDetailContent = memo(
                     entityType={EntityType.STRUCTURE}
                     allowRelicActivation={isMine}
                     variant="tight"
-                    maxItems={maxInventory}
+                    maxItems={inventoryLimit}
                   />
                 ) : (
                   <p className="text-xxs text-gold/60 italic">No resources stored.</p>
@@ -243,16 +245,16 @@ const StructureBannerEntityDetailContent = memo(
           </Tabs.Panels>
 
           <Tabs.List className="mt-auto flex w-full items-center justify-between gap-2">
-            <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+            <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
               <Shield className="h-4 w-4 text-gold" />
             </Tabs.Tab>
             {showProductionTab && (
-              <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
                 <Factory className="h-4 w-4 text-gold" />
               </Tabs.Tab>
             )}
             {!showBalanceInline && (
-              <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
                 <Coins className="h-4 w-4 text-gold" />
               </Tabs.Tab>
             )}

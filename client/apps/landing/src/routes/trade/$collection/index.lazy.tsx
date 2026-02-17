@@ -22,16 +22,16 @@ import {
   clearCollectionTraitsCache,
   fetchAllCollectionTokens,
   FetchAllCollectionTokensOptions,
-  fetchCollectionStatistics,
   fetchCollectionTraits,
 } from "@/hooks/services";
+import { hasCollectionKey } from "@/lib/collection-key";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
 
@@ -45,15 +45,16 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
 function CollectionPage() {
   const { collection } = Route.useParams();
   const navigate = useNavigate();
-  const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
-  const collectionAddress = collectionConfig.address;
+  const collectionConfig = hasCollectionKey(marketplaceCollections, collection)
+    ? marketplaceCollections[collection]
+    : null;
+  const collectionAddress = collectionConfig?.address ?? "";
+  const isValidCollection = Boolean(collectionConfig && collectionConfig.address);
+  const defaultTraitFilters: Record<string, string[]> = collectionConfig?.defaultTraitFilters ?? {};
 
   const enforcedTraitFilters = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(collectionConfig.defaultTraitFilters ?? {}).map(([trait, values]) => [trait, [...values]]),
-      ),
-    [collectionConfig],
+    () => Object.fromEntries(Object.entries(defaultTraitFilters).map(([trait, values]) => [trait, [...values]])),
+    [defaultTraitFilters],
   );
 
   const applyEnforcedFilters = useCallback(
@@ -92,13 +93,16 @@ function CollectionPage() {
       if (saved !== null) {
         setListedOnly(saved === "1");
       }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch {
+      // Ignore storage access errors.
+    }
   }, [collectionAddress]);
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEYS.listedOnly(collectionAddress), listedOnly ? "1" : "0");
-    } catch {}
+    } catch {
+      // Ignore storage access errors.
+    }
   }, [collectionAddress, listedOnly]);
 
   // Persist hideInvalid per collection in localStorage
@@ -108,13 +112,16 @@ function CollectionPage() {
       if (saved !== null) {
         setHideInvalid(saved === "1");
       }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch {
+      // Ignore storage access errors.
+    }
   }, [collectionAddress]);
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEYS.hideInvalid(collectionAddress), hideInvalid ? "1" : "0");
-    } catch {}
+    } catch {
+      // Ignore storage access errors.
+    }
   }, [collectionAddress, hideInvalid]);
 
   // Debounce filters to avoid excessive API calls
@@ -124,12 +131,6 @@ function CollectionPage() {
   const [pageInput, setPageInput] = useState<string>("1");
 
   // --- API Queries ---
-  const totals = useSuspenseQuery({
-    queryKey: ["activeMarketOrdersTotal", collection],
-    queryFn: () => fetchCollectionStatistics(collectionAddress),
-    refetchInterval: 30_000,
-  });
-
   // Fetch tokens with server-side filtering and pagination
   const tokenOptions: FetchAllCollectionTokensOptions = useMemo(
     () => ({
@@ -144,16 +145,18 @@ function CollectionPage() {
 
   const tokensQuery = useQuery({
     queryKey: ["allCollectionTokens", marketplaceAddress, collection, tokenOptions],
-    queryFn: () => fetchAllCollectionTokens(collectionAddress, tokenOptions),
+    queryFn: ({ signal }) => fetchAllCollectionTokens(collectionAddress, tokenOptions, { signal }),
     refetchInterval: 8_000,
+    enabled: isValidCollection,
   });
 
   // Get all traits for filter UI efficiently
   const allTraitsQuery = useQuery({
     queryKey: ["collectionTraits", marketplaceAddress, collection],
-    queryFn: () => fetchCollectionTraits(collectionAddress),
+    queryFn: ({ signal }) => fetchCollectionTraits(collectionAddress, { signal }),
     refetchInterval: 300_000, // Very infrequent updates (5 minutes) since traits don't change often
     staleTime: 300_000, // Consider data fresh for 5 minutes
+    enabled: isValidCollection,
   });
 
   // --- Derived State ---
@@ -178,7 +181,6 @@ function CollectionPage() {
 
   const totalItems = tokensQuery.data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const allTraits = allTraitsQuery.data ?? {};
   const listedTokensOnPage = useMemo(() => {
     return tokens.filter((token) => {
@@ -189,8 +191,6 @@ function CollectionPage() {
       return owner && lister && owner === lister;
     });
   }, [tokens]);
-
-  console.log({ tokens });
 
   // --- Event Handlers ---
   const handlePageChange = (page: number) => {
@@ -237,7 +237,8 @@ function CollectionPage() {
   const clearFilter = useCallback(
     (traitType: string) => {
       setSelectedFilters((prev) => {
-        const { [traitType]: _, ...rest } = prev;
+        const rest = { ...prev };
+        delete rest[traitType];
         return applyEnforcedFilters(rest);
       });
       setCurrentPage(1);
@@ -251,7 +252,7 @@ function CollectionPage() {
   }, [applyEnforcedFilters]);
 
   const [isCompactGrid, setIsCompactGrid] = useState(true);
-  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
+  const { selectedPasses, togglePass, replaceSelection, clearSelection, getTotalPrice } = useSelectedPassesStore(
     "$collection" + collection,
   );
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
@@ -290,24 +291,11 @@ function CollectionPage() {
 
   // Update effect to use debounced value
   useEffect(() => {
-    if (sweepCount > 0 && tokens.length > 0) {
-      // Only select from valid listings (listed and current owner matches lister)
+    if (sweepCount > 0 && listedTokensOnPage.length > 0) {
       const itemsToSelect = listedTokensOnPage.slice(0, sweepCount);
-      const currentSelectedIds = new Set(selectedPasses.map((pass) => pass.token_id));
-
-      itemsToSelect.forEach((item) => {
-        if (!currentSelectedIds.has(item.token_id)) {
-          togglePass(item);
-        }
-      });
-
-      selectedPasses.forEach((pass) => {
-        if (!itemsToSelect.some((p) => p.token_id === pass.token_id)) {
-          togglePass(pass);
-        }
-      });
+      replaceSelection(itemsToSelect);
     }
-  }, [sweepCount, tokens, selectedPasses, togglePass]);
+  }, [sweepCount, listedTokensOnPage, replaceSelection]);
 
   // Reset sweep count only when manually selecting passes
   useEffect(() => {
@@ -323,7 +311,9 @@ function CollectionPage() {
 
   return (
     <>
-      {isSeasonPassEndSeason ? (
+      {!isValidCollection ? (
+        <div className="text-center py-6 text-muted-foreground">Collection not available.</div>
+      ) : isSeasonPassEndSeason ? (
         <div className="text-lg border px-4 py-2 flex items-center gap-2 mt-2 mx-6">
           <AlertTriangle className="w-4 h-4" />
           <p>The current season has ended and Season 1 Passes can no longer be used in Realms.</p>
@@ -473,53 +463,45 @@ function CollectionPage() {
 
           <div className="flex-1">
             <div className="flex flex-col gap-2 px-2">
-              <Suspense
-                fallback={
-                  <div className="flex-grow flex items-center justify-center min-h-[200px]">
-                    <Loader2 className="w-10 h-10 animate-spin" />
-                  </div>
-                }
-              >
-                {tokensQuery.isLoading && (
-                  <div className="flex-grow flex items-center justify-center min-h-[200px]">
-                    <Loader2 className="w-10 h-10 animate-spin" />
-                  </div>
-                )}
+              {tokensQuery.isLoading && (
+                <div className="flex-grow flex items-center justify-center min-h-[200px]">
+                  <Loader2 className="w-10 h-10 animate-spin" />
+                </div>
+              )}
 
-                {!tokensQuery.isLoading && tokens.length > 0 && (
-                  <CollectionTokenGrid
-                    tokens={tokens}
-                    isCompactGrid={isCompactGrid}
-                    onToggleSelection={(pass) => {
-                      // Only allow valid listings: listed and owner matches lister
-                      const listed = pass.expiration !== null && pass.best_price_hex !== null;
-                      const owner = pass.token_owner?.toLowerCase?.();
-                      const lister = pass.order_owner?.toLowerCase?.();
-                      const valid = listed && owner && lister && owner === lister;
-                      if (valid) togglePass(pass);
-                    }}
-                    pageId={`$collection${collection}`}
-                  />
-                )}
+              {!tokensQuery.isLoading && tokens.length > 0 && (
+                <CollectionTokenGrid
+                  tokens={tokens}
+                  isCompactGrid={isCompactGrid}
+                  onToggleSelection={(pass) => {
+                    // Only allow valid listings: listed and owner matches lister
+                    const listed = pass.expiration !== null && pass.best_price_hex !== null;
+                    const owner = pass.token_owner?.toLowerCase?.();
+                    const lister = pass.order_owner?.toLowerCase?.();
+                    const valid = listed && owner && lister && owner === lister;
+                    if (valid) togglePass(pass);
+                  }}
+                  pageId={`$collection${collection}`}
+                />
+              )}
 
-                {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
-                  <div className="text-center py-6 text-muted-foreground">No items match the selected filters.</div>
-                )}
-                {!tokensQuery.isLoading &&
-                  tokens.length === 0 &&
-                  Object.keys(selectedFilters).length === 0 &&
-                  (totalItems > 0 ? (
-                    <div className="text-center py-6 text-muted-foreground">
-                      No items on this page. Try a lower page number or{" "}
-                      <button className="underline" onClick={() => handlePageChange(Math.max(1, totalPages))}>
-                        go to last page
-                      </button>
-                      .
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">No items available.</div>
-                  ))}
-              </Suspense>
+              {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
+                <div className="text-center py-6 text-muted-foreground">No items match the selected filters.</div>
+              )}
+              {!tokensQuery.isLoading &&
+                tokens.length === 0 &&
+                Object.keys(selectedFilters).length === 0 &&
+                (totalItems > 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No items on this page. Try a lower page number or{" "}
+                    <button className="underline" onClick={() => handlePageChange(Math.max(1, totalPages))}>
+                      go to last page
+                    </button>
+                    .
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">No items available.</div>
+                ))}
             </div>
           </div>
 

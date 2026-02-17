@@ -11,9 +11,17 @@ export type WorldmapChunkDiagnosticsEvent =
   | "prefetch_queued"
   | "prefetch_skipped"
   | "prefetch_executed"
+  | "bounds_switch_requested"
+  | "bounds_switch_applied"
+  | "bounds_switch_skipped_same_signature"
+  | "bounds_switch_stale_dropped"
+  | "bounds_switch_skipped_stale_token"
+  | "bounds_switch_failed"
   | "refresh_requested"
   | "refresh_executed"
   | "refresh_superseded"
+  | "duplicate_tile_cache_invalidated"
+  | "duplicate_tile_reconcile_requested"
   | "switch_duration_recorded"
   | "manager_duration_recorded";
 
@@ -30,9 +38,17 @@ export interface WorldmapChunkDiagnostics {
   prefetchQueued: number;
   prefetchSkipped: number;
   prefetchExecuted: number;
+  boundsSwitchRequested: number;
+  boundsSwitchApplied: number;
+  boundsSwitchSkippedSameSignature: number;
+  boundsSwitchStaleDropped: number;
+  boundsSwitchSkippedStaleToken: number;
+  boundsSwitchFailed: number;
   refreshRequested: number;
   refreshExecuted: number;
   refreshSuperseded: number;
+  duplicateTileCacheInvalidated: number;
+  duplicateTileReconcileRequested: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   managerDurationMsTotal: number;
@@ -58,9 +74,17 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     prefetchQueued: 0,
     prefetchSkipped: 0,
     prefetchExecuted: 0,
+    boundsSwitchRequested: 0,
+    boundsSwitchApplied: 0,
+    boundsSwitchSkippedSameSignature: 0,
+    boundsSwitchStaleDropped: 0,
+    boundsSwitchSkippedStaleToken: 0,
+    boundsSwitchFailed: 0,
     refreshRequested: 0,
     refreshExecuted: 0,
     refreshSuperseded: 0,
+    duplicateTileCacheInvalidated: 0,
+    duplicateTileReconcileRequested: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     managerDurationMsTotal: 0,
@@ -113,6 +137,24 @@ export function recordChunkDiagnosticsEvent(
     case "prefetch_executed":
       diagnostics.prefetchExecuted += 1;
       break;
+    case "bounds_switch_requested":
+      diagnostics.boundsSwitchRequested += 1;
+      break;
+    case "bounds_switch_applied":
+      diagnostics.boundsSwitchApplied += 1;
+      break;
+    case "bounds_switch_skipped_same_signature":
+      diagnostics.boundsSwitchSkippedSameSignature += 1;
+      break;
+    case "bounds_switch_stale_dropped":
+      diagnostics.boundsSwitchStaleDropped += 1;
+      break;
+    case "bounds_switch_skipped_stale_token":
+      diagnostics.boundsSwitchSkippedStaleToken += 1;
+      break;
+    case "bounds_switch_failed":
+      diagnostics.boundsSwitchFailed += 1;
+      break;
     case "refresh_requested":
       diagnostics.refreshRequested += 1;
       break;
@@ -121,6 +163,12 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "refresh_superseded":
       diagnostics.refreshSuperseded += 1;
+      break;
+    case "duplicate_tile_cache_invalidated":
+      diagnostics.duplicateTileCacheInvalidated += 1;
+      break;
+    case "duplicate_tile_reconcile_requested":
+      diagnostics.duplicateTileReconcileRequested += 1;
       break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;

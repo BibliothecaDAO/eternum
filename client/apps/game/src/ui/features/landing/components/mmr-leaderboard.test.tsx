@@ -2,30 +2,24 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
-import { useWorldsAvailability } from "@/hooks/use-world-availability";
+import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MMRLeaderboard } from "./mmr-leaderboard";
-
-vi.mock("@/hooks/use-factory-worlds", () => ({
-  useFactoryWorlds: vi.fn(),
-}));
-
-vi.mock("@/hooks/use-world-availability", () => ({
-  useWorldsAvailability: vi.fn(),
-}));
 
 vi.mock("@/ui/utils/utils", () => ({
   displayAddress: vi.fn((address: string) => address),
 }));
 
-vi.mock("starknet", () => ({
-  hash: {
-    getSelectorFromName: vi.fn(() => "0x1"),
-  },
+vi.mock("@/ui/features/market/landing-markets/maybe-controller", () => ({
+  MaybeController: ({ address, className }: { address: string; className?: string }) => (
+    <div className={className}>{address}</div>
+  ),
 }));
 
-const mockedUseFactoryWorlds = vi.mocked(useFactoryWorlds);
-const mockedUseWorldsAvailability = vi.mocked(useWorldsAvailability);
+vi.mock("starknet", () => ({
+  hash: {
+    getSelectorFromName: vi.fn(() => "0xselector"),
+  },
+}));
 
 const waitForAsyncWork = async () => {
   await Promise.resolve();
@@ -39,6 +33,20 @@ const createJsonResponse = (payload: unknown): Response =>
     json: async () => payload,
   }) as Response;
 
+const buildRow = (overrides: Record<string, unknown> = {}) => ({
+  player_address: "0x123",
+  id: "0x1:0x2:0x3:0x0",
+  executed_at: "2026-02-12T00:00:00Z",
+  old_mmr_low: "0x0",
+  old_mmr_high: "0x0",
+  new_mmr_low: "0x0",
+  new_mmr_high: "0x0",
+  event_timestamp: "0x65c8f0f0",
+  mmr_rank: 1,
+  total_rows: 1,
+  ...overrides,
+});
+
 describe("MMRLeaderboard", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -46,36 +54,22 @@ describe("MMRLeaderboard", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.useFakeTimers();
-    mockedUseFactoryWorlds.mockReturnValue({
-      worlds: [{ name: "demo-world" }],
-      isLoading: false,
-    } as ReturnType<typeof useFactoryWorlds>);
-
-    mockedUseWorldsAvailability.mockReturnValue({
-      results: new Map([["mainnet:demo-world", { meta: { mmrEnabled: true } }]]),
-      isAnyLoading: false,
-    } as ReturnType<typeof useWorldsAvailability>);
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString();
-
-      if (url.includes("/torii/sql?query=")) {
-        const query = decodeURIComponent(url.split("query=")[1] ?? "");
-
-        if (query.includes("WorldConfig")) {
-          return createJsonResponse([{ mmr_token_address: "0x1" }]);
-        }
-
-        if (query.includes("BlitzRealmPlayerRegister")) {
-          return createJsonResponse([{ player: "0x123", name: "0x616c696365", registered_points: "0x2" }]);
-        }
+      if (!url.includes("/sql?query=")) {
+        throw new Error(`Unexpected fetch URL: ${url}`);
       }
 
-      if (url.includes("/katana")) {
-        return createJsonResponse([{ id: 0, result: ["0x64", "0x0"] }]);
+      if (url.includes("eternum-global-mainnet")) {
+        return createJsonResponse([buildRow()]);
       }
 
-      throw new Error(`Unexpected fetch URL: ${url}`);
+      if (url.includes("blitz-slot-global-1")) {
+        return createJsonResponse([buildRow({ player_address: "0x456" })]);
+      }
+
+      throw new Error(`Unexpected global torii URL: ${url}`);
     });
 
     vi.stubGlobal("fetch", fetchMock);
@@ -90,47 +84,79 @@ describe("MMRLeaderboard", () => {
       root.unmount();
       await waitForAsyncWork();
     });
-    container.remove();
 
+    container.remove();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
     vi.useRealTimers();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("re-fetches leaderboard data on an interval without manual refresh", async () => {
+  it("does not re-fetch leaderboard data automatically", async () => {
     await act(async () => {
       root.render(<MMRLeaderboard />);
       await waitForAsyncWork();
     });
 
-    await act(async () => {
-      await waitForAsyncWork();
-    });
-
     const fetchMock = vi.mocked(fetch);
-    const worldButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "demo-world",
-    );
-    expect(worldButton).toBeDefined();
-
-    await act(async () => {
-      worldButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      await waitForAsyncWork();
-    });
 
     await vi.waitFor(() => {
       expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
     });
 
-    const initialFetchCallCount = fetchMock.mock.calls.length;
-    expect(initialFetchCallCount).toBeGreaterThan(0);
+    const initialCallCount = fetchMock.mock.calls.length;
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(65_000);
       await waitForAsyncWork();
     });
 
-    expect(fetchMock.mock.calls.length).toBeGreaterThan(initialFetchCallCount);
+    expect(fetchMock.mock.calls.length).toBe(initialCallCount);
+  });
+
+  it("defaults to slot and keeps mainnet disabled as coming soon", async () => {
+    await act(async () => {
+      root.render(<MMRLeaderboard />);
+      await waitForAsyncWork();
+    });
+
+    const buttons = Array.from(container.querySelectorAll("button"));
+    const slotButton = buttons.find((button) => button.textContent?.toLowerCase().includes("slot"));
+    const mainnetButton = buttons.find((button) => button.textContent?.toLowerCase().includes("mainnet"));
+
+    expect(slotButton).toBeDefined();
+    expect(mainnetButton).toBeDefined();
+    expect(mainnetButton?.textContent?.toLowerCase()).toContain("coming soon");
+    expect((mainnetButton as HTMLButtonElement).disabled).toBe(true);
+
+    const fetchMock = vi.mocked(fetch);
+    const fetchedUrls = fetchMock.mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
+
+    expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(true);
+    expect(fetchedUrls.some((url) => url.includes("eternum-global-mainnet"))).toBe(false);
+
+    const slotUrl = fetchedUrls.find((url) => url.includes("blitz-slot-global-1"));
+    expect(slotUrl).toBeDefined();
+
+    const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";
+    const slotToken = (MMR_TOKEN_BY_CHAIN.slot ?? "").toLowerCase();
+
+    expect(slotToken.length).toBeGreaterThan(0);
+    expect(slotQuery.toLowerCase()).toContain(
+      "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0xselector', '0x')",
+    );
+    expect(slotQuery.toLowerCase()).toContain(`lower(id) like '%:${slotToken}:%'`);
+  });
+
+  it("shows the MMR tier column on landing entries", async () => {
+    await act(async () => {
+      root.render(<MMRLeaderboard />);
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain("Tier");
+      expect(container.textContent).toContain("Iron");
+    });
   });
 });

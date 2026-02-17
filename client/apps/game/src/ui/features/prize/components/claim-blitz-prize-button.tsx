@@ -121,7 +121,14 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
               <span className="flex justify-between gap-4">
                 <span>Share:</span>
                 <span className={prizeShare ? "text-yellow-400" : "text-gray-400"}>
-                  {formatTokenAmount(prizeShare)}
+                  {typeof prizeShare === "bigint" ? (
+                    <span className="inline-flex items-center gap-1">
+                      <img src="/tokens/lords.png" alt="LORDS" className="h-3 w-3 rounded-full object-contain" />
+                      <span>{formatTokenAmount(prizeShare)}</span>
+                    </span>
+                  ) : (
+                    formatTokenAmount(prizeShare)
+                  )}
                 </span>
               </span>
             </div>

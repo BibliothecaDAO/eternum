@@ -4,6 +4,7 @@ import { RealmMetadata } from "@/types";
 import { calculateUnregisteredShareholderPointsCache, type ContractAddressAndAmount } from "@/utils/leaderboard";
 import type { ContractAddress } from "@bibliothecadao/types";
 import { fetchSQL, gameClientFetch } from "./apiClient";
+import { resolveCollectionTokensQueryMode } from "./query-selection";
 import { QUERIES } from "./queries";
 
 const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
@@ -118,7 +119,7 @@ export function clearCollectionTraitsCache(contractAddress: string, mode?: "list
  */
 export async function fetchCollectionTraits(
   contractAddress: string,
-  options?: { mode?: "listed" | "full" },
+  options?: { mode?: "listed" | "full"; signal?: AbortSignal },
 ): Promise<Record<string, string[]>> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
@@ -150,15 +151,15 @@ export async function fetchCollectionTraits(
       "{collectionId}",
       String(collectionId),
     );
-    rawData = await fetchSQL<CollectionTrait[]>(listedQuery);
+    rawData = await fetchSQL<CollectionTrait[]>(listedQuery, { signal: options?.signal });
     if (!rawData || rawData.length === 0) {
       const fullQuery = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", padded);
-      rawData = await fetchSQL<CollectionTrait[]>(fullQuery);
+      rawData = await fetchSQL<CollectionTrait[]>(fullQuery, { signal: options?.signal });
     }
   } else {
     // Full traits regardless of listing state
     const fullQuery = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", padded);
-    rawData = await fetchSQL<CollectionTrait[]>(fullQuery);
+    rawData = await fetchSQL<CollectionTrait[]>(fullQuery, { signal: options?.signal });
   }
 
   const traitsMap: Record<string, Set<string>> = {};
@@ -200,7 +201,10 @@ export async function fetchCollectionTraits(
 /**
  * Fetch totals for active market orders from the API
  */
-export async function fetchCollectionStatistics(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
+export async function fetchCollectionStatistics(
+  contractAddress: string,
+  options?: { signal?: AbortSignal },
+): Promise<ActiveMarketOrdersTotal[]> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
     throw new Error(`No collection found for address ${contractAddress}`);
@@ -221,8 +225,8 @@ export async function fetchCollectionStatistics(contractAddress: string): Promis
   );
 
   const [statsRows, acceptedPriceRows] = await Promise.all([
-    fetchSQL<ActiveMarketOrdersTotal[]>(statsQuery),
-    fetchSQL<{ price_hex: string }[]>(acceptedPricesQuery),
+    fetchSQL<ActiveMarketOrdersTotal[]>(statsQuery, { signal: options?.signal }),
+    fetchSQL<{ price_hex: string }[]>(acceptedPricesQuery, { signal: options?.signal }),
   ]);
 
   const base = statsRows?.[0] ?? { active_order_count: 0, open_orders_total_wei: null, floor_price_wei: null };
@@ -662,6 +666,7 @@ interface FetchAllCollectionTokensResult {
 export async function fetchAllCollectionTokens(
   contractAddress: string,
   options: FetchAllCollectionTokensOptions = {},
+  requestOptions?: { signal?: AbortSignal },
 ): Promise<FetchAllCollectionTokensResult> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
@@ -776,12 +781,20 @@ export async function fetchAllCollectionTokens(
   const fullOrderByPaged = buildFullOrderPaged();
   const fullOrderByFinal = buildFullOrderFinal();
 
-  // Choose fast listed-only or full paged query
-  const queryTemplate = listedOnly ? QUERIES.ALL_COLLECTION_TOKENS_LISTED : QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
+  const queryMode = resolveCollectionTokensQueryMode({
+    listedOnly,
+    hasTraitFilters: traitFilterClauses.length > 0,
+  });
 
-  const countTemplate = listedOnly
-    ? QUERIES.ALL_COLLECTION_TOKENS_LISTED_COUNT
-    : QUERIES.ALL_COLLECTION_TOKENS_FULL_COUNT;
+  let queryTemplate = QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
+  let countTemplate = QUERIES.ALL_COLLECTION_TOKENS_FULL_COUNT;
+  if (queryMode === "listed_with_traits") {
+    queryTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED;
+    countTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED_COUNT;
+  } else if (queryMode === "listed_no_traits") {
+    queryTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED_NO_TRAITS;
+    countTemplate = QUERIES.ALL_COLLECTION_TOKENS_LISTED_NO_TRAITS_COUNT;
+  }
 
   const query = queryTemplate
     .replaceAll("{contractAddress}", padAddress(contractAddress))
@@ -804,8 +817,8 @@ export async function fetchAllCollectionTokens(
 
   // Execute both queries
   const [rawData, countData] = await Promise.all([
-    fetchSQL<any[]>(query),
-    fetchSQL<{ total_count: number }[]>(countQuery),
+    fetchSQL<any[]>(query, { signal: requestOptions?.signal }),
+    fetchSQL<{ total_count: number }[]>(countQuery, { signal: requestOptions?.signal }),
   ]);
 
   const tokens = rawData.map((item) => {
@@ -925,13 +938,14 @@ interface ActiveMarketOrder {
 export async function fetchActiveMarketOrders(
   contractAddress: string,
   tokenIds: string[],
+  options?: { signal?: AbortSignal },
 ): Promise<ActiveMarketOrder[]> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   const query = QUERIES.ACTIVE_MARKET_ORDERS.replace("{collectionId}", collectionId?.toString() ?? "0").replace(
     "{tokenIds}",
     tokenIds.map((id) => `'${id}'`).join(","),
   );
-  return await fetchSQL<ActiveMarketOrder[]>(query);
+  return await fetchSQL<ActiveMarketOrder[]>(query, { signal: options?.signal });
 }
 
 export async function fetchTokenBalancesWithMetadata(
@@ -994,6 +1008,7 @@ export async function fetchMarketOrderEvents(
   type: "sales" | "listings" | "all",
   limit?: number,
   offset?: number,
+  options?: { signal?: AbortSignal },
 ): Promise<MarketOrderEvent[]> {
   const finalType = type === "sales" ? "Accepted" : type;
   const collectionId = getCollectionByAddress(contractAddress)?.id ?? 1;
@@ -1003,7 +1018,7 @@ export async function fetchMarketOrderEvents(
     .replace("{limit}", limit?.toString() ?? "50")
     .replace("{offset}", offset?.toString() ?? "0")
     .replaceAll("{type}", finalType);
-  const rawData = await fetchSQL<RawMarketOrderEvent[]>(query);
+  const rawData = await fetchSQL<RawMarketOrderEvent[]>(query, { signal: options?.signal });
   return rawData.map((item) => ({
     event_id: item.internal_event_id,
     executed_at: item.executed_at ?? null,

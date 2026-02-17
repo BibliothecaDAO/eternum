@@ -753,12 +753,10 @@
     "army": 1
   },
   "battle": {
-    "regularImmunityTicks": 24,
+    "regularImmunityTicks": 0,
     "villageImmunityTicks": 0,
     "delaySeconds": 0,
-    "villageRaidImmunityTicks": 24,
-    "graceTickCount": 0,
-    "graceTickCountHyp": 0
+    "villageRaidImmunityTicks": 24
   },
   "troop": {
     "damage": {
@@ -792,13 +790,13 @@
     "limit": {
       "guardResurrectionDelay": 600,
       "mercenariesTroopLowerBound": 800,
-      "mercenariesTroopUpperBound": 1600,
+      "mercenariesTroopUpperBound": 1500,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000,
-      "settlementDeploymentCap": 6000,
-      "cityDeploymentCap": 30000,
-      "kingdomDeploymentCap": 90000,
-      "empireDeploymentCap": 180000,
+      "settlementDeploymentCap": 3000,
+      "cityDeploymentCap": 15000,
+      "kingdomDeploymentCap": 45000,
+      "empireDeploymentCap": 90000,
       "t1TierStrength": 1,
       "t2TierStrength": 3,
       "t3TierStrength": 9,
@@ -1478,15 +1476,15 @@
     },
     {
       "resource": 26,
-      "amount": 3000
+      "amount": 1500
     },
     {
       "resource": 29,
-      "amount": 3000
+      "amount": 1500
     },
     {
       "resource": 32,
-      "amount": 3000
+      "amount": 1500
     }
   ],
   "villageStartingResources": [],
@@ -3265,7 +3263,7 @@
       "contracts": [
         {
           "address": "0x22b347318c17f3cdb805295f46b07b28f1d1ca8dc5e355a67197ddb39d84aa2",
-          "class_hash": "0x775996e1940d07a2be04af0ac54cf1f38e7e596ca245475caa86544eee07ba7",
+          "class_hash": "0x15527f9f5501d4211e878e611c1d7b189ca1612f4a79e6322e28b1b1b011c48",
           "init_calldata": [],
           "tag": "s1_eternum-agent_discovery_systems",
           "selector": "0x39779154845217b9230e347a39ab6e47e8f2d46c1fd80c6996d13988857d770",
@@ -3742,7 +3740,7 @@
         },
         {
           "address": "0x11b2c8ff3833b152020eb78c88d10b1b2e9dfe7f9f77cce414833c80bedb376",
-          "class_hash": "0x35c553ccadf32a0caad8c9a32ee4dbe2c74303e602839e38dcf367cab31ed2f",
+          "class_hash": "0x34adc7e042857829dbede14c56fd8bdf633c734061fc4b99d36b29fb12c6179",
           "init_calldata": [],
           "tag": "s1_eternum-bank_systems",
           "selector": "0x44475a775d79049bbe99567b7c00a1e4d8d582cade61a8aec07ca3bb234f6e6",
@@ -3994,7 +3992,7 @@
         },
         {
           "address": "0x497b04337f49f4c80f8f3f6ebd205dd34abcab2a12f83e64dd26c25639f6b46",
-          "class_hash": "0x31694ff692bf38ca8f7af97f94bad42d11c4f4482685bdaf41fa34f3a2c8678",
+          "class_hash": "0x7df3f649b507f097124a45b5246bf2fb54dac11c59a4dd8b7c2027670f5aed7",
           "init_calldata": [],
           "tag": "s1_eternum-blitz_realm_systems",
           "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",
@@ -6494,7 +6492,7 @@
         },
         {
           "address": "0x2ab0f73ea069f899189a3a44c320580b59c6dbe6d23a1c0c63b7a558e37984e",
-          "class_hash": "0x3e723f0264c789d950b80a6f6dad270c2cdf8f9a2b3a7aff26823d1dfe581a2",
+          "class_hash": "0x4e49678d60952356dbc2b6aec2704032e52856eb74a4b931e6083506e04072f",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_discovery_systems",
           "selector": "0x4de7ee78f9f01b8f7b98c172552cc0f7b81c8706ffc85e7b831021e820420d1",
@@ -7528,7 +7526,7 @@
         },
         {
           "address": "0x1e00979c39dfd68d69b450ced3f4b770c66420aa5fa046b3ad60e82a45c4459",
-          "class_hash": "0x4c4de95f9e88c1d703774b5ac08d24543bea2fea4145b68355baa32fe7f563b",
+          "class_hash": "0x1fdfbac61bb8f7ca913c4b7a29be9ea1f2d2b563e45f29d97f1ce671961814",
           "init_calldata": [],
           "tag": "s1_eternum-mine_discovery_systems",
           "selector": "0x567d970e2796f641f9a9c23fa16378ddaee5c8a7d27ac4e3edbd4dfa25a1743",
@@ -8448,7 +8446,7 @@
         },
         {
           "address": "0x6fe81b60156d9bb36aca9dd2392b08cc5aff2d5d8e9895b5ca9d647af1edb47",
-          "class_hash": "0x7fb67a6bf3b7aaf4dc585572282376847bde6e8972625c4314e5f420bb344aa",
+          "class_hash": "0x10cddce6a832dcafd42a17bdb2aa5103186fe2803718b3373f32f7ac10a3495",
           "init_calldata": [],
           "tag": "s1_eternum-prize_distribution_systems",
           "selector": "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179",
@@ -9281,7 +9279,7 @@
         },
         {
           "address": "0x33b3188acc481d8e1ddfeef9e537b877187371eb08d3a097cde05a110eb8e64",
-          "class_hash": "0x243d77aabc6b700ea1fed68f685d32e51fd0c37afcb7d6842d8b266e64ab0aa",
+          "class_hash": "0x289a414ad1fe6c07d68952ca7cd3baaed8524856ebb65e33e533c9db9e6ae70",
           "init_calldata": [],
           "tag": "s1_eternum-realm_internal_systems",
           "selector": "0x4bb1850a95a41d6b0c7992a0c75bb1212f0ea054dc04866d6a6392cccec58b3",
@@ -9771,7 +9769,7 @@
         },
         {
           "address": "0x7e7e98c572a13499dbaffb1bac93a9ff0e9ee3d34922245612ae8c4e9ee40f",
-          "class_hash": "0x2e93a34ca36b9c3f69125572dd64407dc1ba0f000e3d0700da50fefcf828796",
+          "class_hash": "0x2e052b0a5aca1eeadd9c2137f61217c2236b4e10bde2aa17c0c29b9d31eaca5",
           "init_calldata": [],
           "tag": "s1_eternum-relic_chest_discovery_systems",
           "selector": "0x6c7d7c49c05a128b5ef90b795f638288b11b478ce950a706f6c1db5356ef6a6",
@@ -10248,7 +10246,7 @@
         },
         {
           "address": "0x4aa492ef1dfa57020dc119785c48388d510c04868a815c344677e3d63f00a26",
-          "class_hash": "0x5d5c9eea6d8e670d31ac1dceaa7579e3cbdcf3bcaa8d0b8896409bb346162d6",
+          "class_hash": "0x30314d8ce2afb9e7a2c1b36704b949afbf90870c9c1345753787f184fe0da51",
           "init_calldata": [],
           "tag": "s1_eternum-relic_systems",
           "selector": "0x632480e29dba9c95a8b4e4ba0c7ad48bd5abdd3906211ec6f8a5350249b9d0",
@@ -12086,7 +12084,7 @@
         },
         {
           "address": "0x10ac9cc6f918452ec4b0e5b7fac8d27b86ca18ef3652d6c13b4e4d30d333dfc",
-          "class_hash": "0x192a8023fd35423c048a243720f878df61e1ab9bdee744ef605dea1fa772edd",
+          "class_hash": "0x6b3b0581f39e2183d1e913e4859ffe1486da9c770e6ab62dc4a3ff804dacfdb",
           "init_calldata": [],
           "tag": "s1_eternum-troop_battle_systems",
           "selector": "0x473dc1d8bca81e2a2d92011b4171ffe608d47dcde63f7d112f03bb767b57aea",
@@ -12877,7 +12875,7 @@
         },
         {
           "address": "0x6be9835076acc2de94cebd7e2195f96e41f27f2ebd49b79539bb598aa41a4ca",
-          "class_hash": "0x4f87438af0edba61e20e252830d4485e8c75b258747bd119fb3a35a89aa53dd",
+          "class_hash": "0x1f6ca43456acb7935783ba6006443c3d807b1942c5f581dec57f83b52d7f15b",
           "init_calldata": [],
           "tag": "s1_eternum-troop_movement_systems",
           "selector": "0x522c38540c126c2f193f496d4eb1882a63cdc02997f64c298d41622b26ded2b",
@@ -13661,7 +13659,7 @@
         },
         {
           "address": "0x67a81cefaca3b0d9cf1824be057b47dd8d049d57265a2cef4ca63e206e4c364",
-          "class_hash": "0x67b14f88f9ebe5e872027ed26ae0df42d5d7719bac7ee4fb800e29d73b19c8d",
+          "class_hash": "0x6eefa37a634b7aad9dedba6c9b8ed55cd2a689deb990aa987b4b2fc3b5f51cd",
           "init_calldata": [],
           "tag": "s1_eternum-troop_raid_systems",
           "selector": "0x2cba999742f3b0dad2f036c7ea44826e236555cf5d82930faadcf43260524",
@@ -13913,7 +13911,7 @@
         },
         {
           "address": "0x29e76d7efc71fad9724696c299cc5ed9ac3d94e5e776c7749918720779d918a",
-          "class_hash": "0x871de72781a59732528cf96750f6fcf718557eb58bcdf890a40ec62b287fd8",
+          "class_hash": "0x467cb9aa06420ac94d190698f9cb8dddbb0f01678d174cec5565e481aa5522b",
           "init_calldata": [],
           "tag": "s1_eternum-village_discovery_systems",
           "selector": "0x52ecb1dffcd93e8b7f1379f426b123cc1de850735306874424bf8fe817f3862",
@@ -14390,7 +14388,7 @@
         },
         {
           "address": "0xd3d34c4d7032619e90e50ca014fcf9464442d4e5ae8774d12a3fc458513c3d",
-          "class_hash": "0x2460af054f148d45dc6f0560e8ab68e753926f7645f7034987dc598540ee2ba",
+          "class_hash": "0x7ad62098fdb2c699aed14ff292f88caa13bd30698e5333f735524c5f2f9d321",
           "init_calldata": [],
           "tag": "s1_eternum-village_systems",
           "selector": "0x7626c7e3f63dbae9658ee764d453a8dbdbc0df9797ba797fa6564759c444771",
@@ -14635,31 +14633,31 @@
       "libraries": [
         {
           "class_hash": "0x164e7764f2d85b3f4f26058f4b072f32d4425f47f371890088bbcd06f69807b",
-          "tag": "s1_eternum-biome_library_v0_1_10",
+          "tag": "s1_eternum-biome_library_v0_1_11",
           "selector": "0x17ea0292301ae3a0248f996d5cfb3e4ca37cc9bdcd1f88dc7c7977ed24f9c29",
           "systems": [],
-          "version": "0_1_10"
+          "version": "0_1_11"
         },
         {
           "class_hash": "0x60d02b1fe2c8456da0a76d89ce55731a1861913132b301574b647f090b272ce",
-          "tag": "s1_eternum-combat_library_v0_1_10",
+          "tag": "s1_eternum-combat_library_v0_1_11",
           "selector": "0x6a352fe85e5966806dfb50f4723a8e11a29bf0c5383a3f6facc68cdbc40850a",
           "systems": [],
-          "version": "0_1_10"
+          "version": "0_1_11"
         },
         {
           "class_hash": "0x43bcc77552817dd12d391c547d593342c6f884bc1069f1ef8a4ef88f2037e09",
-          "tag": "s1_eternum-rng_library_v0_1_10",
+          "tag": "s1_eternum-rng_library_v0_1_11",
           "selector": "0x706baa7e13795e75b18774b3068f4bfbf16c3c22692cd8ac1e329255380ab03",
           "systems": [],
-          "version": "0_1_10"
+          "version": "0_1_11"
         },
         {
-          "class_hash": "0x8aafbe37e8535e26ee451c3e1f6d7df91eb892379cb78f892cca43c4a032ba",
-          "tag": "s1_eternum-structure_creation_library_v0_1_10",
+          "class_hash": "0xf39d716b6d3faf10cb08faff3b24d72c33d6cbfb6e62ec8fff288817618b17",
+          "tag": "s1_eternum-structure_creation_library_v0_1_11",
           "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
           "systems": [],
-          "version": "0_1_10"
+          "version": "0_1_11"
         }
       ],
       "models": [

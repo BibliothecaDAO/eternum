@@ -1,4 +1,5 @@
 import { displayAddress } from "@/ui/utils/utils";
+import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import { getAddressName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -175,7 +176,7 @@ export const BlitzMMRTable = () => {
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formatMMR = (mmr: bigint): string => {
-    const mmrValue = mmr / 10n ** 18n;
+    const mmrValue = mmr / MMR_TOKEN_DECIMALS;
     return mmrValue.toString();
   };
 
@@ -209,17 +210,22 @@ export const BlitzMMRTable = () => {
             <tr className="text-gold/70 border-b border-gold/10">
               <th className="text-left py-2 px-2">#</th>
               <th className="text-left py-2 px-2">Player</th>
+              <th className="text-center py-2 px-2">Tier</th>
               <th className="text-right py-2 px-2">MMR</th>
             </tr>
           </thead>
           <tbody>
-            {playerMMRs.map((player, idx) => (
-              <tr key={toHexString(player.address)} className="border-b border-gold/5 hover:bg-gold/5">
-                <td className="py-2 px-2 text-gold/50">{idx + 1}</td>
-                <td className="py-2 px-2 text-gold/80">{getPlayerDisplayName(player.address)}</td>
-                <td className="py-2 px-2 text-right text-gold font-medium">{formatMMR(player.mmr)}</td>
-              </tr>
-            ))}
+            {playerMMRs.map((player, idx) => {
+              const tier = getMMRTierFromRaw(player.mmr);
+              return (
+                <tr key={toHexString(player.address)} className="border-b border-gold/5 hover:bg-gold/5">
+                  <td className="py-2 px-2 text-gold/50">{idx + 1}</td>
+                  <td className="py-2 px-2 text-gold/80">{getPlayerDisplayName(player.address)}</td>
+                  <td className={`py-2 px-2 text-center font-medium ${tier.color}`}>{tier.name}</td>
+                  <td className="py-2 px-2 text-right text-gold font-medium">{formatMMR(player.mmr)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -5,6 +5,8 @@ import { createStore, StoreApi, useStore } from "zustand";
 interface SelectedPassesStore {
   selectedPasses: MergedNftData[];
   togglePass: (pass: MergedNftData) => void;
+  replaceSelection: (passes: MergedNftData[]) => void;
+  removeSelection: (tokenIds: string[]) => void;
   clearSelection: () => void;
   isSelected: (tokenId: string) => boolean;
   getTotalPrice: () => number;
@@ -14,15 +16,13 @@ interface SelectedPassesStore {
 const storeInstances = new Map<string, StoreApi<SelectedPassesStore>>();
 
 // Factory function to create a store instance
-const createSelectedPassesStore = () =>
+export const createSelectedPassesStore = () =>
   createStore<SelectedPassesStore>((set, get) => ({
     selectedPasses: [],
 
     togglePass: (pass: MergedNftData) => {
-      console.log("togglePass", pass);
       set((state) => {
         const isSelected = state.selectedPasses.some((p) => p.token_id === pass.token_id);
-        console.log("isSelected", state.selectedPasses);
         if (isSelected) {
           return {
             selectedPasses: state.selectedPasses.filter((p) => p.token_id !== pass.token_id),
@@ -33,6 +33,18 @@ const createSelectedPassesStore = () =>
           };
         }
       });
+    },
+
+    replaceSelection: (passes: MergedNftData[]) => {
+      set({ selectedPasses: passes });
+    },
+
+    removeSelection: (tokenIds: string[]) => {
+      if (tokenIds.length === 0) return;
+      const ids = new Set(tokenIds.map((id) => String(id)));
+      set((state) => ({
+        selectedPasses: state.selectedPasses.filter((pass) => !ids.has(String(pass.token_id))),
+      }));
     },
 
     clearSelection: () => set({ selectedPasses: [] }),
@@ -58,6 +70,8 @@ export const useSelectedPassesStore = (pageId: string) => {
   return {
     selectedPasses: useStore(store, (state) => state.selectedPasses),
     togglePass: useStore(store, (state) => state.togglePass),
+    replaceSelection: useStore(store, (state) => state.replaceSelection),
+    removeSelection: useStore(store, (state) => state.removeSelection),
     clearSelection: useStore(store, (state) => state.clearSelection),
     isSelected: useStore(store, (state) => state.isSelected),
     getTotalPrice: useStore(store, (state) => state.getTotalPrice),

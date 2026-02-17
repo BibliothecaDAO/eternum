@@ -82,6 +82,7 @@ import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
+  getChunkKeysContainingHexInRenderBounds,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
   isHexWithinRenderBounds,
@@ -105,6 +106,7 @@ import {
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
+  resolveDuplicateTileUpdateActions,
   resolveRefreshExecutionToken,
   resolveChunkSwitchActions,
   shouldApplyRefreshToken,
@@ -2502,10 +2504,29 @@ export default class WorldmapScene extends HexagonScene {
     const col = normalized.x;
     const row = normalized.y;
 
-    // Early check: Skip if tile already exists (prevents duplicate processing)
-    // This check must happen BEFORE any cache invalidation or heavy operations
-    if (!removeExplored && this.exploredTiles.get(col)?.has(row)) {
-      return; // Tile already exists - nothing to do
+    const tileAlreadyKnown = !removeExplored && this.exploredTiles.get(col)?.has(row) === true;
+
+    // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
+    // and force a refresh when the duplicate impacts the currently visible chunk.
+    const duplicateTileActions = resolveDuplicateTileUpdateActions({
+      removeExplored,
+      tileAlreadyKnown,
+      currentChunk: this.currentChunk,
+      isChunkTransitioning: this.isChunkTransitioning,
+      isVisibleInCurrentChunk:
+        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
+    });
+
+    if (duplicateTileActions.shouldInvalidateCaches) {
+      this.invalidateAllChunkCachesContainingHex(col, row);
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
+
+      if (duplicateTileActions.shouldRequestRefresh) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
+        this.requestChunkRefresh(true);
+      }
+
+      return;
     }
 
     // Check if there's a compass effect for this hex and end it
@@ -2744,14 +2765,31 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
+    const overlappingChunkKeys = getChunkKeysContainingHexInRenderBounds({
+      chunkKeys: this.cachedMatrices.keys(),
+      col,
+      row,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
+
+    if (overlappingChunkKeys.length > 0) {
+      overlappingChunkKeys.forEach((chunkKey) => {
+        const [chunkRow, chunkCol] = chunkKey.split(",").map(Number);
+        if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
+          this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+        }
+      });
+      return;
+    }
+
     const pos = getWorldPositionForHex({ row, col });
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
 
     const chunkCol = chunkX * this.chunkSize;
     const chunkRow = chunkZ * this.chunkSize;
 
-    // Only invalidate the chunk that actually contains this hex
-    // Previously invalidated 9 chunks (3x3 grid) which was excessive
+    // Fallback: invalidate the containing stride chunk when no cached overlaps are found.
     this.removeCachedMatricesForChunk(chunkRow, chunkCol);
   }
 
@@ -3360,6 +3398,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private async updateToriiBoundsSubscription(chunkKey: string, transitionToken?: number): Promise<void> {
     if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_stale_token");
       return;
     }
 
@@ -3367,8 +3406,11 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
+
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
     if (areaKey === this.toriiBoundsAreaKey) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
       if (TORII_BOUNDS_DEBUG) {
         console.log("[ToriiBounds] Skip switch (area unchanged)", { chunkKey, areaKey });
       }
@@ -3394,12 +3436,21 @@ export default class WorldmapScene extends HexagonScene {
           models: TORII_BOUNDS_MODELS.map((model) => model.model),
         });
       }
-      await this.toriiStreamManager.switchBounds(descriptor);
+      const result = await this.toriiStreamManager.switchBounds(descriptor);
+      if (result.outcome === "stale_dropped") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_stale_dropped");
+        return;
+      }
+      if (result.outcome === "skipped_same_signature") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+      }
       if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
         return;
       }
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
     } catch (error) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
     }
   }
