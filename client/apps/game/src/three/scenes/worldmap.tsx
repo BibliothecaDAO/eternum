@@ -107,6 +107,7 @@ import {
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveDuplicateTileUpdateActions,
+  resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
@@ -3940,14 +3941,20 @@ export default class WorldmapScene extends HexagonScene {
       this.chunkRefreshRunning = false;
       this.chunkRefreshAppliedToken = executionToken;
 
-      const hasNewerRequest = this.chunkRefreshAppliedToken !== this.chunkRefreshRequestToken;
+      const completionActions = resolveRefreshCompletionActions({
+        appliedToken: this.chunkRefreshAppliedToken,
+        latestToken: this.chunkRefreshRequestToken,
+        rerunRequested: this.chunkRefreshRerunRequested,
+      });
       this.emitZoomHardeningTelemetry("refresh_applied", {
         executionToken: this.chunkRefreshAppliedToken,
         latestToken: this.chunkRefreshRequestToken,
-        hasNewerRequest,
+        hasNewerRequest: completionActions.hasNewerRequest,
       });
-      if (hasNewerRequest || this.chunkRefreshRerunRequested) {
+      if (completionActions.shouldClearRerunRequested) {
         this.chunkRefreshRerunRequested = false;
+      }
+      if (completionActions.shouldScheduleRerun) {
         this.scheduleChunkRefreshExecution();
       }
     }

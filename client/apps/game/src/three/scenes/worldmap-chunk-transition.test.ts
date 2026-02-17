@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveRefreshCompletionActions,
   resolveDuplicateTileUpdateActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
@@ -242,6 +243,50 @@ describe("resolveRefreshRunningActions", () => {
     expect(resolveRefreshRunningActions(10, 9)).toEqual({
       shouldMarkRerunRequested: true,
       shouldRescheduleTimer: false,
+    });
+  });
+});
+
+describe("resolveRefreshCompletionActions", () => {
+  it("schedules rerun when a newer request exists", () => {
+    expect(
+      resolveRefreshCompletionActions({
+        appliedToken: 7,
+        latestToken: 9,
+        rerunRequested: false,
+      }),
+    ).toEqual({
+      hasNewerRequest: true,
+      shouldScheduleRerun: true,
+      shouldClearRerunRequested: true,
+    });
+  });
+
+  it("schedules rerun when explicit rerun was requested", () => {
+    expect(
+      resolveRefreshCompletionActions({
+        appliedToken: 9,
+        latestToken: 9,
+        rerunRequested: true,
+      }),
+    ).toEqual({
+      hasNewerRequest: false,
+      shouldScheduleRerun: true,
+      shouldClearRerunRequested: true,
+    });
+  });
+
+  it("does not schedule rerun when no newer request or rerun flag exists", () => {
+    expect(
+      resolveRefreshCompletionActions({
+        appliedToken: 9,
+        latestToken: 9,
+        rerunRequested: false,
+      }),
+    ).toEqual({
+      hasNewerRequest: false,
+      shouldScheduleRerun: false,
+      shouldClearRerunRequested: false,
     });
   });
 });

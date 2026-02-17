@@ -55,6 +55,12 @@ interface RefreshRunningActions {
   shouldRescheduleTimer: boolean;
 }
 
+interface RefreshCompletionActions {
+  hasNewerRequest: boolean;
+  shouldScheduleRerun: boolean;
+  shouldClearRerunRequested: boolean;
+}
+
 /**
  * Resolve chunk-switch side effects after hydration completes.
  * Keeps behavior deterministic for success, failure, and stale transitions.
@@ -175,6 +181,24 @@ export function resolveRefreshRunningActions(scheduledToken: number, latestToken
   return {
     shouldMarkRerunRequested: true,
     shouldRescheduleTimer: shouldRescheduleRefreshToken(scheduledToken, latestToken),
+  };
+}
+
+/**
+ * Resolve completion behavior after a refresh execution has settled.
+ */
+export function resolveRefreshCompletionActions(input: {
+  appliedToken: number;
+  latestToken: number;
+  rerunRequested: boolean;
+}): RefreshCompletionActions {
+  const hasNewerRequest = input.appliedToken !== input.latestToken;
+  const shouldScheduleRerun = hasNewerRequest || input.rerunRequested;
+
+  return {
+    hasNewerRequest,
+    shouldScheduleRerun,
+    shouldClearRerunRequested: shouldScheduleRerun,
   };
 }
 
