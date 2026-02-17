@@ -99,8 +99,9 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
   resolveArmyTabSelectionPosition,
+  resolvePendingArmyMovementFallbackPlan,
+  resolvePendingArmyMovementSelectionPlan,
   shouldAcceptArmyTabSelectionAttempt,
-  shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
@@ -1680,17 +1681,26 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const fallbackTimeout = setTimeout(() => {
-      if (!this.pendingArmyMovements.has(entityId)) {
+      const fallbackPlan = resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: this.pendingArmyMovements.has(entityId),
+        pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
+        nowMs: Date.now(),
+        staleAfterMs: this.stalePendingArmyMovementMs,
+      });
+
+      if (fallbackPlan.shouldDeleteFallbackTimeout) {
         this.pendingArmyMovementFallbackTimeouts.delete(entityId);
         return;
       }
 
-      if (!this.shouldClearPendingArmyMovementNow(entityId)) {
+      if (!fallbackPlan.shouldClearPendingMovement) {
         return;
       }
 
       this.clearPendingArmyMovement(entityId);
-      this.requestChunkRefresh(true);
+      if (fallbackPlan.shouldRequestChunkRefresh) {
+        this.requestChunkRefresh(true);
+      }
 
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
@@ -1698,14 +1708,6 @@ export default class WorldmapScene extends HexagonScene {
     }, this.stalePendingArmyMovementMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
-  }
-
-  private shouldClearPendingArmyMovementNow(entityId: ID, nowMs: number = Date.now()): boolean {
-    return shouldClearPendingArmyMovement({
-      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
-      nowMs,
-      staleAfterMs: this.stalePendingArmyMovementMs,
-    });
   }
 
   private onArmySelection(
@@ -1716,14 +1718,23 @@ export default class WorldmapScene extends HexagonScene {
     const deferDuringChunkTransition = options?.deferDuringChunkTransition ?? true;
 
     // Check if army has pending movement transactions
-    if (this.pendingArmyMovements.has(selectedEntityId)) {
-      if (!this.shouldClearPendingArmyMovementNow(selectedEntityId)) {
-        this.requestChunkRefresh(true);
-        return false;
-      }
+    const selectionPlan = resolvePendingArmyMovementSelectionPlan({
+      hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(selectedEntityId),
+      nowMs: Date.now(),
+      staleAfterMs: this.stalePendingArmyMovementMs,
+    });
 
+    if (selectionPlan.shouldClearPendingMovement) {
       this.clearPendingArmyMovement(selectedEntityId);
+    }
+
+    if (selectionPlan.shouldRequestChunkRefresh) {
       this.requestChunkRefresh(true);
+    }
+
+    if (selectionPlan.shouldBlockSelection) {
+      return false;
     }
 
     // Check if army is currently being rendered or is in chunk transition

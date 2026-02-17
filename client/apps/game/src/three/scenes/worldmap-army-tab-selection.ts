@@ -22,6 +22,26 @@ interface ShouldClearPendingArmyMovementInput {
   staleAfterMs: number;
 }
 
+interface ResolvePendingArmyMovementSelectionPlanInput extends ShouldClearPendingArmyMovementInput {
+  hasPendingMovement: boolean;
+}
+
+interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPendingArmyMovementInput {
+  hasPendingMovement: boolean;
+}
+
+export interface PendingArmyMovementSelectionPlan {
+  shouldClearPendingMovement: boolean;
+  shouldRequestChunkRefresh: boolean;
+  shouldBlockSelection: boolean;
+}
+
+export interface PendingArmyMovementFallbackPlan {
+  shouldDeleteFallbackTimeout: boolean;
+  shouldClearPendingMovement: boolean;
+  shouldRequestChunkRefresh: boolean;
+}
+
 /**
  * Tab cycling should prioritize the position currently rendered in the worldmap.
  * Fallback to selectable-army snapshot coordinates when render state is unavailable.
@@ -69,4 +89,50 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
   }
 
   return input.nowMs - input.pendingMovementStartedAtMs >= input.staleAfterMs;
+}
+
+/**
+ * Decide stale-clear behavior when an army selection is attempted.
+ */
+export function resolvePendingArmyMovementSelectionPlan(
+  input: ResolvePendingArmyMovementSelectionPlanInput,
+): PendingArmyMovementSelectionPlan {
+  if (!input.hasPendingMovement) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: false,
+    };
+  }
+
+  const shouldClearPendingMovement = shouldClearPendingArmyMovement(input);
+
+  return {
+    shouldClearPendingMovement,
+    shouldRequestChunkRefresh: true,
+    shouldBlockSelection: !shouldClearPendingMovement,
+  };
+}
+
+/**
+ * Decide stale-clear behavior when the pending-movement fallback timer fires.
+ */
+export function resolvePendingArmyMovementFallbackPlan(
+  input: ResolvePendingArmyMovementFallbackPlanInput,
+): PendingArmyMovementFallbackPlan {
+  if (!input.hasPendingMovement) {
+    return {
+      shouldDeleteFallbackTimeout: true,
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+    };
+  }
+
+  const shouldClearPendingMovement = shouldClearPendingArmyMovement(input);
+
+  return {
+    shouldDeleteFallbackTimeout: false,
+    shouldClearPendingMovement,
+    shouldRequestChunkRefresh: shouldClearPendingMovement,
+  };
 }

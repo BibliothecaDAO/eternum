@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveArmyTabSelectionPosition,
+  resolvePendingArmyMovementFallbackPlan,
+  resolvePendingArmyMovementSelectionPlan,
   shouldAcceptArmyTabSelectionAttempt,
   shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
@@ -167,5 +169,99 @@ describe("shouldClearPendingArmyMovement", () => {
         staleAfterMs: 8000,
       }),
     ).toBe(true);
+  });
+});
+
+describe("resolvePendingArmyMovementSelectionPlan", () => {
+  it("returns no-op plan when army has no pending movement", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: false,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9500,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: false,
+    });
+  });
+
+  it("blocks selection and requests refresh when movement is pending but not stale", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 8500,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: true,
+      shouldBlockSelection: true,
+    });
+  });
+
+  it("clears stale pending movement and allows selection to continue", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: true,
+      shouldRequestChunkRefresh: true,
+      shouldBlockSelection: false,
+    });
+  });
+});
+
+describe("resolvePendingArmyMovementFallbackPlan", () => {
+  it("deletes fallback timeout when movement is no longer pending", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: false,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: true,
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+    });
+  });
+
+  it("keeps pending movement when fallback fired before stale threshold", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 8500,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: false,
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+    });
+  });
+
+  it("clears stale movement and requests refresh when fallback threshold is reached", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: false,
+      shouldClearPendingMovement: true,
+      shouldRequestChunkRefresh: true,
+    });
   });
 });
