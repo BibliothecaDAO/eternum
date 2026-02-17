@@ -183,9 +183,9 @@ pre,
 /* Deployment caps: fixed layout with balanced column widths */
 .table-deployment-caps {
   display: block;
-  width: calc(100% + 2.5cm) !important;
+  width: calc(100% + 5cm) !important;
   max-width: none !important;
-  margin-right: -2.5cm;
+  margin-right: -5cm;
 }
 
 .table-deployment-caps table {
