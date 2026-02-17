@@ -11,7 +11,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Set to true to preview the in-game end-game flow without waiting for the timer.
-const DEBUG_FORCE_SHOW_ENDGAME_WINDOW = false;
+const DEBUG_FORCE_SHOW_ENDGAME_WINDOW = true;
 
 interface ReviewWorld {
   name: string;

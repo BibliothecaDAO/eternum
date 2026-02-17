@@ -2,26 +2,21 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   finalizeGameRankingAndMMR,
   type GameReviewData,
-  type GameReviewStats,
 } from "@/services/review/game-review-service";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
+import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
+import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { Button } from "@/ui/design-system/atoms";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
 import {
-  Activity,
   ArrowLeft,
   ArrowRight,
   Copy,
-  Crown,
   Loader2,
-  Medal,
   Share2,
   Shield,
-  Swords,
-  Trophy,
   X,
 } from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,10 +44,7 @@ const SHARE_CARD_DIMENSIONS = BLITZ_CARD_DIMENSIONS;
 const SHARE_PREVIEW_MAX_WIDTH = SHARE_CARD_DIMENSIONS.width;
 const EXPORT_STAGE_PADDING_X = 36;
 const EXPORT_STAGE_PADDING_Y = 24;
-const SHARE_FRAME_STYLE: CSSProperties = {
-  maxWidth: `${SHARE_PREVIEW_MAX_WIDTH}px`,
-};
-const PERSONAL_CARD_PREVIEW_STYLE: CSSProperties = {
+const CARD_PREVIEW_STYLE: CSSProperties = {
   maxWidth: `${SHARE_PREVIEW_MAX_WIDTH}px`,
 };
 
@@ -79,24 +71,39 @@ const buildStepShareMessage = ({
 
   if (step === "stats") {
     return [
-      `Game review for ${worldLabel}:`,
-      `${formatValue(data.stats.numberOfPlayers)} players, ${formatValue(data.stats.totalTilesExplored)} tiles explored, ${formatValue(data.stats.totalDeadTroops)} dead troops.`,
-      "#Realms #Eternum",
+      `${worldLabel} just ended on @realms_gg Blitz!`,
+      `${formatValue(data.stats.numberOfPlayers)} players battled across ${formatValue(data.stats.totalTilesExplored)} tiles with ${formatValue(data.stats.totalTransactions)} total transactions.`,
+      `${formatValue(data.stats.totalDeadTroops)} troops fell in battle.`,
+      "",
+      "Think you can survive the next round?",
+      "blitz.realms.world",
+      "#Realms #Eternum #Starknet",
     ].join("\n");
   }
 
   if (step === "leaderboard") {
-    const podium = data.topPlayers
-      .map((entry) => `#${entry.rank} ${(entry.displayName?.trim() || displayAddress(entry.address)).trim()}`)
-      .join(" · ");
-    return [`Final leaderboard for ${worldLabel}:`, podium || "Top players are in!", "#Realms #Eternum"].join("\n");
+    const podiumLines = data.topPlayers.map((entry) => {
+      const name = (entry.displayName?.trim() || displayAddress(entry.address)).trim();
+      return `#${entry.rank} ${name} - ${formatValue(entry.points)} pts`;
+    });
+    return [
+      `Final standings for ${worldLabel} on @realms_gg Blitz:`,
+      "",
+      ...(podiumLines.length > 0 ? podiumLines : ["Top players are in!"]),
+      "",
+      "Can you dethrone the champions?",
+      "blitz.realms.world",
+      "#Realms #Eternum #Starknet",
+    ].join("\n");
   }
 
   if (step === "personal" && data.personalScore) {
     return [
       `${worldLabel} personal result:`,
       `Rank #${data.personalScore.rank} with ${formatValue(data.personalScore.points)} points.`,
-      "#Realms #Eternum",
+      "",
+      "blitz.realms.world",
+      "#Realms #Eternum #Starknet",
     ].join("\n");
   }
 
@@ -107,225 +114,6 @@ const buildStepShareMessage = ({
   return [`${worldLabel} review is complete.`, "#Realms #Eternum"].join("\n");
 };
 
-const StatTile = ({
-  label,
-  value,
-  index,
-  emphasize = false,
-}: {
-  label: string;
-  value: number;
-  index: number;
-  emphasize?: boolean;
-}) => {
-  return (
-    <div
-      className={cn(
-        "endgame-step-enter rounded-xl border p-3 transition-colors sm:p-4",
-        emphasize
-          ? "border-gold/35 bg-gradient-to-b from-gold/10 to-dark/90 shadow-md shadow-dark/70"
-          : "border-gold/20 bg-dark/80 hover:border-gold/30 hover:bg-dark/90",
-      )}
-      style={{ animationDelay: `${index * 40}ms` }}
-    >
-      <p className="text-[11px] uppercase tracking-wider text-gold/60">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-white">{formatValue(value)}</p>
-    </div>
-  );
-};
-
-const GameStatsStep = ({ worldName, stats }: { worldName: string; stats: GameReviewStats }) => {
-  const overview = [
-    { label: "Number of Players", value: stats.numberOfPlayers, emphasize: true },
-    { label: "Total Tiles Explored", value: stats.totalTilesExplored, emphasize: true },
-    { label: "Total Dead Troops", value: stats.totalDeadTroops, emphasize: false },
-  ];
-  const conquest = [
-    { label: "Total Camps Taken", value: stats.totalCampsTaken },
-    { label: "Total Essence Rifts Taken", value: stats.totalEssenceRiftsTaken },
-    { label: "Total Hyperstructures Taken", value: stats.totalHyperstructuresTaken },
-  ];
-  const production = [
-    { label: "Total T1 Troops Created", value: stats.totalT1TroopsCreated },
-    { label: "Total T2 Troops Created", value: stats.totalT2TroopsCreated },
-    { label: "Total T3 Troops Created", value: stats.totalT3TroopsCreated },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-gold">
-            <Trophy className="h-4 w-4" />
-            <h3 className="font-serif text-xl">Game Stats</h3>
-          </div>
-          <p className="text-xs uppercase tracking-wider text-gold/60">Game: {worldName}</p>
-        </div>
-
-        <div className="relative overflow-hidden rounded-xl border border-gold/45 bg-gradient-to-br from-gold/15 via-gold/8 to-dark/90 px-4 py-3 sm:min-w-[220px]">
-          <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gold/20 blur-xl" />
-          <div className="relative">
-            <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-gold/75">
-              <Activity className="h-3.5 w-3.5" />
-              Total Transactions
-            </p>
-            <p className="mt-1 text-4xl font-semibold leading-none text-gold">{formatValue(stats.totalTransactions)}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-wider text-gold/55">This World</p>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-gold/80">
-          <Trophy className="h-3.5 w-3.5" />
-          <p className="text-[11px] uppercase tracking-wider">Overview</p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {overview.map((metric, index) => (
-            <StatTile
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-              index={index}
-              emphasize={metric.emphasize}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mx-auto h-px w-full bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-gold/80">
-          <Medal className="h-3.5 w-3.5" />
-          <p className="text-[11px] uppercase tracking-wider">Conquest</p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {conquest.map((metric, index) => (
-            <StatTile key={metric.label} label={metric.label} value={metric.value} index={index + overview.length} />
-          ))}
-        </div>
-      </div>
-
-      <div className="mx-auto h-px w-full bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-gold/80">
-          <Shield className="h-3.5 w-3.5" />
-          <p className="text-[11px] uppercase tracking-wider">Troop Production</p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {production.map((metric, index) => (
-            <StatTile
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-              index={index + overview.length + conquest.length}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const getRankTheme = (rank: number) => {
-  if (rank === 1) {
-    return {
-      cardClass: "border-gold/45 bg-gold/10 ring-1 ring-gold/20",
-      rankClass: "text-gold",
-      pointsClass: "border-gold/45 bg-gold/15 text-gold",
-      showCrown: true,
-    };
-  }
-  if (rank === 2) {
-    return {
-      cardClass: "border-light-pink/30 bg-light-pink/5",
-      rankClass: "text-light-pink/90",
-      pointsClass: "border-light-pink/35 bg-light-pink/10 text-lightest",
-      showCrown: false,
-    };
-  }
-  if (rank === 3) {
-    return {
-      cardClass: "border-orange/40 bg-orange/10",
-      rankClass: "text-orange/90",
-      pointsClass: "border-orange/45 bg-orange/20 text-orange",
-      showCrown: false,
-    };
-  }
-
-  return {
-    cardClass: "border-gold/25 bg-dark/80",
-    rankClass: "text-gold/70",
-    pointsClass: "border-gold/30 bg-gold/10 text-gold",
-    showCrown: false,
-  };
-};
-
-const LeaderboardStep = ({ data }: { data: GameReviewData }) => {
-  return (
-    <div className="flex h-full flex-col space-y-3">
-      <div className="flex items-center gap-2 text-gold">
-        <Medal className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Final Leaderboard - Top 3</h3>
-      </div>
-      <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
-
-      <div className="space-y-2">
-        {data.topPlayers.length === 0 ? (
-          <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
-            Leaderboard data is not available yet.
-          </div>
-        ) : (
-          data.topPlayers.map((entry, index) => {
-            const rankTheme = getRankTheme(entry.rank);
-
-            return (
-              <div
-                key={`${entry.address}-${entry.rank}-${index}`}
-                className={`endgame-step-enter rounded-xl border p-3 ${rankTheme.cardClass}`}
-                style={{ animationDelay: `${index * 70}ms` }}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className={`flex items-center gap-1 text-xs uppercase tracking-wider ${rankTheme.rankClass}`}>
-                      {rankTheme.showCrown && <Crown className="h-3.5 w-3.5" />}
-                      Rank #{entry.rank}
-                    </p>
-                    <p className="text-lg font-semibold text-white">
-                      {entry.displayName?.trim() || displayAddress(entry.address)}
-                    </p>
-                    <p className="text-[11px] text-white/40">{displayAddress(entry.address)}</p>
-                  </div>
-                  <div className={`rounded-lg border px-3 py-1.5 text-right ${rankTheme.pointsClass}`}>
-                    <p className="text-[10px] uppercase tracking-wider opacity-80">Points</p>
-                    <p className="text-lg font-semibold">{formatValue(entry.points)}</p>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
-                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                    Tiles: <span className="text-white">{formatValue(entry.exploredTiles ?? 0)}</span>
-                  </div>
-                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                    Camps: <span className="text-white">{formatValue(entry.campsTaken ?? 0)}</span>
-                  </div>
-                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                    Rifts: <span className="text-white">{formatValue(entry.riftsTaken ?? 0)}</span>
-                  </div>
-                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                    Hypers: <span className="text-white">{formatValue(entry.hyperstructuresConquered ?? 0)}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-};
 
 const FinalizeStep = ({
   data,
@@ -453,6 +241,7 @@ export const GameReviewModal = ({
   const worldChain = world?.chain;
 
   const account = useAccountStore((state) => state.account);
+  const accountName = useAccountStore((state) => state.accountName);
 
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
@@ -464,6 +253,16 @@ export const GameReviewModal = ({
   const [stepIndex, setStepIndex] = useState(0);
   const captureRef = useRef<HTMLDivElement | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+
+  const cardPlayer = useMemo(() => {
+    const name = accountName?.trim() || data?.personalScore?.displayName?.trim() || null;
+    const address = data?.personalScore?.address ?? account?.address ?? null;
+    if (!name && !address) return null;
+    return {
+      name: name || displayAddress(address ?? ""),
+      address: displayAddress(address ?? ""),
+    };
+  }, [accountName, data?.personalScore, account?.address]);
 
   const steps = useMemo<ReviewStepId[]>(() => {
     if (!data) return ["stats", "leaderboard", "finalize"];
@@ -560,9 +359,7 @@ export const GameReviewModal = ({
       await Promise.all(waiters);
 
       const captureNode =
-        currentStep === "personal"
-          ? ((captureRef.current.querySelector(".blitz-card-root") as HTMLElement | null) ?? captureRef.current)
-          : captureRef.current;
+        (captureRef.current.querySelector(".blitz-card-root") as HTMLElement | null) ?? captureRef.current;
       const captureRect = captureNode.getBoundingClientRect();
       const captureWidth = Math.max(1, Math.round(captureRect.width));
       const captureHeight = Math.max(1, Math.round(captureRect.height));
@@ -624,7 +421,7 @@ export const GameReviewModal = ({
     } finally {
       setIsCopying(false);
     }
-  }, [currentStep, isStepShareable]);
+  }, [isStepShareable]);
 
   const shareMessage = useMemo(() => {
     if (!data || !isStepShareable) return "";
@@ -724,48 +521,31 @@ export const GameReviewModal = ({
               className="endgame-step-enter rounded-xl border border-gold/20 bg-black/20 p-3 sm:p-4"
             >
               {currentStep === "stats" && (
-                <div
-                  ref={captureRef}
-                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-dark/80 p-4"
-                  style={SHARE_FRAME_STYLE}
-                >
-                  <GameStatsStep worldName={data.worldName} stats={data.stats} />
+                <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                  <BlitzGameStatsCardWithSelector worldName={data.worldName} stats={data.stats} player={cardPlayer} />
                 </div>
               )}
 
               {currentStep === "leaderboard" && (
-                <div
-                  ref={captureRef}
-                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-dark/80 p-4"
-                  style={SHARE_FRAME_STYLE}
-                >
-                  <LeaderboardStep data={data} />
+                <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                  <BlitzLeaderboardCardWithSelector worldName={data.worldName} topPlayers={data.topPlayers} player={cardPlayer} />
                 </div>
               )}
 
               {currentStep === "personal" && (
-                <div ref={captureRef} className="space-y-3">
-                  <div className="flex items-center gap-2 text-gold">
-                    <Swords className="h-4 w-4" />
-                    <h3 className="font-serif text-lg">Personal Score PnL</h3>
+                data.personalScore ? (
+                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                    <ScoreCardContent
+                      worldName={data.worldName}
+                      playerEntry={data.personalScore}
+                      showActions={false}
+                    />
                   </div>
-                  <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
-                  <div className="mx-auto h-px w-full bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-
-                  {data.personalScore ? (
-                    <div className="mx-auto w-full" style={PERSONAL_CARD_PREVIEW_STYLE}>
-                      <ScoreCardContent
-                        worldName={data.worldName}
-                        playerEntry={data.personalScore}
-                        showActions={false}
-                      />
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
-                      No personal score card is available for this account.
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
+                    No personal score card is available for this account.
+                  </div>
+                )
               )}
 
               {currentStep === "finalize" && (
