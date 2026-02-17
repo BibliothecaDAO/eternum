@@ -106,7 +106,7 @@ import {
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
-  resolveDuplicateTileUpdateActions,
+  resolveDuplicateTileReconcilePlan,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
@@ -2555,26 +2555,34 @@ export default class WorldmapScene extends HexagonScene {
     const col = normalized.x;
     const row = normalized.y;
 
-    const tileAlreadyKnown = !removeExplored && this.exploredTiles.get(col)?.has(row) === true;
+    const existingBiome = this.exploredTiles.get(col)?.get(row);
+    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined;
+    const hasBiomeDelta = !removeExplored && tileAlreadyKnown && existingBiome !== biome;
 
     // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
     // and force a refresh when the duplicate impacts the currently visible chunk.
-    const duplicateTileActions = resolveDuplicateTileUpdateActions({
+    const duplicateTileDecisionInput = {
       removeExplored,
       tileAlreadyKnown,
+      hasBiomeDelta,
       currentChunk: this.currentChunk,
       isChunkTransitioning: this.isChunkTransitioning,
       isVisibleInCurrentChunk:
         this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
-    });
+    };
+    const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
 
-    if (duplicateTileActions.shouldInvalidateCaches) {
+    if (duplicateTilePlan.shouldInvalidateCaches) {
       this.invalidateAllChunkCachesContainingHex(col, row);
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
 
-      if (duplicateTileActions.shouldRequestRefresh) {
+      if (duplicateTilePlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
-        this.requestChunkRefresh(true);
+        if (duplicateTilePlan.refreshStrategy === "immediate") {
+          void this.updateVisibleChunks(true).catch((error) => console.error("Failed to reconcile duplicate tile:", error));
+        } else {
+          this.requestChunkRefresh(true);
+        }
       }
 
       return;
