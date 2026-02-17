@@ -151,6 +151,7 @@ export const QUEST_GAME_LEVELS = [
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
 export const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 1; // 1 minute
 export const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3; // 3 minutes
+export const BITCOIN_PHASE_SECONDS = ONE_MINUTE_IN_SECONDS * 10; // 10 minutes
 
 // ----- Speed ----- //
 // @dev: Seconds per km
@@ -345,6 +346,7 @@ export const EternumGlobalConfig: Config = {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
     deliveryTickIntervalInSeconds: DELIVERY_TICK_INTERVAL_SECONDS,
+    bitcoinPhaseInSeconds: BITCOIN_PHASE_SECONDS,
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,

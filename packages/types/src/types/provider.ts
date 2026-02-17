@@ -489,6 +489,7 @@ export interface SetWeightConfigProps extends SystemSigner {
 export interface SetTickConfigProps extends SystemSigner {
   tick_interval_in_seconds: BigNumberish;
   delivery_tick_interval_in_seconds: BigNumberish;
+  bitcoin_phase_in_seconds: BigNumberish;
 }
 
 export interface SetResourceFactoryConfigProps extends SystemSigner {

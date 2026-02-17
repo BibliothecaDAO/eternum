@@ -499,6 +499,7 @@ export interface Config {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
     deliveryTickIntervalInSeconds: number;
+    bitcoinPhaseInSeconds: number;
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
