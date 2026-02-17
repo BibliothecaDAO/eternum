@@ -48,23 +48,18 @@ Multiple agents may work on different files in the same worktree simultaneously.
 
 ### Committing
 
-ONLY commit files YOU changed in THIS session
-ALWAYS include fixes #<number> or closes #<number> in the commit message when there is a related issue or PR
-NEVER use git add -A or git add . - these sweep up changes from other agents
-ALWAYS use git add <specific-file-paths> listing only files you modified
-Before committing, run git status and verify you are only staging YOUR files
-Track which files you created/modified/deleted during the session
+ONLY commit files YOU changed in THIS session ALWAYS include fixes #<number> or closes #<number> in the commit message
+when there is a related issue or PR NEVER use git add -A or git add . - these sweep up changes from other agents ALWAYS
+use git add <specific-file-paths> listing only files you modified Before committing, run git status and verify you are
+only staging YOUR files Track which files you created/modified/deleted during the session
 
 ### Forbidden Git Operations
 
 These commands can destroy other agents' work:
 
-git reset --hard - destroys uncommitted changes
-git checkout . - destroys uncommitted changes
-git clean -fd - deletes untracked files
-git stash - stashes ALL changes including other agents' work
-git add -A / git add . - stages other agents' uncommitted work
-git commit --no-verify - bypasses required checks and is never allowed
+git reset --hard - destroys uncommitted changes git checkout . - destroys uncommitted changes git clean -fd - deletes
+untracked files git stash - stashes ALL changes including other agents' work git add -A / git add . - stages other
+agents' uncommitted work git commit --no-verify - bypasses required checks and is never allowed
 
 ### Safe Workflow
 
@@ -85,6 +80,4 @@ git pull --rebase && git push
 
 ### If Rebase Conflicts Occur
 
-Resolve conflicts in YOUR files only
-If conflict is in a file you didn't modify, abort and ask the user
-NEVER force push
+Resolve conflicts in YOUR files only If conflict is in a file you didn't modify, abort and ask the user NEVER force push

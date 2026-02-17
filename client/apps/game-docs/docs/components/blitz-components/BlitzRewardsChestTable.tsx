@@ -37,8 +37,7 @@ const BLITZ_REWARDS_CHEST_ITEMS = [
     epochItemNumber: 15,
     itemName: "Winter Vortex",
     rarity: "Rare",
-    description:
-      "A swirl of ice and frost surrounding armies that have embraced winter. Part of the Winter Lord Set.",
+    description: "A swirl of ice and frost surrounding armies that have embraced winter. Part of the Winter Lord Set.",
     type: "Troop Aura",
     troopType: "N/A",
     drawChance: 7.32,
@@ -68,8 +67,7 @@ const BLITZ_REWARDS_CHEST_ITEMS = [
     epochItemNumber: 18,
     itemName: "Winter Trooper's Broadaxe",
     rarity: "Uncommon",
-    description:
-      "A sleek, razor-sharp broadaxe wielded by Winter Knights. Part of the Winter Lord Set.",
+    description: "A sleek, razor-sharp broadaxe wielded by Winter Knights. Part of the Winter Lord Set.",
     type: "Troop Primary",
     troopType: "Knight",
     drawChance: 10.98,
@@ -79,8 +77,7 @@ const BLITZ_REWARDS_CHEST_ITEMS = [
     epochItemNumber: 19,
     itemName: "Winter Trooper's Targe",
     rarity: "Uncommon",
-    description:
-      "A frost-patterned, reinforced roundshield wielded by Winter Knights. Part of the Winter Lord Set.",
+    description: "A frost-patterned, reinforced roundshield wielded by Winter Knights. Part of the Winter Lord Set.",
     type: "Troop Secondary",
     troopType: "Knight",
     drawChance: 10.98,
@@ -90,8 +87,7 @@ const BLITZ_REWARDS_CHEST_ITEMS = [
     epochItemNumber: 20,
     itemName: "Witness of the Morning Wars",
     rarity: "Common",
-    description:
-      "A fitting title for a Realm scarred by some of the earliest wars in recorded history.",
+    description: "A fitting title for a Realm scarred by some of the earliest wars in recorded history.",
     type: "Realm Title",
     troopType: "N/A",
     drawChance: 14.63,

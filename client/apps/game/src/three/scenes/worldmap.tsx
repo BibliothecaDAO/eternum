@@ -85,7 +85,6 @@ import {
   getChunkKeysContainingHexInRenderBounds,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
-  isHexWithinRenderBounds,
 } from "../utils/chunk-geometry";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
@@ -100,30 +99,36 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
   resolveArmyTabSelectionPosition,
+  resolvePendingArmyMovementFallbackPlan,
+  resolvePendingArmyMovementSelectionPlan,
   shouldAcceptArmyTabSelectionAttempt,
-  shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
-  resolveRefreshExecutionToken,
+  resolveDuplicateTileReconcilePlan,
+  resolveRefreshCompletionActions,
+  resolveRefreshExecutionPlan,
+  resolveRefreshRunningActions,
   resolveChunkSwitchActions,
-  shouldApplyRefreshToken,
-  shouldForceRefreshForDuplicateTileUpdate,
+  shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
-  shouldRescheduleRefreshToken,
   shouldRunManagerUpdate,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
+import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
+  resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
+import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
   createWorldmapChunkDiagnostics,
@@ -335,6 +340,10 @@ export default class WorldmapScene extends HexagonScene {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
   };
+  private isUrlChangedListenerAttached = false;
+  private readonly urlChangedHandler = () => {
+    this.clearSelection();
+  };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
@@ -345,6 +354,15 @@ export default class WorldmapScene extends HexagonScene {
   private simulateAllExplored: boolean = false;
   private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
+    const toriiClient = this.dojo.network?.toriiClient;
+    const contractComponents = this.dojo.network?.contractComponents as unknown as
+      | Parameters<typeof ensureStructureSynced>[2]
+      | undefined;
+
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
 
     const previousCursor = document.body.style.cursor;
     document.body.style.cursor = "wait";
@@ -352,9 +370,9 @@ export default class WorldmapScene extends HexagonScene {
     try {
       const accountAddress = useAccountStore.getState().account?.address;
       await ensureStructureSynced(
-        this.dojo.components as SetupResult["components"],
-        this.dojo.network?.toriiClient!,
-        this.dojo.network?.contractComponents as any,
+        components,
+        toriiClient,
+        contractComponents,
         structureId,
         { col: contractCoords.x, row: contractCoords.y },
         accountAddress,
@@ -768,13 +786,24 @@ export default class WorldmapScene extends HexagonScene {
           );
         }
 
-        if (positions && !countChanged) {
+        const structureTileActions = resolveStructureTileUpdateActions({
+          hasPositions: Boolean(positions),
+          countChanged,
+        });
+
+        if (structureTileActions.shouldScheduleTileRefresh && positions) {
           this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
         }
 
-        if (countChanged) {
+        if (structureTileActions.shouldUpdateTotalStructures) {
           this.totalStructures = newCount;
+        }
+
+        if (structureTileActions.shouldClearCache) {
           this.clearCache();
+        }
+
+        if (structureTileActions.shouldRefreshVisibleChunks) {
           this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
         }
       }),
@@ -903,10 +932,6 @@ export default class WorldmapScene extends HexagonScene {
         },
       });
     }
-
-    window.addEventListener("urlChanged", () => {
-      this.clearSelection();
-    });
   }
 
   private setupCameraZoomHandler() {
@@ -1667,17 +1692,26 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const fallbackTimeout = setTimeout(() => {
-      if (!this.pendingArmyMovements.has(entityId)) {
+      const fallbackPlan = resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: this.pendingArmyMovements.has(entityId),
+        pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
+        nowMs: Date.now(),
+        staleAfterMs: this.stalePendingArmyMovementMs,
+      });
+
+      if (fallbackPlan.shouldDeleteFallbackTimeout) {
         this.pendingArmyMovementFallbackTimeouts.delete(entityId);
         return;
       }
 
-      if (!this.shouldClearPendingArmyMovementNow(entityId)) {
+      if (!fallbackPlan.shouldClearPendingMovement) {
         return;
       }
 
       this.clearPendingArmyMovement(entityId);
-      this.requestChunkRefresh(true);
+      if (fallbackPlan.shouldRequestChunkRefresh) {
+        this.requestChunkRefresh(true);
+      }
 
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
@@ -1685,14 +1719,6 @@ export default class WorldmapScene extends HexagonScene {
     }, this.stalePendingArmyMovementMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
-  }
-
-  private shouldClearPendingArmyMovementNow(entityId: ID, nowMs: number = Date.now()): boolean {
-    return shouldClearPendingArmyMovement({
-      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
-      nowMs,
-      staleAfterMs: this.stalePendingArmyMovementMs,
-    });
   }
 
   private onArmySelection(
@@ -1703,14 +1729,23 @@ export default class WorldmapScene extends HexagonScene {
     const deferDuringChunkTransition = options?.deferDuringChunkTransition ?? true;
 
     // Check if army has pending movement transactions
-    if (this.pendingArmyMovements.has(selectedEntityId)) {
-      if (!this.shouldClearPendingArmyMovementNow(selectedEntityId)) {
-        this.requestChunkRefresh(true);
-        return false;
-      }
+    const selectionPlan = resolvePendingArmyMovementSelectionPlan({
+      hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(selectedEntityId),
+      nowMs: Date.now(),
+      staleAfterMs: this.stalePendingArmyMovementMs,
+    });
 
+    if (selectionPlan.shouldClearPendingMovement) {
       this.clearPendingArmyMovement(selectedEntityId);
+    }
+
+    if (selectionPlan.shouldRequestChunkRefresh) {
       this.requestChunkRefresh(true);
+    }
+
+    if (selectionPlan.shouldBlockSelection) {
+      return false;
     }
 
     // Check if army is currently being rendered or is in chunk transition
@@ -1720,10 +1755,20 @@ export default class WorldmapScene extends HexagonScene {
           if (this.armyManager.hasArmy(selectedEntityId)) {
             this.onArmySelection(selectedEntityId, playerAddress);
           } else {
+            const shouldQueueRecovery = shouldQueueArmySelectionRecovery({
+              deferDuringChunkTransition,
+              hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+              isChunkTransitioning: this.isChunkTransitioning,
+              armyPresentInManager: false,
+              recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
+            });
+
             if (import.meta.env.DEV) {
               console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
             }
-            this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
+            if (shouldQueueRecovery) {
+              this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
+            }
           }
         };
 
@@ -1746,6 +1791,7 @@ export default class WorldmapScene extends HexagonScene {
           hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
           isChunkTransitioning: this.isChunkTransitioning,
           armyPresentInManager: false,
+          recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
         })
       ) {
         this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
@@ -1963,6 +2009,7 @@ export default class WorldmapScene extends HexagonScene {
 
   async setup() {
     this.isSwitchedOff = false;
+    this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -2078,6 +2125,7 @@ export default class WorldmapScene extends HexagonScene {
 
   onSwitchOff() {
     this.isSwitchedOff = true;
+    this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
 
@@ -2389,11 +2437,14 @@ export default class WorldmapScene extends HexagonScene {
         const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
         if (resolvedStructureId) {
           try {
-            const components = this.dojo.components as any;
+            const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
             const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
-            const structure = getComponentValue(components.Structure, structureEntity);
-            if (structure?.owner) {
-              actualOwnerAddress = BigInt(structure.owner);
+            const structureComponent = components.Structure;
+            if (structureComponent) {
+              const structure = getComponentValue(structureComponent, structureEntity);
+              if (structure?.owner) {
+                actualOwnerAddress = BigInt(structure.owner);
+              }
             }
           } catch {
             // Fall through with 0n if ECS lookup fails
@@ -2504,28 +2555,36 @@ export default class WorldmapScene extends HexagonScene {
     const col = normalized.x;
     const row = normalized.y;
 
-    const tileAlreadyKnown = !removeExplored && this.exploredTiles.get(col)?.has(row) === true;
+    const existingBiome = this.exploredTiles.get(col)?.get(row);
+    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined;
+    const hasBiomeDelta = !removeExplored && tileAlreadyKnown && existingBiome !== biome;
 
     // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
     // and force a refresh when the duplicate impacts the currently visible chunk.
-    if (tileAlreadyKnown) {
+    const duplicateTileDecisionInput = {
+      removeExplored,
+      tileAlreadyKnown,
+      hasBiomeDelta,
+      currentChunk: this.currentChunk,
+      isChunkTransitioning: this.isChunkTransitioning,
+      isVisibleInCurrentChunk:
+        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
+    };
+    const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
+
+    if (duplicateTilePlan.shouldInvalidateCaches) {
       this.invalidateAllChunkCachesContainingHex(col, row);
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
 
-      const isVisibleInCurrentChunk =
-        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false;
-
-      if (
-        shouldForceRefreshForDuplicateTileUpdate({
-          removeExplored,
-          tileAlreadyKnown,
-          currentChunk: this.currentChunk,
-          isChunkTransitioning: this.isChunkTransitioning,
-          isVisibleInCurrentChunk,
-        })
-      ) {
+      if (duplicateTilePlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
-        this.requestChunkRefresh(true);
+        if (duplicateTilePlan.refreshStrategy === "immediate") {
+          void this.updateVisibleChunks(true).catch((error) =>
+            console.error("Failed to reconcile duplicate tile:", error),
+          );
+        } else {
+          this.requestChunkRefresh(true);
+        }
       }
 
       return;
@@ -2639,19 +2698,16 @@ export default class WorldmapScene extends HexagonScene {
     oldHex?: { col: number; row: number } | null,
     newHex?: { col: number; row: number } | null,
   ): void {
-    if (this.currentChunk === "null" || this.isChunkTransitioning) {
-      return;
-    }
-
-    const [startRow, startCol] = this.currentChunk.split(",").map(Number);
-    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
-      return;
-    }
-
-    const affectsBounds = (hex?: { col: number; row: number } | null) =>
-      hex ? isHexWithinRenderBounds(hex.col, hex.row, startRow, startCol, this.renderChunkSize, this.chunkSize) : false;
-
-    if (affectsBounds(oldHex) || affectsBounds(newHex)) {
+    if (
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: this.currentChunk,
+        isChunkTransitioning: this.isChunkTransitioning,
+        oldHex,
+        newHex,
+        renderSize: this.renderChunkSize,
+        chunkSize: this.chunkSize,
+      })
+    ) {
       this.requestChunkRefresh(true);
     }
   }
@@ -2922,12 +2978,26 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private processPrefetchQueue(): void {
-    if (this.isSwitchedOff) {
+    const initialPlan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: this.isSwitchedOff,
+      queueLength: this.prefetchQueue.length,
+      activePrefetches: this.activePrefetches,
+      maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+    });
+
+    if (initialPlan.shouldClearQueuedPrefetchState) {
       this.clearQueuedPrefetchState();
       return;
     }
 
-    while (this.activePrefetches < this.maxConcurrentPrefetches && this.prefetchQueue.length > 0) {
+    while (
+      resolvePrefetchQueueProcessingPlan({
+        isSwitchedOff: this.isSwitchedOff,
+        queueLength: this.prefetchQueue.length,
+        activePrefetches: this.activePrefetches,
+        maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+      }).shouldProcessNextQueueItem
+    ) {
       const item = this.prefetchQueue.shift();
       if (!item) {
         return;
@@ -3457,9 +3527,9 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private addWorldUpdateSubscription(unsub: any) {
+  private addWorldUpdateSubscription(unsub: unknown) {
     if (typeof unsub === "function") {
-      this.worldUpdateUnsubscribes.push(unsub);
+      this.worldUpdateUnsubscribes.push(unsub as () => void);
     }
   }
 
@@ -3770,16 +3840,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
-    if (!this.hasChunkSwitchAnchor || !this.lastChunkSwitchPosition) {
-      return false;
-    }
-
-    const chunkWorldWidth = this.chunkSize * HEX_SIZE * Math.sqrt(3);
-    const chunkWorldDepth = this.chunkSize * HEX_SIZE * 1.5;
-    const dx = Math.abs(cameraPosition.x - this.lastChunkSwitchPosition.x);
-    const dz = Math.abs(cameraPosition.z - this.lastChunkSwitchPosition.z);
-
-    return dx < chunkWorldWidth * this.chunkSwitchPadding && dz < chunkWorldDepth * this.chunkSwitchPadding;
+    return shouldDelayWorldmapChunkSwitch({
+      hasChunkSwitchAnchor: this.hasChunkSwitchAnchor,
+      lastChunkSwitchPosition: this.lastChunkSwitchPosition,
+      cameraPosition,
+      chunkSize: this.chunkSize,
+      hexSize: HEX_SIZE,
+      chunkSwitchPadding: this.chunkSwitchPadding,
+    });
   }
 
   private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
@@ -3861,6 +3929,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public requestChunkRefresh(force: boolean = false) {
+    if (this.isSwitchedOff) {
+      return;
+    }
+
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     if (force) {
       this.pendingChunkRefreshForce = true;
@@ -3905,12 +3977,10 @@ export default class WorldmapScene extends HexagonScene {
 
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const latestToken = this.chunkRefreshRequestToken;
-    const shouldApplyScheduled = shouldApplyRefreshToken(scheduledToken, latestToken);
-    const executionToken = shouldApplyScheduled
-      ? scheduledToken
-      : resolveRefreshExecutionToken(scheduledToken, latestToken);
+    const refreshExecutionPlan = resolveRefreshExecutionPlan(scheduledToken, latestToken);
+    const { executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
 
-    if (!shouldApplyScheduled) {
+    if (shouldRecordSuperseded) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
       this.emitZoomHardeningTelemetry("refresh_superseded", {
         scheduledToken,
@@ -3920,8 +3990,9 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (this.chunkRefreshRunning) {
-      this.chunkRefreshRerunRequested = true;
-      if (shouldRescheduleRefreshToken(scheduledToken, this.chunkRefreshRequestToken)) {
+      const runningActions = resolveRefreshRunningActions(scheduledToken, this.chunkRefreshRequestToken);
+      this.chunkRefreshRerunRequested = runningActions.shouldMarkRerunRequested;
+      if (runningActions.shouldRescheduleTimer) {
         this.emitZoomHardeningTelemetry("refresh_rescheduled", {
           scheduledToken,
           latestToken: this.chunkRefreshRequestToken,
@@ -3944,20 +4015,30 @@ export default class WorldmapScene extends HexagonScene {
       this.chunkRefreshRunning = false;
       this.chunkRefreshAppliedToken = executionToken;
 
-      const hasNewerRequest = this.chunkRefreshAppliedToken !== this.chunkRefreshRequestToken;
+      const completionActions = resolveRefreshCompletionActions({
+        appliedToken: this.chunkRefreshAppliedToken,
+        latestToken: this.chunkRefreshRequestToken,
+        rerunRequested: this.chunkRefreshRerunRequested,
+      });
       this.emitZoomHardeningTelemetry("refresh_applied", {
         executionToken: this.chunkRefreshAppliedToken,
         latestToken: this.chunkRefreshRequestToken,
-        hasNewerRequest,
+        hasNewerRequest: completionActions.hasNewerRequest,
       });
-      if (hasNewerRequest || this.chunkRefreshRerunRequested) {
+      if (completionActions.shouldClearRerunRequested) {
         this.chunkRefreshRerunRequested = false;
+      }
+      if (completionActions.shouldScheduleRerun) {
         this.scheduleChunkRefreshExecution();
       }
     }
   }
 
   async updateVisibleChunks(force: boolean = false, options?: { reason?: "default" | "shortcut" }): Promise<boolean> {
+    if (this.isSwitchedOff) {
+      return false;
+    }
+
     await waitForChunkTransitionToSettle(
       () => this.globalChunkSwitchPromise,
       (error) => console.warn(`Previous global chunk switch failed:`, error),
@@ -4430,6 +4511,8 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
+    this.onSwitchOff();
+    this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
     if (this.hexGridFrameHandle !== null) {
@@ -4463,6 +4546,23 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     super.destroy();
+  }
+
+  private syncUrlChangedListenerLifecycle(phase: "setup" | "switchOff" | "destroy"): void {
+    const listenerDecision = resolveUrlChangedListenerLifecycle({
+      phase,
+      isUrlChangedListenerAttached: this.isUrlChangedListenerAttached,
+    });
+
+    if (listenerDecision.shouldAttach) {
+      window.addEventListener("urlChanged", this.urlChangedHandler);
+    }
+
+    if (listenerDecision.shouldDetach) {
+      window.removeEventListener("urlChanged", this.urlChangedHandler);
+    }
+
+    this.isUrlChangedListenerAttached = listenerDecision.nextIsUrlChangedListenerAttached;
   }
 
   /**

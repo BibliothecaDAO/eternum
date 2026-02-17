@@ -72,7 +72,7 @@ pub impl TroopLimitImpl of TroopLimitTrait {
 
         let tier_strength: u32 = tier_strength.into();
         let tier_modifier: u32 = tier_modifier.into();
-        (deployment_cap * tier_strength * Self::tier_modifier_divisor()) / tier_modifier
+        (deployment_cap * tier_modifier) / (tier_strength * Self::tier_modifier_divisor())
     }
 
     // Returns (explorer_slot_limit, guard_slot_limit)

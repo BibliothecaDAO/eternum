@@ -33,7 +33,7 @@ export const getExplorerTxUrl = (chain: Chain | ChainType, txHash: string) => {
 // Factory addresses by chain (single source of truth for UI)
 export const FACTORY_ADDRESSES: Record<ChainType, string> = {
   sepolia: "0x07A6F094f15f8C18704bfb19fFEBCBC70b87e41674dE97EbeC7cb7Ffe5c9581B",
-  slot: "0x78306a0c2ccf2227c3623d3a8b6fc4be4fbcc9c31c8c688fbc49da66b5b7835",
+  slot: "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb",
   local: "",
   mainnet: "0x3a49cb39fb21e9d46139536ff4ef2b3ec6719f4c7dc8dd0853c850b4f2b0090",
   slottest: "",

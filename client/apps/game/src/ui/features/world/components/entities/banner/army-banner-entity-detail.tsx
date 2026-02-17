@@ -27,11 +27,7 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({
-    armyEntityId,
-    className,
-    compact = true,
-  }: ArmyBannerEntityDetailContentProps) => {
+  ({ armyEntityId, className, compact = true }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
