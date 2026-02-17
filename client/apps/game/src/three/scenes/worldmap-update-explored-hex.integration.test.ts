@@ -6,12 +6,10 @@ const worldmapSource = readFileSync(path.resolve(__dirname, "worldmap.tsx"), "ut
 
 describe("Worldmap updateExploredHex integration wiring", () => {
   it("computes duplicate reconcile plan from unified decision input", () => {
-    const computesBiomeDelta = /const hasBiomeDelta\s*=\s*!removeExplored && tileAlreadyKnown && existingBiome !== biome;/.test(
-      worldmapSource,
-    );
-    const computesReconcilePlan = /const duplicateTilePlan = resolveDuplicateTileReconcilePlan\(duplicateTileDecisionInput\);/.test(
-      worldmapSource,
-    );
+    const computesBiomeDelta =
+      /const hasBiomeDelta\s*=\s*!removeExplored && tileAlreadyKnown && existingBiome !== biome;/.test(worldmapSource);
+    const computesReconcilePlan =
+      /const duplicateTilePlan = resolveDuplicateTileReconcilePlan\(duplicateTileDecisionInput\);/.test(worldmapSource);
 
     expect(computesBiomeDelta).toBe(true);
     expect(computesReconcilePlan).toBe(true);

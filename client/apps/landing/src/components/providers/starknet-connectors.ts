@@ -1,6 +1,8 @@
 import { argent, braavos, type Connector, type UseInjectedConnectorsProps } from "@starknet-react/core";
 
-type InjectedConnectorOptions = Required<Pick<UseInjectedConnectorsProps, "recommended" | "includeRecommended" | "order">>;
+type InjectedConnectorOptions = Required<
+  Pick<UseInjectedConnectorsProps, "recommended" | "includeRecommended" | "order">
+>;
 
 export const getInjectedConnectorsOptions = (): InjectedConnectorOptions => ({
   recommended: [argent(), braavos()],

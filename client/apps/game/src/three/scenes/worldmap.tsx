@@ -2579,7 +2579,9 @@ export default class WorldmapScene extends HexagonScene {
       if (duplicateTilePlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
         if (duplicateTilePlan.refreshStrategy === "immediate") {
-          void this.updateVisibleChunks(true).catch((error) => console.error("Failed to reconcile duplicate tile:", error));
+          void this.updateVisibleChunks(true).catch((error) =>
+            console.error("Failed to reconcile duplicate tile:", error),
+          );
         } else {
           this.requestChunkRefresh(true);
         }

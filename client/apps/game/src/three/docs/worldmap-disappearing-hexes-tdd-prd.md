@@ -10,13 +10,14 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change                                                                                                        |
-| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
+| Update | Date (UTC)       | Author | Change                                                                                                       |
+| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
 | U1     | 2026-02-17 00:00 | Codex  | Initial detailed TDD PRD covering repro, root-cause hypotheses, test-first slice plan, and acceptance gates. |
 
 ## Executive Summary
 
-Players report that after moving a unit, the destination hex sometimes remains visually missing until a small camera or mouse movement occurs. Current evidence points to a convergence bug between:
+Players report that after moving a unit, the destination hex sometimes remains visually missing until a small camera or
+mouse movement occurs. Current evidence points to a convergence bug between:
 
 1. Army tile updates that pre-seed explored tiles.
 2. Duplicate tile update handling that can early-return before visual reconciliation.
@@ -34,7 +35,9 @@ This PRD defines a strict test-first plan to prove failure, implement minimal fi
 
 ## Problem Statement
 
-Worldmap terrain can enter a temporary divergent state where game state marks a tile as explored but terrain render state fails to reflect it until a later refresh. This undermines map trust and creates flickering/disappearing tile behavior.
+Worldmap terrain can enter a temporary divergent state where game state marks a tile as explored but terrain render
+state fails to reflect it until a later refresh. This undermines map trust and creates flickering/disappearing tile
+behavior.
 
 ## Current Findings (Code Review)
 
@@ -47,7 +50,8 @@ Relevant code:
 
 Risk:
 
-1. Army movement path may mark destination as explored (`Grassland`) before the tile stream delivers authoritative biome.
+1. Army movement path may mark destination as explored (`Grassland`) before the tile stream delivers authoritative
+   biome.
 2. Later tile update can be classified as duplicate and skip incremental visual apply.
 
 Impact:
@@ -85,7 +89,8 @@ Relevant code:
 
 Risk:
 
-1. Biome mesh may remain `visible=false` if transitioning from count `0 -> 1` without explicit visibility refresh in this path.
+1. Biome mesh may remain `visible=false` if transitioning from count `0 -> 1` without explicit visibility refresh in
+   this path.
 
 Impact:
 
