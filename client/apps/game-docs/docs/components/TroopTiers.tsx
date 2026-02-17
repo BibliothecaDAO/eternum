@@ -2,35 +2,9 @@ import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { colors, section, table } from "./styles";
 
 export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
-  switch (troopTier) {
-    case TroopTier.T1:
-      switch (troopType) {
-        case TroopType.Knight:
-          return "Footman";
-        case TroopType.Crossbowman:
-          return "Archer";
-        case TroopType.Paladin:
-          return "Horseman";
-      }
-    case TroopTier.T2:
-      switch (troopType) {
-        case TroopType.Knight:
-          return "Knight";
-        case TroopType.Crossbowman:
-          return "Crossbowman";
-        case TroopType.Paladin:
-          return "Paladin";
-      }
-    case TroopTier.T3:
-      switch (troopType) {
-        case TroopType.Knight:
-          return "Royal Guardian";
-        case TroopType.Crossbowman:
-          return "Beast Hunter";
-        case TroopType.Paladin:
-          return "Dragon Rider";
-      }
-  }
+  // Unit names are now just [Tier][Type] format, so we return empty string
+  // and hide the troopNameStyle div
+  return "";
 };
 
 export const troopTypeTierImages = (tier: TroopTier, type: TroopType) => {
@@ -187,7 +161,6 @@ export const TroopTiers = () => {
               {troopTiers.map((tier) => (
                 <div key={`${type}-${tier}`} style={styles.troopCardStyle}>
                   <h3 style={styles.troopHeaderStyle}>{getTierName(tier)}</h3>
-                  <div style={styles.troopNameStyle}>{getTroopName(type, tier)}</div>
                   <div style={styles.troopCardContentStyle}>
                     <div style={styles.troopImageContainerStyle}>
                       <img

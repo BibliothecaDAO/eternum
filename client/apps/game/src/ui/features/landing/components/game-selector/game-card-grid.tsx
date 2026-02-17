@@ -36,6 +36,8 @@ const formatFeeAmount = (amount: bigint): string => {
  */
 const getStageLabel = (stage: RegistrationStage): string => {
   switch (stage) {
+    case "preparing":
+      return "Preparing...";
     case "obtaining-token":
       return "Obtaining token...";
     case "waiting-for-token":
@@ -107,7 +109,7 @@ interface GameCardProps {
   onPlay: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
-  onForgeHyperstructures?: () => void;
+  onForgeHyperstructures?: () => Promise<void> | void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -139,6 +141,7 @@ export const GameCard = ({
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
   // Show forge button when we have config (even if 0 left, show disabled)
   const showForgeButton = canRegisterPeriod && game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -157,6 +160,20 @@ export const GameCard = ({
       console.error("Registration failed:", err);
     }
   }, [register]);
+
+  const handleForgeClick = useCallback(() => {
+    if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
+
+    setIsForgeButtonPending(true);
+
+    void Promise.resolve(onForgeHyperstructures())
+      .catch((err) => {
+        console.error("Forge action failed:", err);
+      })
+      .finally(() => {
+        setIsForgeButtonPending(false);
+      });
+  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending]);
 
   // Show success toast when registration completes
   useEffect(() => {
@@ -311,8 +328,8 @@ export const GameCard = ({
           {/* Forge Hyperstructures button for upcoming games */}
           {showForgeButton && onForgeHyperstructures && (
             <button
-              onClick={onForgeHyperstructures}
-              disabled={numHyperstructuresLeft <= 0}
+              onClick={handleForgeClick}
+              disabled={numHyperstructuresLeft <= 0 || isForgeButtonPending}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors",
                 numHyperstructuresLeft > 0
@@ -320,8 +337,17 @@ export const GameCard = ({
                   : "bg-gray-500/10 text-gray-500 border border-gray-500/20 cursor-not-allowed",
               )}
             >
-              <Sparkles className="w-3 h-3" />
-              Forge {numHyperstructuresLeft} Hypers
+              {isForgeButtonPending ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Opening...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3 h-3" />
+                  Forge {numHyperstructuresLeft} Hypers
+                </>
+              )}
             </button>
           )}
 
@@ -361,7 +387,7 @@ interface UnifiedGameGridProps {
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
   /** Callback for forging hyperstructures - receives world selection and numHyperstructuresLeft */
-  onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => void;
+  onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */

@@ -1,7 +1,7 @@
 [world]
 description = "World factory world."
 name = "world_factory"
-seed = "wfactory-02"
+seed = "wfactory-03"
 
 [env]
 ## local

@@ -1,10 +1,11 @@
 import ControllerConnector from "@cartridge/connector/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
-import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
+import { StarknetConfig, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { getResourceAddresses } from "../ui/utils/addresses";
+import { buildStarknetConnectors, getInjectedConnectorsOptions } from "./starknet-connectors";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const resourceAddresses = getResourceAddresses();
@@ -33,14 +34,7 @@ const cartridgeController = new ControllerConnector({
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {
-  const { connectors } = useInjectedConnectors({
-    // Show these connectors if the user has no connector installed.
-    recommended: [argent(), braavos()],
-    // Hide recommended connectors if the user has any connector installed.
-    includeRecommended: "onlyIfNoConnectors",
-    // Randomize the order of the connectors.
-    order: "random",
-  });
+  const { connectors } = useInjectedConnectors(getInjectedConnectorsOptions());
   const rpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
@@ -50,7 +44,7 @@ export function StarknetProvider({ children, onlyCartridge }: { children: React.
     <StarknetConfig
       chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[cartridgeController, ...(onlyCartridge ? [] : [...connectors])]}
+      connectors={buildStarknetConnectors(cartridgeController, connectors, onlyCartridge)}
       explorer={voyager}
       autoConnect={true}
     >

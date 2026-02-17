@@ -8,6 +8,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    environmentMatchGlobs: [
+      ["src/three/**/*.test.ts", "node"],
+      ["src/three/**/__tests__/*.test.ts", "node"],
+    ],
     setupFiles: "./src/setupTests.ts",
     css: true,
   },

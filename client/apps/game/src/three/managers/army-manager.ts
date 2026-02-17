@@ -50,7 +50,7 @@ import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
-import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
+import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 import { waitForVisualSettle } from "./manager-update-convergence";
 
@@ -1116,13 +1116,12 @@ export class ArmyManager {
     }
 
     const sourceState = this.movingArmySourceBuckets.get(army.entityId);
-    if (
-      !shouldArmyRemainVisibleInBounds(
-        { col: x, row: y },
-        bounds,
-        sourceState ? { col: sourceState.col, row: sourceState.row } : undefined,
-      )
-    ) {
+    const visibilityDecision = resolveArmyVisibilityBoundsDecision({
+      destination: { col: x, row: y },
+      bounds,
+      source: sourceState ? { col: sourceState.col, row: sourceState.row } : undefined,
+    });
+    if (!visibilityDecision.shouldRemainVisible) {
       return false;
     }
 
