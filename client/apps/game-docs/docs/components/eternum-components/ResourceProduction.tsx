@@ -37,7 +37,14 @@ const styles = {
   cellStyle: table.cell,
   resourceCellStyle: {
     ...table.resourceCell,
-    minWidth: "200px",
+    width: "22%",
+    minWidth: "unset",
+    verticalAlign: "middle" as const,
+  },
+  resourceCellInner: {
+    display: "flex" as const,
+    alignItems: "center" as const,
+    gap: "0.35rem",
   },
   productionCellStyle: {
     ...table.cell,
@@ -126,7 +133,6 @@ const componentStyles = {
   },
 };
 
-
 // Component for Simple Mode Resource Production
 export const SimpleResourceProduction = () => {
   const config = ETERNUM_CONFIG();
@@ -168,8 +174,10 @@ export const SimpleResourceProduction = () => {
               return (
                 <tr key={`simple-${resourceId}`}>
                   <td style={styles.resourceCellStyle}>
-                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
-                    {resourceName}
+                    <div style={styles.resourceCellInner}>
+                      <ResourceIcon id={resourceId} name={resourceName} size="md" />
+                      {resourceName}
+                    </div>
                   </td>
                   <td style={styles.productionCellStyle}>
                     <div style={styles.resourceGroupStyle}>
@@ -202,7 +210,6 @@ export const SimpleResourceProduction = () => {
     </div>
   );
 };
-
 
 // Component for Complex Mode Resource Production
 export const StandardResourceProduction = () => {
@@ -245,8 +252,10 @@ export const StandardResourceProduction = () => {
               return (
                 <tr key={`complex-${resourceId}`}>
                   <td style={styles.resourceCellStyle}>
-                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
-                    {resourceName}
+                    <div style={styles.resourceCellInner}>
+                      <ResourceIcon id={resourceId} name={resourceName} size="md" />
+                      {resourceName}
+                    </div>
                   </td>
                   <td style={styles.productionCellStyle}>
                     <div style={styles.resourceGroupStyle}>
@@ -279,7 +288,6 @@ export const StandardResourceProduction = () => {
     </div>
   );
 };
-
 
 // Component for Simple Mode Troop Production
 export const SimpleTroopProduction = () => {
@@ -316,8 +324,10 @@ export const SimpleTroopProduction = () => {
               return (
                 <tr key={`simple-troop-${troopId}`}>
                   <td style={styles.resourceCellStyle}>
-                    <ResourceIcon id={troopId} name={troopName} size="md" />
-                    {troopName}
+                    <div style={styles.resourceCellInner}>
+                      <ResourceIcon id={troopId} name={troopName} size="md" />
+                      {troopName}
+                    </div>
                   </td>
                   <td style={styles.productionCellStyle}>
                     <div style={styles.resourceGroupStyle}>
@@ -350,7 +360,6 @@ export const SimpleTroopProduction = () => {
     </div>
   );
 };
-
 
 // Component for Standard Mode Troop Production
 export const StandardTroopProduction = () => {
@@ -386,14 +395,16 @@ export const StandardTroopProduction = () => {
       return (
         <tr key={`complex-troop-${troopId}`}>
           <td style={styles.resourceCellStyle}>
-            <ResourceIcon id={troopId} name={troopName} size="sm" />
-            {troopName}
+            <div style={styles.resourceCellInner}>
+              <ResourceIcon id={troopId} name={troopName} size="md" />
+              {troopName}
+            </div>
           </td>
           <td style={styles.productionCellStyle}>
             <div style={styles.resourceGroupStyle}>
               {(troopInputComplexMode[troopId] || []).map((input, idx) => (
                 <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                  <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="sm" />
+                  <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                   {formatAmount(input.amount)}
                 </div>
               ))}
@@ -401,13 +412,13 @@ export const StandardTroopProduction = () => {
           </td>
           <td style={styles.productionCellStyle}>
             <div style={styles.resourceItemStyle}>
-              <ResourceIcon id={troopId} name={troopName} size="sm" />
+              <ResourceIcon id={troopId} name={troopName} size="md" />
               {formatAmount(realmOutputAmount)}
             </div>
           </td>
           <td style={styles.productionCellStyle}>
             <div style={styles.resourceItemStyle}>
-              <ResourceIcon id={troopId} name={troopName} size="sm" />
+              <ResourceIcon id={troopId} name={troopName} size="md" />
               {formatAmount(villageOutputAmount)}
             </div>
           </td>
@@ -427,7 +438,7 @@ export const StandardTroopProduction = () => {
           <thead>
             <tr>
               <th style={styles.headerCellStyle}>Troop</th>
-              <th style={{ ...styles.headerCellStyle, width: "50%", minWidth: "300px" }}>Input Materials (units/s)</th>
+              <th style={{ ...styles.headerCellStyle, width: "57%" }}>Input Materials (units/s)</th>
               <th style={styles.headerCellStyle}>Realm Output (units/s)</th>
               <th style={styles.headerCellStyle}>Village Output (units/s)</th>
             </tr>
@@ -445,9 +456,7 @@ export const StandardTroopProduction = () => {
               <thead>
                 <tr>
                   <th style={styles.headerCellStyle}>Troop</th>
-                  <th style={{ ...styles.headerCellStyle, width: "50%", minWidth: "300px" }}>
-                    Input Materials (units/s)
-                  </th>
+                  <th style={{ ...styles.headerCellStyle, width: "57%" }}>Input Materials (units/s)</th>
                   <th style={styles.headerCellStyle}>Realm Output (units/s)</th>
                   <th style={styles.headerCellStyle}>Village Output (units/s)</th>
                 </tr>
@@ -467,9 +476,7 @@ export const StandardTroopProduction = () => {
               <thead>
                 <tr>
                   <th style={styles.headerCellStyle}>Troop</th>
-                  <th style={{ ...styles.headerCellStyle, width: "50%", minWidth: "300px" }}>
-                    Input Materials (units/s)
-                  </th>
+                  <th style={{ ...styles.headerCellStyle, width: "57%" }}>Input Materials (units/s)</th>
                   <th style={styles.headerCellStyle}>Realm Output (units/s)</th>
                   <th style={styles.headerCellStyle}>Village Output (units/s)</th>
                 </tr>
@@ -482,7 +489,6 @@ export const StandardTroopProduction = () => {
     </div>
   );
 };
-
 
 // Component for Labor Production
 export const LaborProduction = () => {
@@ -525,8 +531,10 @@ export const LaborProduction = () => {
               return (
                 <tr key={`labor-${resourceId}`}>
                   <td style={styles.resourceCellStyle}>
-                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
-                    {resourceName}
+                    <div style={styles.resourceCellInner}>
+                      <ResourceIcon id={resourceId} name={resourceName} size="md" />
+                      {resourceName}
+                    </div>
                   </td>
                   <td style={styles.productionCellStyle}>
                     <div style={styles.resourceItemStyle}>
@@ -550,7 +558,6 @@ export const LaborProduction = () => {
   );
 };
 
-
 export const DonkeyProduction = () => {
   const config = ETERNUM_CONFIG();
   const donkeyOutput = config.resources?.productionBySimpleRecipeOutputs?.[ResourcesIds.Donkey] || 0;
@@ -572,8 +579,10 @@ export const DonkeyProduction = () => {
           <tbody>
             <tr>
               <td style={styles.resourceCellStyle}>
-                <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
-                Donkey
+                <div style={styles.resourceCellInner}>
+                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
+                  Donkey
+                </div>
               </td>
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
@@ -604,4 +613,3 @@ export const DonkeyProduction = () => {
     </div>
   );
 };
-

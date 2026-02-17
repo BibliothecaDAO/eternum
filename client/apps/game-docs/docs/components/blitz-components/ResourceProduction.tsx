@@ -44,6 +44,8 @@ const styles = {
     width: "22%",
     minWidth: "unset",
     verticalAlign: "middle" as const,
+  },
+  resourceCellInner: {
     display: "flex" as const,
     alignItems: "center" as const,
     gap: "0.35rem",
@@ -238,8 +240,10 @@ export const BlitzSimpleResourceProduction = () => {
             {blitzResources.map((resource) => (
               <tr key={`blitz-${resource.id}`}>
                 <td style={styles.resourceCellStyle}>
-                  <ResourceIcon id={resource.id} name={resource.name} size="md" />
-                  {resource.name}
+                  <div style={styles.resourceCellInner}>
+                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                    {resource.name}
+                  </div>
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
@@ -381,8 +385,10 @@ export const BlitzStandardResourceProduction = () => {
             {blitzStandardResources.map((resource) => (
               <tr key={`blitz-standard-${resource.id}`}>
                 <td style={styles.resourceCellStyle}>
-                  <ResourceIcon id={resource.id} name={resource.name} size="md" />
-                  {resource.name}
+                  <div style={styles.resourceCellInner}>
+                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                    {resource.name}
+                  </div>
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
@@ -449,10 +455,12 @@ export const BlitzLaborProduction = () => {
             {blitzLaborResources.map((resource) => (
               <tr key={`blitz-labor-${resource.id}`}>
                 <td style={styles.resourceCellStyle}>
-                  <div style={{ minWidth: "24px", display: "flex", justifyContent: "center", flexShrink: 0 }}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                  <div style={styles.resourceCellInner}>
+                    <div style={{ minWidth: "24px", display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                      <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                    </div>
+                    {resource.name}
                   </div>
-                  {resource.name}
                 </td>
                 <td style={styles.productionCellStyle}>{resource.input}</td>
                 <td style={styles.productionCellStyle}>
@@ -500,8 +508,10 @@ export const BlitzSimpleTroopProduction = () => {
             {blitzSimpleTroops.map((troop) => (
               <tr key={`blitz-simple-troop-${troop.id}`}>
                 <td style={styles.resourceCellStyle}>
-                  <ResourceIcon id={troop.id} name={troop.name} size="md" />
-                  {troop.name}
+                  <div style={styles.resourceCellInner}>
+                    <ResourceIcon id={troop.id} name={troop.name} size="md" />
+                    {troop.name}
+                  </div>
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
@@ -663,8 +673,10 @@ export const BlitzStandardTroopProduction = () => {
             {blitzStandardTroops.map((troop) => (
               <tr key={`blitz-standard-troop-${troop.id}`}>
                 <td style={styles.resourceCellStyle}>
-                  <ResourceIcon id={troop.id} name={troop.name} size="md" />
-                  {troop.name}
+                  <div style={styles.resourceCellInner}>
+                    <ResourceIcon id={troop.id} name={troop.name} size="md" />
+                    {troop.name}
+                  </div>
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
@@ -725,8 +737,10 @@ export const BlitzDonkeyProduction = () => {
           <tbody>
             <tr>
               <td style={styles.resourceCellStyle}>
-                <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
-                Donkey
+                <div style={styles.resourceCellInner}>
+                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
+                  Donkey
+                </div>
               </td>
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
