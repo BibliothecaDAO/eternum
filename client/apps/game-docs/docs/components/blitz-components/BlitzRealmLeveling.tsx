@@ -64,14 +64,11 @@ export const BlitzRealmLeveling = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        <span style={{ marginRight: "0.5rem" }}>⬆️</span>Realm Upgrade Costs
-      </div>
+      <div style={section.accentedTitle}>Realm Upgrade Costs</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
-              <th style={table.headerCell}>Current Level</th>
               <th style={table.headerCell}>Next Level</th>
               <th style={table.headerCell}>Resources Required</th>
             </tr>
@@ -79,7 +76,6 @@ export const BlitzRealmLeveling = () => {
           <tbody>
             {levelData.map((item, index) => (
               <tr key={index}>
-                <td style={tableCellStyle}>{item.currentLevel}</td>
                 <td style={tableCellStyle}>{item.nextLevel}</td>
                 <td style={resourcesCellStyle}>
                   <div

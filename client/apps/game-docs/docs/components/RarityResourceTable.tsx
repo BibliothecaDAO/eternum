@@ -107,7 +107,7 @@ const componentStyles = {
   },
   rarityCellStyle: {
     ...table.cell,
-    color: colors.secondary,
+    color: colors.text.light,
     fontWeight: 500,
   },
 };
@@ -141,9 +141,12 @@ const getRarityColor = (rarity: string): string => {
 const RarityResourceTable = () => {
   return (
     <div style={section.wrapper}>
-      <div style={section.subtitle}>Material Rarity Categories</div>
-      <table style={table.table}>
-        <thead>
+      <div style={section.accentedTitle}>
+        <span style={{ fontSize: "0.85em", fontWeight: 400 }}>Material Rarity Categories</span>
+      </div>
+      <div style={table.container}>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
           <tr>
             <th style={table.headerCell}>Rarity</th>
             <th style={table.headerCell}>Materials</th>
@@ -156,10 +159,7 @@ const RarityResourceTable = () => {
             return (
               <tr key={category.rarity}>
                 <td
-                  style={{
-                    ...componentStyles.rarityCellStyle,
-                    borderLeft: `3px solid ${rarityColor}`,
-                  }}
+                  style={componentStyles.rarityCellStyle}
                 >
                   {category.rarity}
                 </td>
@@ -178,6 +178,7 @@ const RarityResourceTable = () => {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

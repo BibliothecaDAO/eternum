@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources, ResourcesIds } from "@bibliothecadao/types";
-import ResourceIcon from "./ResourceIcon";
-import { colors, formatAmount, section, table } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { colors, formatAmount, section, table } from "../styles";
 
 export const RESOURCES: ResourcesIds[] = [
   ResourcesIds.Wood,
@@ -112,76 +112,13 @@ const componentStyles = {
   },
   categoryHeaderStyle: {
     ...table.cell,
-    color: colors.secondary,
+    color: colors.text.light,
     fontWeight: 500,
     padding: "0.75rem 0.5rem",
     whiteSpace: "nowrap" as const,
   },
 };
 
-export const WeightTable = () => {
-  const config = ETERNUM_CONFIG();
-  const weights = config.resources.resourceWeightsGrams;
-
-  // Create a lookup map for weights
-  const weightMap = new Map<number, number>();
-  Object.entries(weights).forEach(([resource, weight]) => {
-    weightMap.set(Number(resource), weight);
-  });
-
-  return (
-    <div style={section.wrapper}>
-      <div style={section.subtitle}>Material Weights (kg)</div>
-      <table style={table.table}>
-        <thead>
-          <tr>
-            <th style={table.headerCell}>Category</th>
-            <th style={table.headerCell}>Resources</th>
-          </tr>
-        </thead>
-        <tbody>
-          {RESOURCE_GROUPS.map((group) => {
-            // Skip empty groups
-            if (group.resources.length === 0) return null;
-
-            const groupColor = getGroupColor(group.name);
-
-            return (
-              <tr key={group.name}>
-                <td
-                  style={{
-                    ...componentStyles.categoryHeaderStyle,
-                    borderLeft: `3px solid ${groupColor}`,
-                  }}
-                >
-                  {group.name}
-                </td>
-                <td style={table.cell}>
-                  <div style={componentStyles.resourcesGroupStyle}>
-                    {group.resources.map((resourceId) => {
-                      const resourceName = getResourceName(resourceId);
-                      const weight = weightMap.get(resourceId) || 0;
-
-                      return (
-                        <div key={resourceId} style={componentStyles.resourceItemStyle}>
-                          <ResourceIcon id={resourceId} name={resourceName} size="sm" />
-                          <span style={{ color: colors.text.light }}>{resourceName}</span>
-                          <span style={componentStyles.weightStyle}>{formatAmount(weight / 1000)} kg</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-// Component for Blitz Mode Weight Table (Hardcoded)
 export const BlitzWeightTable = () => {
   // Hardcoded weights for the 9 Blitz resources (in kg)
   const blitzResources = [
@@ -217,22 +154,25 @@ export const BlitzWeightTable = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.subtitle}>Material Weights (kg)</div>
-      <table style={table.table}>
-        <thead>
+      <div style={section.accentedTitle}>
+        Material Weights
+      </div>
+      <div style={table.container}>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
+            <tr>
+              <th style={table.headerCell}>Category</th>
+              <th style={table.headerCell}>Resources</th>
+            </tr>
+          </thead>
+          <tbody>
           <tr>
-            <th style={table.headerCell}>Category</th>
-            <th style={table.headerCell}>Resources</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.primary}` }}>Resources</td>
+            <td style={componentStyles.categoryHeaderStyle}>Resources</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {blitzResources.map((resource) => (
                   <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
                     <span style={{ color: colors.text.light }}>{resource.name}</span>
                     <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
                   </div>
@@ -241,12 +181,12 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.secondary}` }}>Food</td>
+            <td style={componentStyles.categoryHeaderStyle}>Food</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {foodResources.map((resource) => (
                   <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
                     <span style={{ color: colors.text.light }}>{resource.name}</span>
                     <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
                   </div>
@@ -255,12 +195,12 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.borderDark}` }}>Transport</td>
+            <td style={componentStyles.categoryHeaderStyle}>Transport</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {transportResources.map((resource) => (
                   <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
                     <span style={{ color: colors.text.light }}>{resource.name}</span>
                     <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
                   </div>
@@ -269,12 +209,12 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.borderDark}` }}>Military Units</td>
+            <td style={componentStyles.categoryHeaderStyle}>Military Units</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 {troopResources.map((resource) => (
                   <div key={resource.id} style={componentStyles.resourceItemStyle}>
-                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <ResourceIcon id={resource.id} name={resource.name} size="md" />
                     <span style={{ color: colors.text.light }}>{resource.name}</span>
                     <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
                   </div>
@@ -283,11 +223,11 @@ export const BlitzWeightTable = () => {
             </td>
           </tr>
           <tr>
-            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid ${colors.arcane}` }}>Special</td>
+            <td style={componentStyles.categoryHeaderStyle}>Special</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
                 <div key={ResourcesIds.Essence} style={componentStyles.resourceItemStyle}>
-                  <ResourceIcon id={ResourcesIds.Essence} name="Essence" size="sm" />
+                  <ResourceIcon id={ResourcesIds.Essence} name="Essence" size="md" />
                   <span style={{ color: colors.text.light }}>Essence</span>
                   <span style={componentStyles.weightStyle}>0.1 kg</span>
                 </div>
@@ -296,6 +236,7 @@ export const BlitzWeightTable = () => {
           </tr>
         </tbody>
       </table>
+      </div>
       <div style={componentStyles.weightStyle}>
         {/* DRAFTING NOTE: Hardcoded table for Blitz mode - replace with dynamic data when config is updated. Essence icon is a placeholder. */}
       </div>

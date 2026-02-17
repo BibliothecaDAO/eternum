@@ -1,5 +1,5 @@
-import ResourceIcon from "./ResourceIcon";
-import { colors, section } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { colors, section } from "../styles";
 
 // Define a mapping from resource name to ID in the game-docs context
 const resourceNameToId: Record<string, number> = {

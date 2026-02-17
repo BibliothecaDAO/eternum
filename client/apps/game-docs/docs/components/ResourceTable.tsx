@@ -69,8 +69,10 @@ export default function ResourceTable() {
               {[ResourcesIds.Wheat, ResourcesIds.Fish].map((id) => (
                 <tr key={id}>
                   <td style={table.resourceCell}>
-                    <ResourceIcon id={id} name={getResourceName(id)} size="md" />
-                    {getResourceName(id)}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                      {getResourceName(id)}
+                    </span>
                   </td>
                   <td style={table.weightCell}>{formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}</td>
                   <td style={table.cell}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
@@ -96,8 +98,10 @@ export default function ResourceTable() {
               {config.startingResources.map(({ resource, amount }) => (
                 <tr key={resource}>
                   <td style={table.resourceCell}>
-                    <ResourceIcon id={resource} name={getResourceName(resource)} size="md" />
-                    {getResourceName(resource)}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <ResourceIcon id={resource} name={getResourceName(resource)} size="md" />
+                      {getResourceName(resource)}
+                    </span>
                   </td>
                   <td style={table.cell}>{formatAmount(amount)}</td>
                   <td style={table.cell}>
@@ -131,8 +135,10 @@ export default function ResourceTable() {
                 return (
                   <tr key={id}>
                     <td style={table.resourceCell}>
-                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
-                      {getResourceName(id)}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                        <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                        {getResourceName(id)}
+                      </span>
                     </td>
                     <td style={table.weightCell}>
                       {formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}
@@ -182,8 +188,10 @@ export default function ResourceTable() {
                 return (
                   <tr key={id}>
                     <td style={table.resourceCell}>
-                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
-                      {getResourceName(id)}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                        <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                        {getResourceName(id)}
+                      </span>
                     </td>
                     <td style={table.cell}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
                     <td style={table.cell}>{laborInput ? formatAmount(laborInput.amount) : "-"}</td>

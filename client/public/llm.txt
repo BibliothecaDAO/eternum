@@ -90,13 +90,13 @@ time zones.
 💰 **Gladiator Bracket - $LORDS Stakes**
 
 Competitive games with $LORDS stakes. Players pay a $LORDS entry fee, contributing to a shared prize pool which is split
-between Top-ranking Lords by score at the end of the game. All players have a chance to earn additional Loot Chest
+between top-ranking Lords by score at the end of the game. All players have a chance to earn additional Loot Chest
 rewards. Games run daily on a rotating schedule.
 
 🏅 **Warrior Bracket - Series Games**
 
 These games form the bulk of a competitive Blitz Series. Players pay a $LORDS entry fee, contributing to a shared prize
-pool which is split between Top-ranking Lords by score at the end of the game. All players have a chance at earning
+pool which is split between top-ranking Lords by score at the end of the game. All players have a chance at earning
 additional rewards in the form of Blitz Rewards Chests. The highest placing players can also win tradable NFT invites to
 the Elite bracket. Games run according to the series schedule, but primarily during prime time for key timezones (USA,
 Europe, Asia-Pacific).
@@ -466,16 +466,9 @@ Each winning position `i` (starting from 1) receives a weight:
 
 ```
 weight(i) = s^(i − 1)
-```
 
-| Rank | Weight  |
-| ---- | ------- |
-| 1st  | 1       |
-| 2nd  | s       |
-| 3rd  | s²      |
-| 4th  | s³      |
-| …    | …       |
-| Wth  | s^(W−1) |
+  1st → 1,  2nd → s,  3rd → s²,  4th → s³,  …  Wth → s^(W−1)
+```
 
 The total weight sum is the geometric series:
 
@@ -2014,7 +2007,7 @@ import {
   HyperstructurePointsTable,
   getTotalHyperstructureCompletionPoints,
   HYPERSTRUCTURE_POINT_MULTIPLIER,
-} from "@/components/HyperstructureTable";
+} from "@/components/eternum-components/HyperstructureTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
 # 👑 Victory
@@ -2782,7 +2775,7 @@ import {
   BlitzSimpleResourceProduction,
   BlitzStandardResourceProduction,
   BlitzLaborProduction,
-} from "@/components/ResourceProduction";
+} from "@/components/blitz-components/ResourceProduction";
 
 # ⚒️ Production
 
@@ -2860,7 +2853,7 @@ steady stream of food to produce.
 file: docs/pages/blitz/materials/relics.mdx
 meta: {}
 
-import RelicTable from "@/components/RelicTable";
+import RelicTable from "@/components/blitz-components/RelicTable";
 
 # 🏺 Relics
 
@@ -2997,7 +2990,7 @@ file: docs/pages/blitz/materials/transfers-and-trade.mdx
 meta: {}
 
 import { importantNote } from "@/components/styles";
-import { BlitzWeightTable } from "@/components/WeightTable";
+import { BlitzWeightTable } from "@/components/blitz-components/WeightTable";
 
 # 📜 Transfers
 
@@ -3055,7 +3048,7 @@ meta: {}
 
 import {
   BlitzWorldStructureDefenseSlotsTable,
-} from "@/components/DefendingArmies";
+} from "@/components/blitz-components/DefendingArmies";
 
 # ⚔️ Armies
 
@@ -3079,16 +3072,17 @@ Where Tier Strength values are:
 * **T2**: 3
 * **T3**: 9
 
-### Deployment Caps
+### Deployment Caps & Army Slots
 
-Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed:
+Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed, as well as a
+set number of field and guard army slots.
 
-| Realm Level | Deployment Cap |
-| ----------- | -------------- |
-| Settlement  | 3,000          |
-| City        | 15,000         |
-| Kingdom     | 45,000         |
-| Empire      | 90,000         |
+| Realm Level | Deployment Cap | Field Army Slots | Guard Army Slots |
+| ----------- | -------------- | ---------------- | ---------------- |
+| Settlement  | 3,000          | 1                | 1                |
+| City        | 15,000         | 3                | 2                |
+| Kingdom     | 45,000         | 5                | 3                |
+| Empire      | 90,000         | 8                | 4                |
 
 ### Maximum Army Size
 
@@ -3107,19 +3101,6 @@ Where Tier Modifiers are:
 * A Kingdom (45,000 cap) deploying T2 troops: (45,000 / 3) × 1.0 = **15,000 T2 troops** per army
 * A City (15,000 cap) deploying T3 troops: (15,000 / 9) × 1.5 = **2,500 T3 troops** per army
 * An Empire (90,000 cap) deploying T1 troops: (90,000 / 1) × 0.5 = **45,000 T1 troops** per army
-
-### Army Slots
-
-The number of field and guard army slots depends on the Realm level:
-
-| Realm Level | Field Army Slots | Guard Army Slots |
-| ----------- | ---------------- | ---------------- |
-| Settlement  | 1                | 1                |
-| City        | 3                | 2                |
-| Kingdom     | 5                | 3                |
-| Empire      | 8                | 4                |
-
-Lords can deploy armies from the Military tab in the Local view.
 
 ## Field Armies
 
@@ -3323,7 +3304,7 @@ file: docs/pages/blitz/military/troop-tiers.mdx
 meta: {}
 
 import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
-import { BlitzMaxStaminaTable } from "@/components/TroopMovementTable";
+import { BlitzMaxStaminaTable } from "@/components/blitz-components/TroopMovementTable";
 
 # 🛡️ Troop Tiers
 
@@ -3357,7 +3338,7 @@ import BuildingCard from "../../../components/BuildingCard";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { BlitzBuildingCard } from "@/components/BlitzBuildingCard";
+import { BlitzBuildingCard } from "@/components/blitz-components/BlitzBuildingCard";
 
 # 🪓 Buildings
 
@@ -3806,12 +3787,11 @@ file: docs/pages/blitz/realms/realm.mdx
 meta: {}
 
 import { StartingMilitary } from "@/components/StartingMilitary";
-import { BlitzRealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BlitzRealmDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
-import { RealmLeveling } from "@/components/RealmLeveling";
 import ResourceIcon from "@/components/ResourceIcon";
 import { importantNote, table, formatAmount, section } from "@/components/styles";
-import { BlitzRealmLeveling } from "@/components/BlitzRealmLeveling";
+import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
 
 # 🏰 Realms
 
@@ -3867,8 +3847,8 @@ sequence for an example of 24 players is visualized below:
     <table style={table.table}>
       <thead style={table.tableHead}>
         <tr>
-          <th style={table.headerCell}>Starting Resources per Realm</th>
-          <th style={table.headerCell}>Quantity</th>
+          <th style={{ ...table.headerCell, width: "70%" }}>Starting Resources per Realm</th>
+          <th style={{ ...table.headerCell, width: "30%" }}>Quantity</th>
         </tr>
       </thead>
 
@@ -3983,9 +3963,9 @@ your defenses. Each progression requires specific materials, outlined in the tab
 file: docs/pages/blitz/worldmap-movement/movement.mdx
 meta: {}
 
-import { BlitzTroopMovementTable } from "@/components/TroopMovementTable";
+import { BlitzTroopMovementTable } from "@/components/blitz-components/TroopMovementTable";
 import { BiomeStamina } from "@/components/BiomeStamina";
-import { ExplorationRewards } from "@/components/ExplorationRewards";
+import { ExplorationRewards } from "@/components/blitz-components/ExplorationRewards";
 
 # 🧭 Movement & Exploration
 
@@ -4082,7 +4062,7 @@ of a troop transfer, the army that has received troops:
 file: docs/pages/blitz/worldmap-movement/worldmap.mdx
 meta: {}
 
-import { HyperstructureRings } from "@/components/HyperstructureRings";
+import { HyperstructureRings } from "@/components/blitz-components/HyperstructureRings";
 import { importantNote } from "@/components/styles";
 
 # 🗺️ The World Map
@@ -4146,7 +4126,7 @@ Lord, so be sure to secure them before your enemies do!
 file: docs/pages/eternum/military/armies.mdx
 meta: {}
 
-import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
+import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
@@ -4292,7 +4272,7 @@ meta: {}
 
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resource } from "@/components/styles";
-import { RaidableResources } from "@/components/RaidableResources";
+import { RaidableResources } from "@/components/eternum-components/RaidableResources";
 import { importantNote } from "@/components/styles";
 
 # 💰 Raiding
@@ -4466,7 +4446,7 @@ file: docs/pages/eternum/military/troop-tiers.mdx
 meta: {}
 
 import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
-import { MaxStaminaTable } from "@/components/TroopMovementTable";
+import { MaxStaminaTable } from "@/components/eternum-components/TroopMovementTable";
 
 # 🛡️ Troop Tiers
 
@@ -5021,11 +5001,11 @@ Lumber Camp (both being resource buildings) would not be subject to this cost in
 file: docs/pages/eternum/realm-and-villages/realm.mdx
 meta: {}
 
-import { StartingResources, StructureType } from "@/components/StartingResources";
+import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
-import { RealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { RealmDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
-import { RealmLeveling } from "@/components/RealmLeveling";
+import { RealmLeveling } from "@/components/eternum-components/RealmLeveling";
 import { importantNote } from "@/components/styles";
 
 # 🏰 Realms
@@ -5096,8 +5076,8 @@ your defenses. Each progression requires specific materials, outlined in the tab
 file: docs/pages/eternum/realm-and-villages/villages.mdx
 meta: {}
 
-import ResourceProbability from "@/components/ResourceProbability";
-import { StartingResources, StructureType } from "@/components/StartingResources";
+import ResourceProbability from "@/components/eternum-components/ResourceProbability";
+import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
 
 # 🛖 Villages
@@ -5456,7 +5436,7 @@ You can pause automation at different levels:
 file: docs/pages/eternum/resources/bridging.mdx
 meta: {}
 
-import { EfficiencyTable } from "@/components/EfficiencyTable";
+import { EfficiencyTable } from "@/components/eternum-components/EfficiencyTable";
 
 # 🌀 Bridging (Portals)
 
@@ -5488,7 +5468,7 @@ import {
   StandardResourceProduction,
   LaborProduction,
   DonkeyProduction,
-} from "@/components/ResourceProduction";
+} from "@/components/eternum-components/ResourceProduction";
 
 # ⚒️ Production
 
@@ -5579,7 +5559,7 @@ meta: {}
 
 import RarityResourceTable from "@/components/RarityResourceTable";
 import ResourceIcon from "@/components/ResourceIcon";
-import TroopsLimitTable from "@/components/TroopsLimitTable";
+import TroopsLimitTable from "@/components/eternum-components/TroopsLimitTable";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 # 🧱 Materials
@@ -5733,7 +5713,7 @@ Mysterious artifacts from a forgotten age:
 file: docs/pages/eternum/resources/storage.mdx
 meta: {}
 
-import { WeightTable } from "@/components/WeightTable";
+import { WeightTable } from "@/components/eternum-components/WeightTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { divideByPrecision } from "@/utils/resources";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
@@ -5872,7 +5852,7 @@ control, enabling them to manage market conditions to their advantage and set OT
 file: docs/pages/eternum/worldmap-movement/movement.mdx
 meta: {}
 
-import TroopMovementTable from "@/components/TroopMovementTable";
+import TroopMovementTable from "@/components/eternum-components/TroopMovementTable";
 import { BiomeStamina } from "@/components/BiomeStamina";
 
 # 🧭 Movement & Exploration
@@ -6004,8 +5984,8 @@ meta: {
   "description": "Details on the contents of Loot Chests"
 }
 
-import EternumRewardsChestTable from "@/components/EternumRewardsChestTable";
-import BlitzRewardsChestTable from "@/components/BlitzRewardsChestTable";
+import EternumRewardsChestTable from "@/components/eternum-components/EternumRewardsChestTable";
+import BlitzRewardsChestTable from "@/components/blitz-components/BlitzRewardsChestTable";
 
 # 📜 Chest Contents
 

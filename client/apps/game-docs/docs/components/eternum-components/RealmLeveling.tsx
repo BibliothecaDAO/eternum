@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources } from "@bibliothecadao/types";
-import ResourceIcon from "./ResourceIcon";
-import { colors, formatAmount, section, table } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { colors, formatAmount, section, table } from "../styles";
 
 export const RealmLeveling = () => {
   const config = ETERNUM_CONFIG();
@@ -42,14 +42,11 @@ export const RealmLeveling = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        <span style={{ marginRight: "0.5rem" }}>⬆️</span>Realm Upgrade Costs
-      </div>
+      <div style={section.accentedTitle}>Realm Upgrade Costs</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
-              <th style={table.headerCell}>Current Level</th>
               <th style={table.headerCell}>Next Level</th>
               <th style={table.headerCell}>Resources Required</th>
             </tr>
@@ -57,7 +54,6 @@ export const RealmLeveling = () => {
           <tbody>
             {levelData.slice(0, 3).map((item, index) => (
               <tr key={index}>
-                <td style={table.cell}>{item.currentLevel}</td>
                 <td style={table.cell}>{item.nextLevel}</td>
                 <td style={table.cell}>
                   {item.costs && (

@@ -1,6 +1,4 @@
-import {
-  BlitzWorldStructureDefenseSlotsTable,
-} from "@/components/DefendingArmies";
+import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 
 # ⚔️ Armies
 
@@ -19,20 +17,26 @@ troop tier.
 Army strength is calculated as: **Army_Strength = Troop_Amount × Tier_Strength**
 
 Where Tier Strength values are:
+
 - **T1**: 1
 - **T2**: 3
 - **T3**: 9
 
-### Deployment Caps
+### Deployment Caps & Army Slots
 
-Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed:
+Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed, as well as a set
+number of field and guard army slots.
 
-| Realm Level | Deployment Cap |
-|-------------|----------------|
-| Settlement  | 3,000          |
-| City        | 15,000         |
-| Kingdom     | 45,000         |
-| Empire      | 90,000         |
+<div className="table-fixed-layout">
+
+| Realm Level | Deployment Cap | Field Army Slots | Guard Army Slots |
+| ----------- | -------------- | ---------------- | ---------------- |
+| Settlement  | 3,000          | 1                | 1                |
+| City        | 15,000         | 3                | 2                |
+| Kingdom     | 45,000         | 5                | 3                |
+| Empire      | 90,000         | 8                | 4                |
+
+</div>
 
 ### Maximum Army Size
 
@@ -41,27 +45,16 @@ The maximum number of troops in a single army depends on both the deployment cap
 **Max_Army_Size = (Deployment_Cap / Tier_Strength) × Tier_Modifier**
 
 Where Tier Modifiers are:
+
 - **T1**: 0.5
 - **T2**: 1.0
 - **T3**: 1.5
 
 **Examples:**
+
 - A Kingdom (45,000 cap) deploying T2 troops: (45,000 / 3) × 1.0 = **15,000 T2 troops** per army
 - A City (15,000 cap) deploying T3 troops: (15,000 / 9) × 1.5 = **2,500 T3 troops** per army
 - An Empire (90,000 cap) deploying T1 troops: (90,000 / 1) × 0.5 = **45,000 T1 troops** per army
-
-### Army Slots
-
-The number of field and guard army slots depends on the Realm level:
-
-| Realm Level | Field Army Slots | Guard Army Slots |
-|-------------|------------------|------------------|
-| Settlement  | 1                | 1                |
-| City        | 3                | 2                |
-| Kingdom     | 5                | 3                |
-| Empire      | 8                | 4                |
-
-Lords can deploy armies from the Military tab in the Local view.
 
 ## Field Armies
 

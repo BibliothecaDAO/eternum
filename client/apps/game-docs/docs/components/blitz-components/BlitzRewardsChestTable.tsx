@@ -1,4 +1,4 @@
-import { colors, table } from "./styles";
+import { colors, table } from "../styles";
 
 // Data from the Blitz Rewards Chest (Epoch 1, Series 0, items 12-22)
 const BLITZ_REWARDS_CHEST_ITEMS = [
@@ -145,14 +145,14 @@ const componentStyles = {
   },
   itemImageCell: {
     ...table.cell,
-    width: "80px",
+    width: "110px",
     textAlign: "center" as const,
   },
   itemImage: {
-    width: "48px",
-    height: "48px",
+    width: "72px",
+    height: "72px",
     objectFit: "contain" as const,
-    borderRadius: "0.25rem",
+    borderRadius: "0.35rem",
   },
   rarityCell: {
     ...table.cell,
@@ -186,14 +186,12 @@ const BlitzRewardsChestTable = () => {
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
-              <th style={table.headerCell}>#</th>
               <th style={table.headerCell}>Item Name</th>
               <th style={table.headerCell}></th>
               <th style={table.headerCell}>Rarity</th>
               <th style={table.headerCell}>Description</th>
               <th style={table.headerCell}>Type</th>
-              <th style={table.headerCell}>Troop Type</th>
-              <th style={table.headerCell}>Draw Chance (%)</th>
+              <th style={table.headerCell}>Draw Chance</th>
             </tr>
           </thead>
           <tbody>
@@ -202,7 +200,6 @@ const BlitzRewardsChestTable = () => {
 
               return (
                 <tr key={item.itemName}>
-                  <td style={componentStyles.epochCell}>{item.epochItemNumber}</td>
                   <td style={componentStyles.itemNameCell}>{item.itemName}</td>
                   <td style={componentStyles.itemImageCell}>
                     {item.image ? (
@@ -221,10 +218,10 @@ const BlitzRewardsChestTable = () => {
                   </td>
                   <td style={componentStyles.descriptionCell}>{item.description}</td>
                   <td style={table.cell}>
-                    <span style={{ color: colors.text.light }}>{item.type}</span>
-                  </td>
-                  <td style={table.cell}>
-                    <span style={{ color: colors.text.light }}>{item.troopType}</span>
+                    <span style={{ color: colors.text.light }}>
+                      {item.type}
+                      {item.troopType !== "N/A" ? ` (${item.troopType})` : ""}
+                    </span>
                   </td>
                   <td style={componentStyles.drawChanceCell}>{item.drawChance}%</td>
                 </tr>

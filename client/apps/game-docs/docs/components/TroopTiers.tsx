@@ -197,8 +197,8 @@ export const TroopTierDamageStats = () => {
       <div style={section.subtitle}>Troop Tier Stats</div>
 
       <div style={section.commonCard}>
-        <div style={section.commonHeader}>
-          <span>⚔️</span> Damage Comparison by Tier
+        <div style={section.accentedTitle}>
+          <span style={{ fontSize: "0.85em", fontWeight: 400 }}>Damage Comparison by Tier</span>
         </div>
 
         <table style={table.compareTable}>

@@ -13,10 +13,14 @@ there are 2 or 24 players in a match.
 
 The total prize pool comes from two sources:
 
+<div className="table-stretch-last">
+
 | Source              | Description                                                       |
 | ------------------- | ----------------------------------------------------------------- |
 | **Entry fees (F)**  | Each player pays a $LORDS entry fee when registering for the game |
 | **Sponsorship (S)** | Additional $LORDS added by the game host or external sponsors     |
+
+</div>
 
 **Total Prize Pool = F + S**
 
@@ -105,16 +109,9 @@ Each winning position `i` (starting from 1) receives a weight:
 
 ```
 weight(i) = s^(i − 1)
-```
 
-| Rank | Weight  |
-| ---- | ------- |
-| 1st  | 1       |
-| 2nd  | s       |
-| 3rd  | s²      |
-| 4th  | s³      |
-| …    | …       |
-| Wth  | s^(W−1) |
+  1st → 1,  2nd → s,  3rd → s²,  4th → s³,  …  Wth → s^(W−1)
+```
 
 The total weight sum is the geometric series:
 
@@ -157,4 +154,3 @@ Prize distribution is **permissionless** — anyone can submit the ranked player
 4. Players (or anyone on their behalf) call the claim function to transfer $LORDS and mint any earned NFTs
 
 If only **one player** registered for a game, they receive a full refund of their entry fee with no fee split applied.
-

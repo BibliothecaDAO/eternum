@@ -10,9 +10,7 @@ export const BuildableHexes = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        <span style={{ marginRight: "0.5rem" }}>🏗️</span>Buildable Hexes by Realm Level
-      </div>
+      <div style={section.accentedTitle}>Buildable Hexes by Realm Level</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>

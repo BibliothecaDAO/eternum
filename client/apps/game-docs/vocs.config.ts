@@ -26,7 +26,7 @@ export default defineConfig({
     link: [
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
       },
     ],
   },
@@ -42,7 +42,7 @@ export default defineConfig({
     },
   },
   font: {
-    google: "Rajdhani",
+    google: "Exo 2",
   },
 
   title: "Realms Docs",

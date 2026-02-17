@@ -19,7 +19,7 @@
 
 /* Body font */
 body {
-  font-family: 'Rajdhani', sans-serif !important;
+  font-family: "Exo 2", sans-serif !important;
 }
 
 /* Headings use Cinzel */
@@ -29,14 +29,19 @@ body {
 .vocs_Content h4,
 .vocs_Content h5,
 .vocs_Content h6,
-h1, h2, h3, h4 {
-  font-family: 'Cinzel', serif !important;
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Cinzel", serif !important;
   letter-spacing: 0.02em;
 }
 
 /* Code blocks */
-code, pre, .vocs_Code {
-  font-family: 'Source Code Pro', monospace !important;
+code,
+pre,
+.vocs_Code {
+  font-family: "Source Code Pro", monospace !important;
 }
 
 /* Sidebar styling */
@@ -46,11 +51,27 @@ code, pre, .vocs_Code {
 }
 
 .vocs_Sidebar a {
-  font-family: 'Rajdhani', sans-serif !important;
+  font-family: "Exo 2", sans-serif !important;
+}
+
+/* Make sidebar chevrons clickable and visually indicate toggle */
+.vocs_Sidebar_sectionHeader {
+  cursor: pointer !important;
+}
+
+.vocs_Sidebar_sectionCollapse {
+  cursor: pointer !important;
+  padding: 0.25rem !important;
+}
+
+.vocs_Sidebar_sectionTitle {
+  flex: 1 !important;
+  cursor: pointer !important;
 }
 
 /* Navigation */
-.vocs_NavBar, .vocs_Header {
+.vocs_NavBar,
+.vocs_Header {
   background-color: var(--realm-bg-void) !important;
   border-bottom-color: var(--realm-border-etched) !important;
 }
@@ -88,7 +109,64 @@ code, pre, .vocs_Code {
 }
 
 /* Table defaults (avoid skewed layout) */
+/* Ensure Vocs table wrappers don't constrain width */
+.vocs_Content [data-rehype-pretty-code-fragment],
+.vocs_Content .vocs_Table,
+.vocs_Content div:has(> table) {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: visible !important;
+}
+
 .vocs_Content table {
-  width: 100%;
+  width: 100% !important;
+  min-width: 100% !important;
   border-collapse: collapse;
+  background-color: var(--realm-surface-iron);
+  border: 1px solid var(--realm-border-etched);
+  border-radius: 10px;
+  overflow: hidden;
+  table-layout: auto;
+}
+
+.vocs_Content th {
+  font-family: "Exo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.005em;
+  text-transform: none;
+  color: var(--realm-accent-brass);
+  background-color: var(--realm-surface-slate);
+  border-bottom: 1px solid var(--realm-border-strong) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  padding: 0.6rem 1rem !important;
+}
+
+.vocs_Content td {
+  border-bottom: 1px solid var(--realm-border-etched) !important;
+  vertical-align: middle;
+  color: #e8e4dc;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  padding: 0.6rem 1rem !important;
+}
+
+/* Scoped table-layout: fixed for specific tables */
+.table-fixed-layout table {
+  table-layout: fixed !important;
+}
+
+/* Force last column to fill remaining space in simple markdown tables */
+.table-stretch-last td:last-child,
+.table-stretch-last th:last-child {
+  width: 100%;
+}
+
+/* Ensure images inside tables maintain aspect ratio */
+.vocs_Content table img {
+  min-width: 24px;
+  object-fit: contain;
 }

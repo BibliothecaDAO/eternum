@@ -1,5 +1,5 @@
 import { formatNumberWithCommas } from "@/utils/formatting";
-import { icon, stats, troop } from "./styles";
+import { icon, stats, troop } from "../styles";
 
 export default function BlitzTroopsLimitTable() {
   return (

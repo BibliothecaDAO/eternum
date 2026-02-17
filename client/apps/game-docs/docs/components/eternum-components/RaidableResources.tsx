@@ -1,6 +1,6 @@
 import { table } from "@/components/styles";
 import { ResourcesIds, STEALABLE_RESOURCES, resources } from "@bibliothecadao/types";
-import ResourceIcon from "./ResourceIcon";
+import ResourceIcon from "../ResourceIcon";
 
 export const RaidableResources = () => {
   if (!STEALABLE_RESOURCES) {
@@ -32,8 +32,10 @@ export const RaidableResources = () => {
                 <tr key={resourceId} style={table.tableRow}>
                   <td style={table.cell}>{index + 1}</td>
                   <td style={table.resourceCell}>
-                    <ResourceIcon name={resource.trait} id={resource.id} size="md" />
-                    {resource.trait}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <ResourceIcon name={resource.trait} id={resource.id} size="md" />
+                      {resource.trait}
+                    </span>
                     {resourceId === ResourcesIds.Lords && (
                       <span style={{ marginLeft: "8px", color: "#ff9800" }}>
                         ⚠️{" "}

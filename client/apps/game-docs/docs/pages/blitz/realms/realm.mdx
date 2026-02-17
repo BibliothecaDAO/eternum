@@ -1,10 +1,9 @@
 import { StartingMilitary } from "@/components/StartingMilitary";
-import { BlitzRealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BlitzRealmDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
-import { RealmLeveling } from "@/components/RealmLeveling";
 import ResourceIcon from "@/components/ResourceIcon";
 import { importantNote, table, formatAmount, section } from "@/components/styles";
-import { BlitzRealmLeveling } from "@/components/BlitzRealmLeveling";
+import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
 
 # 🏰 Realms
 
@@ -67,8 +66,8 @@ sequence for an example of 24 players is visualized below:
     <table style={table.table}>
       <thead style={table.tableHead}>
         <tr>
-          <th style={table.headerCell}>Starting Resources per Realm</th>
-          <th style={table.headerCell}>Quantity</th>
+          <th style={{ ...table.headerCell, width: "70%" }}>Starting Resources per Realm</th>
+          <th style={{ ...table.headerCell, width: "30%" }}>Quantity</th>
         </tr>
       </thead>
       <tbody>
