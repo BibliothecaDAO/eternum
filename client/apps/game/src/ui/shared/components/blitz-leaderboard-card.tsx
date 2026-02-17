@@ -197,13 +197,7 @@ interface BlitzLeaderboardCardProps {
   player?: { name: string; address: string } | null;
 }
 
-const PodiumEntry = ({
-  entry,
-  positionClass,
-}: {
-  entry: LandingLeaderboardEntry;
-  positionClass: string;
-}) => {
+const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry; positionClass: string }) => {
   const { value: rankValue, suffix: rankSuffix } = formatRankParts(entry.rank);
   const name = truncateText(getDisplayName(entry), 20);
 

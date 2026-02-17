@@ -14,9 +14,7 @@ interface StructureTileUpdateActions {
  * Resolve worldmap structure-tile update actions.
  * Count changes take precedence and trigger a full visible-chunk refresh path.
  */
-export function resolveStructureTileUpdateActions(
-  input: StructureTileUpdateDecisionInput,
-): StructureTileUpdateActions {
+export function resolveStructureTileUpdateActions(input: StructureTileUpdateDecisionInput): StructureTileUpdateActions {
   if (input.countChanged) {
     return {
       shouldScheduleTileRefresh: false,
@@ -33,4 +31,3 @@ export function resolveStructureTileUpdateActions(
     shouldUpdateTotalStructures: false,
   };
 }
-

@@ -1,8 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import {
-  finalizeGameRankingAndMMR,
-  type GameReviewData,
-} from "@/services/review/game-review-service";
+import { finalizeGameRankingAndMMR, type GameReviewData } from "@/services/review/game-review-service";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
@@ -10,15 +7,7 @@ import { Button } from "@/ui/design-system/atoms";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Copy,
-  Loader2,
-  Share2,
-  Shield,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, Loader2, Share2, Shield, X } from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -113,7 +102,6 @@ const buildStepShareMessage = ({
 
   return [`${worldLabel} review is complete.`, "#Realms #Eternum"].join("\n");
 };
-
 
 const FinalizeStep = ({
   data,
@@ -528,25 +516,24 @@ export const GameReviewModal = ({
 
               {currentStep === "leaderboard" && (
                 <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                  <BlitzLeaderboardCardWithSelector worldName={data.worldName} topPlayers={data.topPlayers} player={cardPlayer} />
+                  <BlitzLeaderboardCardWithSelector
+                    worldName={data.worldName}
+                    topPlayers={data.topPlayers}
+                    player={cardPlayer}
+                  />
                 </div>
               )}
 
-              {currentStep === "personal" && (
-                data.personalScore ? (
+              {currentStep === "personal" &&
+                (data.personalScore ? (
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <ScoreCardContent
-                      worldName={data.worldName}
-                      playerEntry={data.personalScore}
-                      showActions={false}
-                    />
+                    <ScoreCardContent worldName={data.worldName} playerEntry={data.personalScore} showActions={false} />
                   </div>
                 ) : (
                   <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
                     No personal score card is available for this account.
                   </div>
-                )
-              )}
+                ))}
 
               {currentStep === "finalize" && (
                 <div className="space-y-4">

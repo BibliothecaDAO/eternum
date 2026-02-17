@@ -138,7 +138,7 @@ interface GameCardProps {
 /**
  * Single game card component with inline registration
  */
-export const GameCard = ({
+const GameCard = ({
   game,
   onPlay,
   onSpectate,

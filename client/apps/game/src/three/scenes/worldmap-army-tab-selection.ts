@@ -30,13 +30,13 @@ interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPending
   hasPendingMovement: boolean;
 }
 
-export interface PendingArmyMovementSelectionPlan {
+interface PendingArmyMovementSelectionPlan {
   shouldClearPendingMovement: boolean;
   shouldRequestChunkRefresh: boolean;
   shouldBlockSelection: boolean;
 }
 
-export interface PendingArmyMovementFallbackPlan {
+interface PendingArmyMovementFallbackPlan {
   shouldDeleteFallbackTimeout: boolean;
   shouldClearPendingMovement: boolean;
   shouldRequestChunkRefresh: boolean;

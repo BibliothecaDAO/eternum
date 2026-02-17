@@ -248,7 +248,7 @@ const uniqueAddresses = (addresses: Array<string | null | undefined>): string[] 
 const randomTrialId = () =>
   BigInt(`0x${(globalThis.crypto?.randomUUID?.().replace(/-/g, "") || Date.now().toString(16)).slice(0, 31)}`);
 
-const chunk = <T,>(items: T[], chunkSize: number): T[][] => {
+const chunk = <T>(items: T[], chunkSize: number): T[][] => {
   const out: T[][] = [];
   for (let index = 0; index < items.length; index += chunkSize) {
     out.push(items.slice(index, index + chunkSize));
@@ -319,7 +319,7 @@ export interface GameReviewData {
   finalization: ReviewFinalizationMeta;
 }
 
-export interface FinalizeGameReviewResult {
+interface FinalizeGameReviewResult {
   rankingSubmitted: boolean;
   mmrSubmitted: boolean;
   rankingSkipped: boolean;
@@ -357,10 +357,11 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
   };
 };
 
-const fetchStoryStats = async (toriiSqlBaseUrl: string): Promise<Pick<
-  GameReviewStats,
-  "totalDeadTroops" | "totalT1TroopsCreated" | "totalT2TroopsCreated" | "totalT3TroopsCreated"
->> => {
+const fetchStoryStats = async (
+  toriiSqlBaseUrl: string,
+): Promise<
+  Pick<GameReviewStats, "totalDeadTroops" | "totalT1TroopsCreated" | "totalT2TroopsCreated" | "totalT3TroopsCreated">
+> => {
   const rows = await queryToriiSql<StoryStatRow>(
     toriiSqlBaseUrl,
     REVIEW_BATTLE_AND_CREATION_QUERY,
@@ -381,7 +382,8 @@ const fetchStoryStats = async (toriiSqlBaseUrl: string): Promise<Pick<
     const storyType = typeof row.story === "string" ? row.story : null;
 
     if (storyType === "BattleStory") {
-      totalDeadTroops += parseScaledAmount(row.battle_attacker_troops_lost) + parseScaledAmount(row.battle_defender_troops_lost);
+      totalDeadTroops +=
+        parseScaledAmount(row.battle_attacker_troops_lost) + parseScaledAmount(row.battle_defender_troops_lost);
       continue;
     }
 
@@ -465,7 +467,7 @@ export const fetchGameReviewData = async ({
   let personalScore =
     normalizedPlayerAddress == null
       ? null
-      : leaderboard.find((entry) => parseAddress(entry.address) === normalizedPlayerAddress) ?? null;
+      : (leaderboard.find((entry) => parseAddress(entry.address) === normalizedPlayerAddress) ?? null);
 
   if (!personalScore && normalizedPlayerAddress) {
     personalScore = await fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl);
@@ -519,7 +521,8 @@ export const finalizeGameRankingAndMMR = async ({
     fetchRankedPlayersForSubmission(sqlClient),
   ]);
 
-  const playersForSubmission = rankedPlayersByPoints.length > 0 ? rankedPlayersByPoints : finalization.registeredPlayers;
+  const playersForSubmission =
+    rankedPlayersByPoints.length > 0 ? rankedPlayersByPoints : finalization.registeredPlayers;
 
   if (playersForSubmission.length === 0) {
     throw new Error("No registered players found for this game.");

@@ -8,8 +8,7 @@ import { formatOrdinal } from "./blitz-highlight";
 
 export const blitzNumberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
-export const formatBlitzValue = (value: number): string =>
-  blitzNumberFormatter.format(Math.max(0, Math.round(value)));
+export const formatBlitzValue = (value: number): string => blitzNumberFormatter.format(Math.max(0, Math.round(value)));
 
 export const formatBlitzRankParts = (rank: number | null | undefined): { value: string; suffix: string } => {
   if (!rank || rank < 1) {
