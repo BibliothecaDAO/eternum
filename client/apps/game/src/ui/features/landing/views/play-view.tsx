@@ -89,10 +89,12 @@ const WRITTEN_GUIDES = [
 const LearnContent = ({
   onSelectGame,
   onSpectate,
+  onForgeHyperstructures,
   onRegistrationComplete,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
+  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
 }) => (
   <div className="flex flex-col gap-4">
@@ -184,6 +186,7 @@ const LearnContent = ({
       <UnifiedGameGrid
         onSelectGame={onSelectGame}
         onSpectate={onSpectate}
+        onForgeHyperstructures={onForgeHyperstructures}
         onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
         hideHeader
@@ -523,6 +526,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
           <LearnContent
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
+            onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
           />
         );
