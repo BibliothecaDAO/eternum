@@ -24,7 +24,7 @@ interface ScoreCardModalProps {
   worldName: string;
 }
 
-export interface ScoreCardContentProps {
+interface ScoreCardContentProps {
   worldName: string;
   playerEntry: LandingLeaderboardEntry | null;
   isLoading?: boolean;
@@ -224,7 +224,7 @@ export const ScoreCardContent = ({
  * Modal to display player's score card for an ended game
  * Features: BlitzHighlightCard display, copy image, share to X, copy message
  */
-export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
+const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
   const [playerEntry, setPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -267,7 +267,11 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
         <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0a0a0a] to-[#050505] backdrop-blur-xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-gold/20">
             <h2 className="font-serif text-lg text-gold">Your Score - {worldName}</h2>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Close"
+            >
               <X className="w-5 h-5 text-white/60" />
             </button>
           </div>

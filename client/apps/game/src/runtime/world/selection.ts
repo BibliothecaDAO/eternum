@@ -6,6 +6,7 @@ import type { WorldProfile } from "./types";
 export interface WorldSelectionInput {
   name: string;
   chain?: Chain;
+  worldAddress?: string;
 }
 
 interface ApplyWorldSelectionResult {
