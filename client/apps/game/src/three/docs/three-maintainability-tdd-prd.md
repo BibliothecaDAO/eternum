@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: Maintainability hardening program for `client/apps/game/src/three` using strict TDD.
-- Status: Completed (M3)
+- Status: Completed (M4)
 - Owner: Three.js Team
 - Created: 2026-02-17
 - Last Updated: 2026-02-17
@@ -22,6 +22,7 @@
 | U8     | 2026-02-17 00:00 | Codex  | Began M3 RED/GREEN maintainability seam slice: added `scene-manager-transition-policy` tests + module, refactored `scene-manager.ts` through policy decisions, fixed README architecture reference drift, and reduced `src/three` lint errors from `182` to `178`. |
 | U9     | 2026-02-17 00:00 | Codex  | Continued M3 seam extraction in `worldmap.tsx`: added `worldmap-chunk-switch-delay-policy` test/module, routed chunk-switch delay gating through policy, and removed one touched-file lint violation in `worldmap.tsx` (`shouldApplyScheduled` unused) to reduce `src/three` lint errors from `178` to `177`. |
 | U10    | 2026-02-17 00:00 | Codex  | Completed M3 closeout verification: removed remaining touched-file lint blockers in `worldmap.tsx` (`no-non-null-asserted-optional-chain` + `no-explicit-any`), re-ran `src/three` module gates (`31` files / `196` tests), and reduced lint errors from `177` to `173` (baseline `182`). |
+| U11    | 2026-02-17 08:05 | Codex  | Completed M4 hardening closeout: re-ran module + quality gates, recorded final verification snapshot, and published residual-risk follow-up backlog. |
 
 ## Executive Summary
 
@@ -268,3 +269,25 @@ Non-functional requirements:
 | 2026-02-17 | M3        | In Progress | GREEN shipped: extracted `scene-manager-transition-policy.ts`, routed `scene-manager.ts` switch/pending/finalize decisions through policy, updated README architecture reference, and fixed `chunk-geometry.test.ts` sorting lint issues. Gates: `pnpm --dir client/apps/game test src/three` (`30` files / `192` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `178` errors (baseline `182`). |
 | 2026-02-17 | M3        | In Progress | RED/GREEN chunk-switch delay seam completed: `worldmap-chunk-switch-delay-policy.test.ts` failed first on missing module, then passed after extracting `worldmap-chunk-switch-delay-policy.ts` and routing `worldmap.tsx` delay gating through it. Gates: `pnpm --dir client/apps/game test src/three` (`31` files / `196` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `177` errors (baseline `182`). |
 | 2026-02-17 | M3        | Completed | Final M3 verification completed: touched `src/three` files lint-clean, module gate passing (`31` files / `196` tests), and quality gate improved to `173` lint errors vs baseline `182` with no touched-file regressions. |
+| 2026-02-17 | M4        | Completed | Hardening closeout verification rerun: `pnpm --dir client/apps/game test src/three` passing (`31` files / `196` tests) and `pnpm --dir client/apps/game exec eslint src/three` stable at `173` errors (baseline `182`, net `-9`). Final residual risks and ranked extraction backlog documented below. |
+
+## M4 Closeout Report (2026-02-17)
+
+Final verification snapshot:
+
+1. Module gate: `pnpm --dir client/apps/game test src/three` passes (`31` files / `196` tests).
+2. Quality gate: `pnpm --dir client/apps/game exec eslint src/three` reports `173` errors (baseline `182`, net improvement `-9`).
+3. Milestone commitment check: M0-M4 objectives completed with RED/GREEN evidence logged in this PRD update history and execution log.
+
+Residual risks:
+
+1. Lint debt remains concentrated in legacy large files (`worldmap.tsx`, `game-renderer.ts`, manager layer) and can slow future extractions.
+2. Transition and lifecycle policies are unit-covered, but higher-level integration scenarios (multi-scene rapid toggle + async manager callbacks) remain relatively thin.
+3. Large-file ownership remains uneven, so refactor conflicts and behavior drift risk increase under parallel feature work.
+
+Ranked follow-up backlog:
+
+1. P0: Add integration-style scene lifecycle regression tests that combine rapid scene toggles with async manager callbacks.
+2. P1: Continue lint debt burn-down in top-three high-risk files using touched-file-only budgets per PR.
+3. P1: Extract one additional worldmap lifecycle orchestration seam (`destroy`/switch-off side-effect ordering) into a dedicated policy module.
+4. P2: Add lightweight CI guard that fails when `src/three` lint error count rises above current baseline (`173`).
