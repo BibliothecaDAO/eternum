@@ -6,10 +6,24 @@ import {
 } from "@/services/review/game-review-service";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { Button } from "@/ui/design-system/atoms";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
-import { ArrowLeft, ArrowRight, Copy, Crown, Loader2, Medal, Share2, Shield, Swords, Trophy, X } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  Copy,
+  Crown,
+  Loader2,
+  Medal,
+  Share2,
+  Shield,
+  Swords,
+  Trophy,
+  X,
+} from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -106,11 +120,12 @@ const StatTile = ({
 }) => {
   return (
     <div
-      className={`endgame-step-enter rounded-xl border p-3 transition-colors sm:p-4 ${
+      className={cn(
+        "endgame-step-enter rounded-xl border p-3 transition-colors sm:p-4",
         emphasize
-          ? "border-gold/35 bg-gradient-to-b from-gold/10 to-black/40"
-          : "border-gold/20 bg-black/35 hover:border-gold/30 hover:bg-black/45"
-      }`}
+          ? "border-gold/35 bg-gradient-to-b from-gold/10 to-dark/90 shadow-md shadow-dark/70"
+          : "border-gold/20 bg-dark/80 hover:border-gold/30 hover:bg-dark/90",
+      )}
       style={{ animationDelay: `${index * 40}ms` }}
     >
       <p className="text-[11px] uppercase tracking-wider text-gold/60">{label}</p>
@@ -138,12 +153,26 @@ const GameStatsStep = ({ worldName, stats }: { worldName: string; stats: GameRev
 
   return (
     <div className="space-y-5">
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-gold">
-          <Trophy className="h-4 w-4" />
-          <h3 className="font-serif text-xl">Game Stats</h3>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-gold">
+            <Trophy className="h-4 w-4" />
+            <h3 className="font-serif text-xl">Game Stats</h3>
+          </div>
+          <p className="text-xs uppercase tracking-wider text-gold/60">Game: {worldName}</p>
         </div>
-        <p className="text-xs uppercase tracking-wider text-gold/60">Game: {worldName}</p>
+
+        <div className="relative overflow-hidden rounded-xl border border-gold/45 bg-gradient-to-br from-gold/15 via-gold/8 to-dark/90 px-4 py-3 sm:min-w-[220px]">
+          <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gold/20 blur-xl" />
+          <div className="relative">
+            <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-gold/75">
+              <Activity className="h-3.5 w-3.5" />
+              Total Transactions
+            </p>
+            <p className="mt-1 text-4xl font-semibold leading-none text-gold">{formatValue(stats.totalTransactions)}</p>
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-gold/55">This World</p>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -227,7 +256,7 @@ const getRankTheme = (rank: number) => {
   }
 
   return {
-    cardClass: "border-gold/25 bg-black/30",
+    cardClass: "border-gold/25 bg-dark/80",
     rankClass: "text-gold/70",
     pointsClass: "border-gold/30 bg-gold/10 text-gold",
     showCrown: false,
@@ -245,7 +274,7 @@ const LeaderboardStep = ({ data }: { data: GameReviewData }) => {
 
       <div className="space-y-2">
         {data.topPlayers.length === 0 ? (
-          <div className="rounded-xl border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
+          <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
             Leaderboard data is not available yet.
           </div>
         ) : (
@@ -329,7 +358,7 @@ const FinalizeStep = ({
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-gold/20 bg-black/35 p-3">
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Ranking Status</p>
           <p className="mt-1 text-sm text-white">
             {data.finalization.rankingFinalized
@@ -337,7 +366,7 @@ const FinalizeStep = ({
               : "Ranking submission is pending."}
           </p>
         </div>
-        <div className="rounded-xl border border-gold/20 bg-black/35 p-3">
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">MMR Status</p>
           <p className="mt-1 text-sm text-white">
             {!data.finalization.mmrEnabled
@@ -366,24 +395,14 @@ const FinalizeStep = ({
           className="w-full justify-center !px-4 !py-2.5"
           forceUppercase={false}
           isLoading={isFinalizing}
-          disabled={isFinalizing || !hasSigner}
+          disabled={isFinalizing || (canSubmitAnything && !hasSigner)}
         >
           {isFinalizing
             ? "Submitting..."
             : canSubmitAnything
               ? "Finalize ranking & save MMR then go home"
-              : "Go back to home"}
+              : "Return Home"}
         </Button>
-        {!canSubmitAnything && (
-          <Button
-            onClick={onReturnHome}
-            variant="outline"
-            className="w-full justify-center !px-4 !py-2.5"
-            forceUppercase={false}
-          >
-            Return Home
-          </Button>
-        )}
       </div>
     </div>
   );
@@ -403,7 +422,7 @@ const UpcomingGamesStep = ({
         <p className="text-xs uppercase tracking-wider text-gold/60">Finished Game: {worldName}</p>
       </div>
 
-      <div className="max-h-[440px] overflow-y-auto rounded-xl border border-gold/20 bg-black/30 p-3">
+      <div className="max-h-[440px] overflow-y-auto rounded-xl border border-gold/20 bg-dark/80 p-3">
         <UnifiedGameGrid
           onSelectGame={() => undefined}
           onSpectate={() => undefined}
@@ -643,9 +662,9 @@ export const GameReviewModal = ({
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
-      <div className="pointer-events-none absolute inset-0 endgame-backdrop-texture" />
+      <div className="pointer-events-none absolute inset-0 endgame-backdrop-cinematic" />
 
-      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 flex max-h-[84vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
+      <div className="endgame-modal-enter endgame-surface endgame-shell-cinematic relative z-10 flex max-h-[84vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
         <div className="border-b border-gold/20 px-4 py-3.5 sm:px-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -707,7 +726,7 @@ export const GameReviewModal = ({
               {currentStep === "stats" && (
                 <div
                   ref={captureRef}
-                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-black/35 p-4"
+                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-dark/80 p-4"
                   style={SHARE_FRAME_STYLE}
                 >
                   <GameStatsStep worldName={data.worldName} stats={data.stats} />
@@ -717,7 +736,7 @@ export const GameReviewModal = ({
               {currentStep === "leaderboard" && (
                 <div
                   ref={captureRef}
-                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-black/35 p-4"
+                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-dark/80 p-4"
                   style={SHARE_FRAME_STYLE}
                 >
                   <LeaderboardStep data={data} />
@@ -742,7 +761,7 @@ export const GameReviewModal = ({
                       />
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
+                    <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
                       No personal score card is available for this account.
                     </div>
                   )}

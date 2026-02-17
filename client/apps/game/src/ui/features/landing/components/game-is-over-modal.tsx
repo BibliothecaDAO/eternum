@@ -29,9 +29,9 @@ export const GameIsOverModal = ({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
-      <div className="pointer-events-none absolute inset-0 endgame-backdrop-texture" />
+      <div className="pointer-events-none absolute inset-0 endgame-backdrop-cinematic" />
 
-      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
+      <div className="endgame-modal-enter endgame-surface endgame-shell-cinematic relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"

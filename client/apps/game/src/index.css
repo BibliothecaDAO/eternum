@@ -618,7 +618,8 @@ button {
   animation: endgame-progress-pulse 1.3s ease-in-out infinite;
 }
 
-.endgame-backdrop-texture {
+.endgame-backdrop-texture,
+.endgame-backdrop-cinematic {
   background:
     radial-gradient(circle at 50% 0%, rgba(223, 170, 84, 0.14), transparent 52%),
     linear-gradient(180deg, rgba(1, 1, 1, 0.2), rgba(12, 10, 8, 0.35)), url("/images/hex-bg.png");
@@ -641,12 +642,44 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   background-image: url("/images/score-cards/texture.jpg");
   background-size: cover;
   background-position: center;
   opacity: 0.13;
   mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.endgame-shell-cinematic {
+  background: linear-gradient(160deg, rgba(20, 16, 13, 0.98), rgba(12, 10, 8, 0.98) 60%, rgba(1, 1, 1, 0.99));
+}
+
+.endgame-shell-cinematic::before {
+  background-image:
+    url("/images/score-cards/texture.jpg"),
+    radial-gradient(circle at 20% 20%, rgba(223, 170, 84, 0.15), transparent 56%),
+    url("/images/logos/Eternum-Mark-Black.png");
+  background-size:
+    cover,
+    100% 100%,
+    420px 420px;
+  background-position:
+    center,
+    center,
+    calc(100% + 80px) -60px;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.22;
+}
+
+.endgame-shell-cinematic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("/images/score-cards/smoke.png") center/cover no-repeat;
+  opacity: 0.08;
   pointer-events: none;
 }
 

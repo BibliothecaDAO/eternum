@@ -59,6 +59,11 @@ const REVIEW_MMR_CONFIG_QUERY = `
   LIMIT 1;
 `;
 
+const REVIEW_TRANSACTIONS_COUNT_QUERY = `
+  SELECT COUNT(*) AS transaction_count
+  FROM transactions;
+`;
+
 const buildToriiSqlUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii/sql`;
 
 const parseNumeric = (value: unknown): number => {
@@ -277,6 +282,10 @@ interface MmrConfigRow {
   mmr_token_address?: unknown;
 }
 
+interface TransactionsCountRow {
+  transaction_count?: unknown;
+}
+
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
   rankingFinalized: boolean;
@@ -288,6 +297,7 @@ interface ReviewFinalizationMeta {
 
 export interface GameReviewStats {
   numberOfPlayers: number;
+  totalTransactions: number;
   totalTilesExplored: number;
   totalCampsTaken: number;
   totalEssenceRiftsTaken: number;
@@ -393,6 +403,20 @@ const fetchStoryStats = async (toriiSqlBaseUrl: string): Promise<Pick<
   };
 };
 
+const fetchTransactionsCount = async (toriiSqlBaseUrl: string): Promise<number> => {
+  try {
+    const rows = await queryToriiSql<TransactionsCountRow>(
+      toriiSqlBaseUrl,
+      REVIEW_TRANSACTIONS_COUNT_QUERY,
+      "Failed to fetch transactions count",
+    );
+
+    return parseNumeric(rows[0]?.transaction_count);
+  } catch {
+    return 0;
+  }
+};
+
 const sumLeaderboardMetric = (
   rows: LandingLeaderboardEntry[],
   key:
@@ -428,10 +452,11 @@ export const fetchGameReviewData = async ({
 }): Promise<GameReviewData> => {
   const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
 
-  const [leaderboard, finalization, storyStats] = await Promise.all([
+  const [leaderboard, finalization, storyStats, transactionsCount] = await Promise.all([
     fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
     fetchReviewFinalizationMeta(toriiSqlBaseUrl),
     fetchStoryStats(toriiSqlBaseUrl),
+    fetchTransactionsCount(toriiSqlBaseUrl),
   ]);
 
   const topPlayers = leaderboard.slice(0, 3);
@@ -453,6 +478,7 @@ export const fetchGameReviewData = async ({
 
   const stats: GameReviewStats = {
     numberOfPlayers: finalization.registeredPlayers.length,
+    totalTransactions: transactionsCount,
     totalTilesExplored: sumLeaderboardMetric(leaderboard, "exploredTiles"),
     totalCampsTaken: sumLeaderboardMetric(leaderboard, "campsTaken"),
     totalEssenceRiftsTaken: sumLeaderboardMetric(leaderboard, "riftsTaken"),
