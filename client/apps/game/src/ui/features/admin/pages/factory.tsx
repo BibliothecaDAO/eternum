@@ -52,10 +52,10 @@ import { AdminHeader } from "../components/admin-header";
 import {
   CARTRIDGE_API_BASE,
   DEFAULT_NAMESPACE,
-  getDefaultVersion,
   FACTORY_ADDRESSES,
   getDefaultBlitzRegistrationConfig,
   getDefaultMaxActionsForChain,
+  getDefaultVersion,
   getExplorerTxUrl,
   getFactoryDeployRepeatsForChain,
   getRpcUrlForChain,
