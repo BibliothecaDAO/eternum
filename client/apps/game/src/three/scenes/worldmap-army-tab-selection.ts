@@ -13,6 +13,7 @@ interface ShouldQueueArmySelectionRecoveryInput {
   hasPendingMovement: boolean;
   isChunkTransitioning: boolean;
   armyPresentInManager: boolean;
+  recoveryInFlight: boolean;
 }
 
 interface ShouldClearPendingArmyMovementInput {
@@ -53,7 +54,8 @@ export function shouldQueueArmySelectionRecovery(input: ShouldQueueArmySelection
     input.deferDuringChunkTransition &&
     !input.hasPendingMovement &&
     !input.isChunkTransitioning &&
-    !input.armyPresentInManager
+    !input.armyPresentInManager &&
+    !input.recoveryInFlight
   );
 }
 

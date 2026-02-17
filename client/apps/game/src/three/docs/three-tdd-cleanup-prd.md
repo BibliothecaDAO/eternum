@@ -14,6 +14,8 @@
 | ------ | ---------------- | ------ | ------ |
 | U1     | 2026-02-17 21:58 | Codex  | Created detailed TDD PRD with baseline, scope, milestones, test strategy, and acceptance criteria. |
 | U2     | 2026-02-17 22:08 | Codex  | Marked M0 harness stabilization complete and logged implementation outcomes. |
+| U3     | 2026-02-17 23:08 | Codex  | Added S2 duplicate tile refresh/invalidation decision matrix coverage and helper extraction notes. |
+| U4     | 2026-02-17 23:12 | Codex  | Added S3 army selection recovery queue in-flight guard coverage and worldmap wiring updates. |
 
 ## Executive Summary
 
@@ -302,5 +304,5 @@ Exit Criteria:
 | Date       | Milestone | Status    | Notes |
 | ---------- | --------- | --------- | ----- |
 | 2026-02-17 | M0        | Completed | `src/three` tests now run in `node` env via `environmentMatchGlobs`; fixed node-only test assumptions and hoisted mock issues; `pnpm --dir client/apps/game test src/three` passes (`24` files, `121` tests). |
-| 2026-02-17 | M1        | In Progress | Slice S1 continued with red-green-refactor extraction of worldmap refresh and structure-update decisions into policy helpers (`resolveRefreshExecutionPlan`, `resolveRefreshRunningActions`, `resolveRefreshCompletionActions`, `shouldRequestTileRefreshForStructureBoundsChange`, `resolveStructureTileUpdateActions`) and wiring in `worldmap.tsx`; targeted and full `src/three` suites pass (`25` files, `138` tests). |
+| 2026-02-17 | M1        | In Progress | S1 continued with red-green-refactor extraction of worldmap refresh and structure-update decisions into policy helpers (`resolveRefreshExecutionPlan`, `resolveRefreshRunningActions`, `resolveRefreshCompletionActions`, `shouldRequestTileRefreshForStructureBoundsChange`, `resolveStructureTileUpdateActions`); S2 duplicate-tile refresh/invalidation matrix was formalized via `resolveDuplicateTileUpdateMode`; S3 queue conditions added `recoveryInFlight` gating via `shouldQueueArmySelectionRecovery` and worldmap retry-path wiring. Targeted and full `src/three` suites pass (`25` files, `145` tests). |
 | 2026-02-17 | M2-M4     | Planned   | Next slices remain as defined in backlog and milestones. |

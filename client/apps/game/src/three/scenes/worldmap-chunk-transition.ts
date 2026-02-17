@@ -44,6 +44,8 @@ interface DuplicateTileUpdateActions {
   shouldRequestRefresh: boolean;
 }
 
+type DuplicateTileUpdateMode = "none" | "invalidate_only" | "invalidate_and_refresh";
+
 interface RefreshExecutionPlan {
   shouldApplyScheduled: boolean;
   shouldRecordSuperseded: boolean;
@@ -280,23 +282,45 @@ export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRef
 }
 
 /**
+ * Resolve duplicate tile update behavior as an explicit decision matrix mode.
+ */
+export function resolveDuplicateTileUpdateMode(input: DuplicateTileRefreshDecisionInput): DuplicateTileUpdateMode {
+  if (input.removeExplored || !input.tileAlreadyKnown) {
+    return "none";
+  }
+
+  if (shouldForceRefreshForDuplicateTileUpdate(input)) {
+    return "invalidate_and_refresh";
+  }
+
+  return "invalidate_only";
+}
+
+/**
  * Duplicate tile updates can indicate stale visual state despite data parity.
  * Invalidate caches for duplicate adds and request a refresh only when visible.
  */
 export function resolveDuplicateTileUpdateActions(
   input: DuplicateTileRefreshDecisionInput,
 ): DuplicateTileUpdateActions {
-  if (input.removeExplored || !input.tileAlreadyKnown) {
-    return {
-      shouldInvalidateCaches: false,
-      shouldRequestRefresh: false,
-    };
+  const mode = resolveDuplicateTileUpdateMode(input);
+  switch (mode) {
+    case "none":
+      return {
+        shouldInvalidateCaches: false,
+        shouldRequestRefresh: false,
+      };
+    case "invalidate_only":
+      return {
+        shouldInvalidateCaches: true,
+        shouldRequestRefresh: false,
+      };
+    case "invalidate_and_refresh":
+      return {
+        shouldInvalidateCaches: true,
+        shouldRequestRefresh: true,
+      };
   }
-
-  return {
-    shouldInvalidateCaches: true,
-    shouldRequestRefresh: shouldForceRefreshForDuplicateTileUpdate(input),
-  };
 }
 
 /**

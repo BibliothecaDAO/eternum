@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveRefreshCompletionActions,
+  resolveDuplicateTileUpdateMode,
   resolveDuplicateTileUpdateActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
@@ -563,6 +564,79 @@ describe("resolveDuplicateTileUpdateActions", () => {
       shouldInvalidateCaches: false,
       shouldRequestRefresh: false,
     });
+  });
+});
+
+describe("resolveDuplicateTileUpdateMode", () => {
+  it.each([
+    {
+      name: "duplicate tile is visible and stable",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "invalidate_and_refresh",
+    },
+    {
+      name: "duplicate tile is offscreen",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: false,
+      },
+      expected: "invalidate_only",
+    },
+    {
+      name: "duplicate tile arrives during chunk transition",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: true,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "invalidate_only",
+    },
+    {
+      name: "duplicate tile arrives with null chunk",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: true,
+        currentChunk: "null",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "invalidate_only",
+    },
+    {
+      name: "update is not a duplicate add",
+      input: {
+        removeExplored: false,
+        tileAlreadyKnown: false,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "none",
+    },
+    {
+      name: "update removes explored tile",
+      input: {
+        removeExplored: true,
+        tileAlreadyKnown: true,
+        currentChunk: "24,24",
+        isChunkTransitioning: false,
+        isVisibleInCurrentChunk: true,
+      },
+      expected: "none",
+    },
+  ])("resolves matrix mode when $name", ({ input, expected }) => {
+    expect(resolveDuplicateTileUpdateMode(input)).toBe(expected);
   });
 });
 

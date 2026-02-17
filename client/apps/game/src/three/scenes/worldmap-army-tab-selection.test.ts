@@ -72,6 +72,7 @@ describe("shouldQueueArmySelectionRecovery", () => {
         hasPendingMovement: false,
         isChunkTransitioning: false,
         armyPresentInManager: false,
+        recoveryInFlight: false,
       }),
     ).toBe(true);
   });
@@ -83,6 +84,7 @@ describe("shouldQueueArmySelectionRecovery", () => {
         hasPendingMovement: true,
         isChunkTransitioning: false,
         armyPresentInManager: false,
+        recoveryInFlight: false,
       }),
     ).toBe(false);
   });
@@ -94,6 +96,7 @@ describe("shouldQueueArmySelectionRecovery", () => {
         hasPendingMovement: false,
         isChunkTransitioning: true,
         armyPresentInManager: false,
+        recoveryInFlight: false,
       }),
     ).toBe(false);
   });
@@ -105,6 +108,7 @@ describe("shouldQueueArmySelectionRecovery", () => {
         hasPendingMovement: false,
         isChunkTransitioning: false,
         armyPresentInManager: false,
+        recoveryInFlight: false,
       }),
     ).toBe(false);
   });
@@ -116,6 +120,19 @@ describe("shouldQueueArmySelectionRecovery", () => {
         hasPendingMovement: false,
         isChunkTransitioning: false,
         armyPresentInManager: true,
+        recoveryInFlight: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not queue recovery when a recovery attempt is already in flight", () => {
+    expect(
+      shouldQueueArmySelectionRecovery({
+        deferDuringChunkTransition: true,
+        hasPendingMovement: false,
+        isChunkTransitioning: false,
+        armyPresentInManager: false,
+        recoveryInFlight: true,
       }),
     ).toBe(false);
   });

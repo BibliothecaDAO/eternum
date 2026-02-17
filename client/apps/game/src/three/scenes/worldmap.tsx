@@ -1732,10 +1732,20 @@ export default class WorldmapScene extends HexagonScene {
           if (this.armyManager.hasArmy(selectedEntityId)) {
             this.onArmySelection(selectedEntityId, playerAddress);
           } else {
+            const shouldQueueRecovery = shouldQueueArmySelectionRecovery({
+              deferDuringChunkTransition,
+              hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+              isChunkTransitioning: this.isChunkTransitioning,
+              armyPresentInManager: false,
+              recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
+            });
+
             if (import.meta.env.DEV) {
               console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
             }
-            this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
+            if (shouldQueueRecovery) {
+              this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
+            }
           }
         };
 
@@ -1758,6 +1768,7 @@ export default class WorldmapScene extends HexagonScene {
           hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
           isChunkTransitioning: this.isChunkTransitioning,
           armyPresentInManager: false,
+          recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
         })
       ) {
         this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
