@@ -85,7 +85,6 @@ import {
   getChunkKeysContainingHexInRenderBounds,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
-  isHexWithinRenderBounds,
 } from "../utils/chunk-geometry";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
@@ -100,27 +99,31 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
   resolveArmyTabSelectionPosition,
+  resolvePendingArmyMovementFallbackPlan,
+  resolvePendingArmyMovementSelectionPlan,
   shouldAcceptArmyTabSelectionAttempt,
-  shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveDuplicateTileUpdateActions,
-  resolveRefreshExecutionToken,
+  resolveRefreshCompletionActions,
+  resolveRefreshExecutionPlan,
+  resolveRefreshRunningActions,
   resolveChunkSwitchActions,
-  shouldApplyRefreshToken,
+  shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
-  shouldRescheduleRefreshToken,
   shouldRunManagerUpdate,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
+  resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
@@ -768,13 +771,24 @@ export default class WorldmapScene extends HexagonScene {
           );
         }
 
-        if (positions && !countChanged) {
+        const structureTileActions = resolveStructureTileUpdateActions({
+          hasPositions: Boolean(positions),
+          countChanged,
+        });
+
+        if (structureTileActions.shouldScheduleTileRefresh && positions) {
           this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
         }
 
-        if (countChanged) {
+        if (structureTileActions.shouldUpdateTotalStructures) {
           this.totalStructures = newCount;
+        }
+
+        if (structureTileActions.shouldClearCache) {
           this.clearCache();
+        }
+
+        if (structureTileActions.shouldRefreshVisibleChunks) {
           this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
         }
       }),
@@ -1667,17 +1681,26 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const fallbackTimeout = setTimeout(() => {
-      if (!this.pendingArmyMovements.has(entityId)) {
+      const fallbackPlan = resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: this.pendingArmyMovements.has(entityId),
+        pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
+        nowMs: Date.now(),
+        staleAfterMs: this.stalePendingArmyMovementMs,
+      });
+
+      if (fallbackPlan.shouldDeleteFallbackTimeout) {
         this.pendingArmyMovementFallbackTimeouts.delete(entityId);
         return;
       }
 
-      if (!this.shouldClearPendingArmyMovementNow(entityId)) {
+      if (!fallbackPlan.shouldClearPendingMovement) {
         return;
       }
 
       this.clearPendingArmyMovement(entityId);
-      this.requestChunkRefresh(true);
+      if (fallbackPlan.shouldRequestChunkRefresh) {
+        this.requestChunkRefresh(true);
+      }
 
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
@@ -1685,14 +1708,6 @@ export default class WorldmapScene extends HexagonScene {
     }, this.stalePendingArmyMovementMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
-  }
-
-  private shouldClearPendingArmyMovementNow(entityId: ID, nowMs: number = Date.now()): boolean {
-    return shouldClearPendingArmyMovement({
-      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
-      nowMs,
-      staleAfterMs: this.stalePendingArmyMovementMs,
-    });
   }
 
   private onArmySelection(
@@ -1703,14 +1718,23 @@ export default class WorldmapScene extends HexagonScene {
     const deferDuringChunkTransition = options?.deferDuringChunkTransition ?? true;
 
     // Check if army has pending movement transactions
-    if (this.pendingArmyMovements.has(selectedEntityId)) {
-      if (!this.shouldClearPendingArmyMovementNow(selectedEntityId)) {
-        this.requestChunkRefresh(true);
-        return false;
-      }
+    const selectionPlan = resolvePendingArmyMovementSelectionPlan({
+      hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+      pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(selectedEntityId),
+      nowMs: Date.now(),
+      staleAfterMs: this.stalePendingArmyMovementMs,
+    });
 
+    if (selectionPlan.shouldClearPendingMovement) {
       this.clearPendingArmyMovement(selectedEntityId);
+    }
+
+    if (selectionPlan.shouldRequestChunkRefresh) {
       this.requestChunkRefresh(true);
+    }
+
+    if (selectionPlan.shouldBlockSelection) {
+      return false;
     }
 
     // Check if army is currently being rendered or is in chunk transition
@@ -1720,10 +1744,20 @@ export default class WorldmapScene extends HexagonScene {
           if (this.armyManager.hasArmy(selectedEntityId)) {
             this.onArmySelection(selectedEntityId, playerAddress);
           } else {
+            const shouldQueueRecovery = shouldQueueArmySelectionRecovery({
+              deferDuringChunkTransition,
+              hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+              isChunkTransitioning: this.isChunkTransitioning,
+              armyPresentInManager: false,
+              recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
+            });
+
             if (import.meta.env.DEV) {
               console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
             }
-            this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
+            if (shouldQueueRecovery) {
+              this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
+            }
           }
         };
 
@@ -1746,6 +1780,7 @@ export default class WorldmapScene extends HexagonScene {
           hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
           isChunkTransitioning: this.isChunkTransitioning,
           armyPresentInManager: false,
+          recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
         })
       ) {
         this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
@@ -2637,19 +2672,16 @@ export default class WorldmapScene extends HexagonScene {
     oldHex?: { col: number; row: number } | null,
     newHex?: { col: number; row: number } | null,
   ): void {
-    if (this.currentChunk === "null" || this.isChunkTransitioning) {
-      return;
-    }
-
-    const [startRow, startCol] = this.currentChunk.split(",").map(Number);
-    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
-      return;
-    }
-
-    const affectsBounds = (hex?: { col: number; row: number } | null) =>
-      hex ? isHexWithinRenderBounds(hex.col, hex.row, startRow, startCol, this.renderChunkSize, this.chunkSize) : false;
-
-    if (affectsBounds(oldHex) || affectsBounds(newHex)) {
+    if (
+      shouldRequestTileRefreshForStructureBoundsChange({
+        currentChunk: this.currentChunk,
+        isChunkTransitioning: this.isChunkTransitioning,
+        oldHex,
+        newHex,
+        renderSize: this.renderChunkSize,
+        chunkSize: this.chunkSize,
+      })
+    ) {
       this.requestChunkRefresh(true);
     }
   }
@@ -2920,12 +2952,26 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private processPrefetchQueue(): void {
-    if (this.isSwitchedOff) {
+    const initialPlan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: this.isSwitchedOff,
+      queueLength: this.prefetchQueue.length,
+      activePrefetches: this.activePrefetches,
+      maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+    });
+
+    if (initialPlan.shouldClearQueuedPrefetchState) {
       this.clearQueuedPrefetchState();
       return;
     }
 
-    while (this.activePrefetches < this.maxConcurrentPrefetches && this.prefetchQueue.length > 0) {
+    while (
+      resolvePrefetchQueueProcessingPlan({
+        isSwitchedOff: this.isSwitchedOff,
+        queueLength: this.prefetchQueue.length,
+        activePrefetches: this.activePrefetches,
+        maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+      }).shouldProcessNextQueueItem
+    ) {
       const item = this.prefetchQueue.shift();
       if (!item) {
         return;
@@ -3903,12 +3949,10 @@ export default class WorldmapScene extends HexagonScene {
 
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const latestToken = this.chunkRefreshRequestToken;
-    const shouldApplyScheduled = shouldApplyRefreshToken(scheduledToken, latestToken);
-    const executionToken = shouldApplyScheduled
-      ? scheduledToken
-      : resolveRefreshExecutionToken(scheduledToken, latestToken);
+    const refreshExecutionPlan = resolveRefreshExecutionPlan(scheduledToken, latestToken);
+    const { shouldApplyScheduled, executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
 
-    if (!shouldApplyScheduled) {
+    if (shouldRecordSuperseded) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
       this.emitZoomHardeningTelemetry("refresh_superseded", {
         scheduledToken,
@@ -3918,8 +3962,9 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (this.chunkRefreshRunning) {
-      this.chunkRefreshRerunRequested = true;
-      if (shouldRescheduleRefreshToken(scheduledToken, this.chunkRefreshRequestToken)) {
+      const runningActions = resolveRefreshRunningActions(scheduledToken, this.chunkRefreshRequestToken);
+      this.chunkRefreshRerunRequested = runningActions.shouldMarkRerunRequested;
+      if (runningActions.shouldRescheduleTimer) {
         this.emitZoomHardeningTelemetry("refresh_rescheduled", {
           scheduledToken,
           latestToken: this.chunkRefreshRequestToken,
@@ -3942,14 +3987,20 @@ export default class WorldmapScene extends HexagonScene {
       this.chunkRefreshRunning = false;
       this.chunkRefreshAppliedToken = executionToken;
 
-      const hasNewerRequest = this.chunkRefreshAppliedToken !== this.chunkRefreshRequestToken;
+      const completionActions = resolveRefreshCompletionActions({
+        appliedToken: this.chunkRefreshAppliedToken,
+        latestToken: this.chunkRefreshRequestToken,
+        rerunRequested: this.chunkRefreshRerunRequested,
+      });
       this.emitZoomHardeningTelemetry("refresh_applied", {
         executionToken: this.chunkRefreshAppliedToken,
         latestToken: this.chunkRefreshRequestToken,
-        hasNewerRequest,
+        hasNewerRequest: completionActions.hasNewerRequest,
       });
-      if (hasNewerRequest || this.chunkRefreshRerunRequested) {
+      if (completionActions.shouldClearRerunRequested) {
         this.chunkRefreshRerunRequested = false;
+      }
+      if (completionActions.shouldScheduleRerun) {
         this.scheduleChunkRefreshExecution();
       }
     }

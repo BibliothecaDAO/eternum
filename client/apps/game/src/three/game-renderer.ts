@@ -53,6 +53,12 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { env } from "../../env";
 import { SceneName } from "./types";
+import {
+  resolveLabelRenderDecision,
+  resolveLabelRenderIntervalMs,
+  resolvePostProcessingEffectPlan,
+  shouldEnablePostProcessingConfig,
+} from "./game-renderer-policy";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { MaterialPool } from "./utils/material-pool";
@@ -875,11 +881,13 @@ export default class GameRenderer {
 
   private getPostProcessingConfig(): PostProcessingConfig | null {
     const effectsConfig = POST_PROCESSING_CONFIG[this.graphicsSetting];
-    if (!effectsConfig) {
-      return null;
-    }
-
-    if (this.isMobileDevice && this.graphicsSetting !== GraphicsSettings.HIGH) {
+    if (
+      !shouldEnablePostProcessingConfig({
+        hasPostProcessingConfig: effectsConfig !== null,
+        isMobileDevice: this.isMobileDevice,
+        isHighGraphicsSetting: this.graphicsSetting === GraphicsSettings.HIGH,
+      })
+    ) {
       return null;
     }
 
@@ -1183,31 +1191,6 @@ export default class GameRenderer {
     }
   }
 
-  private getLabelRenderIntervalMs(view?: CameraView): number {
-    const baseInterval = (() => {
-      switch (view) {
-        case CameraView.Close:
-          return 0;
-        case CameraView.Medium:
-          return 33;
-        case CameraView.Far:
-          return 100;
-        default:
-          return 33;
-      }
-    })();
-
-    if (!this.isMobileDevice) {
-      return baseInterval;
-    }
-
-    if (baseInterval === 0) {
-      return 33;
-    }
-
-    return Math.round(baseInterval * 1.5);
-  }
-
   private shouldRenderLabels(now: number): boolean {
     const currentScene = this.sceneManager?.getCurrentScene();
     let view: CameraView | undefined;
@@ -1225,20 +1208,33 @@ export default class GameRenderer {
       labelsActive = true;
     }
 
-    if (labelsActive !== this.lastLabelsActive) {
-      this.labelsDirty = true;
-      this.lastLabelsActive = labelsActive;
-    }
+    const cadenceView = (() => {
+      switch (view) {
+        case CameraView.Close:
+          return "close" as const;
+        case CameraView.Medium:
+          return "medium" as const;
+        case CameraView.Far:
+          return "far" as const;
+        default:
+          return undefined;
+      }
+    })();
 
-    const interval = this.getLabelRenderIntervalMs(view);
-    const shouldRenderOnInterval = labelsActive && now - this.lastLabelRenderTime >= interval;
-    if (this.labelsDirty || shouldRenderOnInterval) {
-      this.labelsDirty = false;
-      this.lastLabelRenderTime = now;
-      return true;
-    }
+    const decision = resolveLabelRenderDecision({
+      now,
+      lastLabelRenderTime: this.lastLabelRenderTime,
+      labelsDirty: this.labelsDirty,
+      lastLabelsActive: this.lastLabelsActive,
+      labelsActive,
+      intervalMs: resolveLabelRenderIntervalMs(cadenceView, this.isMobileDevice),
+    });
 
-    return false;
+    this.labelsDirty = decision.nextLabelsDirty;
+    this.lastLabelsActive = decision.nextLastLabelsActive;
+    this.lastLabelRenderTime = decision.nextLastLabelRenderTime;
+
+    return decision.shouldRender;
   }
 
   animate() {
@@ -1486,13 +1482,19 @@ export default class GameRenderer {
     });
     effects.push(this.brightnessContrastEffect);
 
-    if (features.fxaa) {
+    const effectPlan = resolvePostProcessingEffectPlan({
+      fxaa: features.fxaa,
+      bloom: features.bloom,
+      vignette: features.vignette,
+    });
+
+    if (effectPlan.shouldEnableFXAA) {
       effects.push(new FXAAEffect());
     }
-    if (features.bloom) {
+    if (effectPlan.shouldEnableBloom) {
       effects.push(this.createBloomEffect(features.bloomIntensity));
     }
-    if (features.vignette) {
+    if (effectPlan.shouldEnableVignette) {
       this.vignetteEffect = new VignetteEffect({
         darkness: this.postProcessingConfig.vignette.darkness,
         offset: this.postProcessingConfig.vignette.offset,
@@ -1501,7 +1503,7 @@ export default class GameRenderer {
     }
 
     // Subtle chromatic aberration for cinematic lens effect (HIGH quality only)
-    if (features.vignette) {
+    if (effectPlan.shouldEnableChromaticAberration) {
       effects.push(
         new ChromaticAberrationEffect({
           offset: new Vector2(0.0008, 0.0008),
