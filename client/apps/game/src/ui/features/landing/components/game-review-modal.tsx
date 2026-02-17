@@ -9,18 +9,7 @@ import { Button } from "@/ui/design-system/atoms";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Copy,
-  Loader2,
-  Medal,
-  Share2,
-  Shield,
-  Swords,
-  Trophy,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, Crown, Loader2, Medal, Share2, Shield, Swords, Trophy, X } from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -54,6 +43,14 @@ const PERSONAL_CARD_PREVIEW_STYLE: CSSProperties = {
 };
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
+
+const STEP_LABELS: Record<ReviewStepId, string> = {
+  stats: "Game Stats",
+  leaderboard: "Final Leaderboard",
+  personal: "Personal Score",
+  finalize: "Finalize Results",
+  "next-game": "Upcoming Games",
+};
 
 const buildStepShareMessage = ({
   step,
@@ -96,9 +93,26 @@ const buildStepShareMessage = ({
   return [`${worldLabel} review is complete.`, "#Realms #Eternum"].join("\n");
 };
 
-const StatTile = ({ label, value }: { label: string; value: number }) => {
+const StatTile = ({
+  label,
+  value,
+  index,
+  emphasize = false,
+}: {
+  label: string;
+  value: number;
+  index: number;
+  emphasize?: boolean;
+}) => {
   return (
-    <div className="rounded-xl border border-gold/20 bg-black/30 p-3">
+    <div
+      className={`endgame-step-enter rounded-xl border p-3 transition-colors sm:p-4 ${
+        emphasize
+          ? "border-gold/35 bg-gradient-to-b from-gold/10 to-black/40"
+          : "border-gold/20 bg-black/35 hover:border-gold/30 hover:bg-black/45"
+      }`}
+      style={{ animationDelay: `${index * 40}ms` }}
+    >
       <p className="text-[11px] uppercase tracking-wider text-gold/60">{label}</p>
       <p className="mt-1 text-xl font-semibold text-white">{formatValue(value)}</p>
     </div>
@@ -106,27 +120,118 @@ const StatTile = ({ label, value }: { label: string; value: number }) => {
 };
 
 const GameStatsStep = ({ worldName, stats }: { worldName: string; stats: GameReviewStats }) => {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-gold">
-        <Trophy className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Game Stats</h3>
-      </div>
-      <p className="text-xs uppercase tracking-wider text-gold/60">Game: {worldName}</p>
+  const overview = [
+    { label: "Number of Players", value: stats.numberOfPlayers, emphasize: true },
+    { label: "Total Tiles Explored", value: stats.totalTilesExplored, emphasize: true },
+    { label: "Total Dead Troops", value: stats.totalDeadTroops, emphasize: false },
+  ];
+  const conquest = [
+    { label: "Total Camps Taken", value: stats.totalCampsTaken },
+    { label: "Total Essence Rifts Taken", value: stats.totalEssenceRiftsTaken },
+    { label: "Total Hyperstructures Taken", value: stats.totalHyperstructuresTaken },
+  ];
+  const production = [
+    { label: "Total T1 Troops Created", value: stats.totalT1TroopsCreated },
+    { label: "Total T2 Troops Created", value: stats.totalT2TroopsCreated },
+    { label: "Total T3 Troops Created", value: stats.totalT3TroopsCreated },
+  ];
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <StatTile label="Number of Players" value={stats.numberOfPlayers} />
-        <StatTile label="Total Tiles Explored" value={stats.totalTilesExplored} />
-        <StatTile label="Total Camps Taken" value={stats.totalCampsTaken} />
-        <StatTile label="Total Essence Rifts Taken" value={stats.totalEssenceRiftsTaken} />
-        <StatTile label="Total Hyperstructures Taken" value={stats.totalHyperstructuresTaken} />
-        <StatTile label="Total Dead Troops" value={stats.totalDeadTroops} />
-        <StatTile label="Total T1 Troops Created" value={stats.totalT1TroopsCreated} />
-        <StatTile label="Total T2 Troops Created" value={stats.totalT2TroopsCreated} />
-        <StatTile label="Total T3 Troops Created" value={stats.totalT3TroopsCreated} />
+  return (
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-gold">
+          <Trophy className="h-4 w-4" />
+          <h3 className="font-serif text-xl">Game Stats</h3>
+        </div>
+        <p className="text-xs uppercase tracking-wider text-gold/60">Game: {worldName}</p>
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-gold/80">
+          <Trophy className="h-3.5 w-3.5" />
+          <p className="text-[11px] uppercase tracking-wider">Overview</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {overview.map((metric, index) => (
+            <StatTile
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              index={index}
+              emphasize={metric.emphasize}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mx-auto h-px w-full bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-gold/80">
+          <Medal className="h-3.5 w-3.5" />
+          <p className="text-[11px] uppercase tracking-wider">Conquest</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {conquest.map((metric, index) => (
+            <StatTile key={metric.label} label={metric.label} value={metric.value} index={index + overview.length} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mx-auto h-px w-full bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-gold/80">
+          <Shield className="h-3.5 w-3.5" />
+          <p className="text-[11px] uppercase tracking-wider">Troop Production</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {production.map((metric, index) => (
+            <StatTile
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              index={index + overview.length + conquest.length}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
+};
+
+const getRankTheme = (rank: number) => {
+  if (rank === 1) {
+    return {
+      cardClass: "border-yellow-400/45 bg-yellow-400/5 ring-1 ring-yellow-400/20",
+      rankClass: "text-yellow-300",
+      pointsClass: "border-yellow-400/45 bg-yellow-400/15 text-yellow-300",
+      showCrown: true,
+    };
+  }
+  if (rank === 2) {
+    return {
+      cardClass: "border-slate-200/30 bg-slate-100/[0.03]",
+      rankClass: "text-slate-200/80",
+      pointsClass: "border-slate-200/30 bg-slate-100/[0.08] text-slate-100/85",
+      showCrown: false,
+    };
+  }
+  if (rank === 3) {
+    return {
+      cardClass: "border-amber-700/45 bg-amber-900/10",
+      rankClass: "text-amber-500/90",
+      pointsClass: "border-amber-700/45 bg-amber-900/20 text-amber-400",
+      showCrown: false,
+    };
+  }
+
+  return {
+    cardClass: "border-gold/25 bg-black/30",
+    rankClass: "text-gold/70",
+    pointsClass: "border-gold/30 bg-gold/10 text-gold",
+    showCrown: false,
+  };
 };
 
 const LeaderboardStep = ({ data }: { data: GameReviewData }) => {
@@ -144,36 +249,49 @@ const LeaderboardStep = ({ data }: { data: GameReviewData }) => {
             Leaderboard data is not available yet.
           </div>
         ) : (
-          data.topPlayers.map((entry, index) => (
-            <div key={`${entry.address}-${entry.rank}-${index}`} className="rounded-xl border border-gold/25 bg-black/30 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-gold/60">Rank #{entry.rank}</p>
-                  <p className="text-lg font-semibold text-white">{entry.displayName?.trim() || displayAddress(entry.address)}</p>
-                  <p className="text-[11px] text-white/40">{displayAddress(entry.address)}</p>
-                </div>
-                <div className="rounded-lg border border-gold/30 bg-gold/10 px-3 py-1.5 text-right">
-                  <p className="text-[10px] uppercase tracking-wider text-gold/70">Points</p>
-                  <p className="text-lg font-semibold text-gold">{formatValue(entry.points)}</p>
-                </div>
-              </div>
+          data.topPlayers.map((entry, index) => {
+            const rankTheme = getRankTheme(entry.rank);
 
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
-                <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                  Tiles: <span className="text-white">{formatValue(entry.exploredTiles ?? 0)}</span>
+            return (
+              <div
+                key={`${entry.address}-${entry.rank}-${index}`}
+                className={`endgame-step-enter rounded-xl border p-3 ${rankTheme.cardClass}`}
+                style={{ animationDelay: `${index * 70}ms` }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className={`flex items-center gap-1 text-xs uppercase tracking-wider ${rankTheme.rankClass}`}>
+                      {rankTheme.showCrown && <Crown className="h-3.5 w-3.5" />}
+                      Rank #{entry.rank}
+                    </p>
+                    <p className="text-lg font-semibold text-white">
+                      {entry.displayName?.trim() || displayAddress(entry.address)}
+                    </p>
+                    <p className="text-[11px] text-white/40">{displayAddress(entry.address)}</p>
+                  </div>
+                  <div className={`rounded-lg border px-3 py-1.5 text-right ${rankTheme.pointsClass}`}>
+                    <p className="text-[10px] uppercase tracking-wider opacity-80">Points</p>
+                    <p className="text-lg font-semibold">{formatValue(entry.points)}</p>
+                  </div>
                 </div>
-                <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                  Camps: <span className="text-white">{formatValue(entry.campsTaken ?? 0)}</span>
-                </div>
-                <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                  Rifts: <span className="text-white">{formatValue(entry.riftsTaken ?? 0)}</span>
-                </div>
-                <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
-                  Hypers: <span className="text-white">{formatValue(entry.hyperstructuresConquered ?? 0)}</span>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
+                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
+                    Tiles: <span className="text-white">{formatValue(entry.exploredTiles ?? 0)}</span>
+                  </div>
+                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
+                    Camps: <span className="text-white">{formatValue(entry.campsTaken ?? 0)}</span>
+                  </div>
+                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
+                    Rifts: <span className="text-white">{formatValue(entry.riftsTaken ?? 0)}</span>
+                  </div>
+                  <div className="rounded border border-white/10 bg-black/30 px-2 py-1.5 text-white/75">
+                    Hypers: <span className="text-white">{formatValue(entry.hyperstructuresConquered ?? 0)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -211,13 +329,15 @@ const FinalizeStep = ({
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-gold/20 bg-black/30 p-3">
+        <div className="rounded-xl border border-gold/20 bg-black/35 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Ranking Status</p>
           <p className="mt-1 text-sm text-white">
-            {data.finalization.rankingFinalized ? "Final ranking is already published." : "Ranking submission is pending."}
+            {data.finalization.rankingFinalized
+              ? "Final ranking is already published."
+              : "Ranking submission is pending."}
           </p>
         </div>
-        <div className="rounded-xl border border-gold/20 bg-black/30 p-3">
+        <div className="rounded-xl border border-gold/20 bg-black/35 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">MMR Status</p>
           <p className="mt-1 text-sm text-white">
             {!data.finalization.mmrEnabled
@@ -269,7 +389,13 @@ const FinalizeStep = ({
   );
 };
 
-const UpcomingGamesStep = ({ worldName, onRegistrationComplete }: { worldName: string; onRegistrationComplete: () => void }) => {
+const UpcomingGamesStep = ({
+  worldName,
+  onRegistrationComplete,
+}: {
+  worldName: string;
+  onRegistrationComplete: () => void;
+}) => {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -277,7 +403,7 @@ const UpcomingGamesStep = ({ worldName, onRegistrationComplete }: { worldName: s
         <p className="text-xs uppercase tracking-wider text-gold/60">Finished Game: {worldName}</p>
       </div>
 
-      <div className="max-h-[440px] overflow-y-auto rounded-xl border border-gold/20 bg-black/20 p-3">
+      <div className="max-h-[440px] overflow-y-auto rounded-xl border border-gold/20 bg-black/30 p-3">
         <UnifiedGameGrid
           onSelectGame={() => undefined}
           onSpectate={() => undefined}
@@ -336,6 +462,7 @@ export const GameReviewModal = ({
   }, [data, showUpcomingGamesStep]);
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "stats";
+  const currentStepLabel = STEP_LABELS[currentStep];
   const isStepShareable = useMemo(() => {
     if (currentStep === "stats" || currentStep === "leaderboard") {
       return true;
@@ -511,27 +638,50 @@ export const GameReviewModal = ({
   }, []);
 
   if (!isOpen || !worldName || !worldChain) return null;
+  const currentStepNumber = Math.min(stepIndex + 1, steps.length);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
+      <div className="pointer-events-none absolute inset-0 endgame-backdrop-texture" />
 
-      <div className="relative z-10 flex max-h-[80vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0a0a0a] to-[#050505] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gold/20 p-4">
-          <div>
-            <h2 className="font-serif text-lg text-gold">Game In Review - {worldName}</h2>
-            <p className="text-xs text-gold/60">
-              Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}
-            </p>
+      <div className="endgame-modal-enter endgame-surface panel-wood relative z-10 flex max-h-[84vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/35 shadow-[0_24px_90px_rgba(0,0,0,0.72)]">
+        <div className="border-b border-gold/20 px-4 py-3.5 sm:px-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="gold-gradient-text truncate font-serif text-lg sm:text-xl">Game In Review</h2>
+              <p className="mt-0.5 truncate text-sm text-gold/75">{worldName}</p>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {steps.map((step, index) => {
+              const isActive = index === stepIndex;
+              const isCompleted = index < stepIndex;
+              const widthClass = isActive || isCompleted ? "w-6" : "w-2";
+              const toneClass = isActive ? "bg-gold endgame-progress-pulse" : isCompleted ? "bg-gold/75" : "bg-gold/25";
+
+              return (
+                <span
+                  key={`${step}-${index}`}
+                  className={`h-2 rounded-full transition-all ${widthClass} ${toneClass}`}
+                />
+              );
+            })}
+            <span className="ml-1 text-[11px] text-gold/70">
+              {currentStepNumber}/{steps.length}
+            </span>
+            <span className="text-[11px] uppercase tracking-wider text-gold/50">{currentStepLabel}</span>
+          </div>
+          <div className="endgame-header-ornament" />
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
@@ -542,17 +692,22 @@ export const GameReviewModal = ({
             </div>
           ) : error || !data ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-center">
-              <p className="text-sm text-red-400">Failed to load game review data.</p>
+              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
+                Failed to load game review data.
+              </div>
               <Button onClick={() => void refetch()} variant="outline" forceUppercase={false}>
                 Retry
               </Button>
             </div>
           ) : (
-            <div className="rounded-xl border border-gold/20 bg-black/20 p-3 sm:p-4">
+            <div
+              key={currentStep}
+              className="endgame-step-enter rounded-xl border border-gold/20 bg-black/20 p-3 sm:p-4"
+            >
               {currentStep === "stats" && (
                 <div
                   ref={captureRef}
-                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-[#0a0a0a] p-4"
+                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-black/35 p-4"
                   style={SHARE_FRAME_STYLE}
                 >
                   <GameStatsStep worldName={data.worldName} stats={data.stats} />
@@ -562,7 +717,7 @@ export const GameReviewModal = ({
               {currentStep === "leaderboard" && (
                 <div
                   ref={captureRef}
-                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-[#0a0a0a] p-4"
+                  className="mx-auto flex w-full flex-col rounded-xl border border-gold/25 bg-black/35 p-4"
                   style={SHARE_FRAME_STYLE}
                 >
                   <LeaderboardStep data={data} />
@@ -570,16 +725,21 @@ export const GameReviewModal = ({
               )}
 
               {currentStep === "personal" && (
-                <div ref={captureRef} className="space-y-2">
+                <div ref={captureRef} className="space-y-3">
                   <div className="flex items-center gap-2 text-gold">
                     <Swords className="h-4 w-4" />
                     <h3 className="font-serif text-lg">Personal Score PnL</h3>
                   </div>
                   <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
+                  <div className="mx-auto h-px w-full bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
 
                   {data.personalScore ? (
                     <div className="mx-auto w-full" style={PERSONAL_CARD_PREVIEW_STYLE}>
-                      <ScoreCardContent worldName={data.worldName} playerEntry={data.personalScore} showActions={false} />
+                      <ScoreCardContent
+                        worldName={data.worldName}
+                        playerEntry={data.personalScore}
+                        showActions={false}
+                      />
                     </div>
                   ) : (
                     <div className="rounded-xl border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
@@ -602,10 +762,7 @@ export const GameReviewModal = ({
               )}
 
               {currentStep === "next-game" && showUpcomingGamesStep && (
-                <UpcomingGamesStep
-                  worldName={data.worldName}
-                  onRegistrationComplete={onRegistrationComplete}
-                />
+                <UpcomingGamesStep worldName={data.worldName} onRegistrationComplete={onRegistrationComplete} />
               )}
             </div>
           )}
@@ -627,7 +784,7 @@ export const GameReviewModal = ({
               <Button
                 onClick={handleNextStep}
                 variant="gold"
-                className="gap-2 !px-3 !py-2"
+                className="gap-2 !px-3 !py-2 shadow-[0_8px_20px_rgba(223,170,84,0.16)]"
                 forceUppercase={false}
                 disabled={isLoading || Boolean(error)}
               >
