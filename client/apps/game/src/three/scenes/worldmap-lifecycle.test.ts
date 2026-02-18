@@ -1,50 +1,55 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
-
-const worldmapSource = readFileSync(path.resolve(__dirname, "worldmap.tsx"), "utf8");
+import { createWorldmapLifecycleFixture } from "./worldmap-lifecycle-fixture";
 
 describe("Worldmap lifecycle baseline", () => {
-  it("registers urlChanged with a stable handler identity and removes it during teardown", () => {
-    const definesUrlChangedHandler = /private\s+(readonly\s+)?urlChangedHandler/.test(worldmapSource);
-    const addsUrlChangedHandler = /window\.addEventListener\("urlChanged",\s*this\.urlChangedHandler\)/.test(
-      worldmapSource,
-    );
-    const removesUrlChangedHandler = /window\.removeEventListener\("urlChanged",\s*this\.urlChangedHandler\)/.test(
-      worldmapSource,
-    );
+  it("registers and unregisters urlChanged listener with stable identity across setup/destroy", () => {
+    const fixture = createWorldmapLifecycleFixture();
 
-    expect(definesUrlChangedHandler).toBe(true);
-    expect(addsUrlChangedHandler).toBe(true);
-    expect(removesUrlChangedHandler).toBe(true);
+    fixture.setup();
+    fixture.destroy();
+
+    expect(fixture.listenerAdds.length).toBe(1);
+    expect(fixture.listenerRemoves.length).toBe(1);
+    expect(fixture.listenerAdds[0].event).toBe("urlChanged");
+    expect(fixture.listenerRemoves[0].event).toBe("urlChanged");
+    expect(fixture.listenerRemoves[0].handler).toBe(fixture.listenerAdds[0].handler);
   });
 
   it("short-circuits updateVisibleChunks when the worldmap scene is switched off", () => {
-    const hasUpdateVisibleChunks = /async\s+updateVisibleChunks\s*\(/.test(worldmapSource);
-    const hasSwitchedOffGuard = /if\s*\(this\.isSwitchedOff\)\s*\{\s*return\s+false;\s*\}/s.test(worldmapSource);
-    expect(hasUpdateVisibleChunks).toBe(true);
-    expect(hasSwitchedOffGuard).toBe(true);
+    const fixture = createWorldmapLifecycleFixture();
+
+    fixture.switchOff();
+    const result = fixture.updateVisibleChunks();
+
+    expect(result).toBe(false);
   });
 
   it("reuses onSwitchOff cleanup from destroy to keep teardown behavior symmetrical", () => {
-    const destroyCallsOnSwitchOff = /destroy\(\)\s*\{\s*this\.onSwitchOff\(\);/s.test(worldmapSource);
-    expect(destroyCallsOnSwitchOff).toBe(true);
+    const fixture = createWorldmapLifecycleFixture();
+
+    fixture.setup();
+    fixture.destroy();
+
+    expect(fixture.switchOffCalls).toBe(1);
+    expect(fixture.listenerRemoves.length).toBe(1);
   });
 
   it("detaches urlChanged listener when switching off to avoid inactive-scene callbacks", () => {
-    const onSwitchOffSection =
-      /onSwitchOff\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*public deleteArmy/s.exec(worldmapSource)?.[1] ?? "";
-    const onSwitchOffDetachesUrlChanged = /this\.syncUrlChangedListenerLifecycle\("switchOff"\)/.test(
-      onSwitchOffSection,
-    );
+    const fixture = createWorldmapLifecycleFixture();
 
-    expect(onSwitchOffDetachesUrlChanged).toBe(true);
+    fixture.setup();
+    fixture.switchOff();
+
+    expect(fixture.listenerRemoves.length).toBe(1);
+    expect(fixture.listenerRemoves[0].event).toBe("urlChanged");
   });
 
   it("short-circuits requestChunkRefresh when the worldmap scene is switched off", () => {
-    const requestChunkRefreshHasSwitchedOffGuard =
-      /requestChunkRefresh\([^)]*\)\s*\{\s*if\s*\(this\.isSwitchedOff\)\s*\{\s*return;\s*\}/s.test(worldmapSource);
+    const fixture = createWorldmapLifecycleFixture();
 
-    expect(requestChunkRefreshHasSwitchedOffGuard).toBe(true);
+    fixture.switchOff();
+    fixture.requestChunkRefresh();
+
+    expect(fixture.refreshRequests).toBe(0);
   });
 });

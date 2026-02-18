@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveRefreshCompletionActions,
@@ -19,6 +20,9 @@ import {
   shouldRunManagerUpdate,
   shouldRunImmediateDuplicateTileRefresh,
   waitForChunkTransitionToSettle,
+  resolveHydratedChunkRefreshFlushPlan,
+  shouldScheduleHydratedChunkRefreshForFetch,
+  shouldForceChunkRefreshForZoomDistanceChange,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -373,6 +377,52 @@ describe("shouldRequestTileRefreshForStructureBoundsChange", () => {
         chunkSize,
       }),
     ).toBe(false);
+  });
+
+  it("keeps structure bounds decisions in parity with canonical getRenderBounds edges", () => {
+    const cases = [
+      { currentChunk: "0,0", renderSize: { width: 48, height: 48 }, chunkSize: 24 },
+      { currentChunk: "24,-24", renderSize: { width: 49, height: 49 }, chunkSize: 24 },
+      { currentChunk: "72,48", renderSize: { width: 80, height: 65 }, chunkSize: 24 },
+    ];
+
+    cases.forEach(({ currentChunk, renderSize, chunkSize }) => {
+      const [startRow, startCol] = currentChunk.split(",").map(Number);
+      const bounds = getRenderBounds(startRow, startCol, renderSize, chunkSize);
+
+      expect(
+        shouldRequestTileRefreshForStructureBoundsChange({
+          currentChunk,
+          isChunkTransitioning: false,
+          oldHex: { col: bounds.minCol, row: bounds.minRow },
+          newHex: undefined,
+          renderSize,
+          chunkSize,
+        }),
+      ).toBe(true);
+
+      expect(
+        shouldRequestTileRefreshForStructureBoundsChange({
+          currentChunk,
+          isChunkTransitioning: false,
+          oldHex: undefined,
+          newHex: { col: bounds.maxCol, row: bounds.maxRow },
+          renderSize,
+          chunkSize,
+        }),
+      ).toBe(true);
+
+      expect(
+        shouldRequestTileRefreshForStructureBoundsChange({
+          currentChunk,
+          isChunkTransitioning: false,
+          oldHex: { col: bounds.minCol - 1, row: bounds.minRow },
+          newHex: { col: bounds.maxCol + 1, row: bounds.maxRow + 1 },
+          renderSize,
+          chunkSize,
+        }),
+      ).toBe(false);
+    });
   });
 });
 
@@ -840,5 +890,110 @@ describe("waitForChunkTransitionToSettle", () => {
 
     resolveSecond?.();
     await waitPromise;
+  });
+});
+
+describe("shouldScheduleHydratedChunkRefreshForFetch", () => {
+  it("schedules hydrated refresh when fetch area matches current area even during transitions", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: "24,0",
+      }),
+    ).toBe(true);
+  });
+
+  it("does not schedule hydrated refresh when fetch area differs from current area", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: "48,0",
+      }),
+    ).toBe(false);
+  });
+
+  it("does not schedule hydrated refresh when current area is unavailable", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: null,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolveHydratedChunkRefreshFlushPlan", () => {
+  it("defers and preserves queued chunk keys while transition is in progress", () => {
+    expect(
+      resolveHydratedChunkRefreshFlushPlan({
+        queuedChunkKeys: ["24,0", "48,0"],
+        currentChunk: "24,0",
+        isChunkTransitioning: true,
+      }),
+    ).toEqual({
+      shouldDefer: true,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: ["24,0", "48,0"],
+    });
+  });
+
+  it("forces refresh when current chunk is queued and scene is stable", () => {
+    expect(
+      resolveHydratedChunkRefreshFlushPlan({
+        queuedChunkKeys: ["24,0", "48,0"],
+        currentChunk: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: true,
+      remainingQueuedChunkKeys: ["48,0"],
+    });
+  });
+
+  it("skips refresh when current chunk is not queued and scene is stable", () => {
+    expect(
+      resolveHydratedChunkRefreshFlushPlan({
+        queuedChunkKeys: ["48,0"],
+        currentChunk: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: ["48,0"],
+    });
+  });
+});
+
+describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
+  it("forces refresh when zoom distance delta reaches the threshold", () => {
+    expect(
+      shouldForceChunkRefreshForZoomDistanceChange({
+        previousDistance: 20,
+        nextDistance: 20.75,
+        threshold: 0.75,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not force refresh for small zoom drift below threshold", () => {
+    expect(
+      shouldForceChunkRefreshForZoomDistanceChange({
+        previousDistance: 20,
+        nextDistance: 20.4,
+        threshold: 0.75,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not force refresh when previous distance is unavailable", () => {
+    expect(
+      shouldForceChunkRefreshForZoomDistanceChange({
+        previousDistance: null,
+        nextDistance: 40,
+        threshold: 0.75,
+      }),
+    ).toBe(false);
   });
 });

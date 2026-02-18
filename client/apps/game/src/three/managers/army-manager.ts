@@ -51,8 +51,13 @@ import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
-import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
-import { waitForVisualSettle } from "./manager-update-convergence";
+import {
+  isCommittedManagerChunk,
+  MANAGER_UNCOMMITTED_CHUNK,
+  shouldAcceptManagerChunkRequest,
+  shouldRunManagerChunkUpdate,
+  waitForVisualSettle,
+} from "./manager-update-convergence";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -105,7 +110,7 @@ export class ArmyManager {
   private armyModel: ArmyModel;
   private armies: Map<ID, ArmyData> = new Map();
   private scale: Vector3;
-  private currentChunkKey: string | null = "190,170";
+  private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private visibleArmyOrder: ID[] = [];
@@ -143,6 +148,7 @@ export class ArmyManager {
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
+  private transitionChunkByToken: Map<number, string> = new Map();
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
@@ -168,6 +174,14 @@ export class ArmyManager {
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempColor: Color = new Color();
+
+  private pruneTransitionChunkHistory(): void {
+    this.transitionChunkByToken.forEach((_, token) => {
+      if (token < this.latestTransitionToken) {
+        this.transitionChunkByToken.delete(token);
+      }
+    });
+  }
 
   constructor(
     scene: Scene,
@@ -428,7 +442,7 @@ export class ArmyManager {
     mixTiers: boolean;
     isMine: boolean;
   }): void {
-    if (!this.currentChunkKey) {
+    if (!isCommittedManagerChunk(this.currentChunkKey)) {
       console.warn("[Debug Spawner] No current chunk key available");
       return;
     }
@@ -597,11 +611,21 @@ export class ArmyManager {
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
     if (transitionToken !== undefined) {
-      this.latestTransitionToken = transitionToken;
+      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
+      this.transitionChunkByToken.set(transitionToken, chunkKey);
+      this.pruneTransitionChunkHistory();
     }
 
     await this.armyModel.loadPromise;
@@ -625,7 +649,15 @@ export class ArmyManager {
       return;
     }
 
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
 
@@ -653,7 +685,7 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
-    if (!chunkKey) {
+    if (!isCommittedManagerChunk(chunkKey)) {
       return Promise.resolve();
     }
 
@@ -988,10 +1020,14 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
-    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
-      return;
-    }
-    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+    if (
+      !shouldRunManagerChunkUpdate({
+        chunkKey,
+        currentChunk: this.currentChunkKey,
+        transitionToken: options?.transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+      })
+    ) {
       return;
     }
 
@@ -1009,10 +1045,14 @@ export class ArmyManager {
       await this.armyModel.preloadModels(requiredModelTypes);
     }
 
-    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
-      return;
-    }
-    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+    if (
+      !shouldRunManagerChunkUpdate({
+        chunkKey,
+        currentChunk: this.currentChunkKey,
+        transitionToken: options?.transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+      })
+    ) {
       return;
     }
 
@@ -1483,7 +1523,9 @@ export class ArmyManager {
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
 
-    await this.renderVisibleArmies(this.currentChunkKey!);
+    if (isCommittedManagerChunk(this.currentChunkKey)) {
+      await this.renderVisibleArmies(this.currentChunkKey);
+    }
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position) {
@@ -2228,7 +2270,7 @@ export class ArmyManager {
             };
 
             // Re-render visible armies to populate points
-            if (this.currentChunkKey) {
+            if (isCommittedManagerChunk(this.currentChunkKey)) {
               this.renderVisibleArmies(this.currentChunkKey);
             }
           }
