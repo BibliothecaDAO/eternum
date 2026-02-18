@@ -30953,7 +30953,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 22.19.11
+      '@types/node': 20.19.33
       long: 5.3.2
 
   proxy-agent@6.5.0:

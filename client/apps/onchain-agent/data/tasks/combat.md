@@ -8,11 +8,11 @@ autoload: false
 
 ## Troop Types
 
-| Category | T1 (Resource ID) | T2 (Resource ID) | T3 (Resource ID) |
-|----------|-------------------|-------------------|-------------------|
-| Knight | 26 | 27 | 28 |
-| Crossbowman | 29 | 30 | 31 |
-| Paladin | 32 | 33 | 34 |
+| Category    | T1 (Resource ID) | T2 (Resource ID) | T3 (Resource ID) |
+| ----------- | ---------------- | ---------------- | ---------------- |
+| Knight      | 26               | 27               | 28               |
+| Crossbowman | 29               | 30               | 31               |
+| Paladin     | 32               | 33               | 34               |
 
 - All T1 troops = 1 strength per unit
 - Production: 5 troops/tick per military building
@@ -22,19 +22,20 @@ autoload: false
 ## Army (Explorer) Management
 
 - **Create**: `create_explorer` — spawns army from structure's troop reserves
-  - Params: `forStructureId`, `category` (0=Knight, 1=Paladin, 2=Crossbow), `tier` (0=T1, 1=T2, 2=T3), `amount`, `spawnDirection`
+  - Params: `forStructureId`, `category` (0=Knight, 1=Paladin, 2=Crossbow), `tier` (0=T1, 1=T2, 2=T3), `amount`,
+    `spawnDirection`
 - **Reinforce**: `add_to_explorer` — add troops to existing army (must be adjacent to home structure)
 - **Disband**: `delete_explorer` — return troops to structure instantly
 - **Army limit**: Each structure has a max army count (check "Armies: X/Y" in inspect output)
 
 ## Combat Actions
 
-| Action | What It Does | Stamina Cost |
-|--------|-------------|-------------|
-| `attack_explorer` | Army vs army (field battle) | 50 attacker, 40 defender |
-| `attack_guard` | Army vs structure's guards (capture) | Varies |
-| `guard_attack_explorer` | Structure guards attack nearby army | Varies |
-| `raid` | Steal resources without destroying guards | Varies |
+| Action                  | What It Does                              | Stamina Cost             |
+| ----------------------- | ----------------------------------------- | ------------------------ |
+| `attack_explorer`       | Army vs army (field battle)               | 50 attacker, 40 defender |
+| `attack_guard`          | Army vs structure's guards (capture)      | Varies                   |
+| `guard_attack_explorer` | Structure guards attack nearby army       | Varies                   |
+| `raid`                  | Steal resources without destroying guards | Varies                   |
 
 - Combat resolution is instant (onchain)
 - Higher total strength wins
