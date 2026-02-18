@@ -125,6 +125,20 @@ export const TransferTroopsContainer = ({
     staleTime: 10000, // 10 seconds
   });
 
+  // When both entities are explorers (army-to-army), resolve the owner structure's level
+  const ownerEntityId = selectedEntityData?.explorer?.owner ?? targetEntityData?.explorer?.owner;
+  const needsOwnerStructure = !selectedEntityData?.structure && !targetEntityData?.structure && !!ownerEntityId;
+  const { data: ownerStructureData } = useQuery({
+    queryKey: ["ownerStructure", String(ownerEntityId)],
+    queryFn: async () => {
+      if (!ownerEntityId) return null;
+      const structureData = await getStructureFromToriiClient(toriiClient, ownerEntityId);
+      return structureData.structure;
+    },
+    enabled: needsOwnerStructure,
+    staleTime: 10000,
+  });
+
   const isStructureOwnerOfExplorer = useMemo(() => {
     return selectedEntityId === targetEntityData?.explorer?.owner;
   }, [selectedEntityId, targetEntityData?.explorer?.owner]);
@@ -151,9 +165,15 @@ export const TransferTroopsContainer = ({
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
-    const level = selectedStructure?.base?.level ?? targetStructure?.base?.level ?? 0;
+    const level =
+      selectedStructure?.base?.level ?? targetStructure?.base?.level ?? ownerStructureData?.base?.level ?? 0;
     return configManager.getMaxArmySize(level, tier) || null;
-  }, [targetExplorerTroops?.troops?.tier, selectedStructure?.base?.level, targetStructure?.base?.level]);
+  }, [
+    targetExplorerTroops?.troops?.tier,
+    selectedStructure?.base?.level,
+    targetStructure?.base?.level,
+    ownerStructureData?.base?.level,
+  ]);
 
   const directionLabel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
