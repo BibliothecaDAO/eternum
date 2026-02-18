@@ -4,7 +4,7 @@ This is the main game application for Eternum, built with React, TypeScript, and
 
 ## Running Locally
 
-To run the game locally:
+To start the game locally:
 
 1. Make a copy of `.env.local.sample` and rename it to `.env.local`
 2. Update the following environment variables in `.env.local` based on your target environment:

@@ -1,13 +1,14 @@
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
-import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "./factory-sql";
+import { decodePaddedFeltAscii, extractContractAddress, extractNameFelt, fetchFactoryRows } from "./factory-sql";
 
-const FACTORY_QUERY = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
+const FACTORY_QUERY = `SELECT name, address FROM [wf-WorldDeployed] LIMIT 1000;`;
 
 interface FactoryWorld {
   name: string;
   chain: Chain;
+  worldAddress: string | null;
 }
 
 const fetchFactoryWorlds = async (chain: Chain): Promise<FactoryWorld[]> => {
@@ -15,8 +16,8 @@ const fetchFactoryWorlds = async (chain: Chain): Promise<FactoryWorld[]> => {
   if (!factorySqlBaseUrl) return [];
 
   const rows = await fetchFactoryRows(factorySqlBaseUrl, FACTORY_QUERY);
-  const names: string[] = [];
   const seen = new Set<string>();
+  const worlds: FactoryWorld[] = [];
 
   for (const row of rows) {
     const feltHex = extractNameFelt(row);
@@ -24,10 +25,14 @@ const fetchFactoryWorlds = async (chain: Chain): Promise<FactoryWorld[]> => {
     const decoded = decodePaddedFeltAscii(feltHex);
     if (!decoded || seen.has(decoded)) continue;
     seen.add(decoded);
-    names.push(decoded);
+    worlds.push({
+      name: decoded,
+      chain,
+      worldAddress: extractContractAddress(row),
+    });
   }
 
-  return names.map((name) => ({ name, chain }));
+  return worlds;
 };
 
 export const useFactoryWorlds = (chains: Chain[], enabled = true) => {

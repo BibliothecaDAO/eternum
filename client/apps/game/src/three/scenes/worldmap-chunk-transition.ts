@@ -1,3 +1,5 @@
+import { getRenderFetchBoundsForChunk } from "./worldmap-chunk-bounds";
+
 interface ChunkSwitchDecisionInput {
   fetchSucceeded: boolean;
   isCurrentTransition: boolean;
@@ -69,6 +71,24 @@ interface RefreshCompletionActions {
   hasNewerRequest: boolean;
   shouldScheduleRerun: boolean;
   shouldClearRerunRequested: boolean;
+}
+
+interface HydratedChunkRefreshFlushPlanInput {
+  queuedChunkKeys: string[];
+  currentChunk: string;
+  isChunkTransitioning: boolean;
+}
+
+interface HydratedChunkRefreshFlushPlan {
+  shouldDefer: boolean;
+  shouldForceRefreshCurrentChunk: boolean;
+  remainingQueuedChunkKeys: string[];
+}
+
+interface ZoomRefreshDecisionInput {
+  previousDistance: number | null;
+  nextDistance: number;
+  threshold: number;
 }
 
 interface StructureBoundsRefreshInput {
@@ -222,6 +242,70 @@ export function resolveRefreshCompletionActions(input: {
 }
 
 /**
+ * Hydrated fetch completion should enqueue refresh only when the fetched area
+ * corresponds to the currently active area key.
+ */
+export function shouldScheduleHydratedChunkRefreshForFetch(input: {
+  fetchAreaKey: string;
+  currentAreaKey: string | null;
+}): boolean {
+  if (!input.currentAreaKey) {
+    return false;
+  }
+  return input.fetchAreaKey === input.currentAreaKey;
+}
+
+/**
+ * Resolve how hydrated chunk refresh queue should be processed.
+ * While transitioning, queued work must be preserved (not dropped).
+ */
+export function resolveHydratedChunkRefreshFlushPlan(
+  input: HydratedChunkRefreshFlushPlanInput,
+): HydratedChunkRefreshFlushPlan {
+  const uniqueQueuedChunkKeys = Array.from(new Set(input.queuedChunkKeys));
+  if (input.isChunkTransitioning) {
+    return {
+      shouldDefer: true,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: uniqueQueuedChunkKeys,
+    };
+  }
+
+  if (input.currentChunk === "null") {
+    return {
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: uniqueQueuedChunkKeys,
+    };
+  }
+
+  const shouldForceRefreshCurrentChunk = uniqueQueuedChunkKeys.includes(input.currentChunk);
+
+  return {
+    shouldDefer: false,
+    shouldForceRefreshCurrentChunk,
+    remainingQueuedChunkKeys: uniqueQueuedChunkKeys.filter((chunkKey) => chunkKey !== input.currentChunk),
+  };
+}
+
+/**
+ * Large zoom-distance changes can expose stale terrain state even when the
+ * stride chunk key does not change. Force a refresh when movement exceeds
+ * threshold and we have a previous distance sample.
+ */
+export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshDecisionInput): boolean {
+  if (input.previousDistance === null) {
+    return false;
+  }
+  if (!Number.isFinite(input.nextDistance) || !Number.isFinite(input.previousDistance)) {
+    return false;
+  }
+
+  const threshold = Math.max(0, input.threshold);
+  return Math.abs(input.nextDistance - input.previousDistance) >= threshold;
+}
+
+/**
  * Structure updates should trigger a tile refresh only when old/new positions
  * intersect the active render bounds and the scene is stable.
  */
@@ -235,14 +319,11 @@ export function shouldRequestTileRefreshForStructureBoundsChange(input: Structur
     return false;
   }
 
-  const width = Math.max(0, Math.floor(input.renderSize.width));
-  const height = Math.max(0, Math.floor(input.renderSize.height));
-  const centerRow = Math.round(startRow + input.chunkSize / 2);
-  const centerCol = Math.round(startCol + input.chunkSize / 2);
-  const minCol = centerCol - Math.floor(width / 2);
-  const maxCol = minCol + width - 1;
-  const minRow = centerRow - Math.floor(height / 2);
-  const maxRow = minRow + height - 1;
+  const { minCol, maxCol, minRow, maxRow } = getRenderFetchBoundsForChunk(
+    input.currentChunk,
+    input.renderSize,
+    input.chunkSize,
+  );
 
   const affectsBounds = (hex?: { col: number; row: number } | null): boolean =>
     Boolean(hex && hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow);

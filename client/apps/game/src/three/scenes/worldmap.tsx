@@ -113,14 +113,24 @@ import {
   resolveChunkSwitchActions,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
+  shouldForceChunkRefreshForZoomDistanceChange,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
+  resolveHydratedChunkRefreshFlushPlan,
+  shouldScheduleHydratedChunkRefreshForFetch,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
+import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle";
+import {
+  getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
+  getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  getRenderFetchBoundsForChunk as getCanonicalRenderFetchBoundsForChunk,
+} from "./worldmap-chunk-bounds";
+import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -135,6 +145,13 @@ import {
   recordChunkDiagnosticsEvent,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
+import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
+import {
+  captureChunkDiagnosticsBaseline,
+  cloneChunkDiagnosticsBaselines,
+  snapshotChunkDiagnostics as snapshotChunkDiagnosticsState,
+  type WorldmapChunkDiagnosticsBaselineEntry,
+} from "./worldmap-chunk-diagnostics-baseline";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -151,12 +168,6 @@ type ToriiBoundsCounterKey =
   | "structureBuildings"
   | "explorerTiles"
   | "explorerTroops";
-
-interface WorldmapChunkDiagnosticsBaselineEntry {
-  label: string;
-  capturedAtMs: number;
-  diagnostics: WorldmapChunkDiagnostics;
-}
 
 type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkDiagnostics?: () => {
@@ -230,6 +241,8 @@ export default class WorldmapScene extends HexagonScene {
   private chunkRefreshRunning = false;
   private chunkRefreshRerunRequested = false;
   private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
+  private lastControlsCameraDistance: number | null = null;
+  private readonly zoomForceRefreshDistanceThreshold = 0.75;
   private zeroTerrainFrames = 0;
   private terrainRecoveryInFlight = false;
   private lastTerrainRecoveryAtMs = 0;
@@ -339,6 +352,18 @@ export default class WorldmapScene extends HexagonScene {
   private handleControlsChangeForMinimap = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
+
+    const nextCameraDistance = this.getCurrentCameraDistance();
+    const shouldForceRefresh = shouldForceChunkRefreshForZoomDistanceChange({
+      previousDistance: this.lastControlsCameraDistance,
+      nextDistance: nextCameraDistance,
+      threshold: this.zoomForceRefreshDistanceThreshold,
+    });
+    this.lastControlsCameraDistance = nextCameraDistance;
+
+    if (shouldForceRefresh) {
+      this.requestChunkRefresh(true);
+    }
   };
   private isUrlChangedListenerAttached = false;
   private readonly urlChangedHandler = () => {
@@ -2017,6 +2042,7 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
+    this.lastControlsCameraDistance = this.getCurrentCameraDistance();
     this.highlightHexManager.setYOffset(0.025);
 
     // Configure thunder bolts for worldmap - dramatic storm effect
@@ -2147,19 +2173,6 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
 
-    // Clear any pending army removals
-    this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
-    this.pendingArmyRemovals.clear();
-    this.pendingArmyRemovalMeta.clear();
-    this.deferredChunkRemovals.clear();
-    this.armyLastUpdateAt.clear();
-    this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
-    this.pendingArmyMovements.clear();
-    this.pendingArmyMovementStartedAt.clear();
-    this.pendingArmyMovementFallbackTimeouts.clear();
-
-    this.armyStructureOwners.clear();
-
     // Clean up wheel event listener
     if (this.wheelHandler) {
       const canvas = document.getElementById("main-canvas");
@@ -2173,13 +2186,28 @@ export default class WorldmapScene extends HexagonScene {
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();
 
-    // Reset chunk state to ensure clean re-initialization when returning to world view
-    this.currentChunk = "null";
-    this.clearQueuedPrefetchState();
-    this.fetchedChunks.clear();
-    this.pendingChunks.clear();
-    this.pinnedChunkKeys.clear();
-    this.pinnedRenderAreas.clear();
+    const runtimeState = applyWorldmapSwitchOffRuntimeState({
+      pendingArmyRemovals: this.pendingArmyRemovals,
+      pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
+      deferredChunkRemovals: this.deferredChunkRemovals,
+      armyLastUpdateAt: this.armyLastUpdateAt,
+      pendingArmyMovements: this.pendingArmyMovements,
+      pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
+      pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
+      armyStructureOwners: this.armyStructureOwners,
+      fetchedChunks: this.fetchedChunks,
+      pendingChunks: this.pendingChunks,
+      pinnedChunkKeys: this.pinnedChunkKeys,
+      pinnedRenderAreas: this.pinnedRenderAreas,
+      clearTimeout: (timeoutId) => clearTimeout(timeoutId),
+      clearPendingArmyMovement: (entityId) => this.clearPendingArmyMovement(entityId),
+      clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
+    });
+
+    this.isSwitchedOff = runtimeState.isSwitchedOff;
+    this.toriiLoadingCounter = runtimeState.toriiLoadingCounter;
+    this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
+    this.currentChunk = runtimeState.currentChunk;
 
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
@@ -2651,16 +2679,9 @@ export default class WorldmapScene extends HexagonScene {
       dummy.position.copy(pos);
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
 
-      if (!IS_FLAT_MODE) {
-        const rotationSeed = this.hashCoordinates(col, row);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        dummy.rotation.y = randomRotation;
-        dummy.position.y += 0.05;
-      } else {
-        dummy.position.y += 0.1;
-        dummy.rotation.y = 0;
-      }
+      const exploredHexTransform = resolveExploredHexTransform({ isFlatMode: IS_FLAT_MODE });
+      dummy.rotation.y = exploredHexTransform.rotationY;
+      dummy.position.y += exploredHexTransform.yOffset;
 
       dummy.updateMatrix();
 
@@ -2727,35 +2748,28 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   getChunksAround(chunkKey: string) {
-    const startRow = parseInt(chunkKey.split(",")[0]);
-    const startCol = parseInt(chunkKey.split(",")[1]);
-    const chunks: string[] = [];
-    const halfHeight = this.renderChunkSize.height / 2;
-    const halfWidth = this.renderChunkSize.width / 2;
-    for (let i = -halfHeight; i <= halfHeight; i += this.chunkSize) {
-      for (let j = -halfWidth; j <= halfWidth; j += this.chunkSize) {
-        const { x, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
-        const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
-        const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
-        if (!chunks.includes(_chunkKey)) {
-          chunks.push(_chunkKey);
-        }
-      }
-    }
-    return chunks;
+    return getRenderOverlapChunkKeys({
+      centerChunkKey: chunkKey,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
   }
 
   removeCachedMatricesAroundChunk(chunkRow: number, chunkCol: number) {
-    const halfHeight = this.renderChunkSize.height / 2;
-    const halfWidth = this.renderChunkSize.width / 2;
-    for (let i = -halfHeight; i <= halfHeight; i += this.chunkSize) {
-      for (let j = -halfWidth; j <= halfWidth; j += this.chunkSize) {
-        if (i === 0 && j === 0) {
-          continue;
-        }
-        this.removeCachedMatricesForChunk(chunkRow + i, chunkCol + j);
+    const centerChunkKey = `${chunkRow},${chunkCol}`;
+    const neighbors = getRenderOverlapNeighborChunkKeys({
+      centerChunkKey,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
+
+    neighbors.forEach((chunkKey) => {
+      const [startRow, startCol] = chunkKey.split(",").map(Number);
+      if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+        return;
       }
-    }
+      this.removeCachedMatricesForChunk(startRow, startCol);
+    });
   }
 
   /**
@@ -2763,34 +2777,14 @@ export default class WorldmapScene extends HexagonScene {
    * Key by Torii "super-area" so overlapping render windows coalesce.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const stride = this.chunkSize;
-    const superAreaStrides = WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides;
-
-    const chunkRowIdx = startRow / stride;
-    const chunkColIdx = startCol / stride;
-
-    const areaRowIdx = Math.floor(chunkRowIdx / superAreaStrides) * superAreaStrides;
-    const areaColIdx = Math.floor(chunkColIdx / superAreaStrides) * superAreaStrides;
-
-    return `${areaRowIdx * stride},${areaColIdx * stride}`;
+    return getCanonicalRenderAreaKeyForChunk(chunkKey, this.chunkSize, WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides);
   }
 
   /**
    * Compute integer fetch bounds that fully cover the render area for a chunk key.
    */
   private getRenderFetchBounds(chunkKey: string): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
-    const halfWidth = this.renderChunkSize.width / 2;
-    const halfHeight = this.renderChunkSize.height / 2;
-
-    return {
-      minCol: Math.floor(centerCol - halfWidth),
-      maxCol: Math.floor(centerCol + halfWidth - 1),
-      minRow: Math.floor(centerRow - halfHeight),
-      maxRow: Math.floor(centerRow + halfHeight - 1),
-    };
+    return getCanonicalRenderFetchBoundsForChunk(chunkKey, this.renderChunkSize, this.chunkSize);
   }
 
   /**
@@ -2802,24 +2796,12 @@ export default class WorldmapScene extends HexagonScene {
     minRow: number;
     maxRow: number;
   } {
-    const [areaStartRow, areaStartCol] = areaKey.split(",").map(Number);
-    const stride = this.chunkSize;
-    const superAreaStrides = WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides;
-
-    const firstCenter = this.getChunkCenter(areaStartRow, areaStartCol);
-    const lastChunkStartRow = areaStartRow + (superAreaStrides - 1) * stride;
-    const lastChunkStartCol = areaStartCol + (superAreaStrides - 1) * stride;
-    const lastCenter = this.getChunkCenter(lastChunkStartRow, lastChunkStartCol);
-
-    const halfWidth = this.renderChunkSize.width / 2;
-    const halfHeight = this.renderChunkSize.height / 2;
-
-    return {
-      minCol: Math.floor(firstCenter.col - halfWidth),
-      maxCol: Math.floor(lastCenter.col + halfWidth - 1),
-      minRow: Math.floor(firstCenter.row - halfHeight),
-      maxRow: Math.floor(lastCenter.row + halfHeight - 1),
-    };
+    return getCanonicalRenderFetchBoundsForArea(
+      areaKey,
+      this.renderChunkSize,
+      this.chunkSize,
+      WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides,
+    );
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
@@ -3074,13 +3056,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private async flushHydratedChunkRefreshes() {
     this.hydratedRefreshScheduled = false;
-    const targets = Array.from(this.hydratedChunkRefreshes);
-    this.hydratedChunkRefreshes.clear();
-
-    // Skip if chunk is currently transitioning - the chunk switch will handle manager updates
-    if (this.isChunkTransitioning) {
-      return;
-    }
 
     if (this.globalChunkSwitchPromise) {
       try {
@@ -3090,20 +3065,28 @@ export default class WorldmapScene extends HexagonScene {
       }
     }
 
-    for (const chunkKey of targets) {
-      if (chunkKey !== this.currentChunk) {
-        continue;
-      }
-      try {
-        await this.updateManagersForChunk(chunkKey, {
-          force: true,
-          transitionToken: this.chunkTransitionToken,
-        });
-        this.hydratedChunkRefreshes.delete(chunkKey);
-        this.retryDeferredChunkRemovals();
-      } catch (error) {
-        console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${chunkKey}`, error);
-      }
+    const refreshPlan = resolveHydratedChunkRefreshFlushPlan({
+      queuedChunkKeys: Array.from(this.hydratedChunkRefreshes),
+      currentChunk: this.currentChunk,
+      isChunkTransitioning: this.isChunkTransitioning,
+    });
+    this.hydratedChunkRefreshes = new Set(refreshPlan.remainingQueuedChunkKeys);
+
+    if (refreshPlan.shouldDefer) {
+      this.hydratedRefreshScheduled = true;
+      Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
+      return;
+    }
+
+    if (!refreshPlan.shouldForceRefreshCurrentChunk) {
+      return;
+    }
+
+    try {
+      await this.updateVisibleChunks(true);
+      this.retryDeferredChunkRemovals();
+    } catch (error) {
+      console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${this.currentChunk}`, error);
     }
   }
 
@@ -3619,7 +3602,12 @@ export default class WorldmapScene extends HexagonScene {
       if (this.pinnedRenderAreas.has(fetchKey)) {
         this.fetchedChunks.add(fetchKey);
         const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
-        if (currentAreaKey && fetchKey === currentAreaKey && !this.isChunkTransitioning) {
+        if (
+          shouldScheduleHydratedChunkRefreshForFetch({
+            fetchAreaKey: fetchKey,
+            currentAreaKey,
+          })
+        ) {
           this.scheduleHydratedChunkRefresh(this.currentChunk);
         }
       }
@@ -4126,7 +4114,6 @@ export default class WorldmapScene extends HexagonScene {
 
     const oldChunk = this.currentChunk;
     const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-    this.currentChunk = chunkKey;
     const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
     const hasFiniteOldChunkCoordinates =
       oldChunkCoordinates !== null &&
@@ -4203,6 +4190,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
 
     // Ensure visibility state is fresh before manager renders
@@ -4346,26 +4334,18 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private snapshotChunkDiagnostics(): WorldmapChunkDiagnostics {
-    return {
-      ...this.chunkDiagnostics,
-    };
+    return snapshotChunkDiagnosticsState(this.chunkDiagnostics);
   }
 
   private captureChunkDiagnosticsBaseline(label: string = "manual"): WorldmapChunkDiagnosticsBaselineEntry {
-    const safeLabel = label.trim() || "manual";
-    const entry: WorldmapChunkDiagnosticsBaselineEntry = {
-      label: safeLabel,
-      capturedAtMs: Date.now(),
-      diagnostics: this.snapshotChunkDiagnostics(),
-    };
-    this.chunkDiagnosticsBaselines.push(entry);
-    if (this.chunkDiagnosticsBaselines.length > 20) {
-      this.chunkDiagnosticsBaselines.shift();
-    }
-    return {
-      ...entry,
-      diagnostics: { ...entry.diagnostics },
-    };
+    const result = captureChunkDiagnosticsBaseline({
+      baselines: this.chunkDiagnosticsBaselines,
+      diagnostics: this.chunkDiagnostics,
+      label,
+      maxEntries: 20,
+    });
+    this.chunkDiagnosticsBaselines = result.baselines;
+    return result.captured;
   }
 
   private resetChunkDiagnostics(): void {
@@ -4378,10 +4358,7 @@ export default class WorldmapScene extends HexagonScene {
   > {
     return {
       diagnostics: this.snapshotChunkDiagnostics(),
-      baselines: this.chunkDiagnosticsBaselines.map((entry) => ({
-        ...entry,
-        diagnostics: { ...entry.diagnostics },
-      })),
+      baselines: cloneChunkDiagnosticsBaselines(this.chunkDiagnosticsBaselines),
       currentChunk: this.currentChunk,
       chunkTransitionToken: this.chunkTransitionToken,
       chunkRefreshRequestToken: this.chunkRefreshRequestToken,

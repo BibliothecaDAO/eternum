@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-17",
+    title: "Game Review for Ended Worlds",
+    description:
+      "Ended games now include a dedicated Game Review flow with final rankings, score highlights, and share-ready recap cards so you can revisit each world after it concludes.",
+    type: "feature",
+  },
+  {
     date: "2026-02-12",
     title: "Building Cost Visual Feedback",
     description:

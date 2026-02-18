@@ -6,7 +6,7 @@
 - Status: Completed (M4)
 - Owner: Three.js Team
 - Created: 2026-02-17
-- Last Updated: 2026-02-17
+- Last Updated: 2026-02-18
 
 ## Document Update Log
 
@@ -23,6 +23,7 @@
 | U9     | 2026-02-17 00:00 | Codex  | Continued M3 seam extraction in `worldmap.tsx`: added `worldmap-chunk-switch-delay-policy` test/module, routed chunk-switch delay gating through policy, and removed one touched-file lint violation in `worldmap.tsx` (`shouldApplyScheduled` unused) to reduce `src/three` lint errors from `178` to `177`. |
 | U10    | 2026-02-17 00:00 | Codex  | Completed M3 closeout verification: removed remaining touched-file lint blockers in `worldmap.tsx` (`no-non-null-asserted-optional-chain` + `no-explicit-any`), re-ran `src/three` module gates (`31` files / `196` tests), and reduced lint errors from `177` to `173` (baseline `182`).                     |
 | U11    | 2026-02-17 08:05 | Codex  | Completed M4 hardening closeout: re-ran module + quality gates, recorded final verification snapshot, and published residual-risk follow-up backlog.                                                                                                                                                          |
+| U12    | 2026-02-18 16:00 | Codex  | Refreshed baseline metrics and test-reality snapshot after findings follow-up slices (lifecycle coverage, effects determinism, coverage guardrails, and DEV-only debug-hook registry).                                                                                                                        |
 
 ## Executive Summary
 
@@ -37,14 +38,16 @@ maintainability risk:
 This PRD defines a test-first hardening iteration that prioritizes lifecycle correctness and safe refactoring speed over
 architecture rewrite.
 
-## Baseline (as of 2026-02-17)
+## Baseline (as of 2026-02-18)
 
-1. `pnpm --dir client/apps/game test src/three`: passing (`26` files, `173` tests).
-2. `pnpm --dir client/apps/game exec eslint src/three`: failing (`182` errors).
+1. `pnpm --dir client/apps/game exec vitest run src/three`: partial pass (`46` files, `288` tests) before known jsdom
+   `ERR_REQUIRE_ESM` setup failures.
+2. `pnpm --dir client/apps/game exec eslint src/three`: not rerun in this update wave; last recorded baseline remained
+   `173` errors after M4 closeout.
 3. Largest orchestration files:
-   1. `client/apps/game/src/three/scenes/worldmap.tsx` (`4,885` lines)
-   2. `client/apps/game/src/three/managers/army-manager.ts` (`2,688` lines)
-   3. `client/apps/game/src/three/managers/structure-manager.ts` (`2,253` lines)
+   1. `client/apps/game/src/three/scenes/worldmap.tsx` (`4,919` lines)
+   2. `client/apps/game/src/three/managers/army-manager.ts` (`2,730` lines)
+   3. `client/apps/game/src/three/managers/structure-manager.ts` (`2,310` lines)
    4. `client/apps/game/src/three/game-renderer.ts` (`1,519` lines)
 
 ## Problem Statement
@@ -270,6 +273,7 @@ Non-functional requirements:
 | 2026-02-17 | M3        | In Progress | RED/GREEN chunk-switch delay seam completed: `worldmap-chunk-switch-delay-policy.test.ts` failed first on missing module, then passed after extracting `worldmap-chunk-switch-delay-policy.ts` and routing `worldmap.tsx` delay gating through it. Gates: `pnpm --dir client/apps/game test src/three` (`31` files / `196` tests) and lint `pnpm --dir client/apps/game exec eslint src/three` now `177` errors (baseline `182`). |
 | 2026-02-17 | M3        | Completed   | Final M3 verification completed: touched `src/three` files lint-clean, module gate passing (`31` files / `196` tests), and quality gate improved to `173` lint errors vs baseline `182` with no touched-file regressions.                                                                                                                                                                                                         |
 | 2026-02-17 | M4        | Completed   | Hardening closeout verification rerun: `pnpm --dir client/apps/game test src/three` passing (`31` files / `196` tests) and `pnpm --dir client/apps/game exec eslint src/three` stable at `173` errors (baseline `182`, net `-9`). Final residual risks and ranked extraction backlog documented below.                                                                                                                            |
+| 2026-02-18 | Follow-up | Completed   | Findings backlog follow-up landed: lifecycle suites for `GameRenderer`/`WorldmapScene`/`StructureManager`, manager/effects tests, coverage guard scripts, and DEV-only debug-hook registry with dedicated tests. Current module-run snapshot reaches `46` passing files / `288` tests before the existing jsdom ESM environment blocker.                                                                                          |
 
 ## M4 Closeout Report (2026-02-17)
 

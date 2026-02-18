@@ -8,11 +8,14 @@ packages:
   - client/apps/torii
   - client/apps/heavy-load
   - client/apps/eternum-mobile
+  - client/apps/onchain-agent
   - config
   - packages/*
   - contracts/season_pass/scripts/deployment
   - contracts/season_resources/scripts/deployment
   - scripts/lords-distribution
+
+autoInstallPeers: true
 
 catalog:
   "@cartridge/connector": ^0.12.1
