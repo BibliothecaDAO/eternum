@@ -381,8 +381,10 @@ export class ControllerSession {
     const backend = (this.provider as any)._backend;
     if (backend) {
       backend.openLink = (url: string) => {
+        console.log(`\n  🔗 APPROVE SESSION: ${url}\n`);
+        // Also try opening browser (will fail silently on headless)
         const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
-        execFile(openCmd, [url]);
+        execFile(openCmd, [url], () => {});
       };
     }
   }
