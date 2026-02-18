@@ -124,6 +124,7 @@ import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
+import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
@@ -144,6 +145,7 @@ import {
   recordChunkDiagnosticsEvent,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
+import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
 import {
   captureChunkDiagnosticsBaseline,
   cloneChunkDiagnosticsBaselines,
@@ -2171,19 +2173,6 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
 
-    // Clear any pending army removals
-    this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
-    this.pendingArmyRemovals.clear();
-    this.pendingArmyRemovalMeta.clear();
-    this.deferredChunkRemovals.clear();
-    this.armyLastUpdateAt.clear();
-    this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
-    this.pendingArmyMovements.clear();
-    this.pendingArmyMovementStartedAt.clear();
-    this.pendingArmyMovementFallbackTimeouts.clear();
-
-    this.armyStructureOwners.clear();
-
     // Clean up wheel event listener
     if (this.wheelHandler) {
       const canvas = document.getElementById("main-canvas");
@@ -2196,15 +2185,29 @@ export default class WorldmapScene extends HexagonScene {
 
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();
-    this.lastControlsCameraDistance = null;
 
-    // Reset chunk state to ensure clean re-initialization when returning to world view
-    this.currentChunk = "null";
-    this.clearQueuedPrefetchState();
-    this.fetchedChunks.clear();
-    this.pendingChunks.clear();
-    this.pinnedChunkKeys.clear();
-    this.pinnedRenderAreas.clear();
+    const runtimeState = applyWorldmapSwitchOffRuntimeState({
+      pendingArmyRemovals: this.pendingArmyRemovals,
+      pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
+      deferredChunkRemovals: this.deferredChunkRemovals,
+      armyLastUpdateAt: this.armyLastUpdateAt,
+      pendingArmyMovements: this.pendingArmyMovements,
+      pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
+      pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
+      armyStructureOwners: this.armyStructureOwners,
+      fetchedChunks: this.fetchedChunks,
+      pendingChunks: this.pendingChunks,
+      pinnedChunkKeys: this.pinnedChunkKeys,
+      pinnedRenderAreas: this.pinnedRenderAreas,
+      clearTimeout: (timeoutId) => clearTimeout(timeoutId),
+      clearPendingArmyMovement: (entityId) => this.clearPendingArmyMovement(entityId),
+      clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
+    });
+
+    this.isSwitchedOff = runtimeState.isSwitchedOff;
+    this.toriiLoadingCounter = runtimeState.toriiLoadingCounter;
+    this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
+    this.currentChunk = runtimeState.currentChunk;
 
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
@@ -2676,16 +2679,9 @@ export default class WorldmapScene extends HexagonScene {
       dummy.position.copy(pos);
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
 
-      if (!IS_FLAT_MODE) {
-        const rotationSeed = this.hashCoordinates(col, row);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        dummy.rotation.y = randomRotation;
-        dummy.position.y += 0.05;
-      } else {
-        dummy.position.y += 0.1;
-        dummy.rotation.y = 0;
-      }
+      const exploredHexTransform = resolveExploredHexTransform({ isFlatMode: IS_FLAT_MODE });
+      dummy.rotation.y = exploredHexTransform.rotationY;
+      dummy.position.y += exploredHexTransform.yOffset;
 
       dummy.updateMatrix();
 

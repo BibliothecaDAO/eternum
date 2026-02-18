@@ -164,6 +164,7 @@ export class StructureManager {
   private needsSpatialReindex = false;
   private visibleStructureCount = 0;
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
+  private isDestroyed = false;
   private pruneTransitionChunkHistory(): void {
     this.transitionChunkByToken.forEach((_, token) => {
       if (token < this.latestTransitionToken) {
@@ -482,6 +483,12 @@ export class StructureManager {
   }
 
   public destroy() {
+    if (this.isDestroyed) {
+      console.warn("StructureManager already destroyed, skipping cleanup");
+      return;
+    }
+    this.isDestroyed = true;
+
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
       this.unsubscribeFrustum = undefined;

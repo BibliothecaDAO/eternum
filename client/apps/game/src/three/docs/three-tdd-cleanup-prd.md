@@ -6,7 +6,7 @@
 - Status: Completed v1
 - Owner: Three.js Team
 - Created: 2026-02-17
-- Last Updated: 2026-02-17
+- Last Updated: 2026-02-18
 
 ## Document Update Log
 
@@ -20,6 +20,7 @@
 | U6     | 2026-02-17 04:20 | Codex  | Added S5 army visibility bounds rule extraction via `resolveArmyVisibilityBoundsDecision`, expanded source/destination bound-edge tests, and wired `army-manager.ts` through the extracted decision helper.                                                                                                                                                       |
 | U7     | 2026-02-17 04:25 | Codex  | Added S6 army movement stale-clear policy extraction via `resolvePendingArmyMovementSelectionPlan` and `resolvePendingArmyMovementFallbackPlan`, expanded stale-clear policy tests, and wired `worldmap.tsx` pending-movement selection/fallback paths through extracted helpers.                                                                                 |
 | U8     | 2026-02-17 04:48 | Codex  | Completed S8/S9 renderer guardrail extraction with new pure helpers in `game-renderer-policy.ts` (`resolveLabelRenderIntervalMs`, `resolveLabelRenderDecision`, `shouldEnablePostProcessingConfig`, `resolvePostProcessingEffectPlan`), wired `game-renderer.ts` through those helpers, and added policy tests. Updated sprint execution status through M4 close. |
+| U9     | 2026-02-18 16:00 | Codex  | Refreshed baseline footprint and test reality after the findings follow-up wave (lifecycle/effects/coverage/debug-hook slices).                                                                                                                                                                                                                                 |
 
 ## Executive Summary
 
@@ -32,23 +33,23 @@ with weak test seams. This sprint formalizes a strict red-green-refactor cleanup
 
 The sprint target is safer refactoring velocity, not architecture replacement.
 
-## Baseline (as of 2026-02-17)
+## Baseline (as of 2026-02-18)
 
 ### Current Footprint
 
-- Production files: `115`
-- Test files: `24`
-- Production lines: `39,675`
-- Test lines: `1,868`
-- Files with direct paired tests: `22`
+- Production files: `131`
+- Test files: `49`
+- Production lines: `41,430`
+- Test lines: `5,066`
+- Files with direct paired tests: `38`
 - Files without direct paired tests: `93`
 
 ### Largest High-Risk Files
 
-1. `client/apps/game/src/three/scenes/worldmap.tsx` (`4,834` lines)
-2. `client/apps/game/src/three/managers/army-manager.ts` (`2,689` lines)
-3. `client/apps/game/src/three/managers/structure-manager.ts` (`2,253` lines)
-4. `client/apps/game/src/three/managers/army-model.ts` (`1,941` lines)
+1. `client/apps/game/src/three/scenes/worldmap.tsx` (`4,919` lines)
+2. `client/apps/game/src/three/managers/army-manager.ts` (`2,730` lines)
+3. `client/apps/game/src/three/managers/structure-manager.ts` (`2,310` lines)
+4. `client/apps/game/src/three/managers/army-model.ts` (`1,946` lines)
 5. `client/apps/game/src/three/game-renderer.ts` (`1,517` lines)
 
 ### Immediate Test Blocker
@@ -59,8 +60,8 @@ Current command:
 
 Current result:
 
-- Fails before collecting tests with `24` unhandled environment errors.
-- Primary error: `ERR_REQUIRE_ESM` during jsdom setup via `html-encoding-sniffer` and `@exodus/bytes`.
+- `46` `src/three` test files run and pass (`288` tests) in the current tree subset before environment setup failures.
+- Remaining blocker persists in jsdom setup (`ERR_REQUIRE_ESM`) via `html-encoding-sniffer` and `@exodus/bytes`.
 
 This blocker is Sprint Item 0 because TDD cannot run without a stable red phase.
 
