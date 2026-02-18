@@ -167,6 +167,19 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   }
   (dojoConfig as any).manifest = patchedManifest;
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("eternum:controller-config-changed", {
+        detail: {
+          chain,
+          rpcUrl: (dojoConfig as any).rpcUrl,
+          toriiUrl: (dojoConfig as any).toriiUrl,
+          worldName: profile.name,
+        },
+      }),
+    );
+  }
+
   // 3) Point SQL API to the active world's Torii
   const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
   setSqlApiBaseUrl(`${toriiUrl}/sql`);

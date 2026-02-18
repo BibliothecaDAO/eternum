@@ -1,11 +1,12 @@
-import { getActiveWorld, normalizeRpcUrl } from "@/runtime/world";
+import { getActiveWorld, normalizeRpcUrl, resolveChain } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
+import type { Chain as GameChain } from "@contracts";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { constants, shortString } from "starknet";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
@@ -30,9 +31,6 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-
-const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
-const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
 
 // ==============================================
 
@@ -69,37 +67,41 @@ const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
   }
 };
 
-const baseRpcUrl = isLocal ? KATANA_RPC_URL : dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
-const rpcUrl = normalizeRpcUrl(baseRpcUrl);
+type ConnectionContext = {
+  rpcUrl: string;
+  resolvedChain: DerivedChain;
+  resolvedChainId: string;
+};
 
-console.log("baseRpcUrl", baseRpcUrl);
+const resolveFallbackChain = (chain: GameChain): DerivedChain => {
+  if (chain === "slot") {
+    return { kind: "slot", chainId: SLOT_CHAIN_ID };
+  }
+  if (chain === "slottest") {
+    return { kind: "slot", chainId: SLOT_CHAIN_ID_TEST };
+  }
+  if (chain === "mainnet") {
+    return { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN };
+  }
+  return { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+};
 
-const derivedChain = isLocal ? null : deriveChainFromRpcUrl(rpcUrl);
-const fallbackChain: DerivedChain = isSlot
-  ? { kind: "slot", chainId: SLOT_CHAIN_ID }
-  : isSlottest
-    ? { kind: "slot", chainId: SLOT_CHAIN_ID_TEST }
-    : env.VITE_PUBLIC_CHAIN === "mainnet"
-      ? { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN }
-      : { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
-const resolvedChain = derivedChain ?? fallbackChain;
-const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
-const chain_id = resolvedChainId;
+const resolveConnectionContext = (): ConnectionContext => {
+  const selectedChain = resolveChain(env.VITE_PUBLIC_CHAIN as GameChain);
+  const activeWorld = getActiveWorld();
+  const activeRpcUrl = activeWorld?.rpcUrl ? normalizeRpcUrl(activeWorld.rpcUrl) : null;
+  const fallbackRpcUrl = normalizeRpcUrl(dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL);
+  const rpcUrl = activeRpcUrl ?? fallbackRpcUrl;
+  const derivedChain = deriveChainFromRpcUrl(rpcUrl);
+  const resolvedChain = derivedChain ?? resolveFallbackChain(selectedChain);
+  const resolvedChainId = resolvedChain.chainId;
 
-const controller = new ControllerConnector({
-  errorDisplayMode: "notification",
-  propagateSessionErrors: true,
-  // chain_id,
-  chains: [
-    {
-      rpcUrl,
-    },
-  ],
-  defaultChainId: resolvedChainId,
-  policies: buildPolicies(dojoConfig.manifest),
-  slot,
-  namespace,
-});
+  return {
+    rpcUrl,
+    resolvedChain,
+    resolvedChainId,
+  };
+};
 
 const katanaLocalChain = {
   id: BigInt(KATANA_CHAIN_ID),
@@ -144,19 +146,60 @@ const queryClient = new QueryClient({
 });
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
-  const rpc = useCallback(() => {
-    return { nodeUrl: rpcUrl };
+  const [controllerContextVersion, setControllerContextVersion] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const refreshControllerContext = () => {
+      setControllerContextVersion((prev) => prev + 1);
+    };
+
+    window.addEventListener("eternum:world-selection-changed", refreshControllerContext);
+    window.addEventListener("eternum:controller-config-changed", refreshControllerContext);
+
+    return () => {
+      window.removeEventListener("eternum:world-selection-changed", refreshControllerContext);
+      window.removeEventListener("eternum:controller-config-changed", refreshControllerContext);
+    };
   }, []);
 
+  const connectionContext = useMemo(() => resolveConnectionContext(), [controllerContextVersion]);
+  const effectiveRpcUrl = isLocal ? KATANA_RPC_URL : connectionContext.rpcUrl;
+  const resolvedChain = connectionContext.resolvedChain;
+  const resolvedChainId = isLocal ? KATANA_CHAIN_ID : connectionContext.resolvedChainId;
+
+  const controller = useMemo(
+    () =>
+      new ControllerConnector({
+        errorDisplayMode: "notification",
+        propagateSessionErrors: true,
+        chains: [
+          {
+            rpcUrl: effectiveRpcUrl,
+          },
+        ],
+        defaultChainId: resolvedChainId,
+        policies: buildPolicies(dojoConfig.manifest),
+        slot,
+        namespace,
+      }),
+    [effectiveRpcUrl, resolvedChainId, controllerContextVersion],
+  );
+
+  const rpc = useCallback(() => {
+    return { nodeUrl: effectiveRpcUrl };
+  }, [effectiveRpcUrl]);
+
   const { connectors: predeployedConnectors } = usePredeployedAccounts({
-    rpc: rpcUrl,
+    rpc: effectiveRpcUrl,
     id: "katana",
     name: "Katana",
   });
 
   const paymasterRpc = useCallback(() => {
-    return { nodeUrl: rpcUrl };
-  }, []);
+    return { nodeUrl: effectiveRpcUrl };
+  }, [effectiveRpcUrl]);
 
   return (
     <StarknetConfig

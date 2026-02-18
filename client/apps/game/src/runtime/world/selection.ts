@@ -31,5 +31,17 @@ export const applyWorldSelection = async (
   const profile = await buildWorldProfile(targetChain, selection.name);
   setActiveWorldName(selection.name);
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("eternum:world-selection-changed", {
+        detail: {
+          name: selection.name,
+          chain: targetChain,
+          worldAddress: selection.worldAddress ?? profile.worldAddress,
+        },
+      }),
+    );
+  }
+
   return { profile, currentChain, targetChain, chainChanged };
 };
