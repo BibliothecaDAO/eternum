@@ -121,6 +121,7 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
+import { deriveDirectionalPrefetchChunkKeys } from "./worldmap-directional-prefetch-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
@@ -128,7 +129,6 @@ import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
-  getRenderFetchBoundsForChunk as getCanonicalRenderFetchBoundsForChunk,
 } from "./worldmap-chunk-bounds";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
@@ -152,6 +152,10 @@ import {
   snapshotChunkDiagnostics as snapshotChunkDiagnosticsState,
   type WorldmapChunkDiagnosticsBaselineEntry,
 } from "./worldmap-chunk-diagnostics-baseline";
+import {
+  evaluateChunkSwitchP95Regression,
+  type ChunkSwitchP95RegressionResult,
+} from "./worldmap-chunk-latency-regression";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -169,6 +173,11 @@ type ToriiBoundsCounterKey =
   | "explorerTiles"
   | "explorerTroops";
 
+type WorldmapChunkSwitchP95RegressionDebugResult = {
+  baselineLabel: string | null;
+  result: ChunkSwitchP95RegressionResult;
+};
+
 type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkDiagnostics?: () => {
     diagnostics: WorldmapChunkDiagnostics;
@@ -180,6 +189,10 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   };
   resetWorldmapChunkDiagnostics?: () => void;
   captureWorldmapChunkBaseline?: (label?: string) => WorldmapChunkDiagnosticsBaselineEntry;
+  evaluateWorldmapChunkSwitchP95Regression?: (
+    baselineLabel?: string,
+    allowedRegressionFraction?: number,
+  ) => WorldmapChunkSwitchP95RegressionDebugResult;
 };
 
 const dummy = new Object3D();
@@ -201,6 +214,11 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
 const WORLDMAP_CHUNK_POLICY = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
+type DirectionalPrefetchAnchor = {
+  forwardChunkKey: string;
+  movementAxis: "x" | "z";
+  movementSign: -1 | 1;
+};
 
 export default class WorldmapScene extends HexagonScene {
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
@@ -220,7 +238,7 @@ export default class WorldmapScene extends HexagonScene {
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
   private activePrefetches = 0;
-  private readonly maxConcurrentPrefetches = WORLD_CHUNK_CONFIG.prefetch.maxConcurrent;
+  private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -411,7 +429,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
-  private readonly maxMatrixCacheSize = 16;
+  private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
   private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
@@ -520,9 +538,6 @@ export default class WorldmapScene extends HexagonScene {
         this.simulateAllExplored = value;
       },
       getRenderChunkSize: () => this.renderChunkSize,
-      setRenderChunkSize: (width: number, height: number) => {
-        this.renderChunkSize = { width, height };
-      },
       requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
       hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
     });
@@ -2777,14 +2792,7 @@ export default class WorldmapScene extends HexagonScene {
    * Key by Torii "super-area" so overlapping render windows coalesce.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    return getCanonicalRenderAreaKeyForChunk(chunkKey, this.chunkSize, WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides);
-  }
-
-  /**
-   * Compute integer fetch bounds that fully cover the render area for a chunk key.
-   */
-  private getRenderFetchBounds(chunkKey: string): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
-    return getCanonicalRenderFetchBoundsForChunk(chunkKey, this.renderChunkSize, this.chunkSize);
+    return getCanonicalRenderAreaKeyForChunk(chunkKey, this.chunkSize, WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides);
   }
 
   /**
@@ -2800,7 +2808,7 @@ export default class WorldmapScene extends HexagonScene {
       areaKey,
       this.renderChunkSize,
       this.chunkSize,
-      WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
     );
   }
 
@@ -2836,7 +2844,7 @@ export default class WorldmapScene extends HexagonScene {
   /**
    * Compute a forward chunk key based on camera movement to prefetch ahead.
    */
-  private getForwardChunkKey(focusPoint: Vector3): string | null {
+  private getDirectionalPrefetchAnchor(focusPoint: Vector3): DirectionalPrefetchAnchor | null {
     const anchor = this.lastChunkSwitchPosition;
     if (!anchor) {
       return null;
@@ -2854,42 +2862,46 @@ export default class WorldmapScene extends HexagonScene {
     if (stepSign === 0) {
       return null;
     }
+    const movementAxis: "x" | "z" = primaryAxisIsX ? "x" : "z";
+    const movementSign = stepSign > 0 ? 1 : -1;
 
     const strideWorldX = this.chunkSize * HEX_SIZE * Math.sqrt(3);
     const strideWorldZ = this.chunkSize * HEX_SIZE * 1.5;
 
-    const forwardOffsetStrides = WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides;
+    const forwardOffsetStrides = WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides;
     const aheadX = primaryAxisIsX ? focusPoint.x + stepSign * strideWorldX * forwardOffsetStrides : focusPoint.x;
     const aheadZ = primaryAxisIsX ? focusPoint.z : focusPoint.z + stepSign * strideWorldZ * forwardOffsetStrides;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(aheadX, aheadZ);
-    return `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+    return {
+      forwardChunkKey: `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`,
+      movementAxis,
+      movementSign,
+    };
   }
 
   /**
    * Prefetch the chunk in front of the camera to reduce pop-in.
    */
   private prefetchDirectionalChunks(focusPoint: Vector3) {
-    const forwardChunkKey = this.getForwardChunkKey(focusPoint);
-    if (!forwardChunkKey) {
+    const directionalAnchor = this.getDirectionalPrefetchAnchor(focusPoint);
+    if (!directionalAnchor) {
       this.directionalPrefetchAreaKeys.clear();
       this.pruneQueuedDirectionalPrefetches();
       return;
     }
 
-    const forwardRowCol = forwardChunkKey.split(",").map(Number);
-    const prefetchTargets = new Set<string>();
+    const prefetchTargets = new Set(
+      deriveDirectionalPrefetchChunkKeys({
+        forwardChunkKey: directionalAnchor.forwardChunkKey,
+        chunkSize: this.chunkSize,
+        forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
+        sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
+        movementAxis: directionalAnchor.movementAxis,
+        movementSign: directionalAnchor.movementSign,
+      }),
+    );
     const desiredAreaKeys = new Set<string>();
-
-    const { forwardDepthStrides, sideRadiusStrides } = WORLD_CHUNK_CONFIG.prefetch;
-    // Prefetch a band ahead centered on the forward chunk.
-    for (let dzStride = 0; dzStride <= forwardDepthStrides; dzStride++) {
-      for (let dxStride = -sideRadiusStrides; dxStride <= sideRadiusStrides; dxStride++) {
-        const row = forwardRowCol[0] + dzStride * this.chunkSize;
-        const col = forwardRowCol[1] + dxStride * this.chunkSize;
-        prefetchTargets.add(`${row},${col}`);
-      }
-    }
 
     prefetchTargets.forEach((chunkKey) => {
       // Skip if it's already pinned or current
@@ -4135,7 +4147,7 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Load surrounding chunks for better UX (3x3 grid)
+    // Load surrounding pinned chunks for better UX.
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
     const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
@@ -4366,6 +4378,47 @@ export default class WorldmapScene extends HexagonScene {
     };
   }
 
+  private evaluateChunkSwitchP95RegressionAgainstBaseline(
+    baselineLabel?: string,
+    allowedRegressionFraction: number = 0.1,
+  ): WorldmapChunkSwitchP95RegressionDebugResult {
+    let selectedBaseline: WorldmapChunkDiagnosticsBaselineEntry | undefined;
+    if (baselineLabel) {
+      for (let i = this.chunkDiagnosticsBaselines.length - 1; i >= 0; i--) {
+        const candidate = this.chunkDiagnosticsBaselines[i];
+        if (candidate?.label === baselineLabel) {
+          selectedBaseline = candidate;
+          break;
+        }
+      }
+    } else {
+      selectedBaseline = this.chunkDiagnosticsBaselines[this.chunkDiagnosticsBaselines.length - 1];
+    }
+
+    if (!selectedBaseline) {
+      return {
+        baselineLabel: null,
+        result: {
+          status: "pending",
+          reason: "No baseline found. Capture one first with captureWorldmapChunkBaseline(label).",
+          baselineP95Ms: null,
+          currentP95Ms: null,
+          allowedRegressionFraction: Math.max(0, allowedRegressionFraction),
+          regressionFraction: null,
+        },
+      };
+    }
+
+    return {
+      baselineLabel: selectedBaseline.label,
+      result: evaluateChunkSwitchP95Regression({
+        baseline: selectedBaseline.diagnostics,
+        current: this.chunkDiagnostics,
+        allowedRegressionFraction,
+      }),
+    };
+  }
+
   private installChunkDiagnosticsDebugHooks(): void {
     if (!import.meta.env.DEV) {
       return;
@@ -4375,6 +4428,10 @@ export default class WorldmapScene extends HexagonScene {
     debugWindow.getWorldmapChunkDiagnostics = () => this.getChunkDiagnosticsSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.captureWorldmapChunkBaseline = (label?: string) => this.captureChunkDiagnosticsBaseline(label);
+    debugWindow.evaluateWorldmapChunkSwitchP95Regression = (
+      baselineLabel?: string,
+      allowedRegressionFraction?: number,
+    ) => this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
@@ -4386,6 +4443,7 @@ export default class WorldmapScene extends HexagonScene {
     debugWindow.getWorldmapChunkDiagnostics = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
+    debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
   }
 
   private monitorTerrainVisibilityHealth(): void {
