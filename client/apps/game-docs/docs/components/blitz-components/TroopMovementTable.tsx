@@ -102,7 +102,9 @@ export function BlitzTroopMovementTable() {
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={listItemStyle}>
             <span style={listLabelStyle}>Carry Capacity</span>
-            <span style={listValueStyle}>{Number(config.carryCapacityGram[CapacityConfig.Army]) / 1000}kg per troop</span>
+            <span style={listValueStyle}>
+              {Number(config.carryCapacityGram[CapacityConfig.Army]) / 1000}kg per troop
+            </span>
           </div>
           <div style={listItemStyle}>
             <span style={listLabelStyle}>Stamina on Deployment</span>

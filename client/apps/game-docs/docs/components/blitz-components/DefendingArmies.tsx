@@ -27,8 +27,12 @@ export const BlitzRealmDefenseSlotsTable = () => {
             {defenseSlots.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>{item.fieldSlots}</td>
-                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>
+                  {item.fieldSlots}
+                </td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>
+                  {item.guardSlots}
+                </td>
                 <td style={table.cell}>{item.slotName}</td>
               </tr>
             ))}
@@ -62,7 +66,9 @@ export const BlitzWorldStructureDefenseSlotsTable = () => {
             {worldStructures.map((item) => (
               <tr key={item.structure}>
                 <td style={table.cell}>{item.structure}</td>
-                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>
+                  {item.guardSlots}
+                </td>
               </tr>
             ))}
           </tbody>
