@@ -76,6 +76,58 @@ const normalizeValue = (value: unknown): bigint | null => {
   return null;
 };
 
+const normalizeAddress = (value: unknown): string | null => {
+  if (value == null) return null;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      const asBigInt =
+        trimmed.startsWith("0x") || trimmed.startsWith("0X")
+          ? BigInt(trimmed)
+          : /^[0-9]+$/.test(trimmed)
+            ? BigInt(trimmed)
+            : null;
+      if (asBigInt == null || asBigInt <= 0n) return null;
+      return `0x${asBigInt.toString(16)}`;
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return `0x${BigInt(Math.floor(value)).toString(16)}`;
+  }
+
+  if (typeof value === "bigint" && value > 0n) {
+    return `0x${value.toString(16)}`;
+  }
+
+  return null;
+};
+
+/**
+ * Pull the world contract address from a factory row.
+ */
+export const extractContractAddress = (row: Record<string, unknown>): string | null => {
+  const direct = row.contract_address ?? row["data.address"];
+  const normalizedDirect = normalizeAddress(direct);
+  if (normalizedDirect) {
+    return normalizedDirect;
+  }
+
+  const data = asRecord(row.data);
+  if (data) {
+    const nested = normalizeAddress(data.contract_address);
+    if (nested) {
+      return nested;
+    }
+  }
+
+  return null;
+};
+
 const findGameNumber = (record: Record<string, unknown>, depth = 0): bigint | null => {
   if (depth > 3) return null;
   for (const key of ["game_number", "gameNumber"]) {
