@@ -117,9 +117,11 @@ export const TransferTroopsContainer = ({
         getExplorerFromToriiClient(toriiClient, targetEntityId),
       ]);
 
+      let explorerOwner = explorerData?.explorer?.owner ?? 0;
       return {
         structure: structureData.structure,
         explorer: explorerData.explorer,
+        explorerConnectedStructure: await getStructureFromToriiClient(toriiClient, explorerOwner),
       };
     },
     staleTime: 10000, // 10 seconds
@@ -148,12 +150,13 @@ export const TransferTroopsContainer = ({
   const selectedExplorerResources = selectedEntityData?.explorerResources;
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
+  const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure.structure;
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
-    const level = selectedStructure?.base?.level ?? targetStructure?.base?.level ?? 0;
+    const level = targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? 0;
     return configManager.getMaxArmySize(level, tier) || null;
-  }, [targetExplorerTroops?.troops?.tier, selectedStructure?.base?.level, targetStructure?.base?.level]);
+  }, [targetExplorerTroops?.troops?.tier, targetStructure?.base?.level, targetExplorerConnectedStructure?.base?.level]);
 
   const directionLabel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
