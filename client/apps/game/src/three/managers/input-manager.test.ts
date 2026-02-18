@@ -99,7 +99,7 @@ describe("InputManager lifecycle", () => {
     fixture.manager.destroy();
     fixture.manager.destroy();
 
-    const mousedownRemovals = removeSpy.mock.calls.filter((call) => call[0] === "mousedown");
+    const mousedownRemovals = removeSpy.mock.calls.filter((call) => String(call[0]) === "mousedown");
     expect(mousedownRemovals).toHaveLength(1);
     expect(warnSpy).toHaveBeenCalledWith("InputManager already destroyed, skipping cleanup");
   });

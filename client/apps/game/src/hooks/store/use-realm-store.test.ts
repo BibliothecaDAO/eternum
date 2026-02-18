@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import type { RealmStore } from "./use-realm-store";
 
 vi.mock("@bibliothecadao/types", () => ({
   StructureType: {
@@ -23,7 +24,8 @@ const StructureType = {
 
 const { createRealmStoreSlice } = await import("./use-realm-store");
 
-type RealmStoreState = ReturnType<typeof createRealmStoreSlice>;
+type RealmStoreState = RealmStore;
+type PlayerStructure = RealmStoreState["playerStructures"][number];
 
 const createRealmStoreTestHarness = () => {
   let state = {} as RealmStoreState;
@@ -46,11 +48,14 @@ const createRealmStoreTestHarness = () => {
   };
 };
 
-const makeStructure = (entityId: number, category: StructureType = StructureType.Realm) =>
+const makeStructure = (
+  entityId: number,
+  category: (typeof StructureType)[keyof typeof StructureType] = StructureType.Realm,
+) =>
   ({
     entityId,
     category,
-  }) as any;
+  }) as unknown as PlayerStructure;
 
 describe("use-realm-store spectator lifecycle", () => {
   it("enters spectator mode while preserving last controlled owned structure", () => {
