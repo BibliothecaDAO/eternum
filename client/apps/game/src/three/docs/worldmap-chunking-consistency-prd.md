@@ -6,7 +6,7 @@
 - Status: In Progress v1
 - Owner: Three / Worldmap Team
 - Created: 2026-02-17
-- Last Updated: 2026-02-17
+- Last Updated: 2026-02-18
 
 ## Document Update Log
 
@@ -19,6 +19,7 @@
 | U5     | 2026-02-17 23:15 | Codex  | M1 completion update: added failing-then-green behavior tests for `performChunkSwitch` success/fetch-failure/stale suppression, and moved chunk authority write to commit phase in `worldmap.tsx`. |
 | U6     | 2026-02-17 23:40 | Codex  | M2 completion update: added manager convergence behavior tests, aligned manager startup chunk authority to `null`, and enforced transition-token + target-chunk invariants across army/structure/chest manager updates. |
 | U7     | 2026-02-17 23:55 | Codex  | M3 completion update: added failing-then-green scene bounds parity tests, extracted canonical scene chunk-bounds helpers, and refactored worldmap scene/transition bounds paths to reuse shared `getRenderBounds` semantics. |
+| U8     | 2026-02-18 00:00 | Codex  | M4 completion update: added failing-then-green render-size robustness coverage for sizes `32/48/64/80/96` across overlap-neighbor derivation and cache invalidation overlap behavior, then refactored worldmap neighbor/cache invalidation derivation to stride-safe helpers in `worldmap-chunk-neighbors.ts`; targeted scene/manager suites green. |
 
 ## Executive Summary
 
@@ -281,6 +282,7 @@ Exit Criteria:
 | M1 | Completed | 2026-02-17 | `performChunkSwitch` behavior tests green in `src/three/scenes/worldmap-chunk-orchestration-fixture.test.ts`; chunk authority write moved to commit phase in `src/three/scenes/worldmap.tsx`. |
 | M2 | Completed | 2026-02-17 | Manager convergence coverage added in `src/three/managers/manager-update-convergence.test.ts`; startup chunk authority aligned in `src/three/managers/army-manager.ts`, `src/three/managers/chest-manager.ts`, and `src/three/managers/structure-manager.ts`; targeted manager/scene tests green (`manager-update-convergence`, `worldmap-chunk-orchestration-fixture`, `worldmap-chunk-transition`). |
 | M3 | Completed | 2026-02-17 | Bounds parity coverage added in `src/three/scenes/worldmap-chunk-bounds.test.ts` and extended in `src/three/scenes/worldmap-chunk-transition.test.ts`; canonical helpers added in `src/three/scenes/worldmap-chunk-bounds.ts`; scene bounds call sites refactored in `src/three/scenes/worldmap.tsx` and `src/three/scenes/worldmap-chunk-transition.ts`; targeted suite green (`worldmap-chunk-bounds`, `worldmap-chunk-transition`, `worldmap-chunk-orchestration-fixture`, `manager-update-convergence`). |
+| M4 | Completed | 2026-02-18 | Added size-matrix coverage for `32/48/64/80/96` in `src/three/scenes/worldmap-chunk-neighbors.test.ts` (neighbor derivation + cache invalidation overlap behavior); extracted stride-safe overlap helpers in `src/three/scenes/worldmap-chunk-neighbors.ts`; refactored `src/three/scenes/worldmap.tsx` (`getChunksAround`, `removeCachedMatricesAroundChunk`) to remove half-render-size stride assumptions; targeted suite green via `pnpm --dir ./client/apps/game exec vitest run src/three/scenes/worldmap-chunk-neighbors.test.ts src/three/scenes/worldmap-chunk-transition.test.ts src/three/scenes/worldmap-chunk-bounds.test.ts src/three/scenes/worldmap-chunk-policy.test.ts src/three/utils/chunk-geometry.test.ts src/three/managers/manager-update-convergence.test.ts`. |
 
 ## TDD Execution Plan
 

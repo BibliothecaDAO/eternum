@@ -73,6 +73,18 @@ interface RefreshCompletionActions {
   shouldClearRerunRequested: boolean;
 }
 
+interface HydratedChunkRefreshFlushPlanInput {
+  queuedChunkKeys: string[];
+  currentChunk: string;
+  isChunkTransitioning: boolean;
+}
+
+interface HydratedChunkRefreshFlushPlan {
+  shouldDefer: boolean;
+  shouldForceRefreshCurrentChunk: boolean;
+  remainingQueuedChunkKeys: string[];
+}
+
 interface StructureBoundsRefreshInput {
   currentChunk: string;
   isChunkTransitioning: boolean;
@@ -220,6 +232,53 @@ export function resolveRefreshCompletionActions(input: {
     hasNewerRequest,
     shouldScheduleRerun,
     shouldClearRerunRequested: shouldScheduleRerun,
+  };
+}
+
+/**
+ * Hydrated fetch completion should enqueue refresh only when the fetched area
+ * corresponds to the currently active area key.
+ */
+export function shouldScheduleHydratedChunkRefreshForFetch(input: {
+  fetchAreaKey: string;
+  currentAreaKey: string | null;
+}): boolean {
+  if (!input.currentAreaKey) {
+    return false;
+  }
+  return input.fetchAreaKey === input.currentAreaKey;
+}
+
+/**
+ * Resolve how hydrated chunk refresh queue should be processed.
+ * While transitioning, queued work must be preserved (not dropped).
+ */
+export function resolveHydratedChunkRefreshFlushPlan(
+  input: HydratedChunkRefreshFlushPlanInput,
+): HydratedChunkRefreshFlushPlan {
+  const uniqueQueuedChunkKeys = Array.from(new Set(input.queuedChunkKeys));
+  if (input.isChunkTransitioning) {
+    return {
+      shouldDefer: true,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: uniqueQueuedChunkKeys,
+    };
+  }
+
+  if (input.currentChunk === "null") {
+    return {
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: uniqueQueuedChunkKeys,
+    };
+  }
+
+  const shouldForceRefreshCurrentChunk = uniqueQueuedChunkKeys.includes(input.currentChunk);
+
+  return {
+    shouldDefer: false,
+    shouldForceRefreshCurrentChunk,
+    remainingQueuedChunkKeys: uniqueQueuedChunkKeys.filter((chunkKey) => chunkKey !== input.currentChunk),
   };
 }
 

@@ -20,6 +20,8 @@ import {
   shouldRunManagerUpdate,
   shouldRunImmediateDuplicateTileRefresh,
   waitForChunkTransitionToSettle,
+  resolveHydratedChunkRefreshFlushPlan,
+  shouldScheduleHydratedChunkRefreshForFetch,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -887,5 +889,78 @@ describe("waitForChunkTransitionToSettle", () => {
 
     resolveSecond?.();
     await waitPromise;
+  });
+});
+
+describe("shouldScheduleHydratedChunkRefreshForFetch", () => {
+  it("schedules hydrated refresh when fetch area matches current area even during transitions", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: "24,0",
+      }),
+    ).toBe(true);
+  });
+
+  it("does not schedule hydrated refresh when fetch area differs from current area", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: "48,0",
+      }),
+    ).toBe(false);
+  });
+
+  it("does not schedule hydrated refresh when current area is unavailable", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: null,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolveHydratedChunkRefreshFlushPlan", () => {
+  it("defers and preserves queued chunk keys while transition is in progress", () => {
+    expect(
+      resolveHydratedChunkRefreshFlushPlan({
+        queuedChunkKeys: ["24,0", "48,0"],
+        currentChunk: "24,0",
+        isChunkTransitioning: true,
+      }),
+    ).toEqual({
+      shouldDefer: true,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: ["24,0", "48,0"],
+    });
+  });
+
+  it("forces refresh when current chunk is queued and scene is stable", () => {
+    expect(
+      resolveHydratedChunkRefreshFlushPlan({
+        queuedChunkKeys: ["24,0", "48,0"],
+        currentChunk: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: true,
+      remainingQueuedChunkKeys: ["48,0"],
+    });
+  });
+
+  it("skips refresh when current chunk is not queued and scene is stable", () => {
+    expect(
+      resolveHydratedChunkRefreshFlushPlan({
+        queuedChunkKeys: ["48,0"],
+        currentChunk: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: ["48,0"],
+    });
   });
 });

@@ -115,6 +115,8 @@ import {
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
+  resolveHydratedChunkRefreshFlushPlan,
+  shouldScheduleHydratedChunkRefreshForFetch,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
@@ -126,6 +128,7 @@ import {
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
   getRenderFetchBoundsForChunk as getCanonicalRenderFetchBoundsForChunk,
 } from "./worldmap-chunk-bounds";
+import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
@@ -2732,35 +2735,28 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   getChunksAround(chunkKey: string) {
-    const startRow = parseInt(chunkKey.split(",")[0]);
-    const startCol = parseInt(chunkKey.split(",")[1]);
-    const chunks: string[] = [];
-    const halfHeight = this.renderChunkSize.height / 2;
-    const halfWidth = this.renderChunkSize.width / 2;
-    for (let i = -halfHeight; i <= halfHeight; i += this.chunkSize) {
-      for (let j = -halfWidth; j <= halfWidth; j += this.chunkSize) {
-        const { x, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
-        const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
-        const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
-        if (!chunks.includes(_chunkKey)) {
-          chunks.push(_chunkKey);
-        }
-      }
-    }
-    return chunks;
+    return getRenderOverlapChunkKeys({
+      centerChunkKey: chunkKey,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
   }
 
   removeCachedMatricesAroundChunk(chunkRow: number, chunkCol: number) {
-    const halfHeight = this.renderChunkSize.height / 2;
-    const halfWidth = this.renderChunkSize.width / 2;
-    for (let i = -halfHeight; i <= halfHeight; i += this.chunkSize) {
-      for (let j = -halfWidth; j <= halfWidth; j += this.chunkSize) {
-        if (i === 0 && j === 0) {
-          continue;
-        }
-        this.removeCachedMatricesForChunk(chunkRow + i, chunkCol + j);
+    const centerChunkKey = `${chunkRow},${chunkCol}`;
+    const neighbors = getRenderOverlapNeighborChunkKeys({
+      centerChunkKey,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
+
+    neighbors.forEach((chunkKey) => {
+      const [startRow, startCol] = chunkKey.split(",").map(Number);
+      if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+        return;
       }
-    }
+      this.removeCachedMatricesForChunk(startRow, startCol);
+    });
   }
 
   /**
@@ -3047,13 +3043,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private async flushHydratedChunkRefreshes() {
     this.hydratedRefreshScheduled = false;
-    const targets = Array.from(this.hydratedChunkRefreshes);
-    this.hydratedChunkRefreshes.clear();
-
-    // Skip if chunk is currently transitioning - the chunk switch will handle manager updates
-    if (this.isChunkTransitioning) {
-      return;
-    }
 
     if (this.globalChunkSwitchPromise) {
       try {
@@ -3063,20 +3052,28 @@ export default class WorldmapScene extends HexagonScene {
       }
     }
 
-    for (const chunkKey of targets) {
-      if (chunkKey !== this.currentChunk) {
-        continue;
-      }
-      try {
-        await this.updateManagersForChunk(chunkKey, {
-          force: true,
-          transitionToken: this.chunkTransitionToken,
-        });
-        this.hydratedChunkRefreshes.delete(chunkKey);
-        this.retryDeferredChunkRemovals();
-      } catch (error) {
-        console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${chunkKey}`, error);
-      }
+    const refreshPlan = resolveHydratedChunkRefreshFlushPlan({
+      queuedChunkKeys: Array.from(this.hydratedChunkRefreshes),
+      currentChunk: this.currentChunk,
+      isChunkTransitioning: this.isChunkTransitioning,
+    });
+    this.hydratedChunkRefreshes = new Set(refreshPlan.remainingQueuedChunkKeys);
+
+    if (refreshPlan.shouldDefer) {
+      this.hydratedRefreshScheduled = true;
+      Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
+      return;
+    }
+
+    if (!refreshPlan.shouldForceRefreshCurrentChunk) {
+      return;
+    }
+
+    try {
+      await this.updateVisibleChunks(true);
+      this.retryDeferredChunkRemovals();
+    } catch (error) {
+      console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${this.currentChunk}`, error);
     }
   }
 
@@ -3592,7 +3589,12 @@ export default class WorldmapScene extends HexagonScene {
       if (this.pinnedRenderAreas.has(fetchKey)) {
         this.fetchedChunks.add(fetchKey);
         const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
-        if (currentAreaKey && fetchKey === currentAreaKey && !this.isChunkTransitioning) {
+        if (
+          shouldScheduleHydratedChunkRefreshForFetch({
+            fetchAreaKey: fetchKey,
+            currentAreaKey,
+          })
+        ) {
           this.scheduleHydratedChunkRefresh(this.currentChunk);
         }
       }
