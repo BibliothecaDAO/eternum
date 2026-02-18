@@ -59,6 +59,7 @@ export class PathRenderer {
   private fragmentationThreshold = 0.3; // Compact when 30%+ of buffer is fragmented
   private lastCompactTime = 0;
   private compactCooldown = 5000; // Min ms between compactions
+  private isDisposed = false;
 
   private constructor(config: Partial<PathRenderConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CONFIG, ...config };
@@ -343,6 +344,12 @@ export class PathRenderer {
    * Dispose of all resources
    */
   public dispose(): void {
+    if (this.isDisposed) {
+      console.warn("PathRenderer already disposed, skipping cleanup");
+      return;
+    }
+    this.isDisposed = true;
+
     this.clearAll();
 
     // Remove resize listener

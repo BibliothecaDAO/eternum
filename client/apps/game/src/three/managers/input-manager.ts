@@ -11,6 +11,7 @@ export class InputManager {
   private currentDragListener: ((e: MouseEvent) => void) | null = null;
   private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
   private mouseDownHandler: (e: MouseEvent) => void;
+  private isDestroyed = false;
 
   constructor(
     private sceneName: SceneName,
@@ -101,6 +102,12 @@ export class InputManager {
   }
 
   public destroy(): void {
+    if (this.isDestroyed) {
+      console.warn("InputManager already destroyed, skipping cleanup");
+      return;
+    }
+    this.isDestroyed = true;
+
     // Clean up main mousedown handler
     window.removeEventListener("mousedown", this.mouseDownHandler);
 
