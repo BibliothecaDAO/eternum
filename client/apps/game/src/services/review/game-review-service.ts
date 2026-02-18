@@ -4,13 +4,15 @@ import {
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
+import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
+import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
 import { SqlApi, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { Chain } from "@contracts";
 import { getGameManifest } from "@contracts";
 import { getContractByName } from "@dojoengine/core";
-import { Account, AccountInterface, Call } from "starknet";
+import { Account, AccountInterface, Call, hash } from "starknet";
 
 import { env } from "../../../env";
 
@@ -20,6 +22,7 @@ const RESOURCE_PRECISION_BIGINT = BigInt(RESOURCE_PRECISION);
 const LORDS_TOKEN_DECIMALS = 18;
 const VICTORY_POINTS_MULTIPLIER = 1_000_000n;
 const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * VICTORY_POINTS_MULTIPLIER;
+const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
 
 const REVIEW_BATTLE_AND_CREATION_QUERY = `
   SELECT
@@ -337,6 +340,140 @@ const uniqueAddresses = (addresses: Array<string | null | undefined>): string[] 
   return out;
 };
 
+const parseU256 = (low: unknown, high: unknown): bigint => {
+  const parsedLow = parseBigIntValue(low) ?? 0n;
+  const parsedHigh = parseBigIntValue(high) ?? 0n;
+  return parsedLow + (parsedHigh << 128n);
+};
+
+const getGlobalToriiSqlUrl = (chain: Chain): string | null => {
+  if (chain !== "mainnet" && chain !== "slot") {
+    return null;
+  }
+
+  const baseUrl = GLOBAL_TORII_BY_CHAIN[chain];
+  if (!baseUrl) {
+    return null;
+  }
+
+  return `${baseUrl}/sql`;
+};
+
+const buildLatestMmrForAddressesQuery = (addresses: string[], mmrTokenAddress: string): string => {
+  const normalizedToken = mmrTokenAddress.trim().toLowerCase();
+  const normalizedAddressList = addresses
+    .map((address) => {
+      const noPrefix = address.trim().toLowerCase().replace(/^0x/, "");
+      const withoutLeadingZeros = noPrefix.replace(/^0+/, "");
+      return `'${withoutLeadingZeros}'`;
+    })
+    .join(", ");
+
+  return `
+WITH mmr_events AS (
+  SELECT
+    id,
+    executed_at,
+    data,
+    lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1)) AS player_address
+  FROM events
+  WHERE instr(lower(keys), '/') > 0
+    AND ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
+    AND lower(id) LIKE '%:${normalizedToken}:%'
+),
+latest_events AS (
+  SELECT
+    player_address,
+    id,
+    data,
+    ROW_NUMBER() OVER (
+      PARTITION BY player_address
+      ORDER BY executed_at DESC, id DESC
+    ) AS rn
+  FROM mmr_events
+  WHERE ltrim(player_address, '0x') IN (${normalizedAddressList})
+),
+tokenized_1 AS (
+  SELECT
+    player_address,
+    id,
+    substr(data, 1, instr(data, '/') - 1) AS old_mmr_low,
+    substr(data, instr(data, '/') + 1) AS rest_1
+  FROM latest_events
+  WHERE rn = 1
+),
+tokenized_2 AS (
+  SELECT
+    player_address,
+    id,
+    old_mmr_low,
+    substr(rest_1, 1, instr(rest_1, '/') - 1) AS old_mmr_high,
+    substr(rest_1, instr(rest_1, '/') + 1) AS rest_2
+  FROM tokenized_1
+),
+tokenized_3 AS (
+  SELECT
+    player_address,
+    id,
+    old_mmr_low,
+    old_mmr_high,
+    substr(rest_2, 1, instr(rest_2, '/') - 1) AS new_mmr_low,
+    substr(rest_2, instr(rest_2, '/') + 1) AS rest_3
+  FROM tokenized_2
+),
+tokenized_4 AS (
+  SELECT
+    player_address,
+    id,
+    old_mmr_low,
+    old_mmr_high,
+    new_mmr_low,
+    substr(rest_3, 1, instr(rest_3, '/') - 1) AS new_mmr_high
+  FROM tokenized_3
+)
+SELECT player_address, new_mmr_low, new_mmr_high
+FROM tokenized_4;
+`;
+};
+
+const fetchLatestMmrForPlayers = async ({
+  chain,
+  addresses,
+}: {
+  chain: Chain;
+  addresses: string[];
+}): Promise<Map<string, Pick<LandingLeaderboardEntry, "mmr" | "mmrTier">>> => {
+  const normalizedAddresses = uniqueAddresses(addresses);
+  const globalToriiSqlUrl = getGlobalToriiSqlUrl(chain);
+  const mmrTokenAddress = MMR_TOKEN_BY_CHAIN[chain];
+
+  if (!globalToriiSqlUrl || !mmrTokenAddress || normalizedAddresses.length === 0) {
+    return new Map();
+  }
+
+  const query = buildLatestMmrForAddressesQuery(normalizedAddresses, mmrTokenAddress);
+
+  try {
+    const rows = await queryToriiSql<LatestMmrRow>(globalToriiSqlUrl, query, "Failed to fetch latest MMR values");
+    const mmrByAddress = new Map<string, Pick<LandingLeaderboardEntry, "mmr" | "mmrTier">>();
+
+    rows.forEach((row) => {
+      const playerAddress = parseAddress(row.player_address);
+      if (!playerAddress) return;
+
+      const mmrRaw = parseU256(row.new_mmr_low, row.new_mmr_high);
+      mmrByAddress.set(playerAddress, {
+        mmr: toMmrIntegerFromRaw(mmrRaw),
+        mmrTier: getMMRTierFromRaw(mmrRaw).name,
+      });
+    });
+
+    return mmrByAddress;
+  } catch {
+    return new Map();
+  }
+};
+
 const randomTrialId = () =>
   BigInt(`0x${(globalThis.crypto?.randomUUID?.().replace(/-/g, "") || Date.now().toString(16)).slice(0, 31)}`);
 
@@ -406,6 +543,12 @@ interface PlayerRegisteredPointsRow {
 
 interface TransactionsCountRow {
   transaction_count?: unknown;
+}
+
+interface LatestMmrRow {
+  player_address?: unknown;
+  new_mmr_low?: unknown;
+  new_mmr_high?: unknown;
 }
 
 interface ReviewFinalizationMeta {
@@ -762,7 +905,33 @@ export const fetchGameReviewData = async ({
     fetchTransactionsCount(toriiSqlBaseUrl),
   ]);
 
-  const topPlayers = leaderboard.slice(0, 3);
+  let topPlayers = leaderboard.slice(0, 3);
+  if (topPlayers.length > 0) {
+    const mmrByAddress = await fetchLatestMmrForPlayers({
+      chain,
+      addresses: topPlayers.map((entry) => entry.address),
+    });
+
+    if (mmrByAddress.size > 0) {
+      topPlayers = topPlayers.map((entry) => {
+        const normalizedAddress = parseAddress(entry.address);
+        if (!normalizedAddress) {
+          return entry;
+        }
+
+        const mmrData = mmrByAddress.get(normalizedAddress);
+        if (!mmrData) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          mmr: mmrData.mmr,
+          mmrTier: mmrData.mmrTier,
+        };
+      });
+    }
+  }
 
   const normalizedPlayerAddress = parseAddress(playerAddress);
   let personalScore =

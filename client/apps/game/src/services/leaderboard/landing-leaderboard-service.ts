@@ -11,6 +11,10 @@ export interface PlayerLeaderboardData {
   displayName: string | null;
   /** Registered + unregistered points combined */
   points: number;
+  /** Latest global MMR (integer value) when available */
+  mmr?: number;
+  /** Latest MMR tier label when available */
+  mmrTier?: string;
   /** Raw registered portion if available from the backend */
   registeredPoints?: number;
   /** Unregistered (shareholder) contribution if available */

@@ -19,14 +19,7 @@ import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
 import { ScoreCardContent } from "./score-card-modal";
 
-type ReviewStepId =
-  | "finished"
-  | "personal"
-  | "stats"
-  | "leaderboard"
-  | "submit-score"
-  | "claim-rewards"
-  | "next-game";
+type ReviewStepId = "finished" | "personal" | "stats" | "leaderboard" | "submit-score" | "claim-rewards" | "next-game";
 
 interface GameReviewModalProps {
   isOpen: boolean;
@@ -772,7 +765,6 @@ export const GameReviewModal = ({
               {currentStep === "next-game" && showUpcomingGamesStep && (
                 <UpcomingGamesStep worldName={reviewData.worldName} onRegistrationComplete={onRegistrationComplete} />
               )}
-
             </div>
           )}
         </div>
