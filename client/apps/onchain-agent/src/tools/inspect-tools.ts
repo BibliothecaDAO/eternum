@@ -50,7 +50,7 @@ function logToolResponse(toolName: string, params: any, response: string) {
  * Inspect a specific realm/structure — returns full detail including resources,
  * production rates, buildings with costs, guard slots, explorers, arrivals, and orders.
  */
-export function createInspectRealmTool(client: EternumClient): AgentTool<any> {
+function createInspectRealmTool(client: EternumClient): AgentTool<any> {
   return {
     name: "inspect_realm",
     label: "Inspect Realm",
@@ -86,7 +86,7 @@ export function createInspectRealmTool(client: EternumClient): AgentTool<any> {
  * Inspect a specific explorer/army — returns stamina, troops, carried resources,
  * battle status, nearby entities, and recent events.
  */
-export function createInspectExplorerTool(client: EternumClient): AgentTool<any> {
+function createInspectExplorerTool(client: EternumClient): AgentTool<any> {
   return {
     name: "inspect_explorer",
     label: "Inspect Explorer",
@@ -120,7 +120,7 @@ export function createInspectExplorerTool(client: EternumClient): AgentTool<any>
 /**
  * Inspect the market — AMM pool states, recent swaps, open orders, and player LP positions.
  */
-export function createInspectMarketTool(client: EternumClient): AgentTool<any> {
+function createInspectMarketTool(client: EternumClient): AgentTool<any> {
   return {
     name: "inspect_market",
     label: "Inspect Market",
@@ -153,7 +153,7 @@ export function createInspectMarketTool(client: EternumClient): AgentTool<any> {
 /**
  * Inspect a bank — pool states, recent swaps, and LP positions at a specific bank.
  */
-export function createInspectBankTool(client: EternumClient): AgentTool<any> {
+function createInspectBankTool(client: EternumClient): AgentTool<any> {
   return {
     name: "inspect_bank",
     label: "Inspect Bank",

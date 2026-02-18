@@ -1,6 +1,7 @@
 # Package Dependencies
 
-This document describes the three core package dependencies used by the onchain-agent and how they work together to provide game state access and blockchain interaction.
+This document describes the three core package dependencies used by the onchain-agent and how they work together to
+provide game state access and blockchain interaction.
 
 ## Overview
 
@@ -11,6 +12,7 @@ The onchain-agent relies on three main packages from the `@bibliothecadao` works
 3. **`@bibliothecadao/client`** - Headless client SDK for reading game state and submitting transactions
 
 These packages form a layered architecture:
+
 - **Torii** provides low-level data access (SQL queries, entity fetching)
 - **Core** provides game logic, types, and calculations
 - **Client** provides high-level abstractions over Torii + Core with caching and transaction helpers
@@ -19,25 +21,30 @@ These packages form a layered architecture:
 
 ## 1. @bibliothecadao/torii
 
-**Purpose**: Torii indexer integration - provides SQL query utilities and typed responses for querying the Eternum game database.
+**Purpose**: Torii indexer integration - provides SQL query utilities and typed responses for querying the Eternum game
+database.
 
 ### Key Exports Used
 
 #### SQL Query Utilities (`utils/sql.ts`)
+
 ```typescript
 import {
-  buildApiUrl,           // Constructs full API URL with encoded query
+  buildApiUrl, // Constructs full API URL with encoded query
   fetchWithErrorHandling, // Generic fetch wrapper with error handling
   RESOURCE_BALANCE_COLUMNS, // Column definitions for resource queries
-  TROOP_BALANCE_COLUMNS     // Column definitions for troop queries
+  TROOP_BALANCE_COLUMNS, // Column definitions for troop queries
 } from "@bibliothecadao/torii";
 ```
 
 **How onchain-agent uses them**:
+
 - `buildApiUrl` + `fetchWithErrorHandling` - Used in `factory-resolver.ts` to query factory deployment data
-- `RESOURCE_BALANCE_COLUMNS` / `TROOP_BALANCE_COLUMNS` - Used in `world-state.ts` to parse resource and troop balances from SQL results
+- `RESOURCE_BALANCE_COLUMNS` / `TROOP_BALANCE_COLUMNS` - Used in `world-state.ts` to parse resource and troop balances
+  from SQL results
 
 #### Factory Queries (`queries/sql/factory.ts`)
+
 ```typescript
 import { FACTORY_QUERIES } from "@bibliothecadao/torii";
 
@@ -76,6 +83,7 @@ Torii provides extensive type definitions for SQL responses in `types/sql.ts`:
 ### Configuration
 
 The onchain-agent accesses Torii through the `EternumClient`, which is initialized with:
+
 - `toriiUrl` - Base URL for Torii SQL API (e.g. `https://torii.eternum.realms.world`)
 - `cacheUrl` - Optional cache layer URL
 
@@ -83,11 +91,13 @@ The onchain-agent accesses Torii through the `EternumClient`, which is initializ
 
 ## 2. @bibliothecadao/client
 
-**Purpose**: Headless Eternum client SDK - provides high-level, cached read queries and transaction helpers for interacting with the game.
+**Purpose**: Headless Eternum client SDK - provides high-level, cached read queries and transaction helpers for
+interacting with the game.
 
 ### Key Exports Used
 
 #### EternumClient (Main Entry Point)
+
 ```typescript
 import { EternumClient } from "@bibliothecadao/client";
 
@@ -116,11 +126,12 @@ await client.buildings.create(...);
 ```
 
 #### Compute Functions
+
 ```typescript
 import {
-  computeStrength,        // Calculate troop strength (count × tier multiplier)
-  computeOutputAmount,    // Calculate market output amount
-  computeBuildingCost     // Calculate building construction cost
+  computeStrength, // Calculate troop strength (count × tier multiplier)
+  computeOutputAmount, // Calculate market output amount
+  computeBuildingCost, // Calculate building construction cost
 } from "@bibliothecadao/client";
 
 // Example: Calculate army strength
@@ -128,6 +139,7 @@ const strength = computeStrength(troopCount, tier); // tier: 1-3
 ```
 
 **How onchain-agent uses them**:
+
 - `computeStrength` - Used in `world-state.ts` to calculate guard/army strength from raw troop data
 - `computeOutputAmount` - Used in `simulation.ts` to simulate market trades
 - `computeBuildingCost` - Used in `simulation.ts` to calculate building costs
@@ -137,47 +149,51 @@ const strength = computeStrength(troopCount, tier); // tier: 1-3
 The `EternumClient` is composed of three layers:
 
 #### 1. View Layer (`client.view.*`)
+
 Provides cached, read-only queries for game state:
 
 ```typescript
 // View methods used by onchain-agent
-client.view.player(address)       // Player summary with structures/armies
-client.view.market()              // Market swaps and orders
-client.view.leaderboard({ limit }) // Leaderboard rankings
+client.view.player(address); // Player summary with structures/armies
+client.view.market(); // Market swaps and orders
+client.view.leaderboard({ limit }); // Leaderboard rankings
 ```
 
 **Key features**:
+
 - Built-in caching via `ViewCache` (TTL-based, configurable size)
 - Graceful fallbacks on errors (returns empty/default data)
 - Type-safe responses with well-defined view interfaces
 
 #### 2. Transaction Layer (`client.resources.*`, `client.combat.*`, etc.)
+
 Provides grouped transaction builders for write operations:
 
 ```typescript
 // Transaction groups (not yet used by onchain-agent but available)
-client.resources     // Resource transfers, minting
-client.troops        // Troop creation, movement
-client.combat        // Attack, raid, battle
-client.trade         // Market swaps, orders
-client.buildings     // Building placement, destruction
-client.bank          // Bank deposits, withdrawals
-client.hyperstructure // Hyperstructure contributions
-client.guild         // Guild management
-client.realm         // Realm upgrades
+client.resources; // Resource transfers, minting
+client.troops; // Troop creation, movement
+client.combat; // Attack, raid, battle
+client.trade; // Market swaps, orders
+client.buildings; // Building placement, destruction
+client.bank; // Bank deposits, withdrawals
+client.hyperstructure; // Hyperstructure contributions
+client.guild; // Guild management
+client.realm; // Realm upgrades
 ```
 
 #### 3. SQL Access (`client.sql.*`)
+
 Direct access to the underlying Torii SQL API:
 
 ```typescript
 // SQL methods used by onchain-agent (via world-state.ts)
-client.sql.fetchAllStructuresMapData()  // All structures with map data
-client.sql.fetchAllArmiesMapData()      // All armies with map data
-client.sql.fetchAllTiles()              // All tile biome/occupier data
-client.sql.fetchBattleLogs()            // Recent battle events
-client.sql.fetchResourceBalancesAndProduction(entityIds) // Resource balances
-client.sql.fetchBuildingsByStructures(entityIds)         // Building positions
+client.sql.fetchAllStructuresMapData(); // All structures with map data
+client.sql.fetchAllArmiesMapData(); // All armies with map data
+client.sql.fetchAllTiles(); // All tile biome/occupier data
+client.sql.fetchBattleLogs(); // Recent battle events
+client.sql.fetchResourceBalancesAndProduction(entityIds); // Resource balances
+client.sql.fetchBuildingsByStructures(entityIds); // Building positions
 ```
 
 ### Data Flow
@@ -202,14 +218,14 @@ The client is configured via `EternumClientConfig`:
 
 ```typescript
 interface EternumClientConfig {
-  manifest: any;           // Dojo manifest (contracts, ABIs)
-  rpcUrl: string;          // Starknet RPC URL
-  toriiUrl: string;        // Torii indexer URL
-  cacheUrl?: string;       // Optional cache layer URL
+  manifest: any; // Dojo manifest (contracts, ABIs)
+  rpcUrl: string; // Starknet RPC URL
+  toriiUrl: string; // Torii indexer URL
+  cacheUrl?: string; // Optional cache layer URL
   vrfProviderAddress: string; // VRF contract address
-  cacheTtlMs?: number;     // Cache TTL (default: 30000ms)
-  cacheMaxSize?: number;   // Max cache entries (default: 1000)
-  logger?: ClientLogger;   // Custom logger (default: console)
+  cacheTtlMs?: number; // Cache TTL (default: 30000ms)
+  cacheMaxSize?: number; // Max cache entries (default: 1000)
+  logger?: ClientLogger; // Custom logger (default: console)
 }
 ```
 
@@ -224,11 +240,13 @@ interface EternumClientConfig {
 While the onchain-agent doesn't directly import from `@bibliothecadao/eternum`, the package provides:
 
 #### Game Constants & Configuration
+
 - Resource types, building types, structure categories
 - Game tick rates, production rates, upgrade costs
 - Combat multipliers, stamina costs
 
 #### Type Definitions (`@bibliothecadao/types`)
+
 The core package re-exports types from `@bibliothecadao/types`:
 
 ```typescript
@@ -271,6 +289,7 @@ enum Direction {
 ```
 
 #### Utility Functions
+
 - Hex coordinate math (distance, neighbors, pathfinding)
 - Resource arrival calculations
 - Biome generation algorithms
@@ -278,6 +297,7 @@ enum Direction {
 ### Indirect Usage
 
 The onchain-agent benefits from the core package indirectly through:
+
 1. **Type safety** - Types defined in core are used by Torii and Client
 2. **Consistency** - Constants ensure calculations match on-chain logic
 3. **Utilities** - Compute functions in Client use core utilities under the hood
@@ -383,15 +403,12 @@ import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothe
 
 export const resolveWorldContracts = async (
   factorySqlBaseUrl: string,
-  worldName: string
+  worldName: string,
 ): Promise<Record<string, string>> => {
   const paddedName = nameToPaddedFelt(worldName);
   const query = FACTORY_QUERIES.WORLD_CONTRACTS_BY_PADDED_NAME(paddedName);
   const url = buildApiUrl(factorySqlBaseUrl, query);
-  const rows = await fetchWithErrorHandling<FactoryContractRow>(
-    url,
-    "Factory SQL failed"
-  );
+  const rows = await fetchWithErrorHandling<FactoryContractRow>(url, "Factory SQL failed");
 
   const map: Record<string, string> = {};
   for (const row of rows) {
@@ -445,6 +462,7 @@ All three packages are part of the same monorepo workspace and use `workspace:*`
 ```
 
 This ensures:
+
 - Always using the latest local versions during development
 - Consistent versioning across the monorepo
 - Simplified dependency updates (single `pnpm install` at root)
@@ -461,7 +479,7 @@ Fetch multiple independent data sources in parallel to minimize latency:
 const [structures, armies, tiles] = await Promise.all([
   client.sql.fetchAllStructuresMapData(),
   client.sql.fetchAllArmiesMapData(),
-  client.sql.fetchAllTiles()
+  client.sql.fetchAllTiles(),
 ]);
 ```
 
@@ -492,7 +510,7 @@ const strength = computeStrength(count, tier);
 return {
   entityId: raw.entity_id,
   strength,
-  troopSummary: `${count} ${category} T${tier}`
+  troopSummary: `${count} ${category} T${tier}`,
 };
 ```
 
@@ -509,6 +527,7 @@ The `EternumClient` uses a TTL-based cache to reduce redundant queries:
 - **Cache keys**: Derived from method name + parameters (e.g., `player:0x123abc`)
 
 **When to bypass cache**:
+
 - Real-time transaction confirmations (use `client.sql.*` directly)
 - High-frequency updates (tick-based state changes)
 
@@ -539,6 +558,7 @@ await client.sql.fetchResourceBalances(entityIds);
 All three packages follow consistent error handling patterns:
 
 ### Torii (`fetchWithErrorHandling`)
+
 ```typescript
 try {
   const result = await fetchWithErrorHandling<T>(url, "Query failed");
@@ -550,6 +570,7 @@ try {
 ```
 
 ### Client (ViewClient)
+
 ```typescript
 try {
   const data = await this.sql.fetchPlayerStructures(owner);
@@ -562,6 +583,7 @@ try {
 ```
 
 **Onchain-agent strategy**:
+
 - Let Torii errors propagate for factory queries (critical)
 - Rely on Client fallbacks for view queries (graceful)
 - Wrap high-level operations in try-catch for logging
@@ -598,9 +620,11 @@ The onchain-agent leverages three tightly integrated packages:
 - **Core** (indirectly) provides shared types, constants, and utilities
 
 Together, they enable the onchain-agent to:
+
 1. Efficiently query game state from the Torii indexer
 2. Build rich, agent-friendly world state representations
 3. Simulate game actions using compute functions
 4. Submit transactions to the blockchain (future)
 
-The layered architecture ensures separation of concerns while maintaining type safety and performance through caching and batch queries.
+The layered architecture ensures separation of concerns while maintaining type safety and performance through caching
+and batch queries.

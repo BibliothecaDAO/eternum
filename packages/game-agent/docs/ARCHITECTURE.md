@@ -1,8 +1,7 @@
 # Game Agent Architecture
 
-**Package**: `@bibliothecadao/game-agent`
-**Version**: 0.1.0
-**Description**: Autonomous agent framework for playing onchain games with self-evolving strategies
+**Package**: `@bibliothecadao/game-agent` **Version**: 0.1.0 **Description**: Autonomous agent framework for playing
+onchain games with self-evolving strategies
 
 ## Table of Contents
 
@@ -21,7 +20,9 @@
 
 ## Purpose
 
-The `game-agent` package provides a game-agnostic framework for building autonomous AI agents that can play onchain games. It separates the core agent infrastructure (tick loops, decision logging, personality system, tool definitions) from game-specific logic through the **Adapter Pattern**.
+The `game-agent` package provides a game-agnostic framework for building autonomous AI agents that can play onchain
+games. It separates the core agent infrastructure (tick loops, decision logging, personality system, tool definitions)
+from game-specific logic through the **Adapter Pattern**.
 
 ### Key Features
 
@@ -44,11 +45,11 @@ Generic representation of any game state at a given tick:
 
 ```typescript
 interface WorldState<TEntity = unknown> {
-  tick: number;           // Game tick number
-  timestamp: number;      // Unix timestamp
-  entities: TEntity[];    // Game-specific entities (units, buildings, cards, etc.)
-  resources?: Map<string, number>;  // Optional resource tracking
-  raw?: unknown;          // Raw state data for game-specific needs
+  tick: number; // Game tick number
+  timestamp: number; // Unix timestamp
+  entities: TEntity[]; // Game-specific entities (units, buildings, cards, etc.)
+  resources?: Map<string, number>; // Optional resource tracking
+  raw?: unknown; // Raw state data for game-specific needs
 }
 ```
 
@@ -71,14 +72,14 @@ Actions are the agent's interface to the game:
 
 ```typescript
 interface GameAction {
-  type: string;                        // e.g., "move", "build", "attack"
-  params: Record<string, unknown>;     // Action parameters
+  type: string; // e.g., "move", "build", "attack"
+  params: Record<string, unknown>; // Action parameters
 }
 
 interface ActionDefinition {
   type: string;
   description: string;
-  params: ActionParamSchema[];         // Parameter schemas for LLM validation
+  params: ActionParamSchema[]; // Parameter schemas for LLM validation
 }
 ```
 
@@ -151,6 +152,7 @@ data/
 Creates a fully-configured game agent instance.
 
 **Options:**
+
 - `adapter` — GameAdapter implementation for your game
 - `dataDir` — Path to agent's data directory (soul, tasks, skills)
 - `model?` — LLM model (defaults to provider config)
@@ -163,17 +165,18 @@ Creates a fully-configured game agent instance.
 - `actionDefs?` — Action definitions for validation and list_actions tool
 
 **Returns:**
+
 ```typescript
 interface GameAgentResult {
-  agent: Agent;                           // Core LLM agent
-  tools: AgentTool[];                     // All registered tools
-  ticker: TickLoop;                       // Tick loop controller
-  recorder: DecisionRecorder;             // Decision logger
-  enqueuePrompt(prompt: string): Promise<void>;  // Queue agent prompts
-  reloadPrompt(): void;                   // Reload soul/tasks from disk
-  setDataDir(dataDir: string): void;      // Hot-swap data directory
-  getDataDir(): string;                   // Current data directory
-  dispose(): Promise<void>;               // Cleanup and shutdown
+  agent: Agent; // Core LLM agent
+  tools: AgentTool[]; // All registered tools
+  ticker: TickLoop; // Tick loop controller
+  recorder: DecisionRecorder; // Decision logger
+  enqueuePrompt(prompt: string): Promise<void>; // Queue agent prompts
+  reloadPrompt(): void; // Reload soul/tasks from disk
+  setDataDir(dataDir: string): void; // Hot-swap data directory
+  getDataDir(): string; // Current data directory
+  dispose(): Promise<void>; // Cleanup and shutdown
 }
 ```
 
@@ -208,23 +211,26 @@ Manages the periodic game tick cycle.
 Creates a non-overlapping tick loop that calls `onTick` at regular intervals.
 
 **Options:**
+
 - `intervalMs` — Tick interval in milliseconds
 - `onTick` — Async callback executed each tick
 - `onError?` — Error handler
 
 **Interface:**
+
 ```typescript
 interface TickLoop {
-  start(): void;                         // Begin ticking
-  stop(): void;                          // Stop ticking
-  setIntervalMs(intervalMs: number): void;  // Update interval (live)
-  readonly intervalMs: number;           // Current interval
-  readonly isRunning: boolean;           // Tick loop state
-  readonly tickCount: number;            // Total ticks executed
+  start(): void; // Begin ticking
+  stop(): void; // Stop ticking
+  setIntervalMs(intervalMs: number): void; // Update interval (live)
+  readonly intervalMs: number; // Current interval
+  readonly isRunning: boolean; // Tick loop state
+  readonly tickCount: number; // Total ticks executed
 }
 ```
 
 **Guarantees:**
+
 - **Non-overlapping**: Next tick waits for previous `onTick` to complete
 - **Error resilient**: Errors call `onError` but don't stop the loop
 - **Dynamic interval**: Interval can be updated while running
@@ -232,6 +238,7 @@ interface TickLoop {
 #### `formatTickPrompt(state: WorldState): string`
 
 Default tick prompt formatter. Instructs agent to:
+
 1. Use `observe_game` for detailed state inspection
 2. Use `list_actions` to look up available actions
 3. Load relevant skills from SKILL.md files
@@ -252,6 +259,7 @@ Cron-style scheduler for recurring agent jobs.
 Creates a heartbeat scheduler that reads `HEARTBEAT.md` and executes jobs on cron schedules.
 
 **Options:**
+
 - `getHeartbeatPath` — Function returning path to HEARTBEAT.md
 - `onRun` — Callback for job execution
 - `pollIntervalMs?` — How often to check schedules (default: 15000)
@@ -265,19 +273,21 @@ version: 1
 jobs:
   - id: scout-routine
     enabled: true
-    schedule: "*/15 * * * *"  # Every 15 minutes
+    schedule: "*/15 * * * *" # Every 15 minutes
     prompt: "Scout all unexplored areas"
-    mode: observe              # or "act"
+    mode: observe # or "act"
     timeoutSec: 60
 ```
 
 **Cron Format:** `minute hour dayOfMonth month dayOfWeek` (standard 5-field cron)
 
 **Job Modes:**
+
 - `observe` — Agent can only read state and files (no on-chain actions)
 - `act` — Agent can execute on-chain actions
 
 **Execution Guarantees:**
+
 - Jobs run once per minute (deduplicated by `minuteKey`)
 - Disabled jobs are skipped
 - Invalid cron schedules are logged via `onError`
@@ -308,8 +318,7 @@ soulUpdated: false
 
 ## Reasoning
 
-I observed enemy units approaching from the north. Moving south to avoid engagement
-while I build up forces.
+I observed enemy units approaching from the north. Moving south to avoid engagement while I build up forces.
 
 ## Action
 
@@ -328,13 +337,14 @@ while I build up forces.
 interface DecisionRecorder {
   record(decision: Decision): Promise<void>;
   getDecisions(options?: {
-    since?: number;    // Filter by tick
-    limit?: number;    // Max decisions to return
+    since?: number; // Filter by tick
+    limit?: number; // Max decisions to return
   }): Promise<Decision[]>;
 }
 ```
 
 **Usage:**
+
 - Automatically created by `createGameAgent` in `{dataDir}/decisions/`
 - Filename: `{tick}-{timestamp}.md`
 - Sorted chronologically for analysis
@@ -368,9 +378,11 @@ last_modified: tick-42
 # Soul
 
 ## Identity
+
 I am a strategic game agent...
 
 ## Personality Traits
+
 - Aggression: 5/10
 - Greed: 5/10
 - Paranoia: 5/10
@@ -378,25 +390,29 @@ I am a strategic game agent...
 - Adaptability: 7/10
 
 ## Strategic Philosophy
+
 - Information first. I can't exploit what I can't see.
 - Economy enables everything. Outproduce, then overwhelm.
 - Never fight fair. Only engage with advantage.
 
 ## Principles (hard rules)
+
 - NEVER all-in. Always keep a reserve.
 - NEVER ignore scouting for more than 30 ticks.
 
 ## What I've Learned About This Game
+
 (Agent updates this section through self-reflection)
 
 ## What I've Learned About My Opponent
+
 (Agent updates this section based on observations)
 ```
 
 **Task Lists** (`tasks/*.md`):
 
-Organized by domain (combat.md, economy.md, exploration.md, priorities.md, etc.).
-The agent reads and updates these files via the `write` tool.
+Organized by domain (combat.md, economy.md, exploration.md, priorities.md, etc.). The agent reads and updates these
+files via the `write` tool.
 
 ---
 
@@ -407,11 +423,13 @@ Agent self-improvement system.
 #### `buildEvolutionPrompt(options): string`
 
 Builds a prompt for LLM-based performance analysis. The prompt instructs an LLM to:
+
 1. Analyze the agent's decision history
 2. Identify patterns (successful strategies, recurring mistakes)
 3. Suggest improvements to soul, task lists, or skills
 
 **Options:**
+
 - `dataDir` — Path to agent data
 - `maxDecisions?` — Number of recent decisions to analyze
 
@@ -422,10 +440,10 @@ Parses LLM response into structured suggestions:
 ```typescript
 interface EvolutionSuggestion {
   target: "soul" | "task_list" | "skill";
-  domain?: string;              // For task_list/skill targets
+  domain?: string; // For task_list/skill targets
   action: "update" | "create";
-  content: string;              // New/updated content
-  reasoning: string;            // Why this change helps
+  content: string; // New/updated content
+  reasoning: string; // Why this change helps
 }
 ```
 
@@ -453,23 +471,27 @@ Tool definitions for agent interaction with the game.
 #### Core Game Tools
 
 **`observe_game`**
+
 - Calls `adapter.getWorldState()`
 - Returns serialized world state (entities, resources, tick)
 - Optional `filter` parameter for entity filtering
 
 **`list_actions`**
+
 - Returns catalog of available actions and their parameter schemas
 - Created when `actionDefs` are provided to `createGameAgent`
 - Optional `filter` parameter to search by keyword
 - Enables the agent to look up valid action types before calling execute/simulate
 
 **`execute_action(actionType, params)`**
+
 - Calls `adapter.executeAction()`
 - Returns success status, transaction hash, and result data
 - When `actionDefs` are provided, `actionType` is constrained to valid enum
 - Logs response to `debug-tool-responses.log` for debugging
 
 **`simulate_action(actionType, params)`**
+
 - Calls `adapter.simulateAction()`
 - Returns predicted outcome, cost estimates, and success status
 - Used for planning and decision validation
@@ -478,10 +500,12 @@ Tool definitions for agent interaction with the game.
 #### Data Tools (when `includeDataTools: true`)
 
 **`read(path)`**
+
 - Reads files from `dataDir` (scoped access)
 - Provided by `@mariozechner/pi-coding-agent`
 
 **`write(path, content)`**
+
 - Writes files to `dataDir` (scoped access)
 - Used for updating soul, tasks, skills
 - Provided by `@mariozechner/pi-coding-agent`
@@ -489,10 +513,12 @@ Tool definitions for agent interaction with the game.
 #### Config Tools (when `runtimeConfigManager` provided)
 
 **`get_agent_config()`**
+
 - Returns current runtime configuration
 - Includes tick rate, model, world connectivity, etc.
 
 **`set_agent_config(changes, reason?)`**
+
 - Applies live configuration changes
 - Changes: `[{ path: "tickIntervalMs", value: 30000 }]`
 - Supports: tick rate, model, RPC URL, Torii URL, world address, data directory
@@ -582,10 +608,13 @@ heartbeat.start();
 
 ```typescript
 // Agent can call set_agent_config tool, or app can call directly:
-await runtimeConfigManager.applyChanges([
-  { path: "tickIntervalMs", value: 30000 },
-  { path: "modelId", value: "claude-opus-4-6" },
-], "Tuning for faster iteration");
+await runtimeConfigManager.applyChanges(
+  [
+    { path: "tickIntervalMs", value: 30000 },
+    { path: "modelId", value: "claude-opus-4-6" },
+  ],
+  "Tuning for faster iteration",
+);
 ```
 
 - Changes are queued and applied sequentially
@@ -711,7 +740,9 @@ const customTool: AgentTool = {
     // Implementation
     return {
       content: [{ type: "text", text: "Result" }],
-      details: { /* metadata */ },
+      details: {
+        /* metadata */
+      },
     };
   },
 };
@@ -743,6 +774,7 @@ The package includes starter templates in `templates/`:
 ### `templates/soul.md`
 
 Default agent personality with balanced traits. Emphasizes:
+
 - Information gathering before committing
 - Economic advantage as foundation
 - Avoiding fair fights
@@ -777,18 +809,22 @@ description: When and why to use this skill
 # Skill Name
 
 ## When To Use
+
 - Condition 1
 - Condition 2
 
 ## Build Order / Strategy
 
 ### Phase 1: ...
+
 ...
 
 ## Transition Points
+
 - When to switch to another skill
 
 ## Common Mistakes
+
 - Anti-patterns to avoid
 ```
 
@@ -800,6 +836,7 @@ cp -r packages/game-agent/templates/* /path/to/agent-data/
 ```
 
 Agent can then read skills with:
+
 ```typescript
 // Agent calls: read("skills/early-game-opening/SKILL.md")
 ```
@@ -823,7 +860,10 @@ class MyGameAdapter implements GameAdapter {
       tick: this.currentTick,
       timestamp: Date.now(),
       entities: await this.fetchEntities(),
-      resources: new Map([["gold", 1000], ["wood", 500]]),
+      resources: new Map([
+        ["gold", 1000],
+        ["wood", 500],
+      ]),
     };
   }
 
@@ -835,7 +875,12 @@ class MyGameAdapter implements GameAdapter {
 
   async simulateAction(action: GameAction) {
     // Dry-run simulation
-    return { success: true, outcome: { /* predicted result */ } };
+    return {
+      success: true,
+      outcome: {
+        /* predicted result */
+      },
+    };
   }
 }
 
@@ -876,26 +921,22 @@ See `client/apps/onchain-agent/src/index.ts` for complete production integration
 
 ### Core Dependencies
 
-- **`@mariozechner/pi-agent-core`** (^0.52.7)
-  Base Agent class, tool system, streaming
+- **`@mariozechner/pi-agent-core`** (^0.52.7) Base Agent class, tool system, streaming
 
-- **`@mariozechner/pi-ai`** (^0.52.7)
-  LLM model abstraction, message types
+- **`@mariozechner/pi-ai`** (^0.52.7) LLM model abstraction, message types
 
-- **`@mariozechner/pi-coding-agent`** (^0.52.7)
-  File tools (read/write), coding utilities
+- **`@mariozechner/pi-coding-agent`** (^0.52.7) File tools (read/write), coding utilities
 
-- **`@sinclair/typebox`** (^0.34.41)
-  Runtime type validation for tool parameters
+- **`@sinclair/typebox`** (^0.34.41) Runtime type validation for tool parameters
 
-- **`yaml`** (^2.3.0)
-  YAML parsing for HEARTBEAT.md and frontmatter
+- **`yaml`** (^2.3.0) YAML parsing for HEARTBEAT.md and frontmatter
 
 ### Integration Example: Eternum
 
 The `onchain-agent` app (`client/apps/onchain-agent`) integrates game-agent with Eternum:
 
 **Key Files:**
+
 - **`src/adapter/eternum-adapter.ts`** — Implements `GameAdapter<EternumWorldState>`
 - **`src/adapter/world-state.ts`** — Builds EternumWorldState from client queries
 - **`src/adapter/action-registry.ts`** — Defines all Eternum actions (pillage, attack, transfer, explore, etc.)
@@ -903,6 +944,7 @@ The `onchain-agent` app (`client/apps/onchain-agent`) integrates game-agent with
 - **`src/index.ts`** — Main entry point, creates agent with runtime config manager
 
 **EternumGameAdapter:**
+
 ```typescript
 class EternumGameAdapter implements GameAdapter<EternumWorldState> {
   constructor(
@@ -926,6 +968,7 @@ class EternumGameAdapter implements GameAdapter<EternumWorldState> {
 ```
 
 **Action Definitions Example:**
+
 ```typescript
 const actionDefs: ActionDefinition[] = [
   {
@@ -954,5 +997,6 @@ The `game-agent` package provides a complete framework for autonomous game-playi
 - **Extensible**: Custom tools, action definitions, formatters
 
 For implementation examples, see:
+
 - **Package tests**: `packages/game-agent/test/game-agent.test.ts`
 - **Eternum integration**: `client/apps/onchain-agent/src/`

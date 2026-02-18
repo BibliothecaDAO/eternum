@@ -12,18 +12,14 @@ interface ActionParamSchema {
   required?: boolean;
 }
 
-export interface ActionDefinition {
+interface ActionDefinition {
   type: string;
   description: string;
   params: ActionParamSchema[];
 }
 import type { Account } from "starknet";
 
-export type ActionHandler = (
-  client: EternumClient,
-  signer: Account,
-  params: Record<string, unknown>,
-) => Promise<ActionResult>;
+type ActionHandler = (client: EternumClient, signer: Account, params: Record<string, unknown>) => Promise<ActionResult>;
 
 // ---------------------------------------------------------------------------
 // Registry internals

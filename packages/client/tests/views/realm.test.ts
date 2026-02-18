@@ -245,18 +245,16 @@ describe("ViewClient.mapArea", () => {
         { entity_id: 1, coord_x: 5, coord_y: 5, owner: "0x1", category: "Realm", name: "A", level: 1 },
         { entity_id: 2, coord_x: 100, coord_y: 100, owner: "0x2", category: "Bank", name: "B", level: 1 },
       ]),
-      fetchAllArmiesMapData: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            entity_id: 10,
-            coord_x: 6,
-            coord_y: 6,
-            owner_address: "0x1",
-            stamina_amount: "0x50",
-            battle_cooldown_end: null,
-          },
-        ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([
+        {
+          entity_id: 10,
+          coord_x: 6,
+          coord_y: 6,
+          owner_address: "0x1",
+          stamina_amount: "0x50",
+          battle_cooldown_end: null,
+        },
+      ]),
       fetchAllTiles: vi.fn().mockResolvedValue([
         { col: 5, row: 5, biome: "forest", explored: true, occupier_id: null },
         { col: 200, row: 200, biome: "desert", explored: false, occupier_id: null },
@@ -364,18 +362,16 @@ describe("ViewClient.player", () => {
       fetchStructuresByOwner: vi
         .fn()
         .mockResolvedValue([{ entity_id: 1, category: "Realm", name: "MyRealm", coord_x: 5, coord_y: 5, level: 2 }]),
-      fetchAllArmiesMapData: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            entity_id: 10,
-            owner_address: "0xPlayer",
-            coord_x: 6,
-            coord_y: 6,
-            stamina_amount: "0x46",
-            battle_cooldown_end: 9999,
-          },
-        ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([
+        {
+          entity_id: 10,
+          owner_address: "0xPlayer",
+          coord_x: 6,
+          coord_y: 6,
+          stamina_amount: "0x46",
+          battle_cooldown_end: 9999,
+        },
+      ]),
       fetchPlayerLeaderboard: vi
         .fn()
         .mockResolvedValue([

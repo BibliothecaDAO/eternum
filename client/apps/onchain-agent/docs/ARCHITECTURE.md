@@ -1,14 +1,19 @@
 # Onchain Agent Architecture
 
-**Axis** is an autonomous AI agent that plays the Eternum game on StarkNet. It runs as a terminal application (TUI + CLI), connecting to game worlds via Cartridge Controller sessions and executing on-chain actions through an LLM-driven agent loop.
+**Axis** is an autonomous AI agent that plays the Eternum game on StarkNet. It runs as a terminal application (TUI +
+CLI), connecting to game worlds via Cartridge Controller sessions and executing on-chain actions through an LLM-driven
+agent loop.
 
 ## Purpose
 
 The onchain-agent app (`client/apps/onchain-agent/`) provides:
 
-1. **Zero-config world discovery** — automatically finds and connects to active Eternum game worlds on slot/sepolia/mainnet chains via the Cartridge Factory SQL API
-2. **Browser-based authentication** — uses Cartridge Controller sessions (Passkeys/WebAuthn) without storing private keys locally
-3. **Autonomous gameplay** — tick-based agent loop with LLM decision-making, action execution, and optional cron-style recurring jobs
+1. **Zero-config world discovery** — automatically finds and connects to active Eternum game worlds on
+   slot/sepolia/mainnet chains via the Cartridge Factory SQL API
+2. **Browser-based authentication** — uses Cartridge Controller sessions (Passkeys/WebAuthn) without storing private
+   keys locally
+3. **Autonomous gameplay** — tick-based agent loop with LLM decision-making, action execution, and optional cron-style
+   recurring jobs
 4. **Live reconfiguration** — runtime config updates (RPC URLs, tick intervals, model selection) without restart
 5. **Standalone binary packaging** — Bun-compiled cross-platform releases for darwin/linux (x64/arm64)
 
@@ -75,22 +80,30 @@ The onchain-agent app (`client/apps/onchain-agent/`) provides:
 ## Entry Points
 
 ### cli.ts
+
 CLI router supporting four commands:
 
 - **`run`** (default) — prints ASCII banner, imports `./index`, calls `main()`, exits on SIGINT/SIGTERM
-- **`init`** — scaffolds `~/.eternum-agent/data/` (soul.md, HEARTBEAT.md, tasks/), `~/.eternum-agent/.cartridge/`, and `.env.example`
+- **`init`** — scaffolds `~/.eternum-agent/data/` (soul.md, HEARTBEAT.md, tasks/), `~/.eternum-agent/.cartridge/`, and
+  `.env.example`
 - **`doctor`** — validates config paths, manifest existence, API keys, directory writability
 - **`--version`** — reads version from `package.json`
 
-**Bundling:** `resolveBundledPath()` detects Bun binary runtime (`$bunfs` in import.meta.url) and resolves paths relative to `process.execPath` instead of module location.
+**Bundling:** `resolveBundledPath()` detects Bun binary runtime (`$bunfs` in import.meta.url) and resolves paths
+relative to `process.execPath` instead of module location.
 
 ### index.ts
+
 Main orchestration flow:
 
 1. **Load config** (`loadConfig()` from `config.ts`) — env vars + defaults
-2. **World discovery** (if RPC/Torii/WorldAddress not all set) — `discoverAllWorlds()` queries Factory SQL on slot/sepolia/mainnet, filters by game status (skip ended worlds), presents TUI picker or auto-selects by `SLOT_NAME`. Builds `WorldProfile` with live contract addresses and `resolvedManifest` via `buildResolvedManifest()`
-3. **Session setup** — `ControllerSession.connect()` checks for existing session on disk, launches browser auth if needed
-4. **Create runtime services** — `EternumClient`, `SessionAccount`, `EternumGameAdapter`, wrapped in `MutableGameAdapter` for hot-swap
+2. **World discovery** (if RPC/Torii/WorldAddress not all set) — `discoverAllWorlds()` queries Factory SQL on
+   slot/sepolia/mainnet, filters by game status (skip ended worlds), presents TUI picker or auto-selects by `SLOT_NAME`.
+   Builds `WorldProfile` with live contract addresses and `resolvedManifest` via `buildResolvedManifest()`
+3. **Session setup** — `ControllerSession.connect()` checks for existing session on disk, launches browser auth if
+   needed
+4. **Create runtime services** — `EternumClient`, `SessionAccount`, `EternumGameAdapter`, wrapped in
+   `MutableGameAdapter` for hot-swap
 5. **Create game agent** — `createGameAgent()` from `@bibliothecadao/game-agent` with:
    - `adapter`: game world interface
    - `dataDir`: `~/.eternum-agent/data/` (soul.md, tasks/, HEARTBEAT.md)
@@ -100,20 +113,27 @@ Main orchestration flow:
    - `extraTools`: `createInspectTools(client)` for detailed queries
    - `actionDefs`: `getActionDefinitions()` from action registry
    - `formatTickPrompt`: `formatEternumTickPrompt` from world-state
-6. **Launch TUI** — `createApp({ agent, ticker })` renders header, chat log, input area. Returns `addSystemMessage` which is assigned to a `systemMessage` lazy reference used by all post-TUI logging (config changes, shutdown messages, errors)
+6. **Launch TUI** — `createApp({ agent, ticker })` renders header, chat log, input area. Returns `addSystemMessage`
+   which is assigned to a `systemMessage` lazy reference used by all post-TUI logging (config changes, shutdown
+   messages, errors)
 7. **Start loops** — `ticker.start()` if `loopEnabled`, `heartbeat.start()` for cron-style jobs
-8. **Graceful shutdown** — `createShutdownGate()` returns a promise that resolves on SIGINT/SIGTERM, cleans up agent/ticker/client
+8. **Graceful shutdown** — `createShutdownGate()` returns a promise that resolves on SIGINT/SIGTERM, cleans up
+   agent/ticker/client
 
-**Live reconfiguration:** `applyChangesInternal()` supports hot-swapping RPC/Torii/WorldAddress (reconnects session + client), tick interval, model provider/ID, loop enabled/disabled, and data directory. `CONFIG_PATH_ALIASES` maps dotted paths (e.g. `world.rpcUrl`) to flat config keys.
+**Live reconfiguration:** `applyChangesInternal()` supports hot-swapping RPC/Torii/WorldAddress (reconnects session +
+client), tick interval, model provider/ID, loop enabled/disabled, and data directory. `CONFIG_PATH_ALIASES` maps dotted
+paths (e.g. `world.rpcUrl`) to flat config keys.
 
 ### config.ts
+
 Env-driven configuration with fallback defaults:
 
 - **CHAIN** (default: `slot`) → chain ID fallback
 - **RPC_URL**, **TORII_URL**, **WORLD_ADDRESS** — if all set, skips world discovery
 - **MANIFEST_PATH** — defaults to `~/.eternum-agent/manifest.json` (derived from discovery)
 - **GAME_NAME** (default: `eternum`) — filters manifest tags for session policies
-- **CHAIN_ID** — auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3` for Katana, `SN_MAIN`/`SN_SEPOLIA` for L1)
+- **CHAIN_ID** — auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3` for Katana, `SN_MAIN`/`SN_SEPOLIA` for
+  L1)
 - **SESSION_BASE_PATH** (default: `~/.eternum-agent/.cartridge/`) — session.json storage
 - **TICK_INTERVAL_MS** (default: 60000) — tick loop interval
 - **LOOP_ENABLED** (default: true) — auto-start tick loop
@@ -124,20 +144,24 @@ Env-driven configuration with fallback defaults:
 `parseChain()`, `parseBoolean()`, `parsePositiveIntervalMs()` handle string→typed coercion with fallbacks.
 
 ### runtime-paths.ts
+
 Path resolution for bundled vs. dev environments:
 
 - **`isBunBinaryRuntime()`** — detects Bun compiled binary (`$bunfs` or `~BUN` in import.meta.url)
 - **`resolveBundledPath(...segments)`** — returns path relative to binary location (bundled) or package root (dev)
 - **`resolveAgentHome(env)`** — `$ETERNUM_AGENT_HOME` or `~/.eternum-agent`
-- **`resolveDefaultManifestPath()`**, **`resolveDefaultDataDir()`**, **`resolveDefaultSessionBasePath()`** — derive default paths from agent home
+- **`resolveDefaultManifestPath()`**, **`resolveDefaultDataDir()`**, **`resolveDefaultSessionBasePath()`** — derive
+  default paths from agent home
 
 Used by CLI init/doctor and config loading.
 
 ## World Discovery & Factory System
 
-The agent auto-discovers active game worlds by querying the Cartridge Factory SQL API, eliminating manual RPC/Torii/WorldAddress configuration.
+The agent auto-discovers active game worlds by querying the Cartridge Factory SQL API, eliminating manual
+RPC/Torii/WorldAddress configuration.
 
 ### discovery.ts
+
 **Core flow:**
 
 1. **`discoverAllWorlds()`** — parallel queries to Factory SQL on slot/sepolia/mainnet
@@ -154,7 +178,8 @@ The agent auto-discovers active game worlds by querying the Cartridge Factory SQ
    - Calls `resolveWorldContracts()` → Factory SQL query for contract addresses by selector
    - Calls `resolveWorldDeploymentFromFactory()` → extracts world address, RPC URL
    - Queries `s1_eternum-WorldConfig` for entry token, fee token addresses
-   - Returns `WorldProfile` with `{ name, chain, toriiBaseUrl, rpcUrl, worldAddress, contractsBySelector, entryTokenAddress, feeTokenAddress, fetchedAt }`
+   - Returns `WorldProfile` with
+     `{ name, chain, toriiBaseUrl, rpcUrl, worldAddress, contractsBySelector, entryTokenAddress, feeTokenAddress, fetchedAt }`
 7. **`buildResolvedManifest(chain, profile)`** — patches base manifest:
    - Loads `contracts/game/manifest_{chain}.json` from repo
    - Calls `patchManifestWithFactory()` to replace contract addresses with live Factory addresses
@@ -164,31 +189,40 @@ The agent auto-discovers active game worlds by querying the Cartridge Factory SQ
 
 - Factory SQL: `https://api.cartridge.gg/x/eternum-factory-{chain}/torii/sql` (slot-a for slot/slottest/local)
 - Torii: `https://api.cartridge.gg/x/{worldName}/torii`
-- RPC fallback: `https://api.cartridge.gg/x/eternum-blitz-slot-3/katana` (slot), `https://api.cartridge.gg/x/starknet/{sepolia|mainnet}` (L1)
+- RPC fallback: `https://api.cartridge.gg/x/eternum-blitz-slot-3/katana` (slot),
+  `https://api.cartridge.gg/x/starknet/{sepolia|mainnet}` (L1)
 
 ### factory-resolver.ts
+
 **Contract & deployment resolution:**
 
-- **`resolveWorldContracts(factorySqlBaseUrl, worldName)`** — queries Factory SQL `[wf-WorldContractRegistered]` table, returns `Record<normalizedSelector, contractAddress>`
-- **`resolveWorldDeploymentFromFactory(factorySqlBaseUrl, worldName)`** — queries `[wf-WorldDeployed]` table, extracts `worldAddress` and `rpcUrl` from nested `data` field or direct columns
+- **`resolveWorldContracts(factorySqlBaseUrl, worldName)`** — queries Factory SQL `[wf-WorldContractRegistered]` table,
+  returns `Record<normalizedSelector, contractAddress>`
+- **`resolveWorldDeploymentFromFactory(factorySqlBaseUrl, worldName)`** — queries `[wf-WorldDeployed]` table, extracts
+  `worldAddress` and `rpcUrl` from nested `data` field or direct columns
 - **`isToriiAvailable(toriiBaseUrl)`** — HEAD request to `/sql` endpoint
 
 **SQL query helper:** uses `buildApiUrl()` and `fetchWithErrorHandling()` from `@bibliothecadao/torii`.
 
 ### factory-sql.ts
+
 **Felt252 decoding & SQL helpers:**
 
-- **`decodePaddedFeltAscii(hex)`** — converts padded felt252 hex to ASCII string (using `shortString.decodeShortString()` from starknet.js, fallback to manual decode)
+- **`decodePaddedFeltAscii(hex)`** — converts padded felt252 hex to ASCII string (using
+  `shortString.decodeShortString()` from starknet.js, fallback to manual decode)
 - **`extractNameFelt(row)`** — extracts `name` field from SQL row (direct column or nested `data.name`)
 - **`fetchFactoryRows(factorySqlBaseUrl, query)`** — GET request with query string, returns JSON array
 
 ### manifest-patcher.ts
+
 **Manifest address patching:**
 
-- **`patchManifestWithFactory(baseManifest, worldAddress, contractsBySelector)`** — deep clone manifest, update `world.address`, map `contracts[].address` by matching `selector` to Factory-resolved addresses
+- **`patchManifestWithFactory(baseManifest, worldAddress, contractsBySelector)`** — deep clone manifest, update
+  `world.address`, map `contracts[].address` by matching `selector` to Factory-resolved addresses
 - Returns patched manifest ready for `ControllerSession` policy construction
 
 ### normalize.ts
+
 **String normalization:**
 
 - **`normalizeSelector(v)`** — left-pad hex to 64 chars, lowercase, prefix `0x`
@@ -202,11 +236,13 @@ The agent auto-discovers active game worlds by querying the Cartridge Factory SQ
 ## Session Management
 
 ### controller-session.ts
+
 Cartridge Controller session authentication via browser-based Passkeys/WebAuthn flow.
 
 **Core class:** `ControllerSession`
 
 **Constructor params:**
+
 - `rpcUrl`: StarkNet RPC endpoint
 - `chainId`: chain identifier (derived from RPC URL or env)
 - `gameName`: game namespace (default `eternum`, used to filter manifest tags)
@@ -216,7 +252,8 @@ Cartridge Controller session authentication via browser-based Passkeys/WebAuthn 
 
 **Methods:**
 
-1. **`probe()`** — checks for existing valid session on disk at `basePath/session.json`, returns `WalletAccount` if found and not expired, otherwise `null`. No browser flow.
+1. **`probe()`** — checks for existing valid session on disk at `basePath/session.json`, returns `WalletAccount` if
+   found and not expired, otherwise `null`. No browser flow.
 2. **`connect()`** — full auth flow:
    - Calls `probe()` first
    - If no session, prints auth URL to stdout, opens browser via `execFile(open/xdg-open)`
@@ -226,58 +263,75 @@ Cartridge Controller session authentication via browser-based Passkeys/WebAuthn 
 
 **Session policies:** `buildSessionPoliciesFromManifest()` constructs Cartridge policies from manifest tags:
 
-- **System contracts:** all Eternum systems (`resource_systems`, `troop_management_systems`, `trade_systems`, `production_systems`, etc.) with per-entrypoint policies (e.g. `send`, `create_explorer`, `create_order`, `create_building`)
+- **System contracts:** all Eternum systems (`resource_systems`, `troop_management_systems`, `trade_systems`,
+  `production_systems`, etc.) with per-entrypoint policies (e.g. `send`, `create_explorer`, `create_order`,
+  `create_building`)
 - **VRF provider:** `0x051fea4...ced8f` with `request_random` entrypoint for verifiable randomness
 - **Entry token:** `token_lock` entrypoint (if `worldProfile.entryTokenAddress` provided)
 - **Fee token:** `approve` entrypoint (if `worldProfile.feeTokenAddress` provided)
-- **Message signing:** `s1_eternum-Message` typed data policy for in-game chat (chain-specific domain: `SN_MAIN`/`SN_SEPOLIA`)
+- **Message signing:** `s1_eternum-Message` typed data policy for in-game chat (chain-specific domain:
+  `SN_MAIN`/`SN_SEPOLIA`)
 
-**Policy method registry:** `POLICY_METHODS_BY_SUFFIX` maps manifest tags to method arrays. Each method has `{ name, entrypoint, description? }`.
+**Policy method registry:** `POLICY_METHODS_BY_SUFFIX` maps manifest tags to method arrays. Each method has
+`{ name, entrypoint, description? }`.
 
-**Tag filtering:** `tagMatchesGame(tag, gameName)` checks if tag contains game namespace (e.g. `s1_eternum-resource_systems` matches `eternum`).
+**Tag filtering:** `tagMatchesGame(tag, gameName)` checks if tag contains game namespace (e.g.
+`s1_eternum-resource_systems` matches `eternum`).
 
-**Session persistence:** `SessionProvider` from `@cartridge/controller/session/node` stores session at `basePath/session.json`. Session contains:
+**Session persistence:** `SessionProvider` from `@cartridge/controller/session/node` stores session at
+`basePath/session.json`. Session contains:
+
 - Public key
 - Signature policies
 - Expiration timestamp
 - Account credentials (managed by Controller, not exposed as plaintext private keys)
 
-**Transaction execution:** `SessionAccount` tries `executeFromOutside` (paymaster-sponsored, no gas) first, falls back to direct execution if paymaster unavailable.
+**Transaction execution:** `SessionAccount` tries `executeFromOutside` (paymaster-sponsored, no gas) first, falls back
+to direct execution if paymaster unavailable.
 
 ## Adapter Layer
 
 The adapter bridges the generic agent framework (`@bibliothecadao/game-agent`) to Eternum-specific game logic.
 
 ### eternum-adapter.ts
+
 **`EternumGameAdapter` implements `GameAdapter<EternumWorldState>`:**
 
-- **`getWorldState()`** — calls `buildWorldState(client, accountAddress)` to fetch all entities, player stats, market, leaderboard
+- **`getWorldState()`** — calls `buildWorldState(client, accountAddress)` to fetch all entities, player stats, market,
+  leaderboard
 - **`executeAction(action)`** — dispatches to `executeAction(client, signer, action)` from action registry
 - **`simulateAction(action)`** — calls `simulateAction(action)` for dry-run estimates
 
 **Constructor deps:** `EternumClient` (headless game client), `Account` (signer), `accountAddress` (player address)
 
 ### mutable-adapter.ts
+
 **`MutableGameAdapter<TState>` — hot-swappable adapter proxy:**
 
-Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacement. All methods (`getWorldState`, `executeAction`, `simulateAction`, `subscribe?`) forward to `current` adapter.
+Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacement. All methods (`getWorldState`,
+`executeAction`, `simulateAction`, `subscribe?`) forward to `current` adapter.
 
-**Use case:** hot-swapping RPC/Torii/WorldAddress without restarting the agent — `index.ts` creates a `MutableGameAdapter` around `EternumGameAdapter`, then swaps the inner adapter on config changes.
+**Use case:** hot-swapping RPC/Torii/WorldAddress without restarting the agent — `index.ts` creates a
+`MutableGameAdapter` around `EternumGameAdapter`, then swaps the inner adapter on config changes.
 
 ### action-registry.ts
+
 **Action handler registry** — 60+ action types for Eternum gameplay.
 
 **Core pattern:**
 
 1. **`register(type, description, params, handler)`** — stores handler + definition in `Map<string, RegistryEntry>`
-2. **`registerAliases(types[], description, params, handler)`** — multiple types share one definition (e.g. `create_order`/`create_trade`)
-3. **`executeAction(client, signer, action)`** — looks up handler, calls `wrapTx(() => handler(...))`, logs raw errors to `debug-actions-raw-errors.log`, logs action results to `debug-actions.log`
+2. **`registerAliases(types[], description, params, handler)`** — multiple types share one definition (e.g.
+   `create_order`/`create_trade`)
+3. **`executeAction(client, signer, action)`** — looks up handler, calls `wrapTx(() => handler(...))`, logs raw errors
+   to `debug-actions-raw-errors.log`, logs action results to `debug-actions.log`
 4. **`getActionDefinitions()`** — returns all action definitions (deduplicated by reference) for LLM tool descriptions
 
 **Action categories:**
 
 - **Resources:** `send_resources`, `pickup_resources`, `claim_arrivals`
-- **Troops:** `create_explorer`, `add_to_explorer`, `delete_explorer`, `add_guard`, `delete_guard`, `move_explorer`, `travel_explorer`, `explore`, `swap_explorer_to_explorer`, `swap_explorer_to_guard`, `swap_guard_to_explorer`
+- **Troops:** `create_explorer`, `add_to_explorer`, `delete_explorer`, `add_guard`, `delete_guard`, `move_explorer`,
+  `travel_explorer`, `explore`, `swap_explorer_to_explorer`, `swap_explorer_to_guard`, `swap_guard_to_explorer`
 - **Combat:** `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid`
 - **Trade:** `create_order`, `accept_order`, `cancel_order` (+ aliases)
 - **Buildings:** `create_building`, `destroy_building`, `pause_production`, `resume_production`
@@ -287,6 +341,7 @@ Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacemen
 - **Hyperstructure:** `contribute_hyperstructure`
 
 **Param schema helpers:**
+
 - `n(name, desc)` → number
 - `s(name, desc)` → string
 - `b(name, desc)` → boolean
@@ -294,6 +349,7 @@ Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacemen
 - `oa(name, desc)` → object[]
 
 **Coercion helpers:**
+
 - `num(v)` — parse number, handle suffixes (K/M/B/T), strip commas
 - `precisionAmount(v)` — multiply by `RESOURCE_PRECISION` (1e9) for on-chain amounts
 - `bigNumberish(v)` — convert to BigInt or hex string (addresses)
@@ -302,24 +358,31 @@ Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacemen
 - `liquidityCalls(v)` → `{ resourceType, resourceAmount, lordsAmount }[]`
 
 **Error extraction:** `extractErrorMessage(err)` parses Starknet revert reasons:
-- Looks for `Transaction failed with reason:`, `Failure reason:`, `execution reverted`, `execution_revert`, decoded felt252 error codes
+
+- Looks for `Transaction failed with reason:`, `Failure reason:`, `execution reverted`, `execution_revert`, decoded
+  felt252 error codes
 - Decodes felt252 hex strings to ASCII labels (e.g. `0x...` → `argent/multicall-failed`)
 - Truncates generic errors to 200 chars
 
 **Action result wrapping:** `wrapTx(fn)` normalizes transaction responses:
+
 - Success: `{ success: true, txHash, data: { transactionHash } }`
 - Failure: `{ success: false, error: extractedMessage }`
 
-**Reference strings:** `RESOURCE_IDS`, `BUILDING_TYPES`, `BUILDING_GUIDE`, `DIR`, `TROOP_CATEGORY`, `TROOP_TIER` embedded in param descriptions for LLM context.
+**Reference strings:** `RESOURCE_IDS`, `BUILDING_TYPES`, `BUILDING_GUIDE`, `DIR`, `TROOP_CATEGORY`, `TROOP_TIER`
+embedded in param descriptions for LLM context.
 
 ### world-state.ts
-**World state snapshot builder** — queries SQL APIs and view APIs in parallel, enriches entities with game-specific fields, formats human-readable tick prompt.
+
+**World state snapshot builder** — queries SQL APIs and view APIs in parallel, enriches entities with game-specific
+fields, formats human-readable tick prompt.
 
 **Core types:**
 
 - **`EternumEntity`** — unified entity representation:
   - Common: `type`, `entityId`, `owner`, `ownerName`, `isOwned`, `position`, `lastAttack`, `lastDefense`, `actions`
-  - Structure-specific: `structureType`, `level`, `guardStrength`, `guardSummary`, `guardSlots`, `resources`, `productionBuildings`, `buildingSlots`, `population`, `nextUpgrade`, `armies`, `troopsInReserve`, `freeSlots`
+  - Structure-specific: `structureType`, `level`, `guardStrength`, `guardSummary`, `guardSlots`, `resources`,
+    `productionBuildings`, `buildingSlots`, `population`, `nextUpgrade`, `armies`, `troopsInReserve`, `freeSlots`
   - Army-specific: `strength`, `stamina`, `isInBattle`, `troopSummary`, `neighborTiles`
 - **`EternumWorldState extends WorldState<EternumEntity>`** — adds:
   - `player`: { address, name, structures, armies, points, rank }
@@ -348,9 +411,11 @@ Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacemen
    - Parse battle history → `lastAttack`, `lastDefense` with attacker/defender ID, timestamp, position
 4. **Enrich armies:**
    - Parse troop count, tier → `strength`, `stamina`, `troopSummary`
-   - Compute neighbor tiles (6 hex neighbors) → `neighborTiles` with `{ direction, dirId, explored, occupied, biome, occupant, occupantId }`
+   - Compute neighbor tiles (6 hex neighbors) → `neighborTiles` with
+     `{ direction, dirId, explored, occupied, biome, occupant, occupantId }`
 5. **Fetch per-structure resources & buildings:**
-   - `client.sql.fetchResourceBalancesAndProduction(ownedEntityIds)` → parse `RESOURCE_BALANCE_COLUMNS` and production building counts
+   - `client.sql.fetchResourceBalancesAndProduction(ownedEntityIds)` → parse `RESOURCE_BALANCE_COLUMNS` and production
+     building counts
    - `client.sql.fetchBuildingsByStructures(ownedEntityIds)` → occupied inner coords
    - Group by structure entity ID → `resources`, `productionBuildings`, `troopsInReserve`
    - Compute free building slots → `freeSlots` (compare all valid direction paths vs. occupied coords)
@@ -362,8 +427,10 @@ Wraps an underlying `GameAdapter` with `setAdapter(next)` for runtime replacemen
 
 **Helpers:**
 
-- **Hex neighbors:** `hexNeighbors(x, y)` — even-r offset coordinates (matches Cairo contract), returns 6 neighbors with direction labels
-- **Building slots:** `unpackBuildingCountsFromHex()` — unpack 3 u128 hex strings to 48 u8 counts, `computeFreeSlots()` — walk direction paths from center (10,10) to find unoccupied inner coords
+- **Hex neighbors:** `hexNeighbors(x, y)` — even-r offset coordinates (matches Cairo contract), returns 6 neighbors with
+  direction labels
+- **Building slots:** `unpackBuildingCountsFromHex()` — unpack 3 u128 hex strings to 48 u8 counts, `computeFreeSlots()`
+  — walk direction paths from center (10,10) to find unoccupied inner coords
 - **Population:** `computePopulation()` — sum building pop costs, add WorkersHut capacity (6 per hut), base capacity 6
 - **Felt252 decode:** `decodeFelt252(hex)` — convert felt252 hex to ASCII string (owner names)
 - **Biome/occupier names:** `BIOME_NAMES`, `OCCUPIER_NAMES` — map enum values to labels
@@ -377,8 +444,11 @@ Formats world state into a structured prompt for the agent:
 2. **You:** player name, rank, points, structure/army counts
 3. **Resources (total):** aggregated across all structures, formatted with `fmtNum()` (1.5K, 2M, etc.)
 4. **My Entities:**
-   - **Structures:** entity line (type, ID, level, owner, pos, guard, actions), per-structure resources, production buildings, slots (used/total, free paths), population (current/capacity, warning if full), next upgrade, armies (current/max), guard slots, troop reserves, last attack/defense
-   - **Armies:** entity line (ID, troops, strength, stamina, owner, pos, battle status, actions), neighbor tiles (deduplicated across armies), last attack/defense
+   - **Structures:** entity line (type, ID, level, owner, pos, guard, actions), per-structure resources, production
+     buildings, slots (used/total, free paths), population (current/capacity, warning if full), next upgrade, armies
+     (current/max), guard slots, troop reserves, last attack/defense
+   - **Armies:** entity line (ID, troops, strength, stamina, owner, pos, battle status, actions), neighbor tiles
+     (deduplicated across armies), last attack/defense
 5. **Nearby (other players):** structures and armies within VIEW_RADIUS
 6. **Recent Battles:** last 10 player-involved battles (raid/battle, attacker/defender, winner, time ago)
 7. **Leaderboard:** top 10 players
@@ -388,24 +458,31 @@ Formats world state into a structured prompt for the agent:
 **Debug logging:** writes to `debug-tick-prompt.log` with full formatted prompt text.
 
 ### simulation.ts
+
 **Dry-run action simulator** — uses pure compute functions for cost/outcome estimates.
 
 **Supported actions:**
 
-- **Combat:** `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid` → `computeStrength(troops, tier)`, returns `{ estimatedStrength, cost: { troops } }`
+- **Combat:** `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid` → `computeStrength(troops, tier)`,
+  returns `{ estimatedStrength, cost: { troops } }`
 - **Troops:** `create_explorer`, `add_guard` → `computeStrength()`, returns `{ strength, cost: { troops } }`
-- **Bank:** `buy_resources`, `sell_resources` → `computeOutputAmount(amount, reserveIn, reserveOut, feeNum, feeDenom)`, returns `{ estimatedOutput, inputAmount, cost: { inputAmount } }`
-- **Buildings:** `create_building` → `computeBuildingCost(baseCosts, existingCount, costPercentIncrease)`, returns `{ buildingCategory, cost: { resources } }`
+- **Bank:** `buy_resources`, `sell_resources` → `computeOutputAmount(amount, reserveIn, reserveOut, feeNum, feeDenom)`,
+  returns `{ estimatedOutput, inputAmount, cost: { inputAmount } }`
+- **Buildings:** `create_building` → `computeBuildingCost(baseCosts, existingCount, costPercentIncrease)`, returns
+  `{ buildingCategory, cost: { resources } }`
 - **Fallback:** returns `{ success: true, outcome: { message: "No simulation model for..." } }`
 
 **Compute functions from `@bibliothecadao/client`:**
+
 - `computeStrength(troops, tier)` — troop strength calculation (tier multiplier)
 - `computeOutputAmount(...)` — AMM swap output (constant product formula with fees)
-- `computeBuildingCost(baseCosts, existingCount, costPercentIncrease)` — building cost scaling (base + percent increase per existing building)
+- `computeBuildingCost(baseCosts, existingCount, costPercentIncrease)` — building cost scaling (base + percent increase
+  per existing building)
 
 ## TUI Components
 
 ### app.ts
+
 **`createApp({ agent, ticker })`** — creates and starts the TUI for the agent.
 
 **Layout:**
@@ -429,12 +506,15 @@ Formats world state into a structured prompt for the agent:
 **Dependencies:** `@mariozechner/pi-tui` — TUI primitives (`ProcessTerminal`, `Container`, `Text`, `Markdown`)
 
 **Lifecycle:** returns `{ tui, terminal, addSystemMessage, dispose() }`:
+
 - `addSystemMessage(msg)` adds a `[System]`-prefixed text entry to the chat container and triggers a render
 - `dispose()` unsubscribes from agent, stops TUI
 
-All post-TUI messages in `index.ts` route through `addSystemMessage()` instead of `console.log` to avoid corrupting the TUI's differential renderer.
+All post-TUI messages in `index.ts` route through `addSystemMessage()` instead of `console.log` to avoid corrupting the
+TUI's differential renderer.
 
 ### world-picker.ts
+
 **`createWorldPicker(worlds: DiscoveredWorld[])`** — interactive TUI for selecting a game world.
 
 **UI:**
@@ -454,6 +534,7 @@ All post-TUI messages in `index.ts` route through `addSystemMessage()` instead o
 ## Tools & Inspection
 
 ### inspect-tools.ts
+
 **Extra tools for detailed game state queries** — passed to `createGameAgent({ extraTools })`.
 
 **Tools:**
@@ -495,6 +576,7 @@ All post-TUI messages in `index.ts` route through `addSystemMessage()` instead o
 ## Release & Packaging
 
 ### package-release.ts
+
 CLI script for building release archives — invoked via `pnpm package:release`.
 
 **Flags:**
@@ -518,6 +600,7 @@ CLI script for building release archives — invoked via `pnpm package:release`.
 3. Print archive paths + checksums path
 
 ### packager.ts
+
 **`runReleasePackaging(options)`** — orchestrates multi-target packaging.
 
 **Flow per target:**
@@ -525,12 +608,15 @@ CLI script for building release archives — invoked via `pnpm package:release`.
 1. **Build or reuse binary:**
    - If `skipBuild`: use `binaryPath`
    - Else: two-step build via `buildTargetBinary()`:
-     - Step 1: `bun run build.ts` — bundles `src/cli.ts` to `dist-bun/cli.js` with build plugins (WASM embed + pi-config embed)
-     - Step 2: `bun build dist-bun/cli.js --compile --target bun-{target} --outfile {temp}/{APP_NAME}-{target}` — compiles the bundle to a standalone binary
+     - Step 1: `bun run build.ts` — bundles `src/cli.ts` to `dist-bun/cli.js` with build plugins (WASM embed + pi-config
+       embed)
+     - Step 2: `bun build dist-bun/cli.js --compile --target bun-{target} --outfile {temp}/{APP_NAME}-{target}` —
+       compiles the bundle to a standalone binary
 2. **Stage release layout:**
    - Create `{temp}/stage-{target}/axis/` directory
    - Copy binary → `axis` (chmod 755)
-   - Copy common files: `package.json`, `README.md`, `.env.example`, `LICENSE`, `data/` (soul.md, HEARTBEAT.md, tasks/priorities.md)
+   - Copy common files: `package.json`, `README.md`, `.env.example`, `LICENSE`, `data/` (soul.md, HEARTBEAT.md,
+     tasks/priorities.md)
 3. **Validate layout:** check all `REQUIRED_STAGED_FILES` exist
 4. **Create archive:** `tar -czf {outDir}/axis-v{version}-{target}.tar.gz -C {temp}/stage-{target} axis`
 5. **Compute SHA256:** hash archive file, append to checksums array
@@ -541,46 +627,59 @@ CLI script for building release archives — invoked via `pnpm package:release`.
 - `checksums.txt` with SHA256 hashes (one line per archive)
 - Cleans up temp directory on completion
 
-**Archive format:** `.tar.gz` containing single `axis/` directory with all files (binary at root, data/ subdir, docs at root)
+**Archive format:** `.tar.gz` containing single `axis/` directory with all files (binary at root, data/ subdir, docs at
+root)
 
 **Supported targets:** `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64` (Bun compile targets)
 
 ## Build Plugins
 
 ### build-plugins.ts
+
 Two Bun build plugins that make the standalone binary fully self-contained.
 
 **`wasmPlugin`** -- embeds `@cartridge/controller-wasm` WASM modules into the bundle.
 
 Bun's bundler treats `.wasm` imports as file assets (path strings), which breaks the wasm-bindgen pattern. This plugin:
+
 1. Intercepts wasm-bindgen entry JS files matching `controller-wasm/pkg-*/\w+_wasm.js`
 2. Reads the sibling `.wasm` binary, encodes as base64
-3. Generates replacement code that decodes bytes, instantiates `WebAssembly.Module`, and calls `__wbg_set_wasm(instance.exports)` with the glue JS as import object
+3. Generates replacement code that decodes bytes, instantiates `WebAssembly.Module`, and calls
+   `__wbg_set_wasm(instance.exports)` with the glue JS as import object
 
 **`createPiConfigPlugin(packageJsonPath)`** -- embeds `package.json` data into `pi-coding-agent`'s config.
 
-The `@mariozechner/pi-coding-agent` config module reads `package.json` from disk relative to the module location, which fails in a standalone binary. This plugin:
+The `@mariozechner/pi-coding-agent` config module reads `package.json` from disk relative to the module location, which
+fails in a standalone binary. This plugin:
+
 1. Reads `package.json` at build time
 2. Intercepts `pi-coding-agent/dist/config.js`
 3. Replaces the `readFileSync(getPackageJsonPath())` call with the static JSON literal
 
 ### build.ts
+
 Two-step build script:
+
 1. `Bun.build()` API bundles `src/cli.ts` to `dist-bun/cli.js` with both plugins
 2. If `--compile` flag: `bun build dist-bun/cli.js --compile --outfile axis`
 
-The resulting binary is fully standalone -- manifests (embedded via JSON imports), WASM modules (embedded via wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
+The resulting binary is fully standalone -- manifests (embedded via JSON imports), WASM modules (embedded via
+wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
 
 ## Integration with @bibliothecadao Packages
 
 ### @bibliothecadao/game-agent
+
 **Core agent framework** — tick loop, LLM driver, tool execution, state management.
 
 **Key functions:**
 
-- **`createGameAgent({ adapter, dataDir, model, tickIntervalMs, runtimeConfigManager?, extraTools?, actionDefs?, formatTickPrompt?, onTickError? })`** — returns `{ agent, ticker, dispose, enqueuePrompt, setDataDir }`
-  - `onTickError` — optional callback invoked on tick errors; defaults to `console.error` but should route through the TUI's `addSystemMessage()` in the onchain-agent to keep output within the TUI
-- **`createHeartbeatLoop({ getHeartbeatPath, onRun, onError })`** — cron-style scheduler for `HEARTBEAT.md` jobs, hot-reloads file on changes
+- **`createGameAgent({ adapter, dataDir, model, tickIntervalMs, runtimeConfigManager?, extraTools?, actionDefs?, formatTickPrompt?, onTickError? })`**
+  — returns `{ agent, ticker, dispose, enqueuePrompt, setDataDir }`
+  - `onTickError` — optional callback invoked on tick errors; defaults to `console.error` but should route through the
+    TUI's `addSystemMessage()` in the onchain-agent to keep output within the TUI
+- **`createHeartbeatLoop({ getHeartbeatPath, onRun, onError })`** — cron-style scheduler for `HEARTBEAT.md` jobs,
+  hot-reloads file on changes
 
 **Agent lifecycle:**
 
@@ -593,7 +692,8 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
    - **`execute_action`** tool → calls `adapter.executeAction(action)`, returns `ActionResult`
    - **`simulate_action`** tool → calls `adapter.simulateAction(action)`, returns `SimulationResult`
    - **`list_actions`** tool → returns `actionDefs` array
-   - **Extra tools:** `inspect_realm`, `inspect_explorer`, `inspect_market`, `inspect_bank` (from `tools/inspect-tools.ts`)
+   - **Extra tools:** `inspect_realm`, `inspect_explorer`, `inspect_market`, `inspect_bank` (from
+     `tools/inspect-tools.ts`)
    - **File tools:** `read_file`, `write_file` for soul.md, tasks/, HEARTBEAT.md
    - **Runtime config tools:** `get_agent_config`, `set_agent_config` for live config changes
 3. **Dispose:** `ticker.stop()`, cleanup agent state
@@ -601,6 +701,7 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 **Action definitions:** `getActionDefinitions()` from action registry → enriched tool descriptions with param schemas
 
 ### @bibliothecadao/client
+
 **Headless game client** — SQL queries, view APIs, transaction building.
 
 **Core API:**
@@ -611,12 +712,14 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 - **`client.sql.fetchAllArmiesMapData()`** — all armies with troop counts, stamina, owner
 - **`client.sql.fetchAllTiles()`** — tile biome, occupier info
 - **`client.sql.fetchBattleLogs()`** — recent battle events
-- **`client.sql.fetchResourceBalancesAndProduction(entityIds)`** — per-structure resource balances, production building counts
+- **`client.sql.fetchResourceBalancesAndProduction(entityIds)`** — per-structure resource balances, production building
+  counts
 - **`client.sql.fetchBuildingsByStructures(entityIds)`** — occupied building inner coords
 - **`client.view.player(address)`** — player stats, structures, armies
 - **`client.view.market()`** — AMM pools, recent swaps, open orders
 - **`client.view.leaderboard({ limit })`** — top N players
-- **`client.view.realm(entityId)`** — detailed structure info (resources, production, buildings, guards, arrivals, orders)
+- **`client.view.realm(entityId)`** — detailed structure info (resources, production, buildings, guards, arrivals,
+  orders)
 - **`client.view.explorer(entityId)`** — detailed army info (stamina, troops, resources, battle status)
 - **`client.view.bank(bankEntityId)`** — bank AMM pools, LP positions
 
@@ -650,17 +753,21 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 - **`computeBuildingCost(baseCosts, existingCount, costPercentIncrease)`** — building cost scaling
 
 ### @bibliothecadao/torii
+
 **Torii SQL query helpers** — Factory resolution, SQL API utilities.
 
 **Key exports:**
 
 - **`FACTORY_QUERIES`** — pre-built SQL queries:
-  - `WORLD_CONTRACTS_BY_PADDED_NAME(paddedName)` → `SELECT contract_address, contract_selector FROM [wf-WorldContractRegistered] WHERE ...`
+  - `WORLD_CONTRACTS_BY_PADDED_NAME(paddedName)` →
+    `SELECT contract_address, contract_selector FROM [wf-WorldContractRegistered] WHERE ...`
   - `WORLD_DEPLOYED_BY_PADDED_NAME(paddedName)` → `SELECT * FROM [wf-WorldDeployed] WHERE ...`
 - **`buildApiUrl(baseUrl, query)`** — encode query string
 - **`fetchWithErrorHandling<T>(url, errorPrefix)`** — fetch + JSON parse + error handling
-- **`RESOURCE_BALANCE_COLUMNS`** — array of `{ name, column }` for resource balances (e.g. `{ name: "Wood", column: "WOOD_BALANCE" }`)
-- **`TROOP_BALANCE_COLUMNS`** — array of `{ name, column }` for troop reserves (e.g. `{ name: "KnightT1", column: "KNIGHT_T1_BALANCE" }`)
+- **`RESOURCE_BALANCE_COLUMNS`** — array of `{ name, column }` for resource balances (e.g.
+  `{ name: "Wood", column: "WOOD_BALANCE" }`)
+- **`TROOP_BALANCE_COLUMNS`** — array of `{ name, column }` for troop reserves (e.g.
+  `{ name: "KnightT1", column: "KNIGHT_T1_BALANCE" }`)
 
 **SQL column conventions:**
 
@@ -669,11 +776,13 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 - Guard slots: `{alpha|bravo|charlie|delta}_{count|category|tier}` (count is hex u128)
 
 ### @cartridge/controller
+
 **Cartridge Controller session provider** — browser-based authentication.
 
 **Key class:** `SessionProvider` from `@cartridge/controller/session/node`
 
 **Constructor params:**
+
 - `rpc`: RPC URL
 - `chainId`: chain identifier
 - `policies`: `{ contracts: Record<address, { methods: { name, entrypoint, description? }[] }>, messages?: [...] }`
@@ -694,6 +803,7 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 **WASM dependency:** `@cartridge/controller-wasm` (session signing, requires `--experimental-wasm-modules`)
 
 ### @mariozechner/pi-agent-core
+
 **Autonomous agent core** — LLM driver, tool execution, agent state management.
 
 **Key API:**
@@ -701,7 +811,8 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 - **`Agent`** — main agent class:
   - **`prompt(text)`** — enqueue text prompt, stream LLM response
   - **`steer(message)`** — inject message mid-stream (for user steering)
-  - **`subscribe(callback)`** — listen to agent events (agent_start, agent_end, message_end, tool_execution_start, tool_execution_end)
+  - **`subscribe(callback)`** — listen to agent events (agent_start, agent_end, message_end, tool_execution_start,
+    tool_execution_end)
   - **`setModel(model)`** — hot-swap LLM model
   - **`state.isStreaming`** — true if agent is currently processing
 - **`AgentTool<T>`** — tool interface:
@@ -715,9 +826,11 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
   - `message_start`, `message_end` — LLM message boundaries
   - `tool_execution_start`, `tool_execution_end` — tool call lifecycle
 
-**Model providers:** `@mariozechner/pi-ai` — `getModel(provider, modelId)` supports `anthropic`, `openai`, `openrouter`, `google`, etc.
+**Model providers:** `@mariozechner/pi-ai` — `getModel(provider, modelId)` supports `anthropic`, `openai`, `openrouter`,
+`google`, etc.
 
 ### @mariozechner/pi-tui
+
 **Terminal UI primitives** — TUI components for building interactive CLI apps.
 
 **Key classes:**
@@ -743,6 +856,7 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 ## Shutdown & Graceful Exit
 
 ### shutdown-gate.ts
+
 **`createShutdownGate()`** — returns `{ promise, shutdown() }` for graceful shutdown coordination.
 
 **Pattern:**
@@ -756,26 +870,26 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 
 ## Configuration Reference
 
-| Env Var | Default | Description |
-|---------|---------|-------------|
-| `CHAIN` | `slot` | Chain name (slot/slottest/local/sepolia/mainnet) |
-| `RPC_URL` | _(discovery)_ | StarkNet RPC endpoint — if set (with TORII_URL, WORLD_ADDRESS), skips discovery |
-| `TORII_URL` | _(discovery)_ | Torii SQL endpoint |
-| `WORLD_ADDRESS` | _(discovery)_ | World contract address |
-| `MANIFEST_PATH` | `~/.eternum-agent/manifest.json` | Dojo manifest JSON path |
-| `GAME_NAME` | `eternum` | Game namespace (filters manifest tags for session policies) |
-| `CHAIN_ID` | _(auto-derived)_ | StarkNet chain ID (hex encoded short string) |
-| `SESSION_BASE_PATH` | `~/.eternum-agent/.cartridge/` | Cartridge session storage directory |
-| `TICK_INTERVAL_MS` | `60000` | Tick loop interval (1 min) |
-| `LOOP_ENABLED` | `true` | Auto-start tick loop on launch |
-| `MODEL_PROVIDER` | `anthropic` | LLM provider (anthropic/openai/openrouter/google) |
-| `MODEL_ID` | `claude-sonnet-4-5-20250929` | LLM model ID |
-| `DATA_DIR` | `~/.eternum-agent/data/` | Data directory (soul.md, tasks/, HEARTBEAT.md) |
-| `ETERNUM_AGENT_HOME` | `~/.eternum-agent` | Base directory for all paths |
-| `ANTHROPIC_API_KEY` | _(required)_ | Anthropic API key (if MODEL_PROVIDER=anthropic) |
-| `OPENAI_API_KEY` | _(required)_ | OpenAI API key (if MODEL_PROVIDER=openai) |
-| `SLOT_NAME` | _(optional)_ | Auto-select world by name (skips TUI picker if matched) |
-| `CARTRIDGE_API_BASE` | `https://api.cartridge.gg` | Cartridge API base URL (overrides Factory/Torii endpoints) |
+| Env Var              | Default                          | Description                                                                     |
+| -------------------- | -------------------------------- | ------------------------------------------------------------------------------- |
+| `CHAIN`              | `slot`                           | Chain name (slot/slottest/local/sepolia/mainnet)                                |
+| `RPC_URL`            | _(discovery)_                    | StarkNet RPC endpoint — if set (with TORII_URL, WORLD_ADDRESS), skips discovery |
+| `TORII_URL`          | _(discovery)_                    | Torii SQL endpoint                                                              |
+| `WORLD_ADDRESS`      | _(discovery)_                    | World contract address                                                          |
+| `MANIFEST_PATH`      | `~/.eternum-agent/manifest.json` | Dojo manifest JSON path                                                         |
+| `GAME_NAME`          | `eternum`                        | Game namespace (filters manifest tags for session policies)                     |
+| `CHAIN_ID`           | _(auto-derived)_                 | StarkNet chain ID (hex encoded short string)                                    |
+| `SESSION_BASE_PATH`  | `~/.eternum-agent/.cartridge/`   | Cartridge session storage directory                                             |
+| `TICK_INTERVAL_MS`   | `60000`                          | Tick loop interval (1 min)                                                      |
+| `LOOP_ENABLED`       | `true`                           | Auto-start tick loop on launch                                                  |
+| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (anthropic/openai/openrouter/google)                               |
+| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | LLM model ID                                                                    |
+| `DATA_DIR`           | `~/.eternum-agent/data/`         | Data directory (soul.md, tasks/, HEARTBEAT.md)                                  |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for all paths                                                    |
+| `ANTHROPIC_API_KEY`  | _(required)_                     | Anthropic API key (if MODEL_PROVIDER=anthropic)                                 |
+| `OPENAI_API_KEY`     | _(required)_                     | OpenAI API key (if MODEL_PROVIDER=openai)                                       |
+| `SLOT_NAME`          | _(optional)_                     | Auto-select world by name (skips TUI picker if matched)                         |
+| `CARTRIDGE_API_BASE` | `https://api.cartridge.gg`       | Cartridge API base URL (overrides Factory/Torii endpoints)                      |
 
 ## Runtime Directories
 
@@ -798,20 +912,31 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 
 ## Key Design Decisions
 
-1. **Zero-config discovery:** eliminates manual RPC/Torii/WorldAddress config, queries Cartridge Factory SQL to find active worlds, auto-selects or presents TUI picker
-2. **Browser-based auth:** Cartridge Controller sessions avoid storing private keys, use Passkeys/WebAuthn for secure signing
-3. **Hot-swappable adapter:** `MutableGameAdapter` allows runtime config changes (RPC URL, model, tick interval) without restarting
-4. **Action registry pattern:** 60+ action handlers in a single registry, LLM sees enriched tool descriptions with param schemas, human-readable suffixes (K/M/B/T), and reference strings
-5. **View-radius filtering:** only show entities within 5 hexes of owned entities, reduces prompt size and focuses agent attention
-6. **Structured tick prompt:** human-readable world state with per-structure resources, production buildings, free building paths, population, guard slots, neighbor tiles, battle history
-7. **Heartbeat loop:** cron-style jobs from `HEARTBEAT.md` (hot-reloaded), allows periodic tasks like market checks or resource transfers
-8. **TUI + input steering:** terminal UI with scrolling chat log, user can inject messages mid-stream to guide agent behavior
-9. **Bun binary packaging:** single-file cross-platform binaries (darwin/linux x64/arm64), includes bundled data/ files and README/LICENSE
-10. **Debug logging:** separate logs for world state, tick prompt, actions, raw errors, tool responses — enables post-mortem debugging without instrumenting agent loop
+1. **Zero-config discovery:** eliminates manual RPC/Torii/WorldAddress config, queries Cartridge Factory SQL to find
+   active worlds, auto-selects or presents TUI picker
+2. **Browser-based auth:** Cartridge Controller sessions avoid storing private keys, use Passkeys/WebAuthn for secure
+   signing
+3. **Hot-swappable adapter:** `MutableGameAdapter` allows runtime config changes (RPC URL, model, tick interval) without
+   restarting
+4. **Action registry pattern:** 60+ action handlers in a single registry, LLM sees enriched tool descriptions with param
+   schemas, human-readable suffixes (K/M/B/T), and reference strings
+5. **View-radius filtering:** only show entities within 5 hexes of owned entities, reduces prompt size and focuses agent
+   attention
+6. **Structured tick prompt:** human-readable world state with per-structure resources, production buildings, free
+   building paths, population, guard slots, neighbor tiles, battle history
+7. **Heartbeat loop:** cron-style jobs from `HEARTBEAT.md` (hot-reloaded), allows periodic tasks like market checks or
+   resource transfers
+8. **TUI + input steering:** terminal UI with scrolling chat log, user can inject messages mid-stream to guide agent
+   behavior
+9. **Bun binary packaging:** single-file cross-platform binaries (darwin/linux x64/arm64), includes bundled data/ files
+   and README/LICENSE
+10. **Debug logging:** separate logs for world state, tick prompt, actions, raw errors, tool responses — enables
+    post-mortem debugging without instrumenting agent loop
 
 ## Common Workflows
 
 ### First-time setup (zero config)
+
 1. Install: `curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash`
 2. Configure: `echo "ANTHROPIC_API_KEY=sk-ant-..." > ~/.eternum-agent/.env`
 3. Run: `axis run`
@@ -820,14 +945,17 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 6. Agent starts tick loop, displays TUI
 
 ### Local dev setup
+
 1. Clone repo: `git clone https://github.com/bibliothecadao/eternum.git`
 2. Install deps: `pnpm install` (at repo root)
-3. Build packages: `pnpm --dir packages/types build && pnpm --dir packages/torii build && pnpm --dir packages/provider build && pnpm --dir packages/client build && pnpm --dir packages/game-agent build`
+3. Build packages:
+   `pnpm --dir packages/types build && pnpm --dir packages/torii build && pnpm --dir packages/provider build && pnpm --dir packages/client build && pnpm --dir packages/game-agent build`
 4. Type-check: `pnpm --dir client/apps/onchain-agent build`
 5. Configure: `cd client/apps/onchain-agent && cp .env.example .env` (edit with API key)
 6. Run: `pnpm --dir client/apps/onchain-agent dev`
 
 ### Manual world config (skip discovery)
+
 1. Edit `.env`:
    ```
    RPC_URL=http://localhost:5050
@@ -839,6 +967,7 @@ The resulting binary is fully standalone -- manifests (embedded via JSON imports
 2. Run: `axis run` (no picker, connects directly)
 
 ### Live config changes (no restart)
+
 Agent can reconfigure itself via `set_agent_config` tool:
 
 ```json
@@ -853,6 +982,7 @@ Agent can reconfigure itself via `set_agent_config` tool:
 ```
 
 ### Build release archives
+
 ```bash
 cd client/apps/onchain-agent
 pnpm package:release
@@ -860,6 +990,7 @@ pnpm package:release
 ```
 
 ### Add heartbeat job
+
 Edit `~/.eternum-agent/data/HEARTBEAT.md`:
 
 ```yaml
@@ -867,7 +998,7 @@ version: 1
 jobs:
   - id: market-check
     enabled: true
-    schedule: "*/10 * * * *"  # every 10 min
+    schedule: "*/10 * * * *" # every 10 min
     mode: observe
     timeoutSec: 90
     prompt: |
@@ -877,6 +1008,7 @@ jobs:
 Changes apply immediately (hot-reloaded).
 
 ### Steer agent mid-tick
+
 In TUI, type a message and press Enter:
 
 ```
@@ -888,12 +1020,14 @@ Agent receives message and adjusts behavior.
 ## Testing & Debugging
 
 ### Validate config
+
 ```bash
 axis doctor
 # checks: WORLD_ADDRESS not 0x0, manifest exists, directories writable, API keys set
 ```
 
 ### Debug logs
+
 All logs write to `~/.eternum-agent/data/debug-*.log`:
 
 - **`debug-world-state.log`** — raw SQL ownership matches, parsed entities
@@ -903,6 +1037,7 @@ All logs write to `~/.eternum-agent/data/debug-*.log`:
 - **`debug-tool-responses.log`** — inspect tool response text (realm/explorer/market/bank)
 
 ### Test action execution
+
 Check `debug-actions.log` for recent action:
 
 ```
@@ -911,6 +1046,7 @@ Check `debug-actions.log` for recent action:
 ```
 
 ### Test world state parsing
+
 Check `debug-world-state.log` for ownership matches:
 
 ```
@@ -927,7 +1063,9 @@ final entities: 12 (2 structures, 10 armies)
 ```
 
 ### Inspect session policies
-Session stored at `~/.eternum-agent/.cartridge/session.json` (JSON blob with public key, policies, expiration). Policies include all Eternum system contracts + VRF + entry/fee tokens.
+
+Session stored at `~/.eternum-agent/.cartridge/session.json` (JSON blob with public key, policies, expiration). Policies
+include all Eternum system contracts + VRF + entry/fee tokens.
 
 To force re-auth: `rm ~/.eternum-agent/.cartridge/session.json && axis run`
 
@@ -953,6 +1091,4 @@ To force re-auth: `rm ~/.eternum-agent/.cartridge/session.json && axis run`
 
 ---
 
-**Document version:** 2025-02-13
-**Codebase version:** v0.1.0
-**Author:** Claude Opus 4.6
+**Document version:** 2025-02-13 **Codebase version:** v0.1.0 **Author:** Claude Opus 4.6

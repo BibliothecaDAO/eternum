@@ -153,13 +153,13 @@ axis init
 
 **Creates:**
 
-| Path                                | Contents                                              |
-| ----------------------------------- | ----------------------------------------------------- |
-| `~/.eternum-agent/data/soul.md`     | Default agent personality (copied from bundled `data/`) |
-| `~/.eternum-agent/data/HEARTBEAT.md`| Empty heartbeat jobs file                             |
-| `~/.eternum-agent/data/tasks/`      | Task tracking directory with `priorities.md`          |
-| `~/.eternum-agent/.cartridge/`      | Session storage directory (empty)                     |
-| `./.env`                            | Env file from `.env.example` (only if missing)        |
+| Path                                 | Contents                                                |
+| ------------------------------------ | ------------------------------------------------------- |
+| `~/.eternum-agent/data/soul.md`      | Default agent personality (copied from bundled `data/`) |
+| `~/.eternum-agent/data/HEARTBEAT.md` | Empty heartbeat jobs file                               |
+| `~/.eternum-agent/data/tasks/`       | Task tracking directory with `priorities.md`            |
+| `~/.eternum-agent/.cartridge/`       | Session storage directory (empty)                       |
+| `./.env`                             | Env file from `.env.example` (only if missing)          |
 
 If the bundled `data/` directory exists (in repo or release archive), files are copied from there. Otherwise fallback
 templates are generated. Existing files are never overwritten.
@@ -180,14 +180,14 @@ axis doctor
 
 **Checks performed:**
 
-| Check                         | Severity | Condition                                                      |
-| ----------------------------- | -------- | -------------------------------------------------------------- |
-| World address                 | Error    | `WORLD_ADDRESS` is `0x0` or unset                              |
-| Manifest path                 | Error    | `MANIFEST_PATH` file does not exist on disk                    |
-| Data directory                | Error    | `DATA_DIR` cannot be created or is not writable                |
-| Session directory             | Error    | `SESSION_BASE_PATH` cannot be created or is not writable       |
-| Anthropic API key             | Warning  | `MODEL_PROVIDER=anthropic` but `ANTHROPIC_API_KEY` is not set  |
-| OpenAI API key                | Warning  | `MODEL_PROVIDER=openai` but `OPENAI_API_KEY` is not set        |
+| Check             | Severity | Condition                                                     |
+| ----------------- | -------- | ------------------------------------------------------------- |
+| World address     | Error    | `WORLD_ADDRESS` is `0x0` or unset                             |
+| Manifest path     | Error    | `MANIFEST_PATH` file does not exist on disk                   |
+| Data directory    | Error    | `DATA_DIR` cannot be created or is not writable               |
+| Session directory | Error    | `SESSION_BASE_PATH` cannot be created or is not writable      |
+| Anthropic API key | Warning  | `MODEL_PROVIDER=anthropic` but `ANTHROPIC_API_KEY` is not set |
+| OpenAI API key    | Warning  | `MODEL_PROVIDER=openai` but `OPENAI_API_KEY` is not set       |
 
 Exits `0` if no errors (warnings are OK), exits `1` if any errors found.
 
@@ -230,25 +230,25 @@ axis run
 
 ### Environment variables
 
-| Variable             | Default                          | Description                                                                                    |
-| -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `CHAIN`              | `slot`                           | Chain name: `slot`, `slottest`, `local`, `sepolia`, `mainnet`                                  |
-| `RPC_URL`            | _(auto-discovered)_              | StarkNet RPC endpoint. If set with `TORII_URL` and `WORLD_ADDRESS`, skips world discovery.     |
-| `TORII_URL`          | _(auto-discovered)_              | Torii SQL endpoint                                                                             |
-| `WORLD_ADDRESS`      | _(auto-discovered)_              | World contract address                                                                         |
-| `MANIFEST_PATH`      | `~/.eternum-agent/manifest.json` | Dojo manifest JSON path (embedded in binary, not needed for discovery)                         |
-| `GAME_NAME`          | `eternum`                        | Game namespace used to filter manifest tags for session policies                               |
-| `CHAIN_ID`           | _(derived from RPC_URL)_         | StarkNet chain ID. Auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`)            |
-| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for all runtime files                                                           |
-| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Data directory for soul, tasks, heartbeat, debug logs                                          |
-| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Cartridge Controller session storage directory                                                 |
-| `TICK_INTERVAL_MS`   | `60000`                          | Tick loop interval in milliseconds                                                             |
-| `LOOP_ENABLED`       | `true`                           | Auto-start tick loop on launch (`true`/`false`/`1`/`0`/`yes`/`no`)                            |
-| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (`anthropic`, `openai`, `openrouter`, `google`)                                  |
-| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | LLM model ID                                                                                  |
-| `ANTHROPIC_API_KEY`  | _(required for anthropic)_       | Anthropic API key                                                                              |
-| `OPENAI_API_KEY`     | _(required for openai)_          | OpenAI API key                                                                                 |
-| `SLOT_NAME`          | _(optional)_                     | Auto-select a discovered world by name (skips TUI picker)                                      |
+| Variable             | Default                          | Description                                                                                |
+| -------------------- | -------------------------------- | ------------------------------------------------------------------------------------------ |
+| `CHAIN`              | `slot`                           | Chain name: `slot`, `slottest`, `local`, `sepolia`, `mainnet`                              |
+| `RPC_URL`            | _(auto-discovered)_              | StarkNet RPC endpoint. If set with `TORII_URL` and `WORLD_ADDRESS`, skips world discovery. |
+| `TORII_URL`          | _(auto-discovered)_              | Torii SQL endpoint                                                                         |
+| `WORLD_ADDRESS`      | _(auto-discovered)_              | World contract address                                                                     |
+| `MANIFEST_PATH`      | `~/.eternum-agent/manifest.json` | Dojo manifest JSON path (embedded in binary, not needed for discovery)                     |
+| `GAME_NAME`          | `eternum`                        | Game namespace used to filter manifest tags for session policies                           |
+| `CHAIN_ID`           | _(derived from RPC_URL)_         | StarkNet chain ID. Auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3`)         |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for all runtime files                                                       |
+| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Data directory for soul, tasks, heartbeat, debug logs                                      |
+| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Cartridge Controller session storage directory                                             |
+| `TICK_INTERVAL_MS`   | `60000`                          | Tick loop interval in milliseconds                                                         |
+| `LOOP_ENABLED`       | `true`                           | Auto-start tick loop on launch (`true`/`false`/`1`/`0`/`yes`/`no`)                         |
+| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (`anthropic`, `openai`, `openrouter`, `google`)                               |
+| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | LLM model ID                                                                               |
+| `ANTHROPIC_API_KEY`  | _(required for anthropic)_       | Anthropic API key                                                                          |
+| `OPENAI_API_KEY`     | _(required for openai)_          | OpenAI API key                                                                             |
+| `SLOT_NAME`          | _(optional)_                     | Auto-select a discovered world by name (skips TUI picker)                                  |
 
 ### Manual endpoint overrides (skip discovery)
 
@@ -434,8 +434,8 @@ internals:
 | [`docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md`](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | Canonical 8-phase pipeline specification covering factory SQL resolution, manifest patching, policy construction, and Controller initialization. Use as the source of truth when reviewing or evolving the agent's world-connection logic. |
 | [`docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md`](docs/ONCHAIN_AGENT_PIPELINE_REVIEW.md)         | Gap analysis comparing the agent's implementation against the canonical pipeline. Lists identified issues by severity with recommendations. Useful context for code reviewers and for tracking future alignment work.                      |
 
-See also [`packages/game-agent/docs/ARCHITECTURE.md`](../../../packages/game-agent/docs/ARCHITECTURE.md) for the core
-AI agent framework documentation (tick loop, heartbeat, decision logging, soul/personality system, evolution, tools).
+See also [`packages/game-agent/docs/ARCHITECTURE.md`](../../../packages/game-agent/docs/ARCHITECTURE.md) for the core AI
+agent framework documentation (tick loop, heartbeat, decision logging, soul/personality system, evolution, tools).
 
 These documents are intended to support code review, onboarding, and ongoing agent design evolution.
 

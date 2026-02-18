@@ -74,9 +74,10 @@ Eternum-specific logic from the framework. `MutableGameAdapter` wraps it for hot
 
 ### Action Registry
 
-All 60+ game actions are registered in `adapter/action-registry.ts` using `register(type, description, params, handler)`.
-Each handler receives `(client, signer, params)` and returns `{ success, txHash?, error? }`. Param values support
-human-friendly suffixes (K/M/B/T) and are coerced via helpers like `num()`, `precisionAmount()`, `bigNumberish()`.
+All 60+ game actions are registered in `adapter/action-registry.ts` using
+`register(type, description, params, handler)`. Each handler receives `(client, signer, params)` and returns
+`{ success, txHash?, error? }`. Param values support human-friendly suffixes (K/M/B/T) and are coerced via helpers like
+`num()`, `precisionAmount()`, `bigNumberish()`.
 
 ### World State Builder
 
@@ -93,8 +94,11 @@ After the TUI is created, never use `console.log`/`console.error` — it corrupt
 ### Build Plugins (`build-plugins.ts`)
 
 Two Bun build plugins enable standalone binary:
-- `wasmPlugin` — intercepts `@cartridge/controller-wasm` entry JS, embeds WASM as base64, instantiates with `__wbg_set_wasm()`
-- `createPiConfigPlugin()` — patches `pi-coding-agent` config.js to embed `package.json` data, removing filesystem dependency
+
+- `wasmPlugin` — intercepts `@cartridge/controller-wasm` entry JS, embeds WASM as base64, instantiates with
+  `__wbg_set_wasm()`
+- `createPiConfigPlugin()` — patches `pi-coding-agent` config.js to embed `package.json` data, removing filesystem
+  dependency
 
 ### Embedded Manifests
 
@@ -116,6 +120,7 @@ pnpm --dir client/apps/onchain-agent test:watch   # watch mode
 ## Debug Logs
 
 All debug output goes to `~/.eternum-agent/data/debug-*.log`:
+
 - `debug-world-state.log` — raw SQL ownership matches
 - `debug-tick-prompt.log` — formatted tick prompt
 - `debug-actions.log` — action results (OK/FAIL)
@@ -125,6 +130,7 @@ All debug output goes to `~/.eternum-agent/data/debug-*.log`:
 ## Documentation
 
 See `docs/` for detailed architecture docs:
+
 - `docs/ARCHITECTURE.md` — full architecture reference
 - `docs/DEPENDENCIES.md` — package dependency guide (torii, client, core)
 - `docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md` — world discovery pipeline spec

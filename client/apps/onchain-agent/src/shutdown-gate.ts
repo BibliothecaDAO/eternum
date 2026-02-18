@@ -1,4 +1,4 @@
-export interface ShutdownGate {
+interface ShutdownGate {
   promise: Promise<void>;
   shutdown: () => void;
 }
