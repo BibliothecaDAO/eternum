@@ -92,4 +92,3 @@ describe("cloneChunkDiagnosticsBaselines", () => {
     expect(cloned[0].diagnostics).not.toBe(source[0].diagnostics);
   });
 });
-

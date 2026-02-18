@@ -148,7 +148,8 @@ Added:
 
 Updated:
 
-1. `client/apps/game/src/three/scenes/worldmap.tsx` now routes baseline snapshot/capture cloning through the extracted helper.
+1. `client/apps/game/src/three/scenes/worldmap.tsx` now routes baseline snapshot/capture cloning through the extracted
+   helper.
 
 Coverage:
 
@@ -193,7 +194,8 @@ Steps:
 4. Capture end baseline:
    1. `window.captureWorldmapChunkBaseline?.("pre-m1-end")`
    2. `const snapshot = window.getWorldmapChunkDiagnostics?.();`
-5. Persist the snapshot to a local artifact file (recommended: `.context/worldmap-pre-m1-baseline.json`) for milestone comparison.
+5. Persist the snapshot to a local artifact file (recommended: `.context/worldmap-pre-m1-baseline.json`) for milestone
+   comparison.
 
 Validation commands executed:
 

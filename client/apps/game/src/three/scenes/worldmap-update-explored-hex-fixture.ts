@@ -37,4 +37,3 @@ export function createWorldmapUpdateExploredHexFixture(): WorldmapUpdateExplored
 
   return fixture;
 }
-

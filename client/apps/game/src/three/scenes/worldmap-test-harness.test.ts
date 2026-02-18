@@ -44,4 +44,3 @@ describe("createControlledAsyncCall", () => {
     expect(() => controlled.resolveNext()).toThrow("No pending controlled async calls to resolve");
   });
 });
-

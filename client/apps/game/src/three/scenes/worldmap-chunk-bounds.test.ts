@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getRenderAreaKeyForChunk, getRenderFetchBoundsForArea, getRenderFetchBoundsForChunk } from "./worldmap-chunk-bounds";
+import {
+  getRenderAreaKeyForChunk,
+  getRenderFetchBoundsForArea,
+  getRenderFetchBoundsForChunk,
+} from "./worldmap-chunk-bounds";
 
 describe("getRenderFetchBoundsForChunk", () => {
   it("matches canonical getRenderBounds for representative chunk/render-size combinations", () => {

@@ -1,10 +1,10 @@
-export interface Deferred<T> {
+interface Deferred<T> {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
   reject: (reason?: unknown) => void;
 }
 
-export interface ControlledAsyncCall<TArgs extends unknown[], TResult> {
+interface ControlledAsyncCall<TArgs extends unknown[], TResult> {
   calls: TArgs[];
   fn: (...args: TArgs) => Promise<TResult>;
   resolveNext: (value?: TResult) => void;
@@ -64,4 +64,3 @@ export function createControlledAsyncCall<TArgs extends unknown[], TResult>(): C
     pendingCount: () => pending.length,
   };
 }
-

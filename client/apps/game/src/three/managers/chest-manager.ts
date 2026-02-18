@@ -231,7 +231,8 @@ export class ChestManager {
         chunkKey,
         transitionToken,
         latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken: transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
       })
     ) {
       return;
@@ -266,7 +267,8 @@ export class ChestManager {
         chunkKey,
         transitionToken,
         latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken: transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
       })
     ) {
       return;
