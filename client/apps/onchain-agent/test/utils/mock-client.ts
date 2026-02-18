@@ -1,0 +1,420 @@
+import { vi } from "vitest";
+
+/**
+ * Creates a mock EternumClient with all view, sql, and transaction groups stubbed.
+ * Every method is a vitest mock that resolves with realistic fake data by default.
+ *
+ * Raw SQL data uses StructureMapDataRaw / ArmyMapDataRaw field names
+ * with hex-encoded counts and guard slots.
+ */
+export function createMockClient() {
+  const fakeTxResult = { transaction_hash: "0xabc123" };
+
+  return {
+    view: {
+      player: vi.fn().mockResolvedValue({
+        address: "0xdeadbeef",
+        name: "TestPlayer",
+        structures: [
+          {
+            entityId: 1,
+            structureType: "realm",
+            name: "Realm #1",
+            position: { x: 10, y: 20 },
+            level: 2,
+            resourceCount: 5,
+            guardStrength: 100,
+          },
+        ],
+        armies: [
+          {
+            entityId: 100,
+            explorerId: 100,
+            position: { x: 15, y: 25 },
+            strength: 50,
+            stamina: 80,
+            isInBattle: false,
+            carriedResourceCount: 2,
+          },
+        ],
+        totalResources: [
+          { resourceId: 1, name: "Wood", totalBalance: 500 },
+          { resourceId: 2, name: "Stone", totalBalance: 300 },
+        ],
+        points: 1200,
+        rank: 5,
+      }),
+      market: vi.fn().mockResolvedValue({
+        pools: [],
+        recentSwaps: [{ eventId: 1 }, { eventId: 2 }],
+        openOrders: [{ orderId: 1 }],
+        playerLpPositions: [],
+      }),
+      leaderboard: vi.fn().mockResolvedValue({
+        entries: [
+          { address: "0xdeadbeef", name: "TestPlayer", points: 1200, rank: 1, realmCount: 3 },
+          { address: "0xother", name: "Rival", points: 900, rank: 2, realmCount: 2 },
+        ],
+        totalPlayers: 50,
+        lastUpdatedAt: 1700000000,
+      }),
+      realm: vi.fn().mockResolvedValue({ entityId: 1, name: "Realm #1" }),
+      explorer: vi.fn().mockResolvedValue({ entityId: 100 }),
+      hyperstructure: vi.fn().mockResolvedValue({ entityId: 200 }),
+      bank: vi.fn().mockResolvedValue({ entityId: 300 }),
+      events: vi.fn().mockResolvedValue({ events: [], totalCount: 0, hasMore: false }),
+    },
+    sql: {
+      fetchAllStructuresMapData: vi.fn().mockResolvedValue([
+        {
+          entity_id: 1,
+          coord_x: 10,
+          coord_y: 20,
+          structure_type: 1,
+          level: 2,
+          owner_address: "0xDeadBeef",
+          realm_id: 1,
+          resources_packed: "0x0",
+          owner_name: "TestPlayer",
+          // Guard slots — alpha has 150 Knight T2 (count * RESOURCE_PRECISION)
+          alpha_category: "Knight",
+          alpha_tier: "T2",
+          alpha_count: "0x22ECB25C00",
+          alpha_stamina_amount: "0x50",
+          alpha_battle_cooldown_end: 0,
+          bravo_category: null,
+          bravo_tier: null,
+          bravo_count: null,
+          bravo_stamina_amount: null,
+          bravo_battle_cooldown_end: null,
+          charlie_category: null,
+          charlie_tier: null,
+          charlie_count: null,
+          charlie_stamina_amount: null,
+          charlie_battle_cooldown_end: null,
+          delta_category: null,
+          delta_tier: null,
+          delta_count: null,
+          delta_stamina_amount: null,
+          delta_battle_cooldown_end: null,
+          // packed_counts_1: category 1 (WorkersHut) = 2, category 5 (Wood) = 3
+          // Bits: cat 1 at offset 0*8=0, cat 5 at offset 4*8=32
+          // (2 << 0) | (3 << 32) = 0x300000002
+          packed_counts_1: "0x300000002",
+          packed_counts_2: null,
+          // packed_counts_3: category 37 (Wheat) at index 36, offset (36-32)*8 = 32 → 1 << 32
+          packed_counts_3: "0x100000000",
+          // Battle data: structure was attacked by entity #500 at (30,40)
+          latest_attacker_id: 500,
+          latest_attack_timestamp: "0x65B8D800", // unix timestamp
+          latest_defender_id: null,
+          latest_defense_timestamp: null,
+          latest_attacker_coord_x: 30,
+          latest_attacker_coord_y: 40,
+          latest_defender_coord_x: null,
+          latest_defender_coord_y: null,
+        },
+        {
+          entity_id: 3,
+          coord_x: 13,
+          coord_y: 22,
+          structure_type: 4,
+          level: 1,
+          owner_address: "0xother",
+          realm_id: null,
+          resources_packed: "0x0",
+          owner_name: "Rival",
+          alpha_category: null,
+          alpha_tier: null,
+          alpha_count: null,
+          alpha_stamina_amount: null,
+          alpha_battle_cooldown_end: null,
+          bravo_category: null,
+          bravo_tier: null,
+          bravo_count: null,
+          bravo_stamina_amount: null,
+          bravo_battle_cooldown_end: null,
+          charlie_category: null,
+          charlie_tier: null,
+          charlie_count: null,
+          charlie_stamina_amount: null,
+          charlie_battle_cooldown_end: null,
+          delta_category: null,
+          delta_tier: null,
+          delta_count: null,
+          delta_stamina_amount: null,
+          delta_battle_cooldown_end: null,
+          packed_counts_1: null,
+          packed_counts_2: null,
+          packed_counts_3: null,
+          latest_attacker_id: null,
+          latest_attack_timestamp: null,
+          latest_defender_id: null,
+          latest_defense_timestamp: null,
+          latest_attacker_coord_x: null,
+          latest_attacker_coord_y: null,
+          latest_defender_coord_x: null,
+          latest_defender_coord_y: null,
+        },
+        {
+          entity_id: 2,
+          coord_x: 50,
+          coord_y: 60,
+          structure_type: 3,
+          level: 1,
+          owner_address: "0xother",
+          realm_id: null,
+          resources_packed: "0x0",
+          owner_name: "FarPlayer",
+          alpha_category: null,
+          alpha_tier: null,
+          alpha_count: null,
+          alpha_stamina_amount: null,
+          alpha_battle_cooldown_end: null,
+          bravo_category: null,
+          bravo_tier: null,
+          bravo_count: null,
+          bravo_stamina_amount: null,
+          bravo_battle_cooldown_end: null,
+          charlie_category: null,
+          charlie_tier: null,
+          charlie_count: null,
+          charlie_stamina_amount: null,
+          charlie_battle_cooldown_end: null,
+          delta_category: null,
+          delta_tier: null,
+          delta_count: null,
+          delta_stamina_amount: null,
+          delta_battle_cooldown_end: null,
+          packed_counts_1: null,
+          packed_counts_2: null,
+          packed_counts_3: null,
+          latest_attacker_id: null,
+          latest_attack_timestamp: null,
+          latest_defender_id: null,
+          latest_defense_timestamp: null,
+          latest_attacker_coord_x: null,
+          latest_attacker_coord_y: null,
+          latest_defender_coord_x: null,
+          latest_defender_coord_y: null,
+        },
+      ]),
+      fetchResourceBalances: vi.fn().mockResolvedValue([
+        {
+          entity_id: 1,
+          WOOD_BALANCE: "0x746A528800",
+          STONE_BALANCE: "0x45D964B800",
+          COAL_BALANCE: "0x0",
+        },
+      ]),
+      fetchResourceBalancesAndProduction: vi.fn().mockResolvedValue([
+        {
+          entity_id: 1,
+          WOOD_BALANCE: "0x746A528800",
+          STONE_BALANCE: "0x45D964B800",
+          COAL_BALANCE: "0x0",
+          "WOOD_PRODUCTION.building_count": 2,
+          "STONE_PRODUCTION.building_count": 1,
+          "COAL_PRODUCTION.building_count": 0,
+          // Troop reserves: 200 Knight T1 (200 * 1e9 = 0x2E90EDD000)
+          KNIGHT_T1_BALANCE: "0x2E90EDD000",
+          KNIGHT_T2_BALANCE: "0x0",
+          KNIGHT_T3_BALANCE: "0x0",
+          CROSSBOWMAN_T1_BALANCE: "0x0",
+          CROSSBOWMAN_T2_BALANCE: "0x0",
+          CROSSBOWMAN_T3_BALANCE: "0x0",
+          PALADIN_T1_BALANCE: "0x0",
+          PALADIN_T2_BALANCE: "0x0",
+          PALADIN_T3_BALANCE: "0x0",
+        },
+      ]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([
+        {
+          entity_id: 100,
+          coord_x: 15,
+          coord_y: 25,
+          owner_structure_id: 1,
+          category: "Knight",
+          tier: "T2",
+          count: "0x22ECB25C00",
+          stamina_amount: "0x50",
+          stamina_updated_tick: "0x0",
+          owner_address: "0xDeadBeef",
+          owner_name: "TestPlayer",
+          battle_cooldown_end: 0,
+          latest_attacker_id: null,
+          latest_attack_timestamp: null,
+          latest_attacker_coord_x: null,
+          latest_attacker_coord_y: null,
+          latest_defender_id: null,
+          latest_defense_timestamp: null,
+          latest_defender_coord_x: null,
+          latest_defender_coord_y: null,
+        },
+      ]),
+      fetchAllTiles: vi.fn().mockResolvedValue([
+        // Explored tiles around army at (15, 25)
+        // Army is at (15,25) — odd row neighbors:
+        //   East: (16,25), NE: (15,26), NW: (14,26), West: (14,25), SW: (14,24), SE: (15,24)
+        {
+          col: 16,
+          row: 25,
+          biome: 3,
+          occupier_id: 0,
+          occupier_type: 0,
+          occupier_is_structure: false,
+          reward_extracted: false,
+        },
+        // NE (15,26) has a Chest (occupier_type: 34)
+        {
+          col: 15,
+          row: 26,
+          biome: 5,
+          occupier_id: 999,
+          occupier_type: 34,
+          occupier_is_structure: false,
+          reward_extracted: false,
+        },
+        {
+          col: 14,
+          row: 26,
+          biome: 2,
+          occupier_id: 0,
+          occupier_type: 0,
+          occupier_is_structure: false,
+          reward_extracted: false,
+        },
+        // West (14,25) is NOT in the list → unexplored
+        // SW (14,24) is NOT in the list → unexplored
+        // SE (15,24) explored:
+        {
+          col: 15,
+          row: 24,
+          biome: 1,
+          occupier_id: 0,
+          occupier_type: 0,
+          occupier_is_structure: false,
+          reward_extracted: false,
+        },
+        // Owned structure tile at (10,20) — explored
+        {
+          col: 10,
+          row: 20,
+          biome: 4,
+          occupier_id: 1,
+          occupier_type: 1,
+          occupier_is_structure: true,
+          reward_extracted: false,
+        },
+      ]),
+      fetchBuildingsByStructures: vi.fn().mockResolvedValue([
+        // Structure entity_id=1 has 3 buildings: center (10,10), (11,10) via [0], (10,11) via [2]
+        { outer_entity_id: 1, inner_col: 10, inner_row: 10, category: 25 }, // Labor at center
+        { outer_entity_id: 1, inner_col: 11, inner_row: 10, category: 5 }, // Wood at [0] (East of center, even row)
+        { outer_entity_id: 1, inner_col: 10, inner_row: 11, category: 3 }, // Stone at [2] (NW of center, even row)
+      ]),
+      fetchBattleLogs: vi.fn().mockResolvedValue([
+        // Player's army #100 attacked defender #200 — player won
+        {
+          event_type: "BattleEvent",
+          attacker_id: 100,
+          defender_id: 200,
+          attacker_owner_id: 1,
+          defender_owner_id: 0,
+          winner_id: 100,
+          max_reward: "[]",
+          success: null,
+          timestamp: "0x65B8D800",
+        },
+        // Enemy #300 raided player's structure #1 — raid failed
+        {
+          event_type: "ExplorerNewRaidEvent",
+          attacker_id: 300,
+          defender_id: 1,
+          attacker_owner_id: 0,
+          defender_owner_id: 1,
+          winner_id: null,
+          max_reward: null,
+          success: 0,
+          timestamp: "0x65B8D700",
+        },
+        // Unrelated battle — not involving player
+        {
+          event_type: "BattleEvent",
+          attacker_id: 400,
+          defender_id: 500,
+          attacker_owner_id: 600,
+          defender_owner_id: 700,
+          winner_id: 400,
+          max_reward: "[]",
+          success: null,
+          timestamp: "0x65B8D600",
+        },
+      ]),
+    },
+    cache: {
+      invalidateByPrefix: vi.fn(),
+      clear: vi.fn(),
+    },
+    resources: {
+      send: vi.fn().mockResolvedValue(fakeTxResult),
+      pickup: vi.fn().mockResolvedValue(fakeTxResult),
+      claimArrivals: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    troops: {
+      createExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      addToExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      deleteExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      addGuard: vi.fn().mockResolvedValue(fakeTxResult),
+      deleteGuard: vi.fn().mockResolvedValue(fakeTxResult),
+      move: vi.fn().mockResolvedValue(fakeTxResult),
+      travel: vi.fn().mockResolvedValue(fakeTxResult),
+      explore: vi.fn().mockResolvedValue(fakeTxResult),
+      swapExplorerToExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      swapExplorerToGuard: vi.fn().mockResolvedValue(fakeTxResult),
+      swapGuardToExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    combat: {
+      attackExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      attackGuard: vi.fn().mockResolvedValue(fakeTxResult),
+      guardAttackExplorer: vi.fn().mockResolvedValue(fakeTxResult),
+      raid: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    trade: {
+      createOrder: vi.fn().mockResolvedValue(fakeTxResult),
+      acceptOrder: vi.fn().mockResolvedValue(fakeTxResult),
+      cancelOrder: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    buildings: {
+      create: vi.fn().mockResolvedValue(fakeTxResult),
+      destroy: vi.fn().mockResolvedValue(fakeTxResult),
+      pauseProduction: vi.fn().mockResolvedValue(fakeTxResult),
+      resumeProduction: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    bank: {
+      buy: vi.fn().mockResolvedValue(fakeTxResult),
+      sell: vi.fn().mockResolvedValue(fakeTxResult),
+      addLiquidity: vi.fn().mockResolvedValue(fakeTxResult),
+      removeLiquidity: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    guild: {
+      create: vi.fn().mockResolvedValue(fakeTxResult),
+      join: vi.fn().mockResolvedValue(fakeTxResult),
+      leave: vi.fn().mockResolvedValue(fakeTxResult),
+      updateWhitelist: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    realm: {
+      upgrade: vi.fn().mockResolvedValue(fakeTxResult),
+      setName: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+    hyperstructure: {
+      contribute: vi.fn().mockResolvedValue(fakeTxResult),
+      allocateShares: vi.fn().mockResolvedValue(fakeTxResult),
+    },
+  };
+}
+
+/**
+ * A fake signer (Account) for testing purposes.
+ */
+export const mockSigner = { address: "0xdeadbeef" } as any;
