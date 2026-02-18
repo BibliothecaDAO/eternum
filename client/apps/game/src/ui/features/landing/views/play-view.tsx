@@ -467,9 +467,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        void prepareSelectionForSignIn(selection).finally(() => {
-          setModal(<SignInPromptModal />, true);
-        });
+        setModal(<SignInPromptModal />, true);
+        void prepareSelectionForSignIn(selection);
         return;
       }
 
@@ -496,9 +495,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
-        void prepareSelectionForSignIn(selection).finally(() => {
-          setModal(<SignInPromptModal />, true);
-        });
+        setModal(<SignInPromptModal />, true);
+        void prepareSelectionForSignIn(selection);
         return;
       }
 
