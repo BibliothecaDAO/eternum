@@ -145,6 +145,7 @@ import {
   recordChunkDiagnosticsEvent,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
+import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
 import {
   captureChunkDiagnosticsBaseline,
   cloneChunkDiagnosticsBaselines,
@@ -2678,16 +2679,9 @@ export default class WorldmapScene extends HexagonScene {
       dummy.position.copy(pos);
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
 
-      if (!IS_FLAT_MODE) {
-        const rotationSeed = this.hashCoordinates(col, row);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        dummy.rotation.y = randomRotation;
-        dummy.position.y += 0.05;
-      } else {
-        dummy.position.y += 0.1;
-        dummy.rotation.y = 0;
-      }
+      const exploredHexTransform = resolveExploredHexTransform({ isFlatMode: IS_FLAT_MODE });
+      dummy.rotation.y = exploredHexTransform.rotationY;
+      dummy.position.y += exploredHexTransform.yOffset;
 
       dummy.updateMatrix();
 
