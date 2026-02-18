@@ -20,11 +20,13 @@
 
 <div align="center">
 
-**An open-source, fully onchain strategy game built on [Starknet](https://starknet.io) with the [Dojo](https://dojoengine.org) engine.**
+**An open-source, fully onchain strategy game built on [Starknet](https://starknet.io) with the
+[Dojo](https://dojoengine.org) engine.**
 
 Conquer hex territories. Harvest resources. Build armies. Forge alliances. Win seasons.
 
-[Play Now](https://eternum.realms.world) · [Documentation](https://docs.realms.world) · [Discord](https://discord.gg/realmsworld) · [Twitter](https://twitter.com/lootrealms)
+[Play Now](https://eternum.realms.world) · [Documentation](https://docs.realms.world) ·
+[Discord](https://discord.gg/realmsworld) · [Twitter](https://twitter.com/lootrealms)
 
 </div>
 
@@ -32,7 +34,9 @@ Conquer hex territories. Harvest resources. Build armies. Forge alliances. Win s
 
 ## What is Eternum?
 
-Eternum is the foundational game of the [Realms World](https://realms.world) ecosystem — a fully onchain strategy game where every action lives on Starknet. You claim Realms, manage resources across a hex-based world map, raise armies, trade with other players, and compete in seasonal competitions for $LORDS tokens.
+Eternum is the foundational game of the [Realms World](https://realms.world) ecosystem — a fully onchain strategy game
+where every action lives on Starknet. You claim Realms, manage resources across a hex-based world map, raise armies,
+trade with other players, and compete in seasonal competitions for $LORDS tokens.
 
 **Everything is onchain.** Contracts are the game. The client is just a window.
 
@@ -71,14 +75,14 @@ eternum/
 
 ## Tech Stack
 
-| Layer | Tech |
-|-------|------|
-| Blockchain | [Starknet](https://starknet.io) (Cairo) |
-| Game Engine | [Dojo](https://dojoengine.org) v1.0.4 |
-| Frontend | React, Vite, Three.js |
-| Onchain Queries | [Torii](https://book.dojoengine.org/toolchain/torii) |
-| Account Abstraction | [Cartridge Controller](https://cartridge.gg) |
-| Package Manager | pnpm + Bun |
+| Layer               | Tech                                                 |
+| ------------------- | ---------------------------------------------------- |
+| Blockchain          | [Starknet](https://starknet.io) (Cairo)              |
+| Game Engine         | [Dojo](https://dojoengine.org) v1.0.4                |
+| Frontend            | React, Vite, Three.js                                |
+| Onchain Queries     | [Torii](https://book.dojoengine.org/toolchain/torii) |
+| Account Abstraction | [Cartridge Controller](https://cartridge.gg)         |
+| Package Manager     | pnpm + Bun                                           |
 
 ## Getting Started
 
@@ -112,11 +116,11 @@ pnpm dev
 
 ### Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start game dev server |
-| `pnpm dev:docs` | Start docs dev server (Vocs) |
-| `pnpm build:packages` | Build shared packages |
+| Command               | Description                  |
+| --------------------- | ---------------------------- |
+| `pnpm dev`            | Start game dev server        |
+| `pnpm dev:docs`       | Start docs dev server (Vocs) |
+| `pnpm build:packages` | Build shared packages        |
 
 ### Running Contracts Locally
 
@@ -133,6 +137,7 @@ sozo migrate
 We welcome contributions! See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for guidelines.
 
 Key entry points for developers:
+
 - **Contracts** → [`contracts/`](./contracts) — Cairo game logic
 - **SDK** → [`packages/`](./packages) — shared libraries ([package docs](./packages/README.md))
 - **Game Client** → [`client/apps/game/`](./client/apps/game) — React/Three.js frontend
@@ -140,14 +145,14 @@ Key entry points for developers:
 
 ## Links
 
-| | |
-|---|---|
-| 🎮 **Play** | [eternum.realms.world](https://eternum.realms.world) |
-| 📖 **Docs** | [docs.realms.world](https://docs.realms.world) |
-| 🌐 **Realms World** | [realms.world](https://realms.world) |
-| 💬 **Discord** | [discord.gg/realmsworld](https://discord.gg/realmsworld) |
-| 🐦 **Twitter** | [@lootrealms](https://twitter.com/lootrealms) |
-| 🏛️ **BibliothecaDAO** | [@BibliothecaDAO](https://twitter.com/BibliothecaDAO) |
+|                       |                                                          |
+| --------------------- | -------------------------------------------------------- |
+| 🎮 **Play**           | [eternum.realms.world](https://eternum.realms.world)     |
+| 📖 **Docs**           | [docs.realms.world](https://docs.realms.world)           |
+| 🌐 **Realms World**   | [realms.world](https://realms.world)                     |
+| 💬 **Discord**        | [discord.gg/realmsworld](https://discord.gg/realmsworld) |
+| 🐦 **Twitter**        | [@lootrealms](https://twitter.com/lootrealms)            |
+| 🏛️ **BibliothecaDAO** | [@BibliothecaDAO](https://twitter.com/BibliothecaDAO)    |
 
 ## License
 
