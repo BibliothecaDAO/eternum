@@ -18,8 +18,8 @@ export const BlitzRealmDefenseSlotsTable = () => {
           <thead style={table.tableHead}>
             <tr>
               <th style={table.headerCell}>Realm Level</th>
-              <th style={table.headerCell}>No. Field Armies</th>
-              <th style={table.headerCell}>No. Guard Armies</th>
+              <th style={{ ...table.headerCell, textAlign: "center" }}>No. Field Armies</th>
+              <th style={{ ...table.headerCell, textAlign: "center" }}>No. Guard Armies</th>
               <th style={table.headerCell}>Defense Slot Name</th>
             </tr>
           </thead>
@@ -27,8 +27,8 @@ export const BlitzRealmDefenseSlotsTable = () => {
             {defenseSlots.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.fieldSlots}</td>
-                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>{item.fieldSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>{item.guardSlots}</td>
                 <td style={table.cell}>{item.slotName}</td>
               </tr>
             ))}

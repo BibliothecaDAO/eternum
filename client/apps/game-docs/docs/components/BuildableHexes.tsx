@@ -16,7 +16,7 @@ export const BuildableHexes = () => {
           <thead style={table.tableHead}>
             <tr>
               <th style={table.headerCell}>Realm Level</th>
-              <th style={table.headerCell}>Buildable Hexes</th>
+              <th style={{ ...table.headerCell, textAlign: "center" }}>Buildable Hexes</th>
               <th style={table.headerCell}>Description</th>
             </tr>
           </thead>
@@ -24,7 +24,7 @@ export const BuildableHexes = () => {
             {buildableHexes.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: table.headerCell.color, fontWeight: "bold" }}>{item.hexes}</td>
+                <td style={{ ...table.cell, color: table.headerCell.color, fontWeight: "bold", textAlign: "center" }}>{item.hexes}</td>
                 <td style={table.cell}>{item.description}</td>
               </tr>
             ))}

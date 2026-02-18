@@ -1,6 +1,6 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
-import { section, stats, table } from "../styles";
+import { colors, section, stats, table } from "../styles";
 
 // Helper functions for troop information
 export const getTroopName = (troopId: number) => {

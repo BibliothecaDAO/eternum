@@ -4,35 +4,55 @@ layout: docs
 
 # 18th February 2026
 
+### Blitz Prize Pool Rewrite
+
+- [Blitz/Prize Pool](/blitz/prize-pool): Complete rewrite of the prize pool and distribution documentation. Updated
+  prize pool composition, tier breakdowns, and distribution mechanics to reflect current game state.
+
+### Component Architecture
+
+- Separated Blitz and Eternum component variants into dedicated directories (`blitz-components/`,
+  `eternum-components/`) for clearer maintainability. Affected components: DefendingArmies, HyperstructureRings,
+  TroopMovementTable, WeightTable, ResourceProduction, RewardsChestTable, and others.
+- Introduced shared `styles.ts` design system with consistent color palette, spacing, and reusable table/section/stats
+  styles across all components.
+
 ### Visual Overhaul
 
-- Global table improvements: added row hover states, consistent vertical alignment, and mobile overflow protection.
-- Reduced column margins in Loot Chest item tables to allow more width for description columns.
-- Fixed deployment caps table dead space on [Blitz/Armies](/blitz/military/armies) — table now fills full container
-  width.
-- Fixed prize pool composition table dead space on [Blitz/Prize Pool](/blitz/prize-pool).
-- Increased font size of 'Armies by Realm Level' and 'Guard Slots by Structure Type' table headings to match other
-  component headings.
-- Changed troop tier card headings (Tier 1, Tier 2, Tier 3) to Exo 2 font for consistency.
-- Unbolded numeric figures in Troop Tier Stats tables (Damage Comparison, Max Stamina).
+- Applied a Realms-themed design language across all documentation pages: dark card backgrounds, brass/gold accent
+  colors, consistent typography (Exo 2 headings), and hover states on table rows.
+- Rebuilt sidebar navigation with collapsible sections, chevron toggles, and improved hierarchy.
+- Fixed table dead space issues on Deployment Caps and Prize Pool Composition tables.
 - Centre-aligned numeric columns across multiple tables: Deployment Caps, Guard Slots, Damage Comparison, Max Stamina,
-  Starting Materials (Realms and Camps).
-- Restructured Troop Movement stats box as a clean list layout, removing sub-headings and emojis.
-- Added context-aware column width utility classes for future table styling.
+  Buildable Hexes, Armies by Realm Level, and Starting Materials (Realms and Camps).
+- Reduced loot chest table cell margins to allow more width for description columns.
+- Unbolded numeric figures in Troop Tier Stats tables for cleaner readability.
+- Restructured Troop Movement stats as a flat list layout.
+- Added global mobile overflow protection for all tables.
+- Changed Hyperstructure ring formula notation from √(P/6) to (P/6)^(1/2).
+- Converted damage refund calculation rules to code blocks for consistency.
 
 ### Content Updates
 
 - [Overview/Introduction](/overview/introduction): Linked 'Eternum' and 'Blitz' in Game Modes section to their
   respective key concept pages.
-- [Blitz/Damage](/blitz/military/damage): Converted refund calculation rules to code blocks for consistency. Added
-  missing full stop.
-- [Blitz/World Map](/blitz/worldmap-movement/worldmap): Changed Hyperstructure ring formula from √(P/6) to (P/6)^(1/2)
-  notation.
+- [Blitz/Loot Chests](/overview/chests/contents): Updated Blitz and Eternum rewards chest tables with revised item
+  descriptions and column layout.
+- [Blitz/Armies](/blitz/military/armies): Converted Deployment Caps to inline HTML table with fixed layout.
+- [Blitz/Game Entry](/blitz/game-entry): Minor content adjustments.
+- [Blitz/MMR](/blitz/mmr): Removed redundant content.
+- [Development/Getting Started](/development/getting-started): Added setup notes.
+- Multiple Eternum section pages: Minor cross-reference and link fixes.
+
+### Sidebar & Navigation
+
+- Restructured `vocs.config.ts` sidebar: reordered sections, added new pages, improved collapsed/expanded defaults.
+- Added 18 February 2026 changelog to navigation.
 
 ### Changelog Formatting
 
-- Standardized section heading levels across all changelog entries (8th December, 31st January).
+- Standardised section heading levels across 8th December and 31st January changelog entries.
 
 ---
 
-_This changelog reflects all documentation updates made since the previous release._
+_This changelog covers all documentation changes in PR #4204._
