@@ -41,7 +41,6 @@ export interface EternumEntity {
   // Battle history — parsed from already-fetched raw SQL fields
   lastAttack?: { attackerId: number; timestamp: number; pos?: { x: number; y: number } };
   lastDefense?: { defenderId: number; timestamp: number; pos?: { x: number; y: number } };
-
 }
 
 /**
@@ -612,7 +611,9 @@ function buildOperatingArea(
     }
   }
 
-  const lines: string[] = [`### Operating Area (radius ${OPERATING_AREA_RADIUS} around all entities, ${areaTiles.size} tiles)`];
+  const lines: string[] = [
+    `### Operating Area (radius ${OPERATING_AREA_RADIUS} around all entities, ${areaTiles.size} tiles)`,
+  ];
   if (unexplored.length > 0) {
     lines.push(`  Unexplored (${unexplored.length}): ${unexplored.join(", ")}`);
   }
@@ -649,12 +650,25 @@ function parseLastDefense(raw: any): EternumEntity["lastDefense"] {
 /** Actions available on structures — displayed once per section, not per entity. */
 function getStructureActions(): string[] {
   return [
-    "create_building", "destroy_building", "pause_production", "resume_production",
-    "create_explorer", "delete_explorer", "upgrade_realm",
-    "add_guard", "delete_guard", "swap_explorer_to_guard", "swap_guard_to_explorer",
-    "send_resources", "pickup_resources", "claim_arrivals",
-    "create_order", "accept_order", "cancel_order",
-    "buy_resources", "sell_resources",
+    "create_building",
+    "destroy_building",
+    "pause_production",
+    "resume_production",
+    "create_explorer",
+    "delete_explorer",
+    "upgrade_realm",
+    "add_guard",
+    "delete_guard",
+    "swap_explorer_to_guard",
+    "swap_guard_to_explorer",
+    "send_resources",
+    "pickup_resources",
+    "claim_arrivals",
+    "create_order",
+    "accept_order",
+    "cancel_order",
+    "buy_resources",
+    "sell_resources",
     "contribute_hyperstructure",
   ];
 }
@@ -662,10 +676,18 @@ function getStructureActions(): string[] {
 /** Actions available on armies — displayed once per section, not per entity. */
 function getArmyActions(): string[] {
   return [
-    "travel_explorer", "explore", "move_explorer",
-    "attack_explorer", "attack_guard", "guard_attack_explorer", "raid",
-    "add_to_explorer", "delete_explorer",
-    "swap_explorer_to_explorer", "swap_explorer_to_guard", "swap_guard_to_explorer",
+    "travel_explorer",
+    "explore",
+    "move_explorer",
+    "attack_explorer",
+    "attack_guard",
+    "guard_attack_explorer",
+    "raid",
+    "add_to_explorer",
+    "delete_explorer",
+    "swap_explorer_to_explorer",
+    "swap_explorer_to_guard",
+    "swap_guard_to_explorer",
     "pickup_resources",
   ];
 }
@@ -1146,7 +1168,12 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
           );
         }
         // Free building paths — only show when there are actually free slots
-        if (e.freeSlots && e.freeSlots.length > 0 && e.buildingSlots && e.buildingSlots.total - e.buildingSlots.used > 0) {
+        if (
+          e.freeSlots &&
+          e.freeSlots.length > 0 &&
+          e.buildingSlots &&
+          e.buildingSlots.total - e.buildingSlots.used > 0
+        ) {
           lines.push(`    Free paths: ${e.freeSlots.join(",")}`);
         }
         // Population — only show when near capacity or full

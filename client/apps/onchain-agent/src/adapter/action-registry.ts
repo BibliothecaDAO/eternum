@@ -514,7 +514,10 @@ register(
   [
     n("toExplorerId", "Explorer entity ID to reinforce"),
     n("amount", "Number of troops to add"),
-    n("homeDirection", `Direction FROM the explorer TO its home structure (${DIR}). Check explorer's neighbor tiles to find which direction the structure is in.`),
+    n(
+      "homeDirection",
+      `Direction FROM the explorer TO its home structure (${DIR}). Check explorer's neighbor tiles to find which direction the structure is in.`,
+    ),
   ],
   (client, signer, p) =>
     wrapTx(() =>
@@ -1064,7 +1067,10 @@ register(
   [
     n("hyperstructureEntityId", "Hyperstructure entity ID"),
     n("contributorEntityId", "Your structure entity ID contributing"),
-    na("contributions", "Flat array of [resourceType, amount, resourceType, amount, ...] pairs. Use resource IDs from the resource list."),
+    na(
+      "contributions",
+      "Flat array of [resourceType, amount, resourceType, amount, ...] pairs. Use resource IDs from the resource list.",
+    ),
   ],
   (client, signer, p) =>
     wrapTx(() =>
