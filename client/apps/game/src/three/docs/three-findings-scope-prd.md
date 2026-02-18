@@ -58,6 +58,10 @@ This plan scopes the prioritized findings list and converts it into executable T
       2. `client/apps/game/src/three/managers/army-model-debug-hooks.test.ts`
    5. Registry behavior tests:
       1. `client/apps/game/src/three/utils/debug-hooks.test.ts`
+12. Ran autonomous browser smoke lane via `agent-browser` with artifacts:
+   1. Artifacts captured in `.context/spectator-browser/`
+   2. Outcome: spectator entry reached but blocked by headless WebGL context creation failure (`THREE.WebGLRenderer: Error creating WebGL context`)
+   3. Supplemented runbook in `client/apps/game/AGENTS.md` with Node `20.19` compatibility launcher and infra-blocked handling notes
 
 ## Prioritized Findings (Scoped)
 

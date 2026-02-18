@@ -103,7 +103,11 @@ PATH="/Users/os/Library/pnpm:$PATH" pnpm -r --filter "@bibliothecadao/*" --if-pr
 3. Start game client on a fixed port:
 
 ```bash
+# If local node is already >=20.19
 PATH="/Users/os/Library/pnpm:$PATH" pnpm --dir client/apps/game dev --host 127.0.0.1 --port 4173
+
+# If local node is older (common in CI/agents), force a compatible runtime:
+npx -y node@20.19.0 $(which pnpm) --dir client/apps/game dev --host 127.0.0.1 --port 4173
 ```
 
 ### Spectator Smoke Test (Autonomous)
@@ -123,6 +127,8 @@ npx -y agent-browser --session spectator-check wait 2500
 npx -y agent-browser --session spectator-check get url
 npx -y agent-browser --session spectator-check eval "Boolean(document.getElementById('main-canvas'))"
 npx -y agent-browser --session spectator-check get count "text=Unable to Start"
+npx -y agent-browser --session spectator-check console
+npx -y agent-browser --session spectator-check errors
 ```
 
 Expected pass signals:
@@ -130,6 +136,11 @@ Expected pass signals:
 1. URL contains `/play/map` and `spectate=true`.
 2. `main-canvas` exists (`true`).
 3. `Unable to Start` count is `0`.
+
+Known environment caveat:
+
+1. In headless virtualized environments, `THREE.WebGLRenderer` may fail with `Error creating WebGL context`.
+2. When this happens, capture screenshot + console/errors logs and treat the run as infra-blocked, not app-pass.
 
 ### Artifacts
 
