@@ -113,6 +113,7 @@ import {
   resolveChunkSwitchActions,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
+  shouldForceChunkRefreshForZoomDistanceChange,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
   resolveHydratedChunkRefreshFlushPlan,
@@ -238,6 +239,8 @@ export default class WorldmapScene extends HexagonScene {
   private chunkRefreshRunning = false;
   private chunkRefreshRerunRequested = false;
   private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
+  private lastControlsCameraDistance: number | null = null;
+  private readonly zoomForceRefreshDistanceThreshold = 0.75;
   private zeroTerrainFrames = 0;
   private terrainRecoveryInFlight = false;
   private lastTerrainRecoveryAtMs = 0;
@@ -347,6 +350,18 @@ export default class WorldmapScene extends HexagonScene {
   private handleControlsChangeForMinimap = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
+
+    const nextCameraDistance = this.getCurrentCameraDistance();
+    const shouldForceRefresh = shouldForceChunkRefreshForZoomDistanceChange({
+      previousDistance: this.lastControlsCameraDistance,
+      nextDistance: nextCameraDistance,
+      threshold: this.zoomForceRefreshDistanceThreshold,
+    });
+    this.lastControlsCameraDistance = nextCameraDistance;
+
+    if (shouldForceRefresh) {
+      this.requestChunkRefresh(true);
+    }
   };
   private isUrlChangedListenerAttached = false;
   private readonly urlChangedHandler = () => {
@@ -2025,6 +2040,7 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
+    this.lastControlsCameraDistance = this.getCurrentCameraDistance();
     this.highlightHexManager.setYOffset(0.025);
 
     // Configure thunder bolts for worldmap - dramatic storm effect
@@ -2180,6 +2196,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();
+    this.lastControlsCameraDistance = null;
 
     // Reset chunk state to ensure clean re-initialization when returning to world view
     this.currentChunk = "null";

@@ -85,6 +85,12 @@ interface HydratedChunkRefreshFlushPlan {
   remainingQueuedChunkKeys: string[];
 }
 
+interface ZoomRefreshDecisionInput {
+  previousDistance: number | null;
+  nextDistance: number;
+  threshold: number;
+}
+
 interface StructureBoundsRefreshInput {
   currentChunk: string;
   isChunkTransitioning: boolean;
@@ -280,6 +286,23 @@ export function resolveHydratedChunkRefreshFlushPlan(
     shouldForceRefreshCurrentChunk,
     remainingQueuedChunkKeys: uniqueQueuedChunkKeys.filter((chunkKey) => chunkKey !== input.currentChunk),
   };
+}
+
+/**
+ * Large zoom-distance changes can expose stale terrain state even when the
+ * stride chunk key does not change. Force a refresh when movement exceeds
+ * threshold and we have a previous distance sample.
+ */
+export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshDecisionInput): boolean {
+  if (input.previousDistance === null) {
+    return false;
+  }
+  if (!Number.isFinite(input.nextDistance) || !Number.isFinite(input.previousDistance)) {
+    return false;
+  }
+
+  const threshold = Math.max(0, input.threshold);
+  return Math.abs(input.nextDistance - input.previousDistance) >= threshold;
 }
 
 /**
