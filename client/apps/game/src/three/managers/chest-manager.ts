@@ -15,8 +15,13 @@ import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 import { PointsLabelRenderer } from "./points-label-renderer";
-import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
-import { waitForVisualSettle } from "./manager-update-convergence";
+import {
+  isCommittedManagerChunk,
+  MANAGER_UNCOMMITTED_CHUNK,
+  shouldAcceptManagerChunkRequest,
+  shouldRunManagerChunkUpdate,
+  waitForVisualSettle,
+} from "./manager-update-convergence";
 
 const MAX_INSTANCES = 1000;
 
@@ -28,7 +33,7 @@ export class ChestManager {
   private dummy: THREE.Object3D = new THREE.Object3D();
   chests: Chests = new Chests();
   private visibleChests: ChestData[] = [];
-  private currentChunkKey: string | null = "190,170";
+  private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: THREE.Group;
   private entityIdMap: Map<number, ID> = new Map();
@@ -42,7 +47,16 @@ export class ChestManager {
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
+  private transitionChunkByToken: Map<number, string> = new Map();
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
+
+  private pruneTransitionChunkHistory(): void {
+    this.transitionChunkByToken.forEach((_, token) => {
+      if (token < this.latestTransitionToken) {
+        this.transitionChunkByToken.delete(token);
+      }
+    });
+  }
 
   constructor(
     scene: THREE.Scene,
@@ -58,7 +72,7 @@ export class ChestManager {
     this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.loadModel().then(() => {
-      if (this.currentChunkKey) {
+      if (isCommittedManagerChunk(this.currentChunkKey)) {
         this.renderVisibleChests(this.currentChunkKey);
       }
     });
@@ -128,7 +142,7 @@ export class ChestManager {
         console.log("[ChestManager] Points-based icon renderer initialized");
 
         // Re-render visible chests to populate points
-        if (this.currentChunkKey) {
+        if (isCommittedManagerChunk(this.currentChunkKey)) {
           this.renderVisibleChests(this.currentChunkKey);
         }
       },
@@ -204,7 +218,7 @@ export class ChestManager {
     this.chests.addChest(occupierId, position);
 
     // Re-render if we have a current chunk
-    if (this.currentChunkKey) {
+    if (isCommittedManagerChunk(this.currentChunkKey)) {
       this.renderVisibleChests(this.currentChunkKey);
     }
   }
@@ -212,11 +226,21 @@ export class ChestManager {
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
     if (transitionToken !== undefined) {
-      this.latestTransitionToken = transitionToken;
+      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
+      this.transitionChunkByToken.set(transitionToken, chunkKey);
+      this.pruneTransitionChunkHistory();
     }
 
     if (!force && this.currentChunkKey === chunkKey) {
@@ -238,7 +262,15 @@ export class ChestManager {
       return;
     }
 
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
 
@@ -253,10 +285,14 @@ export class ChestManager {
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = (async () => {
-      if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
-        return;
-      }
-      if (transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+      if (
+        !shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunkKey,
+          transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        })
+      ) {
         return;
       }
       this.renderVisibleChests(chunkKey);
@@ -558,7 +594,7 @@ export class ChestManager {
     }
 
     // Re-render visible chests
-    if (this.currentChunkKey) {
+    if (isCommittedManagerChunk(this.currentChunkKey)) {
       this.renderVisibleChests(this.currentChunkKey);
     }
   }

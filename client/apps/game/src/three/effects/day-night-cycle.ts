@@ -66,6 +66,7 @@ export class DayNightCycleManager {
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
+  private isDisposed = false;
 
   // Store original lighting values to restore when disabled
   private originalLightingState: {
@@ -530,6 +531,12 @@ export class DayNightCycleManager {
    * Dispose of resources
    */
   dispose(): void {
+    if (this.isDisposed) {
+      console.warn("DayNightCycleManager already disposed, skipping cleanup");
+      return;
+    }
+    this.isDisposed = true;
+
     this.restoreOriginalLighting();
   }
 

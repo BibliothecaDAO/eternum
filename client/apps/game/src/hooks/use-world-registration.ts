@@ -64,7 +64,14 @@ const createMasterAccount = (rpcProvider: RpcProvider): Account | null => {
   }
 };
 
-export type RegistrationStage = "idle" | "obtaining-token" | "waiting-for-token" | "registering" | "done" | "error";
+export type RegistrationStage =
+  | "idle"
+  | "preparing"
+  | "obtaining-token"
+  | "waiting-for-token"
+  | "registering"
+  | "done"
+  | "error";
 
 interface UseWorldRegistrationProps {
   worldName: string;
@@ -309,6 +316,7 @@ export const useWorldRegistration = ({
     if (!canRegister || !account) return;
 
     setError(null);
+    setRegistrationStage("preparing");
 
     try {
       // Resolve contracts
