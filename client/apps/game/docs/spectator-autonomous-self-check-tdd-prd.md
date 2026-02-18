@@ -10,8 +10,8 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change                                                                 |
-| ------ | ---------------- | ------ | ---------------------------------------------------------------------- |
+| Update | Date (UTC)       | Author | Change                                                                  |
+| ------ | ---------------- | ------ | ----------------------------------------------------------------------- |
 | U1     | 2026-02-18 00:00 | Codex  | Initial PRD with autonomous spectator test loop, milestones, and gates. |
 
 ## Executive Summary
@@ -28,8 +28,8 @@ This PRD defines a strict red-green-refactor program and a self-checking executi
 
 ## Problem Statement
 
-Current spectator behavior can regress without immediate detection because the critical path crosses multiple modules with
-limited cross-module tests:
+Current spectator behavior can regress without immediate detection because the critical path crosses multiple modules
+with limited cross-module tests:
 
 1. Spectator state resolution and fallback selection.
 2. Route transitions and structure-sync-driven navigation.
@@ -123,11 +123,11 @@ Current state:
 
 | ID   | Requirement                                                                                           | Priority |
 | ---- | ----------------------------------------------------------------------------------------------------- | -------- |
-| FR-1 | Entering spectator mode sets `isSpectating=true` and preserves worldmap return coordinates.          | P0       |
-| FR-2 | Startup selection picks owned realm when available, otherwise first global structure as spectator.   | P0       |
-| FR-3 | `exitSpectatorMode()` restores last controlled structure deterministically.                            | P0       |
+| FR-1 | Entering spectator mode sets `isSpectating=true` and preserves worldmap return coordinates.           | P0       |
+| FR-2 | Startup selection picks owned realm when available, otherwise first global structure as spectator.    | P0       |
+| FR-3 | `exitSpectatorMode()` restores last controlled structure deterministically.                           | P0       |
 | FR-4 | Spectator overlay dismisses only after map loading transition (`true -> false`) plus post-load delay. | P0       |
-| FR-5 | Spectator entry from game-entry flow always lands on map route (`/play/map?...&spectate=true`).      | P0       |
+| FR-5 | Spectator entry from game-entry flow always lands on map route (`/play/map?...&spectate=true`).       | P0       |
 | FR-6 | Autonomous browser run can enter spectator without manual input and verify worldmap readiness.        | P0       |
 | FR-7 | Self-check loop retries once only for recognized flaky signatures, otherwise fails immediately.       | P1       |
 | FR-8 | Self-check loop emits artifacts (logs, screenshot, trace) on failure.                                 | P1       |
@@ -135,12 +135,12 @@ Current state:
 
 ### Non-Functional Requirements
 
-| ID    | Requirement                                                           | Priority |
-| ----- | --------------------------------------------------------------------- | -------- |
-| NFR-1 | Full self-check loop target runtime <= 10 minutes on CI workers.      | P1       |
-| NFR-2 | Flake rate for spectator browser suite < 2% across 50 runs.           | P1       |
+| ID    | Requirement                                                                 | Priority |
+| ----- | --------------------------------------------------------------------------- | -------- |
+| NFR-1 | Full self-check loop target runtime <= 10 minutes on CI workers.            | P1       |
+| NFR-2 | Flake rate for spectator browser suite < 2% across 50 runs.                 | P1       |
 | NFR-3 | Tests must be deterministic (fake timers/mocked boundaries where possible). | P0       |
-| NFR-4 | Failures must be classified into infra vs regression with clear output. | P1       |
+| NFR-4 | Failures must be classified into infra vs regression with clear output.     | P1       |
 
 ## Self-Checking Loop Architecture
 
@@ -344,4 +344,3 @@ Expected internal sequence:
 1. Should spectator browser tests launch from game-entry modal flow, direct route, or both?
 2. Do we want an explicit `window` test hook for spectator readiness, or only DOM-visible assertions?
 3. Should self-check artifacts be uploaded on all runs, or only on failure?
-

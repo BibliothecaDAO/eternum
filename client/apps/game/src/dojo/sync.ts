@@ -342,7 +342,8 @@ export const initialSync = async (
     const hasConnectedAccount =
       typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
 
-    let ownedStructures: Array<{ entity_id: number; coord_x: number; coord_y: number; category?: number | string }> = [];
+    let ownedStructures: Array<{ entity_id: number; coord_x: number; coord_y: number; category?: number | string }> =
+      [];
 
     if (hasConnectedAccount) {
       try {
