@@ -1,10 +1,9 @@
 import { StartingMilitary } from "@/components/StartingMilitary";
-import { BlitzRealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BlitzRealmDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
-import { RealmLeveling } from "@/components/RealmLeveling";
 import ResourceIcon from "@/components/ResourceIcon";
 import { importantNote, table, formatAmount, section } from "@/components/styles";
-import { BlitzRealmLeveling } from "@/components/BlitzRealmLeveling";
+import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
 
 # 🏰 Realms
 
@@ -67,8 +66,8 @@ sequence for an example of 24 players is visualized below:
     <table style={table.table}>
       <thead style={table.tableHead}>
         <tr>
-          <th style={table.headerCell}>Starting Resources per Realm</th>
-          <th style={table.headerCell}>Quantity</th>
+          <th style={{ ...table.headerCell, width: "70%" }}>Starting Resources per Realm</th>
+          <th style={{ ...table.headerCell, width: "30%", textAlign: "center" }}>Quantity</th>
         </tr>
       </thead>
       <tbody>
@@ -79,7 +78,7 @@ sequence for an example of 24 players is visualized below:
               Wheat
             </div>
           </td>
-          <td style={table.cell}>1,000</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>1,000</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -88,7 +87,7 @@ sequence for an example of 24 players is visualized below:
               Labor
             </div>
           </td>
-          <td style={table.cell}>1,200</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>1,200</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -97,7 +96,7 @@ sequence for an example of 24 players is visualized below:
               Wood
             </div>
           </td>
-          <td style={table.cell}>180</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>180</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -106,7 +105,7 @@ sequence for an example of 24 players is visualized below:
               Coal
             </div>
           </td>
-          <td style={table.cell}>120</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>120</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -115,7 +114,7 @@ sequence for an example of 24 players is visualized below:
               Copper
             </div>
           </td>
-          <td style={table.cell}>60</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>60</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -124,7 +123,7 @@ sequence for an example of 24 players is visualized below:
               Donkeys
             </div>
           </td>
-          <td style={table.cell}>200</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>200</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -133,7 +132,7 @@ sequence for an example of 24 players is visualized below:
               T1 Troops
             </div>
           </td>
-          <td style={table.cell}>3,000</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>3,000</td>
         </tr>
       </tbody>
     </table>

@@ -1,6 +1,6 @@
 import { ResourcesIds } from "@bibliothecadao/types";
-import ResourceIcon from "./ResourceIcon";
-import { section, table } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { section, table } from "../styles";
 
 export const ExplorationRewards = () => {
   const rewards = [
@@ -32,8 +32,10 @@ export const ExplorationRewards = () => {
             {rewards.map((reward, index) => (
               <tr key={index}>
                 <td style={table.resourceCell}>
-                  <ResourceIcon name={reward.material} id={reward.id} size="sm" />
-                  {reward.material}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                    <ResourceIcon name={reward.material} id={reward.id} size="sm" />
+                    {reward.material}
+                  </span>
                 </td>
                 <td style={table.cell}>{reward.quantity.toLocaleString()}</td>
                 <td style={table.cell}>{reward.chance}%</td>

@@ -1,32 +1,43 @@
 // Common styles for documentation components
-// These styles are extracted from the various component files to create a centralized styling system
+// Realms visual theme — dark mode, inspired by the Realms design language
 
-// Colors
+// Fonts
+export const fonts = {
+  body: "'Exo 2', sans-serif",
+  display: "'MedievalSharp', serif",
+  heading: "'Cinzel', serif",
+  mono: "'Source Code Pro', monospace",
+};
+
+// Colors — Realms palette
 export const colors = {
-  primary: "#f0b060",
-  secondary: "#dfc296",
-  border: "#4d3923",
-  borderDark: "#6d4923",
+  primary: "#c9b06a", // brass accent
+  secondary: "#c4874a", // ember accent
+  border: "#564e3e", // etched border
+  borderDark: "#6b6250", // strong border
+  arcane: "#8088b8", // cool accent
   background: {
-    light: "rgba(30, 20, 10, 0.3)",
-    medium: "rgba(40, 30, 20, 0.5)",
-    dark: "rgba(40, 30, 20, 0.7)",
-    header: "rgba(60, 40, 20, 0.5)",
+    void: "#141520",
+    smoke: "#1e2030",
+    light: "rgba(51, 47, 40, 0.3)", // iron tint
+    medium: "rgba(51, 47, 40, 0.55)", // iron
+    dark: "rgba(56, 58, 74, 0.6)", // slate
+    header: "rgba(56, 58, 74, 0.7)", // slate header
   },
   text: {
-    light: "#f9fafb",
-    muted: "#dfc296",
+    light: "#e8e4dc",
+    muted: "#c9b06a",
   },
   modifiers: {
     positive: "#69db7c",
     negative: "#ff6b6b",
   },
   resource: {
-    military: "#d4af37", // Darker gold
-    food: "#f0b060", // Amber gold
-    labor: "#c0c0c0", // Silver gray
-    transport: "#a67c00", // Bronze gold
-    default: "#dfc296", // Light gold
+    military: "#c9b06a",
+    food: "#c4874a",
+    labor: "#8088b8",
+    transport: "#a89060",
+    default: "#c9b06a",
   },
 };
 
@@ -34,12 +45,12 @@ export const colors = {
 export const table = {
   container: {
     overflowX: "auto" as const,
-    borderRadius: "0.75rem",
+    borderRadius: "10px",
     backgroundColor: colors.background.medium,
-    borderBottom: `1px solid ${colors.border}`,
-    borderLeft: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.border}`,
     marginBottom: "1.5rem",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    boxShadow: "inset 0 1px 0 rgba(201, 176, 106, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
+    fontFamily: fonts.body,
   },
   wrapper: {
     overflowX: "auto" as const,
@@ -53,27 +64,30 @@ export const table = {
     backgroundColor: colors.background.dark,
   },
   headerCell: {
-    padding: "0.5rem",
+    padding: "0.6rem 0.5rem",
     backgroundColor: colors.background.header,
     color: colors.primary,
-    fontWeight: "bold",
+    fontWeight: 700,
     textAlign: "left" as const,
     borderBottom: `1px solid ${colors.borderDark}`,
+    fontFamily: fonts.body,
+    fontSize: "0.85rem",
+    letterSpacing: "0.005em",
   },
   cell: {
     padding: "0.5rem",
     borderBottom: `1px solid ${colors.border}`,
     backgroundColor: colors.background.light,
     verticalAlign: "middle" as const,
+    color: colors.text.light,
   },
   resourceCell: {
     padding: "0.5rem",
     borderBottom: `1px solid ${colors.border}`,
     backgroundColor: colors.background.light,
     verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
+    whiteSpace: "nowrap" as const,
+    minWidth: "180px",
   },
   weightCell: {
     padding: "0.5rem",
@@ -85,24 +99,42 @@ export const table = {
   compareTable: {
     width: "100%",
     borderCollapse: "collapse" as const,
+    tableLayout: "fixed" as const,
     marginBottom: "1.5rem",
+    backgroundColor: colors.background.medium,
+    border: `1px solid ${colors.border}`,
+    borderRadius: "10px",
+    overflow: "hidden",
   },
   tableHeaderCell: {
     textAlign: "left" as const,
     padding: "0.75rem 0.5rem",
     color: colors.primary,
-    fontSize: "0.9rem",
-    fontWeight: "bold",
+    fontSize: "0.85rem",
+    fontWeight: 700,
+    fontFamily: fonts.body,
+    letterSpacing: "0.005em",
   },
   tableFirstColumn: {
     width: "30%",
-    paddingLeft: "0",
+    paddingLeft: "0.75rem",
+  },
+  /* Context-aware first column options - use as needed without changing existing tables */
+  tableFirstColumnNarrow: {
+    width: "20%",
+    paddingLeft: "0.75rem",
+    minWidth: "100px",
+  },
+  tableFirstColumnMedium: {
+    width: "25%",
+    paddingLeft: "0.75rem",
+    minWidth: "140px",
   },
   tableCell: {
     padding: "0.75rem 0.5rem",
-    color: colors.secondary,
+    color: colors.text.light,
     fontSize: "0.95rem",
-    borderBottom: `1px solid rgba(109, 73, 35, 0.3)`,
+    borderBottom: `1px solid rgba(107, 98, 80, 0.3)`,
   },
   tableRow: {
     transition: "background-color 0.2s",
@@ -117,10 +149,12 @@ export const table = {
     display: "inline-block",
     padding: "0.25rem 0.5rem",
     borderRadius: "0.25rem",
-    fontSize: "0.8rem",
+    fontSize: "0.75rem",
     fontWeight: "bold",
-    backgroundColor: `rgba(240, 176, 96, 0.1)`,
+    backgroundColor: `rgba(201, 176, 106, 0.12)`,
     color: colors.primary,
+    fontFamily: fonts.heading,
+    letterSpacing: "0.01em",
   },
 };
 
@@ -132,28 +166,32 @@ export const section = {
   card: {
     border: `1px solid ${colors.border}`,
     padding: "1rem",
-    borderRadius: "0.5rem",
+    borderRadius: "10px",
     backgroundColor: colors.background.light,
+    fontFamily: fonts.body,
   },
   title: {
-    fontWeight: "bold",
-    fontSize: "1.25rem",
+    fontWeight: 800,
+    fontSize: "1.45rem",
     marginBottom: "1.5rem",
+    fontFamily: fonts.display,
+    letterSpacing: "-0.01em",
+    color: colors.text.light,
   },
   subtitle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: colors.primary,
+    fontWeight: 500,
+    fontSize: "1rem",
+    color: colors.text.muted,
     marginBottom: "0.75rem",
     marginTop: "1.5rem",
+    fontFamily: fonts.body,
   },
   accentedTitle: {
-    fontWeight: "bold",
-    fontSize: "1.2rem",
-    color: colors.primary,
-    marginBottom: "1.5rem",
-    borderLeft: `3px solid ${colors.primary}`,
-    paddingLeft: "0.75rem",
+    fontWeight: 500,
+    fontSize: "1rem",
+    color: colors.text.muted,
+    marginBottom: "1rem",
+    fontFamily: fonts.body,
   },
   grid: {
     display: "grid",
@@ -161,7 +199,7 @@ export const section = {
     gap: "1.5rem",
   },
   legend: {
-    backgroundColor: "rgba(30, 20, 10, 0.4)",
+    backgroundColor: "rgba(30, 32, 48, 0.6)",
     padding: "1rem 1.5rem",
     borderRadius: "0.5rem",
     marginTop: "1rem",
@@ -172,16 +210,16 @@ export const section = {
   },
   divider: {
     margin: "1.25rem 0",
-    borderTop: `1px solid rgba(109, 73, 35, 0.5)`,
+    borderTop: `1px solid rgba(107, 98, 80, 0.5)`,
   },
   commonCard: {
     padding: "1.5rem",
-    borderRadius: "0.75rem",
+    borderRadius: "10px",
     backgroundColor: colors.background.medium,
-    borderBottom: `1px solid ${colors.border}`,
-    borderLeft: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.border}`,
     marginBottom: "2rem",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    boxShadow: "inset 0 1px 0 rgba(201, 176, 106, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
+    fontFamily: fonts.body,
   },
   commonHeader: {
     display: "flex",
@@ -193,6 +231,7 @@ export const section = {
     fontSize: "1.1rem",
     paddingBottom: "0.75rem",
     borderBottom: `1px solid ${colors.borderDark}`,
+    fontFamily: fonts.heading,
   },
   sectionHeader: {
     display: "flex",
@@ -202,6 +241,7 @@ export const section = {
     color: colors.primary,
     marginBottom: "0.75rem",
     fontSize: "0.9rem",
+    fontFamily: fonts.heading,
   },
   sectionGrid: {
     display: "grid",
@@ -217,11 +257,12 @@ export const section = {
   fullWidthHeader: {
     gridColumn: "1 / -1",
     fontWeight: 600,
-    color: "#e5c687",
+    color: colors.primary,
     fontSize: "0.85rem",
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
+    fontFamily: fonts.heading,
   },
 };
 
@@ -234,7 +275,7 @@ export const icon = {
     width: "2rem",
     height: "2rem",
     borderRadius: "50%",
-    backgroundColor: "rgba(240, 176, 96, 0.1)",
+    backgroundColor: "rgba(201, 176, 106, 0.12)",
     marginRight: "0.5rem",
   },
   biome: {
@@ -336,6 +377,7 @@ export const resource = {
     color: colors.secondary,
     textTransform: "uppercase" as "uppercase",
     letterSpacing: "0.05em",
+    fontFamily: fonts.heading,
   },
   summaryContainerStyle: {
     marginTop: "2rem",
@@ -347,6 +389,7 @@ export const resource = {
     fontSize: "0.9rem",
     color: colors.primary,
     marginBottom: "0.75rem",
+    fontFamily: fonts.heading,
   },
   summaryGridStyle: {
     display: "grid",
@@ -366,6 +409,7 @@ export const resource = {
     display: "flex",
     alignItems: "center",
     color: colors.primary,
+    fontFamily: fonts.heading,
   },
   totalStyle: {
     fontSize: "1.25rem",
@@ -380,10 +424,11 @@ export const importantNote = {
     padding: "1.5rem",
     marginBottom: "1.5rem",
     backgroundColor: colors.background.medium,
-    borderRadius: "0.75rem",
-    borderLeft: `4px solid ${colors.primary}`,
-    borderBottom: `1px solid ${colors.border}`,
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    borderRadius: "10px",
+    borderLeft: `4px solid ${colors.secondary}`,
+    border: `1px solid ${colors.border}`,
+    boxShadow: "inset 0 1px 0 rgba(201, 176, 106, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
+    fontFamily: fonts.body,
   },
   title: {
     fontSize: "1.1rem",
@@ -393,9 +438,10 @@ export const importantNote = {
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
+    fontFamily: fonts.heading,
   },
   content: {
-    color: colors.secondary,
+    color: colors.text.light,
   },
 };
 
@@ -408,30 +454,31 @@ export const troop = {
   },
   card: {
     padding: "1.25rem",
-    borderRadius: "0.75rem",
+    borderRadius: "10px",
     backgroundColor: colors.background.light,
-    borderBottom: `1px solid ${colors.border}`,
-    borderLeft: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.border}`,
     transition: "transform 0.2s, box-shadow 0.2s",
+    fontFamily: fonts.body,
   },
   header: {
     display: "flex",
     alignItems: "center",
     gap: "0.75rem",
     marginBottom: "1.25rem",
-    color: colors.secondary,
+    color: colors.primary,
     fontWeight: 600,
     fontSize: "1.1rem",
     paddingBottom: "0.75rem",
     borderBottom: `1px solid ${colors.borderDark}`,
+    fontFamily: fonts.heading,
   },
   limitsCard: {
     padding: "1rem",
-    borderRadius: "0.5rem",
+    borderRadius: "10px",
     backgroundColor: colors.background.medium,
-    borderBottom: `1px solid ${colors.border}`,
-    borderLeft: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.border}`,
     marginBottom: "1.5rem",
+    fontFamily: fonts.body,
   },
 };
 
