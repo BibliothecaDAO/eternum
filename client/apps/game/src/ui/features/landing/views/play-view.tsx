@@ -422,7 +422,7 @@ const PlayTabContent = ({
  * This is the default landing page content.
  */
 export const PlayView = ({ className }: PlayViewProps) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as PlayTab) || "play";
   const queryClient = useQueryClient();
 
@@ -530,17 +530,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setReviewWorld(null);
   }, [dismissReviewForWorld, reviewWorld]);
 
-  const handleReturnHomeFromReview = useCallback(() => {
-    dismissReviewForWorld(reviewWorld);
-    setReviewWorld(null);
-
-    if (activeTab !== "play") {
-      const params = new URLSearchParams(searchParams);
-      params.set("tab", "play");
-      setSearchParams(params, { replace: true });
-    }
-  }, [activeTab, dismissReviewForWorld, reviewWorld, searchParams, setSearchParams]);
-
   const handleRequireSignIn = useCallback(() => {
     setModal(<SignInPromptModal />, true);
   }, [setModal]);
@@ -621,8 +610,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}
           nextGame={null}
+          showUpcomingGamesStep={true}
           onClose={handleCloseReviewModal}
-          onReturnHome={handleReturnHomeFromReview}
           onRegistrationComplete={handleRegistrationComplete}
           onRequireSignIn={handleRequireSignIn}
         />
