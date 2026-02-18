@@ -464,12 +464,12 @@ register(
 
 register(
   "claim_arrivals",
-  "Claim incoming resource arrivals at a structure",
+  "Claim incoming resource arrivals at a structure. Use inspect_realm to see incomingArrivals — each arrival has a day, slot, and resource list.",
   [
     n("structureId", "Structure entity ID to claim at"),
-    n("day", "Day index"),
-    n("slot", "Slot index"),
-    n("resourceCount", "Number of resources to claim"),
+    n("day", "Day index of the arrival (from inspect_realm incomingArrivals)"),
+    n("slot", "Slot index of the arrival (from inspect_realm incomingArrivals)"),
+    n("resourceCount", "Number of distinct resource types in the arrival (from inspect_realm incomingArrivals)"),
   ],
   (client, signer, p) =>
     wrapTx(() =>
@@ -510,11 +510,11 @@ register(
 
 register(
   "add_to_explorer",
-  "Add more troops to an existing explorer",
+  "Add more troops to an existing explorer (explorer must be adjacent to its home structure)",
   [
     n("toExplorerId", "Explorer entity ID to reinforce"),
     n("amount", "Number of troops to add"),
-    n("homeDirection", `Direction back to home structure (${DIR})`),
+    n("homeDirection", `Direction FROM the explorer TO its home structure (${DIR}). Check explorer's neighbor tiles to find which direction the structure is in.`),
   ],
   (client, signer, p) =>
     wrapTx(() =>
@@ -575,7 +575,7 @@ register(
 
 register(
   "move_explorer",
-  "Move an explorer along hex directions (optionally exploring)",
+  "Combined move/explore action (wrapper around travel_explorer and explore). With explore=false: multi-hex travel through explored tiles (~10 stamina/hex). With explore=true: single-hex exploration of an unrevealed tile (30 stamina, min 10 troops, awards VP). Prefer using travel_explorer or explore directly.",
   [
     n("explorerId", "Explorer entity ID"),
     na("directions", `Array of hex directions (${DIR})`),
@@ -593,7 +593,7 @@ register(
 
 register(
   "travel_explorer",
-  "Travel an explorer along hex directions (no exploration)",
+  "Travel an explorer along hex directions through already-explored tiles (~10 stamina/hex). Can move 5+ hexes in one action. All tiles must be explored and unoccupied.",
   [n("explorerId", "Explorer entity ID"), na("directions", `Array of hex directions (${DIR})`)],
   (client, signer, p) =>
     wrapTx(() =>
@@ -606,7 +606,7 @@ register(
 
 register(
   "explore",
-  "Explore new tiles with an explorer",
+  "Explore new tiles with an explorer (30 stamina/hex). Only 1 direction per call. Minimum 10 troops required. Reveals the new tile's biome and occupants. Awards Victory Points.",
   [n("explorerId", "Explorer entity ID"), na("directions", `Array of hex directions (${DIR})`)],
   (client, signer, p) =>
     wrapTx(() =>
@@ -619,7 +619,7 @@ register(
 
 register(
   "swap_explorer_to_explorer",
-  "Transfer troops between two explorers",
+  "Transfer troops between two explorers (must be on adjacent hexes)",
   [
     n("fromExplorerId", "Source explorer entity ID"),
     n("toExplorerId", "Destination explorer entity ID"),
@@ -639,7 +639,7 @@ register(
 
 register(
   "swap_explorer_to_guard",
-  "Transfer troops from an explorer to a structure guard slot",
+  "Transfer troops from an explorer to a structure guard slot (explorer must be adjacent to the structure)",
   [
     n("fromExplorerId", "Source explorer entity ID"),
     n("toStructureId", "Destination structure entity ID"),
@@ -661,7 +661,7 @@ register(
 
 register(
   "swap_guard_to_explorer",
-  "Transfer troops from a structure guard slot to an explorer",
+  "Transfer troops from a structure guard slot to an explorer (explorer must be adjacent to the structure)",
   [
     n("fromStructureId", "Source structure entity ID"),
     n("fromGuardSlot", "Guard slot index at the structure (0-3)"),
@@ -1044,7 +1044,7 @@ register(
 
 register(
   "upgrade_realm",
-  "Upgrade your realm to the next level",
+  "Upgrade your realm to the next level. Each level unlocks more building slots: L0=6, L1=18, L2=36. Cost shown in world state under 'Next upgrade'. Requires Labor, Wheat, Essence, and higher-tier resources at higher levels.",
   [n("realmEntityId", "Realm entity ID to upgrade")],
   (client, signer, p) =>
     wrapTx(() =>
@@ -1060,11 +1060,11 @@ register(
 
 register(
   "contribute_hyperstructure",
-  "Contribute resources to a hyperstructure",
+  "Contribute resources to a hyperstructure. In Blitz, hyperstructures are pre-built — capture them from bandits via attack_guard first.",
   [
     n("hyperstructureEntityId", "Hyperstructure entity ID"),
     n("contributorEntityId", "Your structure entity ID contributing"),
-    na("contributions", "Array of contribution amounts by resource type"),
+    na("contributions", "Flat array of [resourceType, amount, resourceType, amount, ...] pairs. Use resource IDs from the resource list."),
   ],
   (client, signer, p) =>
     wrapTx(() =>

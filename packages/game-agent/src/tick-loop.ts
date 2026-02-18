@@ -104,12 +104,11 @@ ${resourceStr}
 
 Review your soul, task lists, and priorities. Then:
 
-1. Use \`observe_game\` if you need more detail on specific areas
-2. Use \`list_actions\` if you need to look up available actions and their parameters
-3. Load any relevant skills by reading their SKILL.md files
-4. Decide on your action(s) for this tick
-5. Use \`execute_action\` to submit your chosen action(s)
-6. Use \`write\` to update your task files, priorities, reflection, or soul as needed
+1. Use \`list_actions\` if you need to look up available actions and their parameters
+2. Load any relevant skills by reading their SKILL.md files
+3. Decide on your action(s) for this tick
+4. Use \`execute_action\` to submit your chosen action(s)
+5. Use \`write\` to update your task files, priorities, or learnings as needed
 7. Use \`set_agent_config\` when you need to tune yourself (model, loop timing, world connectivity)
 8. Maintain \`HEARTBEAT.md\` for cron-style recurring jobs you want to run outside the main tick
 9. Explain your reasoning briefly`;

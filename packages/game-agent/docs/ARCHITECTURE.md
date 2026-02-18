@@ -268,7 +268,7 @@ Creates a heartbeat scheduler that reads `HEARTBEAT.md` and executes jobs on cro
 
 **HEARTBEAT.md Format:**
 
-```yaml
+```
 version: 1
 jobs:
   - id: scout-routine
