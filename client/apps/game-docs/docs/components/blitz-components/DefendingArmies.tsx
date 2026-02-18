@@ -12,9 +12,7 @@ export const BlitzRealmDefenseSlotsTable = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        <span style={{ fontSize: "0.85em", fontWeight: 400 }}>Armies by Realm Level</span>
-      </div>
+      <div style={section.accentedTitle}>Armies by Realm Level</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
@@ -51,22 +49,20 @@ export const BlitzWorldStructureDefenseSlotsTable = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        <span style={{ fontSize: "0.85em", fontWeight: 400 }}>Guard Slots by Structure Type</span>
-      </div>
+      <div style={section.accentedTitle}>Guard Slots by Structure Type</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
               <th style={table.headerCell}>World Structure</th>
-              <th style={table.headerCell}>Guard Slots</th>
+              <th style={{ ...table.headerCell, textAlign: "center" }}>Guard Slots</th>
             </tr>
           </thead>
           <tbody>
             {worldStructures.map((item) => (
               <tr key={item.structure}>
                 <td style={table.cell}>{item.structure}</td>
-                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold" }}>{item.guardSlots}</td>
+                <td style={{ ...table.cell, color: colors.primary, fontWeight: "bold", textAlign: "center" }}>{item.guardSlots}</td>
               </tr>
             ))}
           </tbody>

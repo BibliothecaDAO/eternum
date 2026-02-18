@@ -22,16 +22,14 @@ export const BlitzMaxStaminaTable = () => {
 
   return (
     <div style={section.commonCard}>
-      <div style={section.accentedTitle}>
-        <span style={{ fontSize: "0.85em", fontWeight: 400 }}>Max Stamina Comparison</span>
-      </div>
+      <div style={section.accentedTitle}>Max Stamina Comparison</div>
 
       <table style={table.compareTable}>
         <thead style={table.tableHead}>
           <tr>
             <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
             {troopTypes.map((troopId) => (
-              <th key={troopId} style={table.tableHeaderCell}>
+              <th key={troopId} style={{ ...table.tableHeaderCell, textAlign: "center" }}>
                 {getTroopName(troopId)}
               </th>
             ))}
@@ -50,7 +48,7 @@ export const BlitzMaxStaminaTable = () => {
                   </div>
                 </td>
                 {troopTypes.map((troopId) => (
-                  <td key={troopId} style={{ ...table.tableCell, textAlign: "left", fontWeight: "bold" }}>
+                  <td key={troopId} style={{ ...table.tableCell, textAlign: "center" }}>
                     {tierStamina}
                   </td>
                 ))}
@@ -71,6 +69,25 @@ const StatItem = ({ label, value }: { label: string; value: React.ReactNode }) =
   </div>
 );
 
+const listItemStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "0.5rem 0",
+  borderBottom: `1px solid rgba(107, 98, 80, 0.3)`,
+  fontSize: "0.95rem",
+};
+
+const listLabelStyle = {
+  color: colors.text.light,
+  fontSize: "0.95rem",
+};
+
+const listValueStyle = {
+  color: colors.secondary,
+  fontSize: "0.95rem",
+};
+
 export function BlitzTroopMovementTable() {
   const config = ETERNUM_CONFIG();
 
@@ -82,42 +99,30 @@ export function BlitzTroopMovementTable() {
       <div style={section.commonCard}>
         <div style={section.accentedTitle}>Troop Movement</div>
 
-        <div style={section.sectionContent}>
-          <div>
-            <div style={section.sectionHeader}>
-              <span>💪</span> Capacity
-            </div>
-            <div style={section.sectionGrid}>
-              <StatItem
-                label="Carry Capacity"
-                value={`${Number(config.carryCapacityGram[CapacityConfig.Army]) / 1000}kg per troop`}
-              />
-            </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={listItemStyle}>
+            <span style={listLabelStyle}>Carry Capacity</span>
+            <span style={listValueStyle}>{Number(config.carryCapacityGram[CapacityConfig.Army]) / 1000}kg per troop</span>
           </div>
-
-          <div>
-            <div style={section.sectionHeader}>
-              <span>⚡</span> Stamina
-            </div>
-            <div style={section.sectionGrid}>
-              <StatItem label="Stamina on Deployment" value={config.troop.stamina.staminaInitial} />
-              <StatItem label="Gain Per Phase" value={20} />
-            </div>
+          <div style={listItemStyle}>
+            <span style={listLabelStyle}>Stamina on Deployment</span>
+            <span style={listValueStyle}>{config.troop.stamina.staminaInitial}</span>
           </div>
-        </div>
-
-        <div style={section.divider}></div>
-
-        <div style={section.sectionContent}>
-          <div>
-            <div style={section.sectionHeader}>
-              <span>🚶</span> Movement Costs
-            </div>
-            <div style={section.sectionGrid}>
-              <StatItem label="Travel Stamina Cost" value={`${config.troop.stamina.staminaTravelStaminaCost}/hex`} />
-              <StatItem label="Explore Stamina Cost" value={`${config.troop.stamina.staminaExploreStaminaCost}/hex`} />
-              <StatItem label="Biome Bonus/Penalty" value={`±${config.troop.stamina.staminaBonusValue}`} />
-            </div>
+          <div style={listItemStyle}>
+            <span style={listLabelStyle}>Stamina Gain Per Phase</span>
+            <span style={listValueStyle}>20</span>
+          </div>
+          <div style={listItemStyle}>
+            <span style={listLabelStyle}>Travel Stamina Cost</span>
+            <span style={listValueStyle}>{config.troop.stamina.staminaTravelStaminaCost}/hex</span>
+          </div>
+          <div style={listItemStyle}>
+            <span style={listLabelStyle}>Explore Stamina Cost</span>
+            <span style={listValueStyle}>{config.troop.stamina.staminaExploreStaminaCost}/hex</span>
+          </div>
+          <div style={{ ...listItemStyle, borderBottom: "none" }}>
+            <span style={listLabelStyle}>Biome Bonus/Penalty</span>
+            <span style={listValueStyle}>±{config.troop.stamina.staminaBonusValue}</span>
           </div>
         </div>
       </div>

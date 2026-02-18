@@ -1,4 +1,5 @@
 import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
+import "@/styles.css";
 
 # ⚔️ Armies
 
@@ -27,15 +28,43 @@ Where Tier Strength values are:
 Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed, as well as a set
 number of field and guard army slots.
 
-<div className="table-fixed-layout table-deployment-caps">
-
-| Realm Level | Deployment Cap | Field Army Slots | Guard Army Slots |
-| ----------- | -------------- | ---------------- | ---------------- |
-| Settlement  | 3,000          | 1                | 1                |
-| City        | 15,000         | 3                | 2                |
-| Kingdom     | 45,000         | 5                | 3                |
-| Empire      | 90,000         | 8                | 4                |
-
+<div style={{ width: "100%", maxWidth: "100%" }}>
+  <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", backgroundColor: "#332f28", border: "1px solid #564e3e", borderRadius: "10px", overflow: "hidden", fontSize: "0.85rem" }}>
+    <thead style={{ backgroundColor: "#383a4a" }}>
+      <tr>
+        <th style={{ width: "25%", padding: "0.6rem 1rem", textAlign: "left", fontWeight: 700, color: "#c9b06a", borderBottom: "1px solid #6b6250", fontSize: "0.85rem" }}>Realm Level</th>
+        <th style={{ width: "25%", padding: "0.6rem 1rem", textAlign: "center", fontWeight: 700, color: "#c9b06a", borderBottom: "1px solid #6b6250", fontSize: "0.85rem" }}>Deployment Cap</th>
+        <th style={{ width: "25%", padding: "0.6rem 1rem", textAlign: "center", fontWeight: 700, color: "#c9b06a", borderBottom: "1px solid #6b6250", fontSize: "0.85rem" }}>Field Army Slots</th>
+        <th style={{ width: "25%", padding: "0.6rem 1rem", textAlign: "center", fontWeight: 700, color: "#c9b06a", borderBottom: "1px solid #6b6250", fontSize: "0.85rem" }}>Guard Army Slots</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>Settlement</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>3,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>1</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>1</td>
+      </tr>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>City</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>15,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>3</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>2</td>
+      </tr>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>Kingdom</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>45,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>5</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>3</td>
+      </tr>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>Empire</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>90,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>8</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>4</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 ### Maximum Army Size

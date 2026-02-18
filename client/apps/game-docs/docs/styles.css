@@ -121,25 +121,109 @@ pre,
   background: var(--realm-border-strong);
 }
 
-/* Table defaults (avoid skewed layout) */
+/* ============================================
+   DEPLOYMENT CAPS TABLE - AGGRESSIVE FIX
+   Target: /blitz/military/armies
+   ============================================ */
+
+/* The wrapper div */
+.vocs_Content .table-deployment-caps {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+/* The table itself - override vocs_Table defaults */
+.vocs_Content .table-deployment-caps table,
+.vocs_Content .table-deployment-caps .vocs_Table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Header cells - equal 25% distribution */
+.vocs_Content .table-deployment-caps th:nth-child(1),
+.vocs_Content .table-deployment-caps td:nth-child(1) {
+  width: 25% !important;
+  text-align: center !important;
+}
+
+.vocs_Content .table-deployment-caps th:nth-child(2),
+.vocs_Content .table-deployment-caps td:nth-child(2) {
+  width: 25% !important;
+  text-align: center !important;
+}
+
+.vocs_Content .table-deployment-caps th:nth-child(3),
+.vocs_Content .table-deployment-caps td:nth-child(3) {
+  width: 25% !important;
+  text-align: center !important;
+}
+
+.vocs_Content .table-deployment-caps th:nth-child(4),
+.vocs_Content .table-deployment-caps td:nth-child(4) {
+  width: 25% !important;
+  text-align: center !important;
+}
+
+/* ============================================
+   PRIZE POOL TABLE - AGGRESSIVE FIX
+   Target: /blitz/prize-pool
+   ============================================ */
+
+/* The wrapper div */
+.vocs_Content .table-stretch-last {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+/* The table itself */
+.vocs_Content .table-stretch-last table,
+.vocs_Content .table-stretch-last .vocs_Table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* First column constrained */
+.vocs_Content .table-stretch-last.table-first-col-wide th:first-child,
+.vocs_Content .table-stretch-last.table-first-col-wide td:first-child {
+  width: 25% !important;
+  white-space: nowrap !important;
+}
+
+/* Second column fills remaining space */
+.vocs_Content .table-stretch-last.table-first-col-wide th:last-child,
+.vocs_Content .table-stretch-last.table-first-col-wide td:last-child {
+  width: 75% !important;
+}
+
+/* ============================================
+   BASE TABLE STYLES (scoped to avoid impacting other tables)
+   ============================================ */
+
 /* Ensure Vocs table wrappers don't constrain width */
 .vocs_Content [data-rehype-pretty-code-fragment],
 .vocs_Content .vocs_Table,
 .vocs_Content div:has(> table) {
   width: 100% !important;
   max-width: 100% !important;
-  overflow-x: visible !important;
 }
 
 .vocs_Content table {
   width: 100% !important;
-  min-width: 100% !important;
   border-collapse: collapse;
   background-color: var(--realm-surface-iron);
   border: 1px solid var(--realm-border-etched);
   border-radius: 10px;
   overflow: hidden;
-  table-layout: auto;
 }
 
 .vocs_Content th {
@@ -180,47 +264,93 @@ pre,
   white-space: nowrap;
 }
 
-/* Deployment caps: fixed layout with balanced column widths */
-.table-deployment-caps {
-  display: block;
-  width: calc(100% + 5cm) !important;
-  max-width: none !important;
-  margin-right: -5cm;
-}
-
-.table-deployment-caps table {
-  table-layout: fixed !important;
-  width: 100% !important;
-}
-
-.table-deployment-caps th:nth-child(1),
-.table-deployment-caps td:nth-child(1) {
-  width: 24%;
-}
-
-.table-deployment-caps th:nth-child(2),
-.table-deployment-caps td:nth-child(2) {
-  width: 24%;
-}
-
-.table-deployment-caps th:nth-child(3),
-.table-deployment-caps td:nth-child(3) {
-  width: 24%;
-}
-
-.table-deployment-caps th:nth-child(4),
-.table-deployment-caps td:nth-child(4) {
-  width: 28%;
-}
-
-/* Force last column to fill remaining space in simple markdown tables */
-.table-stretch-last td:last-child,
-.table-stretch-last th:last-child {
-  width: 100%;
-}
-
 /* Ensure images inside tables maintain aspect ratio */
 .vocs_Content table img {
   min-width: 24px;
   object-fit: contain;
+}
+
+/* ============================================
+   MOBILE OVERFLOW PROTECTION
+   ============================================ */
+
+/* Ensure code blocks and preformatted text scroll on mobile */
+.vocs_Content pre,
+.vocs_Content code[class*="language-"],
+.vocs_Content .vocs_Code {
+  overflow-x: auto !important;
+  white-space: pre !important;
+  max-width: 100% !important;
+  word-wrap: normal !important;
+  word-break: keep-all !important;
+}
+
+/* Formula blocks in prize pool and similar pages */
+.vocs_Content pre code,
+.vocs_Content .formula-block,
+.vocs_Content div:has(> pre) {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Mobile-specific: ensure tables don't overflow viewport */
+@media (max-width: 768px) {
+  .vocs_Content div:has(> table) {
+    overflow-x: auto !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .vocs_Content table {
+    min-width: 600px !important;
+  }
+}
+
+/* ============================================
+   GLOBAL TABLE ENHANCEMENTS
+   ============================================ */
+
+/* Subtle hover state for data rows */
+.vocs_Content tbody tr:hover {
+  background-color: rgba(201, 176, 106, 0.05);
+  transition: background-color 0.15s ease;
+}
+
+/* Ensure consistent vertical alignment */
+.vocs_Content td,
+.vocs_Content th {
+  vertical-align: middle !important;
+}
+
+/* ============================================
+   CONTEXT-AWARE COLUMN WIDTHS
+   ============================================ */
+
+/* Narrow first column - for tier/level labels */
+.table-first-col-narrow td:first-child,
+.table-first-col-narrow th:first-child {
+  width: 18%;
+  min-width: 100px;
+}
+
+/* Medium first column - balanced 4-column tables */
+.table-first-col-medium td:first-child,
+.table-first-col-medium th:first-child {
+  width: 25%;
+  min-width: 140px;
+}
+
+/* Wide first column - for descriptive text (default) */
+.table-first-col-wide td:first-child,
+.table-first-col-wide th:first-child {
+  width: 30%;
+  min-width: 160px;
+  white-space: nowrap;
+}
+
+/* Auto first column - content-aware */
+.table-first-col-auto td:first-child,
+.table-first-col-auto th:first-child {
+  width: auto;
+  white-space: normal;
 }

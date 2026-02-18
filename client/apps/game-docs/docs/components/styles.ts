@@ -119,6 +119,17 @@ export const table = {
     width: "30%",
     paddingLeft: "0.75rem",
   },
+  /* Context-aware first column options - use as needed without changing existing tables */
+  tableFirstColumnNarrow: {
+    width: "20%",
+    paddingLeft: "0.75rem",
+    minWidth: "100px",
+  },
+  tableFirstColumnMedium: {
+    width: "25%",
+    paddingLeft: "0.75rem",
+    minWidth: "140px",
+  },
   tableCell: {
     padding: "0.75rem 0.5rem",
     color: colors.text.light,

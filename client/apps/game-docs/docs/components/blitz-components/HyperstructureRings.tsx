@@ -39,9 +39,11 @@ export const HyperstructureRings = () => {
       <div style={equationBoxStyle}>
         <span style={equationTextStyle}>
           <span style={varStyle}>r</span>
-          {" = ⌈ √("}
+          {" = ⌈ ("}
           <span style={varStyle}>P</span>
-          {" / 6) ⌉"}
+          {" / 6)"}
+          <sup style={{ fontSize: "0.65em", verticalAlign: "super" }}>{"1/2"}</sup>
+          {" ⌉"}
         </span>
       </div>
 

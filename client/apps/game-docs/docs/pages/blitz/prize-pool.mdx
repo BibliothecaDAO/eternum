@@ -3,6 +3,8 @@ title: Prize Pool & Distribution
 description: How $LORDS prizes are calculated and distributed in Blitz
 ---
 
+import "@/styles.css";
+
 # Prize Pool & Distribution
 
 Blitz distributes **$LORDS** to players at the end of every game based on their final rank. The system adapts to lobby
@@ -13,13 +15,25 @@ there are 2 or 24 players in a match.
 
 The total prize pool comes from two sources:
 
-<div className="table-stretch-last table-first-col-wide">
-
-| Source              | Description                                                       |
-| ------------------- | ----------------------------------------------------------------- |
-| **Entry fees (F)**  | Each player pays a $LORDS entry fee when registering for the game |
-| **Sponsorship (S)** | Additional $LORDS added by the game host or external sponsors     |
-
+<div style={{ width: "100%", maxWidth: "100%" }}>
+  <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", backgroundColor: "#332f28", border: "1px solid #564e3e", borderRadius: "10px", overflow: "hidden", fontSize: "0.85rem" }}>
+    <thead style={{ backgroundColor: "#383a4a" }}>
+      <tr>
+        <th style={{ width: "25%", padding: "0.6rem 1rem", textAlign: "left", fontWeight: 700, color: "#c9b06a", borderBottom: "1px solid #6b6250", whiteSpace: "nowrap", fontSize: "0.85rem" }}>Source</th>
+        <th style={{ width: "75%", padding: "0.6rem 1rem", textAlign: "left", fontWeight: 700, color: "#c9b06a", borderBottom: "1px solid #6b6250", fontSize: "0.85rem" }}>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", borderBottom: "1px solid #564e3e", whiteSpace: "nowrap", fontSize: "0.85rem" }}><strong>Entry fees (F)</strong></td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", borderBottom: "1px solid #564e3e", fontSize: "0.85rem" }}>Each player pays a $LORDS entry fee when registering for the game</td>
+      </tr>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", whiteSpace: "nowrap", fontSize: "0.85rem" }}><strong>Sponsorship (S)</strong></td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>Additional $LORDS added by the game host or external sponsors</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 **Total Prize Pool = F + S**

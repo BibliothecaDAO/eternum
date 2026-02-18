@@ -16,6 +16,9 @@ export default defineConfig({
       },
     },
     plugins: [llmTxtPlugin()],
+    css: {
+      devSourcemap: true,
+    },
   },
 
   description: "Your Complete Guide to Mastering Eternum",
@@ -27,6 +30,10 @@ export default defineConfig({
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
+      },
+      {
+        rel: "stylesheet",
+        href: "/styles.css",
       },
     ],
     script: [
@@ -227,8 +234,9 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
-      link: "/changelog/31-january-2026",
+      link: "/changelog/18-february-2026",
       items: [
+        { text: "18 February 2026", link: "/changelog/18-february-2026" },
         { text: "31 January 2026", link: "/changelog/31-january-2026" },
         { text: "8 December 2025", link: "/changelog/8-december-2025" },
         { text: "14 November 2025", link: "/changelog/14-november-2025" },

@@ -110,6 +110,7 @@ export const TroopTiers = () => {
       margin: 0,
       fontSize: "1rem",
       textAlign: "center" as const,
+      fontFamily: "'Exo 2', sans-serif",
     },
     troopImageContainerStyle: {
       width: "100%",
@@ -197,16 +198,14 @@ export const TroopTierDamageStats = () => {
       <div style={section.subtitle}>Troop Tier Stats</div>
 
       <div style={section.commonCard}>
-        <div style={section.accentedTitle}>
-          <span style={{ fontSize: "0.85em", fontWeight: 400 }}>Damage Comparison by Tier</span>
-        </div>
+        <div style={section.accentedTitle}>Damage Comparison by Tier</div>
 
         <table style={table.compareTable}>
           <thead style={table.tableHead}>
             <tr>
               <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
-              <th style={table.tableHeaderCell}>Cumulative Damage Increase Over T1</th>
-              <th style={table.tableHeaderCell}>Difference Between Tiers</th>
+              <th style={{ ...table.tableHeaderCell, textAlign: "center" }}>Cumulative Damage Increase Over T1</th>
+              <th style={{ ...table.tableHeaderCell, textAlign: "center" }}>Difference Between Tiers</th>
             </tr>
           </thead>
           <tbody>
@@ -217,8 +216,8 @@ export const TroopTierDamageStats = () => {
                   Base
                 </div>
               </td>
-              <td style={table.tableCell}> N/A </td>
-              <td style={table.tableCell}> N/A </td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}> N/A </td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}> N/A </td>
             </tr>
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
@@ -226,8 +225,8 @@ export const TroopTierDamageStats = () => {
                   <span style={table.tierBadge}>T2</span>3 × T1
                 </div>
               </td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>300%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>300%</td>
             </tr>
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
@@ -235,8 +234,8 @@ export const TroopTierDamageStats = () => {
                   <span style={table.tierBadge}>T3</span>3 × T2 (9 × T1)
                 </div>
               </td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>900%</td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>900%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>300%</td>
             </tr>
           </tbody>
         </table>

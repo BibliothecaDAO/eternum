@@ -130,11 +130,13 @@ const componentStyles = {
     ...table.cell,
     color: colors.text.light,
     fontWeight: 500,
+    padding: "0.4rem 0.5rem",
   },
   itemImageCell: {
     ...table.cell,
-    width: "110px",
+    width: "90px",
     textAlign: "center" as const,
+    padding: "0.4rem 0.3rem",
   },
   itemImage: {
     width: "72px",
@@ -149,10 +151,11 @@ const componentStyles = {
   },
   descriptionCell: {
     ...table.cell,
-    maxWidth: "300px",
+    maxWidth: "none",
     fontSize: "0.8rem",
     lineHeight: "1.4",
     color: colors.text.light,
+    padding: "0.4rem 0.5rem",
   },
   drawChanceCell: {
     ...table.cell,
