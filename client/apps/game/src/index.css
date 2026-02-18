@@ -606,6 +606,127 @@ button {
   /* NOTE: Background stays as variant defines it, just grayed out */
 }
 
+.endgame-modal-enter {
+  animation: endgame-modal-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.endgame-step-enter {
+  animation: endgame-step-enter 180ms ease-out both;
+}
+
+.endgame-progress-pulse {
+  animation: endgame-progress-pulse 1.3s ease-in-out infinite;
+}
+
+.endgame-backdrop-texture,
+.endgame-backdrop-cinematic {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(223, 170, 84, 0.14), transparent 52%),
+    linear-gradient(180deg, rgba(1, 1, 1, 0.2), rgba(12, 10, 8, 0.35)), url("/images/hex-bg.png");
+  background-size:
+    auto,
+    auto,
+    220px 220px;
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, repeat;
+  opacity: 0.55;
+}
+
+.endgame-surface {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(20, 16, 13, 0.98), rgba(12, 10, 8, 0.98)), rgba(1, 1, 1, 0.96);
+}
+
+.endgame-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image: url("/images/score-cards/texture.jpg");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.13;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.endgame-shell-cinematic {
+  background: linear-gradient(160deg, rgba(20, 16, 13, 0.98), rgba(12, 10, 8, 0.98) 60%, rgba(1, 1, 1, 0.99));
+}
+
+.endgame-shell-cinematic::before {
+  background-image:
+    url("/images/score-cards/texture.jpg"),
+    radial-gradient(circle at 20% 20%, rgba(223, 170, 84, 0.15), transparent 56%),
+    url("/images/logos/Eternum-Mark-Black.png");
+  background-size:
+    cover,
+    100% 100%,
+    420px 420px;
+  background-position:
+    center,
+    center,
+    calc(100% + 80px) -60px;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.22;
+}
+
+.endgame-shell-cinematic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("/images/score-cards/smoke.png") center/cover no-repeat;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.endgame-header-ornament {
+  height: 14px;
+  width: min(100%, 560px);
+  margin: 0.25rem auto 0;
+  background-image: url("/borders/top-bar.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+@keyframes endgame-modal-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes endgame-step-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes endgame-progress-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(223, 170, 84, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(223, 170, 84, 0);
+  }
+}
+
 .panel-gold {
   /* Modern gold panel style with highlight tone (matching entity-detail-primitives.tsx) */
   background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */

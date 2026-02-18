@@ -36,6 +36,12 @@ import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import {
+  resolveMovementProgressUpdate,
+  resolveRotationUpdate,
+  shouldSwitchModelForPosition,
+} from "./army-model-behavior-policy";
+import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -1290,18 +1296,26 @@ export class ArmyModel {
   }
 
   private updateRotation(movement: MovementData, deltaTime: number): void {
-    const rotationDiff = movement.targetRotation - movement.currentRotation;
-    const normalizedDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff));
-    movement.currentRotation += normalizedDiff * this.ROTATION_SPEED * deltaTime;
+    movement.currentRotation = resolveRotationUpdate({
+      currentRotation: movement.currentRotation,
+      targetRotation: movement.targetRotation,
+      rotationSpeed: this.ROTATION_SPEED,
+      deltaTime,
+    });
     this.dummyObject.rotation.set(0, movement.currentRotation, 0);
   }
 
   private updateMovementProgress(movement: MovementData, instanceData: ArmyInstanceData, deltaTime: number): void {
     const distance = movement.startPos.distanceTo(movement.endPos);
-    const travelTime = distance / this.MOVEMENT_SPEED;
-    movement.progress += deltaTime / travelTime;
+    const movementProgressStep = resolveMovementProgressUpdate({
+      progress: movement.progress,
+      distance,
+      movementSpeed: this.MOVEMENT_SPEED,
+      deltaTime,
+    });
+    movement.progress = movementProgressStep.nextProgress;
 
-    if (movement.progress >= 1) {
+    if (movementProgressStep.shouldCompletePath) {
       this.handlePathCompletion(movement, instanceData);
     } else {
       // Apply dynamic easing based on army type for juicy movement
@@ -1351,7 +1365,7 @@ export class ArmyModel {
     const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
-    if (this.entityModelMap.get(entityId) !== modelType) {
+    if (shouldSwitchModelForPosition({ currentModel: this.entityModelMap.get(entityId), resolvedModel: modelType })) {
       this.assignModelToEntity(entityId, modelType);
     }
   }
@@ -1929,13 +1943,4 @@ export class ArmyModel {
   }
 }
 
-// Global debug functions for testing easing in armies
-(window as any).setArmyEasing = (easingType: EasingType) => {
-  console.log(`🎮 Setting army default easing to: ${easingType}`);
-  // Note: This requires access to ArmyModel instance - implement in army manager if needed
-};
-
-(window as any).setTierEasing = (tier: TroopTier, easingType: EasingType) => {
-  console.log(`🎮 Setting tier ${tier} easing to: ${easingType}`);
-  // Note: This requires access to ArmyModel instance - implement in army manager if needed
-};
+installArmyModelDebugHooks();

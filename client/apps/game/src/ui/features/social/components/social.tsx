@@ -8,7 +8,6 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
-import { CommitClaimMMRButton } from "@/ui/features/prize/components/commit-claim-mmr-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
@@ -19,7 +18,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { Shapes, TrendingUp, Users } from "lucide-react";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
 
@@ -151,24 +150,30 @@ export const Social = () => {
     );
   }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
 
-  const viewGuildMembers = (guildEntityId: ContractAddress) => {
-    if (selectedGuild === guildEntityId) {
-      setSelectedPlayer(0n);
-      setIsExpanded(!isExpanded);
-    } else {
-      setSelectedGuild(guildEntityId);
-      setIsExpanded(true);
-    }
-  };
+  const viewGuildMembers = useCallback(
+    (guildEntityId: ContractAddress) => {
+      if (selectedGuild === guildEntityId) {
+        setSelectedPlayer(0n);
+        setIsExpanded(!isExpanded);
+      } else {
+        setSelectedGuild(guildEntityId);
+        setIsExpanded(true);
+      }
+    },
+    [selectedGuild, isExpanded, setSelectedGuild, setSelectedPlayer, setIsExpanded],
+  );
 
-  const viewPlayerInfo = (playerAddress: ContractAddress) => {
-    if (selectedPlayer === playerAddress) {
-      setIsExpanded(!isExpanded);
-    } else {
-      setSelectedPlayer(playerAddress);
-      setIsExpanded(true);
-    }
-  };
+  const viewPlayerInfo = useCallback(
+    (playerAddress: ContractAddress) => {
+      if (selectedPlayer === playerAddress) {
+        setIsExpanded(!isExpanded);
+      } else {
+        setSelectedPlayer(playerAddress);
+        setIsExpanded(true);
+      }
+    },
+    [selectedPlayer, isExpanded, setSelectedPlayer, setIsExpanded],
+  );
 
   const tabs = useMemo<SocialTabConfig[]>(() => {
     const baseTabs: SocialTabConfig[] = [
@@ -239,7 +244,10 @@ export const Social = () => {
                 <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex-1 overflow-auto">
                   <BlitzMMRTable />
                 </div>
-                <CommitClaimMMRButton className="mt-2" />
+                <div className="text-xs text-gold/70 mt-2">
+                  Submit rankings from the Blitz Prize tab to trigger MMR updates, and retry there if the first attempt
+                  fails.
+                </div>
               </div>
             </div>
           </div>
@@ -249,17 +257,7 @@ export const Social = () => {
     }
 
     return baseTabs;
-  }, [
-    mode,
-    isExpanded,
-    selectedGuild,
-    selectedPlayer,
-    playerInfo,
-    viewPlayerInfo,
-    viewGuildMembers,
-    setIsExpanded,
-    mmrEnabled,
-  ]);
+  }, [mode, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded, mmrEnabled]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));

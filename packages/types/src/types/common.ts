@@ -11,6 +11,7 @@ import {
   StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
+import type { Manifest } from "./manifest";
 
 export interface RelicEffect {
   end_tick: number;
@@ -668,7 +669,7 @@ export interface Config {
   setup?: {
     chain: string;
     addresses: SeasonAddresses;
-    manifest: any;
+    manifest: Manifest;
   };
 
   // Previous prize distribution systems address (carried between runs)

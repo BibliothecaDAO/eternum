@@ -1,3 +1,5 @@
+import { getRenderFetchBoundsForChunk } from "./worldmap-chunk-bounds";
+
 interface ChunkSwitchDecisionInput {
   fetchSucceeded: boolean;
   isCurrentTransition: boolean;
@@ -34,9 +36,68 @@ interface ShortcutForceFallbackDecisionInput {
 interface DuplicateTileRefreshDecisionInput {
   removeExplored: boolean;
   tileAlreadyKnown: boolean;
+  hasBiomeDelta?: boolean;
   currentChunk: string;
   isChunkTransitioning: boolean;
   isVisibleInCurrentChunk: boolean;
+}
+
+interface DuplicateTileUpdateActions {
+  shouldInvalidateCaches: boolean;
+  shouldRequestRefresh: boolean;
+}
+
+type DuplicateTileRefreshStrategy = "none" | "deferred" | "immediate";
+
+interface DuplicateTileReconcilePlan {
+  shouldInvalidateCaches: boolean;
+  refreshStrategy: DuplicateTileRefreshStrategy;
+}
+
+type DuplicateTileUpdateMode = "none" | "invalidate_only" | "invalidate_and_refresh";
+
+interface RefreshExecutionPlan {
+  shouldApplyScheduled: boolean;
+  shouldRecordSuperseded: boolean;
+  executionToken: number;
+}
+
+interface RefreshRunningActions {
+  shouldMarkRerunRequested: boolean;
+  shouldRescheduleTimer: boolean;
+}
+
+interface RefreshCompletionActions {
+  hasNewerRequest: boolean;
+  shouldScheduleRerun: boolean;
+  shouldClearRerunRequested: boolean;
+}
+
+interface HydratedChunkRefreshFlushPlanInput {
+  queuedChunkKeys: string[];
+  currentChunk: string;
+  isChunkTransitioning: boolean;
+}
+
+interface HydratedChunkRefreshFlushPlan {
+  shouldDefer: boolean;
+  shouldForceRefreshCurrentChunk: boolean;
+  remainingQueuedChunkKeys: string[];
+}
+
+interface ZoomRefreshDecisionInput {
+  previousDistance: number | null;
+  nextDistance: number;
+  threshold: number;
+}
+
+interface StructureBoundsRefreshInput {
+  currentChunk: string;
+  isChunkTransitioning: boolean;
+  oldHex?: { col: number; row: number } | null;
+  newHex?: { col: number; row: number } | null;
+  renderSize: { width: number; height: number };
+  chunkSize: number;
 }
 
 /**
@@ -137,6 +198,140 @@ export function resolveRefreshExecutionToken(scheduledToken: number, latestToken
 }
 
 /**
+ * Resolve refresh token execution behavior for latest-wins refresh scheduling.
+ */
+export function resolveRefreshExecutionPlan(scheduledToken: number, latestToken: number): RefreshExecutionPlan {
+  const shouldApplyScheduled = shouldApplyRefreshToken(scheduledToken, latestToken);
+  const executionToken = shouldApplyScheduled
+    ? scheduledToken
+    : resolveRefreshExecutionToken(scheduledToken, latestToken);
+
+  return {
+    shouldApplyScheduled,
+    shouldRecordSuperseded: !shouldApplyScheduled,
+    executionToken,
+  };
+}
+
+/**
+ * Resolve actions when a refresh request arrives while a refresh is already running.
+ */
+export function resolveRefreshRunningActions(scheduledToken: number, latestToken: number): RefreshRunningActions {
+  return {
+    shouldMarkRerunRequested: true,
+    shouldRescheduleTimer: shouldRescheduleRefreshToken(scheduledToken, latestToken),
+  };
+}
+
+/**
+ * Resolve completion behavior after a refresh execution has settled.
+ */
+export function resolveRefreshCompletionActions(input: {
+  appliedToken: number;
+  latestToken: number;
+  rerunRequested: boolean;
+}): RefreshCompletionActions {
+  const hasNewerRequest = input.appliedToken !== input.latestToken;
+  const shouldScheduleRerun = hasNewerRequest || input.rerunRequested;
+
+  return {
+    hasNewerRequest,
+    shouldScheduleRerun,
+    shouldClearRerunRequested: shouldScheduleRerun,
+  };
+}
+
+/**
+ * Hydrated fetch completion should enqueue refresh only when the fetched area
+ * corresponds to the currently active area key.
+ */
+export function shouldScheduleHydratedChunkRefreshForFetch(input: {
+  fetchAreaKey: string;
+  currentAreaKey: string | null;
+}): boolean {
+  if (!input.currentAreaKey) {
+    return false;
+  }
+  return input.fetchAreaKey === input.currentAreaKey;
+}
+
+/**
+ * Resolve how hydrated chunk refresh queue should be processed.
+ * While transitioning, queued work must be preserved (not dropped).
+ */
+export function resolveHydratedChunkRefreshFlushPlan(
+  input: HydratedChunkRefreshFlushPlanInput,
+): HydratedChunkRefreshFlushPlan {
+  const uniqueQueuedChunkKeys = Array.from(new Set(input.queuedChunkKeys));
+  if (input.isChunkTransitioning) {
+    return {
+      shouldDefer: true,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: uniqueQueuedChunkKeys,
+    };
+  }
+
+  if (input.currentChunk === "null") {
+    return {
+      shouldDefer: false,
+      shouldForceRefreshCurrentChunk: false,
+      remainingQueuedChunkKeys: uniqueQueuedChunkKeys,
+    };
+  }
+
+  const shouldForceRefreshCurrentChunk = uniqueQueuedChunkKeys.includes(input.currentChunk);
+
+  return {
+    shouldDefer: false,
+    shouldForceRefreshCurrentChunk,
+    remainingQueuedChunkKeys: uniqueQueuedChunkKeys.filter((chunkKey) => chunkKey !== input.currentChunk),
+  };
+}
+
+/**
+ * Large zoom-distance changes can expose stale terrain state even when the
+ * stride chunk key does not change. Force a refresh when movement exceeds
+ * threshold and we have a previous distance sample.
+ */
+export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshDecisionInput): boolean {
+  if (input.previousDistance === null) {
+    return false;
+  }
+  if (!Number.isFinite(input.nextDistance) || !Number.isFinite(input.previousDistance)) {
+    return false;
+  }
+
+  const threshold = Math.max(0, input.threshold);
+  return Math.abs(input.nextDistance - input.previousDistance) >= threshold;
+}
+
+/**
+ * Structure updates should trigger a tile refresh only when old/new positions
+ * intersect the active render bounds and the scene is stable.
+ */
+export function shouldRequestTileRefreshForStructureBoundsChange(input: StructureBoundsRefreshInput): boolean {
+  if (input.currentChunk === "null" || input.isChunkTransitioning) {
+    return false;
+  }
+
+  const [startRow, startCol] = input.currentChunk.split(",").map(Number);
+  if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+    return false;
+  }
+
+  const { minCol, maxCol, minRow, maxRow } = getRenderFetchBoundsForChunk(
+    input.currentChunk,
+    input.renderSize,
+    input.chunkSize,
+  );
+
+  const affectsBounds = (hex?: { col: number; row: number } | null): boolean =>
+    Boolean(hex && hex.col >= minCol && hex.col <= maxCol && hex.row >= minRow && hex.row <= maxRow);
+
+  return affectsBounds(input.oldHex) || affectsBounds(input.newHex);
+}
+
+/**
  * Instant camera teleports triggered by shortcut navigation should force
  * a chunk refresh so switch hysteresis cannot suppress reconciliation.
  */
@@ -153,6 +348,22 @@ export function shouldRunShortcutForceFallback(input: ShortcutForceFallbackDecis
 }
 
 /**
+ * Biome-delta duplicate tile updates should bypass debounced refresh flow and
+ * trigger immediate reconciliation while chunk state is stable.
+ */
+export function shouldRunImmediateDuplicateTileRefresh(input: DuplicateTileRefreshDecisionInput): boolean {
+  if (input.removeExplored || !input.tileAlreadyKnown) {
+    return false;
+  }
+
+  if (input.currentChunk === "null" || input.isChunkTransitioning) {
+    return false;
+  }
+
+  return input.hasBiomeDelta === true;
+}
+
+/**
  * Duplicate tile updates can indicate a missed visual apply while data state is
  * already present. Force a chunk refresh only when the duplicate touches the
  * active visible chunk and no transition is in progress.
@@ -166,11 +377,86 @@ export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRef
     return false;
   }
 
+  // Biome delta on a known tile indicates stale visual state; force immediate reconcile.
+  if (shouldRunImmediateDuplicateTileRefresh(input)) {
+    return true;
+  }
+
   if (input.currentChunk === "null" || input.isChunkTransitioning) {
     return false;
   }
 
   return input.isVisibleInCurrentChunk;
+}
+
+/**
+ * Resolve duplicate tile update behavior as an explicit decision matrix mode.
+ */
+export function resolveDuplicateTileUpdateMode(input: DuplicateTileRefreshDecisionInput): DuplicateTileUpdateMode {
+  if (input.removeExplored || !input.tileAlreadyKnown) {
+    return "none";
+  }
+
+  if (shouldForceRefreshForDuplicateTileUpdate(input)) {
+    return "invalidate_and_refresh";
+  }
+
+  return "invalidate_only";
+}
+
+/**
+ * Duplicate tile updates can indicate stale visual state despite data parity.
+ * Invalidate caches for duplicate adds and request a refresh only when visible.
+ */
+export function resolveDuplicateTileUpdateActions(
+  input: DuplicateTileRefreshDecisionInput,
+): DuplicateTileUpdateActions {
+  const mode = resolveDuplicateTileUpdateMode(input);
+  switch (mode) {
+    case "none":
+      return {
+        shouldInvalidateCaches: false,
+        shouldRequestRefresh: false,
+      };
+    case "invalidate_only":
+      return {
+        shouldInvalidateCaches: true,
+        shouldRequestRefresh: false,
+      };
+    case "invalidate_and_refresh":
+      return {
+        shouldInvalidateCaches: true,
+        shouldRequestRefresh: true,
+      };
+  }
+}
+
+/**
+ * Resolve the full duplicate-tile reconcile plan, including whether refresh
+ * should be immediate or deferred through chunk refresh scheduling.
+ */
+export function resolveDuplicateTileReconcilePlan(
+  input: DuplicateTileRefreshDecisionInput,
+): DuplicateTileReconcilePlan {
+  const actions = resolveDuplicateTileUpdateActions(input);
+  if (!actions.shouldInvalidateCaches) {
+    return {
+      shouldInvalidateCaches: false,
+      refreshStrategy: "none",
+    };
+  }
+
+  if (!actions.shouldRequestRefresh) {
+    return {
+      shouldInvalidateCaches: true,
+      refreshStrategy: "none",
+    };
+  }
+
+  return {
+    shouldInvalidateCaches: true,
+    refreshStrategy: shouldRunImmediateDuplicateTileRefresh(input) ? "immediate" : "deferred",
+  };
 }
 
 /**

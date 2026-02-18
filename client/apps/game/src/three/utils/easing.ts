@@ -1,3 +1,5 @@
+import { registerDebugHook, type DebugHookInstallOptions } from "./debug-hooks";
+
 /**
  * Easing functions for smooth, juicy animations
  *
@@ -118,22 +120,33 @@ function getEasingDescription(easingType: EasingType): string {
   return descriptions[easingType] || "Unknown easing type";
 }
 
-// Global debug functions
-(window as any).testEasing = (easingType: EasingType) => {
-  console.log(`🎮 Testing ${easingType} easing:`);
-  console.log(`   Description: ${getEasingDescription(easingType)}`);
+export function installEasingDebugHooks(options: DebugHookInstallOptions = {}): void {
+  registerDebugHook(
+    "testEasing",
+    (easingType: EasingType) => {
+      console.log(`🎮 Testing ${easingType} easing:`);
+      console.log(`   Description: ${getEasingDescription(easingType)}`);
 
-  // Show easing curve samples
-  const samples = [0, 0.25, 0.5, 0.75, 1.0];
-  console.log(
-    "   Progress samples:",
-    samples.map((t) => `${(t * 100).toFixed(0)}% → ${(applyEasing(t, easingType) * 100).toFixed(1)}%`).join(", "),
+      // Show easing curve samples
+      const samples = [0, 0.25, 0.5, 0.75, 1.0];
+      console.log(
+        "   Progress samples:",
+        samples.map((t) => `${(t * 100).toFixed(0)}% → ${(applyEasing(t, easingType) * 100).toFixed(1)}%`).join(", "),
+      );
+    },
+    options,
   );
-};
 
-(window as any).listEasingTypes = () => {
-  console.log("🎮 Available Easing Types:");
-  Object.values(EasingType).forEach((type) => {
-    console.log(`   • ${type}: ${getEasingDescription(type)}`);
-  });
-};
+  registerDebugHook(
+    "listEasingTypes",
+    () => {
+      console.log("🎮 Available Easing Types:");
+      Object.values(EasingType).forEach((type) => {
+        console.log(`   • ${type}: ${getEasingDescription(type)}`);
+      });
+    },
+    options,
+  );
+}
+
+installEasingDebugHooks();

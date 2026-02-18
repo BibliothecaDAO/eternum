@@ -1,0 +1,29 @@
+{
+  "name": "@bibliothecadao/game-agent",
+  "version": "0.1.0",
+  "description": "Autonomous agent framework for playing onchain games with self-evolving strategies",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@mariozechner/pi-agent-core": "^0.52.7",
+    "@mariozechner/pi-ai": "^0.52.7",
+    "@mariozechner/pi-coding-agent": "^0.52.7",
+    "@sinclair/typebox": "^0.34.41",
+    "yaml": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}

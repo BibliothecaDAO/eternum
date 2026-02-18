@@ -71,32 +71,30 @@ interface BiomeSummaryCardProps {
 export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(
     () =>
-      unoccupiedTileTroopTypes
-        .map((troopType) => {
-          const config = unoccupiedTileTroopConfig[troopType];
-          const bonus = configManager.getBiomeCombatBonus(troopType, biome);
-          const styles = getQuadrantBonusStyles(bonus);
-          return {
-            troopType,
-            config,
-            bonus,
-            styles,
-          };
-        })
-        .toSorted((a, b) => a.bonus - b.bonus),
+      unoccupiedTileTroopTypes.map((troopType) => {
+        const config = unoccupiedTileTroopConfig[troopType];
+        const bonus = configManager.getBiomeCombatBonus(troopType, biome);
+        const styles = getQuadrantBonusStyles(bonus);
+        return {
+          troopType,
+          config,
+          bonus,
+          styles,
+        };
+      }),
     [biome],
   );
 
   return (
-    <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-col gap-1">
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex flex-col gap-0.5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
           {showSimulateAction && onSimulateBattle ? (
             <Button
               variant="outline"
               size="xs"
-              className="gap-2 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+              className="h-11 min-w-[90px] gap-2 rounded-full border-gold/60 px-3 text-[11px]"
               forceUppercase={false}
               onClick={onSimulateBattle}
               withoutSound
@@ -106,23 +104,23 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             </Button>
           ) : null}
         </div>
-        <span className="text-sm font-semibold text-gold truncate" title={formatQuadrantBiomeLabel(biome)}>
+        <span className="truncate text-xs font-semibold text-gold" title={formatQuadrantBiomeLabel(biome)}>
           {formatQuadrantBiomeLabel(biome)}
         </span>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Army bonuses</span>
-        <div className="grid grid-cols-1 gap-1.5">
+        <div className="grid grid-cols-1 gap-1">
           {troopBonuses.map(({ troopType, config, bonus, styles }) => (
             <div
               key={troopType}
-              className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-sm ${styles.containerClass}`}
+              className={`flex items-center justify-between rounded-lg border px-2 py-1.5 shadow-sm ${styles.containerClass}`}
             >
               <div className="flex items-center gap-2">
                 <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
-                <span className="text-[11px] font-semibold text-gold/90">{config.label}</span>
+                <span className="text-[10px] font-semibold text-gold/90">{config.label}</span>
               </div>
-              <span className={`text-sm font-semibold ${styles.textClass}`}>
+              <span className={`text-xs font-semibold ${styles.textClass}`}>
                 {bonus === 1 ? "0%" : formatBiomeBonus(bonus)}
               </span>
             </div>
@@ -146,7 +144,7 @@ export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
 
   return (
-    <div className="h-full min-h-0 overflow-auto">
+    <div className="h-full min-h-0">
       <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
         <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
       </EntityDetailSection>

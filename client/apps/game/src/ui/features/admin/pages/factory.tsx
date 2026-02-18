@@ -88,6 +88,7 @@ import {
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 type AutoDeployState = { current: number; total: number; status: "running" | "stopping" };
+type FactoryConfigCall = { entrypoint: string; calldata: any[] };
 type ConfigPreset = "sandbox" | "blitz-slot";
 
 // Maximum hours in the future that a game start time can be set
@@ -495,13 +496,13 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       }
 
       setParsedManifest(manifest);
-      const calldata = generateFactoryCalldata(manifest, version, namespace, maxActions, defaultNamespaceWriterAll);
+      const calldata = generateFactoryCalldata(manifest, version, namespace, defaultNamespaceWriterAll);
       setGeneratedConfigCalldata(calldata);
     } catch {
       setParsedManifest(null);
       setGeneratedConfigCalldata(null);
     }
-  }, [manifestJson, version, namespace, maxActions, defaultNamespaceWriterAll]);
+  }, [manifestJson, version, namespace, defaultNamespaceWriterAll]);
 
   // Generate new world name
   const handleGenerateWorldName = () => {
@@ -709,94 +710,49 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     }
   };
 
-  const executeFactoryConfigCall = async (entrypoint: string, calldata: any[]) => {
-    if (!account || !factoryAddress || !generatedConfigCalldata) return;
+  const buildAllConfigCalls = (calldata: FactoryConfigCalldataParts): FactoryConfigCall[] => [
+    { entrypoint: "set_factory_config", calldata: calldata.base },
+    { entrypoint: "set_factory_config_contracts", calldata: calldata.contracts },
+    { entrypoint: "set_factory_config_models", calldata: calldata.models },
+    { entrypoint: "set_factory_config_events", calldata: calldata.events },
+    { entrypoint: "set_factory_config_libraries", calldata: calldata.libraries },
+  ];
+
+  const executeFactoryConfigCalls = async (calls: FactoryConfigCall[]): Promise<boolean> => {
+    if (!account || !factoryAddress || calls.length === 0) return false;
 
     setTx({ status: "running" });
 
     try {
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint,
-        calldata,
-      });
+      let lastHash: string | undefined;
+      for (const call of calls) {
+        const result = await account.execute({
+          contractAddress: factoryAddress,
+          entrypoint: call.entrypoint,
+          calldata: call.calldata,
+        });
+        lastHash = result.transaction_hash;
+        setTx({ status: "running", hash: lastHash });
+        await account.waitForTransaction(lastHash);
+      }
 
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
+      setTx({ status: "success", hash: lastHash });
+      return true;
     } catch (err: any) {
       setTx({ status: "error", error: err.message });
+      return false;
     }
   };
 
-  // Execute base config only
-  const handleSetConfigBase = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config", generatedConfigCalldata.base);
-  };
-
-  const handleSetConfigContracts = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_contracts", generatedConfigCalldata.contracts);
-  };
-
-  const handleSetConfigModels = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_models", generatedConfigCalldata.models);
-  };
-
-  const handleSetConfigEvents = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_events", generatedConfigCalldata.events);
-  };
-
-  const handleSetConfigLibraries = async () => {
-    if (!generatedConfigCalldata) return;
-    await executeFactoryConfigCall("set_factory_config_libraries", generatedConfigCalldata.libraries);
-  };
-
-  // Execute all config calls in one multicall
+  // Execute all config calls in sequence.
   const handleSetConfigAll = async () => {
-    if (!account || !factoryAddress || !generatedConfigCalldata) return;
+    if (!generatedConfigCalldata) return;
 
-    setTx({ status: "running" });
-
-    try {
-      const result = await account.execute([
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config",
-          calldata: generatedConfigCalldata.base,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_contracts",
-          calldata: generatedConfigCalldata.contracts,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_models",
-          calldata: generatedConfigCalldata.models,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_events",
-          calldata: generatedConfigCalldata.events,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_libraries",
-          calldata: generatedConfigCalldata.libraries,
-        },
-      ]);
-
-      setTx({ status: "success", hash: result.transaction_hash });
-      await account.waitForTransaction(result.transaction_hash);
-
+    const success = await executeFactoryConfigCalls(buildAllConfigCalls(generatedConfigCalldata));
+    if (success) {
       if (worldName) {
         markWorldAsConfigured(worldName);
       }
-    } catch (err: any) {
-      setTx({ status: "error", error: err.message });
     }
   };
 
@@ -812,7 +768,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       const result = await account.execute({
         contractAddress: factoryAddress,
         entrypoint: "create_game",
-        calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
+        calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
       });
 
       setTx({ status: "success", hash: result.transaction_hash });
@@ -826,50 +782,25 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     }
   };
 
-  // Execute both set_config and deploy in multicall
+  // Execute full config then deploy.
   const handleSetConfigAndDeploy = async () => {
     if (!account || !generatedConfigCalldata || !factoryAddress || !worldName) return;
 
-    setTx({ status: "running" });
-
     console.log("Generated Config Calldata:", generatedConfigCalldata);
+
+    const configSuccess = await executeFactoryConfigCalls(buildAllConfigCalls(generatedConfigCalldata));
+    if (!configSuccess) return;
+
+    setTx({ status: "running" });
 
     try {
       const worldNameFelt = shortString.encodeShortString(worldName);
       const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute([
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config",
-          calldata: generatedConfigCalldata.base,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_contracts",
-          calldata: generatedConfigCalldata.contracts,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_models",
-          calldata: generatedConfigCalldata.models,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_events",
-          calldata: generatedConfigCalldata.events,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "set_factory_config_libraries",
-          calldata: generatedConfigCalldata.libraries,
-        },
-        {
-          contractAddress: factoryAddress,
-          entrypoint: "create_game",
-          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
-        },
-      ]);
-
+      const result = await account.execute({
+        contractAddress: factoryAddress,
+        entrypoint: "create_game",
+        calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+      });
       setTx({ status: "success", hash: result.transaction_hash });
       await account.waitForTransaction(result.transaction_hash);
 
@@ -920,7 +851,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         const result = await account.execute({
           contractAddress: factoryAddress,
           entrypoint: "create_game",
-          calldata: [worldNameFelt, version, series.seriesNameFelt, series.seriesGameNumber],
+          calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
         });
         setTx({ status: "success", hash: result.transaction_hash });
 
@@ -2476,50 +2407,18 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        onClick={handleSetConfigBase}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Base
-                      </button>
-                      <button
-                        onClick={handleSetConfigContracts}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Contracts
-                      </button>
-                      <button
-                        onClick={handleSetConfigModels}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Models
-                      </button>
-                      <button
-                        onClick={handleSetConfigEvents}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
-                        Set Events
-                      </button>
-                      <button
-                        onClick={handleSetConfigLibraries}
-                        disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors sm:col-span-1"
-                      >
-                        Set Libraries
-                      </button>
+                    <div className="space-y-2">
                       <button
                         onClick={handleSetConfigAll}
                         disabled={!factoryAddress || !account || !generatedConfigCalldata || tx.status === "running"}
-                        className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 sm:col-span-1"
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                       >
                         {tx.status === "running" && getTxStatusIcon()}
-                        <span>Set All</span>
+                        <span>Set Configuration</span>
                       </button>
+                      <p className="text-xs text-slate-500">
+                        Sends full contracts, models, events, and libraries arrays in one call per setter.
+                      </p>
                     </div>
 
                     {/* Transaction Status for Set Configuration */}
