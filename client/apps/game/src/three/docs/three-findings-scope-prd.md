@@ -40,6 +40,11 @@ This plan scopes the prioritized findings list and converts it into executable T
    2. `client/apps/game/src/three/effects/rain-effect.test.ts`
    3. `client/apps/game/src/three/effects/day-night-cycle.ts`
    4. `client/apps/game/src/three/effects/rain-effect.ts`
+10. Added WS4 coverage guardrails:
+   1. Explicit `src/three` coverage thresholds in `client/apps/game/vitest.config.ts`
+   2. `coverage:three` script in `client/apps/game/package.json`
+   3. Changed-files guard script `client/apps/game/scripts/check-three-changed-tests.mjs`
+   4. Guard runner script `test:three:changed-guard` in `client/apps/game/package.json`
 
 ## Prioritized Findings (Scoped)
 
