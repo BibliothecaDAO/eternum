@@ -156,6 +156,10 @@ import {
   evaluateChunkSwitchP95Regression,
   type ChunkSwitchP95RegressionResult,
 } from "./worldmap-chunk-latency-regression";
+import {
+  evaluateTileFetchVolumeRegression,
+  type TileFetchVolumeRegressionResult,
+} from "./worldmap-tile-fetch-volume-regression";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -178,6 +182,11 @@ type WorldmapChunkSwitchP95RegressionDebugResult = {
   result: ChunkSwitchP95RegressionResult;
 };
 
+type WorldmapTileFetchVolumeRegressionDebugResult = {
+  baselineLabel: string | null;
+  result: TileFetchVolumeRegressionResult;
+};
+
 type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkDiagnostics?: () => {
     diagnostics: WorldmapChunkDiagnostics;
@@ -193,6 +202,10 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     baselineLabel?: string,
     allowedRegressionFraction?: number,
   ) => WorldmapChunkSwitchP95RegressionDebugResult;
+  evaluateWorldmapTileFetchVolumeRegression?: (
+    baselineLabel?: string,
+    allowedIncreaseFraction?: number,
+  ) => WorldmapTileFetchVolumeRegressionDebugResult;
 };
 
 const dummy = new Object3D();
@@ -4419,6 +4432,47 @@ export default class WorldmapScene extends HexagonScene {
     };
   }
 
+  private evaluateTileFetchVolumeRegressionAgainstBaseline(
+    baselineLabel?: string,
+    allowedIncreaseFraction: number = 0,
+  ): WorldmapTileFetchVolumeRegressionDebugResult {
+    let selectedBaseline: WorldmapChunkDiagnosticsBaselineEntry | undefined;
+    if (baselineLabel) {
+      for (let i = this.chunkDiagnosticsBaselines.length - 1; i >= 0; i--) {
+        const candidate = this.chunkDiagnosticsBaselines[i];
+        if (candidate?.label === baselineLabel) {
+          selectedBaseline = candidate;
+          break;
+        }
+      }
+    } else {
+      selectedBaseline = this.chunkDiagnosticsBaselines[this.chunkDiagnosticsBaselines.length - 1];
+    }
+
+    if (!selectedBaseline) {
+      return {
+        baselineLabel: null,
+        result: {
+          status: "fail",
+          reason: "No baseline found. Capture one first with captureWorldmapChunkBaseline(label).",
+          baselineFetchCount: 0,
+          currentFetchCount: Math.max(0, Math.floor(this.chunkDiagnostics.tileFetchStarted)),
+          allowedIncreaseFraction: Math.max(0, allowedIncreaseFraction),
+          increaseFraction: Number.POSITIVE_INFINITY,
+        },
+      };
+    }
+
+    return {
+      baselineLabel: selectedBaseline.label,
+      result: evaluateTileFetchVolumeRegression({
+        baseline: selectedBaseline.diagnostics,
+        current: this.chunkDiagnostics,
+        allowedIncreaseFraction,
+      }),
+    };
+  }
+
   private installChunkDiagnosticsDebugHooks(): void {
     if (!import.meta.env.DEV) {
       return;
@@ -4432,6 +4486,10 @@ export default class WorldmapScene extends HexagonScene {
       baselineLabel?: string,
       allowedRegressionFraction?: number,
     ) => this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
+    debugWindow.evaluateWorldmapTileFetchVolumeRegression = (
+      baselineLabel?: string,
+      allowedIncreaseFraction?: number,
+    ) => this.evaluateTileFetchVolumeRegressionAgainstBaseline(baselineLabel, allowedIncreaseFraction);
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
@@ -4444,6 +4502,7 @@ export default class WorldmapScene extends HexagonScene {
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
+    debugWindow.evaluateWorldmapTileFetchVolumeRegression = undefined;
   }
 
   private monitorTerrainVisibilityHealth(): void {

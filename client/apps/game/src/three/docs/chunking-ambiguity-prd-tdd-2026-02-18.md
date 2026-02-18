@@ -292,7 +292,7 @@ Add/update:
 | FR-6 | Done | `client/apps/game/src/three/README.md`, `client/apps/game/src/three/scenes/worldmap.tsx` |
 | FR-7 | Done | `client/apps/game/src/three/scenes/worldmap-chunk-bounds.ts`, `client/apps/game/src/three/scenes/worldmap-chunk-transition.ts`, `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.ts` |
 | NFR-1 | Pending validation (tooling ready) | p95 comparator implemented via `worldmap-chunk-latency-regression.ts` + `window.evaluateWorldmapChunkSwitchP95Regression(...)`; requires controlled baseline/current run data capture. |
-| NFR-2 | Pending validation | Requires comparative tile fetch-volume measurement on identical camera traversal path. |
+| NFR-2 | Pending validation (tooling ready) | Fetch-volume comparator implemented via `worldmap-tile-fetch-volume-regression.ts` + `window.evaluateWorldmapTileFetchVolumeRegression(...)`; requires controlled identical-path baseline/current run capture. |
 | NFR-3 | Pending validation | Requires 5-minute traversal soak verifying no persistent cache-pressure warning pattern. |
 | NFR-4 | Pending CI run | Local deterministic test runs pass; CI pass still required for acceptance closure. |
 
@@ -313,3 +313,13 @@ Add/update:
 5. In the current build on the same traversal path/hardware, run the same sequence and then evaluate:
    1. `window.evaluateWorldmapChunkSwitchP95Regression?.("nfr1-baseline-end", 0.1)`
 6. Mark `NFR-1` complete only when result status is `pass` and artifact the diagnostics snapshot.
+
+### NFR-2 Controlled Validation Runbook (Implemented)
+
+1. In DEV worldmap session, run `window.resetWorldmapChunkDiagnostics?.()`.
+2. Capture baseline anchor: `window.captureWorldmapChunkBaseline?.("nfr2-baseline-start")`.
+3. Execute the fixed camera traversal path used for comparison.
+4. Capture baseline end: `window.captureWorldmapChunkBaseline?.("nfr2-baseline-end")`.
+5. In the comparison run on identical traversal path/hardware, evaluate:
+   1. `window.evaluateWorldmapTileFetchVolumeRegression?.("nfr2-baseline-end", 0)`
+6. Mark `NFR-2` complete only when result status is `pass` (no fetch-volume increase) and artifact the diagnostics snapshot.
