@@ -1,7 +1,7 @@
-import { getActiveWorld, normalizeRpcUrl, resolveChain } from "@/runtime/world";
+import { getActiveWorld, normalizeRpcUrl, patchManifestWithFactory, resolveChain } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
-import type { Chain as GameChain } from "@contracts";
+import { Chain as GameChain, getGameManifest } from "@contracts";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import { QueryClient } from "@tanstack/react-query";
@@ -71,6 +71,7 @@ type ConnectionContext = {
   rpcUrl: string;
   resolvedChain: DerivedChain;
   resolvedChainId: string;
+  policyManifest: any;
 };
 
 const resolveFallbackChain = (chain: GameChain): DerivedChain => {
@@ -95,11 +96,17 @@ const resolveConnectionContext = (): ConnectionContext => {
   const derivedChain = deriveChainFromRpcUrl(rpcUrl);
   const resolvedChain = derivedChain ?? resolveFallbackChain(selectedChain);
   const resolvedChainId = resolvedChain.chainId;
+  const baseManifest = getGameManifest(selectedChain);
+  const policyManifest =
+    activeWorld?.contractsBySelector && activeWorld.worldAddress
+      ? patchManifestWithFactory(baseManifest as any, activeWorld.worldAddress, activeWorld.contractsBySelector)
+      : baseManifest;
 
   return {
     rpcUrl,
     resolvedChain,
     resolvedChainId,
+    policyManifest,
   };
 };
 
@@ -168,6 +175,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const effectiveRpcUrl = isLocal ? KATANA_RPC_URL : connectionContext.rpcUrl;
   const resolvedChain = connectionContext.resolvedChain;
   const resolvedChainId = isLocal ? KATANA_CHAIN_ID : connectionContext.resolvedChainId;
+  const policyManifest = connectionContext.policyManifest;
 
   const controller = useMemo(
     () =>
@@ -180,11 +188,11 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
           },
         ],
         defaultChainId: resolvedChainId,
-        policies: buildPolicies(dojoConfig.manifest),
+        policies: buildPolicies(policyManifest),
         slot,
         namespace,
       }),
-    [effectiveRpcUrl, resolvedChainId, controllerContextVersion],
+    [effectiveRpcUrl, resolvedChainId, policyManifest, controllerContextVersion],
   );
 
   const rpc = useCallback(() => {

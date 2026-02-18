@@ -389,6 +389,10 @@ export const buildPolicies = (manifest: any) => {
             entrypoint: "burn_resource_for_resource_production",
           },
           {
+            name: "claim_wonder_production_bonus",
+            entrypoint: "claim_wonder_production_bonus",
+          },
+          {
             name: "dojo_name",
             entrypoint: "dojo_name",
           },
@@ -424,18 +428,6 @@ export const buildPolicies = (manifest: any) => {
             name: "withdraw",
             entrypoint: "withdraw",
           },
-          {
-            name: "dojo_name",
-            entrypoint: "dojo_name",
-          },
-          {
-            name: "world_dispatcher",
-            entrypoint: "world_dispatcher",
-          },
-        ],
-      },
-      [getContractByName(manifest, "s1_eternum", "resource_systems").address]: {
-        methods: [
           {
             name: "approve",
             entrypoint: "approve",
@@ -504,6 +496,14 @@ export const buildPolicies = (manifest: any) => {
       },
       [getContractByName(manifest, "s1_eternum", "season_systems").address]: {
         methods: [
+          {
+            name: "season_close",
+            entrypoint: "season_close",
+          },
+          {
+            name: "season_prize_claim",
+            entrypoint: "season_prize_claim",
+          },
           {
             name: "register_to_leaderboard",
             entrypoint: "register_to_leaderboard",

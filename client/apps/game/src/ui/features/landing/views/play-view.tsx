@@ -1,10 +1,8 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { applyWorldSelection, resolveChain } from "@/runtime/world";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
-import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import {
   BookOpen,
@@ -25,7 +23,6 @@ import {
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { env } from "../../../../../env";
 import { HeroTitle } from "../components/hero-title";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
@@ -448,27 +445,13 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
 
-  const prepareSelectionForSignIn = useCallback(async (selection: WorldSelection) => {
-    const fallbackChain = resolveChain(env.VITE_PUBLIC_CHAIN as Chain);
-
-    try {
-      await applyWorldSelection(
-        { name: selection.name, chain: selection.chain ?? fallbackChain, worldAddress: selection.worldAddress },
-        fallbackChain,
-      );
-    } catch (error) {
-      console.error("Failed to prepare world selection before sign-in:", error);
-    }
-  }, []);
-
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
       const hasAccount = Boolean(account) || isConnected;
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
-        void prepareSelectionForSignIn(selection);
+        setModal(<SignInPromptModal selection={selection} />, true);
         return;
       }
 
@@ -478,7 +461,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       setIsForgeMode(false);
       setEntryModalOpen(true);
     },
-    [account, isConnected, prepareSelectionForSignIn, setModal],
+    [account, isConnected, setModal],
   );
 
   const handleSpectate = useCallback((selection: WorldSelection) => {
@@ -495,8 +478,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
-        void prepareSelectionForSignIn(selection);
+        setModal(<SignInPromptModal selection={selection} />, true);
         return;
       }
 
@@ -507,7 +489,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       setNumHyperstructuresLeft(numLeft);
       setEntryModalOpen(true);
     },
-    [account, isConnected, prepareSelectionForSignIn, setModal],
+    [account, isConnected, setModal],
   );
 
   const handleCloseModal = useCallback(() => {
