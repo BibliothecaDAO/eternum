@@ -17,8 +17,18 @@ const StructureType = {
 } as const;
 
 const { resolveInitialStructureSelection } = await import("./sync-initial-selection");
-type InitialStructureSelectionInput = import("./sync-initial-selection").InitialStructureSelectionInput;
-type SyncedStructureRecord = import("./sync-initial-selection").SyncedStructureRecord;
+
+interface SyncedStructureRecord {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  category?: number | string | null;
+}
+
+interface InitialStructureSelectionInput {
+  ownedStructures: SyncedStructureRecord[];
+  firstGlobalStructure: SyncedStructureRecord | null;
+}
 
 const structure = (
   entity_id: number,
@@ -41,10 +51,7 @@ const resolve = (input: Partial<InitialStructureSelectionInput>) =>
 describe("resolveInitialStructureSelection", () => {
   it("prefers owned realm structure when available and does not spectate", () => {
     const selected = resolve({
-      ownedStructures: [
-        structure(10, 1, 1, StructureType.Village),
-        structure(22, 9, 9, StructureType.Realm),
-      ],
+      ownedStructures: [structure(10, 1, 1, StructureType.Village), structure(22, 9, 9, StructureType.Realm)],
       firstGlobalStructure: structure(99, 5, 5),
     });
 

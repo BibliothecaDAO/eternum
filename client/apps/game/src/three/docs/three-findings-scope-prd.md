@@ -31,37 +31,41 @@ This plan scopes the prioritized findings list and converts it into executable T
 7. Added `PathRenderer` lifecycle tests and idempotent dispose guard:
    1. `client/apps/game/src/three/managers/path-renderer.test.ts`
    2. `client/apps/game/src/three/managers/path-renderer.ts`
-8. Added deterministic `ArmyModel` behavior policy tests (movement/rotation/model-switch) and wired runtime methods to the policy seam:
+8. Added deterministic `ArmyModel` behavior policy tests (movement/rotation/model-switch) and wired runtime methods to
+   the policy seam:
    1. `client/apps/game/src/three/managers/army-model-behavior-policy.ts`
    2. `client/apps/game/src/three/managers/army-model-behavior-policy.test.ts`
    3. `client/apps/game/src/three/managers/army-model.ts`
-9. Added direct effects/weather coverage for `DayNightCycleManager` and `RainEffect`, including idempotent dispose guards:
+9. Added direct effects/weather coverage for `DayNightCycleManager` and `RainEffect`, including idempotent dispose
+   guards:
    1. `client/apps/game/src/three/effects/day-night-cycle.test.ts`
    2. `client/apps/game/src/three/effects/rain-effect.test.ts`
    3. `client/apps/game/src/three/effects/day-night-cycle.ts`
    4. `client/apps/game/src/three/effects/rain-effect.ts`
 10. Added WS4 coverage guardrails:
-   1. Explicit `src/three` coverage thresholds in `client/apps/game/vitest.config.ts`
-   2. `coverage:three` script in `client/apps/game/package.json`
-   3. Changed-files guard script `client/apps/game/scripts/check-three-changed-tests.mjs`
-   4. Guard runner script `test:three:changed-guard` in `client/apps/game/package.json`
-11. Added DEV-only debug hook policy with a central registry and targeted tests:
-   1. Central registry utility `client/apps/game/src/three/utils/debug-hooks.ts`
-   2. `Easing` installer + tests:
-      1. `client/apps/game/src/three/utils/easing.ts`
-      2. `client/apps/game/src/three/utils/easing-debug-hooks.test.ts`
-   3. `HexGeometryPool` installer + tests:
-      1. `client/apps/game/src/three/utils/hex-geometry-pool.ts`
-      2. `client/apps/game/src/three/utils/hex-geometry-pool-debug-hooks.test.ts`
-   4. `ArmyModel` installer extraction + tests:
-      1. `client/apps/game/src/three/managers/army-model-debug-hooks.ts`
-      2. `client/apps/game/src/three/managers/army-model-debug-hooks.test.ts`
-   5. Registry behavior tests:
-      1. `client/apps/game/src/three/utils/debug-hooks.test.ts`
-12. Ran autonomous browser smoke lane via `agent-browser` with artifacts:
-   1. Artifacts captured in `.context/spectator-browser/`
-   2. Outcome: spectator entry reached but blocked by headless WebGL context creation failure (`THREE.WebGLRenderer: Error creating WebGL context`)
-   3. Supplemented runbook in `client/apps/game/AGENTS.md` with Node `20.19` compatibility launcher and infra-blocked handling notes
+11. Explicit `src/three` coverage thresholds in `client/apps/game/vitest.config.ts`
+12. `coverage:three` script in `client/apps/game/package.json`
+13. Changed-files guard script `client/apps/game/scripts/check-three-changed-tests.mjs`
+14. Guard runner script `test:three:changed-guard` in `client/apps/game/package.json`
+15. Added DEV-only debug hook policy with a central registry and targeted tests:
+16. Central registry utility `client/apps/game/src/three/utils/debug-hooks.ts`
+17. `Easing` installer + tests:
+    1. `client/apps/game/src/three/utils/easing.ts`
+    2. `client/apps/game/src/three/utils/easing-debug-hooks.test.ts`
+18. `HexGeometryPool` installer + tests:
+    1. `client/apps/game/src/three/utils/hex-geometry-pool.ts`
+    2. `client/apps/game/src/three/utils/hex-geometry-pool-debug-hooks.test.ts`
+19. `ArmyModel` installer extraction + tests:
+    1. `client/apps/game/src/three/managers/army-model-debug-hooks.ts`
+    2. `client/apps/game/src/three/managers/army-model-debug-hooks.test.ts`
+20. Registry behavior tests:
+    1. `client/apps/game/src/three/utils/debug-hooks.test.ts`
+21. Ran autonomous browser smoke lane via `agent-browser` with artifacts:
+22. Artifacts captured in `.context/spectator-browser/`
+23. Outcome: spectator entry reached but blocked by headless WebGL context creation failure
+    (`THREE.WebGLRenderer: Error creating WebGL context`)
+24. Supplemented runbook in `client/apps/game/AGENTS.md` with Node `20.19` compatibility launcher and infra-blocked
+    handling notes
 
 ## Prioritized Findings (Scoped)
 

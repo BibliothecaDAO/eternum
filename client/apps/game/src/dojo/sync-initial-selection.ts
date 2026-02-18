@@ -1,18 +1,18 @@
 import { StructureType } from "@bibliothecadao/types";
 
-export interface SyncedStructureRecord {
+interface SyncedStructureRecord {
   entity_id: number;
   coord_x: number;
   coord_y: number;
   category?: number | string | null;
 }
 
-export interface InitialStructureSelectionInput {
+interface InitialStructureSelectionInput {
   ownedStructures: SyncedStructureRecord[];
   firstGlobalStructure: SyncedStructureRecord | null;
 }
 
-export interface InitialStructureSelectionResult {
+interface InitialStructureSelectionResult {
   selectedStructure: Pick<SyncedStructureRecord, "entity_id" | "coord_x" | "coord_y"> | null;
   spectator: boolean;
 }
