@@ -41,6 +41,7 @@ import {
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
 } from "./army-model-behavior-policy";
+import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -1942,13 +1943,4 @@ export class ArmyModel {
   }
 }
 
-// Global debug functions for testing easing in armies
-(window as any).setArmyEasing = (easingType: EasingType) => {
-  console.log(`🎮 Setting army default easing to: ${easingType}`);
-  // Note: This requires access to ArmyModel instance - implement in army manager if needed
-};
-
-(window as any).setTierEasing = (tier: TroopTier, easingType: EasingType) => {
-  console.log(`🎮 Setting tier ${tier} easing to: ${easingType}`);
-  // Note: This requires access to ArmyModel instance - implement in army manager if needed
-};
+installArmyModelDebugHooks();

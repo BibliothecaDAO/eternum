@@ -45,6 +45,19 @@ This plan scopes the prioritized findings list and converts it into executable T
    2. `coverage:three` script in `client/apps/game/package.json`
    3. Changed-files guard script `client/apps/game/scripts/check-three-changed-tests.mjs`
    4. Guard runner script `test:three:changed-guard` in `client/apps/game/package.json`
+11. Added DEV-only debug hook policy with a central registry and targeted tests:
+   1. Central registry utility `client/apps/game/src/three/utils/debug-hooks.ts`
+   2. `Easing` installer + tests:
+      1. `client/apps/game/src/three/utils/easing.ts`
+      2. `client/apps/game/src/three/utils/easing-debug-hooks.test.ts`
+   3. `HexGeometryPool` installer + tests:
+      1. `client/apps/game/src/three/utils/hex-geometry-pool.ts`
+      2. `client/apps/game/src/three/utils/hex-geometry-pool-debug-hooks.test.ts`
+   4. `ArmyModel` installer extraction + tests:
+      1. `client/apps/game/src/three/managers/army-model-debug-hooks.ts`
+      2. `client/apps/game/src/three/managers/army-model-debug-hooks.test.ts`
+   5. Registry behavior tests:
+      1. `client/apps/game/src/three/utils/debug-hooks.test.ts`
 
 ## Prioritized Findings (Scoped)
 
