@@ -150,7 +150,7 @@ export const TransferTroopsContainer = ({
   const selectedExplorerResources = selectedEntityData?.explorerResources;
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
-  const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure.structure;
+  const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure?.structure;
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
