@@ -2,7 +2,7 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
-import { findResourceById, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { findResourceById, BANDITS_NAME, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 const STRUCTURE_IMAGE_PATHS = {
@@ -32,7 +32,7 @@ export const WorldStructures = () => {
           <p className="leading-relaxed">
             Naturally occurring structures discovered during exploration, enabling players to harvest precious{" "}
             <span className="font-bold">{findResourceById(Number(ResourcesIds.AncientFragment))?.trait}</span> from the
-            world. Be weary of the bandits that inhabit these mines!
+            world. Be wary of {BANDITS_NAME}, who inhabit these mines!
           </p>
         </div>
       </section>
