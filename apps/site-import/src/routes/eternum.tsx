@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { generateMetaTags } from "@/lib/og-image";
 import { Button } from "@/components/ui/button";
-import { HexGridBackground } from "@/components/HexGridBackground";
 import { HexIconBadge } from "@/components/HexIconBadge";
 import { HexCTAFrame } from "@/components/HexCTAFrame";
 import {
@@ -149,14 +148,6 @@ function EternumPage() {
         >
           <source src="/eternum.mp4" type="video/mp4" />
         </video>
-
-        <HexGridBackground
-          colorPrimary="#4ecdc4"
-          colorSecondary="#2a6f97"
-          colorGlow="#00ffcc"
-          disableHover={true}
-          className="z-[1]"
-        />
 
         <div className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_75%_18%,rgba(244,198,124,0.22),transparent_40%),radial-gradient(circle_at_22%_78%,rgba(99,117,214,0.18),transparent_38%),linear-gradient(180deg,rgba(8,8,11,0.10)_0%,rgba(8,8,11,0.55)_50%,rgba(8,8,11,0.92)_100%)]" />
 

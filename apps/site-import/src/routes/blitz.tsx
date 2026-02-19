@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { generateMetaTags } from "@/lib/og-image";
 import { Button } from "@/components/ui/button";
-import { HexGridBackground } from "@/components/HexGridBackground";
 import { HexIconBadge } from "@/components/HexIconBadge";
 import { HexCTAFrame } from "@/components/HexCTAFrame";
 import {
@@ -164,14 +163,6 @@ function BlitzPage() {
         >
           <source src="/videos/blitz-stub.mp4" type="video/mp4" />
         </video>
-
-        <HexGridBackground
-          colorPrimary="#ff6b35"
-          colorSecondary="#c44536"
-          colorGlow="#ff9500"
-          disableHover={true}
-          className="z-[1]"
-        />
 
         <div className="absolute inset-0 z-[2] bg-gradient-to-b from-black/40 via-black/60 to-black/90" />
 
