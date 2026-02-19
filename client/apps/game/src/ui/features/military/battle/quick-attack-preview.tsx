@@ -234,12 +234,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
   const attackerOnCooldown = attackerCooldownRemaining > 0;
 
-  const attackDisabled = attackerOnCooldown || attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData;
+  const hasDefenders = !!targetArmyData;
+  const attackDisabled =
+    (hasDefenders && (attackerOnCooldown || attackerStamina < combatConfig.stamina_attack_req)) || !attackerArmyData;
 
   const attackButtonLabel = (() => {
+    if (!attackerArmyData) return "No troops selected";
+    if (!hasDefenders) return "Claim";
     if (attackerOnCooldown) return "On cooldown";
     if (attackerStamina < combatConfig.stamina_attack_req) return `Need ${combatConfig.stamina_attack_req} stamina`;
-    if (!attackerArmyData) return "No troops selected";
     return "Attack";
   })();
 
