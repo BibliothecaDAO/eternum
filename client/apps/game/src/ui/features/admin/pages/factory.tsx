@@ -421,12 +421,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       if (preset === "blitz-slot") {
         setDevModeOn(false);
         setMmrEnabledOn(true);
-        setDurationHours(2);
+        setDurationHours(1);
 
         setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
         setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
-        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(2) as Record<string, number>) }));
-        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(1) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(30) as Record<string, number>) }));
       }
     },
     [storedWorldNames],
