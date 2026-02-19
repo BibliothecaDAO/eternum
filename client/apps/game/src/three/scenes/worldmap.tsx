@@ -107,13 +107,13 @@ import {
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveControlsChangeChunkRefreshPlan,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
-  shouldForceChunkRefreshForZoomDistanceChange,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
   resolveHydratedChunkRefreshFlushPlan,
@@ -404,15 +404,15 @@ export default class WorldmapScene extends HexagonScene {
     this.updateCameraTargetHexThrottled?.();
 
     const nextCameraDistance = this.getCurrentCameraDistance();
-    const shouldForceRefresh = shouldForceChunkRefreshForZoomDistanceChange({
+    const refreshPlan = resolveControlsChangeChunkRefreshPlan({
       previousDistance: this.lastControlsCameraDistance,
       nextDistance: nextCameraDistance,
       threshold: this.zoomForceRefreshDistanceThreshold,
     });
     this.lastControlsCameraDistance = nextCameraDistance;
 
-    if (shouldForceRefresh) {
-      this.requestChunkRefresh(true);
+    if (refreshPlan.shouldRequestRefresh) {
+      this.requestChunkRefresh(refreshPlan.shouldForceRefresh);
     }
   };
   private isUrlChangedListenerAttached = false;

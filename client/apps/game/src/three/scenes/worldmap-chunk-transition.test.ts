@@ -22,6 +22,7 @@ import {
   resolveHydratedChunkRefreshFlushPlan,
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
+  resolveControlsChangeChunkRefreshPlan,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -976,5 +977,46 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         threshold: 0.75,
       }),
     ).toBe(false);
+  });
+});
+
+describe("resolveControlsChangeChunkRefreshPlan", () => {
+  it("requests a debounced refresh on camera movement even without large zoom delta", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 20.2,
+        threshold: 0.75,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: true,
+      shouldForceRefresh: false,
+    });
+  });
+
+  it("requests a forced refresh when zoom delta crosses threshold", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: true,
+      shouldForceRefresh: true,
+    });
+  });
+
+  it("skips refresh when distance sample is invalid", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: Number.NaN,
+        threshold: 0.75,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
   });
 });

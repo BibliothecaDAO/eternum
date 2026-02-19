@@ -91,6 +91,11 @@ interface ZoomRefreshDecisionInput {
   threshold: number;
 }
 
+interface ControlsChangeChunkRefreshPlan {
+  shouldRequestRefresh: boolean;
+  shouldForceRefresh: boolean;
+}
+
 interface StructureBoundsRefreshInput {
   currentChunk: string;
   isChunkTransitioning: boolean;
@@ -289,6 +294,27 @@ export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshD
 
   const threshold = Math.max(0, input.threshold);
   return Math.abs(input.nextDistance - input.previousDistance) >= threshold;
+}
+
+/**
+ * Controls-change events should always schedule a debounced chunk refresh when
+ * distance samples are valid so pan traversal converges quickly. Large zoom
+ * deltas still escalate to forced refresh.
+ */
+export function resolveControlsChangeChunkRefreshPlan(
+  input: ZoomRefreshDecisionInput,
+): ControlsChangeChunkRefreshPlan {
+  if (!Number.isFinite(input.nextDistance)) {
+    return {
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    };
+  }
+
+  return {
+    shouldRequestRefresh: true,
+    shouldForceRefresh: shouldForceChunkRefreshForZoomDistanceChange(input),
+  };
 }
 
 /**
