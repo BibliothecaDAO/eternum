@@ -11,7 +11,6 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { bootstrapGame } from "../../init/bootstrap";
 import { useAccountStore } from "../store/use-account-store";
-import { buildPolicies } from "./policies";
 import { useControllerAccount } from "./use-controller-account";
 
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -96,7 +95,11 @@ const controller = new ControllerConnector({
     },
   ],
   defaultChainId: resolvedChainId,
-  policies: buildPolicies(dojoConfig.manifest),
+  // Policies are intentionally omitted here so that login/connect does NOT
+  // create a session upfront. Session policies are set later by
+  // refreshSessionPolicies() after the player selects a game and
+  // bootstrapGame() patches the manifest with the correct contract addresses.
+  // policies: buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
 });
