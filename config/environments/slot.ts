@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourcesIds, type Config } from "@bibliothecadao/types";
+import type { Config } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
@@ -16,17 +16,6 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
  */
 export const SlotEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
-  resources: {
-    ...CommonEternumGlobalConfig.resources,
-    productionByComplexRecipeOutputs: {
-      ...CommonEternumGlobalConfig.resources.productionByComplexRecipeOutputs,
-      [ResourcesIds.Donkey]: 3,
-    },
-    productionBySimpleRecipeOutputs: {
-      ...CommonEternumGlobalConfig.resources.productionBySimpleRecipeOutputs,
-      [ResourcesIds.Donkey]: 3,
-    },
-  },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
     hyperstructureWinProbAtCenter: 0,

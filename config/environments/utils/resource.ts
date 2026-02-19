@@ -72,7 +72,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 1,
   [ResourcesIds.Mithral]: 1,
   [ResourcesIds.Dragonhide]: 1,
-  [ResourcesIds.Donkey]: 1,
+  [ResourcesIds.Donkey]: 3,
   [ResourcesIds.Knight]: 5,
   [ResourcesIds.KnightT2]: 5,
   [ResourcesIds.KnightT3]: 5,
