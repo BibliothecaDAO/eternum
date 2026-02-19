@@ -16,7 +16,6 @@ import {
   shouldApplyRefreshToken,
   shouldAcceptExactTransitionToken,
   shouldRescheduleRefreshToken,
-  shouldAcceptTransitionToken,
   shouldRunManagerUpdate,
   shouldRunImmediateDuplicateTileRefresh,
   waitForChunkTransitionToSettle,
@@ -133,24 +132,6 @@ describe("shouldRunManagerUpdate", () => {
         targetChunk: "24,24",
       }),
     ).toBe(true);
-  });
-});
-
-describe("shouldAcceptTransitionToken", () => {
-  it("accepts updates without a transition token", () => {
-    expect(shouldAcceptTransitionToken(undefined, 3)).toBe(true);
-  });
-
-  it("accepts token equal to latest token", () => {
-    expect(shouldAcceptTransitionToken(3, 3)).toBe(true);
-  });
-
-  it("accepts token greater than latest token", () => {
-    expect(shouldAcceptTransitionToken(4, 3)).toBe(true);
-  });
-
-  it("rejects stale token lower than latest token", () => {
-    expect(shouldAcceptTransitionToken(2, 3)).toBe(false);
   });
 });
 

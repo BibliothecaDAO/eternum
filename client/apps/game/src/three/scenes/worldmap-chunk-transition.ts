@@ -146,20 +146,6 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
 }
 
 /**
- * Accept transition tokens in monotonic order.
- * Undefined token is treated as non-transitioned work and accepted.
- */
-export function shouldAcceptTransitionToken(
-  transitionToken: number | undefined,
-  latestTransitionToken: number,
-): boolean {
-  if (transitionToken === undefined) {
-    return true;
-  }
-  return transitionToken >= latestTransitionToken;
-}
-
-/**
  * Accept only the exact current transition token.
  * Undefined token is treated as non-transitioned work and accepted.
  */
