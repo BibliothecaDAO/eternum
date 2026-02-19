@@ -72,7 +72,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 1,
   [ResourcesIds.Mithral]: 1,
   [ResourcesIds.Dragonhide]: 1,
-  [ResourcesIds.Donkey]: 1,
+  [ResourcesIds.Donkey]: 3,
   [ResourcesIds.Knight]: 5,
   [ResourcesIds.KnightT2]: 5,
   [ResourcesIds.KnightT3]: 5,
@@ -231,10 +231,10 @@ export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
   // { resource: ResourcesIds.Fish, amount: 2_000_000 },
   // { resource: ResourcesIds.Labor, amount: 200_000 },
   // { resource: ResourcesIds.Donkey, amount: 1_500 },
-  // // 1000, tokenized troops. only one troop type will be selected
-  // { resource: ResourcesIds.Knight, amount: 1_000 },
-  // { resource: ResourcesIds.Crossbowman, amount: 1_000 },
-  // { resource: ResourcesIds.Paladin, amount: 1_000 },
+  // 1000, tokenized troops. only one troop type will be selected
+  { resource: ResourcesIds.Knight, amount: 500 },
+  { resource: ResourcesIds.Crossbowman, amount: 500 },
+  { resource: ResourcesIds.Paladin, amount: 500 },
 ];
 
 export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [

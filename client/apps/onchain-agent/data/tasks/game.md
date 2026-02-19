@@ -5,7 +5,7 @@ autoload: false
 
 ⚔️ Realms: Blitz Official Game Guide
 
-Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each two-hour match, players
+Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 90-minute match, players
 strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
@@ -17,8 +17,8 @@ bracket\*\*.
 
 📜 Rule Summary
 
-Game Duration Each Blitz game runs for exactly 2 hours. Time is measured in Eternum Days (6 minutes long), divided into
-six 'phases'.
+Game Duration Each Blitz game runs for exactly 90 minutes. Time is measured in Eternum Days (6 minutes long), divided
+into six 'phases'.
 
 Realms Three Starting Realms:** Evenly spaced in a triangle formation. Equal Capability:** All Realms are functionally
 identical at the start. Free Building:** Construct any resource building (restricted only by space/population). Conquest
@@ -49,8 +49,8 @@ outside these protocols.
 
 ⏳ Time & Duration
 
-Total Duration:** 2 Hours. Eternum Day:** 6 Minutes. Phases:** 6 per day (1 minute each). Total Days:* A single game
-spans *20 Eternum Days**.
+Total Duration:** 90 Minutes. Eternum Day:** 6 Minutes. Phases:** 6 per day (1 minute each). Total Days:* A single game
+spans *15 Eternum Days**.
 
 📦 Materials & Economy
 
@@ -58,7 +58,7 @@ Note: "Materials" refers to all tangible assets (Food, Resources, Essence, Labor
 specifically refers to the 9 mined materials.
 
 Cost of Production With the exception of food and labor, nothing is free. Every unit of production demands an input.
-Lords must balance costs to maximize their score within the 2-hour window.
+Lords must balance costs to maximize their score within the 90-minute window.
 
 Travel & Logistics Donkeys:* Required for *every* transfer of materials. They are *single-use** and consumed upon
 arrival. Troop Movement:** Inventory: Moved via Donkeys (cannot fight). Deployed: Moved via Stamina on the map (cannot
