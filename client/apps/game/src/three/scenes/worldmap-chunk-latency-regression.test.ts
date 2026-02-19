@@ -53,6 +53,9 @@ describe("evaluateChunkSwitchP95Regression", () => {
     });
 
     expect(result.status).toBe("pending");
+    if (result.status !== "pending") {
+      throw new Error(`Expected pending status, got ${result.status}`);
+    }
     expect(result.reason).toContain("Insufficient chunk-switch samples");
   });
 });
