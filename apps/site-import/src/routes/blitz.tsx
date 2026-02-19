@@ -169,6 +169,7 @@ function BlitzPage() {
           colorPrimary="#ff6b35"
           colorSecondary="#c44536"
           colorGlow="#ff9500"
+          disableHover={true}
           className="z-[1]"
         />
 

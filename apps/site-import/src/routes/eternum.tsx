@@ -154,6 +154,7 @@ function EternumPage() {
           colorPrimary="#4ecdc4"
           colorSecondary="#2a6f97"
           colorGlow="#00ffcc"
+          disableHover={true}
           className="z-[1]"
         />
 

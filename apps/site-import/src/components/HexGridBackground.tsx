@@ -7,6 +7,7 @@ interface HexGridBackgroundProps {
   colorGlow?: string;
   density?: "low" | "medium" | "high";
   opacity?: number;
+  disableHover?: boolean;
   className?: string;
 }
 
@@ -65,6 +66,7 @@ export function HexGridBackground({
   colorGlow = "#00ffcc",
   density = "medium",
   opacity = 0.6,
+  disableHover = false,
   className,
 }: HexGridBackgroundProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -441,15 +443,19 @@ export function HexGridBackground({
 
     /* ── Event listeners ── */
     window.addEventListener("resize", onResize);
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerleave", onPointerLeave);
+    if (!disableHover) {
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerleave", onPointerLeave);
+    }
 
     /* ── Cleanup ── */
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerleave", onPointerLeave);
+      if (!disableHover) {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerleave", onPointerLeave);
+      }
 
       faceGeometry.dispose();
       faceShaderMaterial.dispose();
@@ -462,7 +468,7 @@ export function HexGridBackground({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [colorPrimary, colorSecondary, colorGlow, density, opacity]);
+  }, [colorPrimary, colorSecondary, colorGlow, density, opacity, disableHover]);
 
   return (
     <div
