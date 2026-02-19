@@ -51,14 +51,18 @@ export interface WorldmapChunkDiagnostics {
   duplicateTileReconcileRequested: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
+  switchDurationMsSamples: number[];
   managerDurationMsTotal: number;
   managerDurationMsMax: number;
+  managerDurationMsSamples: number[];
   updatedAtMs: number;
 }
 
 interface WorldmapChunkDiagnosticsEventOptions {
   durationMs?: number;
 }
+
+const MAX_DURATION_SAMPLES = 512;
 
 export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
   return {
@@ -87,8 +91,10 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     duplicateTileReconcileRequested: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
+    switchDurationMsSamples: [],
     managerDurationMsTotal: 0,
     managerDurationMsMax: 0,
+    managerDurationMsSamples: [],
     updatedAtMs: Date.now(),
   };
 }
@@ -174,12 +180,20 @@ export function recordChunkDiagnosticsEvent(
       const durationMs = options?.durationMs ?? 0;
       diagnostics.switchDurationMsTotal += durationMs;
       diagnostics.switchDurationMsMax = Math.max(diagnostics.switchDurationMsMax, durationMs);
+      diagnostics.switchDurationMsSamples.push(durationMs);
+      if (diagnostics.switchDurationMsSamples.length > MAX_DURATION_SAMPLES) {
+        diagnostics.switchDurationMsSamples.shift();
+      }
       break;
     }
     case "manager_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;
       diagnostics.managerDurationMsTotal += durationMs;
       diagnostics.managerDurationMsMax = Math.max(diagnostics.managerDurationMsMax, durationMs);
+      diagnostics.managerDurationMsSamples.push(durationMs);
+      if (diagnostics.managerDurationMsSamples.length > MAX_DURATION_SAMPLES) {
+        diagnostics.managerDurationMsSamples.shift();
+      }
       break;
     }
   }

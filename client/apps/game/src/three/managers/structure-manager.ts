@@ -1056,9 +1056,6 @@ export class StructureManager {
       return;
     }
 
-    // Refresh visibility state when invoked outside the render loop
-    this.visibilityManager?.beginFrame();
-
     const visibleStructureIds = new Set<ID>();
     const attachmentRetain = new Set<number>();
 

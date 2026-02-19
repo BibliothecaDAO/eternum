@@ -1031,9 +1031,6 @@ export class ArmyManager {
       return;
     }
 
-    // Ensure centralized visibility state is refreshed when invoked outside the render loop
-    this.visibilityManager?.beginFrame();
-
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
 
