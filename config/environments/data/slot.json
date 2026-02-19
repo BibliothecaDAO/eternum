@@ -1487,7 +1487,20 @@
       "amount": 1500
     }
   ],
-  "villageStartingResources": [],
+  "villageStartingResources": [
+    {
+      "resource": 26,
+      "amount": 500
+    },
+    {
+      "resource": 29,
+      "amount": 500
+    },
+    {
+      "resource": 32,
+      "amount": 500
+    }
+  ],
   "discoverableVillageStartingResources": [
     {
       "resource": 35,

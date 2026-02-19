@@ -43,7 +43,7 @@ export const MainnetEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 90, // 1 hour 30 minutes
+    durationSeconds: 60 * 60 * 1.5, // 1.5 hours
     pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
   },
   battle: {
