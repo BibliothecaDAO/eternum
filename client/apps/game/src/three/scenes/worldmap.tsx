@@ -122,10 +122,17 @@ import {
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { deriveDirectionalPrefetchChunkKeys } from "./worldmap-directional-prefetch-policy";
-import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import {
+  createWorldmapZoomHardeningConfig,
+  evaluateChunkVisibilityAnomaly,
+  evaluateTerrainVisibilityAnomaly,
+  resetWorldmapZoomHardeningRuntimeState,
+} from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
+import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle";
+import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
@@ -243,6 +250,7 @@ export default class WorldmapScene extends HexagonScene {
   private chunkSize = this.chunkGeometry.size;
   private chunkSwitchPadding = WORLDMAP_CHUNK_POLICY.switchPadding;
   private lastChunkSwitchPosition?: Vector3;
+  private lastChunkSwitchMovement: { x: number; z: number } | null = null;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
@@ -271,14 +279,25 @@ export default class WorldmapScene extends HexagonScene {
   private chunkRefreshAppliedToken = 0;
   private chunkRefreshRunning = false;
   private chunkRefreshRerunRequested = false;
-  private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
+  private readonly chunkRefreshDebounceMs = 140;
   private lastControlsCameraDistance: number | null = null;
   private readonly zoomForceRefreshDistanceThreshold = 0.75;
   private zeroTerrainFrames = 0;
+  private lowTerrainFrames = 0;
+  private offscreenChunkFrames = 0;
+  private terrainReferenceInstances = 0;
+  private terrainReferenceChunkKey: string | null = null;
   private terrainRecoveryInFlight = false;
   private lastTerrainRecoveryAtMs = 0;
-  private readonly zeroTerrainFrameThreshold = 4;
-  private readonly terrainRecoveryCooldownMs = 3000;
+  private readonly zeroTerrainFrameThreshold = 3;
+  private readonly lowTerrainFrameThreshold = 3;
+  private readonly offscreenChunkFrameThreshold = 2;
+  private readonly minRetainedTerrainFraction = 0.45;
+  private readonly minReferenceTerrainInstances = 100;
+  private readonly terrainRecoveryCooldownMs = 1500;
+  private readonly minCachedTerrainCoverageFraction = 0.08;
+  private readonly minCachedExploredRetentionFraction = 0.6;
+  private readonly minExpectedExploredForCacheValidation = 48;
   private toriiLoadingCounter = 0;
   private isSwitchedOff = false;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
@@ -2175,6 +2194,11 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
     this.zeroTerrainFrames = resetState.zeroTerrainFrames;
     this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
+    this.lowTerrainFrames = 0;
+    this.offscreenChunkFrames = 0;
+    this.terrainReferenceInstances = 0;
+    this.terrainReferenceChunkKey = null;
+    this.lastChunkSwitchMovement = null;
   }
 
   onSwitchOff() {
@@ -2797,6 +2821,25 @@ export default class WorldmapScene extends HexagonScene {
         return;
       }
       this.removeCachedMatricesForChunk(startRow, startCol);
+    });
+  }
+
+  private aggressivelyInvalidateChunkTerrainCaches(
+    centerChunkKey: string,
+    options?: { includeSurroundingChunks?: string[]; invalidateFetchAreas?: boolean },
+  ): void {
+    const targetChunkKeys = new Set<string>([centerChunkKey, ...this.getChunksAround(centerChunkKey)]);
+    options?.includeSurroundingChunks?.forEach((chunkKey) => targetChunkKeys.add(chunkKey));
+
+    targetChunkKeys.forEach((chunkKey) => {
+      const [chunkRow, chunkCol] = chunkKey.split(",").map(Number);
+      if (!Number.isFinite(chunkRow) || !Number.isFinite(chunkCol)) {
+        return;
+      }
+      this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+      if (options?.invalidateFetchAreas) {
+        this.fetchedChunks.delete(this.getRenderAreaKeyForChunk(chunkKey));
+      }
     });
   }
 
@@ -3702,6 +3745,55 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private getRenderHexCapacity(): number {
+    return Math.max(1, this.renderChunkSize.width * this.renderChunkSize.height);
+  }
+
+  private shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances: number): boolean {
+    return shouldRejectCachedTerrainSnapshot({
+      totalCachedTerrainInstances,
+      renderHexCapacity: this.getRenderHexCapacity(),
+      minCoverageFraction: this.minCachedTerrainCoverageFraction,
+    });
+  }
+
+  private shouldRejectExploredTerrainCacheSnapshot(
+    cachedExploredTerrainInstances: number,
+    expectedExploredTerrainInstances: number,
+  ): boolean {
+    return shouldRejectCachedExploredTerrainSnapshot({
+      cachedExploredTerrainInstances,
+      expectedExploredTerrainInstances,
+      minRetentionFraction: this.minCachedExploredRetentionFraction,
+      minExpectedExploredInstances: this.minExpectedExploredForCacheValidation,
+    });
+  }
+
+  private isExploredBiomeCacheKey(biomeKey: string): boolean {
+    const normalizedKey = biomeKey.toLowerCase();
+    return normalizedKey !== "outline" && normalizedKey !== "none";
+  }
+
+  private getExpectedExploredTerrainInstances(startRow: number, startCol: number): number {
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    let expectedExploredTerrainInstances = 0;
+
+    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        if (isStructure) {
+          continue;
+        }
+
+        if (this.simulateAllExplored || this.exploredTiles.get(col)?.has(row)) {
+          expectedExploredTerrainInstances += 1;
+        }
+      }
+    }
+
+    return expectedExploredTerrainInstances;
+  }
+
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     if (!this.cachedMatrices.has(chunkKey)) {
@@ -3709,6 +3801,8 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const cachedChunk = this.cachedMatrices.get(chunkKey)!;
+    let totalCachedTerrainInstances = 0;
+    let cachedExploredTerrainInstances = 0;
 
     const { box, sphere } = this.computeChunkBounds(startRow, startCol);
     for (const [biome, model] of this.biomeModels) {
@@ -3719,6 +3813,10 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
       const { matrices, count } = model.getMatricesAndCount();
+      totalCachedTerrainInstances += count;
+      if (this.isExploredBiomeCacheKey(String(biome))) {
+        cachedExploredTerrainInstances += count;
+      }
       if (count === 0) {
         this.releaseInstancedAttribute(matrices);
         cachedChunk.set(biome, { matrices: null, count, landColors: null });
@@ -3734,6 +3832,31 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       cachedChunk.set(biome, { matrices, count, landColors });
+    }
+
+    const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+    if (
+      this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
+      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+    ) {
+      if (import.meta.env.DEV) {
+        console.warn("[CACHE] Rejecting suspicious terrain snapshot", {
+          chunkKey,
+          totalCachedTerrainInstances,
+          cachedExploredTerrainInstances,
+          expectedExploredTerrainInstances,
+          renderHexCapacity: this.getRenderHexCapacity(),
+          minCoverageFraction: this.minCachedTerrainCoverageFraction,
+          minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+        });
+      }
+      this.disposeCachedMatrices(chunkKey);
+      this.cachedMatrices.delete(chunkKey);
+      const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
+      if (existingIndex !== -1) {
+        this.cachedMatrixOrder.splice(existingIndex, 1);
+      }
+      return;
     }
 
     cachedChunk.set("__bounds__", {
@@ -3761,6 +3884,39 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      let totalCachedTerrainInstances = 0;
+      let cachedExploredTerrainInstances = 0;
+      for (const [biome, entry] of cachedMatrices) {
+        if (biome === "__bounds__") {
+          continue;
+        }
+        const count = Math.max(0, Math.floor(entry.count ?? 0));
+        totalCachedTerrainInstances += count;
+        if (this.isExploredBiomeCacheKey(biome)) {
+          cachedExploredTerrainInstances += count;
+        }
+      }
+
+      const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+      if (
+        this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
+        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+      ) {
+        if (import.meta.env.DEV) {
+          console.warn("[CACHE] Evicting suspicious cached terrain before apply", {
+            chunkKey,
+            totalCachedTerrainInstances,
+            cachedExploredTerrainInstances,
+            expectedExploredTerrainInstances,
+            renderHexCapacity: this.getRenderHexCapacity(),
+            minCoverageFraction: this.minCachedTerrainCoverageFraction,
+            minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+          });
+        }
+        this.removeCachedMatricesForChunk(startRow, startCol);
+        return false;
+      }
+
       const bounds = cachedMatrices.get("__bounds__");
       if (bounds?.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
         return false;
@@ -4138,6 +4294,24 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const oldChunk = this.currentChunk;
+    const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
+      previousSwitchPosition: this.lastChunkSwitchPosition
+        ? {
+            x: this.lastChunkSwitchPosition.x,
+            z: this.lastChunkSwitchPosition.z,
+          }
+        : null,
+      nextSwitchPosition: switchPosition
+        ? {
+            x: switchPosition.x,
+            z: switchPosition.z,
+          }
+        : null,
+      previousMovementVector: this.lastChunkSwitchMovement,
+      minMovementDistance: 0.001,
+    });
+    const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
+    const effectiveForce = force || shouldAggressiveReversalRefresh;
     const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
     const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
     const hasFiniteOldChunkCoordinates =
@@ -4153,15 +4327,20 @@ export default class WorldmapScene extends HexagonScene {
       this.applySceneChunkBounds(targetChunkBounds);
     }
 
-    // Kick off tile data fetch
-    const tileFetchPromise = this.computeTileEntities(chunkKey);
-
-    if (force) {
+    // Load surrounding pinned chunks for better UX.
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    if (shouldAggressiveReversalRefresh) {
+      this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
+        includeSurroundingChunks: surroundingChunks,
+        invalidateFetchAreas: true,
+      });
+    } else if (effectiveForce) {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Load surrounding pinned chunks for better UX.
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
+    const tileFetchPromise = this.computeTileEntities(chunkKey);
+
     this.updatePinnedChunks(surroundingChunks);
     const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
 
@@ -4222,7 +4401,7 @@ export default class WorldmapScene extends HexagonScene {
     this.visibilityManager?.forceUpdate();
 
     // Update all managers concurrently once shared prerequisites are ready
-    await this.updateManagersForChunk(chunkKey, { force, transitionToken });
+    await this.updateManagersForChunk(chunkKey, { force: effectiveForce, transitionToken });
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
 
     if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
@@ -4241,6 +4420,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (switchPosition) {
       this.lastChunkSwitchPosition = switchPosition;
+      this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
       this.hasChunkSwitchAnchor = true;
     }
   }
@@ -4252,10 +4432,12 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Start tile data fetch
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    this.removeCachedMatricesForChunk(startRow, startCol);
+
+    // Start tile data fetch after force invalidation.
     const tileFetchPromise = this.computeTileEntities(chunkKey);
 
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
     const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -4344,6 +4526,8 @@ export default class WorldmapScene extends HexagonScene {
       this.monitorTerrainVisibilityHealth();
     } else {
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
+      this.offscreenChunkFrames = 0;
     }
   }
 
@@ -4510,15 +4694,65 @@ export default class WorldmapScene extends HexagonScene {
       this.sceneManager.getCurrentScene() !== SceneName.WorldMap ||
       this.isSwitchedOff ||
       this.currentChunk === "null" ||
-      this.isChunkTransitioning ||
       !this.currentChunkBounds
     ) {
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
+      this.offscreenChunkFrames = 0;
       return;
     }
 
-    if (!this.visibilityManager.isBoxVisible(this.currentChunkBounds.box)) {
+    const isCurrentChunkVisible = this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
+    const chunkVisibilityAnomaly = evaluateChunkVisibilityAnomaly({
+      isCurrentChunkVisible,
+      offscreenChunkFrames: this.offscreenChunkFrames,
+      offscreenChunkFrameThreshold: this.offscreenChunkFrameThreshold,
+    });
+    this.offscreenChunkFrames = chunkVisibilityAnomaly.offscreenChunkFrames;
+
+    if (!isCurrentChunkVisible) {
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
+
+      if (!chunkVisibilityAnomaly.shouldTriggerRecovery) {
+        return;
+      }
+
+      const now = performance.now();
+      if (this.terrainRecoveryInFlight || now - this.lastTerrainRecoveryAtMs < this.terrainRecoveryCooldownMs) {
+        return;
+      }
+
+      this.lastTerrainRecoveryAtMs = now;
+      this.terrainRecoveryInFlight = true;
+
+      console.warn("[WorldMap] Current chunk bounds remained offscreen; forcing chunk refresh", {
+        chunk: this.currentChunk,
+        offscreenChunkFrames: this.offscreenChunkFrames,
+      });
+      this.emitZoomHardeningTelemetry("self_heal_start", {
+        chunk: this.currentChunk,
+        reason: "offscreen",
+        offscreenChunkFrames: this.offscreenChunkFrames,
+      });
+
+      void this.updateVisibleChunks(true)
+        .catch((error) => {
+          console.error("[WorldMap] Offscreen chunk recovery failed:", error);
+          this.emitZoomHardeningTelemetry("self_heal_failed", {
+            chunk: this.currentChunk,
+            reason: "offscreen",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        })
+        .finally(() => {
+          this.emitZoomHardeningTelemetry("self_heal_complete", {
+            chunk: this.currentChunk,
+            reason: "offscreen",
+          });
+          this.terrainRecoveryInFlight = false;
+          this.offscreenChunkFrames = 0;
+        });
       return;
     }
 
@@ -4527,13 +4761,31 @@ export default class WorldmapScene extends HexagonScene {
       totalTerrainInstances += biome.getCount();
     });
 
-    if (totalTerrainInstances > 0) {
+    if (this.terrainReferenceChunkKey !== this.currentChunk) {
+      this.terrainReferenceChunkKey = this.currentChunk;
+      this.terrainReferenceInstances = totalTerrainInstances;
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
       return;
     }
 
-    this.zeroTerrainFrames += 1;
-    if (this.zeroTerrainFrames < this.zeroTerrainFrameThreshold) {
+    const anomalyResult = evaluateTerrainVisibilityAnomaly({
+      terrainInstances: totalTerrainInstances,
+      terrainReferenceInstances: this.terrainReferenceInstances,
+      zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
+      zeroTerrainFrameThreshold: this.zeroTerrainFrameThreshold,
+      lowTerrainFrameThreshold: this.lowTerrainFrameThreshold,
+      minRetainedTerrainFraction: this.minRetainedTerrainFraction,
+      minReferenceTerrainInstances: this.minReferenceTerrainInstances,
+    });
+
+    this.zeroTerrainFrames = anomalyResult.zeroTerrainFrames;
+    this.lowTerrainFrames = anomalyResult.lowTerrainFrames;
+    if (!anomalyResult.shouldTriggerRecovery) {
+      if (totalTerrainInstances > 0 && this.lowTerrainFrames === 0) {
+        this.terrainReferenceInstances = totalTerrainInstances;
+      }
       return;
     }
 
@@ -4547,11 +4799,19 @@ export default class WorldmapScene extends HexagonScene {
 
     console.warn("[WorldMap] Terrain visibility anomaly detected; forcing chunk refresh", {
       chunk: this.currentChunk,
+      reason: anomalyResult.recoveryReason,
+      terrainInstances: totalTerrainInstances,
+      terrainReferenceInstances: this.terrainReferenceInstances,
       zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
     });
     this.emitZoomHardeningTelemetry("self_heal_start", {
       chunk: this.currentChunk,
+      reason: anomalyResult.recoveryReason,
+      terrainInstances: totalTerrainInstances,
+      terrainReferenceInstances: this.terrainReferenceInstances,
       zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
     });
 
     void this.updateVisibleChunks(true)
@@ -4568,6 +4828,11 @@ export default class WorldmapScene extends HexagonScene {
         });
         this.terrainRecoveryInFlight = false;
         this.zeroTerrainFrames = 0;
+        this.lowTerrainFrames = 0;
+        this.offscreenChunkFrames = 0;
+        if (totalTerrainInstances > this.terrainReferenceInstances) {
+          this.terrainReferenceInstances = totalTerrainInstances;
+        }
       });
   }
 
