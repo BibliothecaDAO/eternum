@@ -806,7 +806,21 @@ export class StructureManager {
       if (isPendingStale) {
         this.pendingLabelUpdates.delete(entityId);
       } else {
-        finalOwner = pendingUpdate.owner;
+        // Building updates can arrive before tile updates and carry a placeholder empty owner.
+        // Merge owner fields conservatively so placeholder data cannot clobber fresher tile owner data.
+        const pendingOwner = pendingUpdate.owner;
+        if (pendingOwner) {
+          const hasPendingAddress = pendingOwner.address !== undefined && pendingOwner.address !== null;
+          const shouldApplyPendingAddress =
+            hasPendingAddress &&
+            (pendingUpdate.updateType === "structure" || pendingOwner.address !== 0n || finalOwner.address === 0n);
+
+          finalOwner = {
+            address: shouldApplyPendingAddress ? pendingOwner.address : finalOwner.address,
+            ownerName: pendingOwner.ownerName || finalOwner.ownerName,
+            guildName: pendingOwner.guildName || finalOwner.guildName,
+          };
+        }
         if (pendingUpdate.guardArmies) {
           finalGuardArmies = pendingUpdate.guardArmies;
         }

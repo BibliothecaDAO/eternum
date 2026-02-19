@@ -247,6 +247,77 @@ function createStructureManagerSubject() {
   };
 }
 
+function createOnUpdateSubject() {
+  const subject = Object.create(StructureManager.prototype) as any;
+  const structuresById = new Map<number, any>();
+
+  subject.ensureStructureModels = vi.fn().mockResolvedValue([]);
+  subject.dummy = {
+    position: { copy: vi.fn() },
+    updateMatrix: vi.fn(),
+  };
+  subject.structureHexCoords = new Map();
+  subject.updateSpatialIndex = vi.fn();
+  subject.pendingLabelUpdates = new Map();
+  subject.components = undefined;
+  subject.entityIdLabels = new Map();
+  subject.updateBattleTimerTracking = vi.fn();
+  subject.isInCurrentChunk = vi.fn(() => false);
+  subject.updateVisibleStructures = vi.fn();
+  subject.structures = {
+    getStructureByEntityId: vi.fn((entityId: number) => structuresById.get(entityId)),
+    addStructure: vi.fn(
+      (
+        entityId: number,
+        structureName: string,
+        structureType: unknown,
+        hexCoords: { col: number; row: number },
+        initialized: boolean,
+        stage: number,
+        level: number,
+        owner: { address: bigint; ownerName: string; guildName: string },
+        _hasWonder: boolean,
+        _attachments: unknown,
+        isAlly: boolean,
+        guardArmies: unknown,
+        activeProductions: unknown,
+      ) => {
+        structuresById.set(entityId, {
+          entityId,
+          structureName,
+          structureType,
+          hexCoords,
+          initialized,
+          stage,
+          level,
+          owner,
+          isMine: false,
+          isAlly,
+          guardArmies,
+          activeProductions,
+        });
+      },
+    ),
+  };
+
+  return { subject, structuresById };
+}
+
+const BASE_STRUCTURE_UPDATE = {
+  entityId: 7,
+  structureName: "Camp",
+  hexCoords: { col: 10, row: 15 },
+  structureType: "Village" as any,
+  initialized: true,
+  stage: 0,
+  level: 1,
+  hasWonder: false,
+  isAlly: false,
+  guardArmies: [],
+  activeProductions: [],
+  battleData: {},
+};
+
 describe("StructureManager destroy lifecycle", () => {
   it("cleans subscriptions, timers, labels, models, and caches", () => {
     const fixture = createStructureManagerSubject();
@@ -295,5 +366,60 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("StructureManager already destroyed, skipping cleanup");
+  });
+
+  it("keeps tile owner name when a building-only pending update exists", async () => {
+    const { subject, structuresById } = createOnUpdateSubject();
+
+    subject.updateStructureLabelFromBuildingUpdate({
+      entityId: 7,
+      activeProductions: [{ buildingCount: 2, buildingType: 1 as any }],
+    });
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
+    });
+
+    const updated = structuresById.get(7);
+    expect(updated.owner.ownerName).toBe("The Vanguard");
+  });
+
+  it("keeps tile owner address when a building-only pending update exists", async () => {
+    const { subject, structuresById } = createOnUpdateSubject();
+
+    subject.updateStructureLabelFromBuildingUpdate({
+      entityId: 7,
+      activeProductions: [{ buildingCount: 2, buildingType: 1 as any }],
+    });
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+    });
+
+    const updated = structuresById.get(7);
+    expect(updated.owner.address).toBe(123n);
+    expect(updated.owner.ownerName).toBe("Alice");
+  });
+
+  it("applies pending structure owner updates even when owner becomes unowned", async () => {
+    const { subject, structuresById } = createOnUpdateSubject();
+
+    subject.updateStructureLabelFromStructureUpdate({
+      entityId: 7,
+      guardArmies: [],
+      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
+      battleCooldownEnd: 0,
+    });
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+    });
+
+    const updated = structuresById.get(7);
+    expect(updated.owner.address).toBe(0n);
+    expect(updated.owner.ownerName).toBe("The Vanguard");
   });
 });
