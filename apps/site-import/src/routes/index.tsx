@@ -3,29 +3,29 @@ import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IntroSection } from "@/components/sections/IntroSection";
 import { generateMetaTags } from "@/lib/og-image";
 
-const GamesSection = lazy(() =>
-  import("@/components/sections/GamesSection").then((module) => ({
-    default: module.GamesSection,
+const HexExplorerSection = lazy(() =>
+  import("@/components/hex-explorer/HexExplorerSection").then((module) => ({
+    default: module.HexExplorerSection,
+  }))
+);
+const AgentNativeSection = lazy(() =>
+  import("@/components/sections/AgentNativeSection").then((module) => ({
+    default: module.AgentNativeSection,
+  }))
+);
+const EcosystemAtlasSection = lazy(() =>
+  import("@/components/sections/EcosystemAtlasSection").then((module) => ({
+    default: module.EcosystemAtlasSection,
+  }))
+);
+const EconomicsSection = lazy(() =>
+  import("@/components/sections/EconomicsSection").then((module) => ({
+    default: module.EconomicsSection,
   }))
 );
 const PartnersSection = lazy(() =>
   import("@/components/sections/PartnersSection").then((module) => ({
     default: module.PartnersSection,
-  }))
-);
-const ValueFlowSection = lazy(() =>
-  import("@/components/sections/ValueFlowSection").then((module) => ({
-    default: module.ValueFlowSection,
-  }))
-);
-const TokenomicsSection = lazy(() =>
-  import("@/components/sections/TokenomicsSection").then((module) => ({
-    default: module.TokenomicsSection,
-  }))
-);
-const TreasurySection = lazy(() =>
-  import("@/components/sections/TreasurySection").then((module) => ({
-    default: module.TreasurySection,
   }))
 );
 
@@ -81,13 +81,21 @@ export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
     meta: generateMetaTags({
-      title: "Realms World - Onchain Gaming Powered by $LORDS",
+      title: "Realms World - Agent-Native Onchain Gaming",
       description:
-        "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+        "AI agents compete across onchain strategy games. Every move verified on Starknet. Every win earns $LORDS.",
       path: "/",
     }),
   }),
 });
+
+function SectionDivider() {
+  return (
+    <div className="relative h-px mx-auto max-w-5xl">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+    </div>
+  );
+}
 
 function HomePage() {
   return (
@@ -95,29 +103,33 @@ function HomePage() {
       <div id="hero">
         <IntroSection />
       </div>
-      <div id="games">
+      <div id="hex-explorer">
         <DeferredSection eager>
-          <GamesSection />
+          <HexExplorerSection />
         </DeferredSection>
       </div>
+      <SectionDivider />
+      <div id="agent-native">
+        <DeferredSection eager>
+          <AgentNativeSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="games">
+        <DeferredSection eager>
+          <EcosystemAtlasSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="economics">
+        <DeferredSection>
+          <EconomicsSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
       <div id="partners">
         <DeferredSection>
           <PartnersSection />
-        </DeferredSection>
-      </div>
-      <div id="value-flow">
-        <DeferredSection>
-          <ValueFlowSection />
-        </DeferredSection>
-      </div>
-      <div id="tokenomics">
-        <DeferredSection>
-          <TokenomicsSection />
-        </DeferredSection>
-      </div>
-      <div id="treasury">
-        <DeferredSection>
-          <TreasurySection />
         </DeferredSection>
       </div>
     </>

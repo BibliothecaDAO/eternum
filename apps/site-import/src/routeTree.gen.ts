@@ -9,12 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as EternumRouteImport } from './routes/eternum'
+import { Route as BlitzRouteImport } from './routes/blitz'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScrollIndexRouteImport } from './routes/scroll/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
 import { Route as ScrollSlugRouteImport } from './routes/scroll/$slug'
 import { Route as GamesSlugRouteImport } from './routes/games/$slug'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EternumRoute = EternumRouteImport.update({
+  id: '/eternum',
+  path: '/eternum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlitzRoute = BlitzRouteImport.update({
+  id: '/blitz',
+  path: '/blitz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +67,10 @@ const GamesSlugRoute = GamesSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/blitz': typeof BlitzRoute
+  '/eternum': typeof EternumRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/games/$slug': typeof GamesSlugRoute
   '/scroll/$slug': typeof ScrollSlugRoute
   '/games/': typeof GamesIndexRoute
@@ -50,6 +78,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/blitz': typeof BlitzRoute
+  '/eternum': typeof EternumRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/games/$slug': typeof GamesSlugRoute
   '/scroll/$slug': typeof ScrollSlugRoute
   '/games': typeof GamesIndexRoute
@@ -58,6 +90,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/blitz': typeof BlitzRoute
+  '/eternum': typeof EternumRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/games/$slug': typeof GamesSlugRoute
   '/scroll/$slug': typeof ScrollSlugRoute
   '/games/': typeof GamesIndexRoute
@@ -65,12 +101,34 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/games/$slug' | '/scroll/$slug' | '/games/' | '/scroll/'
+  fullPaths:
+    | '/'
+    | '/blitz'
+    | '/eternum'
+    | '/privacy'
+    | '/terms'
+    | '/games/$slug'
+    | '/scroll/$slug'
+    | '/games/'
+    | '/scroll/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/games/$slug' | '/scroll/$slug' | '/games' | '/scroll'
+  to:
+    | '/'
+    | '/blitz'
+    | '/eternum'
+    | '/privacy'
+    | '/terms'
+    | '/games/$slug'
+    | '/scroll/$slug'
+    | '/games'
+    | '/scroll'
   id:
     | '__root__'
     | '/'
+    | '/blitz'
+    | '/eternum'
+    | '/privacy'
+    | '/terms'
     | '/games/$slug'
     | '/scroll/$slug'
     | '/games/'
@@ -79,6 +137,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BlitzRoute: typeof BlitzRoute
+  EternumRoute: typeof EternumRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   GamesSlugRoute: typeof GamesSlugRoute
   ScrollSlugRoute: typeof ScrollSlugRoute
   GamesIndexRoute: typeof GamesIndexRoute
@@ -87,6 +149,34 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/eternum': {
+      id: '/eternum'
+      path: '/eternum'
+      fullPath: '/eternum'
+      preLoaderRoute: typeof EternumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blitz': {
+      id: '/blitz'
+      path: '/blitz'
+      fullPath: '/blitz'
+      preLoaderRoute: typeof BlitzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -127,6 +217,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BlitzRoute: BlitzRoute,
+  EternumRoute: EternumRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   GamesSlugRoute: GamesSlugRoute,
   ScrollSlugRoute: ScrollSlugRoute,
   GamesIndexRoute: GamesIndexRoute,

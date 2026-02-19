@@ -5,12 +5,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 uppercase tracking-wider",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium [font-family:var(--font-ui)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 uppercase tracking-wider relative overflow-hidden",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90 relative before:absolute before:inset-0 before:rounded-md before:border-2 before:border-primary/20 before:transition-transform active:before:scale-95 active:scale-95 before:pointer-events-none",
+          "bg-primary text-primary-foreground shadow hover:bg-primary/90 before:absolute before:inset-0 before:rounded-md before:border before:border-primary/25 before:transition-transform active:before:scale-95 active:scale-95 before:pointer-events-none after:absolute after:inset-x-0 after:top-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-primary-foreground/45 after:to-transparent",
+        war: "bg-primary text-primary-foreground shadow-md shadow-primary/30 hover:bg-primary/92 border border-primary/50 before:pointer-events-none before:absolute before:inset-[2px] before:border before:border-primary/20 before:rounded-[6px] after:absolute after:inset-x-0 after:top-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-primary-foreground/55 after:to-transparent",
+        oath:
+          "border border-primary/35 bg-black/35 text-foreground shadow-sm hover:bg-black/50 hover:border-primary/60 before:absolute before:inset-[2px] before:border before:border-primary/15 before:rounded-[6px] before:pointer-events-none",
+        rune: "border border-primary/30 bg-black/40 text-foreground/85 hover:text-primary hover:border-primary/62 before:absolute before:inset-[2px] before:border before:border-primary/18 before:rounded-[6px] before:pointer-events-none",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:

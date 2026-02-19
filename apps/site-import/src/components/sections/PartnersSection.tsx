@@ -1,90 +1,55 @@
 import { motion } from "framer-motion";
+import { partners } from "@/data/partners";
 
-// Partner data - replace with actual partner logos
-const partners = [
-  {
-    name: "Starknet",
-    logo: "/partners/Starknet.svg",
-    url: "https://starknet.io",
-  },
-  {
-    name: "Starkware",
-    logo: "/partners/Starkware.svg",
-    url: "https://starkware.co",
-  },
-  {
-    name: "Dojo",
-    logo: "/partners/dojo-logo.svg",
-    url: "https://dojoengine.org",
-  },
-  {
-    name: "Cartridge",
-    logo: "/partners/Cartridge.svg",
-    url: "https://cartridge.gg",
-  },
-];
+const partnerRoles: Record<string, string> = {
+  Starknet: "Execution Layer",
+  Starkware: "ZK Infrastructure",
+  Cartridge: "Account Stack",
+  Dojo: "Engine Framework",
+};
 
 export function PartnersSection() {
   return (
-    <section className="py-16 sm:py-24 bg-background/50">
+    <section className="realm-section relative overflow-hidden">
+      <div className="absolute inset-0 -z-10" />
+
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="space-y-12"
+          transition={{ duration: 0.65 }}
+          className="space-y-8"
         >
-          {/* Header */}
-          <motion.div
-            className="text-center max-w-3xl mx-auto space-y-4"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold">Trusted Partners</h2>
-            <p className="text-lg text-muted-foreground">
-              Building the future of onchain gaming together with industry
-              leaders
-            </p>
-          </motion.div>
+          <p className="realm-banner text-center">Built With</p>
 
-          {/* Partners Grid */}
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 items-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-          >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {partners.map((partner, index) => (
               <motion.a
-                key={partner.name}
+                key={partner.id}
                 href={partner.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center justify-center p-6 rounded-lg bg-background border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
-                initial={{ opacity: 0, y: 20 }}
+                className="group flex flex-col items-center gap-3 rounded-xl border border-primary/20 bg-black/30 p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/55"
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + index * 0.1, duration: 0.6 }}
-                whileHover={{ scale: 1.05 }}
+                transition={{ delay: 0.1 + index * 0.07, duration: 0.4 }}
               >
-                <img
-                  src={partner.logo}
-                  alt={partner.name}
-                  className="h-8 w-auto object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300 opacity-60 group-hover:opacity-100"
-                  onError={(e) => {
-                    // Fallback to text if logo doesn't load
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                    const textFallback = document.createElement("div");
-                    textFallback.className =
-                      "text-lg font-semibold text-muted-foreground group-hover:text-primary transition-colors";
-                    textFallback.textContent = partner.name;
-                    target.parentElement?.appendChild(textFallback);
-                  }}
-                />
+                <div className="h-10 w-full flex items-center justify-center">
+                  <img
+                    src={partner.logo}
+                    alt={partner.name}
+                    className="h-8 max-w-full object-contain grayscale opacity-75 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold">{partner.name}</p>
+                  <p className="text-xs text-foreground/70">
+                    {partnerRoles[partner.name] ?? "Ecosystem Partner"}
+                  </p>
+                </div>
               </motion.a>
             ))}
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </section>

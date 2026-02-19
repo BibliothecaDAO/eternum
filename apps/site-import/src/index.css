@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=MedievalSharp&family=Rajdhani:wght@400;500;600;700&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
 
 @import 'tailwindcss';
 
@@ -38,10 +38,22 @@
   --sidebar-accent-foreground: oklch(0.33 0 0);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.77 0 0);
-  --font-sans: Space Grotesk, serif;
-  --font-serif: Space Grotesk, serif;
+  --realm-bg-void: oklch(0.22 0.012 260);
+  --realm-bg-smoke: oklch(0.30 0.018 245);
+  --realm-surface-iron: oklch(0.30 0.01 80);
+  --realm-surface-slate: oklch(0.35 0.012 260);
+  --realm-accent-ember: oklch(0.66 0.12 55);
+  --realm-accent-brass: oklch(0.72 0.10 85);
+  --realm-accent-arcane: oklch(0.62 0.08 260);
+  --realm-border-etched: oklch(0.52 0.04 75);
+  --realm-border-strong: oklch(0.44 0.03 80);
+  --realm-glow-soft: color-mix(in oklab, var(--primary) 30%, transparent);
+  --realm-vignette: linear-gradient(180deg, transparent 0%, color-mix(in oklab, black 38%, transparent) 100%);
+  --font-sans: Rajdhani, sans-serif;
+  --font-serif: MedievalSharp, serif;
+  --font-ui: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
-  --radius: 0rem;
+  --radius: 0.5rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
@@ -85,10 +97,22 @@
   --sidebar-accent-foreground: oklch(0.97 0.00 286.38);
   --sidebar-border: oklch(0.27 0.01 286.03);
   --sidebar-ring: oklch(0.87 0.01 286.29);
-  --font-sans: Space Grotesk, serif;
-  --font-serif: Space Grotesk, serif;
+  --realm-bg-void: oklch(0.12 0.012 260);
+  --realm-bg-smoke: oklch(0.17 0.016 250);
+  --realm-surface-iron: oklch(0.23 0.01 80);
+  --realm-surface-slate: oklch(0.27 0.012 260);
+  --realm-accent-ember: oklch(0.72 0.14 55);
+  --realm-accent-brass: oklch(0.78 0.10 85);
+  --realm-accent-arcane: oklch(0.65 0.08 260);
+  --realm-border-etched: oklch(0.38 0.04 75);
+  --realm-border-strong: oklch(0.46 0.04 82);
+  --realm-glow-soft: color-mix(in oklab, var(--primary) 32%, transparent);
+  --realm-vignette: linear-gradient(180deg, transparent 0%, color-mix(in oklab, black 55%, transparent) 100%);
+  --font-sans: Rajdhani, sans-serif;
+  --font-serif: MedievalSharp, serif;
+  --font-ui: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
-  --radius: 0rem;
+  --radius: 0.5rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
@@ -136,6 +160,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  --font-ui: var(--font-ui);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -315,6 +340,960 @@
 }
 
 @layer components {
+  .realm-section {
+    @apply relative py-20 sm:py-28;
+  }
+
+  .realm-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(110% 70% at 20% 0%, color-mix(in oklab, var(--realm-accent-ember) 18%, transparent) 0%, transparent 55%),
+      radial-gradient(90% 60% at 80% 100%, color-mix(in oklab, var(--realm-accent-arcane) 14%, transparent) 0%, transparent 58%);
+    opacity: 0.6;
+  }
+
+  .realm-panel {
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--realm-accent-ember) 10%, transparent) 0%,
+        transparent 14%,
+        transparent 86%,
+        color-mix(in oklab, var(--realm-accent-arcane) 12%, transparent) 100%
+      ),
+      linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--realm-surface-iron) 76%, transparent),
+        color-mix(in oklab, var(--realm-surface-slate) 72%, transparent)
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 12%, transparent),
+      inset 0 -1px 0 color-mix(in oklab, var(--realm-accent-arcane) 10%, transparent),
+      0 18px 36px color-mix(in oklab, black 36%, transparent);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    clip-path: polygon(0 12px, 12px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+
+  .realm-banner {
+    @apply inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-primary/90;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 72%, transparent);
+    background: color-mix(in oklab, var(--realm-bg-smoke) 45%, transparent);
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+  }
+
+  .realm-title {
+    @apply font-serif tracking-tight text-foreground;
+  }
+
+  .realm-subtitle {
+    @apply text-foreground/85;
+  }
+
+  .realm-sigil {
+    @apply inline-flex items-center text-[10px] uppercase tracking-[0.12em];
+    font-family: var(--font-ui);
+    font-weight: 600;
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 68%, transparent);
+    background: color-mix(in oklab, var(--realm-bg-smoke) 40%, transparent);
+    color: color-mix(in oklab, var(--primary) 82%, white);
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  .realm-header-shell {
+    border: 1px solid color-mix(in oklab, var(--realm-border-strong) 70%, transparent);
+    background:
+      linear-gradient(
+        160deg,
+        color-mix(in oklab, var(--realm-surface-iron) 62%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 62%, transparent)
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 14%, transparent),
+      0 10px 22px color-mix(in oklab, black 40%, transparent);
+  }
+
+  .realm-nav-link {
+    position: relative;
+    font-family: var(--font-ui);
+    letter-spacing: 0.16em;
+  }
+
+  .realm-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.35rem;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--realm-accent-brass) 75%, transparent),
+      transparent
+    );
+    opacity: 0;
+    transform: scaleX(0.3);
+    transform-origin: center;
+    transition: transform 220ms ease, opacity 220ms ease;
+  }
+
+  .realm-nav-link:hover::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .realm-rail-button {
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 72%, transparent);
+    background: color-mix(in oklab, var(--realm-bg-smoke) 46%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 10%, transparent);
+  }
+
+  .realm-rail-shell {
+    border: 1px solid color-mix(in oklab, var(--realm-border-strong) 74%, transparent);
+    border-radius: 999px;
+    padding: 0.35rem;
+    align-items: center;
+    background:
+      linear-gradient(
+        170deg,
+        color-mix(in oklab, var(--realm-surface-iron) 72%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 70%, transparent)
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 15%, transparent),
+      0 18px 28px color-mix(in oklab, black 48%, transparent);
+    backdrop-filter: blur(10px);
+    transition: border-radius 180ms ease;
+  }
+
+  .realm-rail-shell:has(.realm-rail-item:hover),
+  .realm-rail-shell:has(.realm-rail-item:focus-visible) {
+    border-radius: 0.95rem;
+  }
+
+  .realm-rail-shell-expanded {
+    border-radius: 0.95rem;
+    align-items: stretch;
+  }
+
+  .realm-rail-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-height: 2.4rem;
+    min-width: 2.4rem;
+    border-radius: 999px;
+    padding: 0.5rem;
+    color: color-mix(in oklab, var(--foreground) 82%, transparent);
+    border-color: color-mix(in oklab, var(--realm-border-etched) 68%, transparent);
+    transition:
+      border-color 220ms ease,
+      background-color 220ms ease,
+      color 220ms ease,
+      border-radius 180ms ease,
+      gap 180ms ease;
+  }
+
+  .realm-rail-item:hover,
+  .realm-rail-item:focus-visible {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 72%, transparent);
+    color: color-mix(in oklab, var(--realm-accent-brass) 92%, white);
+    border-radius: 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .realm-rail-item-expanded {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .realm-rail-glyph {
+    width: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 1rem;
+  }
+
+  .realm-rail-item-active {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 82%, transparent);
+    background:
+      linear-gradient(
+        120deg,
+        color-mix(in oklab, var(--realm-accent-brass) 26%, transparent),
+        color-mix(in oklab, var(--realm-accent-arcane) 26%, transparent)
+      );
+    color: color-mix(in oklab, var(--realm-accent-brass) 92%, white);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, white 24%, transparent),
+      0 0 18px color-mix(in oklab, var(--realm-accent-brass) 26%, transparent);
+  }
+
+  .realm-rail-label {
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-left: 0;
+    transition-property: max-width, opacity, margin-left;
+  }
+
+  .realm-rail-item:hover .realm-rail-label,
+  .realm-rail-item:focus-visible .realm-rail-label {
+    margin-left: 0.2rem;
+  }
+
+  .realm-grid-scan {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .realm-grid-scan::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        color-mix(in oklab, var(--realm-accent-arcane) 9%, transparent) 0 1px,
+        transparent 1px 24px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--realm-accent-brass) 7%, transparent) 0 1px,
+        transparent 1px 24px
+      );
+    opacity: 0.45;
+    animation: realm-scan-drift 18s linear infinite;
+  }
+
+  .realm-edge-brackets {
+    position: relative;
+  }
+
+  .realm-edge-brackets::before,
+  .realm-edge-brackets::after {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    pointer-events: none;
+    border: 1px solid transparent;
+    z-index: 1;
+  }
+
+  .realm-edge-brackets::before {
+    border-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--realm-accent-ember) 60%, transparent),
+      transparent 35%,
+      transparent 65%,
+      color-mix(in oklab, var(--realm-accent-arcane) 60%, transparent)
+    ) 1;
+    opacity: 0.55;
+  }
+
+  .realm-edge-brackets::after {
+    inset: 18px;
+    border-image: linear-gradient(
+      315deg,
+      color-mix(in oklab, var(--realm-accent-brass) 42%, transparent),
+      transparent 35%,
+      transparent 65%,
+      color-mix(in oklab, var(--realm-accent-arcane) 38%, transparent)
+    ) 1;
+    opacity: 0.35;
+  }
+
+  .realm-journey-map {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .realm-journey-path {
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 18px;
+    width: 2px;
+    border-radius: 999px;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--realm-accent-brass) 70%, transparent),
+        color-mix(in oklab, var(--realm-accent-arcane) 70%, transparent)
+      );
+    box-shadow:
+      0 0 16px color-mix(in oklab, var(--realm-accent-arcane) 35%, transparent),
+      inset 0 0 8px color-mix(in oklab, var(--realm-accent-brass) 40%, transparent);
+    opacity: 0.8;
+    animation: realm-route-pulse 4s ease-in-out infinite;
+  }
+
+  .realm-world-node {
+    position: relative;
+    margin-left: 1.5rem;
+  }
+
+  .realm-world-node::before {
+    content: "";
+    position: absolute;
+    left: -1.65rem;
+    top: 1.25rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--realm-accent-brass) 70%, transparent);
+    background: color-mix(in oklab, var(--realm-accent-arcane) 42%, transparent);
+    box-shadow:
+      0 0 0 3px color-mix(in oklab, var(--realm-bg-void) 80%, transparent),
+      0 0 16px color-mix(in oklab, var(--realm-accent-brass) 35%, transparent);
+  }
+
+  @media (min-width: 640px) {
+    .realm-journey-path {
+      left: 22px;
+    }
+    .realm-world-node {
+      margin-left: 2rem;
+    }
+    .realm-world-node::before {
+      left: -2.15rem;
+    }
+  }
+
+  .card-relic {
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    background:
+      linear-gradient(
+        160deg,
+        color-mix(in oklab, var(--realm-accent-ember) 10%, transparent),
+        transparent 35%
+      ),
+      linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--realm-surface-iron) 76%, transparent),
+        color-mix(in oklab, var(--realm-surface-slate) 72%, transparent)
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 12%, transparent),
+      0 14px 26px color-mix(in oklab, black 35%, transparent);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    @apply p-4;
+  }
+
+  .realm-holo-card {
+    position: relative;
+    overflow: hidden;
+    transition:
+      transform 280ms ease,
+      border-color 280ms ease,
+      box-shadow 280ms ease;
+    transform-origin: 50% 65%;
+  }
+
+  .realm-holo-card::before {
+    content: "";
+    position: absolute;
+    inset: -85% -14%;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 15%,
+      color-mix(in oklab, var(--realm-accent-arcane) 24%, transparent) 45%,
+      color-mix(in oklab, var(--realm-accent-brass) 20%, transparent) 52%,
+      transparent 75%
+    );
+    opacity: 0.14;
+    transform: translate3d(-24%, 0, 0);
+    animation: realm-holo-shift 12s ease-in-out infinite;
+  }
+
+  .realm-holo-card:hover {
+    transform: translateY(-4px) rotateX(2deg);
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 75%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 16%, transparent),
+      0 18px 34px color-mix(in oklab, black 42%, transparent);
+  }
+
+  .card-parchment-dark {
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 65%, transparent);
+    background:
+      linear-gradient(
+        165deg,
+        color-mix(in oklab, var(--realm-surface-iron) 64%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 72%, transparent)
+      );
+    border-radius: 10px;
+  }
+
+  .hero-summoning-panel {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    min-height: 420px;
+    border-color: color-mix(in oklab, var(--realm-border-strong) 78%, transparent);
+    background:
+      radial-gradient(120% 120% at 90% 0%, color-mix(in oklab, var(--realm-accent-arcane) 18%, transparent), transparent 62%),
+      linear-gradient(
+        165deg,
+        color-mix(in oklab, var(--realm-surface-iron) 76%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 76%, transparent)
+      );
+  }
+
+  .hero-ember-field {
+    position: absolute;
+    inset: -30% -35%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 24% 28%, color-mix(in oklab, var(--realm-accent-ember) 25%, transparent) 0%, transparent 45%),
+      radial-gradient(circle at 68% 35%, color-mix(in oklab, var(--realm-accent-brass) 20%, transparent) 0%, transparent 38%),
+      radial-gradient(circle at 46% 72%, color-mix(in oklab, var(--realm-accent-arcane) 24%, transparent) 0%, transparent 42%);
+    filter: blur(2px) saturate(120%);
+    opacity: 0.9;
+    animation: hero-ember-drift 12s ease-in-out infinite alternate;
+  }
+
+  .hero-sigil-ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: clamp(180px, 30vw, 250px);
+    aspect-ratio: 1 / 1;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 75%, transparent);
+    background:
+      radial-gradient(circle, color-mix(in oklab, var(--realm-bg-smoke) 60%, transparent) 0%, transparent 66%),
+      conic-gradient(
+        from 0deg,
+        color-mix(in oklab, var(--realm-accent-ember) 35%, transparent),
+        color-mix(in oklab, var(--realm-accent-brass) 40%, transparent),
+        color-mix(in oklab, var(--realm-accent-arcane) 35%, transparent),
+        color-mix(in oklab, var(--realm-accent-brass) 40%, transparent),
+        color-mix(in oklab, var(--realm-accent-ember) 35%, transparent)
+      );
+    box-shadow:
+      inset 0 0 0 2px color-mix(in oklab, var(--realm-bg-void) 65%, transparent),
+      0 0 42px color-mix(in oklab, var(--realm-accent-ember) 20%, transparent);
+    animation: hero-sigil-spin 18s linear infinite;
+  }
+
+  .hero-sigil-ring::after {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 60%, transparent);
+    opacity: 0.65;
+  }
+
+  .hero-sigil-core {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: clamp(70px, 12vw, 94px);
+    aspect-ratio: 1 / 1;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--realm-border-strong) 70%, transparent);
+    background: color-mix(in oklab, var(--realm-bg-void) 68%, transparent);
+    box-shadow:
+      inset 0 0 22px color-mix(in oklab, var(--realm-accent-arcane) 18%, transparent),
+      0 0 24px color-mix(in oklab, var(--realm-accent-ember) 16%, transparent);
+    animation: hero-core-pulse 3.2s ease-in-out infinite;
+  }
+
+  .realm-blitz-ascii-overlay {
+    mask-image: radial-gradient(
+      circle 185px at var(--ascii-x, 50%) var(--ascii-y, 50%),
+      black 0%,
+      black 46%,
+      transparent 74%
+    );
+    -webkit-mask-image: radial-gradient(
+      circle 185px at var(--ascii-x, 50%) var(--ascii-y, 50%),
+      black 0%,
+      black 46%,
+      transparent 74%
+    );
+  }
+
+  .realm-blitz-ascii-overlay::before {
+    content:
+      "@ # 0 1 % + - = A I Z X R W N C 7 3 @ # 0 1 % + - = A I Z X R W N C 7 3\A"
+      "1 % + - = A I Z X R W N C 7 3 @ # 0 1 % + - = A I Z X R W N C 7 3 @ # 0\A"
+      "A I Z X R W N C 7 3 @ # 0 1 % + - = A I Z X R W N C 7 3 @ # 0 1 % + - =\A"
+      "X R W N C 7 3 @ # 0 1 % + - = A I Z X R W N C 7 3 @ # 0 1 % + - = A I Z\A"
+      "7 3 @ # 0 1 % + - = A I Z X R W N C 7 3 @ # 0 1 % + - = A I Z X R W N C";
+    position: absolute;
+    inset: -18% -4%;
+    white-space: pre;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.05;
+    letter-spacing: 0.12em;
+    color: color-mix(in oklab, var(--realm-accent-brass) 78%, white);
+    opacity: 0.78;
+    text-shadow:
+      0 0 10px color-mix(in oklab, var(--realm-accent-brass) 40%, transparent),
+      0 0 28px color-mix(in oklab, var(--realm-accent-arcane) 22%, transparent);
+    animation: blitz-ascii-drift 14s linear infinite;
+    transform-origin: center;
+  }
+
+  .realm-blitz-ascii-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        color-mix(in oklab, var(--realm-accent-brass) 22%, transparent) 0 1px,
+        transparent 1px 13px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--realm-accent-arcane) 18%, transparent) 0 1px,
+        transparent 1px 13px
+      );
+    mix-blend-mode: screen;
+    opacity: 0.32;
+  }
+
+  .realm-blitz-hover-lens {
+    mask-image: radial-gradient(
+      circle 205px at var(--ascii-x, 50%) var(--ascii-y, 50%),
+      black 0%,
+      black 56%,
+      transparent 80%
+    );
+    -webkit-mask-image: radial-gradient(
+      circle 205px at var(--ascii-x, 50%) var(--ascii-y, 50%),
+      black 0%,
+      black 56%,
+      transparent 80%
+    );
+    background: radial-gradient(
+      circle 205px at var(--ascii-x, 50%) var(--ascii-y, 50%),
+      color-mix(in oklab, var(--realm-accent-brass) 30%, transparent) 0%,
+      color-mix(in oklab, var(--realm-accent-arcane) 25%, transparent) 45%,
+      transparent 76%
+    );
+    mix-blend-mode: screen;
+    backdrop-filter: saturate(150%) contrast(122%) blur(1px);
+    -webkit-backdrop-filter: saturate(150%) contrast(122%) blur(1px);
+  }
+
+  .realm-games-stage {
+    isolation: isolate;
+  }
+
+  .realm-games-stage::after {
+    content: "";
+    position: absolute;
+    inset: 2% 4% auto;
+    height: 48%;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(
+        95% 85% at 10% 5%,
+        color-mix(in oklab, var(--realm-accent-brass) 16%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        100% 90% at 88% 25%,
+        color-mix(in oklab, var(--realm-accent-arcane) 18%, transparent),
+        transparent 76%
+      );
+    filter: blur(10px);
+    opacity: 0.8;
+  }
+
+  .realm-games-hero {
+    position: relative;
+    overflow: hidden;
+    border-color: color-mix(in oklab, var(--realm-border-strong) 75%, transparent);
+    background:
+      radial-gradient(
+        140% 90% at 85% 0%,
+        color-mix(in oklab, var(--realm-accent-arcane) 20%, transparent),
+        transparent 58%
+      ),
+      linear-gradient(
+        145deg,
+        color-mix(in oklab, var(--realm-surface-iron) 78%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 74%, transparent)
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 14%, transparent),
+      0 22px 34px color-mix(in oklab, black 40%, transparent);
+  }
+
+  .realm-games-metrics {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .realm-games-metrics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .realm-games-metric {
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    background:
+      linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--realm-bg-smoke) 50%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 56%, transparent)
+      );
+    border-radius: 0.75rem;
+    padding: 0.8rem 0.95rem;
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 10%, transparent);
+  }
+
+  .realm-games-filterbar {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 66%, transparent);
+  }
+
+  .realm-games-select {
+    font-family: var(--font-sans);
+    letter-spacing: 0.04em;
+  }
+
+  .realm-games-feature {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 16%, transparent),
+      0 20px 36px color-mix(in oklab, black 42%, transparent);
+  }
+
+  .realm-games-grid {
+    align-items: stretch;
+  }
+
+  .realm-games-card {
+    border-color: color-mix(in oklab, var(--realm-border-etched) 74%, transparent);
+  }
+
+  .realm-games-card:hover,
+  .realm-games-feature:hover {
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 20%, transparent),
+      0 24px 40px color-mix(in oklab, black 45%, transparent),
+      0 0 0 1px color-mix(in oklab, var(--realm-accent-brass) 25%, transparent);
+  }
+
+  .realm-games-detail-stage {
+    isolation: isolate;
+  }
+
+  .realm-games-detail-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(
+        90% 70% at 12% 4%,
+        color-mix(in oklab, var(--realm-accent-brass) 18%, transparent),
+        transparent 68%
+      ),
+      radial-gradient(
+        90% 70% at 90% 8%,
+        color-mix(in oklab, var(--realm-accent-arcane) 18%, transparent),
+        transparent 70%
+      );
+    opacity: 0.82;
+  }
+
+  .realm-games-detail-shell {
+    position: relative;
+  }
+
+  .realm-games-detail-hero {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 14%, transparent),
+      0 20px 36px color-mix(in oklab, black 42%, transparent);
+  }
+
+  .realm-games-detail-media {
+    background:
+      linear-gradient(
+        155deg,
+        color-mix(in oklab, var(--realm-bg-smoke) 55%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 65%, transparent)
+      );
+  }
+
+  .realm-games-detail-stats {
+    align-items: stretch;
+  }
+
+  .realm-games-detail-stat {
+    border-color: color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    background:
+      linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--realm-bg-smoke) 47%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 55%, transparent)
+      );
+  }
+
+  .realm-games-detail-gallery {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 68%, transparent);
+  }
+
+  .realm-games-detail-shot {
+    transition:
+      transform 220ms ease,
+      border-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .realm-games-detail-shot:hover {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 15%, transparent),
+      0 16px 28px color-mix(in oklab, black 38%, transparent);
+  }
+
+  .realm-games-detail-links {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 66%, transparent);
+  }
+
+  .scroll-codex-stage {
+    isolation: isolate;
+  }
+
+  .scroll-codex-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        90% 70% at 10% 2%,
+        color-mix(in oklab, var(--realm-accent-brass) 16%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        90% 70% at 90% 6%,
+        color-mix(in oklab, var(--realm-accent-arcane) 18%, transparent),
+        transparent 72%
+      );
+    opacity: 0.82;
+  }
+
+  .scroll-codex-hero {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 14%, transparent),
+      0 20px 36px color-mix(in oklab, black 42%, transparent);
+  }
+
+  .scroll-codex-metrics {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .scroll-codex-metrics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .scroll-codex-metric {
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    border-radius: 0.75rem;
+    padding: 0.8rem 0.95rem;
+    background:
+      linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--realm-bg-smoke) 48%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 58%, transparent)
+      );
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 11%, transparent);
+  }
+
+  .scroll-codex-filters {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 64%, transparent);
+  }
+
+  .scroll-codex-filter {
+    border-radius: 0.5rem;
+    border-width: 1px;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.75rem;
+    font-family: var(--font-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition:
+      border-color 180ms ease,
+      color 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .scroll-codex-filter-active {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 74%, transparent);
+    background:
+      linear-gradient(
+        125deg,
+        color-mix(in oklab, var(--realm-accent-brass) 28%, transparent),
+        color-mix(in oklab, var(--realm-accent-arcane) 24%, transparent)
+      );
+    color: color-mix(in oklab, var(--realm-accent-brass) 92%, white);
+  }
+
+  .scroll-codex-filter-idle {
+    border-color: color-mix(in oklab, var(--realm-border-etched) 66%, transparent);
+    background: color-mix(in oklab, var(--realm-bg-smoke) 42%, transparent);
+    color: color-mix(in oklab, var(--foreground) 80%, transparent);
+  }
+
+  .scroll-codex-filter-idle:hover {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 62%, transparent);
+    color: color-mix(in oklab, var(--realm-accent-brass) 90%, white);
+  }
+
+  .scroll-codex-feature {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 15%, transparent),
+      0 18px 34px color-mix(in oklab, black 40%, transparent);
+  }
+
+  .scroll-codex-feed {
+    align-items: stretch;
+  }
+
+  .scroll-codex-card {
+    border-color: color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    transition:
+      border-color 220ms ease,
+      transform 220ms ease;
+  }
+
+  .scroll-codex-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 66%, transparent);
+  }
+
+  .scroll-codex-link:hover {
+    color: color-mix(in oklab, var(--realm-accent-brass) 90%, white);
+  }
+
+  .scroll-scriptorium-stage {
+    isolation: isolate;
+  }
+
+  .scroll-scriptorium-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        100% 72% at 8% 4%,
+        color-mix(in oklab, var(--realm-accent-brass) 15%, transparent),
+        transparent 74%
+      ),
+      radial-gradient(
+        100% 72% at 92% 6%,
+        color-mix(in oklab, var(--realm-accent-arcane) 16%, transparent),
+        transparent 74%
+      );
+    opacity: 0.82;
+  }
+
+  .scroll-detail-hero {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 14%, transparent),
+      0 18px 34px color-mix(in oklab, black 40%, transparent);
+  }
+
+  .scroll-detail-back {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: color-mix(in oklab, var(--foreground) 72%, transparent);
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 66%, transparent);
+    background: color-mix(in oklab, var(--realm-bg-smoke) 40%, transparent);
+    padding: 0.42rem 0.68rem;
+    border-radius: 0.5rem;
+    transition: color 180ms ease, border-color 180ms ease;
+  }
+
+  .scroll-detail-back:hover {
+    color: color-mix(in oklab, var(--realm-accent-brass) 88%, white);
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 62%, transparent);
+  }
+
+  .scroll-detail-cover {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 66%, transparent);
+    box-shadow: 0 14px 28px color-mix(in oklab, black 35%, transparent);
+  }
+
+  .scroll-detail-body {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 68%, transparent);
+    background:
+      linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--realm-bg-smoke) 46%, transparent),
+        color-mix(in oklab, var(--realm-bg-void) 58%, transparent)
+      );
+  }
+
+  .scroll-detail-neighbors {
+    align-items: stretch;
+  }
+
+  .scroll-detail-neighbor-card {
+    border-color: color-mix(in oklab, var(--realm-border-etched) 68%, transparent);
+    transition: border-color 180ms ease, transform 180ms ease;
+  }
+
+  .scroll-detail-neighbor-card:hover {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 62%, transparent);
+    transform: translateY(-2px);
+  }
+
+  .scroll-detail-similar {
+    border-color: color-mix(in oklab, var(--realm-border-strong) 66%, transparent);
+  }
+
+  .scroll-detail-similar-card:hover {
+    border-color: color-mix(in oklab, var(--realm-accent-brass) 62%, transparent);
+  }
+
   .scroll-content {
     @apply text-base leading-7 text-foreground;
   }
@@ -386,5 +1365,146 @@
 
   .similar-scroll-card {
     @apply block border border-border bg-card/70 p-4 transition-all hover:border-primary/60 hover:-translate-y-0.5;
+  }
+
+  .hex-grid-texture {
+    position: relative;
+  }
+
+  .hex-grid-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97'%3E%3Cpath d='M28 0 L56 16.5 L56 49.5 L28 66 L0 49.5 L0 16.5 Z' fill='none' stroke='white' stroke-width='0.5'/%3E%3Cpath d='M28 66 L56 82.5 L56 97 M28 66 L0 82.5 L0 97' fill='none' stroke='white' stroke-width='0.5'/%3E%3Cpath d='M56 16.5 L56 0 M0 16.5 L0 0' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+    background-size: 56px 97px;
+  }
+}
+
+@keyframes hero-ember-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-4%, 3%, 0) scale(1.06);
+  }
+}
+
+@keyframes realm-scan-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(24px, 24px, 0);
+  }
+}
+
+@keyframes realm-holo-shift {
+  0% {
+    transform: translate3d(-24%, 0, 0) rotate(6deg);
+    opacity: 0.07;
+  }
+  48% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate3d(24%, 0, 0) rotate(6deg);
+    opacity: 0.06;
+  }
+}
+
+@keyframes realm-route-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    filter: saturate(95%);
+  }
+  50% {
+    opacity: 0.95;
+    filter: saturate(130%);
+  }
+}
+
+@keyframes hero-sigil-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hero-core-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.96;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes hero-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes hero-glow-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 30px color-mix(in oklab, var(--primary) 35%, transparent),
+      0 0 60px color-mix(in oklab, var(--primary) 15%, transparent);
+  }
+  50% {
+    text-shadow:
+      0 0 40px color-mix(in oklab, var(--primary) 50%, transparent),
+      0 0 80px color-mix(in oklab, var(--primary) 25%, transparent),
+      0 0 120px color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+}
+
+.hero-title-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--primary) 0%,
+    color-mix(in oklab, var(--realm-accent-brass) 100%, white) 25%,
+    color-mix(in oklab, var(--primary) 100%, white) 40%,
+    color-mix(in oklab, var(--realm-accent-ember) 85%, white) 55%,
+    var(--primary) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-shimmer 4s ease-in-out infinite;
+}
+
+.hero-title-glow {
+  animation: hero-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes blitz-ascii-drift {
+  0% {
+    transform: translate3d(-1%, -1%, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(1.2%, -0.6%, 0) scale(1.015);
+  }
+  50% {
+    transform: translate3d(0.8%, 1%, 0) scale(1.01);
+  }
+  75% {
+    transform: translate3d(-1.1%, 0.8%, 0) scale(1.02);
+  }
+  100% {
+    transform: translate3d(-1%, -1%, 0) scale(1);
   }
 }

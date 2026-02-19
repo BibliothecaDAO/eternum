@@ -1,8 +1,14 @@
-import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  useLocation,
+} from "@tanstack/react-router";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 // import { WaveformBackground } from "@/components/WaveformBackground";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 // import AsciiArt from "@/components/ascii";
 
 const RouterDevtools = import.meta.env.DEV
@@ -16,6 +22,11 @@ const RouterDevtools = import.meta.env.DEV
 const FooterSection = lazy(() =>
   import("@/components/sections/FooterSection").then((module) => ({
     default: module.FooterSection,
+  }))
+);
+const RealmSceneBackground = lazy(() =>
+  import("@/components/RealmSceneBackground").then((module) => ({
+    default: module.RealmSceneBackground,
   }))
 );
 
@@ -119,13 +130,25 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const location = useLocation();
+  const isBlitzRoute = location.pathname === "/blitz";
+  const isEternumRoute = location.pathname === "/eternum";
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
   return (
     <>
       <HeadContent />
       {/* <AsciiArt /> */}
       {/* Fixed position background */}
       <div className="fixed inset-0">
-        <div className="absolute inset-x-0 bottom-0 h-[70vh]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(246,194,122,0.17),transparent_42%),radial-gradient(circle_at_80%_8%,rgba(106,127,227,0.18),transparent_35%),linear-gradient(180deg,rgba(13,15,22,0.97),rgba(11,11,15,0.94))]" />
+        <Suspense fallback={null}>
+          <RealmSceneBackground />
+        </Suspense>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,11,0.06),rgba(8,8,11,0.35))]" />
       </div>
 
       {/* Scrollable content */}
@@ -136,7 +159,13 @@ function RootComponent() {
         transition={{ delay: 0.2, duration: 0.5 }}
       >
         <TopBar />
-        <div className="min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4">
+        <div
+          className={cn(
+            isBlitzRoute || isEternumRoute
+              ? "min-h-screen"
+              : "min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4"
+          )}
+        >
           <Outlet />
         </div>
       </motion.div>

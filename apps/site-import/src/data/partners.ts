@@ -2,21 +2,25 @@ export const partners = [
   {
     id: 1,
     name: "Starknet",
-    logo: "/Starknet.svg",
+    logo: "/partners/Starknet.svg",
+    url: "https://starknet.io",
   },
   {
     id: 2,
     name: "Starkware",
-    logo: "/Starkware.svg",
+    logo: "/partners/Starkware.svg",
+    url: "https://starkware.co",
   },
   {
     id: 3,
     name: "Cartridge",
-    logo: "/Cartridge.svg",
+    logo: "/partners/Cartridge.svg",
+    url: "https://cartridge.gg",
   },
   {
     id: 4,
     name: "Dojo",
-    logo: "/dojo-logo.svg",
+    logo: "/partners/dojo-logo.svg",
+    url: "https://dojoengine.org",
   },
 ];

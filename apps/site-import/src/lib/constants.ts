@@ -31,3 +31,12 @@ export const APY_CONSTANTS = {
   BASIS_POINTS: 10000,
   DECIMALS: 18,
 };
+
+/** Total $LORDS token supply */
+export const LORDS_TOTAL_SUPPLY = 300_000_000;
+
+/** Minimum votes required for a governance proposal to pass quorum */
+export const PROPOSAL_QUORUM = 1500;
+
+/** Fixed header height offset for scroll-to-section calculations (px) */
+export const HEADER_SCROLL_OFFSET = 108;

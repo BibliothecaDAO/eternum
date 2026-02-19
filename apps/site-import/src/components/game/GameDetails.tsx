@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/data/games";
 import { useNavigate } from "@tanstack/react-router";
@@ -26,18 +25,17 @@ import {
 function LiveIndicator() {
   return (
     <motion.div
-      className="inline-flex items-center"
+      className="inline-flex items-center rounded-full border border-emerald-400/35 bg-black/35 px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-emerald-300"
       initial={{ opacity: 0 }}
-      animate={{ opacity: [0.5, 1, 0.5] }}
+      animate={{ opacity: [0.55, 1, 0.55] }}
       transition={{ duration: 2, repeat: Infinity }}
     >
-      <div className="w-2 h-2 rounded-full bg-positive mr-2 bg-green-500" />
-      <span className="text-sm text-positive">Live</span>
+      <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-300" />
+      Live
     </motion.div>
   );
 }
 
-// Screenshot Modal Component
 function ScreenshotModal({
   images,
   currentIndex,
@@ -51,7 +49,6 @@ function ScreenshotModal({
   onNext: () => void;
   onPrevious: () => void;
 }) {
-  // Add keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -72,8 +69,7 @@ function ScreenshotModal({
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
         onClick={onClose}
       >
-        <div className="relative w-full h-full flex items-center justify-center p-4">
-          {/* Close button */}
+        <div className="relative flex h-full w-full items-center justify-center p-4">
           <Button
             variant="ghost"
             size="icon"
@@ -83,7 +79,6 @@ function ScreenshotModal({
             <X className="w-6 h-6" />
           </Button>
 
-          {/* Previous button */}
           {images.length > 1 && (
             <Button
               variant="ghost"
@@ -98,7 +93,6 @@ function ScreenshotModal({
             </Button>
           )}
 
-          {/* Image */}
           <motion.img
             key={currentIndex}
             src={images[currentIndex]}
@@ -111,7 +105,6 @@ function ScreenshotModal({
             onClick={(e) => e.stopPropagation()}
           />
 
-          {/* Next button */}
           {images.length > 1 && (
             <Button
               variant="ghost"
@@ -126,9 +119,8 @@ function ScreenshotModal({
             </Button>
           )}
 
-          {/* Image counter */}
           {images.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
               {currentIndex + 1} / {images.length}
             </div>
           )}
@@ -138,24 +130,27 @@ function ScreenshotModal({
   );
 }
 
+function statusChipClasses(status: Game["status"]) {
+  if (status === "mainnet") {
+    return "border-emerald-400/40 text-emerald-300 bg-emerald-400/10";
+  }
+  if (status === "testnet") {
+    return "border-amber-300/40 text-amber-200 bg-amber-300/10";
+  }
+
+  return "border-sky-300/35 text-sky-200 bg-sky-300/10";
+}
+
+function openExternal(url?: string) {
+  if (!url) return;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export function GameDetails({ game }: { game: Game }) {
   const navigate = useNavigate();
   const [selectedScreenshot, setSelectedScreenshot] = useState<number | null>(
     null
   );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "mainnet":
-        return "border-positive text-positive";
-      case "testnet":
-        return "border-warning text-warning";
-      case "development":
-        return "border-info text-info";
-      default:
-        return "";
-    }
-  };
 
   const handleNextScreenshot = () => {
     if (selectedScreenshot !== null && game.backgroundImages) {
@@ -177,327 +172,292 @@ export function GameDetails({ game }: { game: Game }) {
     }
   };
 
+  const statusLabel =
+    game.status.charAt(0).toUpperCase() + game.status.slice(1);
+
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-2xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-2xl realm-games-detail-shell">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-8"
+          transition={{ duration: 0.45 }}
+          className="space-y-6 sm:space-y-8"
         >
-          {/* Back Button */}
           <Button
-            variant="ghost"
+            variant="rune"
             size="sm"
             onClick={() => navigate({ to: "/games" })}
-            className="mb-4"
+            className="mb-1"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Games
           </Button>
 
-          {/* Hero Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Game Info */}
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <motion.h1
-                      className="text-4xl md:text-5xl font-bold mb-2"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
+          <section className="realm-panel realm-grid-scan realm-games-detail-hero rounded-2xl p-5 sm:p-6 lg:p-7">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
+              <div className="space-y-5">
+                <div>
+                  <p className="realm-banner">Campaign Brief</p>
+                  <motion.h1
+                    className="realm-title mt-3 text-3xl sm:text-4xl lg:text-5xl"
+                    initial={{ opacity: 0, x: -18 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    {game.title}
+                  </motion.h1>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {game.isLive ? <LiveIndicator /> : null}
+                    <Badge
+                      variant="outline"
+                      className={`uppercase tracking-[0.12em] ${statusChipClasses(
+                        game.status
+                      )}`}
                     >
-                      {game.title}
-                    </motion.h1>
-                    <div className="flex items-center gap-3 mb-4">
-                      {game.isLive && <LiveIndicator />}
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(game.status)}
-                      >
-                        {game.status.toUpperCase()}
-                      </Badge>
-                    </div>
+                      {game.status}
+                    </Badge>
                   </div>
                 </div>
 
-                <motion.p
-                  className="text-lg text-muted-foreground leading-relaxed"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
+                <p className="text-base sm:text-lg leading-relaxed text-foreground/82">
                   {game.description}
-                </motion.p>
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  {game.links?.homepage ? (
+                    <Button
+                      size="lg"
+                      variant="rune"
+                      onClick={() => openExternal(game.links?.homepage)}
+                      className="gap-2"
+                    >
+                      <Play className="h-4 w-4" />
+                      Play Now
+                    </Button>
+                  ) : null}
+                  {game.whitepaper ? (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => openExternal(game.whitepaper)}
+                      className="gap-2 border-primary/35 bg-black/30 hover:bg-black/45"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Whitepaper
+                    </Button>
+                  ) : null}
+                </div>
+
+                {game.genre && game.genre.length > 0 ? (
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground/65 uppercase tracking-[0.12em] mb-2">
+                      Genres
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {game.genre.map((genre) => (
+                        <span
+                          key={genre}
+                          className="rounded-md border border-primary/25 bg-black/35 px-2 py-1 text-xs text-foreground/80"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
-              {/* Action Buttons */}
               <motion.div
-                className="flex flex-wrap gap-3"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 }}
+                className="realm-games-detail-media relative aspect-video overflow-hidden rounded-xl border border-primary/25"
               >
-                {game.links?.homepage && (
-                  <Button
-                    size="lg"
-                    onClick={() => window.open(game.links?.homepage, "_blank")}
-                    className="gap-2"
-                  >
-                    <Play className="w-4 h-4" />
-                    Play Now
-                  </Button>
-                )}
-                {game.whitepaper && (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => window.open(game.whitepaper, "_blank")}
-                    className="gap-2"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Whitepaper
-                  </Button>
+                {game.video ? (
+                  <iframe
+                    src={game.video}
+                    title={`${game.title} Trailer`}
+                    className="h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <img
+                    src={game.image}
+                    alt={game.title}
+                    className="h-full w-full object-cover"
+                  />
                 )}
               </motion.div>
-
-              {/* Genres */}
-              {game.genre && game.genre.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                    GENRES
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {game.genre.map((g) => (
-                      <Badge key={g} variant="secondary">
-                        {g}
-                      </Badge>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
             </div>
+          </section>
 
-            {/* Right Column - Video/Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="relative aspect-video rounded-2xl border border-white/10 overflow-hidden bg-card"
-            >
-              {game.video ? (
-                <iframe
-                  src={game.video}
-                  title={`${game.title} Trailer`}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <img
-                  src={game.image}
-                  alt={game.title}
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </motion.div>
-          </div>
-
-          {/* Info Grid */}
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-            initial={{ opacity: 0, y: 20 }}
+          <motion.section
+            className="realm-games-detail-stats grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.2 }}
           >
-            {/* Studio Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Building className="w-4 h-4" />
-                  Studio
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold">{game.studio}</p>
-              </CardContent>
-            </Card>
+            <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+              <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
+                <Building className="h-4 w-4" />
+                Studio
+              </p>
+              <p className="mt-3 text-lg font-semibold text-foreground">{game.studio}</p>
+            </article>
 
-            {/* Players Card */}
-            {game.players && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Active Players
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg font-semibold">
-                    {game.players.toLocaleString()}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            {game.players ? (
+              <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+                <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
+                  <Users className="h-4 w-4" />
+                  Active Players
+                </p>
+                <p className="mt-3 text-lg font-semibold text-foreground tabular-nums">
+                  {game.players.toLocaleString()}
+                </p>
+              </article>
+            ) : null}
 
-            {/* TVL Card */}
-            {game.tvl && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <DollarSign className="w-4 h-4" />
-                    Total Value Locked
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg font-semibold">
-                    ${game.tvl.toLocaleString()}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            {game.tvl ? (
+              <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+                <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
+                  <DollarSign className="h-4 w-4" />
+                  Total Value Locked
+                </p>
+                <p className="mt-3 text-lg font-semibold text-foreground tabular-nums">
+                  ${game.tvl.toLocaleString()}
+                </p>
+              </article>
+            ) : null}
 
-            {/* Status Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Gamepad2 className="w-4 h-4" />
-                  Game Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge
-                  variant="outline"
-                  className={`${getStatusColor(game.status)} text-base`}
+            <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+              <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
+                <Gamepad2 className="h-4 w-4" />
+                Game Status
+              </p>
+              <div className="mt-3">
+                <span
+                  className={`inline-flex rounded-full border px-3 py-1 text-sm uppercase tracking-[0.12em] ${statusChipClasses(
+                    game.status
+                  )}`}
                 >
-                  {game.status.charAt(0).toUpperCase() + game.status.slice(1)}
-                </Badge>
-              </CardContent>
-            </Card>
-          </motion.div>
+                  {statusLabel}
+                </span>
+              </div>
+            </article>
+          </motion.section>
 
-          {/* Screenshots Section */}
-          {game.backgroundImages && game.backgroundImages.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
+          {game.backgroundImages && game.backgroundImages.length > 0 ? (
+            <motion.section
+              className="realm-panel realm-games-detail-gallery rounded-2xl p-5 sm:p-6"
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
+              transition={{ delay: 0.25 }}
             >
-              <h2 className="text-2xl font-bold mb-4">Screenshots</h2>
+              <header className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <p className="realm-banner">Recon Archive</p>
+                  <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Screenshots</h2>
+                </div>
+                <span className="realm-sigil">
+                  {game.backgroundImages.length} captures
+                </span>
+              </header>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {game.backgroundImages.map((img, index) => (
-                  <motion.div
-                    key={index}
-                    className="relative aspect-video rounded-lg overflow-hidden bg-card cursor-pointer group"
-                    initial={{ opacity: 0, scale: 0.9 }}
+                  <motion.button
+                    key={img}
+                    type="button"
+                    className="realm-games-detail-shot group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
+                    initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.8 + index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
+                    transition={{ delay: 0.3 + index * 0.04 }}
+                    whileHover={{ y: -2 }}
                     onClick={() => setSelectedScreenshot(index)}
                   >
                     <img
                       src={img}
                       alt={`${game.title} Screenshot ${index + 1}`}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                            className="w-6 h-6 text-white"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+                  </motion.button>
                 ))}
               </div>
-            </motion.div>
-          )}
+            </motion.section>
+          ) : null}
 
-          {/* Links Section */}
-          {game.links && Object.keys(game.links).length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
+          {game.links && Object.keys(game.links).length > 0 ? (
+            <motion.section
+              className="realm-panel realm-games-detail-links rounded-2xl p-5 sm:p-6"
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 }}
+              transition={{ delay: 0.3 }}
             >
-              <h2 className="text-2xl font-bold mb-4">Connect</h2>
+              <header className="mb-4">
+                <p className="realm-banner">Deploy Channels</p>
+                <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Connect</h2>
+              </header>
+
               <div className="flex flex-wrap gap-3">
-                {game.links.homepage && (
+                {game.links.homepage ? (
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => window.open(game.links?.homepage, "_blank")}
-                    className="gap-2"
+                    onClick={() => openExternal(game.links?.homepage)}
+                    className="gap-2 border-primary/35 bg-black/30 hover:bg-black/45"
                   >
-                    <Globe className="w-4 h-4" />
+                    <Globe className="h-4 w-4" />
                     Website
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="h-3 w-3" />
                   </Button>
-                )}
-                {game.links.discord && (
+                ) : null}
+                {game.links.discord ? (
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => window.open(game.links?.discord, "_blank")}
-                    className="gap-2"
+                    onClick={() => openExternal(game.links?.discord)}
+                    className="gap-2 border-primary/35 bg-black/30 hover:bg-black/45"
                   >
-                    <MessageCircle className="w-4 h-4" />
+                    <MessageCircle className="h-4 w-4" />
                     Discord
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="h-3 w-3" />
                   </Button>
-                )}
-                {game.links.twitter && (
+                ) : null}
+                {game.links.twitter ? (
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => window.open(game.links?.twitter, "_blank")}
-                    className="gap-2"
+                    onClick={() => openExternal(game.links?.twitter)}
+                    className="gap-2 border-primary/35 bg-black/30 hover:bg-black/45"
                   >
-                    <Twitter className="w-4 h-4" />
+                    <Twitter className="h-4 w-4" />
                     Twitter
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="h-3 w-3" />
                   </Button>
-                )}
-                {game.links.github && (
+                ) : null}
+                {game.links.github ? (
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => window.open(game.links?.github, "_blank")}
-                    className="gap-2"
+                    onClick={() => openExternal(game.links?.github)}
+                    className="gap-2 border-primary/35 bg-black/30 hover:bg-black/45"
                   >
-                    <Github className="w-4 h-4" />
+                    <Github className="h-4 w-4" />
                     GitHub
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="h-3 w-3" />
                   </Button>
-                )}
+                ) : null}
               </div>
-            </motion.div>
-          )}
+            </motion.section>
+          ) : null}
         </motion.div>
       </div>
 
-      {/* Screenshot Modal */}
-      {selectedScreenshot !== null && game.backgroundImages && (
+      {selectedScreenshot !== null && game.backgroundImages ? (
         <ScreenshotModal
           images={game.backgroundImages}
           currentIndex={selectedScreenshot}
@@ -505,7 +465,7 @@ export function GameDetails({ game }: { game: Game }) {
           onNext={handleNextScreenshot}
           onPrevious={handlePreviousScreenshot}
         />
-      )}
+      ) : null}
     </>
   );
 }
