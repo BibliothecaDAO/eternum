@@ -3,6 +3,7 @@ use crate::alias::ID;
 use crate::models::config::WorldConfigUtilImpl;
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
+use crate::models::resource;
 use crate::models::structure::{StructureCategory, StructureMetadata};
 
 #[starknet::interface]
@@ -19,9 +20,15 @@ pub trait IStructureCreationlibrary<T> {
         tile_occupier: TileOccupier,
         explore_village_coord: bool,
     );
-    fn grant_starting_resources(self: @T, world: WorldStorage, structure_id: ID, structure_coord: Coord);
-    fn grant_starting_resources_only(self: @T, world: WorldStorage, structure_id: ID, structure_coord: Coord);
-    fn grant_starting_troop_resources(self: @T, world: WorldStorage, structure_id: ID, structure_coord: Coord);
+    fn grant_starting_resources(
+        self: @T, world: WorldStorage, structure_id: ID, structure_category: StructureCategory, structure_coord: Coord,
+    );
+    fn grant_starting_resources_only(
+        self: @T, world: WorldStorage, structure_id: ID, structure_category: StructureCategory, structure_coord: Coord,
+    );
+    fn grant_starting_troop_resources(
+        self: @T, world: WorldStorage, structure_id: ID, structure_category: StructureCategory, structure_coord: Coord,
+    );
 }
 
 #[dojo::library]
@@ -138,7 +145,7 @@ pub mod structure_creation_library {
                 world, selector!("village_pass_config"),
             );
 
-            if (category != StructureCategory::FragmentMine.into() && category != StructureCategory::Village.into())
+            if (category != StructureCategory::FragmentMine && category != StructureCategory::Village)
                 || explore_village_coord {
                 for direction in structure_surrounding {
                     let neighbor_coord: Coord = coord.neighbor(direction);
@@ -222,17 +229,27 @@ pub mod structure_creation_library {
 
 
         fn grant_starting_resources(
-            self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
+            self: @ContractState,
+            world: WorldStorage,
+            structure_id: ID,
+            structure_category: StructureCategory,
+            structure_coord: Coord,
         ) {
             let mut world = world;
             let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
             let resources = _fetch_resource_list(ref world, structure_id);
             _grant_non_troop_resources(ref world, structure_id, ref structure_weight, resources.span());
-            _grant_troop_resources(ref world, structure_id, structure_coord, ref structure_weight, resources.span());
+            _grant_troop_resources(
+                ref world, structure_id, structure_category, structure_coord, ref structure_weight, resources.span(),
+            );
         }
 
         fn grant_starting_resources_only(
-            self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
+            self: @ContractState,
+            world: WorldStorage,
+            structure_id: ID,
+            structure_category: StructureCategory,
+            structure_coord: Coord,
         ) {
             let mut world = world;
             let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
@@ -241,12 +258,18 @@ pub mod structure_creation_library {
         }
 
         fn grant_starting_troop_resources(
-            self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
+            self: @ContractState,
+            world: WorldStorage,
+            structure_id: ID,
+            structure_category: StructureCategory,
+            structure_coord: Coord,
         ) {
             let mut world = world;
             let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
             let resources = _fetch_resource_list(ref world, structure_id);
-            _grant_troop_resources(ref world, structure_id, structure_coord, ref structure_weight, resources.span());
+            _grant_troop_resources(
+                ref world, structure_id, structure_category, structure_coord, ref structure_weight, resources.span(),
+            );
         }
     }
 
@@ -287,6 +310,7 @@ pub mod structure_creation_library {
     fn _grant_troop_resources(
         ref world: WorldStorage,
         structure_id: ID,
+        structure_category: StructureCategory,
         structure_coord: Coord,
         ref structure_weight: Weight,
         resources: Span<ResourceList>,
@@ -302,24 +326,35 @@ pub mod structure_creation_library {
             if resource.resource_type != start_troop_resource_type {
                 continue;
             }
+
+            let additional_troop_amount = if structure_category == StructureCategory::Village {
+                TroopsImpl::deployed_village_troop_count()
+            } else if structure_category == StructureCategory::Realm {
+                TroopsImpl::deployed_realm_troop_count()
+            } else {
+                0
+            };
+            let resource_amount_granted = resource.amount + additional_troop_amount;
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource.resource_type);
             let mut realm_resource = SingleResourceStoreImpl::retrieve(
                 ref world, structure_id, resource.resource_type, ref structure_weight, resource_weight_grams, true,
             );
-            realm_resource.add(resource.amount, ref structure_weight, resource_weight_grams);
+            realm_resource.add(resource_amount_granted, ref structure_weight, resource_weight_grams);
             realm_resource.store(ref world);
             structure_weight.store(ref world, structure_id);
 
             // create starting guard
-            let start_guard_troop_amount = resource.amount - TroopsImpl::start_resource_amount();
-            let (troop_management_systems_address, _) = world.dns(@"troop_management_systems").unwrap();
-            ITroopManagementSystemsDispatcher { contract_address: troop_management_systems_address }
-                .guard_add(
-                    structure_id, GuardSlot::Delta, start_troop_type, start_troop_tier, start_guard_troop_amount,
-                );
+            let start_guard_troop_amount = additional_troop_amount;
+            if start_guard_troop_amount.is_non_zero() {
+                let (troop_management_systems_address, _) = world.dns(@"troop_management_systems").unwrap();
+                ITroopManagementSystemsDispatcher { contract_address: troop_management_systems_address }
+                    .guard_add(
+                        structure_id, GuardSlot::Delta, start_troop_type, start_troop_tier, start_guard_troop_amount,
+                    );
 
-            // refetch structure weight
-            structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
+                // refetch structure weight
+                structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            }
         };
     }
 

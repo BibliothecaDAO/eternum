@@ -123,7 +123,8 @@ pub mod village_systems {
                 );
 
             // grant starting resources (no troops — troops come from receive_army_grant)
-            structure_creation_library.grant_starting_resources_only(world, village_id, village_coord);
+            structure_creation_library
+                .grant_starting_resources_only(world, village_id, StructureCategory::Village, village_coord);
 
             // place castle building
             BuildingImpl::create(
@@ -171,7 +172,8 @@ pub mod village_systems {
             // grant starting troop resources using the existing library function
             let village_coord = village_base.coord();
             let structure_creation_library = structure_creation_library::get_dispatcher(@world);
-            structure_creation_library.grant_starting_troop_resources(world, village_id, village_coord);
+            structure_creation_library
+                .grant_starting_troop_resources(world, village_id, StructureCategory::Village, village_coord);
 
             // mark as claimed
             world.write_model(@VillageTroop { village_id, claimed: true });
