@@ -26,6 +26,32 @@ import {
 /** How far back (ms) from now to consider events as "recent" for toasting. */
 const RECENT_WINDOW_MS = 20_000;
 
+const getStoryEventToastKey = (event: ProcessedStoryEvent): string => {
+  if (event.story !== "BattleStory") {
+    return event.tx_hash ?? event.id;
+  }
+
+  const attackerId = parseNumeric(event.battle_attacker_id);
+  const defenderId = parseNumeric(event.battle_defender_id);
+  const winnerId = parseNumeric(event.battle_winner_id);
+
+  return [
+    "battle",
+    event.tx_hash ?? "",
+    event.timestamp ?? "",
+    attackerId ?? "na",
+    defenderId ?? "na",
+    winnerId ?? "na",
+  ].join(":");
+};
+
+const getBattleLocationPriority = (location: BattleLocation | null, locationLabel: string): number => {
+  if (!location) return 0;
+  if (locationLabel === "Hex") return 3;
+  if (location.type === "structure") return 2;
+  return 1;
+};
+
 export function StoryEventToastBridge() {
   const { setup } = useDojo();
   const { isMapView } = useQuery();
@@ -36,7 +62,7 @@ export function StoryEventToastBridge() {
 
   const { data: storyEventLog = [] } = useStoryEvents(350);
 
-  // Track which event IDs we've already shown as toasts
+  // Track which event keys we've already shown as toasts
   const shownIdsRef = useRef(new Set<string>());
   // Track initial load so we don't toast all existing events on mount
   const initializedRef = useRef(false);
@@ -173,7 +199,7 @@ export function StoryEventToastBridge() {
     if (!initializedRef.current) {
       // On first load, mark all current events as "seen" so we don't spam toasts
       for (const event of storyEventLog) {
-        const key = event.tx_hash ?? event.id;
+        const key = getStoryEventToastKey(event);
         if (key) shownIdsRef.current.add(key);
       }
       initializedRef.current = true;
@@ -185,13 +211,33 @@ export function StoryEventToastBridge() {
       (event) =>
         event.story === "BattleStory" &&
         event.timestampMs >= now - RECENT_WINDOW_MS &&
-        !shownIdsRef.current.has(event.tx_hash ?? event.id),
+        !shownIdsRef.current.has(getStoryEventToastKey(event)),
     );
 
+    const dedupedBattles = new Map<
+      string,
+      {
+        event: ProcessedStoryEvent;
+        location: BattleLocation | null;
+        locationLabel: string;
+        priority: number;
+      }
+    >();
+
     for (const event of recentBattles) {
-      const key = event.tx_hash ?? event.id;
+      const key = getStoryEventToastKey(event);
       if (key) shownIdsRef.current.add(key);
 
+      const location = getBattleLocation(event);
+      const locationLabel = getLocationLabel(location);
+      const priority = getBattleLocationPriority(location, locationLabel);
+      const existing = dedupedBattles.get(key);
+      if (!existing || priority > existing.priority) {
+        dedupedBattles.set(key, { event, location, locationLabel, priority });
+      }
+    }
+
+    for (const { event, location, locationLabel } of dedupedBattles.values()) {
       const description = event.presentation?.description;
       const descriptionSegments = parsePresentationDescription(description);
 
@@ -221,9 +267,6 @@ export function StoryEventToastBridge() {
           event.battle_defender_troops_tier,
         );
 
-      const location = getBattleLocation(event);
-      const locationLabel = getLocationLabel(location);
-
       toast.custom(
         (id) => (
           <BattleToast
@@ -245,7 +288,7 @@ export function StoryEventToastBridge() {
 
     // Prune old IDs to prevent unbounded memory growth
     if (shownIdsRef.current.size > 500) {
-      const currentIds = new Set(storyEventLog.map((e) => e.tx_hash ?? e.id));
+      const currentIds = new Set(storyEventLog.map((event) => getStoryEventToastKey(event)));
       for (const id of shownIdsRef.current) {
         if (!currentIds.has(id)) shownIdsRef.current.delete(id);
       }
