@@ -17,7 +17,6 @@ const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-Resource",
   "s1_eternum-ResourceArrival",
 ];
-const PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS = 2500;
 
 export const usePlayerStructureSync = () => {
   const {
@@ -94,13 +93,9 @@ export const usePlayerStructureSync = () => {
     };
 
     void backfillOwnedStructures();
-    const intervalId = setInterval(() => {
-      void backfillOwnedStructures();
-    }, PLAYER_STRUCTURE_BACKFILL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
     };
   }, [accountAddress, toriiClient, toriiComponents]);
 
