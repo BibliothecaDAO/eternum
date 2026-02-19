@@ -31,8 +31,10 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
     expect(diagnostics.switchDurationMsMax).toBe(0);
+    expect(diagnostics.switchDurationMsSamples).toEqual([]);
     expect(diagnostics.managerDurationMsTotal).toBe(0);
     expect(diagnostics.managerDurationMsMax).toBe(0);
+    expect(diagnostics.managerDurationMsSamples).toEqual([]);
   });
 
   it("records event counters", () => {
@@ -100,7 +102,21 @@ describe("worldmap-chunk-diagnostics", () => {
 
     expect(diagnostics.switchDurationMsTotal).toBeCloseTo(17);
     expect(diagnostics.switchDurationMsMax).toBeCloseTo(12.5);
+    expect(diagnostics.switchDurationMsSamples).toEqual([12.5, 4.5]);
     expect(diagnostics.managerDurationMsTotal).toBeCloseTo(15);
     expect(diagnostics.managerDurationMsMax).toBeCloseTo(9);
+    expect(diagnostics.managerDurationMsSamples).toEqual([6, 9]);
+  });
+
+  it("caps duration samples to the latest bounded window", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    for (let i = 1; i <= 600; i++) {
+      recordChunkDiagnosticsEvent(diagnostics, "switch_duration_recorded", { durationMs: i });
+    }
+
+    expect(diagnostics.switchDurationMsSamples).toHaveLength(512);
+    expect(diagnostics.switchDurationMsSamples[0]).toBe(89);
+    expect(diagnostics.switchDurationMsSamples[511]).toBe(600);
   });
 });

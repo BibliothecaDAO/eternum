@@ -1,4 +1,4 @@
-import { colors, table } from "./styles";
+import { colors, table } from "../styles";
 
 // Data from the Eternum Rewards Chest (Epoch 1, items 2-11)
 const ETERNUM_REWARDS_CHEST_ITEMS = [
@@ -130,17 +130,19 @@ const componentStyles = {
     ...table.cell,
     color: colors.text.light,
     fontWeight: 500,
+    padding: "0.4rem 0.5rem",
   },
   itemImageCell: {
     ...table.cell,
-    width: "80px",
+    width: "90px",
     textAlign: "center" as const,
+    padding: "0.4rem 0.3rem",
   },
   itemImage: {
-    width: "48px",
-    height: "48px",
+    width: "72px",
+    height: "72px",
     objectFit: "contain" as const,
-    borderRadius: "0.25rem",
+    borderRadius: "0.35rem",
   },
   rarityCell: {
     ...table.cell,
@@ -149,10 +151,11 @@ const componentStyles = {
   },
   descriptionCell: {
     ...table.cell,
-    maxWidth: "300px",
+    maxWidth: "none",
     fontSize: "0.8rem",
     lineHeight: "1.4",
     color: colors.text.light,
+    padding: "0.4rem 0.5rem",
   },
   drawChanceCell: {
     ...table.cell,
@@ -169,14 +172,12 @@ const EternumRewardsChestTable = () => {
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
-              <th style={table.headerCell}>#</th>
               <th style={table.headerCell}>Item Name</th>
               <th style={table.headerCell}></th>
               <th style={table.headerCell}>Rarity</th>
               <th style={table.headerCell}>Description</th>
               <th style={table.headerCell}>Type</th>
-              <th style={table.headerCell}>Troop Type</th>
-              <th style={table.headerCell}>Draw Chance (%)</th>
+              <th style={table.headerCell}>Draw Chance</th>
             </tr>
           </thead>
           <tbody>
@@ -185,7 +186,6 @@ const EternumRewardsChestTable = () => {
 
               return (
                 <tr key={item.itemName}>
-                  <td style={table.cell}>{item.epochItemNumber}</td>
                   <td style={componentStyles.itemNameCell}>{item.itemName}</td>
                   <td style={componentStyles.itemImageCell}>
                     <img src={item.image} alt={item.itemName} style={componentStyles.itemImage} />
@@ -200,10 +200,10 @@ const EternumRewardsChestTable = () => {
                   </td>
                   <td style={componentStyles.descriptionCell}>{item.description}</td>
                   <td style={table.cell}>
-                    <span style={{ color: colors.text.light }}>{item.type}</span>
-                  </td>
-                  <td style={table.cell}>
-                    <span style={{ color: colors.text.light }}>{item.troopType}</span>
+                    <span style={{ color: colors.text.light }}>
+                      {item.type}
+                      {item.troopType !== "N/A" ? ` (${item.troopType})` : ""}
+                    </span>
                   </td>
                   <td style={componentStyles.drawChanceCell}>{item.drawChance}%</td>
                 </tr>

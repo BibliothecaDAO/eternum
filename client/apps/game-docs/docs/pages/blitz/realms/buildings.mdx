@@ -2,7 +2,7 @@ import BuildingCard from "../../../components/BuildingCard";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { BlitzBuildingCard } from "@/components/BlitzBuildingCard";
+import { BlitzBuildingCard } from "@/components/blitz-components/BlitzBuildingCard";
 
 # 🪓 Buildings
 
@@ -289,6 +289,7 @@ available for construction in resource mode.
   image="/images/buildings/construction/barracks.png"
   buildingType={29}
   description={["Produces T2 Knights", "Only available in resource mode"]}
+  standardOnly={true}
   resourceCosts={[
     { resource: ResourcesIds.Labor, amount: 360 }, // Labor
     { resource: ResourcesIds.Wood, amount: 240 }, // Wood
@@ -303,6 +304,7 @@ available for construction in resource mode.
   image="/images/buildings/construction/barracks.png"
   buildingType={30}
   description={["Produces T3 Knights", "Only available in resource mode"]}
+  standardOnly={true}
   resourceCosts={[
     { resource: ResourcesIds.Labor, amount: 540 }, // Labor
     { resource: ResourcesIds.Wood, amount: 360 }, // Wood
@@ -342,6 +344,7 @@ available for construction in resource mode.
   image="/images/buildings/construction/archery.png"
   buildingType={32}
   description={["Produces T2 Crossbowmen", "Only available in resource mode"]}
+  standardOnly={true}
   resourceCosts={[
     { resource: ResourcesIds.Labor, amount: 360 }, // Labor
     { resource: ResourcesIds.Wood, amount: 240 }, // Wood
@@ -356,6 +359,7 @@ available for construction in resource mode.
   image="/images/buildings/construction/archery.png"
   buildingType={33}
   description={["Produces T3 Crossbowmen", "Only available in resource mode"]}
+  standardOnly={true}
   resourceCosts={[
     { resource: ResourcesIds.Labor, amount: 540 }, // Labor
     { resource: ResourcesIds.Wood, amount: 360 }, // Wood
@@ -395,6 +399,7 @@ available for construction in resource mode.
   image="/images/buildings/construction/stable.png"
   buildingType={35}
   description={["Produces T2 Paladins", "Only available in resource mode"]}
+  standardOnly={true}
   resourceCosts={[
     { resource: ResourcesIds.Labor, amount: 360 }, // Labor
     { resource: ResourcesIds.Wood, amount: 240 }, // Wood
@@ -409,6 +414,7 @@ available for construction in resource mode.
   image="/images/buildings/construction/stable.png" 
   buildingType={36} 
   description={["Produces T3 Paladins", "Only available in resource mode"]}
+  standardOnly={true}
   resourceCosts={[
     { resource: ResourcesIds.Labor, amount: 540 }, // Labor
     { resource: ResourcesIds.Wood, amount: 360 }, // Wood

@@ -42,7 +42,7 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
       <thead style={table.tableHead}>
         <tr>
           <th style={table.headerCell}>Resource</th>
-          <th style={table.headerCell}>Amount</th>
+          <th style={{ ...table.headerCell, textAlign: "center" }}>Amount</th>
         </tr>
       </thead>
       <tbody>
@@ -53,7 +53,7 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
               Wheat
             </div>
           </td>
-          <td style={table.cell}>500</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>500</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -62,7 +62,7 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
               Labor
             </div>
           </td>
-          <td style={table.cell}>2,500</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>2,500</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
@@ -71,7 +71,7 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
               Donkeys
             </div>
           </td>
-          <td style={table.cell}>200</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>200</td>
         </tr>
       </tbody>
     </table>

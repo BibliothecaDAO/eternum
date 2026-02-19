@@ -1,8 +1,8 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { findResourceById } from "@/utils/resources";
 import { RealmLevels } from "@bibliothecadao/types";
-import ResourceIcon from "./ResourceIcon";
-import { colors, formatAmount } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { colors, formatAmount } from "../styles";
 
 type Props = {
   level: RealmLevels;

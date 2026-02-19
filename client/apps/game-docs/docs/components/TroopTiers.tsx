@@ -110,6 +110,7 @@ export const TroopTiers = () => {
       margin: 0,
       fontSize: "1rem",
       textAlign: "center" as const,
+      fontFamily: "'Exo 2', sans-serif",
     },
     troopImageContainerStyle: {
       width: "100%",
@@ -118,7 +119,7 @@ export const TroopTiers = () => {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(20, 15, 10, 0.5)",
+      backgroundColor: "rgba(30, 32, 48, 0.6)",
     },
     troopImageStyle: {
       width: "100%",
@@ -172,7 +173,7 @@ export const TroopTiers = () => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = "none";
                           target.parentElement!.innerHTML = `
-                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(20, 15, 10, 0.5); color: #dfc296; flex-direction: column; padding: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(30, 32, 48, 0.6); color: #c9b06a; flex-direction: column; padding: 8px;">
                               <div>Image not available</div>
                               <div><code>${troopTypeTierImages(tier, type)}</code></div>
                             </div>
@@ -197,16 +198,14 @@ export const TroopTierDamageStats = () => {
       <div style={section.subtitle}>Troop Tier Stats</div>
 
       <div style={section.commonCard}>
-        <div style={section.commonHeader}>
-          <span>⚔️</span> Damage Comparison by Tier
-        </div>
+        <div style={section.accentedTitle}>Damage Comparison by Tier</div>
 
         <table style={table.compareTable}>
           <thead style={table.tableHead}>
             <tr>
               <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
-              <th style={table.tableHeaderCell}>Cumulative Damage Increase Over T1</th>
-              <th style={table.tableHeaderCell}>Difference Between Tiers</th>
+              <th style={{ ...table.tableHeaderCell, textAlign: "center" }}>Cumulative Damage Increase Over T1</th>
+              <th style={{ ...table.tableHeaderCell, textAlign: "center" }}>Difference Between Tiers</th>
             </tr>
           </thead>
           <tbody>
@@ -217,8 +216,8 @@ export const TroopTierDamageStats = () => {
                   Base
                 </div>
               </td>
-              <td style={table.tableCell}> N/A </td>
-              <td style={table.tableCell}> N/A </td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}> N/A </td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}> N/A </td>
             </tr>
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
@@ -226,8 +225,8 @@ export const TroopTierDamageStats = () => {
                   <span style={table.tierBadge}>T2</span>3 × T1
                 </div>
               </td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>300%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>300%</td>
             </tr>
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
@@ -235,8 +234,8 @@ export const TroopTierDamageStats = () => {
                   <span style={table.tierBadge}>T3</span>3 × T2 (9 × T1)
                 </div>
               </td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>900%</td>
-              <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>900%</td>
+              <td style={{ ...table.tableCell, textAlign: "center" }}>300%</td>
             </tr>
           </tbody>
         </table>

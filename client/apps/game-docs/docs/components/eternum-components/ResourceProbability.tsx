@@ -1,5 +1,5 @@
-import ResourceIcon from "./ResourceIcon";
-import { colors, section } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { colors, section } from "../styles";
 
 // Define a mapping from resource name to ID in the game-docs context
 const resourceNameToId: Record<string, number> = {
@@ -171,11 +171,11 @@ const ResourceProbability = () => {
       case "rare":
         return "#c19a49"; // bronze gold
       case "epic":
-        return "#d4af37"; // darker gold
+        return "#c4874a"; // darker gold
       case "legendary":
-        return "#e5c687"; // pale gold
+        return "#c9b06a"; // pale gold
       default:
-        return "#dfc296"; // light gold
+        return "#c9b06a"; // light gold
     }
   };
 

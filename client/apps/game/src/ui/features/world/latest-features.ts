@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-02-18",
+    title: "Smoother Worldmap Chunking",
+    description:
+      "World map chunk prefetching now follows camera direction more accurately and chunk cache sizing is more stable, reducing pop-in and traversal stutter during fast panning.",
+    type: "improvement",
+  },
+  {
     date: "2026-02-17",
     title: "Game Review for Ended Worlds",
     description:

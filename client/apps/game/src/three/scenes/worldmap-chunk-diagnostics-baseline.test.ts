@@ -23,12 +23,15 @@ describe("sanitizeChunkDiagnosticsBaselineLabel", () => {
 });
 
 describe("snapshotChunkDiagnostics", () => {
-  it("returns a shallow clone disconnected from future mutations", () => {
+  it("returns a clone disconnected from future mutations", () => {
     const diagnostics = createWorldmapChunkDiagnostics();
+    diagnostics.switchDurationMsSamples.push(12);
     const snapshot = snapshotChunkDiagnostics(diagnostics);
 
     diagnostics.transitionStarted = 5;
+    diagnostics.switchDurationMsSamples.push(25);
     expect(snapshot.transitionStarted).toBe(0);
+    expect(snapshot.switchDurationMsSamples).toEqual([12]);
   });
 });
 
@@ -78,11 +81,13 @@ describe("captureChunkDiagnosticsBaseline", () => {
 
 describe("cloneChunkDiagnosticsBaselines", () => {
   it("clones entry objects and diagnostics payloads", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+    diagnostics.switchDurationMsSamples.push(9);
     const source: WorldmapChunkDiagnosticsBaselineEntry[] = [
       {
         label: "one",
         capturedAtMs: 1,
-        diagnostics: createWorldmapChunkDiagnostics(),
+        diagnostics,
       },
     ];
 
@@ -90,5 +95,6 @@ describe("cloneChunkDiagnosticsBaselines", () => {
     expect(cloned).toEqual(source);
     expect(cloned[0]).not.toBe(source[0]);
     expect(cloned[0].diagnostics).not.toBe(source[0].diagnostics);
+    expect(cloned[0].diagnostics.switchDurationMsSamples).not.toBe(source[0].diagnostics.switchDurationMsSamples);
   });
 });

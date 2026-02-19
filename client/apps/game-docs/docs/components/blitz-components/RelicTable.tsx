@@ -1,4 +1,4 @@
-import { colors, section, table } from "./styles";
+import { colors, section, table } from "../styles";
 
 const RELIC_DATA = [
   {
@@ -147,7 +147,7 @@ const componentStyles = {
   relicNameCell: {
     ...table.cell,
     fontWeight: 500,
-    color: colors.primary,
+    color: colors.text.light,
   },
   effectCell: {
     ...table.cell,
@@ -162,12 +162,12 @@ const componentStyles = {
   essenceCell: {
     ...table.cell,
     textAlign: "center" as const,
-    color: colors.secondary,
+    color: colors.text.light,
   },
   chanceCell: {
     ...table.cell,
     textAlign: "center" as const,
-    color: colors.secondary,
+    color: colors.text.light,
   },
 };
 

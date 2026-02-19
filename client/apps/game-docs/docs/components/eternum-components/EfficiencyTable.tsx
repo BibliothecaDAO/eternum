@@ -1,4 +1,4 @@
-import { colors, table } from "./styles";
+import { colors, table } from "../styles";
 
 export const EfficiencyTable = () => {
   const efficiencyData = [

@@ -1,4 +1,4 @@
-import { colors, table } from "./styles";
+import { colors, table } from "../styles";
 
 // Data from the Blitz Rewards Chest (Epoch 1, Series 0, items 12-22)
 const BLITZ_REWARDS_CHEST_ITEMS = [
@@ -61,7 +61,7 @@ const BLITZ_REWARDS_CHEST_ITEMS = [
     type: "Realm Skin",
     troopType: "N/A",
     drawChance: 10.98,
-    image: "",
+    image: "/images/nft-images/0x3021101.png",
   },
   {
     epochItemNumber: 18,
@@ -138,29 +138,33 @@ const componentStyles = {
     ...table.cell,
     color: colors.text.light,
     fontWeight: 500,
+    padding: "0.4rem 0.5rem",
   },
   itemImageCell: {
     ...table.cell,
-    width: "80px",
+    width: "90px",
     textAlign: "center" as const,
+    padding: "0.4rem 0.3rem",
   },
   itemImage: {
-    width: "48px",
-    height: "48px",
+    width: "72px",
+    height: "72px",
     objectFit: "contain" as const,
-    borderRadius: "0.25rem",
+    borderRadius: "0.35rem",
   },
   rarityCell: {
     ...table.cell,
     color: colors.secondary,
     fontWeight: 500,
+    padding: "0.4rem 0.5rem",
   },
   descriptionCell: {
     ...table.cell,
-    maxWidth: "300px",
+    maxWidth: "none",
     fontSize: "0.8rem",
     lineHeight: "1.4",
     color: colors.text.light,
+    padding: "0.4rem 0.5rem",
   },
   drawChanceCell: {
     ...table.cell,
@@ -182,14 +186,12 @@ const BlitzRewardsChestTable = () => {
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
-              <th style={table.headerCell}>#</th>
               <th style={table.headerCell}>Item Name</th>
               <th style={table.headerCell}></th>
               <th style={table.headerCell}>Rarity</th>
               <th style={table.headerCell}>Description</th>
               <th style={table.headerCell}>Type</th>
-              <th style={table.headerCell}>Troop Type</th>
-              <th style={table.headerCell}>Draw Chance (%)</th>
+              <th style={table.headerCell}>Draw Chance</th>
             </tr>
           </thead>
           <tbody>
@@ -198,7 +200,6 @@ const BlitzRewardsChestTable = () => {
 
               return (
                 <tr key={item.itemName}>
-                  <td style={componentStyles.epochCell}>{item.epochItemNumber}</td>
                   <td style={componentStyles.itemNameCell}>{item.itemName}</td>
                   <td style={componentStyles.itemImageCell}>
                     {item.image ? (
@@ -217,10 +218,10 @@ const BlitzRewardsChestTable = () => {
                   </td>
                   <td style={componentStyles.descriptionCell}>{item.description}</td>
                   <td style={table.cell}>
-                    <span style={{ color: colors.text.light }}>{item.type}</span>
-                  </td>
-                  <td style={table.cell}>
-                    <span style={{ color: colors.text.light }}>{item.troopType}</span>
+                    <span style={{ color: colors.text.light }}>
+                      {item.type}
+                      {item.troopType !== "N/A" ? ` (${item.troopType})` : ""}
+                    </span>
                   </td>
                   <td style={componentStyles.drawChanceCell}>{item.drawChance}%</td>
                 </tr>
