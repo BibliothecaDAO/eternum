@@ -68,24 +68,27 @@ describe("deriveDirectionalPrefetchChunkKeys", () => {
   ];
   const invalidChunkKeys = ["", "bad-key", "0", "0,", ",0", "1,2,3", "Infinity,0", "NaN,0"];
 
-  it.each(directionalCases)("derives axis-correct forward band for $label", async ({ movementAxis, movementSign, forwardChunkKey }) => {
-    const directionalPolicy = await loadDirectionalPolicyModule();
-    expect(typeof directionalPolicy.deriveDirectionalPrefetchChunkKeys).toBe("function");
-    const deriveDirectionalPrefetchChunkKeys = directionalPolicy.deriveDirectionalPrefetchChunkKeys as (
-      input: DirectionalPrefetchInput,
-    ) => string[];
+  it.each(directionalCases)(
+    "derives axis-correct forward band for $label",
+    async ({ movementAxis, movementSign, forwardChunkKey }) => {
+      const directionalPolicy = await loadDirectionalPolicyModule();
+      expect(typeof directionalPolicy.deriveDirectionalPrefetchChunkKeys).toBe("function");
+      const deriveDirectionalPrefetchChunkKeys = directionalPolicy.deriveDirectionalPrefetchChunkKeys as (
+        input: DirectionalPrefetchInput,
+      ) => string[];
 
-    const input: DirectionalPrefetchInput = {
-      ...baseConfig,
-      forwardChunkKey,
-      movementAxis,
-      movementSign,
-    };
+      const input: DirectionalPrefetchInput = {
+        ...baseConfig,
+        forwardChunkKey,
+        movementAxis,
+        movementSign,
+      };
 
-    const expected = buildExpectedDirectionalBand(input);
-    const actual = new Set(deriveDirectionalPrefetchChunkKeys(input));
-    expect(actual).toEqual(expected);
-  });
+      const expected = buildExpectedDirectionalBand(input);
+      const actual = new Set(deriveDirectionalPrefetchChunkKeys(input));
+      expect(actual).toEqual(expected);
+    },
+  );
 
   it.each(invalidChunkKeys)("rejects malformed forward chunk keys: %s", async (forwardChunkKey) => {
     const directionalPolicy = await loadDirectionalPolicyModule();

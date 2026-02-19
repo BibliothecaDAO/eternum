@@ -23,7 +23,8 @@ In scope:
 9. `client/apps/game/src/three/managers/structure-manager.ts`
 10. `client/apps/game/src/three/managers/chest-manager.ts`
 11. `client/apps/game/src/three/README.md`
-12. Chunking-focused tests under `client/apps/game/src/three/scenes`, `client/apps/game/src/three/managers`, and `client/apps/game/src/three/utils`.
+12. Chunking-focused tests under `client/apps/game/src/three/scenes`, `client/apps/game/src/three/managers`, and
+    `client/apps/game/src/three/utils`.
 
 Out of scope:
 
@@ -40,7 +41,8 @@ Evidence:
 
 1. Forward direction is computed by primary axis and sign in `client/apps/game/src/three/scenes/worldmap.tsx:2852`.
 2. Prefetch target expansion always adds positive row depth in `client/apps/game/src/three/scenes/worldmap.tsx:2886`.
-3. No dedicated tests found for directional prefetch geometry (no `prefetchDirectionalChunks`-targeted coverage in scene tests).
+3. No dedicated tests found for directional prefetch geometry (no `prefetchDirectionalChunks`-targeted coverage in scene
+   tests).
 
 Risk:
 
@@ -86,7 +88,8 @@ Evidence:
    1. `client/apps/game/src/three/managers/army-manager.ts:202`
    2. `client/apps/game/src/three/managers/structure-manager.ts:255`
    3. `client/apps/game/src/three/managers/chest-manager.ts:71`
-3. Biome instancing capacity is allocated once from initial size in `client/apps/game/src/three/scenes/hexagon-scene.ts:833`.
+3. Biome instancing capacity is allocated once from initial size in
+   `client/apps/game/src/three/scenes/hexagon-scene.ts:833`.
 
 Risk:
 
@@ -101,7 +104,8 @@ Evidence:
 2. Managers also call `beginFrame()` in:
    1. `client/apps/game/src/three/managers/army-manager.ts:1035`
    2. `client/apps/game/src/three/managers/structure-manager.ts:1060`
-3. Prior performance PR recorded side-path removal intent in `client/apps/game/src/three/docs/three-performance-prd.md:23`.
+3. Prior performance PR recorded side-path removal intent in
+   `client/apps/game/src/three/docs/three-performance-prd.md:23`.
 
 Risk:
 
@@ -112,9 +116,12 @@ Risk:
 
 Evidence:
 
-1. README states render window `64x64` in `client/apps/game/src/three/README.md:69`, but config is `48x48` in `client/apps/game/src/three/constants/world-chunk-config.ts:38`.
-2. README states `50ms` debounce in `client/apps/game/src/three/README.md:81`, runtime is `200ms` in `client/apps/game/src/three/scenes/worldmap.tsx:243`.
-3. Inline comment says `3x3 grid` in `client/apps/game/src/three/scenes/worldmap.tsx:4138`, runtime pins `5x5` via policy.
+1. README states render window `64x64` in `client/apps/game/src/three/README.md:69`, but config is `48x48` in
+   `client/apps/game/src/three/constants/world-chunk-config.ts:38`.
+2. README states `50ms` debounce in `client/apps/game/src/three/README.md:81`, runtime is `200ms` in
+   `client/apps/game/src/three/scenes/worldmap.tsx:243`.
+3. Inline comment says `3x3 grid` in `client/apps/game/src/three/scenes/worldmap.tsx:4138`, runtime pins `5x5` via
+   policy.
 
 Risk:
 
@@ -125,8 +132,10 @@ Risk:
 Evidence:
 
 1. Unused helper in `client/apps/game/src/three/scenes/worldmap.tsx:2786`.
-2. Non-exact token helper remains exported but unused in runtime (`client/apps/game/src/three/scenes/worldmap-chunk-transition.ts:152`).
-3. Chunk key parsing in `client/apps/game/src/three/scenes/worldmap-chunk-bounds.ts:15` does not validate malformed keys.
+2. Non-exact token helper remains exported but unused in runtime
+   (`client/apps/game/src/three/scenes/worldmap-chunk-transition.ts:152`).
+3. Chunk key parsing in `client/apps/game/src/three/scenes/worldmap-chunk-bounds.ts:15` does not validate malformed
+   keys.
 
 Risk:
 
@@ -143,24 +152,24 @@ Risk:
 
 ## Functional Requirements
 
-| ID   | Requirement                                                                                  | Priority |
-| ---- | -------------------------------------------------------------------------------------------- | -------- |
+| ID   | Requirement                                                                                      | Priority |
+| ---- | ------------------------------------------------------------------------------------------------ | -------- |
 | FR-1 | Directional prefetch target derivation is deterministic and axis-correct for all pan directions. | P0       |
-| FR-2 | A single typed policy contract drives all runtime chunking/prefetch/torii constants.       | P0       |
-| FR-3 | Matrix cache budget is guaranteed to be >= pinned neighborhood floor (plus defined slack).  | P0       |
-| FR-4 | Render-size debug controls cannot desync scene and manager chunk visibility assumptions.     | P1       |
-| FR-5 | Visibility frame advancement has one authoritative owner per render frame.                   | P1       |
-| FR-6 | Chunking docs/comments reflect actual runtime constants and semantics.                       | P2       |
-| FR-7 | Dead/ambiguous chunk helpers are removed or made explicit with input validation.            | P2       |
+| FR-2 | A single typed policy contract drives all runtime chunking/prefetch/torii constants.             | P0       |
+| FR-3 | Matrix cache budget is guaranteed to be >= pinned neighborhood floor (plus defined slack).       | P0       |
+| FR-4 | Render-size debug controls cannot desync scene and manager chunk visibility assumptions.         | P1       |
+| FR-5 | Visibility frame advancement has one authoritative owner per render frame.                       | P1       |
+| FR-6 | Chunking docs/comments reflect actual runtime constants and semantics.                           | P2       |
+| FR-7 | Dead/ambiguous chunk helpers are removed or made explicit with input validation.                 | P2       |
 
 ## Non-Functional Requirements
 
-| ID    | Requirement                                                                 | Priority |
-| ----- | --------------------------------------------------------------------------- | -------- |
-| NFR-1 | No chunk-switch p95 latency regression > 10% baseline.                     | P0       |
+| ID    | Requirement                                                                       | Priority |
+| ----- | --------------------------------------------------------------------------------- | -------- |
+| NFR-1 | No chunk-switch p95 latency regression > 10% baseline.                            | P0       |
 | NFR-2 | No increase in tile fetch volume due to off-axis prefetching under same pan path. | P0       |
-| NFR-3 | No persistent cache-pressure warnings during normal 5-minute traversal.     | P1       |
-| NFR-4 | Chunking-focused tests run deterministically in CI.                         | P0       |
+| NFR-3 | No persistent cache-pressure warnings during normal 5-minute traversal.           | P1       |
+| NFR-4 | Chunking-focused tests run deterministically in CI.                               | P0       |
 
 ## TDD Plan
 
@@ -271,30 +280,30 @@ Add/update:
 
 ### Milestone Status
 
-| Milestone | Status | Notes |
-| --------- | ------ | ----- |
+| Milestone | Status | Notes                                                                                                                               |
+| --------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
 | M0        | Done   | RED tests were added and used to drive implementation on directional prefetch, policy shape, cache floor, and chunk key validation. |
-| M1        | Done   | Policy expanded and adopted by runtime chunking call sites in worldmap scene. |
-| M2        | Done   | Directional prefetch extracted to pure helper and aligned by axis/sign. |
-| M3        | Done   | Matrix cache capacity now policy-derived (`pinned floor + slack`). |
-| M4        | Done   | Runtime render-size mutation removed; perf control is read-only fixed value. |
-| M5        | Done   | Manager-side `beginFrame()` ownership split removed, cleanup and docs updates landed. |
+| M1        | Done   | Policy expanded and adopted by runtime chunking call sites in worldmap scene.                                                       |
+| M2        | Done   | Directional prefetch extracted to pure helper and aligned by axis/sign.                                                             |
+| M3        | Done   | Matrix cache capacity now policy-derived (`pinned floor + slack`).                                                                  |
+| M4        | Done   | Runtime render-size mutation removed; perf control is read-only fixed value.                                                        |
+| M5        | Done   | Manager-side `beginFrame()` ownership split removed, cleanup and docs updates landed.                                               |
 
 ### Requirement Status
 
-| ID | Status | Evidence |
-| -- | ------ | -------- |
-| FR-1 | Done | `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.ts`, `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.test.ts` |
-| FR-2 | Done | `client/apps/game/src/three/scenes/worldmap-chunk-policy.ts`, `client/apps/game/src/three/scenes/worldmap.tsx` |
-| FR-3 | Done | `client/apps/game/src/three/scenes/worldmap-chunk-policy.ts`, `client/apps/game/src/three/scenes/worldmap.tsx` |
-| FR-4 | Done | `client/apps/game/src/three/scenes/worldmap-perf-simulation.ts`, `client/apps/game/src/three/scenes/worldmap-render-size-safety.test.ts` |
-| FR-5 | Done | `client/apps/game/src/three/scenes/hexagon-scene.ts`, `client/apps/game/src/three/scenes/worldmap-visibility-frame-ownership.test.ts` |
-| FR-6 | Done | `client/apps/game/src/three/README.md`, `client/apps/game/src/three/scenes/worldmap.tsx` |
-| FR-7 | Done | `client/apps/game/src/three/scenes/worldmap-chunk-bounds.ts`, `client/apps/game/src/three/scenes/worldmap-chunk-transition.ts`, `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.ts` |
-| NFR-1 | Pending validation (tooling ready) | p95 comparator implemented via `worldmap-chunk-latency-regression.ts` + `window.evaluateWorldmapChunkSwitchP95Regression(...)`; requires controlled baseline/current run data capture. |
+| ID    | Status                             | Evidence                                                                                                                                                                                                       |
+| ----- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-1  | Done                               | `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.ts`, `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.test.ts`                                                  |
+| FR-2  | Done                               | `client/apps/game/src/three/scenes/worldmap-chunk-policy.ts`, `client/apps/game/src/three/scenes/worldmap.tsx`                                                                                                 |
+| FR-3  | Done                               | `client/apps/game/src/three/scenes/worldmap-chunk-policy.ts`, `client/apps/game/src/three/scenes/worldmap.tsx`                                                                                                 |
+| FR-4  | Done                               | `client/apps/game/src/three/scenes/worldmap-perf-simulation.ts`, `client/apps/game/src/three/scenes/worldmap-render-size-safety.test.ts`                                                                       |
+| FR-5  | Done                               | `client/apps/game/src/three/scenes/hexagon-scene.ts`, `client/apps/game/src/three/scenes/worldmap-visibility-frame-ownership.test.ts`                                                                          |
+| FR-6  | Done                               | `client/apps/game/src/three/README.md`, `client/apps/game/src/three/scenes/worldmap.tsx`                                                                                                                       |
+| FR-7  | Done                               | `client/apps/game/src/three/scenes/worldmap-chunk-bounds.ts`, `client/apps/game/src/three/scenes/worldmap-chunk-transition.ts`, `client/apps/game/src/three/scenes/worldmap-directional-prefetch-policy.ts`    |
+| NFR-1 | Pending validation (tooling ready) | p95 comparator implemented via `worldmap-chunk-latency-regression.ts` + `window.evaluateWorldmapChunkSwitchP95Regression(...)`; requires controlled baseline/current run data capture.                         |
 | NFR-2 | Pending validation (tooling ready) | Fetch-volume comparator implemented via `worldmap-tile-fetch-volume-regression.ts` + `window.evaluateWorldmapTileFetchVolumeRegression(...)`; requires controlled identical-path baseline/current run capture. |
-| NFR-3 | Pending validation | Requires 5-minute traversal soak verifying no persistent cache-pressure warning pattern. |
-| NFR-4 | Pending CI run | Local deterministic test runs pass; CI pass still required for acceptance closure. |
+| NFR-3 | Pending validation                 | Requires 5-minute traversal soak verifying no persistent cache-pressure warning pattern.                                                                                                                       |
+| NFR-4 | Pending CI run                     | Local deterministic test runs pass; CI pass still required for acceptance closure.                                                                                                                             |
 
 ### What Is Left
 
@@ -322,4 +331,5 @@ Add/update:
 4. Capture baseline end: `window.captureWorldmapChunkBaseline?.("nfr2-baseline-end")`.
 5. In the comparison run on identical traversal path/hardware, evaluate:
    1. `window.evaluateWorldmapTileFetchVolumeRegression?.("nfr2-baseline-end", 0)`
-6. Mark `NFR-2` complete only when result status is `pass` (no fetch-volume increase) and artifact the diagnostics snapshot.
+6. Mark `NFR-2` complete only when result status is `pass` (no fetch-volume increase) and artifact the diagnostics
+   snapshot.
