@@ -33,9 +33,7 @@ export type ChunkSwitchP95RegressionResult =
   | ChunkSwitchP95RegressionPendingResult;
 
 function toSortedFiniteSamples(samples: number[]): number[] {
-  return samples
-    .filter((value) => Number.isFinite(value) && value >= 0)
-    .sort((a, b) => a - b);
+  return samples.filter((value) => Number.isFinite(value) && value >= 0).sort((a, b) => a - b);
 }
 
 function getNearestRankPercentile(sortedValues: number[], percentile: number): number | null {

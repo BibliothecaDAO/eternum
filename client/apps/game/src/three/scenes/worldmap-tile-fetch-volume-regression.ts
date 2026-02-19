@@ -22,9 +22,7 @@ interface TileFetchVolumeRegressionFailResult extends TileFetchVolumeRegressionB
   reason: string;
 }
 
-export type TileFetchVolumeRegressionResult =
-  | TileFetchVolumeRegressionPassResult
-  | TileFetchVolumeRegressionFailResult;
+export type TileFetchVolumeRegressionResult = TileFetchVolumeRegressionPassResult | TileFetchVolumeRegressionFailResult;
 
 export function evaluateTileFetchVolumeRegression(
   input: EvaluateTileFetchVolumeRegressionInput,

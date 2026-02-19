@@ -43,8 +43,7 @@ export function resolveChunkReversalRefreshDecision(
   }
 
   const shouldForceRefresh =
-    !!input.previousMovementVector &&
-    dx * input.previousMovementVector.x + dz * input.previousMovementVector.z < 0;
+    !!input.previousMovementVector && dx * input.previousMovementVector.x + dz * input.previousMovementVector.z < 0;
 
   return {
     shouldForceRefresh,
