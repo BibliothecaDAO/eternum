@@ -118,8 +118,8 @@ export const games: Game[] = [
     genre: ["Social", "Casual", "Strategy", "PVP"],
     description:
       'Kill or be killed — not just a game, but a showdown of souls. Challenge a friend or a foe in an atmospheric, on-chain duel where every choice, bluff, and bullet is forever etched in the blockchain. Pick your cards. Choose your moment. Fire… or don\'t! Each duel tells a story — make yours legendary.',
-    status: "mainnet",
-    isLive: true,
+    status: "development",
+    isLive: false,
     studio: "Underware",
     links: {
       homepage: "https://pistols.gg",
