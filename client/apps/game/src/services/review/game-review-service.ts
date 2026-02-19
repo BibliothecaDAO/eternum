@@ -609,7 +609,7 @@ interface FinalizeGameReviewResult {
   totalPlayers: number;
 }
 
-export interface ClaimGameReviewRewardsResult {
+interface ClaimGameReviewRewardsResult {
   claimed: boolean;
   playerAddress: string;
 }
