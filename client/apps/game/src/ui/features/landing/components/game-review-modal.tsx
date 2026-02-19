@@ -1,21 +1,25 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { finalizeGameRankingAndMMR, type GameReviewData } from "@/services/review/game-review-service";
-import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
+import {
+  claimGameReviewRewards,
+  finalizeGameRankingAndMMR,
+  type GameReviewData,
+} from "@/services/review/game-review-service";
+import { Button } from "@/ui/design-system/atoms";
 import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
-import { Button } from "@/ui/design-system/atoms";
+import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
-import { ArrowLeft, ArrowRight, Copy, Loader2, Share2, Shield, X } from "lucide-react";
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, Shield, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
 import { ScoreCardContent } from "./score-card-modal";
 
-type ReviewStepId = "stats" | "leaderboard" | "personal" | "finalize" | "next-game";
+type ReviewStepId = "finished" | "personal" | "stats" | "leaderboard" | "submit-score" | "claim-rewards" | "next-game";
 
 interface GameReviewModalProps {
   isOpen: boolean;
@@ -23,7 +27,6 @@ interface GameReviewModalProps {
   nextGame: GameData | null;
   showUpcomingGamesStep?: boolean;
   onClose: () => void;
-  onReturnHome: () => void;
   onRegistrationComplete: () => void;
   onRequireSignIn: () => void;
 }
@@ -40,11 +43,13 @@ const CARD_PREVIEW_STYLE: CSSProperties = {
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
 
 const STEP_LABELS: Record<ReviewStepId, string> = {
-  stats: "Game Stats",
-  leaderboard: "Final Leaderboard",
-  personal: "Personal Score",
-  finalize: "Finalize Results",
-  "next-game": "Upcoming Games",
+  finished: "Game Finished",
+  personal: "Personal Score Card",
+  stats: "Global Stats",
+  leaderboard: "Global Leaderboard",
+  "submit-score": "Submit Score + MMR",
+  "claim-rewards": "Claim Rewards",
+  "next-game": "Next Deployed Games Calendar",
 };
 
 const buildStepShareMessage = ({
@@ -103,81 +108,192 @@ const buildStepShareMessage = ({
   return [`${worldLabel} review is complete.`, "#Realms #Eternum"].join("\n");
 };
 
-const FinalizeStep = ({
+const getMmrStatus = (data: GameReviewData): string => {
+  if (!data.finalization.mmrEnabled) return "MMR is disabled for this world.";
+  if (data.finalization.mmrCommitted) return "MMR has already been committed.";
+  if (!data.finalization.mmrTokenAddress) return "MMR token is not configured.";
+  if (data.finalization.registeredPlayers.length < data.finalization.mmrMinPlayers) {
+    return `MMR unavailable: requires at least ${data.finalization.mmrMinPlayers} players.`;
+  }
+  return "MMR is eligible and will be submitted with score finalization.";
+};
+
+const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
+  const winner = data.topPlayers[0];
+  const winnerLabel = winner ? winner.displayName?.trim() || displayAddress(winner.address) : "No winner available yet";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-gold">
+        <Flag className="h-4 w-4" />
+        <h3 className="font-serif text-xl">Game Is Finished</h3>
+      </div>
+      <p className="text-xs uppercase tracking-wider text-gold/60">World: {data.worldName}</p>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Winner</p>
+          <p className="mt-1 text-sm text-white">{winnerLabel}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Registered Players</p>
+          <p className="mt-1 text-sm text-white">{formatValue(data.stats.numberOfPlayers)}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Total Transactions</p>
+          <p className="mt-1 text-sm text-white">{formatValue(data.stats.totalTransactions)}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SubmitScoreStep = ({
   data,
-  isFinalizing,
-  onFinalize,
-  onReturnHome,
   hasSigner,
+  isSubmitting,
+  onSubmit,
+  onRequireSignIn,
 }: {
   data: GameReviewData;
-  isFinalizing: boolean;
-  onFinalize: () => void;
-  onReturnHome: () => void;
   hasSigner: boolean;
+  isSubmitting: boolean;
+  onSubmit: () => void;
+  onRequireSignIn: () => void;
 }) => {
-  const mmrNeedsSubmission =
-    data.finalization.mmrEnabled &&
-    Boolean(data.finalization.mmrTokenAddress) &&
-    !data.finalization.mmrCommitted &&
-    data.finalization.registeredPlayers.length >= data.finalization.mmrMinPlayers;
-
-  const rankingNeedsSubmission = !data.finalization.rankingFinalized;
-  const canSubmitAnything = rankingNeedsSubmission || mmrNeedsSubmission;
+  const scoreSubmitted = data.finalization.rankingFinalized;
+  const canSubmitScore = !scoreSubmitted;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
         <Shield className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Finalize Ranking & Save MMR</h3>
+        <h3 className="font-serif text-xl">Submit Score (+ MMR if Eligible)</h3>
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Ranking Status</p>
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Score Submission Status</p>
           <p className="mt-1 text-sm text-white">
-            {data.finalization.rankingFinalized
-              ? "Final ranking is already published."
-              : "Ranking submission is pending."}
+            {scoreSubmitted ? "Score is already submitted and finalized." : "Score submission is pending."}
           </p>
         </div>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">MMR Status</p>
-          <p className="mt-1 text-sm text-white">
-            {!data.finalization.mmrEnabled
-              ? "MMR is disabled for this world."
-              : data.finalization.mmrCommitted
-                ? "MMR has already been committed."
-                : data.finalization.registeredPlayers.length < data.finalization.mmrMinPlayers
-                  ? `Needs at least ${data.finalization.mmrMinPlayers} players.`
-                  : !data.finalization.mmrTokenAddress
-                    ? "MMR token is not configured."
-                    : "MMR submission is pending."}
-          </p>
+          <p className="mt-1 text-sm text-white">{getMmrStatus(data)}</p>
         </div>
       </div>
 
-      {!hasSigner && (
+      {!hasSigner && canSubmitScore && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
-          Connect a wallet to finalize ranking and MMR.
+          Connect a wallet to submit score.
         </div>
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
-          onClick={canSubmitAnything ? onFinalize : onReturnHome}
+          onClick={hasSigner ? onSubmit : onRequireSignIn}
           variant="gold"
           className="w-full justify-center !px-4 !py-2.5"
           forceUppercase={false}
-          isLoading={isFinalizing}
-          disabled={isFinalizing || (canSubmitAnything && !hasSigner)}
+          isLoading={isSubmitting}
+          disabled={isSubmitting || scoreSubmitted || !hasSigner}
         >
-          {isFinalizing
-            ? "Submitting..."
-            : canSubmitAnything
-              ? "Finalize ranking & save MMR then go home"
-              : "Return Home"}
+          {isSubmitting ? "Submitting..." : scoreSubmitted ? "Score already submitted" : "Submit score now"}
+        </Button>
+      </div>
+
+      <div className="rounded-xl border border-gold/20 bg-dark/80 p-3 text-sm text-gold/75">
+        Reward claiming only requires score submission. MMR is only saved if there's a minimum of 6 players.
+      </div>
+    </div>
+  );
+};
+
+const ClaimRewardsStep = ({
+  data,
+  hasSigner,
+  isClaiming,
+  onClaim,
+  onRequireSignIn,
+}: {
+  data: GameReviewData;
+  hasSigner: boolean;
+  isClaiming: boolean;
+  onClaim: () => void;
+  onRequireSignIn: () => void;
+}) => {
+  const rewards = data.rewards;
+  const scoreSubmitted = rewards?.scoreSubmitted ?? data.finalization.rankingFinalized;
+  const alreadyClaimed = rewards?.alreadyClaimed ?? false;
+  const canClaimNow = rewards?.canClaimNow ?? false;
+  const claimBlockedReason = rewards?.claimBlockedReason;
+  const lordsWon = rewards?.lordsWonFormatted ?? "0";
+  const chestsClaimedEstimate = rewards?.chestsClaimedEstimate ?? 0;
+  const chestsClaimedReason = rewards?.chestsClaimedReason ?? "No chest estimate available.";
+  const eliteTicketEarned = rewards?.eliteTicketEarned ? 1 : 0;
+  const eliteTicketReason =
+    rewards?.eliteTicketReason ??
+    "Elite ticket eligibility is available once score is submitted and final ranking is available.";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-gold">
+        <Gift className="h-4 w-4" />
+        <h3 className="font-serif text-xl">Claim Rewards</h3>
+      </div>
+      <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">$LORDS won</p>
+          <p className="mt-1 text-sm text-white">{lordsWon}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests claimed</p>
+          <p className="mt-1 text-sm text-white">{formatValue(chestsClaimedEstimate)}</p>
+          <p className="mt-1 text-xs text-gold/70">{chestsClaimedReason}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Elite ticket earned</p>
+          <p className="mt-1 text-sm text-white">{eliteTicketEarned}</p>
+          <p className="mt-1 text-xs text-gold/70">{eliteTicketReason}</p>
+        </div>
+      </div>
+
+      {!scoreSubmitted && (
+        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+          Submit score first to unlock reward claiming.
+        </div>
+      )}
+
+      {claimBlockedReason && scoreSubmitted && !alreadyClaimed && (
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3 text-sm text-gold/75">{claimBlockedReason}</div>
+      )}
+
+      {alreadyClaimed && (
+        <div className="rounded-xl border border-brilliance/40 bg-brilliance/10 p-3 text-sm text-brilliance">
+          Rewards already claimed.
+        </div>
+      )}
+
+      {!hasSigner && (
+        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+          Connect a wallet to claim rewards.
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          onClick={hasSigner ? onClaim : onRequireSignIn}
+          variant="gold"
+          className="w-full justify-center !px-4 !py-2.5"
+          forceUppercase={false}
+          isLoading={isClaiming}
+          disabled={isClaiming || !canClaimNow || !hasSigner}
+        >
+          {isClaiming ? "Claiming..." : alreadyClaimed ? "Rewards claimed" : "Claim rewards"}
         </Button>
       </div>
     </div>
@@ -194,7 +310,7 @@ const UpcomingGamesStep = ({
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h3 className="font-serif text-xl text-gold">Upcoming Games</h3>
+        <h3 className="font-serif text-xl text-gold">Next Deployed Games Calendar</h3>
         <p className="text-xs uppercase tracking-wider text-gold/60">Finished Game: {worldName}</p>
       </div>
 
@@ -219,9 +335,8 @@ export const GameReviewModal = ({
   isOpen,
   world,
   nextGame,
-  showUpcomingGamesStep = false,
+  showUpcomingGamesStep = true,
   onClose,
-  onReturnHome,
   onRegistrationComplete,
   onRequireSignIn,
 }: GameReviewModalProps) => {
@@ -239,6 +354,7 @@ export const GameReviewModal = ({
 
   const queryClient = useQueryClient();
   const [stepIndex, setStepIndex] = useState(0);
+  const [frozenSnapshot, setFrozenSnapshot] = useState<Pick<GameReviewData, "stats" | "topPlayers"> | null>(null);
   const captureRef = useRef<HTMLDivElement | null>(null);
   const [isCopying, setIsCopying] = useState(false);
 
@@ -253,21 +369,14 @@ export const GameReviewModal = ({
   }, [accountName, data?.personalScore, account?.address]);
 
   const steps = useMemo<ReviewStepId[]>(() => {
-    if (!data) return ["stats", "leaderboard", "finalize"];
-
-    const ordered: ReviewStepId[] = ["stats", "leaderboard"];
-    if (data.isParticipant) {
-      ordered.push("personal");
-    }
-    ordered.push("finalize");
+    const ordered: ReviewStepId[] = ["finished", "personal", "stats", "leaderboard", "submit-score", "claim-rewards"];
     if (showUpcomingGamesStep) {
       ordered.push("next-game");
     }
-
     return ordered;
-  }, [data, showUpcomingGamesStep]);
+  }, [showUpcomingGamesStep]);
 
-  const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "stats";
+  const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "finished";
   const currentStepLabel = STEP_LABELS[currentStep];
   const isStepShareable = useMemo(() => {
     if (currentStep === "stats" || currentStep === "leaderboard") {
@@ -281,10 +390,54 @@ export const GameReviewModal = ({
     return false;
   }, [currentStep, data?.personalScore]);
 
+  const reviewData = useMemo<GameReviewData | null>(() => {
+    if (!data) return null;
+    if (!frozenSnapshot) return data;
+    return {
+      ...data,
+      stats: frozenSnapshot.stats,
+      topPlayers: frozenSnapshot.topPlayers,
+    };
+  }, [data, frozenSnapshot]);
+
+  const canProceedToNextStep = useMemo(() => {
+    if (!reviewData) return true;
+    if (currentStep === "submit-score") {
+      return reviewData.finalization.rankingFinalized;
+    }
+    if (currentStep === "claim-rewards") {
+      if (!reviewData.rewards) return true;
+      return Boolean(reviewData.rewards.alreadyClaimed) || Boolean(reviewData.rewards.canProceedWithoutClaim);
+    }
+    return true;
+  }, [currentStep, reviewData]);
+
+  const nextStepBlockedReason = useMemo(() => {
+    if (!reviewData) return null;
+    if (currentStep === "submit-score" && !reviewData.finalization.rankingFinalized) {
+      return "Submit score before continuing.";
+    }
+    if (
+      currentStep === "claim-rewards" &&
+      reviewData.rewards &&
+      !reviewData.rewards?.alreadyClaimed &&
+      !reviewData.rewards?.canProceedWithoutClaim
+    ) {
+      return "Claim rewards before continuing.";
+    }
+    return null;
+  }, [currentStep, reviewData]);
+
   useEffect(() => {
     if (!isOpen) return;
     setStepIndex(0);
+    setFrozenSnapshot(null);
   }, [isOpen, worldName, worldChain]);
+
+  useEffect(() => {
+    if (!isOpen || !data) return;
+    setFrozenSnapshot((previous) => previous ?? { stats: data.stats, topPlayers: data.topPlayers });
+  }, [data, isOpen]);
 
   useEffect(() => {
     if (stepIndex < steps.length) return;
@@ -304,19 +457,44 @@ export const GameReviewModal = ({
       });
     },
     onSuccess: async (result) => {
-      toast.success("Ranking/MMR submission completed.", {
-        description: `${result.totalPlayers} players processed. Returning to home.`,
+      toast.success("Score submission completed.", {
+        description: result.mmrSubmitted
+          ? `${result.totalPlayers} players processed. MMR committed.`
+          : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
       });
       await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
-      onReturnHome();
+      setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
     },
     onError: (caughtError) => {
-      console.error("Failed to finalize ranking/MMR", caughtError);
-      toast.error("Failed to finalize ranking or MMR.");
+      console.error("Failed to submit score/MMR", caughtError);
+      toast.error("Failed to submit score or MMR.");
     },
   });
 
-  const handleFinalize = useCallback(() => {
+  const claimRewardsMutation = useMutation({
+    mutationFn: async () => {
+      if (!worldName || !worldChain || !account?.address || !account) {
+        throw new Error("Missing world selection or signer.");
+      }
+
+      return claimGameReviewRewards({
+        worldName,
+        chain: worldChain,
+        signer: account,
+        playerAddress: account.address,
+      });
+    },
+    onSuccess: async () => {
+      toast.success("Rewards claimed.");
+      await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
+    },
+    onError: (caughtError) => {
+      console.error("Failed to claim rewards", caughtError);
+      toast.error("Failed to claim rewards.");
+    },
+  });
+
+  const handleSubmitScore = useCallback(() => {
     if (!account) {
       onRequireSignIn();
       return;
@@ -324,6 +502,14 @@ export const GameReviewModal = ({
 
     finalizeMutation.mutate();
   }, [account, finalizeMutation, onRequireSignIn]);
+
+  const handleClaimRewards = useCallback(() => {
+    if (!account) {
+      onRequireSignIn();
+      return;
+    }
+    claimRewardsMutation.mutate();
+  }, [account, claimRewardsMutation, onRequireSignIn]);
 
   const handleCopyStep = useCallback(async () => {
     if (!isStepShareable || !captureRef.current) return;
@@ -412,13 +598,13 @@ export const GameReviewModal = ({
   }, [isStepShareable]);
 
   const shareMessage = useMemo(() => {
-    if (!data || !isStepShareable) return "";
+    if (!reviewData || !isStepShareable) return "";
     return buildStepShareMessage({
       step: currentStep,
-      data,
+      data: reviewData,
       nextGame,
     });
-  }, [currentStep, data, isStepShareable, nextGame]);
+  }, [currentStep, reviewData, isStepShareable, nextGame]);
 
   const handleShareOnX = useCallback(() => {
     if (!shareMessage) return;
@@ -429,13 +615,20 @@ export const GameReviewModal = ({
   }, [shareMessage]);
 
   const handleNextStep = useCallback(() => {
+    if (!canProceedToNextStep) {
+      if (nextStepBlockedReason) {
+        toast.error(nextStepBlockedReason);
+      }
+      return;
+    }
+
     if (stepIndex >= steps.length - 1) {
       onClose();
       return;
     }
 
     setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
-  }, [onClose, stepIndex, steps.length]);
+  }, [canProceedToNextStep, nextStepBlockedReason, onClose, stepIndex, steps.length]);
 
   const handlePrevStep = useCallback(() => {
     setStepIndex((prev) => Math.max(0, prev - 1));
@@ -494,7 +687,7 @@ export const GameReviewModal = ({
               <Loader2 className="h-10 w-10 animate-spin text-gold" />
               <p className="mt-3 text-sm text-gold/70">Loading game review...</p>
             </div>
-          ) : error || !data ? (
+          ) : error || !reviewData ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-center">
               <div className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2 text-sm text-lightest">
                 Failed to load game review data.
@@ -508,26 +701,16 @@ export const GameReviewModal = ({
               key={currentStep}
               className="endgame-step-enter rounded-xl border border-gold/20 bg-black/20 p-3 sm:p-4"
             >
-              {currentStep === "stats" && (
-                <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                  <BlitzGameStatsCardWithSelector worldName={data.worldName} stats={data.stats} player={cardPlayer} />
-                </div>
-              )}
-
-              {currentStep === "leaderboard" && (
-                <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                  <BlitzLeaderboardCardWithSelector
-                    worldName={data.worldName}
-                    topPlayers={data.topPlayers}
-                    player={cardPlayer}
-                  />
-                </div>
-              )}
+              {currentStep === "finished" && <GameFinishedStep data={reviewData} />}
 
               {currentStep === "personal" &&
-                (data.personalScore ? (
+                (reviewData.personalScore ? (
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <ScoreCardContent worldName={data.worldName} playerEntry={data.personalScore} showActions={false} />
+                    <ScoreCardContent
+                      worldName={reviewData.worldName}
+                      playerEntry={reviewData.personalScore}
+                      showActions={false}
+                    />
                   </div>
                 ) : (
                   <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
@@ -535,20 +718,52 @@ export const GameReviewModal = ({
                   </div>
                 ))}
 
-              {currentStep === "finalize" && (
-                <div className="space-y-4">
-                  <FinalizeStep
-                    data={data}
-                    hasSigner={Boolean(account)}
-                    isFinalizing={finalizeMutation.isPending}
-                    onFinalize={handleFinalize}
-                    onReturnHome={onReturnHome}
-                  />
+              {currentStep === "stats" && (
+                <div className="space-y-3">
+                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                    <BlitzGameStatsCardWithSelector
+                      worldName={reviewData.worldName}
+                      stats={reviewData.stats}
+                      player={cardPlayer}
+                    />
+                  </div>
                 </div>
               )}
 
+              {currentStep === "leaderboard" && (
+                <div className="space-y-3">
+                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                    <BlitzLeaderboardCardWithSelector
+                      worldName={reviewData.worldName}
+                      topPlayers={reviewData.topPlayers}
+                      player={cardPlayer}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "submit-score" && (
+                <SubmitScoreStep
+                  data={reviewData}
+                  hasSigner={Boolean(account)}
+                  isSubmitting={finalizeMutation.isPending}
+                  onSubmit={handleSubmitScore}
+                  onRequireSignIn={onRequireSignIn}
+                />
+              )}
+
+              {currentStep === "claim-rewards" && (
+                <ClaimRewardsStep
+                  data={reviewData}
+                  hasSigner={Boolean(account)}
+                  isClaiming={claimRewardsMutation.isPending}
+                  onClaim={handleClaimRewards}
+                  onRequireSignIn={onRequireSignIn}
+                />
+              )}
+
               {currentStep === "next-game" && showUpcomingGamesStep && (
-                <UpcomingGamesStep worldName={data.worldName} onRegistrationComplete={onRegistrationComplete} />
+                <UpcomingGamesStep worldName={reviewData.worldName} onRegistrationComplete={onRegistrationComplete} />
               )}
             </div>
           )}
@@ -572,7 +787,7 @@ export const GameReviewModal = ({
                 variant="gold"
                 className="gap-2 !px-3 !py-2 shadow-lg shadow-gold/20"
                 forceUppercase={false}
-                disabled={isLoading || Boolean(error)}
+                disabled={isLoading || Boolean(error) || !canProceedToNextStep}
               >
                 {stepIndex >= steps.length - 1 ? "Close" : "Next"}
                 <ArrowRight className="h-4 w-4" />

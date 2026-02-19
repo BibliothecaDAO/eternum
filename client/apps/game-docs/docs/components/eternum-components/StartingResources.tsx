@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { useState } from "react";
-import ResourceIcon from "./ResourceIcon";
-import { colors, formatNumber, resource, section } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { colors, formatNumber, resource, section } from "../styles";
 
 export enum StructureType {
   Village = "Village",

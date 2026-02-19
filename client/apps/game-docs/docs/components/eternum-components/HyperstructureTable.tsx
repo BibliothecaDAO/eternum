@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources } from "@bibliothecadao/types";
-import ResourceIcon from "./ResourceIcon";
-import { formatAmount, section, table } from "./styles";
+import ResourceIcon from "../ResourceIcon";
+import { formatAmount, section, table } from "../styles";
 
 export const HYPERSTRUCTURE_POINT_MULTIPLIER = 1_000_000;
 

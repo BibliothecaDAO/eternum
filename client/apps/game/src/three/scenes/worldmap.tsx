@@ -107,13 +107,13 @@ import {
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveControlsChangeChunkRefreshPlan,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
-  shouldForceChunkRefreshForZoomDistanceChange,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
   resolveHydratedChunkRefreshFlushPlan,
@@ -121,14 +121,21 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { deriveDirectionalPrefetchChunkKeys } from "./worldmap-directional-prefetch-policy";
+import {
+  createWorldmapZoomHardeningConfig,
+  evaluateChunkVisibilityAnomaly,
+  evaluateTerrainVisibilityAnomaly,
+  resetWorldmapZoomHardeningRuntimeState,
+} from "./worldmap-zoom-hardening";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
+import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle";
+import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
-  getRenderFetchBoundsForChunk as getCanonicalRenderFetchBoundsForChunk,
 } from "./worldmap-chunk-bounds";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
@@ -152,6 +159,14 @@ import {
   snapshotChunkDiagnostics as snapshotChunkDiagnosticsState,
   type WorldmapChunkDiagnosticsBaselineEntry,
 } from "./worldmap-chunk-diagnostics-baseline";
+import {
+  evaluateChunkSwitchP95Regression,
+  type ChunkSwitchP95RegressionResult,
+} from "./worldmap-chunk-latency-regression";
+import {
+  evaluateTileFetchVolumeRegression,
+  type TileFetchVolumeRegressionResult,
+} from "./worldmap-tile-fetch-volume-regression";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -169,6 +184,16 @@ type ToriiBoundsCounterKey =
   | "explorerTiles"
   | "explorerTroops";
 
+type WorldmapChunkSwitchP95RegressionDebugResult = {
+  baselineLabel: string | null;
+  result: ChunkSwitchP95RegressionResult;
+};
+
+type WorldmapTileFetchVolumeRegressionDebugResult = {
+  baselineLabel: string | null;
+  result: TileFetchVolumeRegressionResult;
+};
+
 type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkDiagnostics?: () => {
     diagnostics: WorldmapChunkDiagnostics;
@@ -180,6 +205,14 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   };
   resetWorldmapChunkDiagnostics?: () => void;
   captureWorldmapChunkBaseline?: (label?: string) => WorldmapChunkDiagnosticsBaselineEntry;
+  evaluateWorldmapChunkSwitchP95Regression?: (
+    baselineLabel?: string,
+    allowedRegressionFraction?: number,
+  ) => WorldmapChunkSwitchP95RegressionDebugResult;
+  evaluateWorldmapTileFetchVolumeRegression?: (
+    baselineLabel?: string,
+    allowedIncreaseFraction?: number,
+  ) => WorldmapTileFetchVolumeRegressionDebugResult;
 };
 
 const dummy = new Object3D();
@@ -201,6 +234,11 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
 const WORLDMAP_CHUNK_POLICY = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
+type DirectionalPrefetchAnchor = {
+  forwardChunkKey: string;
+  movementAxis: "x" | "z";
+  movementSign: -1 | 1;
+};
 
 export default class WorldmapScene extends HexagonScene {
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
@@ -212,6 +250,7 @@ export default class WorldmapScene extends HexagonScene {
   private chunkSize = this.chunkGeometry.size;
   private chunkSwitchPadding = WORLDMAP_CHUNK_POLICY.switchPadding;
   private lastChunkSwitchPosition?: Vector3;
+  private lastChunkSwitchMovement: { x: number; z: number } | null = null;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
@@ -220,7 +259,7 @@ export default class WorldmapScene extends HexagonScene {
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
   private activePrefetches = 0;
-  private readonly maxConcurrentPrefetches = WORLD_CHUNK_CONFIG.prefetch.maxConcurrent;
+  private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -240,14 +279,25 @@ export default class WorldmapScene extends HexagonScene {
   private chunkRefreshAppliedToken = 0;
   private chunkRefreshRunning = false;
   private chunkRefreshRerunRequested = false;
-  private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
+  private readonly chunkRefreshDebounceMs = 140;
   private lastControlsCameraDistance: number | null = null;
   private readonly zoomForceRefreshDistanceThreshold = 0.75;
   private zeroTerrainFrames = 0;
+  private lowTerrainFrames = 0;
+  private offscreenChunkFrames = 0;
+  private terrainReferenceInstances = 0;
+  private terrainReferenceChunkKey: string | null = null;
   private terrainRecoveryInFlight = false;
   private lastTerrainRecoveryAtMs = 0;
-  private readonly zeroTerrainFrameThreshold = 4;
-  private readonly terrainRecoveryCooldownMs = 3000;
+  private readonly zeroTerrainFrameThreshold = 3;
+  private readonly lowTerrainFrameThreshold = 3;
+  private readonly offscreenChunkFrameThreshold = 2;
+  private readonly minRetainedTerrainFraction = 0.45;
+  private readonly minReferenceTerrainInstances = 100;
+  private readonly terrainRecoveryCooldownMs = 1500;
+  private readonly minCachedTerrainCoverageFraction = 0.08;
+  private readonly minCachedExploredRetentionFraction = 0.6;
+  private readonly minExpectedExploredForCacheValidation = 48;
   private toriiLoadingCounter = 0;
   private isSwitchedOff = false;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
@@ -354,15 +404,15 @@ export default class WorldmapScene extends HexagonScene {
     this.updateCameraTargetHexThrottled?.();
 
     const nextCameraDistance = this.getCurrentCameraDistance();
-    const shouldForceRefresh = shouldForceChunkRefreshForZoomDistanceChange({
+    const refreshPlan = resolveControlsChangeChunkRefreshPlan({
       previousDistance: this.lastControlsCameraDistance,
       nextDistance: nextCameraDistance,
       threshold: this.zoomForceRefreshDistanceThreshold,
     });
     this.lastControlsCameraDistance = nextCameraDistance;
 
-    if (shouldForceRefresh) {
-      this.requestChunkRefresh(true);
+    if (refreshPlan.shouldRequestRefresh) {
+      this.requestChunkRefresh(refreshPlan.shouldForceRefresh);
     }
   };
   private isUrlChangedListenerAttached = false;
@@ -411,7 +461,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
-  private readonly maxMatrixCacheSize = 16;
+  private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
   private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
@@ -520,9 +570,6 @@ export default class WorldmapScene extends HexagonScene {
         this.simulateAllExplored = value;
       },
       getRenderChunkSize: () => this.renderChunkSize,
-      setRenderChunkSize: (width: number, height: number) => {
-        this.renderChunkSize = { width, height };
-      },
       requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
       hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
     });
@@ -2147,6 +2194,11 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
     this.zeroTerrainFrames = resetState.zeroTerrainFrames;
     this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
+    this.lowTerrainFrames = 0;
+    this.offscreenChunkFrames = 0;
+    this.terrainReferenceInstances = 0;
+    this.terrainReferenceChunkKey = null;
+    this.lastChunkSwitchMovement = null;
   }
 
   onSwitchOff() {
@@ -2772,19 +2824,35 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  private aggressivelyInvalidateChunkTerrainCaches(
+    centerChunkKey: string,
+    options?: { includeSurroundingChunks?: string[]; invalidateFetchAreas?: boolean },
+  ): void {
+    const targetChunkKeys = new Set<string>([centerChunkKey, ...this.getChunksAround(centerChunkKey)]);
+    options?.includeSurroundingChunks?.forEach((chunkKey) => targetChunkKeys.add(chunkKey));
+
+    targetChunkKeys.forEach((chunkKey) => {
+      const [chunkRow, chunkCol] = chunkKey.split(",").map(Number);
+      if (!Number.isFinite(chunkRow) || !Number.isFinite(chunkCol)) {
+        return;
+      }
+      this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+      if (options?.invalidateFetchAreas) {
+        this.fetchedChunks.delete(this.getRenderAreaKeyForChunk(chunkKey));
+      }
+    });
+  }
+
   /**
    * Derive a stable Torii render-area key for a chunk key.
    * Key by Torii "super-area" so overlapping render windows coalesce.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    return getCanonicalRenderAreaKeyForChunk(chunkKey, this.chunkSize, WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides);
-  }
-
-  /**
-   * Compute integer fetch bounds that fully cover the render area for a chunk key.
-   */
-  private getRenderFetchBounds(chunkKey: string): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
-    return getCanonicalRenderFetchBoundsForChunk(chunkKey, this.renderChunkSize, this.chunkSize);
+    return getCanonicalRenderAreaKeyForChunk(
+      chunkKey,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+    );
   }
 
   /**
@@ -2800,7 +2868,7 @@ export default class WorldmapScene extends HexagonScene {
       areaKey,
       this.renderChunkSize,
       this.chunkSize,
-      WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
     );
   }
 
@@ -2836,7 +2904,7 @@ export default class WorldmapScene extends HexagonScene {
   /**
    * Compute a forward chunk key based on camera movement to prefetch ahead.
    */
-  private getForwardChunkKey(focusPoint: Vector3): string | null {
+  private getDirectionalPrefetchAnchor(focusPoint: Vector3): DirectionalPrefetchAnchor | null {
     const anchor = this.lastChunkSwitchPosition;
     if (!anchor) {
       return null;
@@ -2854,42 +2922,46 @@ export default class WorldmapScene extends HexagonScene {
     if (stepSign === 0) {
       return null;
     }
+    const movementAxis: "x" | "z" = primaryAxisIsX ? "x" : "z";
+    const movementSign = stepSign > 0 ? 1 : -1;
 
     const strideWorldX = this.chunkSize * HEX_SIZE * Math.sqrt(3);
     const strideWorldZ = this.chunkSize * HEX_SIZE * 1.5;
 
-    const forwardOffsetStrides = WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides;
+    const forwardOffsetStrides = WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides;
     const aheadX = primaryAxisIsX ? focusPoint.x + stepSign * strideWorldX * forwardOffsetStrides : focusPoint.x;
     const aheadZ = primaryAxisIsX ? focusPoint.z : focusPoint.z + stepSign * strideWorldZ * forwardOffsetStrides;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(aheadX, aheadZ);
-    return `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+    return {
+      forwardChunkKey: `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`,
+      movementAxis,
+      movementSign,
+    };
   }
 
   /**
    * Prefetch the chunk in front of the camera to reduce pop-in.
    */
   private prefetchDirectionalChunks(focusPoint: Vector3) {
-    const forwardChunkKey = this.getForwardChunkKey(focusPoint);
-    if (!forwardChunkKey) {
+    const directionalAnchor = this.getDirectionalPrefetchAnchor(focusPoint);
+    if (!directionalAnchor) {
       this.directionalPrefetchAreaKeys.clear();
       this.pruneQueuedDirectionalPrefetches();
       return;
     }
 
-    const forwardRowCol = forwardChunkKey.split(",").map(Number);
-    const prefetchTargets = new Set<string>();
+    const prefetchTargets = new Set(
+      deriveDirectionalPrefetchChunkKeys({
+        forwardChunkKey: directionalAnchor.forwardChunkKey,
+        chunkSize: this.chunkSize,
+        forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
+        sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
+        movementAxis: directionalAnchor.movementAxis,
+        movementSign: directionalAnchor.movementSign,
+      }),
+    );
     const desiredAreaKeys = new Set<string>();
-
-    const { forwardDepthStrides, sideRadiusStrides } = WORLD_CHUNK_CONFIG.prefetch;
-    // Prefetch a band ahead centered on the forward chunk.
-    for (let dzStride = 0; dzStride <= forwardDepthStrides; dzStride++) {
-      for (let dxStride = -sideRadiusStrides; dxStride <= sideRadiusStrides; dxStride++) {
-        const row = forwardRowCol[0] + dzStride * this.chunkSize;
-        const col = forwardRowCol[1] + dxStride * this.chunkSize;
-        prefetchTargets.add(`${row},${col}`);
-      }
-    }
 
     prefetchTargets.forEach((chunkKey) => {
       // Skip if it's already pinned or current
@@ -3677,6 +3749,55 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private getRenderHexCapacity(): number {
+    return Math.max(1, this.renderChunkSize.width * this.renderChunkSize.height);
+  }
+
+  private shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances: number): boolean {
+    return shouldRejectCachedTerrainSnapshot({
+      totalCachedTerrainInstances,
+      renderHexCapacity: this.getRenderHexCapacity(),
+      minCoverageFraction: this.minCachedTerrainCoverageFraction,
+    });
+  }
+
+  private shouldRejectExploredTerrainCacheSnapshot(
+    cachedExploredTerrainInstances: number,
+    expectedExploredTerrainInstances: number,
+  ): boolean {
+    return shouldRejectCachedExploredTerrainSnapshot({
+      cachedExploredTerrainInstances,
+      expectedExploredTerrainInstances,
+      minRetentionFraction: this.minCachedExploredRetentionFraction,
+      minExpectedExploredInstances: this.minExpectedExploredForCacheValidation,
+    });
+  }
+
+  private isExploredBiomeCacheKey(biomeKey: string): boolean {
+    const normalizedKey = biomeKey.toLowerCase();
+    return normalizedKey !== "outline" && normalizedKey !== "none";
+  }
+
+  private getExpectedExploredTerrainInstances(startRow: number, startCol: number): number {
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    let expectedExploredTerrainInstances = 0;
+
+    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        if (isStructure) {
+          continue;
+        }
+
+        if (this.simulateAllExplored || this.exploredTiles.get(col)?.has(row)) {
+          expectedExploredTerrainInstances += 1;
+        }
+      }
+    }
+
+    return expectedExploredTerrainInstances;
+  }
+
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     if (!this.cachedMatrices.has(chunkKey)) {
@@ -3684,6 +3805,8 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const cachedChunk = this.cachedMatrices.get(chunkKey)!;
+    let totalCachedTerrainInstances = 0;
+    let cachedExploredTerrainInstances = 0;
 
     const { box, sphere } = this.computeChunkBounds(startRow, startCol);
     for (const [biome, model] of this.biomeModels) {
@@ -3694,6 +3817,10 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
       const { matrices, count } = model.getMatricesAndCount();
+      totalCachedTerrainInstances += count;
+      if (this.isExploredBiomeCacheKey(String(biome))) {
+        cachedExploredTerrainInstances += count;
+      }
       if (count === 0) {
         this.releaseInstancedAttribute(matrices);
         cachedChunk.set(biome, { matrices: null, count, landColors: null });
@@ -3709,6 +3836,31 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       cachedChunk.set(biome, { matrices, count, landColors });
+    }
+
+    const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+    if (
+      this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
+      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+    ) {
+      if (import.meta.env.DEV) {
+        console.warn("[CACHE] Rejecting suspicious terrain snapshot", {
+          chunkKey,
+          totalCachedTerrainInstances,
+          cachedExploredTerrainInstances,
+          expectedExploredTerrainInstances,
+          renderHexCapacity: this.getRenderHexCapacity(),
+          minCoverageFraction: this.minCachedTerrainCoverageFraction,
+          minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+        });
+      }
+      this.disposeCachedMatrices(chunkKey);
+      this.cachedMatrices.delete(chunkKey);
+      const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
+      if (existingIndex !== -1) {
+        this.cachedMatrixOrder.splice(existingIndex, 1);
+      }
+      return;
     }
 
     cachedChunk.set("__bounds__", {
@@ -3736,6 +3888,39 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      let totalCachedTerrainInstances = 0;
+      let cachedExploredTerrainInstances = 0;
+      for (const [biome, entry] of cachedMatrices) {
+        if (biome === "__bounds__") {
+          continue;
+        }
+        const count = Math.max(0, Math.floor(entry.count ?? 0));
+        totalCachedTerrainInstances += count;
+        if (this.isExploredBiomeCacheKey(biome)) {
+          cachedExploredTerrainInstances += count;
+        }
+      }
+
+      const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+      if (
+        this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
+        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+      ) {
+        if (import.meta.env.DEV) {
+          console.warn("[CACHE] Evicting suspicious cached terrain before apply", {
+            chunkKey,
+            totalCachedTerrainInstances,
+            cachedExploredTerrainInstances,
+            expectedExploredTerrainInstances,
+            renderHexCapacity: this.getRenderHexCapacity(),
+            minCoverageFraction: this.minCachedTerrainCoverageFraction,
+            minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+          });
+        }
+        this.removeCachedMatricesForChunk(startRow, startCol);
+        return false;
+      }
+
       const bounds = cachedMatrices.get("__bounds__");
       if (bounds?.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
         return false;
@@ -4113,6 +4298,24 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const oldChunk = this.currentChunk;
+    const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
+      previousSwitchPosition: this.lastChunkSwitchPosition
+        ? {
+            x: this.lastChunkSwitchPosition.x,
+            z: this.lastChunkSwitchPosition.z,
+          }
+        : null,
+      nextSwitchPosition: switchPosition
+        ? {
+            x: switchPosition.x,
+            z: switchPosition.z,
+          }
+        : null,
+      previousMovementVector: this.lastChunkSwitchMovement,
+      minMovementDistance: 0.001,
+    });
+    const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
+    const effectiveForce = force || shouldAggressiveReversalRefresh;
     const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
     const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
     const hasFiniteOldChunkCoordinates =
@@ -4128,15 +4331,20 @@ export default class WorldmapScene extends HexagonScene {
       this.applySceneChunkBounds(targetChunkBounds);
     }
 
-    // Kick off tile data fetch
-    const tileFetchPromise = this.computeTileEntities(chunkKey);
-
-    if (force) {
+    // Load surrounding pinned chunks for better UX.
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    if (shouldAggressiveReversalRefresh) {
+      this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
+        includeSurroundingChunks: surroundingChunks,
+        invalidateFetchAreas: true,
+      });
+    } else if (effectiveForce) {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Load surrounding chunks for better UX (3x3 grid)
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
+    const tileFetchPromise = this.computeTileEntities(chunkKey);
+
     this.updatePinnedChunks(surroundingChunks);
     const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
 
@@ -4197,7 +4405,7 @@ export default class WorldmapScene extends HexagonScene {
     this.visibilityManager?.forceUpdate();
 
     // Update all managers concurrently once shared prerequisites are ready
-    await this.updateManagersForChunk(chunkKey, { force, transitionToken });
+    await this.updateManagersForChunk(chunkKey, { force: effectiveForce, transitionToken });
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
 
     if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
@@ -4216,6 +4424,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (switchPosition) {
       this.lastChunkSwitchPosition = switchPosition;
+      this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
       this.hasChunkSwitchAnchor = true;
     }
   }
@@ -4227,10 +4436,12 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Start tile data fetch
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    this.removeCachedMatricesForChunk(startRow, startCol);
+
+    // Start tile data fetch after force invalidation.
     const tileFetchPromise = this.computeTileEntities(chunkKey);
 
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
     const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -4319,6 +4530,8 @@ export default class WorldmapScene extends HexagonScene {
       this.monitorTerrainVisibilityHealth();
     } else {
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
+      this.offscreenChunkFrames = 0;
     }
   }
 
@@ -4366,6 +4579,88 @@ export default class WorldmapScene extends HexagonScene {
     };
   }
 
+  private evaluateChunkSwitchP95RegressionAgainstBaseline(
+    baselineLabel?: string,
+    allowedRegressionFraction: number = 0.1,
+  ): WorldmapChunkSwitchP95RegressionDebugResult {
+    let selectedBaseline: WorldmapChunkDiagnosticsBaselineEntry | undefined;
+    if (baselineLabel) {
+      for (let i = this.chunkDiagnosticsBaselines.length - 1; i >= 0; i--) {
+        const candidate = this.chunkDiagnosticsBaselines[i];
+        if (candidate?.label === baselineLabel) {
+          selectedBaseline = candidate;
+          break;
+        }
+      }
+    } else {
+      selectedBaseline = this.chunkDiagnosticsBaselines[this.chunkDiagnosticsBaselines.length - 1];
+    }
+
+    if (!selectedBaseline) {
+      return {
+        baselineLabel: null,
+        result: {
+          status: "pending",
+          reason: "No baseline found. Capture one first with captureWorldmapChunkBaseline(label).",
+          baselineP95Ms: null,
+          currentP95Ms: null,
+          allowedRegressionFraction: Math.max(0, allowedRegressionFraction),
+          regressionFraction: null,
+        },
+      };
+    }
+
+    return {
+      baselineLabel: selectedBaseline.label,
+      result: evaluateChunkSwitchP95Regression({
+        baseline: selectedBaseline.diagnostics,
+        current: this.chunkDiagnostics,
+        allowedRegressionFraction,
+      }),
+    };
+  }
+
+  private evaluateTileFetchVolumeRegressionAgainstBaseline(
+    baselineLabel?: string,
+    allowedIncreaseFraction: number = 0,
+  ): WorldmapTileFetchVolumeRegressionDebugResult {
+    let selectedBaseline: WorldmapChunkDiagnosticsBaselineEntry | undefined;
+    if (baselineLabel) {
+      for (let i = this.chunkDiagnosticsBaselines.length - 1; i >= 0; i--) {
+        const candidate = this.chunkDiagnosticsBaselines[i];
+        if (candidate?.label === baselineLabel) {
+          selectedBaseline = candidate;
+          break;
+        }
+      }
+    } else {
+      selectedBaseline = this.chunkDiagnosticsBaselines[this.chunkDiagnosticsBaselines.length - 1];
+    }
+
+    if (!selectedBaseline) {
+      return {
+        baselineLabel: null,
+        result: {
+          status: "fail",
+          reason: "No baseline found. Capture one first with captureWorldmapChunkBaseline(label).",
+          baselineFetchCount: 0,
+          currentFetchCount: Math.max(0, Math.floor(this.chunkDiagnostics.tileFetchStarted)),
+          allowedIncreaseFraction: Math.max(0, allowedIncreaseFraction),
+          increaseFraction: Number.POSITIVE_INFINITY,
+        },
+      };
+    }
+
+    return {
+      baselineLabel: selectedBaseline.label,
+      result: evaluateTileFetchVolumeRegression({
+        baseline: selectedBaseline.diagnostics,
+        current: this.chunkDiagnostics,
+        allowedIncreaseFraction,
+      }),
+    };
+  }
+
   private installChunkDiagnosticsDebugHooks(): void {
     if (!import.meta.env.DEV) {
       return;
@@ -4375,6 +4670,14 @@ export default class WorldmapScene extends HexagonScene {
     debugWindow.getWorldmapChunkDiagnostics = () => this.getChunkDiagnosticsSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.captureWorldmapChunkBaseline = (label?: string) => this.captureChunkDiagnosticsBaseline(label);
+    debugWindow.evaluateWorldmapChunkSwitchP95Regression = (
+      baselineLabel?: string,
+      allowedRegressionFraction?: number,
+    ) => this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
+    debugWindow.evaluateWorldmapTileFetchVolumeRegression = (
+      baselineLabel?: string,
+      allowedIncreaseFraction?: number,
+    ) => this.evaluateTileFetchVolumeRegressionAgainstBaseline(baselineLabel, allowedIncreaseFraction);
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
@@ -4386,6 +4689,8 @@ export default class WorldmapScene extends HexagonScene {
     debugWindow.getWorldmapChunkDiagnostics = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
+    debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
+    debugWindow.evaluateWorldmapTileFetchVolumeRegression = undefined;
   }
 
   private monitorTerrainVisibilityHealth(): void {
@@ -4393,15 +4698,65 @@ export default class WorldmapScene extends HexagonScene {
       this.sceneManager.getCurrentScene() !== SceneName.WorldMap ||
       this.isSwitchedOff ||
       this.currentChunk === "null" ||
-      this.isChunkTransitioning ||
       !this.currentChunkBounds
     ) {
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
+      this.offscreenChunkFrames = 0;
       return;
     }
 
-    if (!this.visibilityManager.isBoxVisible(this.currentChunkBounds.box)) {
+    const isCurrentChunkVisible = this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
+    const chunkVisibilityAnomaly = evaluateChunkVisibilityAnomaly({
+      isCurrentChunkVisible,
+      offscreenChunkFrames: this.offscreenChunkFrames,
+      offscreenChunkFrameThreshold: this.offscreenChunkFrameThreshold,
+    });
+    this.offscreenChunkFrames = chunkVisibilityAnomaly.offscreenChunkFrames;
+
+    if (!isCurrentChunkVisible) {
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
+
+      if (!chunkVisibilityAnomaly.shouldTriggerRecovery) {
+        return;
+      }
+
+      const now = performance.now();
+      if (this.terrainRecoveryInFlight || now - this.lastTerrainRecoveryAtMs < this.terrainRecoveryCooldownMs) {
+        return;
+      }
+
+      this.lastTerrainRecoveryAtMs = now;
+      this.terrainRecoveryInFlight = true;
+
+      console.warn("[WorldMap] Current chunk bounds remained offscreen; forcing chunk refresh", {
+        chunk: this.currentChunk,
+        offscreenChunkFrames: this.offscreenChunkFrames,
+      });
+      this.emitZoomHardeningTelemetry("self_heal_start", {
+        chunk: this.currentChunk,
+        reason: "offscreen",
+        offscreenChunkFrames: this.offscreenChunkFrames,
+      });
+
+      void this.updateVisibleChunks(true)
+        .catch((error) => {
+          console.error("[WorldMap] Offscreen chunk recovery failed:", error);
+          this.emitZoomHardeningTelemetry("self_heal_failed", {
+            chunk: this.currentChunk,
+            reason: "offscreen",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        })
+        .finally(() => {
+          this.emitZoomHardeningTelemetry("self_heal_complete", {
+            chunk: this.currentChunk,
+            reason: "offscreen",
+          });
+          this.terrainRecoveryInFlight = false;
+          this.offscreenChunkFrames = 0;
+        });
       return;
     }
 
@@ -4410,13 +4765,31 @@ export default class WorldmapScene extends HexagonScene {
       totalTerrainInstances += biome.getCount();
     });
 
-    if (totalTerrainInstances > 0) {
+    if (this.terrainReferenceChunkKey !== this.currentChunk) {
+      this.terrainReferenceChunkKey = this.currentChunk;
+      this.terrainReferenceInstances = totalTerrainInstances;
       this.zeroTerrainFrames = 0;
+      this.lowTerrainFrames = 0;
       return;
     }
 
-    this.zeroTerrainFrames += 1;
-    if (this.zeroTerrainFrames < this.zeroTerrainFrameThreshold) {
+    const anomalyResult = evaluateTerrainVisibilityAnomaly({
+      terrainInstances: totalTerrainInstances,
+      terrainReferenceInstances: this.terrainReferenceInstances,
+      zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
+      zeroTerrainFrameThreshold: this.zeroTerrainFrameThreshold,
+      lowTerrainFrameThreshold: this.lowTerrainFrameThreshold,
+      minRetainedTerrainFraction: this.minRetainedTerrainFraction,
+      minReferenceTerrainInstances: this.minReferenceTerrainInstances,
+    });
+
+    this.zeroTerrainFrames = anomalyResult.zeroTerrainFrames;
+    this.lowTerrainFrames = anomalyResult.lowTerrainFrames;
+    if (!anomalyResult.shouldTriggerRecovery) {
+      if (totalTerrainInstances > 0 && this.lowTerrainFrames === 0) {
+        this.terrainReferenceInstances = totalTerrainInstances;
+      }
       return;
     }
 
@@ -4430,11 +4803,19 @@ export default class WorldmapScene extends HexagonScene {
 
     console.warn("[WorldMap] Terrain visibility anomaly detected; forcing chunk refresh", {
       chunk: this.currentChunk,
+      reason: anomalyResult.recoveryReason,
+      terrainInstances: totalTerrainInstances,
+      terrainReferenceInstances: this.terrainReferenceInstances,
       zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
     });
     this.emitZoomHardeningTelemetry("self_heal_start", {
       chunk: this.currentChunk,
+      reason: anomalyResult.recoveryReason,
+      terrainInstances: totalTerrainInstances,
+      terrainReferenceInstances: this.terrainReferenceInstances,
       zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
     });
 
     void this.updateVisibleChunks(true)
@@ -4451,6 +4832,11 @@ export default class WorldmapScene extends HexagonScene {
         });
         this.terrainRecoveryInFlight = false;
         this.zeroTerrainFrames = 0;
+        this.lowTerrainFrames = 0;
+        this.offscreenChunkFrames = 0;
+        if (totalTerrainInstances > this.terrainReferenceInstances) {
+          this.terrainReferenceInstances = totalTerrainInstances;
+        }
       });
   }
 

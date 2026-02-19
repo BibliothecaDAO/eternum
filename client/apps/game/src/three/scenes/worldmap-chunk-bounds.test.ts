@@ -90,3 +90,19 @@ describe("getRenderFetchBoundsForArea", () => {
     expect(getRenderFetchBoundsForArea(areaKey, renderSize, chunkSize, superAreaStrides)).toEqual(expected);
   });
 });
+
+describe("chunk key validation", () => {
+  const invalidKeys = ["", "bad-key", "0", "0,", ",0", "1,2,3", "Infinity,0", "NaN,0"];
+
+  it.each(invalidKeys)("rejects malformed keys in getRenderAreaKeyForChunk: %s", (chunkKey) => {
+    expect(() => getRenderAreaKeyForChunk(chunkKey, 24, 3)).toThrow(/chunk key/i);
+  });
+
+  it.each(invalidKeys)("rejects malformed keys in getRenderFetchBoundsForChunk: %s", (chunkKey) => {
+    expect(() => getRenderFetchBoundsForChunk(chunkKey, { width: 48, height: 48 }, 24)).toThrow(/chunk key/i);
+  });
+
+  it.each(invalidKeys)("rejects malformed keys in getRenderFetchBoundsForArea: %s", (chunkKey) => {
+    expect(() => getRenderFetchBoundsForArea(chunkKey, { width: 48, height: 48 }, 24, 3)).toThrow(/chunk key/i);
+  });
+});

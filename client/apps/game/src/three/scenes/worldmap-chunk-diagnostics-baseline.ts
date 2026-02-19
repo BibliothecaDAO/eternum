@@ -27,6 +27,8 @@ export function sanitizeChunkDiagnosticsBaselineLabel(label?: string, fallback: 
 export function snapshotChunkDiagnostics(diagnostics: WorldmapChunkDiagnostics): WorldmapChunkDiagnostics {
   return {
     ...diagnostics,
+    switchDurationMsSamples: [...diagnostics.switchDurationMsSamples],
+    managerDurationMsSamples: [...diagnostics.managerDurationMsSamples],
   };
 }
 
@@ -35,7 +37,7 @@ export function cloneChunkDiagnosticsBaselines(
 ): WorldmapChunkDiagnosticsBaselineEntry[] {
   return baselines.map((entry) => ({
     ...entry,
-    diagnostics: { ...entry.diagnostics },
+    diagnostics: snapshotChunkDiagnostics(entry.diagnostics),
   }));
 }
 
@@ -57,7 +59,7 @@ export function captureChunkDiagnosticsBaseline(
   return {
     captured: {
       ...captured,
-      diagnostics: { ...captured.diagnostics },
+      diagnostics: snapshotChunkDiagnostics(captured.diagnostics),
     },
     baselines,
   };

@@ -50,13 +50,17 @@ The system calculates a **Refund Factor** based on the damage ratio between armi
 - **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
 - **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
 
-- **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
-- **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
-- **If 2.5 < R<sub>x</sub> < 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+```
+If Rx ≥ 10:       f(Rx) = 1              (maximum refund)
+If Rx ≤ 2.5:      f(Rx) = 0              (no refund)
+If 2.5 < Rx < 10: f(Rx) = (Rx - 2.5) / (10 - 2.5)
+```
 
 For army **x**:
 
-- **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
-- **Battle Timer Length**: (base timer) × [1 - f(R<sub>x</sub>)]
+```
+Refunded Stamina   = (combat cost) × f(Rx), rounded up
+Battle Timer Length = (base timer) × [1 - f(Rx)]
+```
 
-The same calculations are applied for army **y**
+The same calculations are applied for army **y**.

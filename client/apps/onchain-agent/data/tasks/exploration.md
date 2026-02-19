@@ -8,7 +8,8 @@ autoload: false
 
 ## Exploration & Victory Points
 
-Each newly explored tile awards Victory Points (VP). Exploration is a direct VP source — see `tasks/priorities.md` for the full scoring breakdown.
+Each newly explored tile awards Victory Points (VP). Exploration is a direct VP source — see `tasks/priorities.md` for
+the full scoring breakdown.
 
 ## Hex Grid
 
@@ -18,6 +19,7 @@ Each newly explored tile awards Victory Points (VP). Exploration is a direct VP 
 ## Movement Types
 
 ### `travel_explorer` — Fast Movement (Explored Tiles Only)
+
 - **Multi-hex**: Can move 5+ hexes in one action — e.g. `directions: [4,4,4,4,4]`
 - **Stamina**: ~10 per hex
 - **Requirement**: All tiles in path must be explored AND unoccupied
@@ -26,11 +28,13 @@ Each newly explored tile awards Victory Points (VP). Exploration is a direct VP 
   - `"one of the tiles in path is occupied"` — another army is blocking, reroute
 
 ### `move_explorer` — Combined Wrapper
+
 - With `explore: false`: same as `travel_explorer` (multi-hex through explored tiles)
 - With `explore: true`: same as `explore` (single hex, reveals new tile)
 - Prefer using `travel_explorer` or `explore` directly
 
 ### `explore` — Dedicated Scouting
+
 - Pure exploration action
 - **Stamina**: 30 per hex
 - **Minimum**: 10 troops required in the army
@@ -40,14 +44,17 @@ Each newly explored tile awards Victory Points (VP). Exploration is a direct VP 
 ## Multi-Hex Travel
 
 Moving 5+ hexes in a single action is possible:
+
 - All tiles in the path must already be explored
 - All tiles must be unoccupied (no other armies blocking)
 - Stamina cost scales linearly (~10/hex for travel)
-- Exploring tiles first (1 hex at a time, 30 stamina each) reveals them permanently, enabling fast multi-hex travel through those tiles afterward
+- Exploring tiles first (1 hex at a time, 30 stamina each) reveals them permanently, enabling fast multi-hex travel
+  through those tiles afterward
 
 ## Nearby Entities
 
 The `observe_game` tick prompt and `inspect_explorer` tool show neighbor tiles around each army:
+
 - Direction, explored status, occupied status, biome, occupant info
 - Use this to decide which direction to explore or travel
 

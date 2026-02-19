@@ -94,12 +94,6 @@ export const EndgameModal = () => {
     dismissReview();
   }, [dismissReview]);
 
-  const handleReturnHomeFromReview = useCallback(() => {
-    dismissReview();
-    resetBootstrap();
-    navigate("/");
-  }, [dismissReview, navigate]);
-
   const handleOpenReview = useCallback(() => {
     if (!activeReviewKey) {
       return;
@@ -143,7 +137,6 @@ export const EndgameModal = () => {
         nextGame={null}
         showUpcomingGamesStep={true}
         onClose={handleCloseReview}
-        onReturnHome={handleReturnHomeFromReview}
         onRegistrationComplete={() => undefined}
         onRequireSignIn={handleRequireSignIn}
       />

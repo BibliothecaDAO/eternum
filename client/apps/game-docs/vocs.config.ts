@@ -5,6 +5,9 @@ import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 export default defineConfig({
   vite: {
     publicDir: path.resolve(__dirname, "../../public"),
+    server: {
+      allowedHosts: true,
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./docs"),
@@ -13,31 +16,77 @@ export default defineConfig({
       },
     },
     plugins: [llmTxtPlugin()],
+    css: {
+      devSourcemap: true,
+    },
   },
 
   description: "Your Complete Guide to Mastering Eternum",
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
   ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
+  head: {
+    link: [
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
+      },
+      {
+        rel: "stylesheet",
+        href: "/styles.css",
+      },
+    ],
+    script: [
+      {
+        children: `
+(function () {
+  function bindSidebarToggles() {
+    const headers = document.querySelectorAll('.vocs_Sidebar_sectionHeader');
+    headers.forEach((header) => {
+      const chevron = header.querySelector('.vocs_Sidebar_sectionCollapse');
+      const toggleBtn = header.querySelector('div[role="button"]');
+      if (!chevron || !toggleBtn) return;
+
+      header.addEventListener('click', (e) => {
+        // If user clicked the chevron button itself, let Vocs handle it.
+        if (e.target.closest('.vocs_Sidebar_sectionCollapse')) return;
+        // Toggle instead of navigating for collapsible sections.
+        e.preventDefault();
+        toggleBtn.click();
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindSidebarToggles);
+  } else {
+    bindSidebarToggles();
+  }
+})();
+        `.trim(),
+      },
+    ],
+  },
   theme: {
     colorScheme: "dark",
     variables: {
       color: {
-        textAccent: "#f6c297",
-        background: "#14100d",
-        backgroundDark: "#14100d",
-        noteBackground: "#14100d",
+        textAccent: "#c9b06a",
+        background: "#141520",
+        backgroundDark: "#141520",
+        noteBackground: "#1e2030",
       },
     },
   },
   font: {
-    google: "Open Sans",
+    google: "Exo 2",
   },
 
   title: "Realms Docs",
   sidebar: [
     {
       text: "Overview",
+      link: "/overview/introduction",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
         { text: "Cartridge Controller", link: "/overview/controller" },
@@ -47,6 +96,7 @@ export default defineConfig({
           collapsed: true,
           link: "/overview/chests/loot-chests",
           items: [
+            { text: "Loot Chests", link: "/overview/chests/loot-chests" },
             { text: "Chest Contents", link: "/overview/chests/contents" },
             { text: "Cosmetic Items", link: "/overview/chests/cosmetics" },
           ],
@@ -58,6 +108,7 @@ export default defineConfig({
     },
     {
       text: "Blitz",
+      link: "/blitz/key-concepts",
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
         { text: "Game Entry", link: "/blitz/game-entry" },
@@ -76,7 +127,7 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/materials/resources",
           items: [
-            { text: "Resources", link: "/blitz/materials/resources" },
+            { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
             { text: "Production Automation", link: "/blitz/materials/automation" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
@@ -113,6 +164,7 @@ export default defineConfig({
     },
     {
       text: "Eternum (Season 1 - Concluded)",
+      link: "/eternum/key-concepts",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
         { text: "Game Entry", link: "/eternum/game-entry" },
@@ -121,6 +173,7 @@ export default defineConfig({
           text: "Realms & Villages",
           link: "/eternum/realm-and-villages/realm",
           collapsed: true,
+          link: "/eternum/realm-and-villages/realm",
           items: [
             { text: "Villages", link: "/eternum/realm-and-villages/villages" },
             { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
@@ -131,6 +184,7 @@ export default defineConfig({
           text: "Materials",
           link: "/eternum/resources/resources",
           collapsed: true,
+          link: "/eternum/resources/resources",
           items: [
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
@@ -143,6 +197,7 @@ export default defineConfig({
           text: "Military",
           link: "/eternum/military/armies",
           collapsed: true,
+          link: "/eternum/military/armies",
           items: [
             { text: "Troop Tiers", link: "/eternum/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
@@ -154,6 +209,7 @@ export default defineConfig({
           text: "World Map & Movement",
           link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
+          link: "/eternum/worldmap-movement/worldmap",
           items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
@@ -165,6 +221,7 @@ export default defineConfig({
     {
       text: "Development",
       collapsed: true,
+      link: "/development/getting-started",
       items: [
         { text: "Getting Started", link: "/development/getting-started" },
         { text: "Client", link: "/development/client" },
@@ -177,7 +234,9 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
+      link: "/changelog/18-february-2026",
       items: [
+        { text: "18 February 2026", link: "/changelog/18-february-2026" },
         { text: "31 January 2026", link: "/changelog/31-january-2026" },
         { text: "8 December 2025", link: "/changelog/8-december-2025" },
         { text: "14 November 2025", link: "/changelog/14-november-2025" },

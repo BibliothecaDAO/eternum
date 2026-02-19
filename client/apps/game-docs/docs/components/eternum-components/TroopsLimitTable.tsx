@@ -1,6 +1,6 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
-import { icon, stats, troop } from "./styles";
+import { icon, stats, troop } from "../styles";
 
 export default function TroopsLimitTable() {
   const config = ETERNUM_CONFIG();

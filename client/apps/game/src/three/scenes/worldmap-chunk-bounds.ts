@@ -13,7 +13,23 @@ interface ChunkBounds {
 }
 
 function parseChunkKey(chunkKey: string): { startRow: number; startCol: number } {
-  const [startRow, startCol] = chunkKey.split(",").map(Number);
+  const segments = chunkKey.split(",");
+  if (segments.length !== 2) {
+    throw new Error(`Invalid chunk key: ${chunkKey}`);
+  }
+
+  const rowToken = segments[0].trim();
+  const colToken = segments[1].trim();
+  if (rowToken.length === 0 || colToken.length === 0) {
+    throw new Error(`Invalid chunk key: ${chunkKey}`);
+  }
+
+  const startRow = Number(rowToken);
+  const startCol = Number(colToken);
+  if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+    throw new Error(`Invalid chunk key: ${chunkKey}`);
+  }
+
   return { startRow, startCol };
 }
 

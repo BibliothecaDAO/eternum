@@ -2,6 +2,7 @@ import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
+import { getMMRTier } from "@/ui/utils/mmr-tiers";
 import { displayAddress } from "@/ui/utils/utils";
 import { BLITZ_CARD_DIMENSIONS, truncateText } from "../lib/blitz-highlight";
 import {
@@ -177,6 +178,25 @@ const LEADERBOARD_CARD_STYLES = `
     color: #925518;
   }
 
+  .blitz-card-root .podium-mmr {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    margin-top: 4px;
+    color: #ffffff;
+    opacity: 0.82;
+  }
+
+  .blitz-card-root .podium-first .podium-mmr {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .blitz-card-root .podium-second .podium-mmr,
+  .blitz-card-root .podium-third .podium-mmr {
+    font-size: 12px;
+    line-height: 16px;
+  }
+
   .blitz-card-root .empty-leaderboard {
     position: absolute;
     left: 50%;
@@ -197,9 +217,14 @@ interface BlitzLeaderboardCardProps {
   player?: { name: string; address: string } | null;
 }
 
+const DEFAULT_MMR_VALUE = 1000;
+
 const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry; positionClass: string }) => {
   const { value: rankValue, suffix: rankSuffix } = formatRankParts(entry.rank);
   const name = truncateText(getDisplayName(entry), 20);
+  const effectiveMmr = typeof entry.mmr === "number" && Number.isFinite(entry.mmr) ? entry.mmr : DEFAULT_MMR_VALUE;
+  const effectiveTier = entry.mmrTier || getMMRTier(effectiveMmr).name;
+  const mmrLabel = `MMR ${formatValue(effectiveMmr)} · ${effectiveTier}`;
 
   return (
     <div className={`podium-entry ${positionClass}`}>
@@ -210,6 +235,7 @@ const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry;
       <div className="podium-name">{name}</div>
       <div className="podium-address">{displayAddress(entry.address)}</div>
       <div className="podium-points">{formatValue(entry.points)} pts</div>
+      <div className="podium-mmr">{mmrLabel}</div>
     </div>
   );
 };

@@ -66,7 +66,7 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 - **Stride chunk size:** `chunkSize = 24` hexes. Chunk keys are `"startRow,startCol"` in **normalized** hex coords,
   snapped to multiples of `chunkSize`.
-- **Render window:** `renderChunkSize = 64×64` hexes centered on the stride chunk. All fetch/visibility logic uses
+- **Render window:** `renderChunkSize = 48×48` hexes centered on the stride chunk. All fetch/visibility logic uses
   `utils/chunk-geometry.ts` to avoid edge drift.
 
 **Pinned neighborhood & prefetch**
@@ -74,11 +74,12 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 - **Pinned neighborhood is 5×5**, not 3×3: the scene keeps a 5×5 grid of stride chunks active around the current chunk
   (`chunkRowsAhead/Behind = 2`, `chunkColsEachSide = 2`). These pinned chunks drive background prefetching and cache
   retention.
-- **Directional prefetch:** a 2×3 band of chunks ahead of camera movement is prefetched to reduce pop‑in.
+- **Directional prefetch:** a movement-aligned `3×3` chunk band (forward depth `2`, side radius `1`) is prefetched to
+  reduce pop‑in.
 
 **Loading / unloading**
 
-- Camera movement triggers `WorldmapScene.requestChunkRefresh()` (50ms debounce).
+- Camera movement triggers `WorldmapScene.requestChunkRefresh()` (200ms debounce).
 - `updateVisibleChunks()` computes a ground focus point, derives the next chunk key, and uses a small padding
   (`chunkSwitchPadding`) to delay switching right at boundaries.
 - On chunk change `performChunkSwitch()`:
@@ -118,9 +119,9 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 - Tile hiding is coupled to structure/quest presence during grid builds. If structures/quests change without a tile
   update, a targeted grid refresh could be required to avoid tiles showing under them.
-- The 5×5 pinned set can exceed `maxMatrixCacheSize = 16`; consider increasing the cache or tying it to pinned count to
-  avoid retention warnings.
-- Torii tile fetches are coalesced by super‑areas (`toriiFetch.superAreaStrides`) so overlapping 64×64 render windows
+- Matrix cache capacity is policy-derived as pinned floor + slack (`25 + 8 = 33` by default), so pinned chunks do not
+  force persistent retention warnings during normal traversal.
+- Torii tile fetches are coalesced by super‑areas (`toriiFetch.superAreaStrides`) so overlapping 48×48 render windows
   don’t repeat queries. Tune `superAreaStrides` if Torii payload size or pop‑in behavior changes.
 - Keep `chunkSize`/`renderChunkSize` consistent across managers; `utils/chunk-geometry.ts` is the shared source of
   truth.
@@ -133,7 +134,7 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
      launching fetches.
 3. Fix correctness: trigger tile/biome refresh when structures/quests enter/ leave/move inside the current render bounds
    (not only on tile updates). This removes “tiles showing under late‑hydrated entities.”
-4. Centralize chunk geometry/policy constants (stride=24, render=64×64, pin radius=2 → 5×5, padding, prefetch band) into
+4. Centralize chunk geometry/policy constants (stride=24, render=48×48, pin radius=2 → 5×5, padding, prefetch band) into
    a shared config used by scene + managers. This stabilizes invariants before tuning.
 5. Resize/auto‑scale the biome matrix cache to cover the pinned set (≥25, preferably pinned+slack). Now you can tie it
    directly to the shared config.

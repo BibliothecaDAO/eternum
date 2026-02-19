@@ -202,8 +202,10 @@ export const BiomeStamina = () => {
                 {group.biomes.map((biome) => (
                   <tr key={biome}>
                     <td style={table.resourceCell}>
-                      <span style={icon.biome}>{getBiomeIcon(biome)}</span>
-                      {biome.replace(/([A-Z])/g, " $1").trim()}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={icon.biome}>{getBiomeIcon(biome)}</span>
+                        {biome.replace(/([A-Z])/g, " $1").trim()}
+                      </span>
                     </td>
                     {Object.values(TroopType).map((troopType) => (
                       <td key={`${biome}-${troopType}`} style={{ ...table.cell, textAlign: "center" }}>

@@ -260,6 +260,8 @@ export class ArmyModel {
 
       this.updateInstance(entityId, instance.matrixIndex, position, scale, rotation, color);
     });
+
+    this.syncModelDrawCount(modelData);
   }
 
   private reapplyInstancesForModel(modelType: ModelType, modelData: ModelData): void {
@@ -281,6 +283,22 @@ export class ArmyModel {
 
       this.updateInstance(entityId, instance.matrixIndex, position, scale, rotation, color);
     });
+
+    this.syncModelDrawCount(modelData);
+  }
+
+  /**
+   * Keep draw counts in sync after async model load replays instance state.
+   * Without this, meshes can stay hidden until the next explicit visibility sync.
+   */
+  private syncModelDrawCount(modelData: ModelData): void {
+    const drawCount = this.getModelDrawCount(modelData);
+    modelData.instancedMeshes.forEach((mesh) => {
+      mesh.count = drawCount;
+    });
+    if (modelData.contactShadowMesh) {
+      modelData.contactShadowMesh.count = drawCount;
+    }
   }
 
   private createModelData(gltf: any): ModelData {
