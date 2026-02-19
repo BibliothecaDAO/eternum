@@ -75,7 +75,8 @@ export const TransferSlotSelection = ({
 
     const tierText = typeof troop.tier === "string" ? troop.tier.toUpperCase() : `T${Number(troop.tier)}`;
     const typeLabel = String(troop.category).toUpperCase();
-    const countLabel = currencyIntlFormat(Number(troop.count), 1);
+    const rawCount = Number(troop.count);
+    const countLabel = rawCount >= 10000 ? currencyIntlFormat(rawCount, 1) : rawCount.toLocaleString();
     const troopResourceTrait =
       resources.find((resource) => resource.id === getTroopResourceId(troop.category, troop.tier))?.trait ?? null;
 
