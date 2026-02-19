@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@bibliothecadao/client": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
     "@bibliothecadao/game-agent": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@cartridge/controller": "^0.13.4",

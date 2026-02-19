@@ -3,7 +3,7 @@ import type { EternumClient } from "@bibliothecadao/client";
 import type { Account } from "starknet";
 import type { EternumWorldState } from "./world-state";
 import { buildWorldState } from "./world-state";
-import { executeAction } from "./action-registry";
+import { executeAction, setWorldStateProvider } from "./action-registry";
 import { simulateAction } from "./simulation";
 
 /**
@@ -19,7 +19,10 @@ export class EternumGameAdapter implements GameAdapter<EternumWorldState> {
     private client: EternumClient,
     private signer: Account,
     private accountAddress: string,
-  ) {}
+  ) {
+    // Enable move_to action with pathfinding by providing world state access
+    setWorldStateProvider(accountAddress);
+  }
 
   async getWorldState(): Promise<EternumWorldState> {
     return buildWorldState(this.client, this.accountAddress);

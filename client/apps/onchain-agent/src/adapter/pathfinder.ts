@@ -1,47 +1,21 @@
 /**
  * A* pathfinder for Eternum's even-r offset hex grid.
  *
+ * Uses shared packages (@bibliothecadao/types) for hex neighbor logic,
+ * coordinate conversions, and biome definitions — zero inlined duplicates.
+ *
  * Pure function: takes start, end, and tile map — returns the cheapest path
  * with per-step cost breakdown and directions for action execution.
- *
- * Does NOT make decisions about whether to go somewhere. That's the agent's job.
- * This just answers: "what's the path and what does it cost?"
  */
 
-// ---------------------------------------------------------------------------
-// Inline hex neighbor logic (even-r offset grid)
-// Avoids adding @bibliothecadao/types as a dependency.
-// Source: packages/types/src/constants/hex.ts
-// ---------------------------------------------------------------------------
-
-interface NeighborHex {
-  col: number;
-  row: number;
-  direction: number;
-}
-
-const NEIGHBOR_OFFSETS_EVEN = [
-  { i: 1, j: 0, direction: 0 }, // EAST
-  { i: 1, j: 1, direction: 1 }, // NORTH_EAST
-  { i: 0, j: 1, direction: 2 }, // NORTH_WEST
-  { i: -1, j: 0, direction: 3 }, // WEST
-  { i: 0, j: -1, direction: 4 }, // SOUTH_WEST
-  { i: 1, j: -1, direction: 5 }, // SOUTH_EAST
-];
-
-const NEIGHBOR_OFFSETS_ODD = [
-  { i: 1, j: 0, direction: 0 }, // EAST
-  { i: 0, j: 1, direction: 1 }, // NORTH_EAST
-  { i: -1, j: 1, direction: 2 }, // NORTH_WEST
-  { i: -1, j: 0, direction: 3 }, // WEST
-  { i: -1, j: -1, direction: 4 }, // SOUTH_WEST
-  { i: 0, j: -1, direction: 5 }, // SOUTH_EAST
-];
-
-function getNeighborHexes(col: number, row: number): NeighborHex[] {
-  const offsets = row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
-  return offsets.map((o) => ({ col: col + o.i, row: row + o.j, direction: o.direction }));
-}
+import {
+  getNeighborHexes,
+  Direction,
+  BiomeType,
+  BiomeTypeToId,
+  type NeighborHex,
+} from "@bibliothecadao/types";
+import { Coord } from "@bibliothecadao/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,7 +31,7 @@ export interface TileInfo {
 export interface PathStep {
   col: number;
   row: number;
-  direction: number; // Direction enum value to reach this tile from previous
+  direction: Direction; // Direction enum value to reach this tile from previous
   cost: number; // Movement cost for this step
   explored: boolean; // Whether this tile is already explored
 }
@@ -74,7 +48,7 @@ export interface PathResult {
 /** A batch of consecutive steps that can be executed as a single action. */
 export interface ActionBatch {
   type: "travel" | "explore";
-  directions: number[];
+  directions: Direction[];
   /** Total cost for this batch. */
   cost: number;
 }
@@ -84,37 +58,24 @@ export interface ActionBatch {
 // ---------------------------------------------------------------------------
 
 /** Impassable biome IDs (deep ocean, ocean). */
-const IMPASSABLE_BIOMES = new Set([1, 2]);
+const IMPASSABLE_BIOMES = new Set([
+  BiomeTypeToId[BiomeType.DeepOcean],
+  BiomeTypeToId[BiomeType.Ocean],
+]);
 
 /**
  * Movement cost by biome ID.
  * Biome 0 = unexplored/unknown — passable but higher cost (explore action).
  * These are base costs; the agent can query stamina tables for exact values.
  */
-const BIOME_COST: Record<number, number> = {
-  0: 30, // Unexplored — explore action cost
-  1: Infinity, // Deep Ocean — impassable
-  2: Infinity, // Ocean — impassable
-  3: 10, // Beach
-  4: 10, // Scorched
-  5: 10, // Bare
-  6: 10, // Tundra
-  7: 10, // Snow
-  8: 10, // Temperate Desert
-  9: 10, // Shrubland
-  10: 10, // Taiga
-  11: 10, // Grassland
-  12: 10, // Temperate Deciduous Forest
-  13: 10, // Temperate Rain Forest
-  14: 10, // Subtropical Desert
-  15: 10, // Tropical Seasonal Forest
-  16: 10, // Tropical Rain Forest
-};
+const EXPLORE_COST = 30;
+const TRAVEL_COST = 10;
 
 function getTileCost(tile: TileInfo | undefined): number {
-  if (!tile) return 30; // Unknown/unexplored tile — explore cost
+  if (!tile) return EXPLORE_COST; // Unknown/unexplored tile — explore cost
   if (IMPASSABLE_BIOMES.has(tile.biome)) return Infinity;
-  return BIOME_COST[tile.biome] ?? 10;
+  if (tile.biome === 0) return EXPLORE_COST; // Unexplored
+  return TRAVEL_COST;
 }
 
 function isTileExplored(tile: TileInfo | undefined): boolean {
@@ -129,23 +90,17 @@ function coordKey(col: number, row: number): string {
   return `${col},${row}`;
 }
 
-/** Cube distance for hex heuristic (admissible, never overestimates). */
+/**
+ * Hex distance using Coord.distance() from shared types.
+ * Admissible heuristic — never overestimates.
+ */
 function hexDistance(
   fromCol: number,
   fromRow: number,
   toCol: number,
   toRow: number,
 ): number {
-  // Convert even-r offset to cube coords
-  const fq = fromCol - Math.floor((fromRow - (fromRow & 1)) / 2);
-  const fr = fromRow;
-  const fs = -fq - fr;
-
-  const tq = toCol - Math.floor((toRow - (toRow & 1)) / 2);
-  const tr = toRow;
-  const ts = -tq - tr;
-
-  return Math.max(Math.abs(fq - tq), Math.abs(fr - tr), Math.abs(fs - ts));
+  return new Coord(fromCol, fromRow).distance(new Coord(toCol, toRow));
 }
 
 // ---------------------------------------------------------------------------
@@ -240,7 +195,7 @@ export function findPath(
 
   const cameFrom = new Map<string, string | null>();
   const costSoFar = new Map<string, number>();
-  const directionTo = new Map<string, number>(); // direction used to reach each tile
+  const directionTo = new Map<string, Direction>();
 
   cameFrom.set(startKey, null);
   costSoFar.set(startKey, 0);
@@ -263,6 +218,7 @@ export function findPath(
     // Bail if we've explored too many nodes
     if (costSoFar.size > maxSteps * 6) break;
 
+    // Use shared getNeighborHexes from @bibliothecadao/types
     const neighbors: NeighborHex[] = getNeighborHexes(currentCol, currentRow);
 
     for (const neighbor of neighbors) {
@@ -278,7 +234,7 @@ export function findPath(
       if (existingCost === undefined || newCost < existingCost) {
         costSoFar.set(neighborKey, newCost);
         // A* heuristic: cost so far + estimated remaining (hex distance * min cost)
-        const heuristic = hexDistance(neighbor.col, neighbor.row, endCol, endRow) * 10;
+        const heuristic = hexDistance(neighbor.col, neighbor.row, endCol, endRow) * TRAVEL_COST;
         frontier.push(neighborKey, newCost + heuristic);
         cameFrom.set(neighborKey, currentKey);
         directionTo.set(neighborKey, neighbor.direction);
@@ -329,7 +285,7 @@ function buildActionBatches(path: PathStep[]): ActionBatch[] {
   while (i < path.length) {
     if (path[i].explored) {
       // Collect consecutive explored tiles into one travel batch
-      const travelDirections: number[] = [];
+      const travelDirections: Direction[] = [];
       let travelCost = 0;
       while (i < path.length && path[i].explored) {
         travelDirections.push(path[i].direction);

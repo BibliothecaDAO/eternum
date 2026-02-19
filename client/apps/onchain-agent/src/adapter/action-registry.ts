@@ -1083,6 +1083,65 @@ register(
 );
 
 // ---------------------------------------------------------------------------
+// High-level: move_to (pathfinding + execution)
+// ---------------------------------------------------------------------------
+
+import { moveExplorer } from "./move-executor";
+import { buildWorldState, type EternumWorldState } from "./world-state";
+
+/** Cached world state provider — set via setWorldStateProvider. */
+let _worldStateProvider: ((client: EternumClient) => Promise<EternumWorldState>) | undefined;
+
+/**
+ * Set the world state provider so move_to can fetch current tile map.
+ * Call once during adapter initialization with the account address.
+ */
+export function setWorldStateProvider(accountAddress: string) {
+  _worldStateProvider = (client: EternumClient) => buildWorldState(client, accountAddress);
+}
+
+register(
+  "move_to",
+  "Move an explorer to a target coordinate using A* pathfinding. Automatically computes the optimal path, " +
+    "batches travel/explore actions, and executes them sequentially. Stops on first failure. " +
+    "Uses shared hex types from @bibliothecadao/types for neighbor expansion and Coord.distance() as heuristic.",
+  [
+    n("explorerId", "Explorer entity ID to move"),
+    n("targetCol", "Target column (x coordinate)"),
+    n("targetRow", "Target row (y coordinate)"),
+  ],
+  async (client, signer, p) => {
+    if (!_worldStateProvider) {
+      return { success: false, error: "World state provider not initialized. Call setWorldStateProvider first." };
+    }
+
+    const worldState = await _worldStateProvider(client);
+
+    const result = await moveExplorer(client, signer, {
+      explorerId: num(p.explorerId),
+      targetCol: num(p.targetCol),
+      targetRow: num(p.targetRow),
+    }, worldState);
+
+    if (!result.success) {
+      return { success: false, error: result.summary };
+    }
+
+    return {
+      success: true,
+      data: {
+        summary: result.summary,
+        stepsExecuted: result.steps.length,
+        totalCost: result.pathResult.totalCost,
+        txHashes: result.steps
+          .map((s) => s.result.txHash)
+          .filter(Boolean),
+      },
+    };
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 

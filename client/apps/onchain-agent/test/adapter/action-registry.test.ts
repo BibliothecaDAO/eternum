@@ -58,6 +58,7 @@ describe("action-registry", () => {
         "update_whitelist",
         "upgrade_realm",
         "contribute_hyperstructure",
+        "move_to",
       ];
 
       for (const action of expected) {
