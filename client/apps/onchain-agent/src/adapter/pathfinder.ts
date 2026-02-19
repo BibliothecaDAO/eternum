@@ -13,6 +13,8 @@ import {
   Direction,
   BiomeType,
   BiomeTypeToId,
+  BiomeIdToType,
+  TroopType,
   type NeighborHex,
 } from "@bibliothecadao/types";
 import { Coord } from "@bibliothecadao/types";
@@ -26,6 +28,30 @@ export interface TileInfo {
   occupierType: number;
   occupierId: number;
 }
+
+/**
+ * Configuration for pathfinding stamina costs.
+ * Mirrors values from ConfigManager but as a plain object — no ECS dependency.
+ * Caller fetches these once per tick from SQL or uses defaults.
+ */
+export interface PathCostConfig {
+  /** Stamina cost to explore an unknown tile (default 30). */
+  exploreCost: number;
+  /** Base stamina cost to travel through an explored tile (default 10). */
+  baseTravelCost: number;
+  /** Biome bonus/penalty value applied per troop type (default 10). */
+  biomeBonus: number;
+  /** Troop type of the explorer — affects biome-specific cost modifiers. */
+  troopType: TroopType;
+}
+
+/** Default cost config matching current Eternum game values. */
+export const DEFAULT_COST_CONFIG: PathCostConfig = {
+  exploreCost: 30,
+  baseTravelCost: 10,
+  biomeBonus: 10,
+  troopType: TroopType.Knight,
+};
 
 /** A single step in a computed path. */
 export interface PathStep {
@@ -64,18 +90,55 @@ const IMPASSABLE_BIOMES = new Set([
 ]);
 
 /**
- * Movement cost by biome ID.
- * Biome 0 = unexplored/unknown — passable but higher cost (explore action).
- * These are base costs; the agent can query stamina tables for exact values.
+ * Get the travel stamina cost for a specific biome and troop type.
+ * Mirrors ConfigManager.getTravelStaminaCost logic as a pure function.
+ *
+ * Paladin gets bonuses in open terrain (grassland, shrubland, desert, tundra, bare)
+ * and penalties in forests/rain forests. All troops get reduced cost in ocean/deep ocean
+ * (though those are typically impassable) and increased cost in scorched.
  */
-const EXPLORE_COST = 30;
-const TRAVEL_COST = 10;
+export function getBiomeTravelCost(
+  biome: BiomeType,
+  config: PathCostConfig,
+): number {
+  const { baseTravelCost, biomeBonus, troopType } = config;
+  const isPaladin = troopType === TroopType.Paladin;
 
-function getTileCost(tile: TileInfo | undefined): number {
-  if (!tile) return EXPLORE_COST; // Unknown/unexplored tile — explore cost
+  switch (biome) {
+    case BiomeType.Ocean:
+    case BiomeType.DeepOcean:
+      return baseTravelCost - biomeBonus; // -bonus for all troops
+    case BiomeType.Beach:
+    case BiomeType.Snow:
+      return baseTravelCost; // No modifier
+    case BiomeType.Grassland:
+    case BiomeType.Shrubland:
+    case BiomeType.SubtropicalDesert:
+    case BiomeType.TemperateDesert:
+    case BiomeType.Tundra:
+    case BiomeType.Bare:
+      return baseTravelCost + (isPaladin ? -biomeBonus : 0);
+    case BiomeType.TropicalRainForest:
+    case BiomeType.TropicalSeasonalForest:
+    case BiomeType.TemperateRainForest:
+    case BiomeType.TemperateDeciduousForest:
+    case BiomeType.Taiga:
+      return baseTravelCost + (isPaladin ? biomeBonus : 0);
+    case BiomeType.Scorched:
+      return baseTravelCost + biomeBonus; // +bonus for all troops
+    default:
+      return baseTravelCost;
+  }
+}
+
+function getTileCost(tile: TileInfo | undefined, config: PathCostConfig): number {
+  if (!tile) return config.exploreCost; // Unknown/unexplored tile
   if (IMPASSABLE_BIOMES.has(tile.biome)) return Infinity;
-  if (tile.biome === 0) return EXPLORE_COST; // Unexplored
-  return TRAVEL_COST;
+  if (tile.biome === 0) return config.exploreCost; // Unexplored
+
+  const biomeType = BiomeIdToType[tile.biome];
+  if (!biomeType) return config.baseTravelCost;
+  return getBiomeTravelCost(biomeType, config);
 }
 
 function isTileExplored(tile: TileInfo | undefined): boolean {
@@ -166,6 +229,7 @@ class MinHeap {
  * @param endCol - Target column
  * @param endRow - Target row
  * @param tileMap - Map of "col,row" -> TileInfo from world state
+ * @param costConfig - Stamina cost configuration (defaults to DEFAULT_COST_CONFIG)
  * @param maxSteps - Maximum path length before giving up (default 200)
  * @returns PathResult with path, costs, and executable action batches
  */
@@ -175,6 +239,7 @@ export function findPath(
   endCol: number,
   endRow: number,
   tileMap: Map<string, TileInfo>,
+  costConfig: PathCostConfig = DEFAULT_COST_CONFIG,
   maxSteps: number = 200,
 ): PathResult {
   const startKey = coordKey(startCol, startRow);
@@ -224,7 +289,7 @@ export function findPath(
     for (const neighbor of neighbors) {
       const neighborKey = coordKey(neighbor.col, neighbor.row);
       const neighborTile = tileMap.get(neighborKey);
-      const moveCost = getTileCost(neighborTile);
+      const moveCost = getTileCost(neighborTile, costConfig);
 
       if (moveCost === Infinity) continue; // Impassable
 
@@ -234,7 +299,9 @@ export function findPath(
       if (existingCost === undefined || newCost < existingCost) {
         costSoFar.set(neighborKey, newCost);
         // A* heuristic: cost so far + estimated remaining (hex distance * min cost)
-        const heuristic = hexDistance(neighbor.col, neighbor.row, endCol, endRow) * TRAVEL_COST;
+        // Minimum possible cost per hex — use lowest travel cost for admissible heuristic
+        const minCost = Math.max(1, costConfig.baseTravelCost - costConfig.biomeBonus);
+        const heuristic = hexDistance(neighbor.col, neighbor.row, endCol, endRow) * minCost;
         frontier.push(neighborKey, newCost + heuristic);
         cameFrom.set(neighborKey, currentKey);
         directionTo.set(neighborKey, neighbor.direction);
@@ -256,7 +323,7 @@ export function findPath(
     const row = parseInt(rStr, 10);
     const tile = tileMap.get(current);
     const direction = directionTo.get(current)!;
-    const cost = getTileCost(tile);
+    const cost = getTileCost(tile, costConfig);
     const explored = isTileExplored(tile);
 
     path.unshift({ col, row, direction, cost, explored });
