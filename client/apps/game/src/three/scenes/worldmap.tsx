@@ -2848,7 +2848,11 @@ export default class WorldmapScene extends HexagonScene {
    * Key by Torii "super-area" so overlapping render windows coalesce.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
-    return getCanonicalRenderAreaKeyForChunk(chunkKey, this.chunkSize, WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides);
+    return getCanonicalRenderAreaKeyForChunk(
+      chunkKey,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+    );
   }
 
   /**

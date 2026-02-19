@@ -301,9 +301,7 @@ export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshD
  * distance samples are valid so pan traversal converges quickly. Large zoom
  * deltas still escalate to forced refresh.
  */
-export function resolveControlsChangeChunkRefreshPlan(
-  input: ZoomRefreshDecisionInput,
-): ControlsChangeChunkRefreshPlan {
+export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecisionInput): ControlsChangeChunkRefreshPlan {
   if (!Number.isFinite(input.nextDistance)) {
     return {
       shouldRequestRefresh: false,

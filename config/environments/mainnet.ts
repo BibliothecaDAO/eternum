@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import type { Config } from "@bibliothecadao/types";
+import { ResourcesIds, type Config } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
@@ -16,6 +16,17 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
  */
 export const MainnetEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
+  resources: {
+    ...CommonEternumGlobalConfig.resources,
+    productionByComplexRecipeOutputs: {
+      ...CommonEternumGlobalConfig.resources.productionByComplexRecipeOutputs,
+      [ResourcesIds.Donkey]: 3,
+    },
+    productionBySimpleRecipeOutputs: {
+      ...CommonEternumGlobalConfig.resources.productionBySimpleRecipeOutputs,
+      [ResourcesIds.Donkey]: 3,
+    },
+  },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
     hyperstructureWinProbAtCenter: 0,
@@ -43,7 +54,7 @@ export const MainnetEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2, // 2 hours
+    durationSeconds: 60 * 90, // 1 hour 30 minutes
     pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
   },
   battle: {
