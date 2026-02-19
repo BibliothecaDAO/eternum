@@ -131,8 +131,8 @@ export const TroopSelectionGrid = ({
                       <div
                         className={clsx("text-sm font-bold flex-shrink-0", isSelected ? "text-gold" : "text-gold/90")}
                       >
-                        {tierOption.available > 999
-                          ? `${Math.floor(tierOption.available / 1000)}k`
+                        {tierOption.available >= 10000
+                          ? `${(tierOption.available / 1000).toFixed(1)}k`
                           : tierOption.available.toLocaleString()}
                       </div>
                     </div>
