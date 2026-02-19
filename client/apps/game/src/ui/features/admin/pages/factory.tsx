@@ -326,7 +326,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       const secs = Number(ETERNUM_CONFIG()?.season?.durationSeconds || 0);
       return Math.max(1, Math.round(secs / 3600));
     } catch {
-      return 24;
+      return 1;
     }
   });
   const [storedWorldNames, setStoredWorldNames] = useState<string[]>([]);
@@ -388,7 +388,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
   const baseDurationMinutes = useMemo(() => {
     const secs = Number(eternumConfig?.season?.durationSeconds || 0);
-    if (!Number.isFinite(secs) || secs <= 0) return 0;
+    if (!Number.isFinite(secs) || secs <= 0) return 30;
     return Math.max(0, Math.round((secs % 3600) / 60));
   }, [eternumConfig]);
 
@@ -421,12 +421,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       if (preset === "blitz-slot") {
         setDevModeOn(false);
         setMmrEnabledOn(true);
-        setDurationHours(2);
+        setDurationHours(1);
 
         setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
         setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
-        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(2) as Record<string, number>) }));
-        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(1) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(30) as Record<string, number>) }));
       }
     },
     [storedWorldNames],
@@ -1009,9 +1009,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                               : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
                           }`}
                         >
-                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
+                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (1h 30m game onslot)</p>
                           <p className="mt-1 text-xs text-gold/60">
-                            Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
+                            Sets Dev Mode OFF, MMR ON, and game duration to 1 hour 30 minutes.
                           </p>
                         </button>
                       </div>

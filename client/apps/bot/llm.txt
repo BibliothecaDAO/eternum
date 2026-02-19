@@ -112,9 +112,9 @@ series.
 
 Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
 other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
-forces, territorial positioning, and resource management to survive and thrive within the intense two-hour game
-duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
-world state.
+forces, territorial positioning, and resource management to survive and thrive within the intense 90-minute game
+duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed world
+state.
 
 
 
@@ -130,7 +130,7 @@ meta: {
 
 <img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
 
-Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each two-hour match,
+Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 90-minute match,
 players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
 high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset,
@@ -144,7 +144,7 @@ brings additional Loot Chest rewards and invitations to the coveted Elite bracke
 
 ### Game Duration
 
-Each Blitz game runs for exactly **2 hours**. Time is measured in Eternum Days, which are six minutes long and divided
+Each Blitz game runs for exactly **90 minutes**. Time is measured in Eternum Days, which are six minutes long and divided
 into six 'phases'.
 
 ### Realms
@@ -233,7 +233,7 @@ and control World Structures. Victory Points are awarded for:
 
 ### Victory
 
-Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the two hours
+Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the 90 minutes
 share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the game.
 
 ## Blitz Variants
@@ -611,13 +611,13 @@ boundaries set by these protocols.
 
 ## Game Duration
 
-Each Blitz game runs for exactly **2 hours**.
+Each Blitz game runs for exactly **90 minutes**.
 
 ## Time
 
 Time within a Blitz game is measured in Eternum Days, and each is precisely six minutes in length. Each Eternum Day is
 divided into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting
-one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 20 Eternum Days.
+one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 15 Eternum Days.
 
 ## Materials
 
@@ -633,7 +633,7 @@ and donkeys. This is not to be confused with 'resources', which specifically ref
 
 With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
 input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
-production to ensure they can maximize their Score within the 2-hour game window.
+production to ensure they can maximize their Score within the 90-minute game window.
 
 ## Travel
 
@@ -6142,4 +6142,3 @@ Lords who prove themselves in Elite bracket games.
     Chest rewards. This section will be updated as more information is made available to the community.
   </p>
 </div>
-
