@@ -46,7 +46,7 @@ export function setCachedWorldState(state: EternumWorldState) {
 }
 
 /** Get the cached world state (may be undefined if no tick has run yet). */
-export function getCachedWorldState(): EternumWorldState | undefined {
+function getCachedWorldState(): EternumWorldState | undefined {
   return _cachedWorldState;
 }
 

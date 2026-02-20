@@ -24,12 +24,12 @@ export interface MoveRequest {
   targetRow: number;
 }
 
-export interface MoveStepResult {
+interface MoveStepResult {
   batch: ActionBatch;
   result: ActionResult;
 }
 
-export interface MoveResult {
+interface MoveResult {
   /** Whether the full path was computed successfully. */
   pathFound: boolean;
   /** The computed path details. */
