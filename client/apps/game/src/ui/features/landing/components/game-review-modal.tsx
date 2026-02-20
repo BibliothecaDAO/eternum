@@ -118,6 +118,57 @@ const getMmrStatus = (data: GameReviewData): string => {
   return "MMR is eligible and will be submitted with score finalization.";
 };
 
+const canRetryMmrUpdate = (data: GameReviewData): boolean => {
+  const finalization = data.finalization;
+  return (
+    finalization.rankingFinalized &&
+    finalization.mmrEnabled &&
+    !finalization.mmrCommitted &&
+    Boolean(finalization.mmrTokenAddress) &&
+    finalization.registeredPlayers.length >= finalization.mmrMinPlayers
+  );
+};
+
+const formatCountdown = (seconds: number): string => {
+  if (seconds <= 0) return "0s";
+
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+};
+
+const isSingleRegistrantNoGame = (finalization: GameReviewData["finalization"]): boolean =>
+  finalization.registrationCount === 1 && !finalization.rankingFinalized;
+
+const getSecondsUntilScoreSubmissionOpen = (
+  finalization: GameReviewData["finalization"],
+  nowTs: number,
+): number | null => {
+  if (isSingleRegistrantNoGame(finalization)) {
+    return 0;
+  }
+
+  const opensAt = finalization.scoreSubmissionOpensAt;
+  if (finalization.rankingFinalized) {
+    return 0;
+  }
+  if (!opensAt) return null;
+
+  const remaining = opensAt - nowTs + 1;
+  return remaining > 0 ? remaining : 0;
+};
+
+const isScoreSubmissionWindowOpen = (finalization: GameReviewData["finalization"], nowTs: number): boolean => {
+  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(finalization, nowTs);
+  return secondsUntilOpen === 0;
+};
+
 const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
   const winner = data.topPlayers[0];
   const winnerLabel = winner ? winner.displayName?.trim() || displayAddress(winner.address) : "No winner available yet";
@@ -150,19 +201,29 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
 
 const SubmitScoreStep = ({
   data,
+  nowTs,
   hasSigner,
   isSubmitting,
   onSubmit,
   onRequireSignIn,
 }: {
   data: GameReviewData;
+  nowTs: number;
   hasSigner: boolean;
   isSubmitting: boolean;
   onSubmit: () => void;
   onRequireSignIn: () => void;
 }) => {
   const scoreSubmitted = data.finalization.rankingFinalized;
-  const canSubmitScore = !scoreSubmitted;
+  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(data.finalization, nowTs);
+  const submissionWindowOpen = isScoreSubmissionWindowOpen(data.finalization, nowTs);
+  const canRetryMMR = canRetryMmrUpdate(data);
+  const canSubmitScore = !scoreSubmitted && submissionWindowOpen;
+  const canRunPrimaryAction = canSubmitScore || canRetryMMR;
+  const submissionUnlockTime =
+    data.finalization.scoreSubmissionOpensAt != null
+      ? new Date((data.finalization.scoreSubmissionOpensAt + 1) * 1000)
+      : null;
 
   return (
     <div className="space-y-4">
@@ -185,9 +246,31 @@ const SubmitScoreStep = ({
         </div>
       </div>
 
-      {!hasSigner && canSubmitScore && (
+      {!hasSigner && canRunPrimaryAction && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
           Connect a wallet to submit score.
+        </div>
+      )}
+
+      {!scoreSubmitted && !submissionWindowOpen && secondsUntilOpen != null && secondsUntilOpen > 0 && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          <div className="font-medium">Point registration is still open.</div>
+          <div className="mt-1">Score submission unlocks in {formatCountdown(secondsUntilOpen)}.</div>
+          {submissionUnlockTime && (
+            <div className="mt-1 text-xs text-gold/75">
+              Opens at {submissionUnlockTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
+            </div>
+          )}
+        </div>
+      )}
+      {!scoreSubmitted && !submissionWindowOpen && secondsUntilOpen == null && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Submission opens once the game and registration grace period end.
+        </div>
+      )}
+      {canRetryMMR && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Scores are already finalized. Retry MMR update independently if the previous MMR submission failed.
         </div>
       )}
 
@@ -198,9 +281,19 @@ const SubmitScoreStep = ({
           className="w-full justify-center !px-4 !py-2.5"
           forceUppercase={false}
           isLoading={isSubmitting}
-          disabled={isSubmitting || scoreSubmitted || !hasSigner}
+          disabled={isSubmitting || !hasSigner || !canRunPrimaryAction}
         >
-          {isSubmitting ? "Submitting..." : scoreSubmitted ? "Score already submitted" : "Submit score now"}
+          {isSubmitting
+            ? "Submitting..."
+            : canRetryMMR
+              ? "Retry MMR update"
+              : scoreSubmitted
+                ? "Score already submitted"
+                : !submissionWindowOpen && secondsUntilOpen != null
+                  ? `Opens in ${formatCountdown(secondsUntilOpen)}`
+                  : !submissionWindowOpen
+                    ? "Waiting for window"
+                    : "Submit score now"}
         </Button>
       </div>
 
@@ -357,6 +450,7 @@ export const GameReviewModal = ({
   const [frozenSnapshot, setFrozenSnapshot] = useState<Pick<GameReviewData, "stats" | "topPlayers"> | null>(null);
   const captureRef = useRef<HTMLDivElement | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
 
   const cardPlayer = useMemo(() => {
     const name = accountName?.trim() || data?.personalScore?.displayName?.trim() || null;
@@ -444,6 +538,13 @@ export const GameReviewModal = ({
     setStepIndex(Math.max(0, steps.length - 1));
   }, [stepIndex, steps.length]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setNowTs(Math.floor(Date.now() / 1000));
+    const interval = setInterval(() => setNowTs(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
   const finalizeMutation = useMutation({
     mutationFn: async () => {
       if (!worldName || !worldChain || !account) {
@@ -457,17 +558,39 @@ export const GameReviewModal = ({
       });
     },
     onSuccess: async (result) => {
-      toast.success("Score submission completed.", {
-        description: result.mmrSubmitted
-          ? `${result.totalPlayers} players processed. MMR committed.`
-          : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
-      });
+      if (result.mmrError) {
+        toast("Score submission completed with MMR pending.", {
+          description: `${result.totalPlayers} players processed. Retry MMR independently from this step.`,
+        });
+      } else {
+        toast.success("Score submission completed.", {
+          description: result.mmrSubmitted
+            ? `${result.totalPlayers} players processed. MMR committed.`
+            : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
+        });
+      }
       await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
-      setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+      if (!result.mmrError) {
+        setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+      }
     },
     onError: (caughtError) => {
       console.error("Failed to submit score/MMR", caughtError);
-      toast.error("Failed to submit score or MMR.");
+      const errorMessage = caughtError instanceof Error ? caughtError.message : String(caughtError);
+      const isGracePeriodError = errorMessage.toLowerCase().includes("registration grace period is not over");
+
+      if (isGracePeriodError && reviewData) {
+        const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
+        toast.error("Score submission is not open yet.", {
+          description:
+            secondsUntilOpen != null && secondsUntilOpen > 0
+              ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
+              : "Submission opens once the game and registration grace period end.",
+        });
+        return;
+      }
+
+      toast.error("Failed to submit score or MMR.", { description: errorMessage });
     },
   });
 
@@ -500,8 +623,31 @@ export const GameReviewModal = ({
       return;
     }
 
+    if (reviewData) {
+      const retryAvailable = canRetryMmrUpdate(reviewData);
+      if (reviewData.finalization.rankingFinalized) {
+        if (!retryAvailable) {
+          toast.error("MMR retry is unavailable.", {
+            description: getMmrStatus(reviewData),
+          });
+          return;
+        }
+      } else {
+        const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
+        if (secondsUntilOpen == null || secondsUntilOpen > 0) {
+          toast.error("Score submission is not open yet.", {
+            description:
+              secondsUntilOpen != null
+                ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
+                : "Submission opens once the game and registration grace period end.",
+          });
+          return;
+        }
+      }
+    }
+
     finalizeMutation.mutate();
-  }, [account, finalizeMutation, onRequireSignIn]);
+  }, [account, finalizeMutation, nowTs, onRequireSignIn, reviewData]);
 
   const handleClaimRewards = useCallback(() => {
     if (!account) {
@@ -745,6 +891,7 @@ export const GameReviewModal = ({
               {currentStep === "submit-score" && (
                 <SubmitScoreStep
                   data={reviewData}
+                  nowTs={nowTs}
                   hasSigner={Boolean(account)}
                   isSubmitting={finalizeMutation.isPending}
                   onSubmit={handleSubmitScore}

@@ -65,6 +65,15 @@ const REVIEW_MMR_CONFIG_QUERY = `
   LIMIT 1;
 `;
 
+const REVIEW_SEASON_TIMING_QUERY = `
+  SELECT
+    "season_config.end_at" AS season_end_at,
+    "season_config.registration_grace_seconds" AS registration_grace_seconds,
+    "blitz_registration_config.registration_count" AS registration_count
+  FROM "s1_eternum-WorldConfig"
+  LIMIT 1;
+`;
+
 const REVIEW_TRANSACTIONS_COUNT_QUERY = `
   SELECT COUNT(*) AS transaction_count
   FROM transactions;
@@ -517,6 +526,12 @@ interface MmrConfigRow {
   mmr_token_address?: unknown;
 }
 
+interface SeasonTimingRow {
+  season_end_at?: unknown;
+  registration_grace_seconds?: unknown;
+  registration_count?: unknown;
+}
+
 interface RankPrizeRow {
   total_players_same_rank_count?: unknown;
   total_prize_amount?: unknown;
@@ -553,12 +568,14 @@ interface LatestMmrRow {
 
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
+  registrationCount: number;
   finalTrialId: bigint | null;
   rankingFinalized: boolean;
   mmrCommitted: boolean;
   mmrEnabled: boolean;
   mmrMinPlayers: number;
   mmrTokenAddress: string | null;
+  scoreSubmissionOpensAt: number | null;
 }
 
 export interface GameReviewStats {
@@ -607,6 +624,7 @@ interface FinalizeGameReviewResult {
   rankingSkipped: boolean;
   mmrSkipped: boolean;
   totalPlayers: number;
+  mmrError: string | null;
 }
 
 interface ClaimGameReviewRewardsResult {
@@ -615,7 +633,7 @@ interface ClaimGameReviewRewardsResult {
 }
 
 const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<ReviewFinalizationMeta> => {
-  const [registeredRows, rankFinalRows, mmrMetaRows, mmrConfigRows] = await Promise.all([
+  const [registeredRows, rankFinalRows, mmrMetaRows, mmrConfigRows, seasonTimingRows] = await Promise.all([
     queryToriiSql<RegisteredPlayerRow>(
       toriiSqlBaseUrl,
       REVIEW_REGISTERED_PLAYERS_QUERY,
@@ -624,9 +642,17 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
     queryToriiSql<RankFinalRow>(toriiSqlBaseUrl, REVIEW_PLAYERS_RANK_FINAL_QUERY, "Failed to fetch PlayersRankFinal"),
     queryToriiSql<MmrMetaRow>(toriiSqlBaseUrl, REVIEW_MMR_META_QUERY, "Failed to fetch MMRGameMeta"),
     queryToriiSql<MmrConfigRow>(toriiSqlBaseUrl, REVIEW_MMR_CONFIG_QUERY, "Failed to fetch MMR config"),
+    queryToriiSql<SeasonTimingRow>(toriiSqlBaseUrl, REVIEW_SEASON_TIMING_QUERY, "Failed to fetch season timing config"),
   ]);
 
   const registeredPlayers = uniqueAddresses(registeredRows.map((row) => parseAddress(row.player)));
+  const registrationCountFromConfig = Math.max(0, parseNumeric(seasonTimingRows[0]?.registration_count));
+  const registrationCount =
+    registrationCountFromConfig > 0
+      ? registrationCountFromConfig
+      : seasonTimingRows.length > 0
+        ? registrationCountFromConfig
+        : registeredPlayers.length;
   const finalTrialId = parseBigIntValue(rankFinalRows[0]?.trial_id);
   const rankingFinalized = finalTrialId != null && finalTrialId > 0n;
   const mmrCommitted = parseNumeric(mmrMetaRows[0]?.game_median) > 0;
@@ -634,15 +660,20 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
   const mmrEnabled = parseNumeric(mmrConfigRows[0]?.mmr_enabled) !== 0;
   const mmrMinPlayers = Math.max(1, parseNumeric(mmrConfigRows[0]?.mmr_min_players) || 6);
   const mmrTokenAddress = parseAddress(mmrConfigRows[0]?.mmr_token_address);
+  const seasonEndAt = parseNumeric(seasonTimingRows[0]?.season_end_at);
+  const registrationGraceSeconds = Math.max(0, parseNumeric(seasonTimingRows[0]?.registration_grace_seconds));
+  const scoreSubmissionOpensAt = seasonEndAt > 0 ? seasonEndAt + registrationGraceSeconds : null;
 
   return {
     registeredPlayers,
+    registrationCount,
     finalTrialId,
     rankingFinalized,
     mmrCommitted,
     mmrEnabled,
     mmrMinPlayers,
     mmrTokenAddress,
+    scoreSubmissionOpensAt,
   };
 };
 
@@ -1019,6 +1050,7 @@ export const finalizeGameRankingAndMMR = async ({
 
   let rankingSubmitted = false;
   let mmrSubmitted = false;
+  let mmrError: string | null = null;
 
   if (!finalization.rankingFinalized) {
     if (playersForSubmission.length === 1) {
@@ -1056,30 +1088,34 @@ export const finalizeGameRankingAndMMR = async ({
   if (canSubmitMMR) {
     const mmrSystemsAddress = getContractByName(patchedManifest, "s1_eternum", "mmr_systems").address;
 
-    await commitAndClaimMMR({
-      registeredPlayers: playersForSubmission.map((address) => BigInt(address)),
-      mmrTokenAddress: finalization.mmrTokenAddress!,
-      rpcUrl: profile.rpcUrl || env.VITE_PUBLIC_NODE_URL,
-      signer,
-      commitAndClaimGameMmr: async ({ players }) => {
-        const calls: Call[] = [
-          {
-            contractAddress: mmrSystemsAddress,
-            entrypoint: "commit_game_mmr_meta",
-            calldata: [players.length, ...players],
-          },
-          {
-            contractAddress: mmrSystemsAddress,
-            entrypoint: "claim_game_mmr",
-            calldata: [players.length, ...players],
-          },
-        ];
+    try {
+      await commitAndClaimMMR({
+        registeredPlayers: playersForSubmission.map((address) => BigInt(address)),
+        mmrTokenAddress: finalization.mmrTokenAddress!,
+        rpcUrl: profile.rpcUrl || env.VITE_PUBLIC_NODE_URL,
+        signer,
+        commitAndClaimGameMmr: async ({ players }) => {
+          const calls: Call[] = [
+            {
+              contractAddress: mmrSystemsAddress,
+              entrypoint: "commit_game_mmr_meta",
+              calldata: [players.length, ...players],
+            },
+            {
+              contractAddress: mmrSystemsAddress,
+              entrypoint: "claim_game_mmr",
+              calldata: [players.length, ...players],
+            },
+          ];
 
-        return signer.execute(calls);
-      },
-    });
+          return signer.execute(calls);
+        },
+      });
 
-    mmrSubmitted = true;
+      mmrSubmitted = true;
+    } catch (error: unknown) {
+      mmrError = error instanceof Error ? error.message : String(error);
+    }
   }
 
   return {
@@ -1088,6 +1124,7 @@ export const finalizeGameRankingAndMMR = async ({
     rankingSkipped: !rankingSubmitted,
     mmrSkipped: !mmrSubmitted,
     totalPlayers: playersForSubmission.length,
+    mmrError,
   };
 };
 
