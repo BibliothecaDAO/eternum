@@ -48,4 +48,19 @@ describe("error-boundary dynamic import recovery", () => {
     const storage = createStorage("not-a-number");
     expect(shouldAttemptDynamicImportRecovery(storage, 2_000_000)).toBe(true);
   });
+
+  it("does not auto-recover when storage is unavailable", () => {
+    expect(shouldAttemptDynamicImportRecovery(null, 2_000_000)).toBe(false);
+  });
+
+  it("does not auto-recover when storage writes fail", () => {
+    const storage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("write failed");
+      },
+    } as Pick<Storage, "getItem" | "setItem">;
+
+    expect(shouldAttemptDynamicImportRecovery(storage, 3_000_000)).toBe(false);
+  });
 });

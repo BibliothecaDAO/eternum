@@ -19,8 +19,7 @@ const parseTimestamp = (value: string | null): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const readLastReloadAttempt = (storage: StorageLike | null | undefined): number => {
-  if (!storage) return inMemoryLastReloadAttemptMs;
+const readLastReloadAttempt = (storage: StorageLike): number => {
   try {
     const stored = parseTimestamp(storage.getItem(DYNAMIC_IMPORT_RELOAD_STORAGE_KEY));
     if (stored === null) return inMemoryLastReloadAttemptMs;
@@ -30,13 +29,13 @@ const readLastReloadAttempt = (storage: StorageLike | null | undefined): number 
   }
 };
 
-const writeLastReloadAttempt = (storage: StorageLike | null | undefined, nowMs: number) => {
+const writeLastReloadAttempt = (storage: StorageLike, nowMs: number): boolean => {
   inMemoryLastReloadAttemptMs = nowMs;
-  if (!storage) return;
   try {
     storage.setItem(DYNAMIC_IMPORT_RELOAD_STORAGE_KEY, String(nowMs));
+    return true;
   } catch {
-    // Ignore storage write failures and rely on in-memory throttling.
+    return false;
   }
 };
 
@@ -64,10 +63,14 @@ export const shouldAttemptDynamicImportRecovery = (
   nowMs: number = Date.now(),
   cooldownMs: number = DYNAMIC_IMPORT_RELOAD_COOLDOWN_MS,
 ): boolean => {
+  // Avoid automatic reload loops when storage is unavailable.
+  if (!storage) {
+    return false;
+  }
+
   const lastAttemptMs = readLastReloadAttempt(storage);
   if (lastAttemptMs > 0 && nowMs - lastAttemptMs < cooldownMs) {
     return false;
   }
-  writeLastReloadAttempt(storage, nowMs);
-  return true;
+  return writeLastReloadAttempt(storage, nowMs);
 };
