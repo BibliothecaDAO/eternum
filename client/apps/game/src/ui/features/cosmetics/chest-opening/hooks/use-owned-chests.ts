@@ -1,4 +1,8 @@
-import { getLootChestsAddress } from "@/utils/addresses";
+import {
+  COSMETICS_NETWORK_CONFIG,
+  CosmeticsNetwork,
+  DEFAULT_COSMETICS_NETWORK,
+} from "@/ui/features/cosmetics/config/networks";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { fetchLootChestBalances } from "../services";
@@ -16,8 +20,9 @@ interface UseOwnedChestsReturn {
  * Hook to fetch owned loot chests for the connected wallet.
  * Uses the Torii SQL API to query token balances.
  */
-export function useOwnedChests(): UseOwnedChestsReturn {
+export function useOwnedChests(network: CosmeticsNetwork = DEFAULT_COSMETICS_NETWORK): UseOwnedChestsReturn {
   const { address } = useAccount();
+  const networkConfig = COSMETICS_NETWORK_CONFIG[network];
 
   const {
     data: ownedChests = [],
@@ -25,7 +30,7 @@ export function useOwnedChests(): UseOwnedChestsReturn {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["ownedChests", address],
+    queryKey: ["ownedChests", network, address],
     queryFn: async (): Promise<MergedNftData[]> => {
       // Mock mode for testing
       if (MOCK_CHEST_OPENING) {
@@ -36,7 +41,7 @@ export function useOwnedChests(): UseOwnedChestsReturn {
         return [];
       }
 
-      const lootChestAddress = getLootChestsAddress();
+      const lootChestAddress = networkConfig.lootChestsAddress;
       if (!lootChestAddress) {
         console.warn("Loot chest contract address not configured");
         return [];
@@ -45,7 +50,10 @@ export function useOwnedChests(): UseOwnedChestsReturn {
       console.log({ lootChestAddress });
 
       try {
-        const tokenBalances = await fetchLootChestBalances(lootChestAddress, address);
+        const tokenBalances = await fetchLootChestBalances(lootChestAddress, address, {
+          collectionId: networkConfig.lootChestCollectionId,
+          baseUrl: networkConfig.marketplaceUrl,
+        });
 
         // Map to MergedNftData format
         return tokenBalances.map((token) => ({

@@ -1,4 +1,5 @@
 import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
+import { CosmeticsNetwork, DEFAULT_COSMETICS_NETWORK } from "@/ui/features/cosmetics/config/networks";
 import Button from "@/ui/design-system/atoms/button";
 import Package from "lucide-react/dist/esm/icons/package";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -70,6 +71,8 @@ interface ChestOpeningExperienceProps {
   initialChestId?: string;
   /** Pre-selected chest epoch */
   initialEpoch?: ChestEpoch;
+  /** Selected network used for querying and tx */
+  network?: CosmeticsNetwork;
 }
 
 /**
@@ -81,14 +84,19 @@ interface ChestOpeningExperienceProps {
  * 3. Opening: Playing the chest opening video
  * 4. Reveal: Showing the revealed items
  */
-export function ChestOpeningExperience({ onClose, initialChestId, initialEpoch }: ChestOpeningExperienceProps) {
+export function ChestOpeningExperience({
+  onClose,
+  initialChestId,
+  initialEpoch,
+  network = DEFAULT_COSMETICS_NETWORK,
+}: ChestOpeningExperienceProps) {
   const { flowState, actions } = useChestOpeningFlow();
-  const { openChest } = useOpenChest();
-  const { ownedChests, refetch: refetchChests } = useOwnedChests();
+  const { openChest } = useOpenChest(network);
+  const { ownedChests, refetch: refetchChests } = useOwnedChests(network);
   const { chestOpenTimestamp, setShowLootChestOpening, chestAssets: storeAssets } = useLootChestOpeningStore();
 
   // Listen for CollectibleClaimed events
-  const { chestContent, resetChestContent } = useChestContent(MOCK_CHEST_OPENING, chestOpenTimestamp);
+  const { chestContent, resetChestContent } = useChestContent(MOCK_CHEST_OPENING, chestOpenTimestamp, network);
 
   // Local state for revealed assets (from events or mock)
   const [revealedAssets, setRevealedAssets] = useState(storeAssets);

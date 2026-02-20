@@ -6,11 +6,9 @@
     "eliza/**",
 
     "**/*.js",
-    "**/vitest**",
 
     "packages/**",
 
-    "client/apps/landing/src/routeTree.gen.ts",
     "client/apps/landing/src/components/ui/**",
     "client/apps/landing/src/components/typography/**",
     "client/apps/landing/src/hooks/gql/**",
@@ -20,9 +18,6 @@
     "client/apps/game-docs/vocs.config.ts",
     "client/apps/game-docs/vite-plugin-llm-txt.mjs",
     "client/apps/game-docs/env.ts",
-
-    "client/apps/game/src/setupTests.ts",
-    "client/apps/game/src/setup-tests.ts",
 
     "client/apps/bot/index.ts",
 

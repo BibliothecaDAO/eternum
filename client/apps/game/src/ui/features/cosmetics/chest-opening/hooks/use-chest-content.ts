@@ -1,4 +1,8 @@
-import { getCosmeticsAddress } from "@/utils/addresses";
+import {
+  COSMETICS_NETWORK_CONFIG,
+  CosmeticsNetwork,
+  DEFAULT_COSMETICS_NETWORK,
+} from "@/ui/features/cosmetics/config/networks";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -43,7 +47,11 @@ interface UseChestContentReturn {
  * Polls the token_transfers table to detect when new cosmetics are minted.
  * Groups items by timestamp and shows only the latest batch (from the same chest opening).
  */
-export function useChestContent(debugMode: boolean = false, timestamp: number): UseChestContentReturn {
+export function useChestContent(
+  debugMode: boolean = false,
+  timestamp: number,
+  network: CosmeticsNetwork = DEFAULT_COSMETICS_NETWORK,
+): UseChestContentReturn {
   const [chestContent, setChestContent] = useState<ChestAsset[]>([]);
   // Track the baseline count from first poll (pre-existing items to ignore)
   const baselineLengthRef = useRef<number | null>(null);
@@ -57,13 +65,17 @@ export function useChestContent(debugMode: boolean = false, timestamp: number): 
   }
 
   const { address: rawAddress } = useAccount();
+  const networkConfig = COSMETICS_NETWORK_CONFIG[network];
   // Remove leading zeros from the address
   const address = rawAddress ? `0x${rawAddress.slice(2).replace(/^0+/, "")}` : undefined;
-  const cosmeticsAddress = getCosmeticsAddress();
+  const cosmeticsAddress = networkConfig.cosmeticsAddress;
 
   const { data: mintedCosmeticsQuery } = useQuery({
-    queryKey: ["mintedCosmetics", address, timestamp],
-    queryFn: () => (address && cosmeticsAddress ? fetchMintedCosmetics(cosmeticsAddress, address, timestamp) : null),
+    queryKey: ["mintedCosmetics", network, address, timestamp],
+    queryFn: () =>
+      address && cosmeticsAddress
+        ? fetchMintedCosmetics(cosmeticsAddress, address, timestamp, { baseUrl: networkConfig.marketplaceUrl })
+        : null,
     refetchInterval: 3_000,
     enabled: !!address && !!cosmeticsAddress && timestamp > 0,
   });
