@@ -85,12 +85,12 @@ const MAINNET_CHAIN_ALIASES = new Set(
   [MAINNET_CHAIN_ID, MAINNET_CHAIN_ID_ALIAS, "sn_main", "mainnet"].filter((value): value is string => Boolean(value)),
 );
 const SEPOLIA_CHAIN_ALIASES = new Set(
-  [SEPOLIA_CHAIN_ID, SEPOLIA_CHAIN_ID_ALIAS, "sn_sepolia", "sepolia"].filter(
-    (value): value is string => Boolean(value),
+  [SEPOLIA_CHAIN_ID, SEPOLIA_CHAIN_ID_ALIAS, "sn_sepolia", "sepolia"].filter((value): value is string =>
+    Boolean(value),
   ),
 );
 
-export const resolveConnectedTxNetwork = (chainId: bigint | string | null | undefined): CosmeticsNetwork | null => {
+const resolveConnectedTxNetwork = (chainId: bigint | string | null | undefined): CosmeticsNetwork | null => {
   const normalized = normalizeChainId(chainId);
   if (!normalized) return null;
 
@@ -99,7 +99,7 @@ export const resolveConnectedTxNetwork = (chainId: bigint | string | null | unde
   return null;
 };
 
-export const resolveConnectedTxNetworkFromRpcUrl = (rpcUrl: string | null | undefined): CosmeticsNetwork | null => {
+const resolveConnectedTxNetworkFromRpcUrl = (rpcUrl: string | null | undefined): CosmeticsNetwork | null => {
   if (!rpcUrl) return null;
 
   try {
@@ -133,7 +133,7 @@ export const resolveConnectedTxNetworkFromRuntime = ({
 export const getStarknetChainIdForNetwork = (network: CosmeticsNetwork): string =>
   network === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA;
 
-export const resolveCurrentTxNetwork = (): CosmeticsNetwork | null => {
+const resolveCurrentTxNetwork = (): CosmeticsNetwork | null => {
   const chain = env.VITE_PUBLIC_CHAIN;
   if (chain === "mainnet" || chain === "sepolia") {
     return chain;

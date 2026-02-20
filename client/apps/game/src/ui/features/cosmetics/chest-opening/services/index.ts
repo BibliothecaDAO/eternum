@@ -161,7 +161,10 @@ export async function fetchMintedCosmetics(
  * Fetch total unique cosmetic types across all users.
  * Used for calculating collection progress percentage.
  */
-export async function fetchTotalCosmeticsSupply(contractAddress: string, options?: { baseUrl?: string }): Promise<number> {
+export async function fetchTotalCosmeticsSupply(
+  contractAddress: string,
+  options?: { baseUrl?: string },
+): Promise<number> {
   const query = QUERIES.TOTAL_COSMETICS_SUPPLY.replaceAll("{contractAddress}", padAddress(contractAddress));
 
   const result = await fetchSQL<{ total: number }[]>(query, { baseUrl: options?.baseUrl });

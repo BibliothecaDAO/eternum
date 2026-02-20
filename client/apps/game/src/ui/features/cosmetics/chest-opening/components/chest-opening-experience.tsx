@@ -1,8 +1,5 @@
 import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
-import {
-  CosmeticsNetwork,
-  DEFAULT_COSMETICS_NETWORK,
-} from "@/ui/features/cosmetics/config/networks";
+import { CosmeticsNetwork, DEFAULT_COSMETICS_NETWORK } from "@/ui/features/cosmetics/config/networks";
 import Button from "@/ui/design-system/atoms/button";
 import Package from "lucide-react/dist/esm/icons/package";
 import { useCallback, useEffect, useRef, useState } from "react";
