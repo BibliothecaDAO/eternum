@@ -3218,10 +3218,10 @@ export default class WorldmapScene extends HexagonScene {
 
     const halfRows = rows / 2;
     const halfCols = cols / 2;
-    const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
-    const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-    const frameBudget = this.hexGridFrameBudgetMs;
 
+    // Process all hex cells synchronously to prevent stale mesh data from the
+    // previous chunk being visible during a multi-frame rAF build.
+    // 2,304 cells (48x48) with simple matrix math completes well within a single frame.
     this.updateHexagonGridPromise = new Promise((resolve) => {
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
         None: [],
@@ -3247,9 +3247,6 @@ export default class WorldmapScene extends HexagonScene {
         Outline: [],
       };
 
-      let currentIndex = 0;
-      let resolved = false;
-
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
       const matrixPool = matrixPoolInstance;
@@ -3259,16 +3256,6 @@ export default class WorldmapScene extends HexagonScene {
       const vertDist = hexHeight * 0.75;
       const horizDist = hexWidth;
       const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-
-      const cleanupTask = () => {
-        if (this.hexGridFrameHandle !== null) {
-          cancelAnimationFrame(this.hexGridFrameHandle);
-          this.hexGridFrameHandle = null;
-        }
-        if (this.currentHexGridTask === taskToken) {
-          this.currentHexGridTask = null;
-        }
-      };
 
       const releaseAllMatrices = () => {
         let totalReleased = 0;
@@ -3282,69 +3269,8 @@ export default class WorldmapScene extends HexagonScene {
         return totalReleased;
       };
 
-      const resolveOnce = () => {
-        if (!resolved) {
-          resolved = true;
-          this.cancelHexGridComputation = undefined;
-          cleanupTask();
-          resolve();
-        }
-      };
-
-      const abortTask = () => {
-        releaseAllMatrices();
-        resolveOnce();
-      };
-
-      this.cancelHexGridComputation = () => {
-        abortTask();
-      };
-
-      const finalizeSuccess = () => {
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as BiomeType);
-
-          if (!hexMesh) {
-            if (matrices.length > 0) {
-              console.error(`❌ Missing biome model for: ${biome}`);
-              if (import.meta.env.DEV) {
-                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
-              }
-            }
-            continue;
-          }
-
-          if (matrices.length === 0) {
-            hexMesh.setCount(0);
-            hexMesh.updateMeshVisibility(); // Hide meshes with 0 instances to skip draw calls
-            continue;
-          }
-
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-          });
-          hexMesh.setCount(matrices.length);
-          hexMesh.updateMeshVisibility(); // Show meshes that have instances
-        }
-
-        this.cacheMatricesForChunk(startRow, startCol);
-        this.computeInteractiveHexes(startRow, startCol, cols, rows);
-
-        releaseAllMatrices();
-
-        if (memoryMonitor && preUpdateStats) {
-          const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
-          const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
-
-          if (memoryDelta > 15) {
-            console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
-          }
-        }
-
-        resolveOnce();
-      };
-
-      const processCell = (index: number) => {
+      // Process all cells synchronously in a single pass
+      for (let index = 0; index < totalHexes; index++) {
         const rowOffset = Math.floor(index / cols) - halfRows;
         const colOffset = (index % cols) - halfCols;
 
@@ -3361,7 +3287,7 @@ export default class WorldmapScene extends HexagonScene {
         const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
 
         if (shouldHideTile) {
-          return;
+          continue;
         }
 
         tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -3389,42 +3315,54 @@ export default class WorldmapScene extends HexagonScene {
           pooledMatrix.copy(tempMatrix);
           biomeHexes.Outline.push(pooledMatrix);
         }
-      };
+      }
 
-      const processFrame = () => {
-        if (this.currentHexGridTask !== taskToken) {
-          abortTask();
-          return;
-        }
+      // Apply all biome data atomically
+      for (const [biome, matrices] of Object.entries(biomeHexes)) {
+        const hexMesh = this.biomeModels.get(biome as BiomeType);
 
-        const frameStart = performance.now();
-        let processedThisFrame = 0;
-
-        while (currentIndex < totalHexes) {
-          processCell(currentIndex);
-          currentIndex += 1;
-          processedThisFrame += 1;
-
-          if (currentIndex >= totalHexes) {
-            break;
-          }
-
-          if (processedThisFrame >= minBatch) {
-            const elapsed = performance.now() - frameStart;
-            if (elapsed >= frameBudget || processedThisFrame >= maxBatch) {
-              break;
+        if (!hexMesh) {
+          if (matrices.length > 0) {
+            console.error(`❌ Missing biome model for: ${biome}`);
+            if (import.meta.env.DEV) {
+              console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
             }
           }
+          continue;
         }
 
-        if (currentIndex < totalHexes) {
-          this.hexGridFrameHandle = requestAnimationFrame(processFrame);
-        } else {
-          finalizeSuccess();
+        if (matrices.length === 0) {
+          hexMesh.setCount(0);
+          hexMesh.updateMeshVisibility();
+          continue;
         }
-      };
 
-      this.hexGridFrameHandle = requestAnimationFrame(processFrame);
+        matrices.forEach((matrix, index) => {
+          hexMesh.setMatrixAt(index, matrix);
+        });
+        hexMesh.setCount(matrices.length);
+        hexMesh.updateMeshVisibility();
+      }
+
+      this.cacheMatricesForChunk(startRow, startCol);
+      this.computeInteractiveHexes(startRow, startCol, cols, rows);
+
+      releaseAllMatrices();
+
+      if (memoryMonitor && preUpdateStats) {
+        const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
+        const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
+
+        if (memoryDelta > 15) {
+          console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
+        }
+      }
+
+      this.cancelHexGridComputation = undefined;
+      if (this.currentHexGridTask === taskToken) {
+        this.currentHexGridTask = null;
+      }
+      resolve();
     });
 
     await this.updateHexagonGridPromise;
