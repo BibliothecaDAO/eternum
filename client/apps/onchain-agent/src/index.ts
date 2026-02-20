@@ -158,11 +158,17 @@ async function createRuntimeServices(
 
   const chainId = deriveChainIdFromRpcUrl(config.rpcUrl) ?? config.chainId;
 
+  // Each world gets its own session directory so switching worlds doesn't
+  // invalidate the on-chain session registration (policies Merkle root).
+  const sessionBasePath = worldProfile
+    ? path.join(config.sessionBasePath, worldProfile.name)
+    : config.sessionBasePath;
+
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
     chainId,
     gameName: config.gameName,
-    basePath: config.sessionBasePath,
+    basePath: sessionBasePath,
     manifest,
     worldProfile,
   });
