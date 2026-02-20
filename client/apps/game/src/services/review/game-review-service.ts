@@ -1018,10 +1018,12 @@ export const finalizeGameRankingAndMMR = async ({
   worldName,
   chain,
   signer,
+  skipRankingSubmission = false,
 }: {
   worldName: string;
   chain: Chain;
   signer: Account | AccountInterface;
+  skipRankingSubmission?: boolean;
 }): Promise<FinalizeGameReviewResult> => {
   const profile = await buildWorldProfile(chain, worldName);
   const toriiSqlBaseUrl = `${profile.toriiBaseUrl}/sql`;
@@ -1052,7 +1054,7 @@ export const finalizeGameRankingAndMMR = async ({
   let mmrSubmitted = false;
   let mmrError: string | null = null;
 
-  if (!finalization.rankingFinalized) {
+  if (!finalization.rankingFinalized && !skipRankingSubmission) {
     if (playersForSubmission.length === 1) {
       const onlyPlayer = playersForSubmission[0];
       const claimNoGameCall: Call = {
