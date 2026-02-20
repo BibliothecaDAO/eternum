@@ -119,6 +119,7 @@ import {
   resolveHydratedChunkRefreshFlushPlan,
   shouldScheduleHydratedChunkRefreshForFetch,
   waitForChunkTransitionToSettle,
+  shouldReconcileGridAfterChunkHydration,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { deriveDirectionalPrefetchChunkKeys } from "./worldmap-directional-prefetch-policy";
@@ -4302,6 +4303,8 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const oldChunk = this.currentChunk;
+    const targetFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const targetAreaWasCachedBeforeSwitch = this.fetchedChunks.has(targetFetchKey);
     const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
       previousSwitchPosition: this.lastChunkSwitchPosition
         ? {
@@ -4371,6 +4374,16 @@ export default class WorldmapScene extends HexagonScene {
       previousChunk: oldChunk,
     });
 
+    if (
+      shouldReconcileGridAfterChunkHydration({
+        fetchSucceeded: tileFetchSucceeded,
+        isCurrentTransition,
+        targetAreaWasCachedBeforeSwitch,
+      })
+    ) {
+      await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+    }
+
     if (chunkSwitchActions.shouldRollback) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
       this.currentChunk = oldChunk ?? "null";
@@ -4437,6 +4450,8 @@ export default class WorldmapScene extends HexagonScene {
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
+    const targetFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const targetAreaWasCachedBeforeSwitch = this.fetchedChunks.has(targetFetchKey);
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
@@ -4458,6 +4473,16 @@ export default class WorldmapScene extends HexagonScene {
     this.hydratedChunkRefreshes.delete(chunkKey);
     if (!tileFetchSucceeded) {
       return;
+    }
+
+    if (
+      shouldReconcileGridAfterChunkHydration({
+        fetchSucceeded: tileFetchSucceeded,
+        isCurrentTransition: transitionToken === this.chunkTransitionToken,
+        targetAreaWasCachedBeforeSwitch,
+      })
+    ) {
+      await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }
 
     await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
