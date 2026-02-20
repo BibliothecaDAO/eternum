@@ -25,6 +25,7 @@ import { BatchedTransactionDetail, TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType, BatchedTransactionDetail } from "./types";
 export { TransactionCostCategory, CATEGORY_BATCH_LIMITS, getTransactionCategory } from "./batch-config";
+const U32_MAX_BIGINT = 4294967295n;
 type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
@@ -45,6 +46,31 @@ export const getContractByName = (manifest: Manifest, name: string) => {
     throw new Error(`Contract ${name} not found in manifest`);
   }
   return contract.address;
+};
+
+export const normalizeU32TrialId = (trialId: BigNumberish): string => {
+  let parsedTrialId: bigint;
+  try {
+    parsedTrialId = BigInt(trialId as string | number | bigint);
+  } catch {
+    throw new Error(
+      `Invalid trial_id value "${String(trialId)}". trial_id must be a non-negative integer <= ${U32_MAX_BIGINT.toString()}.`,
+    );
+  }
+
+  if (parsedTrialId < 0n) {
+    throw new Error(
+      `Invalid trial_id value "${parsedTrialId.toString()}". trial_id must be a non-negative integer <= ${U32_MAX_BIGINT.toString()}.`,
+    );
+  }
+
+  if (parsedTrialId > U32_MAX_BIGINT) {
+    throw new Error(
+      `Invalid trial_id value "${parsedTrialId.toString()}". trial_id exceeds u32::MAX (${U32_MAX_BIGINT.toString()}).`,
+    );
+  }
+
+  return parsedTrialId.toString();
 };
 
 /**
@@ -3215,11 +3241,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   // Prize distribution (Blitz)
   public async blitz_prize_player_rank(props: SystemProps.BlitzPrizePlayerRankProps) {
     const { trial_id, total_player_count_committed, players_list, signer } = props;
+    const normalizedTrialId = normalizeU32TrialId(trial_id);
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
       entrypoint: "blitz_prize_player_rank",
-      calldata: [trial_id, total_player_count_committed, players_list.length, ...players_list],
+      calldata: [normalizedTrialId, total_player_count_committed, players_list.length, ...players_list],
     });
 
     return await this.promiseQueue.enqueue(call, TransactionType.BLITZ_PRIZE_PLAYER_RANK);

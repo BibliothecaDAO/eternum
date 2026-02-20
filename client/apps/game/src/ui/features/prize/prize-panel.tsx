@@ -2,6 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
+import { normalizeU32TrialId, randomU32TrialId } from "@/utils/trial-id";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -46,7 +47,7 @@ export const PrizePanel = () => {
   const {
     setup: {
       components,
-      systemCalls: { blitz_prize_player_rank, blitz_prize_claim_no_game, uuid, commit_and_claim_game_mmr },
+      systemCalls: { blitz_prize_player_rank, blitz_prize_claim_no_game, commit_and_claim_game_mmr },
     },
   } = useDojo();
 
@@ -368,7 +369,7 @@ export const PrizePanel = () => {
       const addresses = registeredPlayers.map((p) => p.address.toString());
 
       // Determine trial id and committed count
-      const trialId: bigint = myTrial ? (myTrial.trial_id as bigint) : ((await uuid()) as unknown as bigint);
+      const trialId: bigint = myTrial ? normalizeU32TrialId(myTrial.trial_id as bigint) : randomU32TrialId();
       const committed: number = myTrial ? Number(myTrial.total_player_count_committed) : addresses.length;
       const revealed: number = myTrial ? Number(myTrial.total_player_count_revealed) : 0;
 

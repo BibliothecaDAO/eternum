@@ -7,6 +7,7 @@ import {
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
+import { randomU32TrialId } from "@/utils/trial-id";
 import { SqlApi, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { Chain } from "@contracts";
@@ -482,9 +483,6 @@ const fetchLatestMmrForPlayers = async ({
     return new Map();
   }
 };
-
-const randomTrialId = () =>
-  BigInt(`0x${(globalThis.crypto?.randomUUID?.().replace(/-/g, "") || Date.now().toString(16)).slice(0, 31)}`);
 
 const chunk = <T>(items: T[], chunkSize: number): T[][] => {
   const out: T[][] = [];
@@ -1072,7 +1070,7 @@ export const finalizeGameRankingAndMMR = async ({
         const playerRankCall: Call = {
           contractAddress: prizeDistributionAddress,
           entrypoint: "blitz_prize_player_rank",
-          calldata: [randomTrialId(), index === 0 ? totalPlayers : 0, batch.length, ...batch],
+          calldata: [randomU32TrialId(), index === 0 ? totalPlayers : 0, batch.length, ...batch],
         };
         await signer.execute([playerRankCall]);
       }
