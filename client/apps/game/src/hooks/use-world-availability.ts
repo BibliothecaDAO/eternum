@@ -4,7 +4,8 @@
  * by caching results and sharing them across components.
  */
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
 const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
@@ -240,7 +241,34 @@ const checkWorldAvailability = async (
  * @param enabled - Whether to enable the queries
  * @param playerAddress - Optional player address (padded felt) to check registration status
  */
+/**
+ * Lightweight SQL query to fetch registration count for a world.
+ * Used for fast-polling during registration periods to detect new registrations.
+ */
+const REGISTRATION_COUNT_QUERY = `SELECT "blitz_registration_config.registration_count" AS registration_count, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+const fetchRegistrationSnapshot = async (
+  worldName: string,
+): Promise<{ registrationCount: number; maxRingCount: number } | null> => {
+  try {
+    const toriiBaseUrl = buildToriiBaseUrl(worldName);
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(REGISTRATION_COUNT_QUERY)}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const [row] = (await response.json()) as Record<string, unknown>[];
+    if (!row) return null;
+    return {
+      registrationCount: parseMaybeHexToNumber(row.registration_count) ?? 0,
+      maxRingCount: parseMaybeHexToNumber(row.max_ring_count) ?? 0,
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
+  const queryClient = useQueryClient();
+
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
@@ -254,6 +282,41 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       retry: 1,
     })),
   });
+
+  // Fast-poll registration changes during registration periods.
+  // When a new player registers, the contract updates max_ring_count which controls
+  // how many hyperstructures can be forged. The main query polls every 30s which is
+  // too slow — the forge button appears missing until manual reload.
+  // This polls registration_count + max_ring_count every 5s and invalidates the
+  // main cache when either changes, giving near-instant forge button appearance.
+  const prevSnapshotsRef = useRef<Map<string, { registrationCount: number; maxRingCount: number }>>(new Map());
+
+  useEffect(() => {
+    if (!enabled || worlds.length === 0) return;
+
+    const intervalId = setInterval(async () => {
+      for (const world of worlds) {
+        if (!world.name) continue;
+        const snapshot = await fetchRegistrationSnapshot(world.name);
+        if (!snapshot) continue;
+
+        const worldKey = getWorldKey(world);
+        const prev = prevSnapshotsRef.current.get(worldKey);
+
+        if (
+          prev &&
+          (prev.registrationCount !== snapshot.registrationCount || prev.maxRingCount !== snapshot.maxRingCount)
+        ) {
+          // Registration state changed — invalidate the full world availability cache
+          queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+        }
+
+        prevSnapshotsRef.current.set(worldKey, snapshot);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [enabled, worlds, queryClient]);
 
   const results: Map<string, WorldAvailability> = new Map();
 
