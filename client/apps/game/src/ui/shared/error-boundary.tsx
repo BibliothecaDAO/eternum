@@ -1,6 +1,9 @@
 import { captureError } from "@/posthog";
 import React, { Component, ReactNode } from "react";
-import { isDynamicImportChunkError, shouldAttemptDynamicImportRecovery } from "./error-boundary.dynamic-import-recovery";
+import {
+  isDynamicImportChunkError,
+  shouldAttemptDynamicImportRecovery,
+} from "./error-boundary.dynamic-import-recovery";
 
 interface Props {
   children: ReactNode;

@@ -2,7 +2,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import { isDynamicImportChunkError, shouldAttemptDynamicImportRecovery } from "./error-boundary.dynamic-import-recovery";
+import {
+  isDynamicImportChunkError,
+  shouldAttemptDynamicImportRecovery,
+} from "./error-boundary.dynamic-import-recovery";
 
 const createStorage = (initialValue?: string) => {
   const store = new Map<string, string>();
