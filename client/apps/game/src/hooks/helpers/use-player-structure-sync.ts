@@ -18,6 +18,41 @@ const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-ResourceArrival",
 ];
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const unwrapToriiFieldValue = (value: unknown): unknown => {
+  let current = value;
+
+  while (isRecord(current) && "value" in current && ("type" in current || "type_name" in current || "key" in current)) {
+    current = current.value;
+  }
+
+  return current;
+};
+
+const readOwnerFromStructureModelUpdate = (update: unknown): string | null => {
+  if (!isRecord(update) || !isRecord(update.models)) return null;
+
+  const structureModel = update.models["s1_eternum-Structure"];
+  if (!isRecord(structureModel)) return null;
+
+  const directOwner = unwrapToriiFieldValue(structureModel.owner);
+  if (typeof directOwner === "string" && directOwner.startsWith("0x")) {
+    return directOwner;
+  }
+
+  const base = unwrapToriiFieldValue(structureModel.base);
+  if (!isRecord(base)) return null;
+
+  const ownerFromBase = unwrapToriiFieldValue(base.owner);
+  if (typeof ownerFromBase === "string" && ownerFromBase.startsWith("0x")) {
+    return ownerFromBase;
+  }
+
+  return null;
+};
+
 export const usePlayerStructureSync = () => {
   const {
     setup: {
@@ -29,8 +64,10 @@ export const usePlayerStructureSync = () => {
   const playerStructures = usePlayerStructures();
 
   const subscriptionRef = useRef<{ cancel: () => void } | null>(null);
+  const ownerStructureSubscriptionRef = useRef<{ cancel: () => void } | null>(null);
   const syncedStructureIds = useRef<Set<number>>(new Set());
   const inFlightStructureIds = useRef<Set<number>>(new Set());
+  const backfillOwnedStructuresRef = useRef<(() => Promise<void>) | null>(null);
 
   const structureEntityIds = useMemo(() => playerStructures.map((s) => s.entityId), [playerStructures]);
 
@@ -92,12 +129,58 @@ export const usePlayerStructureSync = () => {
       }
     };
 
+    backfillOwnedStructuresRef.current = backfillOwnedStructures;
     void backfillOwnedStructures();
 
     return () => {
       cancelled = true;
+      if (backfillOwnedStructuresRef.current === backfillOwnedStructures) {
+        backfillOwnedStructuresRef.current = null;
+      }
     };
   }, [accountAddress, toriiClient, toriiComponents]);
+
+  useEffect(() => {
+    if (!accountAddress || !toriiClient) return;
+    let cancelled = false;
+
+    const ownerStructureClause = MemberClause("s1_eternum-Structure", "owner", "Eq", {
+      type: "ContractAddress",
+      value: padHexAddressTo66(accountAddress),
+    }).build();
+    const normalizedAccountAddress = padHexAddressTo66(accountAddress).toLowerCase();
+
+    const subscribeToOwnedStructureUpdates = async () => {
+      const ownerSubscription = await toriiClient.onEntityUpdated(ownerStructureClause, (value: unknown) => {
+        if (cancelled) return;
+
+        const owner = readOwnerFromStructureModelUpdate(value);
+        if (!owner) return;
+
+        const normalizedUpdateOwner = padHexAddressTo66(owner).toLowerCase();
+        if (normalizedUpdateOwner !== normalizedAccountAddress) return;
+
+        void backfillOwnedStructuresRef.current?.();
+      });
+
+      if (cancelled) {
+        ownerSubscription.cancel();
+        return;
+      }
+
+      ownerStructureSubscriptionRef.current = ownerSubscription;
+    };
+
+    void subscribeToOwnedStructureUpdates();
+
+    return () => {
+      cancelled = true;
+      if (ownerStructureSubscriptionRef.current) {
+        ownerStructureSubscriptionRef.current.cancel();
+        ownerStructureSubscriptionRef.current = null;
+      }
+    };
+  }, [accountAddress, toriiClient]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).
   useEffect(() => {

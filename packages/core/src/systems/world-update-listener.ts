@@ -1,6 +1,7 @@
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { SqlApi } from "@bibliothecadao/torii";
 import {
+  BANDITS_NAME,
   BiomeIdToType,
   BiomeType,
   BuildingType,
@@ -27,7 +28,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { StaminaManager } from "../managers";
 import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "../stores/map-data-store";
-import { divideByPrecision, tileOptToTile, unpackBuildingCounts } from "../utils";
+import { divideByPrecision, getIsBlitz, getStructureTypeName, tileOptToTile, unpackBuildingCounts } from "../utils";
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
 import { getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
@@ -475,10 +476,17 @@ export class WorldUpdateListener {
                 }
 
                 ownerName = ownerName || "";
+                if (ownerAddress === 0n && ownerName.length === 0) {
+                  ownerName = BANDITS_NAME;
+                }
 
                 this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
 
-                const structureName = structureComponent ? getStructureName(structureComponent, true).name : "";
+                const isBlitz = getIsBlitz();
+                const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
+                const structureName = structureComponent
+                  ? getStructureName(structureComponent, isBlitz).name
+                  : `${fallbackTypeName} ${rawOccupierId}`;
 
                 const battleData = enhancedData.battleData
                   ? {
@@ -543,7 +551,10 @@ export class WorldUpdateListener {
                   ? ownerValue.toString()
                   : (ownerValue ?? "0");
 
-              const playerName = await this.dataEnhancer.getPlayerName(ownerString);
+              let playerName = await this.dataEnhancer.getPlayerName(ownerString);
+              if (ownerValue === 0n && (!playerName || playerName.length === 0)) {
+                playerName = BANDITS_NAME;
+              }
 
               const entityId = this.resolveEntityId(currentState.entity_id as ID | undefined, update.entity, () => {
                 const componentState = getComponentValue(this.setup.components.Structure, update.entity) as

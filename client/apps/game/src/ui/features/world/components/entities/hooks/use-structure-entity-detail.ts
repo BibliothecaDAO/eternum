@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, MERCENARIES, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
@@ -74,7 +74,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
           playerGuild: undefined,
           guards: [],
           isAlly: false,
-          addressName: MERCENARIES,
+          addressName: BANDITS_NAME,
           isMine: false,
           hyperstructureRealmCount: undefined,
           relicEffects,
@@ -85,7 +85,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
       const guards = getGuardsByStructure(structure);
       const userGuild = getGuildFromPlayerAddress(userAddress, components);
       const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-      const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
+      const addressName = structure.owner ? getAddressName(structure.owner, components) : BANDITS_NAME;
 
       const hyperstructureRealmCount =
         structure.base.category === StructureType.Hyperstructure

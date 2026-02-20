@@ -13,7 +13,7 @@ import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from 
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
+import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
@@ -271,13 +271,13 @@ export const PlayersPanel = ({
                   <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim an Essence Rift or Camp from bandits</span>
+                  <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
                   <span className="text-gold font-semibold">
                     {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim a Hyperstructure from bandits</span>
+                  <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
                   <span className="text-gold font-semibold">
                     {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
                   </span>

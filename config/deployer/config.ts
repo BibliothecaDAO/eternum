@@ -5,6 +5,7 @@ import {
   BuildingType,
   CapacityConfig,
   HexGrid,
+  MERCENARIES_NAME_FELT,
   RESOURCE_PRECISION,
   ResourcesIds,
   scaleResourceInputs,
@@ -296,7 +297,7 @@ export const setWorldConfig = async (config: Config) => {
   `),
   );
 
-  const mercenariesName = "0x5468652056616e6775617264";
+  const mercenariesName = MERCENARIES_NAME_FELT;
   const mercenariesTx = await config.provider.set_mercenaries_name_config({
     signer: config.account,
     name: mercenariesName, // The Vanguard
