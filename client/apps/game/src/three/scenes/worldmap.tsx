@@ -147,6 +147,7 @@ import {
 } from "./worldmap-prefetch-queue";
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
+import { resolveWorldmapChunkCoordinates } from "./worldmap-chunk-coordinates";
 import {
   createWorldmapChunkDiagnostics,
   recordChunkDiagnosticsEvent,
@@ -4007,9 +4008,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
-    const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
-    const chunkZ = Math.floor(z / (this.chunkSize * HEX_SIZE * 1.5));
-    return { chunkX, chunkZ };
+    return resolveWorldmapChunkCoordinates({
+      x,
+      z,
+      chunkSize: this.chunkSize,
+      hexSize: HEX_SIZE,
+    });
   }
 
   private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
