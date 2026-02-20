@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 
 import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } from "@/runtime/world";
+import { randomU32TrialId } from "@/utils/trial-id";
 import { Chain, getGameManifest } from "@contracts";
 import { env } from "../../../../../../env";
 import { decodePaddedFeltAscii } from "../market-utils";
@@ -24,9 +25,6 @@ const chunk = <T,>(arr: T[], size: number) => {
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
 };
-
-const randomTrialId = () =>
-  BigInt("0x" + (globalThis.crypto?.randomUUID?.().replace(/-/g, "") || Date.now().toString(16)));
 
 const toAddressHex = (value: any): string | null => {
   try {
@@ -340,7 +338,7 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
         const rankCall: Call = {
           contractAddress: prizeContract.address,
           entrypoint: "blitz_prize_player_rank",
-          calldata: [randomTrialId(), i === 0 ? total : 0, batch.length, ...batch],
+          calldata: [randomU32TrialId(), i === 0 ? total : 0, batch.length, ...batch],
         };
         await account.execute([rankCall]);
       }
