@@ -22,6 +22,9 @@ const HEXCEPTION_READY_TIMEOUT_MS = 6_000;
 // Longer because the bounds subscription still needs to stream Structure
 // entities and the WorldUpdateListener needs to process them into visuals.
 const POST_MAP_LOAD_DELAY_MS = 3_000;
+// If mapLoading never fires (worldmap already mounted before overlay started
+// watching), fall back and dismiss after this delay.
+const SPECTATOR_MAP_LOAD_FALLBACK_MS = 2_000;
 
 /**
  * Loading overlay shown while game data syncs after <World> mounts.
@@ -121,6 +124,20 @@ export const GameLoadingOverlay = () => {
       dismiss(POST_MAP_LOAD_DELAY_MS);
     }
   }, [mapLoading, isSpectating, dismiss]);
+
+  // Fallback for spectators: if mapLoading never fires (race condition where
+  // worldmap mounts before overlay starts watching), dismiss after a short delay.
+  useEffect(() => {
+    if (!isSpectating) return;
+    const fallbackTimer = window.setTimeout(() => {
+      if (!hasDismissed.current && !hasSeenMapLoading.current && !hasQueuedSpectatorReady.current) {
+        hasQueuedSpectatorReady.current = true;
+        setIsReady(true);
+        dismiss(POST_MAP_LOAD_DELAY_MS);
+      }
+    }, SPECTATOR_MAP_LOAD_FALLBACK_MS);
+    return () => window.clearTimeout(fallbackTimer);
+  }, [isSpectating, dismiss]);
 
   useEffect(() => {
     return () => {
