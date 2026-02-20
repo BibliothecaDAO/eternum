@@ -105,6 +105,17 @@ export async function moveExplorer(
     };
   }
 
+  // Pre-flight: check stamina before executing
+  if (explorer.stamina !== undefined && pathResult.totalCost > explorer.stamina) {
+    return {
+      pathFound: true,
+      pathResult,
+      success: false,
+      steps: [],
+      summary: `Insufficient stamina: ${explorer.stamina} available, ${pathResult.totalCost} needed. Wait for regeneration (+20/min).`,
+    };
+  }
+
   if (pathResult.actionBatches.length === 0) {
     return {
       pathFound: true,
