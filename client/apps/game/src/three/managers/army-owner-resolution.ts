@@ -1,4 +1,4 @@
-export interface ArmyOwnerState {
+interface ArmyOwnerState {
   address: bigint;
   ownerName: string;
   guildName: string;
@@ -57,7 +57,8 @@ export const resolveArmyOwnerState = ({ existingOwner, incomingOwner }: ResolveA
     };
   }
 
-  const shouldReuseExistingName = incomingName.length === 0 && existingAddress === incomingAddress && existingAddress !== 0n;
+  const shouldReuseExistingName =
+    incomingName.length === 0 && existingAddress === incomingAddress && existingAddress !== 0n;
   const shouldReuseExistingGuild =
     incomingGuild.length === 0 && existingAddress === incomingAddress && existingAddress !== 0n;
 
