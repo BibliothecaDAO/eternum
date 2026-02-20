@@ -2,10 +2,6 @@ import { CollectibleClaimed, MintedCosmetic, RealmMetadata, TokenBalanceWithToke
 import { fetchSQL } from "./api-client";
 import { QUERIES } from "./queries";
 
-// Collection configuration for loot chests
-// These values should match the network (mainnet/sepolia)
-const LOOT_CHEST_COLLECTION_ID = 3; // mainnet
-
 /**
  * Pad address to 66 characters (0x + 64 hex chars)
  */
@@ -58,6 +54,7 @@ interface RawTokenBalanceWithMetadata {
 export async function fetchTokenBalancesWithMetadata(
   contractAddress: string,
   accountAddress: string,
+  options?: { baseUrl?: string },
 ): Promise<TokenBalanceWithToken[]> {
   const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll(
     "{contractAddress}",
@@ -66,7 +63,7 @@ export async function fetchTokenBalancesWithMetadata(
 
   console.log({ query });
 
-  const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
+  const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query, { baseUrl: options?.baseUrl });
 
   return rawData.map((item) => ({
     token_id: Number(item.token_id.split(":")[1]).toString(),
@@ -90,15 +87,16 @@ export async function fetchTokenBalancesWithMetadata(
 export async function fetchLootChestBalances(
   contractAddress: string,
   accountAddress: string,
+  options?: { collectionId?: number; baseUrl?: string },
 ): Promise<TokenBalanceWithToken[]> {
-  const collectionId = LOOT_CHEST_COLLECTION_ID;
+  const collectionId = options?.collectionId ?? 3;
 
   const query = QUERIES.TOKEN_BALANCES_WITH_MARKETPLACE.replaceAll("{contractAddress}", padAddress(contractAddress))
     .replace("{collectionId}", collectionId.toString())
     .replaceAll("{accountAddress}", padAddress(accountAddress))
     .replace("{trimmedAccountAddress}", padAddress(accountAddress));
 
-  const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
+  const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query, { baseUrl: options?.baseUrl });
 
   return rawData.map((item) => ({
     token_id: Number(item.token_id.split(":")[1]).toString(),
@@ -121,6 +119,7 @@ async function fetchCollectibleClaimed(
   contractAddress: string,
   playerAddress: string,
   minTimestamp: number = 0,
+  options?: { baseUrl?: string },
 ): Promise<CollectibleClaimed[]> {
   // Convert Unix timestamp to ISO string format for SQL datetime comparison
   const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("T", " ").replace("Z", "");
@@ -129,7 +128,7 @@ async function fetchCollectibleClaimed(
     .replace("{playerAddress}", padAddress(playerAddress))
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
-  return await fetchSQL<CollectibleClaimed[]>(query);
+  return await fetchSQL<CollectibleClaimed[]>(query, { baseUrl: options?.baseUrl });
 }
 
 /**
@@ -140,6 +139,7 @@ export async function fetchMintedCosmetics(
   contractAddress: string,
   playerAddress: string,
   minTimestamp: number = 0,
+  options?: { baseUrl?: string },
 ): Promise<MintedCosmetic[]> {
   // Convert Unix timestamp to ISO 8601 format matching the database format (e.g., 2026-01-16T19:32:21+00:00)
   const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("Z", "+00:00");
@@ -148,7 +148,7 @@ export async function fetchMintedCosmetics(
     .replace("{playerAddress}", padAddress(playerAddress))
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
-  const rawData = await fetchSQL<MintedCosmetic[]>(query);
+  const rawData = await fetchSQL<MintedCosmetic[]>(query, { baseUrl: options?.baseUrl });
 
   // Normalize metadata for each result
   return rawData.map((item) => ({
@@ -161,10 +161,10 @@ export async function fetchMintedCosmetics(
  * Fetch total unique cosmetic types across all users.
  * Used for calculating collection progress percentage.
  */
-export async function fetchTotalCosmeticsSupply(contractAddress: string): Promise<number> {
+export async function fetchTotalCosmeticsSupply(contractAddress: string, options?: { baseUrl?: string }): Promise<number> {
   const query = QUERIES.TOTAL_COSMETICS_SUPPLY.replaceAll("{contractAddress}", padAddress(contractAddress));
 
-  const result = await fetchSQL<{ total: number }[]>(query);
+  const result = await fetchSQL<{ total: number }[]>(query, { baseUrl: options?.baseUrl });
 
   return result[0]?.total ?? 0;
 }

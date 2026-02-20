@@ -17,8 +17,18 @@ import {
   CosmeticShowcase,
 } from "@/ui/features/cosmetics/components";
 import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import {
+  COSMETICS_NETWORK_CONFIG,
+  COSMETICS_NETWORKS,
+  type CosmeticsNetwork,
+  DEFAULT_COSMETICS_NETWORK,
+  getStarknetChainIdForNetwork,
+  resolveConnectedTxNetworkFromRuntime,
+} from "@/ui/features/cosmetics/config/networks";
 import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/cosmetics/lib/use-torii-cosmetics";
+import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const resolveAssetImage = (uri?: string | null): string | null => {
   if (!uri) return null;
@@ -30,9 +40,20 @@ const resolveAssetImage = (uri?: string | null): string | null => {
   return uri;
 };
 
+interface ControllerConnectorLike {
+  switchStarknetChain?: (chainId: string) => Promise<boolean>;
+  openSettings?: () => void;
+  rpcUrl?: () => string;
+}
+
 export const LandingCosmetics = () => {
-  const { data: toriiCosmetics, isLoading, isError } = useToriiCosmetics();
-  const { data: totalSupply, isLoading: isLoadingSupply } = useTotalCosmeticsSupply();
+  const { chainId, connector } = useAccount();
+  const controller = (connector as { controller?: ControllerConnectorLike } | undefined)?.controller;
+  const connectedTxNetwork = resolveConnectedTxNetworkFromRuntime({ chainId, controller });
+  const [selectedNetwork, setSelectedNetwork] = useState<CosmeticsNetwork>(DEFAULT_COSMETICS_NETWORK);
+  const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
+  const { data: toriiCosmetics, isLoading, isError } = useToriiCosmetics({ network: selectedNetwork });
+  const { data: totalSupply, isLoading: isLoadingSupply } = useTotalCosmeticsSupply({ network: selectedNetwork });
   const [selectedId, setSelectedId] = useState<string | null>(COSMETIC_ITEMS[0]?.id ?? null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(0);
@@ -40,7 +61,20 @@ export const LandingCosmetics = () => {
 
   // Chest opening state
   const { showLootChestOpening, setShowLootChestOpening } = useLootChestOpeningStore();
-  const { ownedChests, isLoading: isLoadingChests, refetch: refetchChests } = useOwnedChests();
+  const { ownedChests, isLoading: isLoadingChests, refetch: refetchChests } = useOwnedChests(selectedNetwork);
+  const canOpenSelectedNetworkChests = connectedTxNetwork !== null && selectedNetwork === connectedTxNetwork;
+  const selectedNetworkLabel = COSMETICS_NETWORK_CONFIG[selectedNetwork].label;
+  const openDisabledReason = canOpenSelectedNetworkChests
+    ? undefined
+    : connectedTxNetwork
+      ? `You're connected to ${COSMETICS_NETWORK_CONFIG[connectedTxNetwork].label}. Click Open Chest to switch to ${selectedNetworkLabel}.`
+      : `You're on an unsupported transaction network for this action. Click Open Chest to switch to ${selectedNetworkLabel}.`;
+
+  useEffect(() => {
+    if (canOpenSelectedNetworkChests && showWrongNetworkPrompt) {
+      setShowWrongNetworkPrompt(false);
+    }
+  }, [canOpenSelectedNetworkChests, showWrongNetworkPrompt]);
 
   const toriiItems = useMemo<CosmeticItem[]>(() => {
     if (!toriiCosmetics || toriiCosmetics.length === 0) {
@@ -143,13 +177,46 @@ export const LandingCosmetics = () => {
     return filteredItems.find((item) => item.id === selectedId) ?? null;
   }, [filteredItems, selectedId]);
 
+  const handleSwitchNetwork = useCallback(async () => {
+    const targetLabel = COSMETICS_NETWORK_CONFIG[selectedNetwork].label;
+
+    if (!controller?.switchStarknetChain) {
+      toast.error(`Please switch to ${targetLabel} in your wallet, then retry.`);
+      controller?.openSettings?.();
+      return;
+    }
+
+    try {
+      const switched = await controller.switchStarknetChain(getStarknetChainIdForNetwork(selectedNetwork));
+      if (!switched) {
+        toast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
+        controller.openSettings?.();
+        return;
+      }
+
+      toast.success(`Switched to ${targetLabel}.`);
+      setShowWrongNetworkPrompt(false);
+    } catch (error) {
+      console.error("Failed to switch network:", error);
+      toast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
+      controller.openSettings?.();
+    }
+  }, [controller, selectedNetwork]);
+
   // Handle opening a chest from the gallery
   const handleOpenChest = useCallback(
     (chestId: string, epoch: ChestEpoch) => {
+      const runtimeConnectedNetwork = resolveConnectedTxNetworkFromRuntime({ chainId, controller });
+      const canOpen = runtimeConnectedNetwork !== null && selectedNetwork === runtimeConnectedNetwork;
+
+      if (!canOpen) {
+        setShowWrongNetworkPrompt(true);
+        return;
+      }
       setOpeningChest({ id: chestId, epoch });
       setShowLootChestOpening(true);
     },
-    [setShowLootChestOpening],
+    [chainId, controller, selectedNetwork, setShowLootChestOpening],
   );
 
   // Handle closing chest experience
@@ -172,13 +239,36 @@ export const LandingCosmetics = () => {
           size="small"
           className="flex h-full flex-col"
         >
-          <Tabs.List className="mb-4 flex-shrink-0 max-w-md">
-            <Tabs.Tab>Cosmetics</Tabs.Tab>
-            <Tabs.Tab>Chests ({ownedChests.length})</Tabs.Tab>
-            <Tabs.Tab disabled>
-              <span title="Coming Soon">Elite Passes</span>
-            </Tabs.Tab>
-          </Tabs.List>
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <Tabs.List className="flex-shrink-0 max-w-md">
+              <Tabs.Tab>Cosmetics</Tabs.Tab>
+              <Tabs.Tab>Chests ({ownedChests.length})</Tabs.Tab>
+              <Tabs.Tab disabled>
+                <span title="Coming Soon">Elite Passes</span>
+              </Tabs.Tab>
+            </Tabs.List>
+
+            <div className="inline-flex w-fit rounded-xl border border-gold/20 bg-black/40 p-1">
+              {COSMETICS_NETWORKS.map((network) => {
+                const isActive = selectedNetwork === network;
+                return (
+                  <button
+                    key={network}
+                    type="button"
+                    onClick={() => setSelectedNetwork(network)}
+                    className={[
+                      "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                      isActive
+                        ? "bg-gold/25 text-gold border border-gold/40"
+                        : "text-gold/65 border border-transparent hover:text-gold hover:bg-gold/10",
+                    ].join(" ")}
+                  >
+                    {COSMETICS_NETWORK_CONFIG[network].label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <Tabs.Panels className="min-h-0 flex-1 overflow-hidden">
             {/* Cosmetics Tab */}
@@ -243,6 +333,8 @@ export const LandingCosmetics = () => {
                   onOpenChest={handleOpenChest}
                   isLoading={isLoadingChests}
                   openingChestId={openingChest?.id}
+                  canOpenChests={canOpenSelectedNetworkChests}
+                  openDisabledReason={openDisabledReason}
                 />
               </div>
             </Tabs.Panel>
@@ -264,8 +356,38 @@ export const LandingCosmetics = () => {
             onClose={handleCloseChestExperience}
             initialChestId={openingChest?.id}
             initialEpoch={openingChest?.epoch}
+            network={selectedNetwork}
           />
         </LandingDojoProvider>
+      )}
+
+      {showWrongNetworkPrompt && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gold/30 bg-black/95 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gold">Switch Network Required</h3>
+            <p className="mt-2 text-sm text-gold/75">
+              You're trying to open a {selectedNetworkLabel} chest while your wallet is on another chain.
+            </p>
+            <p className="mt-1 text-xs text-gold/55">Switch your wallet to {selectedNetworkLabel} to continue.</p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowWrongNetworkPrompt(false)}
+                className="rounded-lg border border-gold/25 px-3 py-1.5 text-xs text-gold/80 hover:bg-gold/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSwitchNetwork()}
+                className="rounded-lg border border-gold/50 bg-gold/20 px-3 py-1.5 text-xs font-medium text-gold hover:bg-gold/30"
+              >
+                Switch To {selectedNetworkLabel}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
