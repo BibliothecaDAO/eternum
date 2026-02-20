@@ -18,11 +18,14 @@ import { env } from "../../../env";
 
 const RANKING_BATCH_SIZE = 200;
 const LEADERBOARD_FETCH_LIMIT = 1000;
+const MAX_MAP_SNAPSHOT_TILES = 4200;
 const RESOURCE_PRECISION_BIGINT = BigInt(RESOURCE_PRECISION);
 const LORDS_TOKEN_DECIMALS = 18;
 const VICTORY_POINTS_MULTIPLIER = 1_000_000n;
 const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * VICTORY_POINTS_MULTIPLIER;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
+const FNV_OFFSET_BASIS = 0x811c9dc5;
+const FNV_PRIME = 0x01000193;
 
 const REVIEW_BATTLE_AND_CREATION_QUERY = `
   SELECT
@@ -591,6 +594,35 @@ export interface GameReviewStats {
   totalT3TroopsCreated: number;
 }
 
+export interface GameReviewMapSnapshotTile {
+  col: number;
+  row: number;
+  biome: number;
+  hasOccupier: boolean;
+  occupierType: number;
+  occupierIsStructure: boolean;
+}
+
+export type GameReviewMapSnapshot =
+  | {
+      available: true;
+      tiles: GameReviewMapSnapshotTile[];
+      bounds: {
+        minCol: number;
+        maxCol: number;
+        minRow: number;
+        maxRow: number;
+      };
+      totalTiles: number;
+      sampledTiles: number;
+      fingerprintBiome: string;
+      fingerprintOccupier: string;
+    }
+  | {
+      available: false;
+      reason: string;
+    };
+
 export interface GameReviewRewards {
   scoreSubmitted: boolean;
   isRanked: boolean;
@@ -614,6 +646,7 @@ export interface GameReviewData {
   personalScore: LandingLeaderboardEntry | null;
   isParticipant: boolean;
   stats: GameReviewStats;
+  mapSnapshot: GameReviewMapSnapshot;
   finalization: ReviewFinalizationMeta;
   rewards: GameReviewRewards | null;
 }
@@ -736,6 +769,131 @@ const fetchTransactionsCount = async (toriiSqlBaseUrl: string): Promise<number> 
     return parseNumeric(rows[0]?.transaction_count);
   } catch {
     return 0;
+  }
+};
+
+const fnv1aUpdate = (hash: number, chunk: string): number => {
+  let next = hash >>> 0;
+  for (let index = 0; index < chunk.length; index += 1) {
+    next ^= chunk.charCodeAt(index);
+    next = Math.imul(next, FNV_PRIME) >>> 0;
+  }
+  return next >>> 0;
+};
+
+const formatFingerprint = (left: number, right: number): string => {
+  const hex =
+    `${(left >>> 0).toString(16).padStart(8, "0")}${(right >>> 0).toString(16).padStart(8, "0")}`.toUpperCase();
+  return `${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}`;
+};
+
+const sortMapSnapshotTiles = (tiles: GameReviewMapSnapshotTile[]): GameReviewMapSnapshotTile[] => {
+  return tiles.toSorted((left, right) => {
+    if (left.row !== right.row) return left.row - right.row;
+    if (left.col !== right.col) return left.col - right.col;
+    if (left.biome !== right.biome) return left.biome - right.biome;
+    if (left.hasOccupier !== right.hasOccupier) return Number(left.hasOccupier) - Number(right.hasOccupier);
+    if (left.occupierType !== right.occupierType) return left.occupierType - right.occupierType;
+    if (left.occupierIsStructure !== right.occupierIsStructure) {
+      return Number(left.occupierIsStructure) - Number(right.occupierIsStructure);
+    }
+    return 0;
+  });
+};
+
+const sampleMapSnapshotTiles = (tiles: GameReviewMapSnapshotTile[]): GameReviewMapSnapshotTile[] => {
+  if (tiles.length <= MAX_MAP_SNAPSHOT_TILES) {
+    return tiles;
+  }
+
+  const samplingStep = Math.ceil(tiles.length / MAX_MAP_SNAPSHOT_TILES);
+  return tiles.filter((_, index) => index % samplingStep === 0);
+};
+
+const fetchMapSnapshot = async (toriiSqlBaseUrl: string): Promise<GameReviewMapSnapshot> => {
+  try {
+    const sqlClient = new SqlApi(toriiSqlBaseUrl);
+    const rawTiles = await sqlClient.fetchAllTiles();
+
+    if (!Array.isArray(rawTiles) || rawTiles.length === 0) {
+      return {
+        available: false,
+        reason: "Map snapshot unavailable.",
+      };
+    }
+
+    const normalizedTiles = rawTiles.map((tile) => {
+      const col = Math.trunc(parseNumeric(tile.col));
+      const row = Math.trunc(parseNumeric(tile.row));
+      const biome = Math.trunc(parseNumeric(tile.biome));
+      const occupierId = parseNumeric(tile.occupier_id);
+      const occupierType = Math.trunc(parseNumeric(tile.occupier_type));
+
+      return {
+        col,
+        row,
+        biome,
+        hasOccupier: occupierId > 0,
+        occupierType,
+        occupierIsStructure: Boolean(tile.occupier_is_structure),
+      } satisfies GameReviewMapSnapshotTile;
+    });
+
+    if (normalizedTiles.length === 0) {
+      return {
+        available: false,
+        reason: "Map snapshot unavailable.",
+      };
+    }
+
+    const sortedTiles = sortMapSnapshotTiles(normalizedTiles);
+
+    let minCol = Number.POSITIVE_INFINITY;
+    let maxCol = Number.NEGATIVE_INFINITY;
+    let minRow = Number.POSITIVE_INFINITY;
+    let maxRow = Number.NEGATIVE_INFINITY;
+    let biomeHash = FNV_OFFSET_BASIS;
+    let occupierHash = FNV_OFFSET_BASIS;
+
+    for (const tile of sortedTiles) {
+      minCol = Math.min(minCol, tile.col);
+      maxCol = Math.max(maxCol, tile.col);
+      minRow = Math.min(minRow, tile.row);
+      maxRow = Math.max(maxRow, tile.row);
+
+      const baseChunk = `${tile.col}:${tile.row}:${tile.biome};`;
+      biomeHash = fnv1aUpdate(biomeHash, baseChunk);
+
+      const occupierChunk = tile.hasOccupier
+        ? `${baseChunk}1:${tile.occupierType}:${tile.occupierIsStructure ? 1 : 0};`
+        : `${baseChunk}0;`;
+      occupierHash = fnv1aUpdate(occupierHash, occupierChunk);
+    }
+
+    const biomeTail = fnv1aUpdate(biomeHash, `tiles:${sortedTiles.length};`);
+    const occupierTail = fnv1aUpdate(occupierHash, `tiles:${sortedTiles.length};`);
+
+    const sampledTiles = sampleMapSnapshotTiles(sortedTiles);
+
+    return {
+      available: true,
+      tiles: sampledTiles,
+      bounds: {
+        minCol: Number.isFinite(minCol) ? minCol : 0,
+        maxCol: Number.isFinite(maxCol) ? maxCol : 0,
+        minRow: Number.isFinite(minRow) ? minRow : 0,
+        maxRow: Number.isFinite(maxRow) ? maxRow : 0,
+      },
+      totalTiles: sortedTiles.length,
+      sampledTiles: sampledTiles.length,
+      fingerprintBiome: formatFingerprint(biomeHash, biomeTail),
+      fingerprintOccupier: formatFingerprint(occupierHash, occupierTail),
+    };
+  } catch {
+    return {
+      available: false,
+      reason: "Map snapshot unavailable.",
+    };
   }
 };
 
@@ -929,11 +1087,12 @@ export const fetchGameReviewData = async ({
 }): Promise<GameReviewData> => {
   const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
 
-  const [leaderboard, finalization, storyStats, transactionsCount] = await Promise.all([
+  const [leaderboard, finalization, storyStats, transactionsCount, mapSnapshot] = await Promise.all([
     fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
     fetchReviewFinalizationMeta(toriiSqlBaseUrl),
     fetchStoryStats(toriiSqlBaseUrl),
     fetchTransactionsCount(toriiSqlBaseUrl),
+    fetchMapSnapshot(toriiSqlBaseUrl),
   ]);
 
   let topPlayers = leaderboard.slice(0, 3);
@@ -1009,6 +1168,7 @@ export const fetchGameReviewData = async ({
     personalScore,
     isParticipant,
     stats,
+    mapSnapshot,
     finalization,
     rewards,
   };
