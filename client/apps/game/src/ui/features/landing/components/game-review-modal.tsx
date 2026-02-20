@@ -7,6 +7,7 @@ import {
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
+import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +20,15 @@ import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
 import { ScoreCardContent } from "./score-card-modal";
 
-type ReviewStepId = "finished" | "personal" | "stats" | "leaderboard" | "submit-score" | "claim-rewards" | "next-game";
+type ReviewStepId =
+  | "finished"
+  | "personal"
+  | "stats"
+  | "map-fingerprint"
+  | "leaderboard"
+  | "submit-score"
+  | "claim-rewards"
+  | "next-game";
 
 interface GameReviewModalProps {
   isOpen: boolean;
@@ -39,6 +48,10 @@ const EXPORT_STAGE_PADDING_Y = 24;
 const CARD_PREVIEW_STYLE: CSSProperties = {
   maxWidth: `${SHARE_PREVIEW_MAX_WIDTH}px`,
 };
+const MAP_FINGERPRINT_ZOOM_LEVELS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.25, 1.5] as const;
+const MAP_FINGERPRINT_DEFAULT_ZOOM = MAP_FINGERPRINT_ZOOM_LEVELS[3];
+const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
+const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
 
@@ -46,6 +59,7 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
   personal: "Personal Score Card",
   stats: "Global Stats",
+  "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
   "submit-score": "Submit Score + MMR",
   "claim-rewards": "Claim Rewards",
@@ -91,6 +105,23 @@ const buildStepShareMessage = ({
     ].join("\n");
   }
 
+  if (step === "map-fingerprint") {
+    if (!data.mapSnapshot.available) {
+      return [`${worldLabel} map snapshot is unavailable.`, "#Realms #Eternum #Starknet"].join("\n");
+    }
+
+    const signature = data.mapSnapshot.fingerprintBiome;
+
+    return [
+      `${worldLabel} final map fingerprint (Biome View)`,
+      `Signature: ${signature}`,
+      "",
+      "Can you leave your own mark on the next map?",
+      "blitz.realms.world",
+      "#Realms #Eternum #Starknet",
+    ].join("\n");
+  }
+
   if (step === "personal" && data.personalScore) {
     return [
       `${worldLabel} personal result:`,
@@ -116,6 +147,57 @@ const getMmrStatus = (data: GameReviewData): string => {
     return `MMR unavailable: requires at least ${data.finalization.mmrMinPlayers} players.`;
   }
   return "MMR is eligible and will be submitted with score finalization.";
+};
+
+const canRetryMmrUpdate = (data: GameReviewData): boolean => {
+  const finalization = data.finalization;
+  return (
+    finalization.rankingFinalized &&
+    finalization.mmrEnabled &&
+    !finalization.mmrCommitted &&
+    Boolean(finalization.mmrTokenAddress) &&
+    finalization.registeredPlayers.length >= finalization.mmrMinPlayers
+  );
+};
+
+const formatCountdown = (seconds: number): string => {
+  if (seconds <= 0) return "0s";
+
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+};
+
+const isSingleRegistrantNoGame = (finalization: GameReviewData["finalization"]): boolean =>
+  finalization.registrationCount === 1 && !finalization.rankingFinalized;
+
+const getSecondsUntilScoreSubmissionOpen = (
+  finalization: GameReviewData["finalization"],
+  nowTs: number,
+): number | null => {
+  if (isSingleRegistrantNoGame(finalization)) {
+    return 0;
+  }
+
+  const opensAt = finalization.scoreSubmissionOpensAt;
+  if (finalization.rankingFinalized) {
+    return 0;
+  }
+  if (!opensAt) return null;
+
+  const remaining = opensAt - nowTs + 1;
+  return remaining > 0 ? remaining : 0;
+};
+
+const isScoreSubmissionWindowOpen = (finalization: GameReviewData["finalization"], nowTs: number): boolean => {
+  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(finalization, nowTs);
+  return secondsUntilOpen === 0;
 };
 
 const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
@@ -150,19 +232,29 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
 
 const SubmitScoreStep = ({
   data,
+  nowTs,
   hasSigner,
   isSubmitting,
   onSubmit,
   onRequireSignIn,
 }: {
   data: GameReviewData;
+  nowTs: number;
   hasSigner: boolean;
   isSubmitting: boolean;
   onSubmit: () => void;
   onRequireSignIn: () => void;
 }) => {
   const scoreSubmitted = data.finalization.rankingFinalized;
-  const canSubmitScore = !scoreSubmitted;
+  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(data.finalization, nowTs);
+  const submissionWindowOpen = isScoreSubmissionWindowOpen(data.finalization, nowTs);
+  const canRetryMMR = canRetryMmrUpdate(data);
+  const canSubmitScore = !scoreSubmitted && submissionWindowOpen;
+  const canRunPrimaryAction = canSubmitScore || canRetryMMR;
+  const submissionUnlockTime =
+    data.finalization.scoreSubmissionOpensAt != null
+      ? new Date((data.finalization.scoreSubmissionOpensAt + 1) * 1000)
+      : null;
 
   return (
     <div className="space-y-4">
@@ -185,9 +277,31 @@ const SubmitScoreStep = ({
         </div>
       </div>
 
-      {!hasSigner && canSubmitScore && (
+      {!hasSigner && canRunPrimaryAction && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
           Connect a wallet to submit score.
+        </div>
+      )}
+
+      {!scoreSubmitted && !submissionWindowOpen && secondsUntilOpen != null && secondsUntilOpen > 0 && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          <div className="font-medium">Point registration is still open.</div>
+          <div className="mt-1">Score submission unlocks in {formatCountdown(secondsUntilOpen)}.</div>
+          {submissionUnlockTime && (
+            <div className="mt-1 text-xs text-gold/75">
+              Opens at {submissionUnlockTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
+            </div>
+          )}
+        </div>
+      )}
+      {!scoreSubmitted && !submissionWindowOpen && secondsUntilOpen == null && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Submission opens once the game and registration grace period end.
+        </div>
+      )}
+      {canRetryMMR && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Scores are already finalized. Retry MMR update independently if the previous MMR submission failed.
         </div>
       )}
 
@@ -198,9 +312,19 @@ const SubmitScoreStep = ({
           className="w-full justify-center !px-4 !py-2.5"
           forceUppercase={false}
           isLoading={isSubmitting}
-          disabled={isSubmitting || scoreSubmitted || !hasSigner}
+          disabled={isSubmitting || !hasSigner || !canRunPrimaryAction}
         >
-          {isSubmitting ? "Submitting..." : scoreSubmitted ? "Score already submitted" : "Submit score now"}
+          {isSubmitting
+            ? "Submitting..."
+            : canRetryMMR
+              ? "Retry MMR update"
+              : scoreSubmitted
+                ? "Score already submitted"
+                : !submissionWindowOpen && secondsUntilOpen != null
+                  ? `Opens in ${formatCountdown(secondsUntilOpen)}`
+                  : !submissionWindowOpen
+                    ? "Waiting for window"
+                    : "Submit score now"}
         </Button>
       </div>
 
@@ -354,9 +478,51 @@ export const GameReviewModal = ({
 
   const queryClient = useQueryClient();
   const [stepIndex, setStepIndex] = useState(0);
-  const [frozenSnapshot, setFrozenSnapshot] = useState<Pick<GameReviewData, "stats" | "topPlayers"> | null>(null);
+  const [frozenSnapshot, setFrozenSnapshot] = useState<Pick<
+    GameReviewData,
+    "stats" | "topPlayers" | "mapSnapshot"
+  > | null>(null);
   const captureRef = useRef<HTMLDivElement | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
+  const [mapFingerprintZoom, setMapFingerprintZoom] = useState<number>(MAP_FINGERPRINT_DEFAULT_ZOOM);
+  const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
+  const currentMapZoomIndex = useMemo(() => {
+    const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
+      (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
+    );
+    if (exactIndex >= 0) return exactIndex;
+
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    MAP_FINGERPRINT_ZOOM_LEVELS.forEach((zoomLevel, index) => {
+      const distance = Math.abs(mapFingerprintZoom - zoomLevel);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }, [mapFingerprintZoom]);
+  const canZoomIn = currentMapZoomIndex < MAP_FINGERPRINT_ZOOM_LEVELS.length - 1;
+  const canZoomOut = currentMapZoomIndex > 0;
+  const currentGoldLevelIndex = useMemo(() => {
+    const exactIndex = MAP_FINGERPRINT_GOLD_LEVELS.findIndex(
+      (goldLevel) => Math.abs(mapFingerprintGoldLevel - goldLevel) < 0.001,
+    );
+    if (exactIndex >= 0) return exactIndex;
+
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    MAP_FINGERPRINT_GOLD_LEVELS.forEach((goldLevel, index) => {
+      const distance = Math.abs(mapFingerprintGoldLevel - goldLevel);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }, [mapFingerprintGoldLevel]);
 
   const cardPlayer = useMemo(() => {
     const name = accountName?.trim() || data?.personalScore?.displayName?.trim() || null;
@@ -369,7 +535,15 @@ export const GameReviewModal = ({
   }, [accountName, data?.personalScore, account?.address]);
 
   const steps = useMemo<ReviewStepId[]>(() => {
-    const ordered: ReviewStepId[] = ["finished", "personal", "stats", "leaderboard", "submit-score", "claim-rewards"];
+    const ordered: ReviewStepId[] = [
+      "finished",
+      "personal",
+      "stats",
+      "map-fingerprint",
+      "leaderboard",
+      "submit-score",
+      "claim-rewards",
+    ];
     if (showUpcomingGamesStep) {
       ordered.push("next-game");
     }
@@ -383,12 +557,16 @@ export const GameReviewModal = ({
       return true;
     }
 
+    if (currentStep === "map-fingerprint") {
+      return Boolean(data?.mapSnapshot.available);
+    }
+
     if (currentStep === "personal") {
       return Boolean(data?.personalScore);
     }
 
     return false;
-  }, [currentStep, data?.personalScore]);
+  }, [currentStep, data?.mapSnapshot.available, data?.personalScore]);
 
   const reviewData = useMemo<GameReviewData | null>(() => {
     if (!data) return null;
@@ -397,6 +575,7 @@ export const GameReviewModal = ({
       ...data,
       stats: frozenSnapshot.stats,
       topPlayers: frozenSnapshot.topPlayers,
+      mapSnapshot: frozenSnapshot.mapSnapshot,
     };
   }, [data, frozenSnapshot]);
 
@@ -432,17 +611,28 @@ export const GameReviewModal = ({
     if (!isOpen) return;
     setStepIndex(0);
     setFrozenSnapshot(null);
+    setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
+    setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
   }, [isOpen, worldName, worldChain]);
 
   useEffect(() => {
     if (!isOpen || !data) return;
-    setFrozenSnapshot((previous) => previous ?? { stats: data.stats, topPlayers: data.topPlayers });
+    setFrozenSnapshot(
+      (previous) => previous ?? { stats: data.stats, topPlayers: data.topPlayers, mapSnapshot: data.mapSnapshot },
+    );
   }, [data, isOpen]);
 
   useEffect(() => {
     if (stepIndex < steps.length) return;
     setStepIndex(Math.max(0, steps.length - 1));
   }, [stepIndex, steps.length]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setNowTs(Math.floor(Date.now() / 1000));
+    const interval = setInterval(() => setNowTs(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   const finalizeMutation = useMutation({
     mutationFn: async () => {
@@ -457,17 +647,39 @@ export const GameReviewModal = ({
       });
     },
     onSuccess: async (result) => {
-      toast.success("Score submission completed.", {
-        description: result.mmrSubmitted
-          ? `${result.totalPlayers} players processed. MMR committed.`
-          : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
-      });
+      if (result.mmrError) {
+        toast("Score submission completed with MMR pending.", {
+          description: `${result.totalPlayers} players processed. Retry MMR independently from this step.`,
+        });
+      } else {
+        toast.success("Score submission completed.", {
+          description: result.mmrSubmitted
+            ? `${result.totalPlayers} players processed. MMR committed.`
+            : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
+        });
+      }
       await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
-      setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+      if (!result.mmrError) {
+        setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+      }
     },
     onError: (caughtError) => {
       console.error("Failed to submit score/MMR", caughtError);
-      toast.error("Failed to submit score or MMR.");
+      const errorMessage = caughtError instanceof Error ? caughtError.message : String(caughtError);
+      const isGracePeriodError = errorMessage.toLowerCase().includes("registration grace period is not over");
+
+      if (isGracePeriodError && reviewData) {
+        const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
+        toast.error("Score submission is not open yet.", {
+          description:
+            secondsUntilOpen != null && secondsUntilOpen > 0
+              ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
+              : "Submission opens once the game and registration grace period end.",
+        });
+        return;
+      }
+
+      toast.error("Failed to submit score or MMR.", { description: errorMessage });
     },
   });
 
@@ -500,8 +712,31 @@ export const GameReviewModal = ({
       return;
     }
 
+    if (reviewData) {
+      const retryAvailable = canRetryMmrUpdate(reviewData);
+      if (reviewData.finalization.rankingFinalized) {
+        if (!retryAvailable) {
+          toast.error("MMR retry is unavailable.", {
+            description: getMmrStatus(reviewData),
+          });
+          return;
+        }
+      } else {
+        const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
+        if (secondsUntilOpen == null || secondsUntilOpen > 0) {
+          toast.error("Score submission is not open yet.", {
+            description:
+              secondsUntilOpen != null
+                ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
+                : "Submission opens once the game and registration grace period end.",
+          });
+          return;
+        }
+      }
+    }
+
     finalizeMutation.mutate();
-  }, [account, finalizeMutation, onRequireSignIn]);
+  }, [account, finalizeMutation, nowTs, onRequireSignIn, reviewData]);
 
   const handleClaimRewards = useCallback(() => {
     if (!account) {
@@ -730,6 +965,71 @@ export const GameReviewModal = ({
                 </div>
               )}
 
+              {currentStep === "map-fingerprint" && (
+                <div className="space-y-3">
+                  {reviewData.mapSnapshot.available ? (
+                    <>
+                      <div className="mx-auto flex w-full max-w-[1060px] items-center justify-center gap-2 sm:gap-3">
+                        <div ref={captureRef} className="min-w-0 flex-1" style={CARD_PREVIEW_STYLE}>
+                          <BlitzMapFingerprintCardWithSelector
+                            worldName={reviewData.worldName}
+                            snapshot={reviewData.mapSnapshot}
+                            mode="biome"
+                            zoom={mapFingerprintZoom}
+                            goldLevel={mapFingerprintGoldLevel}
+                            player={cardPlayer}
+                          />
+                        </div>
+                        <div className="inline-flex shrink-0 flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/40">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!canZoomIn) return;
+                              const nextIndex = currentMapZoomIndex + 1;
+                              setMapFingerprintZoom(MAP_FINGERPRINT_ZOOM_LEVELS[nextIndex]);
+                            }}
+                            disabled={!canZoomIn}
+                            className="px-2.5 py-2 text-sm font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40 sm:px-3"
+                            aria-label="Zoom in"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!canZoomOut) return;
+                              const nextIndex = currentMapZoomIndex - 1;
+                              setMapFingerprintZoom(MAP_FINGERPRINT_ZOOM_LEVELS[nextIndex]);
+                            }}
+                            disabled={!canZoomOut}
+                            className="px-2.5 py-2 text-sm font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40 sm:px-3"
+                            aria-label="Zoom out"
+                          >
+                            -
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextIndex = (currentGoldLevelIndex + 1) % MAP_FINGERPRINT_GOLD_LEVELS.length;
+                              setMapFingerprintGoldLevel(MAP_FINGERPRINT_GOLD_LEVELS[nextIndex]);
+                            }}
+                            className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 sm:px-3"
+                            aria-label={`Gold level ${Math.round(mapFingerprintGoldLevel * 100)} percent`}
+                            title={`Gold ${Math.round(mapFingerprintGoldLevel * 100)}% (click to cycle)`}
+                          >
+                            G
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
+                      {reviewData.mapSnapshot.reason || "Map snapshot unavailable."}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {currentStep === "leaderboard" && (
                 <div className="space-y-3">
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
@@ -745,6 +1045,7 @@ export const GameReviewModal = ({
               {currentStep === "submit-score" && (
                 <SubmitScoreStep
                   data={reviewData}
+                  nowTs={nowTs}
                   hasSigner={Boolean(account)}
                   isSubmitting={finalizeMutation.isPending}
                   onSubmit={handleSubmitScore}

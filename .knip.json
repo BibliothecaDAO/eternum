@@ -1,6 +1,10 @@
 {
   "ignoreDependencies": ["@videos/.*"],
   "ignore": [
+    ".context/**",
+
+    "eliza/**",
+
     "**/*.js",
 
     "packages/**",
