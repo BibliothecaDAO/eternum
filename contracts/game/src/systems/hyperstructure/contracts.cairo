@@ -153,7 +153,8 @@ pub mod hyperstructure_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
-        HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
+        BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl,
+        VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
     use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
     use crate::models::guild::GuildMember;
@@ -439,8 +440,11 @@ pub mod hyperstructure_systems {
                     // count surrounding realms and determine points per second multiplier
                     let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
                     let structure_coord: Coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
+                    let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
+                        world, selector!("blitz_settlement_config"),
+                    );
                     let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
-                        ref world, structure_coord,
+                        ref world, structure_coord, blitz_settlement_config.single_realm_mode,
                     );
                     hyperstructure.points_multiplier = surrounding_realms_count;
                     world.write_model(@hyperstructure);
