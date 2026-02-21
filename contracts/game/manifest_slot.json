@@ -5186,7 +5186,7 @@
     },
     {
       "address": "0x5b120cb31f17c52f0c4808745c585b52a138c75918c54cffdc1ee24fd76b149",
-      "class_hash": "0x5ba225d213b2a2749d1e92483903e76d738588d1b346225464fd5c5814367ea",
+      "class_hash": "0x611fa3a9e78b047001136ca90f3a0a5a2f04f79feb4d793b49ea54f9c96bbde",
       "init_calldata": [],
       "tag": "s1_eternum-hyperstructure_systems",
       "selector": "0x4bdd8bcbb935577aba3b974bd7e906698504fcb75e0c3aa34913c21342b4498",
