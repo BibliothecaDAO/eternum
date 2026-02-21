@@ -105,6 +105,12 @@ interface StructureBoundsRefreshInput {
   chunkSize: number;
 }
 
+interface HydratedGridReconcileDecisionInput {
+  fetchSucceeded: boolean;
+  isCurrentTransition: boolean;
+  targetAreaWasCachedBeforeSwitch: boolean;
+}
+
 /**
  * Resolve chunk-switch side effects after hydration completes.
  * Keeps behavior deterministic for success, failure, and stale transitions.
@@ -136,6 +142,18 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
     shouldUnregisterPreviousChunk,
     shouldRestorePreviousState: false,
   };
+}
+
+/**
+ * When switching into a chunk whose render area was not cached before switch start,
+ * run one post-hydration grid rebuild to converge terrain visuals.
+ */
+export function shouldReconcileGridAfterChunkHydration(input: HydratedGridReconcileDecisionInput): boolean {
+  if (!input.fetchSucceeded || !input.isCurrentTransition) {
+    return false;
+  }
+
+  return !input.targetAreaWasCachedBeforeSwitch;
 }
 
 /**

@@ -23,6 +23,7 @@ import {
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   resolveControlsChangeChunkRefreshPlan,
+  shouldReconcileGridAfterChunkHydration,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -88,6 +89,46 @@ describe("resolveChunkSwitchActions", () => {
       shouldUnregisterPreviousChunk: false,
       shouldRestorePreviousState: false,
     });
+  });
+});
+
+describe("shouldReconcileGridAfterChunkHydration", () => {
+  it("reconciles grid after successful current transition when target area was uncached", () => {
+    expect(
+      shouldReconcileGridAfterChunkHydration({
+        fetchSucceeded: true,
+        isCurrentTransition: true,
+        targetAreaWasCachedBeforeSwitch: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("skips reconcile when target area was already cached before switch", () => {
+    expect(
+      shouldReconcileGridAfterChunkHydration({
+        fetchSucceeded: true,
+        isCurrentTransition: true,
+        targetAreaWasCachedBeforeSwitch: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("skips reconcile on failed hydration or stale transitions", () => {
+    expect(
+      shouldReconcileGridAfterChunkHydration({
+        fetchSucceeded: false,
+        isCurrentTransition: true,
+        targetAreaWasCachedBeforeSwitch: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldReconcileGridAfterChunkHydration({
+        fetchSucceeded: true,
+        isCurrentTransition: false,
+        targetAreaWasCachedBeforeSwitch: false,
+      }),
+    ).toBe(false);
   });
 });
 
