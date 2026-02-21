@@ -214,7 +214,7 @@ pub mod mmr_systems {
             assert!(meta.game_median.is_non_zero(), "Eternum: mmr meta not committed");
 
             // Ensure claim hasnt been called previously
-            let mut claimed: MMRClaimed = world.read_model(WORLD_CONFIG_ID);
+            let mut claimed: MMRClaimed = world.read_model(final_trial_id);
             assert!(claimed.claimed_at.is_zero(), "Eternum: mmr already claimed");
 
             // ensure mmr token address is set
