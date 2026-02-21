@@ -153,8 +153,8 @@ pub mod hyperstructure_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
-        BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig,
-        WorldConfigUtilImpl,
+        BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl,
+        VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
     use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
     use crate::models::guild::GuildMember;

@@ -36,9 +36,7 @@ pub impl iVillageImpl of iVillageTrait {
     fn ensure_associated_with_village(
         ref world: WorldStorage, village_structure_metadata: StructureMetadata, check_realm_entity_id: ID,
     ) {
-        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(
-            world, selector!("blitz_mode_on"),
-        );
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
         if blitz_mode_on {
             return;
         }
