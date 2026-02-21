@@ -35,24 +35,25 @@ afterEach(() => {
 });
 
 describe("doctor command", () => {
-  it("fails when manifest path does not exist", async () => {
+  it("passes when config is valid (manifest path is optional)", async () => {
     const base = mkdtempSync(join(tmpdir(), "onchain-doctor-"));
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     process.env.ETERNUM_AGENT_HOME = base;
     process.env.DATA_DIR = join(base, "data");
     process.env.SESSION_BASE_PATH = join(base, ".cartridge");
-    process.env.MANIFEST_PATH = join(base, "missing-manifest.json");
+    delete process.env.MANIFEST_PATH;
     process.env.WORLD_ADDRESS = "0x123";
     process.env.RPC_URL = "http://localhost:5050";
     process.env.TORII_URL = "http://localhost:8080";
+    process.env.ANTHROPIC_API_KEY = "test-key";
 
     try {
       const { runCli } = await import("../../src/cli");
       const code = await runCli(["doctor"]);
 
-      expect(code).toBe(1);
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("MANIFEST_PATH"));
+      expect(code).toBe(0);
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Doctor OK"));
     } finally {
       rmSync(base, { recursive: true, force: true });
     }

@@ -3,7 +3,7 @@ version: 1
 jobs:
   - id: military-check
     enabled: true
-    schedule: "*/6 * * * *"
+    schedule: "*/3 * * * *"
     mode: observe
     timeoutSec: 30
     prompt: |
@@ -19,7 +19,7 @@ jobs:
       Do NOT execute actions.
   - id: upgrade-check
     enabled: true
-    schedule: "2-59/6 * * * *"
+    schedule: "1-59/3 * * * *"
     mode: observe
     timeoutSec: 30
     prompt: |
@@ -32,7 +32,7 @@ jobs:
       Write upgrade opportunities to tasks/learnings.md. Do NOT execute actions.
   - id: build-check
     enabled: true
-    schedule: "4-59/6 * * * *"
+    schedule: "2-59/3 * * * *"
     mode: observe
     timeoutSec: 30
     prompt: |
@@ -45,7 +45,7 @@ jobs:
       Write build recommendations to tasks/learnings.md. Do NOT execute actions.
   - id: study-handbooks
     enabled: true
-    schedule: "1-59/20 * * * *"
+    schedule: "*/10 * * * *"
     mode: observe
     timeoutSec: 60
     prompt: |
@@ -64,11 +64,11 @@ jobs:
 
 <!-- HEARTBEAT.md — Cron-style recurring jobs
 
-Stagger schedule (6-min cycle, 2-min offset):
-  military-check: 0, 6, 12, 18, 24, 30, 36, 42, 48, 54
-  upgrade-check:  2, 8, 14, 20, 26, 32, 38, 44, 50, 56
-  build-check:    4, 10, 16, 22, 28, 34, 40, 46, 52, 58
-  study-handbooks: 1, 21, 41
+Stagger schedule (3-min cycle, 1-min offset):
+  military-check: 0, 3, 6, 9, ...
+  upgrade-check:  1, 4, 7, 10, ...
+  build-check:    2, 5, 8, 11, ...
+  study-handbooks: 0, 10, 20, 30, 40, 50
 
 Changes to this file are hot-reloaded (no restart needed).
 -->

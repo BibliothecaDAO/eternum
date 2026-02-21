@@ -54,7 +54,7 @@ const mocks = vi.hoisted(() => {
       dispose: vi.fn().mockResolvedValue(undefined),
     }),
     createHeartbeatLoop: vi.fn().mockReturnValue(heartbeatLoop),
-    createApp: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+    createApp: vi.fn().mockReturnValue({ dispose: vi.fn(), addSystemMessage: vi.fn() }),
     getModel: vi.fn().mockReturnValue({ id: "test-model" }),
     loadConfig: vi.fn().mockReturnValue({
       rpcUrl: "http://rpc.local",
@@ -141,7 +141,7 @@ describe("index bootstrap", () => {
     mocks.sessionInstances.length = 0;
     mocks.createClient.mockResolvedValue(mocks.client);
     mocks.createHeartbeatLoop.mockReturnValue(mocks.heartbeatLoop);
-    mocks.createApp.mockReturnValue({ dispose: vi.fn() });
+    mocks.createApp.mockReturnValue({ dispose: vi.fn(), addSystemMessage: vi.fn() });
     mocks.getModel.mockReturnValue({ id: "test-model" });
     mocks.createGameAgent.mockReturnValue({
       agent: mocks.agent,
@@ -200,7 +200,7 @@ describe("index bootstrap", () => {
       getDataDir: vi.fn().mockReturnValue("/tmp/agent-data"),
       dispose: disposeAgent,
     });
-    mocks.createApp.mockReturnValueOnce({ dispose: disposeTui });
+    mocks.createApp.mockReturnValueOnce({ dispose: disposeTui, addSystemMessage: vi.fn() });
 
     mocks.loadConfig.mockReturnValueOnce({
       rpcUrl: "http://rpc.local",

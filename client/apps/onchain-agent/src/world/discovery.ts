@@ -136,8 +136,7 @@ async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> 
     factoryUrls.map(async (url) => {
       try {
         return await fetchFactoryRows(url, query);
-      } catch (err) {
-        console.error(`[discovery] Factory query failed for ${url}:`, err instanceof Error ? err.message : err);
+      } catch {
         return [];
       }
     }),
@@ -162,9 +161,9 @@ async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> 
     }),
   );
 
-  // Filter out ended worlds — keep worlds with unknown status (Torii may not be ready yet)
+  // Only show worlds that are upcoming or actively ongoing
   return checks
-    .filter((w) => w.status !== "ended")
+    .filter((w) => w.status === "upcoming" || w.status === "ongoing")
     .map(({ name, chain, status }) => ({ name, chain, status }));
 }
 

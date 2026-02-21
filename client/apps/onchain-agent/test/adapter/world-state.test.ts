@@ -180,62 +180,39 @@ describe("buildWorldState", () => {
     expect(army!.troopSummary).toBe("150 Knight T2");
   });
 
-  it("populates actions for owned entities only", async () => {
+  it("does not attach per-entity actions (actions are listed in tick prompt section headers)", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");
 
+    // Actions were moved to section headers in the tick prompt formatter
     const realm = state.entities.find((e) => e.entityId === 1);
-    expect(realm!.actions).toBeDefined();
-    expect(realm!.actions).toContain("createExplorer");
-    expect(realm!.actions).toContain("addGuard");
+    expect((realm as any).actions).toBeUndefined();
 
     const army = state.entities.find((e) => e.entityId === 100);
-    expect(army!.actions).toBeDefined();
-    expect(army!.actions).toContain("move");
-    expect(army!.actions).toContain("attackExplorer");
-
-    // Non-owned entities have no actions
-    const mine = state.entities.find((e) => e.entityId === 3);
-    expect(mine!.actions).toBeUndefined();
+    expect((army as any).actions).toBeUndefined();
   });
 
-  it("populates neighborTiles with biome and occupant details for owned armies", async () => {
+  it("builds tileMap from raw tile data for neighbor lookups", async () => {
     const client = createMockClient() as any;
     const state = await buildWorldState(client, "0xdeadbeef");
 
-    const army = state.entities.find((e) => e.entityId === 100);
-    expect(army!.neighborTiles).toBeDefined();
-    expect(army!.neighborTiles!.length).toBe(6);
+    // Tile data is stored in the top-level tileMap, not per-entity neighborTiles
+    expect(state.tileMap).toBeDefined();
+    expect(state.tileMap.size).toBeGreaterThan(0);
 
-    // Army at (15, 25) — odd row
-    // East (16,25) → biome=3 (Beach) → explored, not occupied
-    const east = army!.neighborTiles!.find((n) => n.direction === "East");
-    expect(east!.explored).toBe(true);
-    expect(east!.occupied).toBe(false);
-    expect(east!.biome).toBe("Beach");
-    expect(east!.occupant).toBeUndefined();
+    // East of army (16,25) → biome=3 (Beach)
+    const east = state.tileMap.get("16,25");
+    expect(east).toBeDefined();
+    expect(east!.biome).toBe(3);
 
-    // NE (15,26) → biome=5 (Bare) → explored, occupied by Chest #999
-    const ne = army!.neighborTiles!.find((n) => n.direction === "NE");
-    expect(ne!.explored).toBe(true);
-    expect(ne!.occupied).toBe(true);
-    expect(ne!.biome).toBe("Bare");
-    expect(ne!.occupant).toBe("Chest");
-    expect(ne!.occupantId).toBe(999);
+    // NE (15,26) → occupied by Chest (#999, type 34)
+    const ne = state.tileMap.get("15,26");
+    expect(ne).toBeDefined();
+    expect(ne!.occupierType).toBe(34);
+    expect(ne!.occupierId).toBe(999);
 
-    // West (14,25) → not in tiles → unexplored
-    const west = army!.neighborTiles!.find((n) => n.direction === "West");
-    expect(west!.explored).toBe(false);
-    expect(west!.biome).toBeUndefined();
-
-    // SW (14,24) → not in tiles → unexplored
-    const sw = army!.neighborTiles!.find((n) => n.direction === "SW");
-    expect(sw!.explored).toBe(false);
-
-    // SE (15,24) → biome=1 (DeepOcean) → explored, empty
-    const se = army!.neighborTiles!.find((n) => n.direction === "SE");
-    expect(se!.explored).toBe(true);
-    expect(se!.biome).toBe("DeepOcean");
+    // West (14,25) → not in tiles → missing from map
+    expect(state.tileMap.has("14,25")).toBe(false);
   });
 
   it("populates buildingSlots from packed_counts for owned structures", async () => {
@@ -297,7 +274,8 @@ describe("buildWorldState", () => {
     // Mock army has owner_structure_id: 1
     expect(realm!.armies).toBeDefined();
     expect(realm!.armies!.current).toBe(1);
-    expect(realm!.armies!.max).toBe(1); // Realm max = 1
+    // max is not computed from structure type — always starts at 0
+    expect(realm!.armies!.max).toBe(0);
   });
 
   it("provides guard slot details for owned structures", async () => {

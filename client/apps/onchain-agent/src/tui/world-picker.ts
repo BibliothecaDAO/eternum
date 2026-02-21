@@ -29,12 +29,20 @@ export function createWorldPicker(worlds: DiscoveredWorld[]): Promise<Discovered
     const maxVisible = Math.min(worlds.length, termRows - 2, 30);
     const selectList = new SelectList(items, maxVisible, theme);
     let resolved = false;
+    let lastLineCount = 0;
 
     const render = () => {
       const width = process.stdout.columns || 80;
       const lines = selectList.render(width);
-      // Cursor home + clear + draw in a single atomic write
-      process.stdout.write(`\x1b[H\x1b[J${lines.join("\n")}\n`);
+      // Clear previous picker lines, then redraw in place
+      let out = "";
+      if (lastLineCount > 0) {
+        // Move up to the start of the previous render and clear from there
+        out += `\x1b[${lastLineCount}A\x1b[J`;
+      }
+      out += lines.join("\n") + "\n";
+      lastLineCount = lines.length;
+      process.stdout.write(out);
     };
 
     const cleanup = () => {
@@ -42,8 +50,11 @@ export function createWorldPicker(worlds: DiscoveredWorld[]): Promise<Discovered
       resolved = true;
       process.stdin.setRawMode(false);
       process.stdin.removeListener("data", onData);
-      // Exit alternate screen + show cursor
-      process.stdout.write("\x1b[?1049l\x1b[?25h");
+      // Clear picker lines and show cursor
+      if (lastLineCount > 0) {
+        process.stdout.write(`\x1b[${lastLineCount}A\x1b[J`);
+      }
+      process.stdout.write("\x1b[?25h");
     };
 
     selectList.onSelect = (item: SelectItem) => {
@@ -73,8 +84,8 @@ export function createWorldPicker(worlds: DiscoveredWorld[]): Promise<Discovered
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.on("data", onData);
-    // Enter alternate screen + hide cursor
-    process.stdout.write("\x1b[?1049h\x1b[?25l");
+    // Hide cursor, render picker below existing output
+    process.stdout.write("\x1b[?25l");
     render();
   });
 }
