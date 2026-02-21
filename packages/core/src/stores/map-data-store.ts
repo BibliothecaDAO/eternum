@@ -26,7 +26,13 @@ import { ArmyMapDataRaw, SqlApi, StructureMapDataRaw } from "@bibliothecadao/tor
 import { BuildingType, GuardSlot, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../client/public/jsons/realms.json";
-import { divideByPrecision, getIsBlitz, getStructureTypeName, unpackBuildingCounts } from "../utils";
+import {
+  divideByPrecision,
+  getHyperstructureRealmCheckRadius,
+  getIsBlitz,
+  getStructureTypeName,
+  unpackBuildingCounts,
+} from "../utils";
 
 // Army category mapping
 const ARMY_CATEGORY_NAMES: Record<string, string> = {
@@ -383,11 +389,13 @@ export class MapDataStore {
     const isBlitz = getIsBlitz();
     const realmsData = realms as Record<string, { name: string }>;
 
+    const hyperstructureRealmCheckRadius = getHyperstructureRealmCheckRadius();
+
     // Fetch all structures and armies in parallel
     const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await Promise.all([
       this.sqlApi.fetchAllStructuresMapData(),
       this.sqlApi.fetchAllArmiesMapData(),
-      this.sqlApi.fetchHyperstructuresWithRealmCount(8),
+      this.sqlApi.fetchHyperstructuresWithRealmCount(hyperstructureRealmCheckRadius),
     ]);
 
     // Transform and store structures
