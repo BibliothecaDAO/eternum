@@ -4,7 +4,7 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::config::{
-    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+    BlitzSettlementConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use crate::models::map::{Tile, TileOccupier};
@@ -158,8 +158,22 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
 #[generate_trait]
 pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
-    fn realm_tile_distance() -> u32 {
-        8 // manually counted. must be divisible by 2
+    fn realm_tile_distance_three_realm_mode() -> u32 {
+        8 // 3-realm spawn coords use this offset from hyperstructures
+    }
+
+    fn realm_tile_distance_single_realm_mode() -> u32 {
+        10 // centered single-realm spawn coords use this offset from hyperstructures
+    }
+
+    fn realm_tile_distance(ref world: WorldStorage) -> u32 {
+        let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("blitz_settlement_config"),
+        );
+        if blitz_settlement_config.single_realm_mode {
+            return Self::realm_tile_distance_single_realm_mode();
+        }
+        return Self::realm_tile_distance_three_realm_mode();
     }
 
     fn count_surrounding_realms(ref world: WorldStorage, hyperstructure_coord: Coord) -> u8 {
@@ -170,12 +184,13 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
             (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
         ];
 
+        let realm_tile_distance = Self::realm_tile_distance(ref world);
         let mut count = 0;
         for direction in start_directions {
             let (start_direction, triangle_direction) = direction;
             let potential_realm_coord = start_coord
-                .neighbor_after_distance(start_direction, Self::realm_tile_distance())
-                .neighbor_after_distance(triangle_direction, Self::realm_tile_distance() / 2);
+                .neighbor_after_distance(start_direction, realm_tile_distance)
+                .neighbor_after_distance(triangle_direction, realm_tile_distance / 2);
 
             let potential_realm_tile_opt: TileOpt = world
                 .read_model((potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
