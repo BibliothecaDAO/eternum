@@ -13,7 +13,7 @@ export const GettingStarted = () => {
     },
     {
       title: "Victory Points Breakdown",
-      content: `Victory Points (VP) are earned through various actions: Explore a tile - ${VICTORY_POINT_VALUES.exploreTile} VP, Claim a World Structure from ${BANDITS_NAME} - ${VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP, Claim a Hyperstructure from ${BANDITS_NAME} - ${VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP, Control a Hyperstructure - ${VICTORY_POINT_VALUES.hyperstructureControlPerRealmPerSecond} VP/second per nearby settled Realm (8-hex check in 3-Realm Blitz, 10-hex check in centered single-Realm mode). The first player to reach 9.6 million points gains the power to end the season and claim victory.`,
+      content: `Victory Points (VP) are earned through various actions: Explore a tile - ${VICTORY_POINT_VALUES.exploreTile} VP, Claim a World Structure from ${BANDITS_NAME} - ${VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP, Claim a Hyperstructure from ${BANDITS_NAME} - ${VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP, Control a Hyperstructure - ${VICTORY_POINT_VALUES.hyperstructureControlPerRealmPerSecond} VP/second per nearby settled Realm. The first player to reach 9.6 million points gains the power to end the season and claim victory.`,
     },
     {
       title: "The Realms Day",
