@@ -19,36 +19,39 @@ function logToolResponse(toolName: string, params: any, response: string) {
   } catch (_) {}
 }
 
-// const observeSchema = Type.Object({
-//   filter: Type.Optional(Type.String({ description: "Optional filter for entities" })),
-// });
+const observeSchema = Type.Object({
+  filter: Type.Optional(Type.String({ description: "Optional filter for entities" })),
+});
 
 /**
  * Creates a tool that observes the current game world state.
  * The tool calls adapter.getWorldState() and returns the state as JSON.
  * Map values (like resources) are serialized to plain objects.
+ *
+ * Note: The tick prompt already provides formatted world state each tick,
+ * but this tool is available for on-demand queries between ticks.
  */
-// observe_game disabled — the tick prompt already provides formatted world state each tick.
-// export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<typeof observeSchema> {
-//   return {
-//     name: "observe_game",
-//     label: "Observe Game",
-//     description: "Get the current game world state including entities, resources, and tick information.",
-//     parameters: observeSchema,
-//     async execute(_toolCallId, _params) {
-//       const state = await adapter.getWorldState();
-//       // Handle Map serialization for resources
-//       const serializable = {
-//         ...state,
-//         resources: state.resources ? Object.fromEntries(state.resources) : undefined,
-//       };
-//       return {
-//         content: [{ type: "text", text: JSON.stringify(serializable, null, 2) }],
-//         details: { tick: state.tick },
-//       };
-//     },
-//   };
-// }
+export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<typeof observeSchema> {
+  return {
+    name: "observe_game",
+    label: "Observe Game",
+    description: "Get the current game world state including entities, resources, and tick information. Use this to refresh your view of the world between ticks.",
+    parameters: observeSchema,
+    async execute(_toolCallId, _params) {
+      const state = await adapter.getWorldState();
+      const serializable = {
+        ...state,
+        resources: state.resources ? Object.fromEntries(state.resources) : undefined,
+      };
+      const response = JSON.stringify(serializable, null, 2);
+      logToolResponse("observe_game", _params, response);
+      return {
+        content: [{ type: "text", text: response }],
+        details: { tick: state.tick },
+      };
+    },
+  };
+}
 
 /**
  * Build a human-readable description block from action definitions.
@@ -188,7 +191,7 @@ export function createSimulateActionTool(adapter: GameAdapter<any>, actionDefs?:
  */
 export function createGameTools(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any>[] {
   const tools: AgentTool<any>[] = [
-    // createObserveGameTool(adapter),
+    createObserveGameTool(adapter),
     createExecuteActionTool(adapter, actionDefs),
     createSimulateActionTool(adapter, actionDefs),
   ];

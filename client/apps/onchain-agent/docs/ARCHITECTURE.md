@@ -130,7 +130,7 @@ Env-driven configuration with fallback defaults:
 
 - **CHAIN** (default: `slot`) → chain ID fallback
 - **RPC_URL**, **TORII_URL**, **WORLD_ADDRESS** — if all set, skips world discovery
-- **MANIFEST_PATH** — defaults to `~/.eternum-agent/manifest.json` (derived from discovery)
+- **MANIFEST_PATH** — optional, only needed when bypassing world discovery
 - **GAME_NAME** (default: `eternum`) — filters manifest tags for session policies
 - **CHAIN_ID** — auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3` for Katana, `SN_MAIN`/`SN_SEPOLIA` for
   L1)
@@ -876,7 +876,7 @@ wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
 | `RPC_URL`            | _(discovery)_                    | StarkNet RPC endpoint — if set (with TORII_URL, WORLD_ADDRESS), skips discovery |
 | `TORII_URL`          | _(discovery)_                    | Torii SQL endpoint                                                              |
 | `WORLD_ADDRESS`      | _(discovery)_                    | World contract address                                                          |
-| `MANIFEST_PATH`      | `~/.eternum-agent/manifest.json` | Dojo manifest JSON path                                                         |
+| `MANIFEST_PATH`      | _(none)_                         | Optional Dojo manifest JSON — only needed when bypassing world discovery        |
 | `GAME_NAME`          | `eternum`                        | Game namespace (filters manifest tags for session policies)                     |
 | `CHAIN_ID`           | _(auto-derived)_                 | StarkNet chain ID (hex encoded short string)                                    |
 | `SESSION_BASE_PATH`  | `~/.eternum-agent/.cartridge/`   | Cartridge session storage directory                                             |
@@ -961,7 +961,7 @@ wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
    RPC_URL=http://localhost:5050
    TORII_URL=http://localhost:8080/sql
    WORLD_ADDRESS=0x...
-   MANIFEST_PATH=/path/to/manifest.json
+   MANIFEST_PATH=/path/to/manifest.json   # optional
    ANTHROPIC_API_KEY=sk-ant-...
    ```
 2. Run: `axis run` (no picker, connects directly)

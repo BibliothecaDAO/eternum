@@ -190,7 +190,10 @@ async function createRuntimeServices(
   resolvedManifest?: { contracts: unknown[] },
   worldProfile?: WorldProfile,
 ): Promise<RuntimeServices> {
-  const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath)));
+  if (!resolvedManifest && !config.manifestPath) {
+    throw new Error("No manifest available: use world discovery or set MANIFEST_PATH");
+  }
+  const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath!)));
 
   const chainId = deriveChainIdFromRpcUrl(config.rpcUrl) ?? config.chainId;
 
