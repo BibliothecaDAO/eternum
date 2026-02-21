@@ -434,15 +434,21 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
+    let cancelled = false;
+
     const defaultFactory = FACTORY_ADDRESSES[currentChain];
     if (defaultFactory) {
       setFactoryAddress(defaultFactory);
     }
 
-    const manifest = getManifestJsonString(currentChain);
-    if (manifest) {
-      setManifestJson(manifest);
-    }
+    const loadManifest = async () => {
+      const manifest = await getManifestJsonString(currentChain);
+      if (!cancelled && manifest) {
+        setManifestJson(manifest);
+      }
+    };
+
+    void loadManifest();
 
     // Load stored world names
     setStoredWorldNames(getStoredWorldNames());
@@ -457,6 +463,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentChain]);
 
   // Generate world name when account name changes

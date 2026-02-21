@@ -25,7 +25,7 @@
 import { ArmyMapDataRaw, SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
 import { BuildingType, GuardSlot, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import realms from "../../../../client/public/jsons/realms.json";
+import { getRealmNameById } from "../data/realm-names";
 import {
   divideByPrecision,
   getHyperstructureRealmCheckRadius,
@@ -387,8 +387,6 @@ export class MapDataStore {
 
   private async fetchAndStoreMapData(): Promise<void> {
     const isBlitz = getIsBlitz();
-    const realmsData = realms as Record<string, { name: string }>;
-
     const hyperstructureRealmCheckRadius = getHyperstructureRealmCheckRadius();
 
     // Fetch all structures and armies in parallel
@@ -398,7 +396,14 @@ export class MapDataStore {
       this.sqlApi.fetchHyperstructuresWithRealmCount(hyperstructureRealmCheckRadius),
     ]);
 
-    // Transform and store structures
+    // Build fresh maps so refresh commits atomically and drops stale entries.
+    const nextStructuresMap: Map<number, StructureMapData> = new Map();
+    const nextArmiesMap: Map<number, ArmyMapData> = new Map();
+    const nextAddressToNameMap: Map<string, string> = new Map();
+    const nextEntityToEntityIdMap: Map<string, number> = new Map();
+    const nextHyperstructureRealmCountMap: Map<ID, number> = new Map();
+
+    // Transform and stage structures
     structuresRaw.forEach((structureRaw: StructureMapDataRaw) => {
       const structure = structureRaw as StructureMapDataRawWithEntity;
       const structureEntityHex = structure.internal_entity_id ?? "";
@@ -419,7 +424,7 @@ export class MapDataStore {
 
       const structureTypeName =
         structure.realm_id && structure.realm_id !== 0
-          ? realmsData[structure.realm_id.toString()]?.name || "Unknown Realm"
+          ? getRealmNameById(structure.realm_id) || "Unknown Realm"
           : getStructureTypeName(structure.structure_type, isBlitz);
 
       const structureData: StructureMapData = {
@@ -453,14 +458,14 @@ export class MapDataStore {
         },
       };
 
-      this.structuresMap.set(structure.entity_id, structureData);
-      this.addressToNameMap.set(structureData.ownerAddress, ownerName);
+      nextStructuresMap.set(structure.entity_id, structureData);
+      nextAddressToNameMap.set(structureData.ownerAddress, ownerName);
       if (normalizedStructureEntityHex) {
-        this.entityToEntityIdMap.set(normalizedStructureEntityHex, structure.entity_id);
+        nextEntityToEntityIdMap.set(normalizedStructureEntityHex, structure.entity_id);
       }
     });
 
-    // Transform and store armies
+    // Transform and stage armies
     armiesRaw.forEach((armyRaw: ArmyMapDataRaw) => {
       const army = armyRaw as ArmyMapDataRawWithEntity;
       const armyEntityHex = army.internal_entity_id ?? "";
@@ -499,20 +504,26 @@ export class MapDataStore {
         },
       };
 
-      this.armiesMap.set(army.entity_id, armyData);
-      this.addressToNameMap.set(armyData.ownerAddress, ownerName);
+      nextArmiesMap.set(army.entity_id, armyData);
+      nextAddressToNameMap.set(armyData.ownerAddress, ownerName);
       if (normalizedArmyEntityHex) {
-        this.entityToEntityIdMap.set(normalizedArmyEntityHex, army.entity_id);
+        nextEntityToEntityIdMap.set(normalizedArmyEntityHex, army.entity_id);
       }
     });
 
-    // Store hyperstructure realm counts
+    // Stage hyperstructure realm counts
     hyperstructuresWithRealmCount.forEach((hyperstructure) => {
-      this.hyperstructureRealmCountMap.set(
+      nextHyperstructureRealmCountMap.set(
         hyperstructure.hyperstructure_entity_id,
         hyperstructure.realm_count_within_radius,
       );
     });
+
+    this.structuresMap = nextStructuresMap;
+    this.armiesMap = nextArmiesMap;
+    this.addressToNameMap = nextAddressToNameMap;
+    this.entityToEntityIdMap = nextEntityToEntityIdMap;
+    this.hyperstructureRealmCountMap = nextHyperstructureRealmCountMap;
 
     this.lastFetchTime = Date.now();
   }
@@ -692,6 +703,7 @@ export class MapDataStore {
   public clear(): void {
     this.structuresMap.clear();
     this.armiesMap.clear();
+    this.hyperstructureRealmCountMap.clear();
     this.addressToNameMap.clear();
     this.entityToEntityIdMap.clear();
     this.lastFetchTime = 0;
@@ -749,6 +761,7 @@ export class MapDataStore {
     this.stopAutoRefresh();
     this.structuresMap.clear();
     this.armiesMap.clear();
+    this.hyperstructureRealmCountMap.clear();
     this.addressToNameMap.clear();
     this.entityToEntityIdMap.clear();
     console.log("MapDataStore: Destroyed and cleaned up");
