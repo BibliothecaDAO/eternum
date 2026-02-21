@@ -33,6 +33,23 @@ interface RegistryEntry {
 const registry = new Map<string, RegistryEntry>();
 let _currentActionType: string | undefined;
 
+// ---------------------------------------------------------------------------
+// Cached world state — updated every tick, used for pre-flight validation.
+// If stale/missing, validations are skipped (fail-open).
+// ---------------------------------------------------------------------------
+
+let _cachedWorldState: EternumWorldState | undefined;
+
+/** Cache the latest world state for pre-flight validation in action handlers. */
+export function setCachedWorldState(state: EternumWorldState) {
+  _cachedWorldState = state;
+}
+
+/** Get the cached world state (may be undefined if no tick has run yet). */
+function getCachedWorldState(): EternumWorldState | undefined {
+  return _cachedWorldState;
+}
+
 function register(type: string, description: string, params: ActionParamSchema[], handler: ActionHandler) {
   registry.set(type, { handler, definition: { type, description, params } });
 }
@@ -423,6 +440,23 @@ const TROOP_CATEGORY = "0=Knight, 1=Paladin, 2=Crossbowman";
 const TROOP_TIER = "0=T1, 1=T2, 2=T3";
 
 // ---------------------------------------------------------------------------
+// Resource type ID → display name mapping (matches RESOURCE_BALANCE_COLUMNS names)
+// Used for pre-flight balance validation against cached world state.
+// ---------------------------------------------------------------------------
+
+const RESOURCE_TYPE_NAMES: Record<number, string> = {
+  1: "Stone", 2: "Coal", 3: "Wood", 4: "Copper", 5: "Ironwood", 6: "Obsidian",
+  7: "Gold", 8: "Silver", 9: "Mithral", 10: "Alchemical Silver", 11: "Cold Iron",
+  12: "Deep Crystal", 13: "Ruby", 14: "Diamonds", 15: "Hartwood", 16: "Ignium",
+  17: "Twilight Quartz", 18: "True Ice", 19: "Adamantine", 20: "Sapphire",
+  21: "Ethereal Silica", 22: "Dragonhide", 23: "Labor", 24: "Ancient Fragment",
+  25: "Donkey", 26: "Knight", 27: "Knight T2", 28: "Knight T3",
+  29: "Crossbowman", 30: "Crossbowman T2", 31: "Crossbowman T3",
+  32: "Paladin", 33: "Paladin T2", 34: "Paladin T3",
+  35: "Wheat", 36: "Fish", 37: "Lords", 38: "Essence",
+};
+
+// ---------------------------------------------------------------------------
 // Resources
 // ---------------------------------------------------------------------------
 
@@ -434,14 +468,33 @@ register(
     n("recipientEntityId", "Entity ID of the recipient"),
     oa("resources", `Array of {resourceType, amount} to send. ${RESOURCE_IDS}`),
   ],
-  (client, signer, p) =>
-    wrapTx(() =>
+  async (client, signer, p) => {
+    // Pre-flight: check sender has sufficient balance for each resource
+    const cached = getCachedWorldState();
+    if (cached) {
+      const senderEntity = cached.entities.find(
+        (e) => e.entityId === num(p.senderEntityId) && e.type === "structure",
+      );
+      if (senderEntity?.resources) {
+        const requested = resourceList(p.resources);
+        for (const r of requested) {
+          const name = RESOURCE_TYPE_NAMES[r.resourceType] ?? `Resource#${r.resourceType}`;
+          const have = senderEntity.resources.get(name) ?? 0;
+          const need = r.amount / RESOURCE_PRECISION;
+          if (need > have) {
+            return { success: false, error: `Insufficient balance: have ${have} ${name}, need ${need}` };
+          }
+        }
+      }
+    }
+    return wrapTx(() =>
       client.resources.send(signer, {
         senderEntityId: num(p.senderEntityId),
         recipientEntityId: num(p.recipientEntityId),
         resources: resourceList(p.resources),
       }),
-    ),
+    );
+  },
 );
 
 register(
@@ -496,8 +549,21 @@ register(
     n("amount", "Number of troops to create"),
     n("spawnDirection", `Hex direction (${DIR})`),
   ],
-  (client, signer, p) =>
-    wrapTx(() =>
+  async (client, signer, p) => {
+    // Pre-flight: check army limit at structure
+    const cached = getCachedWorldState();
+    if (cached) {
+      const structure = cached.entities.find(
+        (e) => e.entityId === num(p.forStructureId) && e.type === "structure" && e.isOwned,
+      );
+      if (structure?.armies && structure.armies.max > 0 && structure.armies.current >= structure.armies.max) {
+        return {
+          success: false,
+          error: `Structure has ${structure.armies.current}/${structure.armies.max} armies. Upgrade realm level or delete an army first.`,
+        };
+      }
+    }
+    return wrapTx(() =>
       client.troops.createExplorer(signer, {
         forStructureId: num(p.forStructureId),
         category: num(p.category),
@@ -505,7 +571,8 @@ register(
         amount: precisionAmount(p.amount),
         spawnDirection: num(p.spawnDirection),
       }),
-    ),
+    );
+  },
 );
 
 register(
@@ -611,13 +678,29 @@ register(
   "explore",
   "Explore new tiles with an explorer (30 stamina/hex). Only 1 direction per call. Minimum 10 troops required. Reveals the new tile's biome and occupants. Awards Victory Points.",
   [n("explorerId", "Explorer entity ID"), na("directions", `Array of hex directions (${DIR})`)],
-  (client, signer, p) =>
-    wrapTx(() =>
+  async (client, signer, p) => {
+    // Pre-flight: check explorer has enough stamina to explore (30 per hex)
+    const cached = getCachedWorldState();
+    if (cached) {
+      const explorer = cached.entities.find(
+        (e) => e.entityId === num(p.explorerId) && e.type === "army" && e.isOwned,
+      );
+      const dirs = numArray(p.directions);
+      const staminaNeeded = 30 * Math.max(dirs.length, 1);
+      if (explorer?.stamina !== undefined && explorer.stamina < staminaNeeded) {
+        return {
+          success: false,
+          error: `Explorer has ${explorer.stamina} stamina, need ${staminaNeeded} to explore. Use move_to for explored tiles (10 stamina/hex). Wait for regen (+20/min).`,
+        };
+      }
+    }
+    return wrapTx(() =>
       client.troops.explore(signer, {
         explorerId: num(p.explorerId),
         directions: numArray(p.directions),
       }),
-    ),
+    );
+  },
 );
 
 register(
@@ -1080,6 +1163,65 @@ register(
         contributions: numArray(p.contributions),
       }),
     ),
+);
+
+// ---------------------------------------------------------------------------
+// High-level: move_to (pathfinding + execution)
+// ---------------------------------------------------------------------------
+
+import { moveExplorer } from "./move-executor";
+import { buildWorldState, type EternumWorldState } from "./world-state";
+
+/** Cached world state provider — set via setWorldStateProvider. */
+let _worldStateProvider: ((client: EternumClient) => Promise<EternumWorldState>) | undefined;
+
+/**
+ * Set the world state provider so move_to can fetch current tile map.
+ * Call once during adapter initialization with the account address.
+ */
+export function setWorldStateProvider(accountAddress: string) {
+  _worldStateProvider = (client: EternumClient) => buildWorldState(client, accountAddress);
+}
+
+register(
+  "move_to",
+  "Move an explorer to a target coordinate using A* pathfinding. Automatically computes the optimal path, " +
+    "batches travel/explore actions, and executes them sequentially. Stops on first failure. " +
+    "Uses shared hex types from @bibliothecadao/types for neighbor expansion and Coord.distance() as heuristic.",
+  [
+    n("explorerId", "Explorer entity ID to move"),
+    n("targetCol", "Target column (x coordinate)"),
+    n("targetRow", "Target row (y coordinate)"),
+  ],
+  async (client, signer, p) => {
+    if (!_worldStateProvider) {
+      return { success: false, error: "World state provider not initialized. Call setWorldStateProvider first." };
+    }
+
+    const worldState = await _worldStateProvider(client);
+
+    const result = await moveExplorer(client, signer, {
+      explorerId: num(p.explorerId),
+      targetCol: num(p.targetCol),
+      targetRow: num(p.targetRow),
+    }, worldState);
+
+    if (!result.success) {
+      return { success: false, error: result.summary };
+    }
+
+    return {
+      success: true,
+      data: {
+        summary: result.summary,
+        stepsExecuted: result.steps.length,
+        totalCost: result.pathResult.totalCost,
+        txHashes: result.steps
+          .map((s) => s.result.txHash)
+          .filter(Boolean),
+      },
+    };
+  },
 );
 
 // ---------------------------------------------------------------------------

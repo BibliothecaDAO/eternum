@@ -98,7 +98,7 @@ function nearAnyOwned(pos: Pos, centers: Pos[]): boolean {
 const RESOURCE_PRECISION = 1_000_000_000;
 
 /** Parse a hex string to a BigInt, then to number. Returns 0 for null/invalid. */
-function parseHexBig(hex: string | null | undefined): bigint {
+export function parseHexBig(hex: string | null | undefined): bigint {
   if (!hex || hex === "0x0") return 0n;
   try {
     return BigInt(hex);
@@ -263,7 +263,7 @@ function sameAddress(a: string | null | undefined, b: string | null | undefined)
 // Building slot parsing — unpack packed_counts from structure data
 // ---------------------------------------------------------------------------
 
-const BUILDING_NAMES: Record<number, string> = {
+export const BUILDING_NAMES: Record<number, string> = {
   1: "WorkersHut",
   3: "Stone",
   4: "Coal",
@@ -292,7 +292,7 @@ const BUILDING_NAMES: Record<number, string> = {
 };
 
 /** Unpack 3 packed u128 hex strings into an array of 48 8-bit building counts. */
-function unpackBuildingCountsFromHex(
+export function unpackBuildingCountsFromHex(
   hex1: string | null | undefined,
   hex2: string | null | undefined,
   hex3: string | null | undefined,

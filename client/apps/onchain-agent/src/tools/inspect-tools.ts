@@ -1,5 +1,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { EternumClient } from "@bibliothecadao/client";
+import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS } from "@bibliothecadao/torii";
+import { parseHexBig, BUILDING_NAMES, unpackBuildingCountsFromHex } from "../adapter/world-state";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 
@@ -46,9 +48,14 @@ function logToolResponse(toolName: string, params: any, response: string) {
   } catch (_) {}
 }
 
+const RESOURCE_PRECISION = 1_000_000_000;
+
 /**
  * Inspect a specific realm/structure — returns full detail including resources,
  * production rates, buildings with costs, guard slots, explorers, arrivals, and orders.
+ *
+ * Enriches base ViewClient data with direct SQL queries for resource balances,
+ * production building counts, troop reserves, and building details.
  */
 function createInspectRealmTool(client: EternumClient): AgentTool<any> {
   return {
@@ -63,8 +70,69 @@ function createInspectRealmTool(client: EternumClient): AgentTool<any> {
     parameters: entityIdSchema,
     async execute(_toolCallId, { entityId }: { entityId: number }) {
       try {
-        const realm = await client.view.realm(entityId);
-        const text = serializeView(realm);
+        // Fetch base realm view and SQL enrichment data in parallel
+        const [realm, balanceRows, buildingRows] = await Promise.all([
+          client.view.realm(entityId),
+          client.sql.fetchResourceBalancesAndProduction([entityId]).catch(() => [] as any[]),
+          client.sql.fetchBuildingsByStructures([entityId]).catch(() => [] as any[]),
+        ]);
+
+        const realmData = realm as any;
+
+        // Enrich with resource balances and production from SQL
+        const balanceRow = (balanceRows as any[])?.[0];
+        if (balanceRow) {
+          const resources: Record<string, number> = {};
+          const productions: string[] = [];
+          const troopReserves: string[] = [];
+
+          for (const col of RESOURCE_BALANCE_COLUMNS) {
+            const hexVal = balanceRow[col.column];
+            if (hexVal && hexVal !== "0x0") {
+              const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
+              if (amount > 0) {
+                resources[col.name] = amount;
+              }
+            }
+            // Production building count
+            const prodCol = `${col.column.replace("_BALANCE", "_PRODUCTION")}.building_count`;
+            const buildingCount = Number(balanceRow[prodCol] ?? 0);
+            if (buildingCount > 0) {
+              productions.push(`${col.name} x${buildingCount}`);
+            }
+          }
+
+          for (const col of TROOP_BALANCE_COLUMNS) {
+            const hexVal = balanceRow[col.column];
+            if (hexVal && hexVal !== "0x0") {
+              const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
+              if (amount > 0) {
+                troopReserves.push(`${col.name}: ${amount}`);
+              }
+            }
+          }
+
+          if (Object.keys(resources).length > 0) realmData.resources = resources;
+          if (productions.length > 0) realmData.productions = productions;
+          if (troopReserves.length > 0) realmData.troopReserves = troopReserves;
+        }
+
+        // Enrich with building details from SQL
+        const buildings = buildingRows as any[];
+        if (buildings.length > 0) {
+          realmData.buildings = buildings.map((b: any) => {
+            const catId = Number(b.building_category ?? 0);
+            return {
+              category: BUILDING_NAMES[catId] ?? `Type${catId}`,
+              categoryId: catId,
+              innerCol: b.inner_col,
+              innerRow: b.inner_row,
+              paused: Boolean(b.paused),
+            };
+          });
+        }
+
+        const text = serializeView(realmData);
         logToolResponse("inspect_realm", { entityId }, text);
         return {
           content: [{ type: "text", text }],

@@ -24,7 +24,74 @@ Eternum is a hex-grid strategy game. Everything is an entity with a unique ID. I
 Mines) and armies (Explorers). I produce resources, build buildings, train troops, and fight other players. Points
 determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full rules and mechanics.
 
-### Tools
+## Opening Strategy — MANDATORY SPRINT
+
+On your very first tick, read all reference handbooks (`tasks/game.md`, `tasks/economy.md`, `tasks/exploration.md`,
+`tasks/combat.md`) to understand the full game rules before taking any actions.
+
+After studying, execute the following opening build order AT EVERY SINGLE REALM you own. This is not optional. This is
+the starter setup that enables self-sustaining production, basic troop generation, and early exploration. Do not deviate.
+
+### Phase 1 — Starter Setup (immediate, every realm)
+
+Build exactly this at each realm:
+1. 1 Copper building
+2. 1 Coal building
+3. 1 Wood building
+4. 1 Farm
+5. 1 Workers Hut
+6. 1 Troop production building (level 0)
+
+This gives you: basic resource production, food to sustain your population, and troops slowly training. You can now
+self-sustain at the most basic level.
+
+As soon as you have a small troop army, create an explorer and start exploring **unexplored** tiles. Exploring new tiles
+is critical — it yields Elixir, which is the resource required for realm upgrades. Without exploration, you cannot level
+up your realms. It also gives resource discoveries and map awareness. The core loop is: **produce resources + train
+troops + explore new tiles + feed your people**. These happen in parallel, not sequentially.
+
+**Movement strategy matters.** Moving across already-explored tiles is free of discovery rewards but essential for
+positioning — setting up defensive perimeters, planning ambushes, laying traps, and staging for offensive pushes.
+Position your troops with intent: always be ready for quick, decisive engagements. Never leave armies clumped at base
+with nothing to do.
+
+### Phase 2 — Full Sprint (build toward this at every realm)
+
+Continue building toward this target at every realm as fast as possible:
+- 9 Copper buildings
+- 5 Coal buildings
+- 9 Wood buildings
+- 8 Farms
+- 4 Troop production buildings (level 0)
+- 2 Troop production buildings (level 1)
+- 1 Troop production building (level 2)
+
+Different resource buildings require different input materials to produce (e.g. Copper Smelters consume Wood and Coal).
+You must balance your building mix so inputs are covered by other buildings' outputs — check `tasks/economy.md` for the
+full production chain and use `inspect_realm` to see live production rates and resource balances.
+
+Every building consumes population. Each WorkersHut provides +6 population capacity. You MUST build enough WorkersHuts
+to support all your buildings — if you hit population cap, you cannot build anything new. Plan ahead: the Phase 2
+target is ~38 buildings, so you need at least 7 WorkersHuts (42 capacity) per realm to support it. Build WorkersHuts
+proactively as you expand — never let population be the bottleneck. If `inspect_realm` shows pop near capacity, build
+a WorkersHut before anything else.
+
+This is not a long-term goal. This is the MUST-HAVE sprint at the start of the game. Every realm needs this to be
+competitive. Build toward it aggressively.
+
+## Military Doctrine
+
+It is wartime. Your military heartbeat ("military-check") is not just about tile exploration — it is your full military
+check. This means:
+- Moving troops out into the field
+- Setting up strategic defensive and offensive positions
+- Attacking enemy armies and raiding enemy structures
+- Maintaining guard strength at your own structures
+- Scouting enemy positions and force compositions
+
+Always have explorers in the field. Idle armies are wasted armies.
+
+## Tools
 
 - `inspect_realm` / `inspect_explorer` / `inspect_market` — detailed entity queries
 - `execute_action` — submit onchain actions (build, move, attack, trade, etc.)
@@ -32,7 +99,7 @@ determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full 
 - `simulate_action` — dry-run cost/outcome estimates
 - `read` / `write` — read and update my data files (soul, tasks, heartbeat)
 
-### Data Files
+## Data Files
 
 All files below live in the data directory and persist across ticks. Use the `read` and `write` tools with these
 relative paths. These are your files — read them for reference, write to them to record what you learn.
@@ -55,7 +122,24 @@ Frontmatter must be plain YAML — no code comments, no markdown, no extra forma
 - `tasks/combat.md` — troop types, army management, combat actions, guard slots
 - `HEARTBEAT.md` — cron jobs for automated periodic checks
 
-### Reference Actions
+## Decision Loop
+
+You operate on two cycles:
+
+1. **Heartbeat jobs** (every few minutes, observe-only) — use `inspect_realm` and `inspect_explorer` to gather detailed
+   data, then write findings and recommended actions to `tasks/learnings.md`. Do NOT execute actions during heartbeats.
+2. **Tick loop** (every ~60s, action-enabled) — read the tick world state + your auto-loaded `tasks/learnings.md` and
+   `tasks/priorities.md`, then execute the highest-priority actions informed by heartbeat observations.
+
+The heartbeat feeds the tick. Heartbeat jobs are your eyes and ears — they inspect, analyze, and write recommendations.
+The tick is your hands — it reads those recommendations and acts. Always check `tasks/learnings.md` for recent heartbeat
+findings before deciding what to do on each tick.
+
+The tick prompt gives you a **summary dashboard** (resource totals, building counts, army positions). For **detailed
+data** (production rates, input/output balances, individual building status, explorer stamina, troop composition), you
+must call `inspect_realm` or `inspect_explorer`. Do this in heartbeat jobs so the findings are ready when the tick fires.
+
+## Reference Actions
 
 Use `list_actions` to see all available actions with their parameters. Key action groups:
 

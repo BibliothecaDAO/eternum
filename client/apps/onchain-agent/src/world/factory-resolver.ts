@@ -28,7 +28,8 @@ export const resolveWorldContracts = async (
 
 export const isToriiAvailable = async (toriiBaseUrl: string): Promise<boolean> => {
   try {
-    const res = await fetch(`${toriiBaseUrl}/sql`, { method: "HEAD" });
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent("SELECT contract_address FROM contracts WHERE contract_type = 'WORLD' LIMIT 1;")}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     return res.ok;
   } catch {
     return false;
