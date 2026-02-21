@@ -524,7 +524,7 @@ mod tests {
         stop_cheat_caller_address(system_addr);
 
         // Verify not claimed yet
-        let claimed_before: MMRClaimed = world.read_model(WORLD_CONFIG_ID);
+        let claimed_before: MMRClaimed = world.read_model(1_u128);
         assert!(claimed_before.claimed_at == 0, "Should not be claimed yet");
 
         // Claim
@@ -533,7 +533,7 @@ mod tests {
         stop_cheat_caller_address(system_addr);
 
         // Verify claimed
-        let claimed_after: MMRClaimed = world.read_model(WORLD_CONFIG_ID);
+        let claimed_after: MMRClaimed = world.read_model(1_u128);
         assert!(claimed_after.claimed_at > 0, "Should be marked as claimed");
     }
 
@@ -752,7 +752,7 @@ mod tests {
         assert!(loser_new_mmr < e18(1400), "Favorite loser should lose MMR");
 
         // Verify claimed flag is set
-        let claimed: MMRClaimed = world.read_model(WORLD_CONFIG_ID);
+        let claimed: MMRClaimed = world.read_model(1_u128);
         assert!(claimed.claimed_at > 0, "Should be marked claimed");
     }
 }
