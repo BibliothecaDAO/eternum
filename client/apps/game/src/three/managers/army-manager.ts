@@ -5,6 +5,7 @@ import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-c
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
 import { GUIManager } from "@/three/utils/";
+import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -1386,9 +1387,21 @@ export class ArmyManager {
         // Use pending update data instead of initial data
         finalTroopCount = pendingUpdate.troopCount;
         finalCurrentStamina = updatedStamina;
-        finalOwnerAddress = pendingUpdate.ownerAddress;
         finalOnChainStamina = pendingUpdate.onChainStamina;
-        finalOwnerName = pendingUpdate.ownerName;
+        const pendingOwner = resolveArmyOwnerState({
+          existingOwner: {
+            address: finalOwnerAddress,
+            ownerName: finalOwnerName,
+            guildName: finalGuildName,
+          },
+          incomingOwner: {
+            address: pendingUpdate.ownerAddress,
+            ownerName: pendingUpdate.ownerName,
+            guildName: finalGuildName,
+          },
+        });
+        finalOwnerAddress = pendingOwner.address;
+        finalOwnerName = pendingOwner.ownerName;
         finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
         finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
         if (pendingUpdate.ownerStructureId !== undefined && pendingUpdate.ownerStructureId !== null) {
@@ -2606,8 +2619,21 @@ ${
       }
     }
 
+    const mergedOwner = resolveArmyOwnerState({
+      existingOwner: army.owner,
+      incomingOwner: {
+        address: resolvedOwnerAddress,
+        ownerName: resolvedOwnerName,
+        guildName: army.owner.guildName,
+      },
+    });
+
+    resolvedOwnerAddress = mergedOwner.address;
+    resolvedOwnerName = mergedOwner.ownerName;
+
     army.owner.address = resolvedOwnerAddress;
     army.owner.ownerName = resolvedOwnerName;
+    army.owner.guildName = mergedOwner.guildName;
     army.owningStructureId = update.ownerStructureId;
     // Update ownership status - this ensures armies are correctly marked as owned when the user's account
     // becomes available after initial load, since tile updates may occur before account authentication
