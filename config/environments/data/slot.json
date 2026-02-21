@@ -8016,7 +8016,7 @@
         },
         {
           "address": "0x1ad3ee9fadf34d470810049b75635e069ffb4af77183763f9cb41017176eea2",
-          "class_hash": "0x482ab180afe50a83defc7cc62e8a7f5d2d5ec9c83302255709adba0e5cb28a9",
+          "class_hash": "0x633a939859e99d5670a6c32fa5c198ddb9d32e61fe884a855d2540313cc7f1e",
           "init_calldata": [],
           "tag": "s1_eternum-mmr_systems",
           "selector": "0x628d6becd2c6fa1835109109b92cc642dfe69ab9194ca331cf7c510d9e2b5ce",
@@ -15432,7 +15432,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u32",
+              "type": "core::integer::u128",
               "key": true
             },
             {
@@ -15441,7 +15441,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x5ade4af21db03de3b9ad7fe359eb15138858ff0b73c7f280e91520249784708",
+          "class_hash": "0x7e86632b2773cf202696b4366153a027bf1bcde43d04206bc8b266e656a6e70",
           "tag": "s1_eternum-MMRClaimed",
           "selector": "0x3910dd89bb26a13f55ce9c44d1a751447697b627c7fc8410cdfec26fb4ffe81"
         },
@@ -15449,7 +15449,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u32",
+              "type": "core::integer::u128",
               "key": true
             },
             {
@@ -15458,7 +15458,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x67ec7a99f324d2969abe8785245a9832366f57fc9166df233e8868095f4a809",
+          "class_hash": "0x2fe528afefe00532209b9663a1905f3534d45cb07969477f596774a086a227a",
           "tag": "s1_eternum-MMRGameMeta",
           "selector": "0xbd1c676dfb64e6ddb00b4468610fe069d774a528af26d0f40cf1363131f5b"
         },
@@ -24014,7 +24014,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             },
             {
               "name": "claimed_at",
@@ -24080,7 +24080,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             },
             {
               "name": "game_median",
