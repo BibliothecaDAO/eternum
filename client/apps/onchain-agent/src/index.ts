@@ -221,7 +221,12 @@ async function createRuntimeServices(
     manifest,
   });
   client.connect(account as any);
-  const adapter = new EternumGameAdapter(client, account as any, account.address);
+  const tokenConfig = worldProfile ? {
+    feeToken: worldProfile.feeTokenAddress,
+    entryToken: worldProfile.entryTokenAddress,
+    worldAddress: config.worldAddress,
+  } : undefined;
+  const adapter = new EternumGameAdapter(client, account as any, account.address, manifest as any, config.gameName, tokenConfig);
   return { client, account, session, adapter };
 }
 
