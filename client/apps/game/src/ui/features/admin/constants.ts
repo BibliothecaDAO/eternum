@@ -35,13 +35,13 @@ export const FACTORY_ADDRESSES: Record<ChainType, string> = {
   sepolia: "0x07A6F094f15f8C18704bfb19fFEBCBC70b87e41674dE97EbeC7cb7Ffe5c9581B",
   slot: "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb",
   local: "",
-  mainnet: "0x3a49cb39fb21e9d46139536ff4ef2b3ec6719f4c7dc8dd0853c850b4f2b0090",
+  mainnet: "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
   slottest: "",
 };
 
 // Default max actions per chain (mirrors FACTORY_ADDRESSES pattern)
 const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
-  mainnet: 5,
+  mainnet: 100,
   sepolia: 20,
   slot: 300,
   slottest: 300,
@@ -58,7 +58,7 @@ const parsePositiveInt = (value?: string): number | null => {
 };
 
 const DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN: Record<ChainType, number> = {
-  mainnet: 39,
+  mainnet: 2,
   sepolia: 1,
   slot: 1,
   slottest: 1,
