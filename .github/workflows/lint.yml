@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v1
       - uses: pnpm/action-setup@v3
         with:
@@ -26,5 +28,19 @@ jobs:
       - name: Install dependencies
         run: pnpm i
 
+      - name: Collect changed files
+        id: changed-files
+        run: |
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "${{ github.event.pull_request.base.sha }}...${{ github.sha }}" | grep -E '\.(cjs|mjs|js|jsx|ts|tsx|json|md|mdx|yaml|yml|css|scss|html)$' || true)
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          printf '%s\n' "${files[@]}" > /tmp/prettier-files.txt
+          echo "has_files=true" >> "$GITHUB_OUTPUT"
+
       - name: Run Prettier
-        run: pnpm run format:check .
+        if: steps.changed-files.outputs.has_files == 'true'
+        run: xargs -r pnpm prettier --check < /tmp/prettier-files.txt

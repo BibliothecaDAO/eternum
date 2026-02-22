@@ -33,6 +33,7 @@ export default defineConfig({
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../../packages/core/src/index.ts"),
       "@bibliothecadao/react": path.resolve(__dirname, "../../../packages/react/src/index.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../../packages/types/src/index.ts"),
+      "@manifests": path.resolve(__dirname, "../../../contracts/game"),
     },
   },
 });
