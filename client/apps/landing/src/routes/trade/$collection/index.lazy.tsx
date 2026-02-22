@@ -1,4 +1,5 @@
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
+import type { ViewMode } from "@/components/modules/collection-token-grid";
 import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
@@ -30,6 +31,8 @@ import { useDebounce } from "@bibliothecadao/react";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import LayoutGrid from "lucide-react/dist/esm/icons/layout-grid";
+import List from "lucide-react/dist/esm/icons/list";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
@@ -252,6 +255,7 @@ function CollectionPage() {
   }, [applyEnforcedFilters]);
 
   const [isCompactGrid, setIsCompactGrid] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { selectedPasses, togglePass, replaceSelection, clearSelection, getTotalPrice } = useSelectedPassesStore(
     "$collection" + collection,
   );
@@ -408,25 +412,35 @@ function CollectionPage() {
                   </Label>
                 </div>
 
-                {/* Grid Size Toggle - Desktop Only */}
+                {/* Grid Size / View Toggle - Desktop Only */}
                 <div className="hidden lg:flex items-center rounded-md overflow-hidden border shadow-sm">
                   <Button
-                    variant={isCompactGrid ? "default" : "ghost"}
+                    variant={viewMode === "grid" && isCompactGrid ? "default" : "ghost"}
                     size="sm"
                     className="rounded-none text-xs h-9 px-3"
-                    onClick={() => setIsCompactGrid(true)}
+                    onClick={() => { setViewMode("grid"); setIsCompactGrid(true); }}
                     title="Compact grid"
                   >
                     Compact
                   </Button>
                   <Button
-                    variant={!isCompactGrid ? "default" : "ghost"}
+                    variant={viewMode === "grid" && !isCompactGrid ? "default" : "ghost"}
                     size="sm"
                     className="rounded-none border-l text-xs h-9 px-3"
-                    onClick={() => setIsCompactGrid(false)}
+                    onClick={() => { setViewMode("grid"); setIsCompactGrid(false); }}
                     title="Large grid"
                   >
                     Large
+                  </Button>
+                  <Button
+                    variant={viewMode === "row" ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none border-l text-xs h-9 px-3 flex items-center gap-1"
+                    onClick={() => setViewMode("row")}
+                    title="Row view"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    Row
                   </Button>
                 </div>
               </div>
@@ -473,6 +487,7 @@ function CollectionPage() {
                 <CollectionTokenGrid
                   tokens={tokens}
                   isCompactGrid={isCompactGrid}
+                  viewMode={viewMode}
                   onToggleSelection={(pass) => {
                     // Only allow valid listings: listed and owner matches lister
                     const listed = pass.expiration !== null && pass.best_price_hex !== null;
