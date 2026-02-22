@@ -2,9 +2,12 @@
 
 ## 1. Summary
 
-This PRD defines a focused performance program for the game client to reduce memory retention, garbage collection churn, and runtime slowdowns observed in production-like sessions.
+This PRD defines a focused performance program for the game client to reduce memory retention, garbage collection churn,
+and runtime slowdowns observed in production-like sessions.
 
-The plan is driven by a heap snapshot captured on **February 22, 2026** (`Heap-20260222T000722.heapsnapshot`, 174 MB) and repository-verified loading patterns. The core issue is not detached DOM leaks; it is large, eagerly loaded data plus repeated object/schema allocation and refresh-path retention.
+The plan is driven by a heap snapshot captured on **February 22, 2026** (`Heap-20260222T000722.heapsnapshot`, 174 MB)
+and repository-verified loading patterns. The core issue is not detached DOM leaks; it is large, eagerly loaded data
+plus repeated object/schema allocation and refresh-path retention.
 
 ## 2. Problem Statement
 
@@ -14,7 +17,8 @@ Users experience degradation over session time, including:
 - Longer GC pauses and interaction jank
 - Slowdown that worsens after gameplay/data refresh cycles
 
-Current loading and caching patterns keep large JSON structures and related runtime objects alive longer than necessary, and some store refresh paths can retain stale data.
+Current loading and caching patterns keep large JSON structures and related runtime objects alive longer than necessary,
+and some store refresh paths can retain stale data.
 
 ## 3. Goals
 
@@ -99,7 +103,8 @@ If entity ids churn or stale rows remain absent in a subsequent fetch, stale ent
 
 ### 6.5 Detached DOM is not primary issue
 
-Detached-node signal in snapshot is low (~30 matches), so main remediation should target data/object retention and load boundaries.
+Detached-node signal in snapshot is low (~30 matches), so main remediation should target data/object retention and load
+boundaries.
 
 ## 7. Product Requirements
 
@@ -146,7 +151,8 @@ Detached-node signal in snapshot is low (~30 matches), so main remediation shoul
 
 #### Design
 
-1. Introduce a compact realm-name index artifact (`realm-names.json` or generated TS map) containing only required fields.
+1. Introduce a compact realm-name index artifact (`realm-names.json` or generated TS map) containing only required
+   fields.
 2. Replace full-data imports in:
    - `client/apps/game/src/three/managers/player-data-store.ts`
    - `packages/core/src/stores/map-data-store.ts`

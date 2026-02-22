@@ -19,9 +19,7 @@ const MANIFEST_LOADERS: Record<PredictionMarketChain, () => Promise<PredictionMa
 
 const manifestCache = new Map<PredictionMarketChain, PredictionMarketManifest>();
 
-export const loadPredictionMarketManifest = async (
-  chain: PredictionMarketChain,
-): Promise<PredictionMarketManifest> => {
+export const loadPredictionMarketManifest = async (chain: PredictionMarketChain): Promise<PredictionMarketManifest> => {
   const cachedManifest = manifestCache.get(chain);
   if (cachedManifest) {
     return cachedManifest;

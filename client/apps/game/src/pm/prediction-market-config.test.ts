@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { loadPredictionMarketManifest, type PredictionMarketManifest, type PredictionMarketChain } from "./manifest-loader";
+import {
+  loadPredictionMarketManifest,
+  type PredictionMarketManifest,
+  type PredictionMarketChain,
+} from "./manifest-loader";
 import { getPredictionMarketConfigForChain } from "./prediction-market-config";
 
 const getContractAddress = (manifest: PredictionMarketManifest, tag: string): string => {
