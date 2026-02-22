@@ -442,9 +442,17 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     }
 
     const loadManifest = async () => {
-      const manifest = await getManifestJsonString(currentChain);
-      if (!cancelled && manifest) {
-        setManifestJson(manifest);
+      try {
+        const manifest = await getManifestJsonString(currentChain);
+        if (!cancelled) {
+          // Always set the latest load result to avoid displaying stale manifests after chain switches.
+          setManifestJson(manifest);
+        }
+      } catch (error) {
+        console.error(`[factory] Failed to load manifest for chain '${currentChain}'`, error);
+        if (!cancelled) {
+          setManifestJson("");
+        }
       }
     };
 

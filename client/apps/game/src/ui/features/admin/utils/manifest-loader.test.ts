@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { getManifestJsonString, type ChainType } from "./manifest-loader";
+import { describe, expect, it, vi } from "vitest";
+import { getManifestJsonString, type ChainType, type ManifestSourceLoader } from "./manifest-loader";
 
 const CHAINS: ChainType[] = ["local", "sepolia", "mainnet", "slot", "slottest"];
 
@@ -19,5 +19,17 @@ describe("admin manifest-loader", () => {
 
   it("returns an empty string for unknown chain values", async () => {
     expect(await getManifestJsonString("unknown" as ChainType)).toBe("");
+  });
+
+  it("returns an empty string when manifest source loading throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failingLoader = vi.fn<ManifestSourceLoader>().mockRejectedValue(new Error("manifest exploded"));
+
+    const manifestJson = await getManifestJsonString("slot", failingLoader);
+
+    expect(failingLoader).toHaveBeenCalledWith("slot");
+    expect(manifestJson).toBe("");
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

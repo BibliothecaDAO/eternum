@@ -523,7 +523,11 @@ export class MapDataStore {
     this.armiesMap = nextArmiesMap;
     this.addressToNameMap = nextAddressToNameMap;
     this.entityToEntityIdMap = nextEntityToEntityIdMap;
-    this.hyperstructureRealmCountMap = nextHyperstructureRealmCountMap;
+    // Keep map identity stable for consumers that hold a reference (e.g. LeaderboardManager singleton).
+    this.hyperstructureRealmCountMap.clear();
+    nextHyperstructureRealmCountMap.forEach((realmCount, hyperstructureEntityId) => {
+      this.hyperstructureRealmCountMap.set(hyperstructureEntityId, realmCount);
+    });
 
     this.lastFetchTime = Date.now();
   }

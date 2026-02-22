@@ -42,7 +42,9 @@ const MANIFEST_LOADERS: Record<ChainType, () => Promise<ManifestData>> = {
 
 const manifestCache = new Map<ChainType, ManifestData>();
 
-const loadManifestFromSource = async (chain: ChainType): Promise<ManifestData | null> => {
+export type ManifestSourceLoader = (chain: ChainType) => Promise<ManifestData | null>;
+
+const loadManifestFromSource: ManifestSourceLoader = async (chain) => {
   const cached = manifestCache.get(chain);
   if (cached) {
     return cached;
@@ -58,7 +60,15 @@ const loadManifestFromSource = async (chain: ChainType): Promise<ManifestData | 
   return manifest;
 };
 
-export const getManifestJsonString = async (chain: ChainType): Promise<string> => {
-  const manifest = await loadManifestFromSource(chain);
-  return manifest ? JSON.stringify(manifest, null, 2) : "";
+export const getManifestJsonString = async (
+  chain: ChainType,
+  manifestSourceLoader: ManifestSourceLoader = loadManifestFromSource,
+): Promise<string> => {
+  try {
+    const manifest = await manifestSourceLoader(chain);
+    return manifest ? JSON.stringify(manifest, null, 2) : "";
+  } catch (error) {
+    console.error(`[admin-manifest-loader] Failed to load manifest for chain '${chain}'`, error);
+    return "";
+  }
 };

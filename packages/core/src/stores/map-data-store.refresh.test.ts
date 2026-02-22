@@ -111,4 +111,27 @@ describe("MapDataStore refresh semantics", () => {
     expect(store.getHyperstructureRealmCount(501 as any)).toBeUndefined();
     expect(store.getHyperstructureRealmCount(502 as any)).toBe(2);
   });
+
+  it("keeps hyperstructure realm count map identity stable across refreshes", async () => {
+    const sqlApi = {
+      fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchHyperstructuresWithRealmCount: vi
+        .fn()
+        .mockResolvedValueOnce([{ hyperstructure_entity_id: 501, realm_count_within_radius: 7 }])
+        .mockResolvedValueOnce([{ hyperstructure_entity_id: 502, realm_count_within_radius: 2 }]),
+    };
+
+    const store = MapDataStore.getInstance(60_000, sqlApi as any);
+
+    await store.refresh();
+    const cachedMap = store.getRealmCountPerHyperstructure();
+    expect(cachedMap.get(501 as any)).toBe(7);
+
+    await store.refresh();
+
+    expect(store.getRealmCountPerHyperstructure()).toBe(cachedMap);
+    expect(cachedMap.get(501 as any)).toBeUndefined();
+    expect(cachedMap.get(502 as any)).toBe(2);
+  });
 });
