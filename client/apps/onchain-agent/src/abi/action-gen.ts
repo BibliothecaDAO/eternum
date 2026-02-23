@@ -5,8 +5,8 @@
  * that the LLM uses to discover and call actions. Supports optional domain
  * overlays for game-specific enrichments (descriptions, param transforms, etc.).
  */
-import { extractAllFromManifest, getGameEntrypoints, tagMatchesGame, abiTypeToParamSchemaType } from "./parser";
-import type { ABIEntrypoint, ContractABIResult, DomainOverlayMap, Manifest, ActionRoute } from "./types";
+import { extractAllFromManifest, getGameEntrypoints, tagMatchesGame, abiTypeToParamSchemaType, describeStructFields } from "./parser";
+import type { ABIEntrypoint, ABIParam, ContractABIResult, DomainOverlayMap, Manifest, ActionRoute } from "./types";
 
 // Re-declared to avoid import from game-agent (which may not be built).
 interface ActionParamSchema {
@@ -52,6 +52,16 @@ export function generateActions(
   const routes = new Map<string, ActionRoute>();
 
   const allContracts = extractAllFromManifest(manifest);
+
+  // Collect struct definitions from ALL contracts so cross-contract structs resolve
+  const globalStructs = new Map<string, ABIParam[]>();
+  for (const contract of allContracts) {
+    for (const [name, fields] of contract.structs) {
+      globalStructs.set(name, fields);
+    }
+  }
+  const structNames = new Set(globalStructs.keys());
+
   // Track which overlay key first claimed each action type for collision detection
   const claimedBy = new Map<string, string>();
 
@@ -85,7 +95,7 @@ export function generateActions(
       claimedBy.set(actionType, overlayKey);
 
       // Build param schemas
-      const params = buildParamSchemas(ep, overlay?.paramOverrides);
+      const params = buildParamSchemas(ep, overlay?.paramOverrides, globalStructs, structNames);
 
       // Build description
       const description = overlay?.description ?? ep.signature;
@@ -119,13 +129,28 @@ export function generateActions(
 function buildParamSchemas(
   ep: ABIEntrypoint,
   paramOverrides?: Record<string, { description?: string; transform?: (v: unknown) => unknown }>,
+  structs?: Map<string, ABIParam[]>,
+  structNames?: Set<string>,
 ): ActionParamSchema[] {
   return ep.params.map((p) => {
     const override = paramOverrides?.[p.name];
+    const schemaType = abiTypeToParamSchemaType(p.rawType, structNames);
+
+    // For struct params, include field descriptions so the LLM knows the shape
+    let description = override?.description ?? `${p.name} (${p.type})`;
+    if (structs) {
+      const structDesc = describeStructFields(p.rawType, structs);
+      if (structDesc) {
+        description = override?.description
+          ? `${override.description} — pass as object: ${structDesc}`
+          : `${p.name} — pass as object: ${structDesc}`;
+      }
+    }
+
     return {
       name: p.name,
-      type: abiTypeToParamSchemaType(p.rawType),
-      description: override?.description ?? `${p.name} (${p.type})`,
+      type: schemaType,
+      description,
       required: true,
     };
   });

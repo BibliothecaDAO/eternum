@@ -221,6 +221,7 @@ export function createABIExecutor(
   options: ABIExecutorOptions,
 ): ABIExecutor {
   const { cache: contractCache, globalEnums } = buildContractCache(manifest);
+  const globalStructs = buildGlobalStructMap(manifest);
   const { routes, cachedStateProvider, onBeforeExecute, onAfterExecute } = options;
 
   async function execute(action: GameAction): Promise<ActionResult> {
@@ -256,11 +257,14 @@ export function createABIExecutor(
       // Coerce plain numeric enum values to CairoCustomEnum instances
       const coercedParams = coerceEnumParams(transformedParams, route.entrypoint, cached.abi as unknown[], globalEnums);
 
+      // Coerce struct params: ensure object shape with default fields
+      const structCoerced = coerceStructParams(coercedParams, route.entrypoint, cached.abi as unknown[], globalStructs);
+
       // Debug: log coercion results so we can diagnose enum failures
-      debugLogCoercion(action.type, route.entrypoint, transformedParams, coercedParams);
+      debugLogCoercion(action.type, route.entrypoint, transformedParams, structCoerced);
 
       // Use Contract.populate() for ABI-aware calldata encoding
-      const call: Call = cached.contract.populate(route.entrypoint, coercedParams as any);
+      const call: Call = cached.contract.populate(route.entrypoint, structCoerced as any);
       const result = await account.execute(call);
       const txHash = result?.transaction_hash ?? (result as any)?.transactionHash ?? undefined;
 
@@ -401,6 +405,83 @@ function normalizeParamKeys(
         result[key] = value;
       }
     }
+  }
+
+  return result;
+}
+
+// ── Struct coercion ────────────────────────────────────────────────────────
+
+type StructMap = Map<string, { name: string; type: string }[]>;
+
+/** Build a global struct map from ALL contract ABIs. */
+function buildGlobalStructMap(manifest: Manifest): StructMap {
+  const structs: StructMap = new Map();
+  for (const contract of manifest.contracts ?? []) {
+    for (const entry of (contract.abi ?? []) as any[]) {
+      if (entry.type === "struct" && entry.members) {
+        structs.set(
+          entry.name,
+          entry.members.map((m: any) => ({ name: m.name, type: m.type as string })),
+        );
+      }
+    }
+  }
+  return structs;
+}
+
+/** Default value for a Cairo type. */
+function defaultForType(rawType: string): unknown {
+  if (rawType === "core::bool") return false;
+  if (rawType.startsWith("core::integer::")) return 0;
+  if (rawType === "core::felt252") return "0";
+  return 0;
+}
+
+/**
+ * Coerce struct parameters: ensure the agent's object has all required fields
+ * with sane defaults for any the agent omitted (e.g., `alt: false` on Coord).
+ */
+function coerceStructParams(
+  params: Record<string, unknown>,
+  entrypoint: string,
+  abi: unknown[],
+  structs: StructMap,
+): Record<string, unknown> {
+  // Find the entrypoint's inputs
+  let inputs: { name: string; type: string }[] | undefined;
+  for (const entry of abi as any[]) {
+    if (entry.type === "interface" && Array.isArray(entry.items)) {
+      const fn = entry.items.find(
+        (item: any) => item.type === "function" && item.name === entrypoint,
+      );
+      if (fn) {
+        inputs = fn.inputs;
+        break;
+      }
+    }
+  }
+  if (!inputs) return params;
+
+  const result = { ...params };
+  for (const input of inputs) {
+    const structDef = structs.get(input.type);
+    if (!structDef) continue;
+
+    const val = result[input.name];
+    if (val === undefined || val === null) continue;
+
+    // If the agent passed a non-object (e.g. a number), skip — can't coerce
+    if (typeof val !== "object" || Array.isArray(val)) continue;
+
+    // Fill in missing fields with defaults
+    const obj = { ...(val as Record<string, unknown>) };
+    for (const field of structDef) {
+      if (!(field.name in obj)) {
+        obj[field.name] = defaultForType(field.type);
+      }
+    }
+    result[input.name] = obj;
   }
 
   return result;

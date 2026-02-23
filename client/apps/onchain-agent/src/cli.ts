@@ -198,10 +198,20 @@ function seedEnvFile() {
   );
 }
 
-function runInit(): number {
+function runInit(world?: string): number {
   const config = loadConfig();
 
+  // Seed base data dir
   seedDataDir(config.dataDir);
+
+  // If a world is specified, also seed the world-scoped data dir
+  // (this is where the agent actually reads at runtime)
+  if (world) {
+    const worldDataDir = path.join(config.dataDir, world);
+    seedDataDir(worldDataDir);
+    console.log(`Initialized world data directory: ${worldDataDir}`);
+  }
+
   mkdirSync(config.sessionBasePath, { recursive: true });
   seedEnvFile();
 
@@ -228,7 +238,7 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<nu
       return runDoctor();
 
     case "init":
-      return runInit();
+      return runInit(opts.world);
 
     case "worlds":
       return runWorlds({ json: opts.json, write });

@@ -118,6 +118,78 @@ function parseStamina(hex: string | null | undefined): number {
   return Number(parseHexBig(hex));
 }
 
+// ---------------------------------------------------------------------------
+// Stamina recalculation from on-chain config
+// ---------------------------------------------------------------------------
+
+interface StaminaConfig {
+  armiesTickInSeconds: number;
+  gainPerTick: number;
+  knightMax: number;
+  crossbowmanMax: number;
+  paladinMax: number;
+}
+
+const STAMINA_CONFIG_QUERY = `SELECT
+  "tick_config.armies_tick_in_seconds" AS armies_tick_in_seconds,
+  "troop_stamina_config.stamina_gain_per_tick" AS gain_per_tick,
+  "troop_stamina_config.stamina_knight_max" AS knight_max,
+  "troop_stamina_config.stamina_crossbowman_max" AS crossbowman_max,
+  "troop_stamina_config.stamina_paladin_max" AS paladin_max
+FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+async function fetchStaminaConfig(sqlBaseUrl: string): Promise<StaminaConfig | null> {
+  try {
+    const url = `${sqlBaseUrl}?query=${encodeURIComponent(STAMINA_CONFIG_QUERY)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const rows = (await resp.json()) as Record<string, unknown>[];
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      armiesTickInSeconds: Number(parseHexBig(row.armies_tick_in_seconds as string)) || 0,
+      gainPerTick: Number(parseHexBig(row.gain_per_tick as string)) || 0,
+      knightMax: Number(parseHexBig(row.knight_max as string)) || 0,
+      crossbowmanMax: Number(parseHexBig(row.crossbowman_max as string)) || 0,
+      paladinMax: Number(parseHexBig(row.paladin_max as string)) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Get max stamina for a troop type + tier using on-chain config. */
+function getMaxStamina(cfg: StaminaConfig, category: string | null | undefined, tier: string | null | undefined): number {
+  const name = troopCategoryName(category);
+  let base = 0;
+  if (name === "Knight") base = cfg.knightMax;
+  else if (name === "Paladin") base = cfg.paladinMax;
+  else if (name === "Crossbowman") base = cfg.crossbowmanMax;
+
+  const t = String(tier ?? "T1");
+  let tierBonus = 0;
+  if (t === "T2") tierBonus = 20;
+  else if (t === "T3") tierBonus = 40;
+
+  return base + tierBonus;
+}
+
+/** Recalculate current stamina based on time elapsed since last refill. */
+function recalculateStamina(
+  storedAmount: number,
+  updatedTick: number,
+  cfg: StaminaConfig,
+  category: string | null | undefined,
+  tier: string | null | undefined,
+): number {
+  if (cfg.armiesTickInSeconds <= 0) return storedAmount;
+  const currentTick = Math.floor(Date.now() / 1000 / cfg.armiesTickInSeconds);
+  if (updatedTick >= currentTick) return storedAmount;
+  const ticksPassed = currentTick - updatedTick;
+  const maxStamina = getMaxStamina(cfg, category, tier);
+  return Math.min(storedAmount + ticksPassed * cfg.gainPerTick, maxStamina);
+}
+
 /** Decode a felt252 hex string (e.g. "0x...626f6174") to a human-readable string.
  *  If the input is already a readable string (not hex), pass it through. */
 function decodeFelt252(hex: string | null | undefined): string | undefined {
@@ -708,8 +780,11 @@ function getArmyActions(): string[] {
  * @returns A fully populated EternumWorldState
  */
 export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
-  // 1. Fetch all data sources in parallel.
-  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs] =
+  // Extract Torii SQL base URL from the client's SqlApi (for config queries)
+  const sqlBaseUrl: string = (client.sql as any).baseUrl ?? "";
+
+  // 1. Fetch all data sources in parallel (including stamina config for recalculation).
+  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs, staminaCfg] =
     await Promise.all([
       client.view.player(accountAddress),
       client.view.market(),
@@ -718,6 +793,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       client.sql.fetchAllArmiesMapData(),
       client.sql.fetchAllTiles().catch(() => [] as any[]),
       client.sql.fetchBattleLogs().catch(() => [] as any[]),
+      sqlBaseUrl ? fetchStaminaConfig(sqlBaseUrl) : Promise.resolve(null),
     ]);
 
   const rawStructures: any[] = Array.isArray(allRawStructures) ? allRawStructures : [];
@@ -798,6 +874,12 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
     const owned = sameAddress(a.owner_address, accountAddress);
     const count = parseTroopCount(a.count);
     const tier = tierToNum(a.tier);
+    // Recalculate stamina based on tick regeneration (raw SQL value is stale)
+    const rawStamina = parseStamina(a.stamina_amount);
+    const updatedTick = Number(parseHexBig(a.stamina_updated_tick));
+    const stamina = staminaCfg
+      ? recalculateStamina(rawStamina, updatedTick, staminaCfg, a.category, a.tier)
+      : rawStamina;
     return {
       type: "army" as const,
       entityId: Number(a.entity_id ?? 0),
@@ -806,7 +888,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       isOwned: owned,
       position: { x: Number(a.coord_x ?? 0), y: Number(a.coord_y ?? 0) },
       strength: count > 0 ? computeStrength(count, tier) : 0,
-      stamina: parseStamina(a.stamina_amount),
+      stamina,
       isInBattle: Number(a.battle_cooldown_end ?? 0) > 0,
       troopSummary: buildTroopSummary(a),
       lastAttack: parseLastAttack(a),

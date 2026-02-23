@@ -3,9 +3,8 @@ import {
   createHeartbeatLoop,
   createGameAgent,
   type HeartbeatJob,
-  type RuntimeConfigManager,
 } from "@bibliothecadao/game-agent";
-import { getModel, type KnownProvider } from "@mariozechner/pi-ai";
+import { getModel } from "@mariozechner/pi-ai";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { Account, RpcProvider, uint256, CallData, type AccountInterface } from "starknet";
@@ -25,6 +24,7 @@ import { createApiServer } from "./api/server";
 import { startStdinReader } from "./input/stdin-reader";
 import type { CliOptions } from "./cli-args";
 import { seedDataDir } from "./cli";
+import { createRuntimeConfigManager } from "./runtime-config";
 
 function loadReferenceHandbooks(dataDir: string): string {
   const taskDir = path.join(dataDir, "tasks");
@@ -121,7 +121,7 @@ async function autoTopUpFeeTokens(
 }
 
 export async function mainHeadless(options: CliOptions): Promise<void> {
-  const config = loadConfig();
+  let config = loadConfig();
 
   // Scope data dir per-world so multiple agents don't share state
   if (options.world) {
@@ -263,16 +263,16 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     return base;
   };
 
-  const runtimeConfigManager: RuntimeConfigManager = {
-    getConfig: () => ({ ...config }),
-    applyChanges: async (changes, _reason) => ({
-      ok: true,
-      results: changes.map((c) => ({ path: c.path, applied: true, message: "applied" })),
-      currentConfig: { ...config },
-    }),
-  };
+  let game: ReturnType<typeof createGameAgent> | null = null;
 
-  const game = createGameAgent({
+  const runtimeConfigManager = createRuntimeConfigManager({
+    getConfig: () => config,
+    setConfig: (c) => { config = c; },
+    getAgent: () => game,
+    onMessage: (msg) => emitter.emit({ type: "config", message: msg }),
+  });
+
+  game = createGameAgent({
     adapter: mutableAdapter,
     dataDir: config.dataDir,
     model,
@@ -286,7 +286,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     },
   });
 
-  const { agent, ticker, dispose: disposeAgent } = game;
+  const { agent, ticker, dispose: disposeAgent } = game!;
 
   // Subscribe to agent events and map to emitter
   agent.subscribe((event) => {
@@ -349,7 +349,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
         "Follow the job instructions below:",
         job.prompt,
       ].join("\n\n");
-      await game.enqueuePrompt(heartbeatPrompt);
+      await game!.enqueuePrompt(heartbeatPrompt);
     },
     onError: (error) => {
       emitter.emit({ type: "error", message: `Heartbeat error: ${error.message}` });
@@ -377,7 +377,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       {
         enqueuePrompt: async (content) => {
           emitter.emit({ type: "prompt", source: "http", content });
-          await game.enqueuePrompt(content);
+          await game!.enqueuePrompt(content);
         },
         getStatus: () => ({
           tick: ticker.tickCount,
@@ -406,7 +406,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     stdinClose = startStdinReader({
       enqueuePrompt: async (content) => {
         emitter.emit({ type: "prompt", source: "stdin", content });
-        await game.enqueuePrompt(content);
+        await game!.enqueuePrompt(content);
       },
       applyConfig: async (changes) => runtimeConfigManager.applyChanges(changes),
       shutdown,
