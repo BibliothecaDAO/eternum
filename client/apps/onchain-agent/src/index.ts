@@ -10,8 +10,8 @@ import {
 } from "@bibliothecadao/game-agent";
 import { getModel } from "@mariozechner/pi-ai";
 import { readFile } from "node:fs/promises";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { AccountInterface } from "starknet";
 import { createShutdownGate } from "./shutdown-gate";
 import { type AgentConfig, loadConfig } from "./config";
@@ -25,7 +25,45 @@ import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
 import { createInspectTools } from "./tools/inspect-tools";
 import { getActionDefinitions } from "./adapter/action-registry";
-import { formatEternumTickPrompt } from "./adapter/world-state";
+import { formatEternumTickPrompt, type EternumWorldState } from "./adapter/world-state";
+
+/**
+ * Load all reference handbooks (autoload: false task files) from the data
+ * directory.  These are injected into the first tick prompt so the agent
+ * starts with full game knowledge, and can be re-read via heartbeat jobs.
+ */
+function loadReferenceHandbooks(dataDir: string): string {
+  const taskDir = path.join(dataDir, "tasks");
+  if (!existsSync(taskDir)) return "";
+
+  const sections: string[] = [];
+  let files: string[];
+  try {
+    files = readdirSync(taskDir)
+      .filter((f: string) => f.endsWith(".md"))
+      .sort();
+  } catch {
+    return "";
+  }
+
+  for (const file of files) {
+    const raw = readFileSync(path.join(taskDir, file), "utf-8");
+    // Only include files that are NOT autoloaded (the reference handbooks)
+    const autoloadMatch = raw.match(/^---\n[\s\S]*?autoload:\s*(true|false)[\s\S]*?\n---/);
+    if (autoloadMatch && autoloadMatch[1] === "true") continue;
+    // Also skip files without frontmatter (shouldn't happen, but be safe)
+    if (!raw.startsWith("---\n")) continue;
+
+    const domain = file.replace(/\.md$/, "");
+    const content = raw.replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
+    if (content) {
+      sections.push(`<reference domain="${domain}">\n${content}\n</reference>`);
+    }
+  }
+
+  if (sections.length === 0) return "";
+  return `## Reference Handbooks (study these before acting)\n\n${sections.join("\n\n")}`;
+}
 
 export async function loadManifest(manifestPath: string): Promise<{ contracts: unknown[] }> {
   const raw = await readFile(manifestPath, "utf8");
@@ -154,15 +192,22 @@ async function createRuntimeServices(
   resolvedManifest?: { contracts: unknown[] },
   worldProfile?: WorldProfile,
 ): Promise<RuntimeServices> {
-  const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath)));
+  if (!resolvedManifest && !config.manifestPath) {
+    throw new Error("No manifest available: use world discovery or set MANIFEST_PATH");
+  }
+  const manifest = resolvedManifest ?? (await loadManifest(path.resolve(config.manifestPath!)));
 
   const chainId = deriveChainIdFromRpcUrl(config.rpcUrl) ?? config.chainId;
+
+  // Each world gets its own session directory so switching worlds doesn't
+  // invalidate the on-chain session registration (policies Merkle root).
+  const sessionBasePath = worldProfile ? path.join(config.sessionBasePath, worldProfile.name) : config.sessionBasePath;
 
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
     chainId,
     gameName: config.gameName,
-    basePath: config.sessionBasePath,
+    basePath: sessionBasePath,
     manifest,
     worldProfile,
   });
@@ -414,7 +459,21 @@ export async function main() {
   };
 
   // 4. Create the game agent
+  //    First tick gets all reference handbooks prepended so the agent starts
+  //    with full game knowledge before taking any actions.
   const model = getModel(runtimeConfig.modelProvider, runtimeConfig.modelId);
+  let isFirstTick = true;
+  const formatTickPromptWithHandbooks = (state: EternumWorldState): string => {
+    const base = formatEternumTickPrompt(state);
+    if (isFirstTick) {
+      isFirstTick = false;
+      const handbooks = loadReferenceHandbooks(runtimeConfig.dataDir);
+      if (handbooks) {
+        return `${handbooks}\n\n---\n\n${base}\n\nIMPORTANT: This is your first tick. Study the reference handbooks above carefully before taking any actions. Write key insights to tasks/learnings.md so you retain them.`;
+      }
+    }
+    return base;
+  };
   const game = createGameAgent({
     adapter,
     dataDir: runtimeConfig.dataDir,
@@ -423,7 +482,7 @@ export async function main() {
     runtimeConfigManager,
     extraTools: createInspectTools(services.client),
     actionDefs: getActionDefinitions(),
-    formatTickPrompt: formatEternumTickPrompt,
+    formatTickPrompt: formatTickPromptWithHandbooks,
     onTickError: (err) => {
       systemMessage?.(`Tick error: ${err.message}`);
     },
@@ -495,22 +554,7 @@ export async function main() {
   return gate.promise;
 }
 
-function isDirectExecution(metaUrl: string): boolean {
-  if (!process.argv[1]) {
-    return false;
-  }
-
-  try {
-    const currentModulePath = fileURLToPath(metaUrl);
-    return path.resolve(process.argv[1]) === path.resolve(currentModulePath);
-  } catch {
-    return false;
-  }
-}
-
-if (isDirectExecution(import.meta.url)) {
-  main().catch((err) => {
-    console.error("Fatal error:", err);
-    process.exit(1);
-  });
-}
+// Entry point is cli.ts — do NOT add an isDirectExecution guard here.
+// In the Bun binary, all modules share the same import.meta.url, so a guard
+// here would fire in parallel with cli.ts's guard, calling main() twice and
+// opening two browser auth tabs with different keypairs.

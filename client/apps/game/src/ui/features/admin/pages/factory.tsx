@@ -391,6 +391,17 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     if (!Number.isFinite(secs) || secs <= 0) return 30;
     return Math.max(0, Math.round((secs % 3600) / 60));
   }, [eternumConfig]);
+  const configuredBlitzFeeRecipient = (eternumConfig as any)?.blitz?.registration?.fee_recipient || "";
+  const defaultBlitzFeeRecipient = account?.address || configuredBlitzFeeRecipient;
+  const getBlitzFeeRecipientForWorld = useCallback(
+    (name: string) => {
+      if (Object.prototype.hasOwnProperty.call(blitzFeeRecipientOverrides, name)) {
+        return blitzFeeRecipientOverrides[name] ?? "";
+      }
+      return defaultBlitzFeeRecipient;
+    },
+    [blitzFeeRecipientOverrides, defaultBlitzFeeRecipient],
+  );
 
   // Check indexer and deployment status for all stored worlds
   const checkAllWorldStatuses = useCallback(async () => {
@@ -1784,13 +1795,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             </label>
                                             <input
                                               type="text"
-                                              placeholder={
-                                                (eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."
-                                              }
-                                              value={
-                                                blitzFeeRecipientOverrides[name] ??
-                                                ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
-                                              }
+                                              placeholder={defaultBlitzFeeRecipient || "0x..."}
+                                              value={getBlitzFeeRecipientForWorld(name)}
                                               onChange={(e) =>
                                                 setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
@@ -2225,7 +2231,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     blitzFeeAmount: blitzFeeAmountOverrides[name],
                                                     blitzFeePrecision: blitzFeePrecisionOverrides[name],
                                                     blitzFeeToken: blitzFeeTokenOverrides[name],
-                                                    blitzFeeRecipient: blitzFeeRecipientOverrides[name],
+                                                    blitzFeeRecipient: getBlitzFeeRecipientForWorld(name),
                                                     registrationCountMax: registrationCountMaxOverrides[name],
                                                     registrationDelaySeconds: registrationDelaySecondsOverrides[name],
                                                     registrationPeriodSeconds: registrationPeriodSecondsOverrides[name],

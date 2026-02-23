@@ -57,10 +57,6 @@ async function runDoctor(): Promise<number> {
     errors.push("WORLD_ADDRESS is unset (currently 0x0)");
   }
 
-  if (!existsSync(config.manifestPath)) {
-    errors.push(`MANIFEST_PATH not found: ${config.manifestPath}`);
-  }
-
   if (!(await ensureDirWritable(config.dataDir))) {
     errors.push(`DATA_DIR not writable: ${config.dataDir}`);
   }
@@ -153,7 +149,6 @@ function seedEnvFile() {
       "RPC_URL=http://localhost:5050",
       "TORII_URL=http://localhost:8080",
       "WORLD_ADDRESS=0x0",
-      "MANIFEST_PATH=",
       "CHAIN_ID=0x534e5f5345504f4c4941",
       "MODEL_PROVIDER=anthropic",
       "MODEL_ID=claude-sonnet-4-5-20250929",

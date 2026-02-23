@@ -130,7 +130,7 @@ Env-driven configuration with fallback defaults:
 
 - **CHAIN** (default: `slot`) → chain ID fallback
 - **RPC_URL**, **TORII_URL**, **WORLD_ADDRESS** — if all set, skips world discovery
-- **MANIFEST_PATH** — defaults to `~/.eternum-agent/manifest.json` (derived from discovery)
+- **MANIFEST_PATH** — optional, only needed when bypassing world discovery
 - **GAME_NAME** (default: `eternum`) — filters manifest tags for session policies
 - **CHAIN_ID** — auto-derived from RPC URL slug (e.g. `WP_ETERNUM_BLITZ_SLOT_3` for Katana, `SN_MAIN`/`SN_SEPOLIA` for
   L1)
@@ -870,26 +870,26 @@ wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
 
 ## Configuration Reference
 
-| Env Var              | Default                          | Description                                                                     |
-| -------------------- | -------------------------------- | ------------------------------------------------------------------------------- |
-| `CHAIN`              | `slot`                           | Chain name (slot/slottest/local/sepolia/mainnet)                                |
-| `RPC_URL`            | _(discovery)_                    | StarkNet RPC endpoint — if set (with TORII_URL, WORLD_ADDRESS), skips discovery |
-| `TORII_URL`          | _(discovery)_                    | Torii SQL endpoint                                                              |
-| `WORLD_ADDRESS`      | _(discovery)_                    | World contract address                                                          |
-| `MANIFEST_PATH`      | `~/.eternum-agent/manifest.json` | Dojo manifest JSON path                                                         |
-| `GAME_NAME`          | `eternum`                        | Game namespace (filters manifest tags for session policies)                     |
-| `CHAIN_ID`           | _(auto-derived)_                 | StarkNet chain ID (hex encoded short string)                                    |
-| `SESSION_BASE_PATH`  | `~/.eternum-agent/.cartridge/`   | Cartridge session storage directory                                             |
-| `TICK_INTERVAL_MS`   | `60000`                          | Tick loop interval (1 min)                                                      |
-| `LOOP_ENABLED`       | `true`                           | Auto-start tick loop on launch                                                  |
-| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (anthropic/openai/openrouter/google)                               |
-| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | LLM model ID                                                                    |
-| `DATA_DIR`           | `~/.eternum-agent/data/`         | Data directory (soul.md, tasks/, HEARTBEAT.md)                                  |
-| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for all paths                                                    |
-| `ANTHROPIC_API_KEY`  | _(required)_                     | Anthropic API key (if MODEL_PROVIDER=anthropic)                                 |
-| `OPENAI_API_KEY`     | _(required)_                     | OpenAI API key (if MODEL_PROVIDER=openai)                                       |
-| `SLOT_NAME`          | _(optional)_                     | Auto-select world by name (skips TUI picker if matched)                         |
-| `CARTRIDGE_API_BASE` | `https://api.cartridge.gg`       | Cartridge API base URL (overrides Factory/Torii endpoints)                      |
+| Env Var              | Default                        | Description                                                                     |
+| -------------------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| `CHAIN`              | `slot`                         | Chain name (slot/slottest/local/sepolia/mainnet)                                |
+| `RPC_URL`            | _(discovery)_                  | StarkNet RPC endpoint — if set (with TORII_URL, WORLD_ADDRESS), skips discovery |
+| `TORII_URL`          | _(discovery)_                  | Torii SQL endpoint                                                              |
+| `WORLD_ADDRESS`      | _(discovery)_                  | World contract address                                                          |
+| `MANIFEST_PATH`      | _(none)_                       | Optional Dojo manifest JSON — only needed when bypassing world discovery        |
+| `GAME_NAME`          | `eternum`                      | Game namespace (filters manifest tags for session policies)                     |
+| `CHAIN_ID`           | _(auto-derived)_               | StarkNet chain ID (hex encoded short string)                                    |
+| `SESSION_BASE_PATH`  | `~/.eternum-agent/.cartridge/` | Cartridge session storage directory                                             |
+| `TICK_INTERVAL_MS`   | `60000`                        | Tick loop interval (1 min)                                                      |
+| `LOOP_ENABLED`       | `true`                         | Auto-start tick loop on launch                                                  |
+| `MODEL_PROVIDER`     | `anthropic`                    | LLM provider (anthropic/openai/openrouter/google)                               |
+| `MODEL_ID`           | `claude-sonnet-4-5-20250929`   | LLM model ID                                                                    |
+| `DATA_DIR`           | `~/.eternum-agent/data/`       | Data directory (soul.md, tasks/, HEARTBEAT.md)                                  |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`             | Base directory for all paths                                                    |
+| `ANTHROPIC_API_KEY`  | _(required)_                   | Anthropic API key (if MODEL_PROVIDER=anthropic)                                 |
+| `OPENAI_API_KEY`     | _(required)_                   | OpenAI API key (if MODEL_PROVIDER=openai)                                       |
+| `SLOT_NAME`          | _(optional)_                   | Auto-select world by name (skips TUI picker if matched)                         |
+| `CARTRIDGE_API_BASE` | `https://api.cartridge.gg`     | Cartridge API base URL (overrides Factory/Torii endpoints)                      |
 
 ## Runtime Directories
 
@@ -961,7 +961,7 @@ wasmPlugin), and package.json (embedded via piConfigPlugin) are all inlined.
    RPC_URL=http://localhost:5050
    TORII_URL=http://localhost:8080/sql
    WORLD_ADDRESS=0x...
-   MANIFEST_PATH=/path/to/manifest.json
+   MANIFEST_PATH=/path/to/manifest.json   # optional
    ANTHROPIC_API_KEY=sk-ant-...
    ```
 2. Run: `axis run` (no picker, connects directly)

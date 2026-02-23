@@ -20,17 +20,40 @@ export interface DiscoveredWorld {
   status: GameStatus;
 }
 
-function getFactorySqlBaseUrl(chain: Chain): string {
+async function discoverSlotFactories(): Promise<string[]> {
+  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+  const suffixes = "abcdefghijklmnopqrstuvwxyz".split("");
+  const probe = async (suffix: string): Promise<string | null> => {
+    const url = `${base}/x/eternum-factory-slot-${suffix}/torii/sql`;
+    try {
+      const res = await fetch(`${url}?query=${encodeURIComponent("SELECT 1 LIMIT 1;")}`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      return res.ok ? url : null;
+    } catch {
+      return null;
+    }
+  };
+  const results = await Promise.all(suffixes.map(probe));
+  return results.filter((url): url is string => url !== null);
+}
+
+let cachedSlotFactories: string[] | null = null;
+
+async function getFactorySqlBaseUrls(chain: Chain): Promise<string[]> {
   const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
   switch (chain) {
     case "mainnet":
-      return `${base}/x/eternum-factory-mainnet/torii/sql`;
+      return [`${base}/x/eternum-factory-mainnet/torii/sql`];
     case "sepolia":
-      return `${base}/x/eternum-factory-sepolia/torii/sql`;
+      return [`${base}/x/eternum-factory-sepolia/torii/sql`];
     case "slot":
     case "slottest":
     case "local":
-      return `${base}/x/eternum-factory-slot-a/torii/sql`;
+      if (!cachedSlotFactories) {
+        cachedSlotFactories = await discoverSlotFactories();
+      }
+      return cachedSlotFactories;
   }
 }
 
@@ -79,11 +102,11 @@ async function checkWorldAvailability(worldName: string): Promise<{ available: b
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
 
   const available = await isToriiAvailable(toriiBaseUrl);
-  if (!available) return { available: false, status: "ended" };
+  if (!available) return { available: true, status: "unknown" };
 
   try {
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return { available: true, status: "unknown" };
     const rows = (await res.json()) as Record<string, unknown>[];
     const row = rows[0];
@@ -101,16 +124,25 @@ async function checkWorldAvailability(worldName: string): Promise<{ available: b
 const DISCOVERABLE_CHAINS: Chain[] = ["slot", "sepolia", "mainnet"];
 
 async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> {
-  const factoryUrl = getFactorySqlBaseUrl(chain);
-  if (!factoryUrl) return [];
+  const factoryUrls = await getFactorySqlBaseUrls(chain);
+  if (factoryUrls.length === 0) return [];
 
-  try {
-    const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
-    const rows = await fetchFactoryRows(factoryUrl, query);
+  const query = `SELECT name FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT 1000;`;
+  const seen = new Set<string>();
+  const candidates: { name: string; chain: Chain }[] = [];
 
-    const seen = new Set<string>();
-    const candidates: { name: string; chain: Chain }[] = [];
+  // Query all factory endpoints for this chain in parallel
+  const allRows = await Promise.all(
+    factoryUrls.map(async (url) => {
+      try {
+        return await fetchFactoryRows(url, query);
+      } catch {
+        return [];
+      }
+    }),
+  );
 
+  for (const rows of allRows) {
     for (const row of rows) {
       const nameFelt = extractNameFelt(row);
       if (!nameFelt) continue;
@@ -119,22 +151,20 @@ async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> 
       seen.add(name);
       candidates.push({ name, chain });
     }
-
-    // Check availability + game status in parallel
-    const checks = await Promise.all(
-      candidates.map(async (c) => {
-        const { available, status } = await checkWorldAvailability(c.name);
-        return { ...c, available, status };
-      }),
-    );
-
-    // Filter out unavailable and ended worlds
-    return checks
-      .filter((w) => w.available && w.status !== "ended")
-      .map(({ name, chain, status }) => ({ name, chain, status }));
-  } catch {
-    return [];
   }
+
+  // Check availability + game status in parallel
+  const checks = await Promise.all(
+    candidates.map(async (c) => {
+      const { available, status } = await checkWorldAvailability(c.name);
+      return { ...c, available, status };
+    }),
+  );
+
+  // Only show worlds that are upcoming or actively ongoing
+  return checks
+    .filter((w) => w.status === "upcoming" || w.status === "ongoing")
+    .map(({ name, chain, status }) => ({ name, chain, status }));
 }
 
 export async function discoverAllWorlds(): Promise<DiscoveredWorld[]> {
@@ -170,13 +200,34 @@ async function fetchTokenAddresses(
   }
 }
 
-export async function buildWorldProfile(chain: Chain, worldName: string): Promise<WorldProfile> {
-  const factoryUrl = getFactorySqlBaseUrl(chain);
+async function resolveFromFactories(
+  chain: Chain,
+  worldName: string,
+): Promise<{
+  contractsBySelector: Record<string, string>;
+  deployment: { worldAddress: string | null; rpcUrl: string | null } | null;
+}> {
+  const factoryUrls = await getFactorySqlBaseUrls(chain);
 
-  const [contractsBySelector, deployment] = await Promise.all([
-    resolveWorldContracts(factoryUrl, worldName),
-    resolveWorldDeploymentFromFactory(factoryUrl, worldName),
-  ]);
+  // Try each factory URL until we find one with contracts for this world
+  for (const factoryUrl of factoryUrls) {
+    try {
+      const [contractsBySelector, deployment] = await Promise.all([
+        resolveWorldContracts(factoryUrl, worldName),
+        resolveWorldDeploymentFromFactory(factoryUrl, worldName),
+      ]);
+      if (Object.keys(contractsBySelector).length > 0 || deployment?.worldAddress) {
+        return { contractsBySelector, deployment };
+      }
+    } catch {
+      // Try next factory
+    }
+  }
+  return { contractsBySelector: {}, deployment: null };
+}
+
+export async function buildWorldProfile(chain: Chain, worldName: string): Promise<WorldProfile> {
+  const { contractsBySelector, deployment } = await resolveFromFactories(chain, worldName);
 
   const worldAddress = deployment?.worldAddress;
   if (!worldAddress) {

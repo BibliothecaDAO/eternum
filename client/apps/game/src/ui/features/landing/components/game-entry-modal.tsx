@@ -17,6 +17,7 @@ import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
+import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -862,6 +863,18 @@ export const GameEntryModal = ({
         updateTask("manifest", "running");
         const result = await bootstrapGame();
         debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
+
+        // After bootstrap patches the manifest with the selected world's
+        // contract addresses, refresh the controller's session policies
+        // if they changed. This recreates the keychain iframe with correct
+        // policies and re-probes to restore the user's account.
+        const connector = useAccountStore.getState().connector;
+        if (connector) {
+          const updated = await refreshSessionPolicies(connector);
+          if (updated) {
+            debugLog(worldName, "Session policies refreshed for new world");
+          }
+        }
 
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));

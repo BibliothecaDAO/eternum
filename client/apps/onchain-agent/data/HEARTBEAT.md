@@ -1,40 +1,74 @@
 ---
 version: 1
-jobs: []
----
-
-<!-- HEARTBEAT.md — Cron-style recurring jobs
-
-Add jobs to automate periodic checks. The agent can also edit this file at runtime. Use strict yaml ONLY (no extra commenting or formatting. It's YAML.)
-
-Format:
-  - id: unique-job-name
+jobs:
+  - id: military-check
     enabled: true
-    schedule: "*/15 * * * *"    # Standard 5-field cron (min hour dom mon dow)
-    mode: observe               # "observe" (read-only) or "act" (can execute actions)
-    timeoutSec: 90
+    schedule: "*/3 * * * *"
+    mode: observe
+    timeoutSec: 30
     prompt: |
-      Description of what the job should do.
-
-Example jobs:
-
-  - id: economy-check
+      Full military status check. This is wartime.
+      Use inspect_explorer on each of your explorers and inspect_realm
+      on each structure to get current data. Assess:
+      - Are any explorers idle with stamina? They should be moving.
+      - Are troops in the field in good defensive/offensive positions?
+      - Are any enemy armies nearby that should be attacked or avoided?
+      - Are guard slots at all structures adequately filled?
+      - Are there exploration targets (unexplored tiles) within reach?
+      Write findings and recommended actions to tasks/learnings.md.
+      Do NOT execute actions.
+  - id: upgrade-check
+    enabled: true
+    schedule: "1-59/3 * * * *"
+    mode: observe
+    timeoutSec: 30
+    prompt: |
+      Use inspect_realm on each structure to check current resources
+      and building status. Assess:
+      - Can any realm level up? (check Elixir and other upgrade costs)
+      - Are there buildings that should be upgraded to higher tiers?
+      - Is production net-positive or are inputs being consumed faster
+        than produced?
+      Write upgrade opportunities to tasks/learnings.md. Do NOT execute actions.
+  - id: build-check
+    enabled: true
+    schedule: "2-59/3 * * * *"
+    mode: observe
+    timeoutSec: 30
+    prompt: |
+      Use inspect_realm on each structure to check free slots, population
+      headroom, and resource balances. Assess:
+      - Are there free building slots? What should be built next per
+        the Phase 2 sprint targets in soul.md?
+      - Is population near capacity? Build WorkersHut first if so.
+      - Are input resources balanced for current production buildings?
+      Write build recommendations to tasks/learnings.md. Do NOT execute actions.
+  - id: study-handbooks
     enabled: true
     schedule: "*/10 * * * *"
     mode: observe
     timeoutSec: 60
     prompt: |
-      Check Wheat production vs consumption across all structures.
-      Flag any structure running low. Summarize in tasks/economy.md.
+      Re-read the reference handbooks to refresh your game knowledge.
+      Use the read tool to load each of these files:
+        - tasks/game.md
+        - tasks/economy.md
+        - tasks/exploration.md
+        - tasks/combat.md
+      After reading, update tasks/learnings.md with any new insights,
+      corrections to previous assumptions, or strategy refinements.
+      Focus on rules you may have been violating or mechanics you
+      haven't been leveraging. Do NOT overwrite existing learnings —
+      append or revise specific entries.
+---
 
-  - id: guard-audit
-    enabled: true
-    schedule: "*/30 * * * *"
-    mode: observe
-    timeoutSec: 60
-    prompt: |
-      Inspect guard strength on all owned structures.
-      Flag any structure with guards below threshold.
+<!-- HEARTBEAT.md — Cron-style recurring jobs
+
+Stagger schedule (3-min cycle, 1-min offset):
+  military-check: 0, 3, 6, 9, ...
+  upgrade-check:  1, 4, 7, 10, ...
+  build-check:    2, 5, 8, 11, ...
+  study-handbooks: 0, 10, 20, 30, 40, 50
 
 Changes to this file are hot-reloaded (no restart needed).
 -->

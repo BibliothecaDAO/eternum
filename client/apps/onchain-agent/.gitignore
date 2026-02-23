@@ -4,3 +4,6 @@ axis
 dist-bun/
 release/
 *.wasm
+.agents/
+.skills/
+.claude

@@ -103,6 +103,18 @@ export function divideByPrecision(value: number, floor: boolean = true): number 
   return floor ? Math.floor(value / RESOURCE_PRECISION) : value / RESOURCE_PRECISION;
 }
 
+const HYPERSTRUCTURE_REALM_CHECK_RADIUS_THREE_REALM = 8;
+const HYPERSTRUCTURE_REALM_CHECK_RADIUS_SINGLE_REALM = 10;
+
+export const getHyperstructureRealmCheckRadius = () => {
+  const blitzConfig = configManager.getBlitzConfig();
+  const isSingleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
+
+  return isSingleRealmMode
+    ? HYPERSTRUCTURE_REALM_CHECK_RADIUS_SINGLE_REALM
+    : HYPERSTRUCTURE_REALM_CHECK_RADIUS_THREE_REALM;
+};
+
 export function divideWithPrecision(
   numerator: bigint,
   denominator: bigint,

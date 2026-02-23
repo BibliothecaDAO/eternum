@@ -35,10 +35,6 @@ function resolveAgentHome(env: NodeJS.ProcessEnv = process.env): string {
   return path.join(homedir(), ".eternum-agent");
 }
 
-export function resolveDefaultManifestPath(env: NodeJS.ProcessEnv = process.env): string {
-  return path.join(resolveAgentHome(env), "manifest.json");
-}
-
 export function resolveDefaultDataDir(env: NodeJS.ProcessEnv = process.env): string {
   return path.join(resolveAgentHome(env), "data");
 }

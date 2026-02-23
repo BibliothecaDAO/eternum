@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x613551abceb2b37073b1149bb862ea70cf029981ce1ca47e9dd7c7ab97cb65d",
-    "address": "0x605da57a48c8d82d36c1ad376c4d45b7ce2d3abcf8c6b948aec7e100b131e01",
-    "seed": "wfactory_2",
+    "address": "0x6ca129bc7a71e27c2d4584538b05acf44c4900e54b409d19f536909b2886a39",
+    "seed": "wfactory_3",
     "name": "world_factory",
     "entrypoints": [
       "uuid",
@@ -33,8 +33,8 @@
   },
   "contracts": [
     {
-      "address": "0x3a49cb39fb21e9d46139536ff4ef2b3ec6719f4c7dc8dd0853c850b4f2b0090",
-      "class_hash": "0x82f80585075b593d679e0bb386eb5ff33f55cb55b6cb8ea23b5c486f09a91b",
+      "address": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+      "class_hash": "0x761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498",
       "init_calldata": [],
       "tag": "wf-factory",
       "selector": "0x398833bb04609c104a5d4c379fe679825183830e7be294a4725f7a8b3b1dab7",
@@ -42,6 +42,10 @@
         "set_series_config",
         "create_game",
         "set_factory_config",
+        "set_factory_config_contracts",
+        "set_factory_config_models",
+        "set_factory_config_events",
+        "set_factory_config_libraries",
         "upgrade"
       ]
     }
@@ -54,11 +58,6 @@
           "name": "version",
           "type": "core::felt252",
           "key": true
-        },
-        {
-          "name": "max_actions",
-          "type": "core::integer::u64",
-          "key": false
         },
         {
           "name": "world_class_hash",
@@ -76,27 +75,37 @@
           "key": false
         },
         {
-          "name": "contracts",
-          "type": "core::array::Array::<world_factory::factory_models::FactoryConfigContract>",
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
           "key": false
         },
         {
-          "name": "models",
-          "type": "core::array::Array::<core::starknet::class_hash::ClassHash>",
+          "name": "revision",
+          "type": "core::integer::u64",
           "key": false
         },
         {
-          "name": "events",
-          "type": "core::array::Array::<core::starknet::class_hash::ClassHash>",
+          "name": "contracts_len",
+          "type": "core::integer::u64",
           "key": false
         },
         {
-          "name": "libraries",
-          "type": "core::array::Array::<world_factory::factory_models::FactoryConfigLibrary>",
+          "name": "models_len",
+          "type": "core::integer::u64",
+          "key": false
+        },
+        {
+          "name": "events_len",
+          "type": "core::integer::u64",
+          "key": false
+        },
+        {
+          "name": "libraries_len",
+          "type": "core::integer::u64",
           "key": false
         }
       ],
-      "class_hash": "0x36b0fd4bc0ba4a4170cf5355bdfd35354ca36b5c29094f15c72d3d7a1e5e22",
+      "class_hash": "0x792516408d741d88d2082c38e90e599f8bded6dd3d03475f77df0c6afb4e96d",
       "tag": "wf-FactoryConfig",
       "selector": "0x3751059678234ede81cb1dcbd857b98ad93598e7a943d1d63547211095dfeac"
     },
@@ -108,14 +117,105 @@
           "key": true
         },
         {
-          "name": "contract_address",
-          "type": "core::starknet::contract_address::ContractAddress",
+          "name": "index",
+          "type": "core::integer::u64",
+          "key": true
+        },
+        {
+          "name": "selector",
+          "type": "core::felt252",
+          "key": false
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash",
+          "key": false
+        },
+        {
+          "name": "init_args",
+          "type": "core::array::Span::<core::felt252>",
           "key": false
         }
       ],
-      "class_hash": "0x6de985dacbde33dcabf7a3e42cacce663668aaf88b09b8ae5221ec59de8b029",
-      "tag": "wf-FactoryConfigOwner",
-      "selector": "0x1c5cbfbf77e5834a5cf3cd7534e8a19e1de250887d9a4385e805ad09bd28188"
+      "class_hash": "0x4281538805437a340ebc60a0c5aa9f1a76877ddee3000f207b147b993e3abc7",
+      "tag": "wf-FactoryConfigContract",
+      "selector": "0x432fd2187550baefc34042c0934ee92e4af54ca140534d4bf29912c1653da83"
+    },
+    {
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252",
+          "key": true
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u64",
+          "key": true
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash",
+          "key": false
+        }
+      ],
+      "class_hash": "0x59e5cd797ea380cd04ece5bbab62fee7aaeda9ed98ce1c890dc54067620549a",
+      "tag": "wf-FactoryConfigEvent",
+      "selector": "0xebe028a531b8bfcceb68930d53fa83d318fbab24635511beeac1219517a20b"
+    },
+    {
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252",
+          "key": true
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u64",
+          "key": true
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash",
+          "key": false
+        },
+        {
+          "name": "name",
+          "type": "core::byte_array::ByteArray",
+          "key": false
+        },
+        {
+          "name": "library_version",
+          "type": "core::byte_array::ByteArray",
+          "key": false
+        }
+      ],
+      "class_hash": "0x2398004b9c3aa64f32aa44639ad78b0d5b8380ab34fe20ce78d3c122d9b4bbe",
+      "tag": "wf-FactoryConfigLibrary",
+      "selector": "0x651393490ac09c7d0963d851e0bdec0fe6968a5d65c7f7e07e868c2537aeec8"
+    },
+    {
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252",
+          "key": true
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u64",
+          "key": true
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash",
+          "key": false
+        }
+      ],
+      "class_hash": "0x4919499459ce50934ac25b811aeb06d4ce6b182784fcb2160fba0c2ac81916a",
+      "tag": "wf-FactoryConfigModel",
+      "selector": "0x13850c86a5c18c6422ce92e02fa8b648086d3061cc418957e85261ffcfbdb17"
     },
     {
       "members": [
@@ -132,6 +232,11 @@
         {
           "name": "world_address",
           "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+          "key": false
+        },
+        {
+          "name": "config_revision",
+          "type": "core::integer::u64",
           "key": false
         },
         {
@@ -155,16 +260,6 @@
           "key": false
         },
         {
-          "name": "permission_cursor",
-          "type": "core::integer::u64",
-          "key": false
-        },
-        {
-          "name": "init_cursor",
-          "type": "core::integer::u64",
-          "key": false
-        },
-        {
           "name": "total_actions",
           "type": "core::integer::u64",
           "key": false
@@ -175,9 +270,26 @@
           "key": false
         }
       ],
-      "class_hash": "0x27871e03c3546fef1a108aab4b7166846e52a63830c85fd1c9f44bf9b98bd7b",
+      "class_hash": "0x29a6c0be9ccfbce3afb07cba58ef32dc914e7413549206b25167d967ab5296c",
       "tag": "wf-FactoryDeploymentCursor",
       "selector": "0x752a901a506178e9335c4bd662486b79c44a224939c02af489313a0151052f3"
+    },
+    {
+      "members": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": true
+        },
+        {
+          "name": "version",
+          "type": "core::felt252",
+          "key": false
+        }
+      ],
+      "class_hash": "0x2e6b233df64d45c84e0b4ef197716b7c2701d1e6738b9c0bd2346dc5d1386d8",
+      "tag": "wf-MMRRegistration",
+      "selector": "0x665a1f8c56266a51cfa2260d1bfbcebe66af9be8d5ff164354bb367daa72cdc"
     },
     {
       "members": [
@@ -2181,10 +2293,6 @@
           "type": "core::felt252"
         },
         {
-          "name": "max_actions",
-          "type": "core::integer::u64"
-        },
-        {
           "name": "world_class_hash",
           "type": "core::starknet::class_hash::ClassHash"
         },
@@ -2197,26 +2305,60 @@
           "type": "core::bool"
         },
         {
-          "name": "contracts",
-          "type": "core::array::Array::<world_factory::factory_models::FactoryConfigContract>"
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "models",
-          "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+          "name": "revision",
+          "type": "core::integer::u64"
         },
         {
-          "name": "events",
-          "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+          "name": "contracts_len",
+          "type": "core::integer::u64"
         },
         {
-          "name": "libraries",
-          "type": "core::array::Array::<world_factory::factory_models::FactoryConfigLibrary>"
+          "name": "models_len",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "events_len",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "libraries_len",
+          "type": "core::integer::u64"
         }
       ]
     },
     {
       "type": "struct",
       "name": "world_factory::factory_models::FactoryConfigContract",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252"
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "selector",
+          "type": "core::felt252"
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "init_args",
+          "type": "core::array::Span::<core::felt252>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::factory_models::FactoryConfigContractData",
       "members": [
         {
           "name": "selector",
@@ -2229,20 +2371,84 @@
         {
           "name": "init_args",
           "type": "core::array::Span::<core::felt252>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::factory_models::FactoryConfigContractValue",
+      "members": [
+        {
+          "name": "selector",
+          "type": "core::felt252"
         },
         {
-          "name": "writer_of_resources",
-          "type": "core::array::Span::<core::felt252>"
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
         },
         {
-          "name": "owner_of_resources",
+          "name": "init_args",
           "type": "core::array::Span::<core::felt252>"
         }
       ]
     },
     {
       "type": "struct",
+      "name": "world_factory::factory_models::FactoryConfigEvent",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252"
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::factory_models::FactoryConfigEventValue",
+      "members": [
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "world_factory::factory_models::FactoryConfigLibrary",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252"
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "name",
+          "type": "core::byte_array::ByteArray"
+        },
+        {
+          "name": "library_version",
+          "type": "core::byte_array::ByteArray"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::factory_models::FactoryConfigLibraryData",
       "members": [
         {
           "name": "class_hash",
@@ -2260,25 +2466,47 @@
     },
     {
       "type": "struct",
-      "name": "world_factory::factory_models::FactoryConfigOwner",
+      "name": "world_factory::factory_models::FactoryConfigLibraryValue",
+      "members": [
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "name",
+          "type": "core::byte_array::ByteArray"
+        },
+        {
+          "name": "library_version",
+          "type": "core::byte_array::ByteArray"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::factory_models::FactoryConfigModel",
       "members": [
         {
           "name": "version",
           "type": "core::felt252"
         },
         {
-          "name": "contract_address",
-          "type": "core::starknet::contract_address::ContractAddress"
+          "name": "index",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "world_factory::factory_models::FactoryConfigOwnerValue",
+      "name": "world_factory::factory_models::FactoryConfigModelValue",
       "members": [
         {
-          "name": "contract_address",
-          "type": "core::starknet::contract_address::ContractAddress"
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
         }
       ]
     },
@@ -2286,10 +2514,6 @@
       "type": "struct",
       "name": "world_factory::factory_models::FactoryConfigValue",
       "members": [
-        {
-          "name": "max_actions",
-          "type": "core::integer::u64"
-        },
         {
           "name": "world_class_hash",
           "type": "core::starknet::class_hash::ClassHash"
@@ -2303,20 +2527,28 @@
           "type": "core::bool"
         },
         {
-          "name": "contracts",
-          "type": "core::array::Array::<world_factory::factory_models::FactoryConfigContract>"
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "models",
-          "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+          "name": "revision",
+          "type": "core::integer::u64"
         },
         {
-          "name": "events",
-          "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+          "name": "contracts_len",
+          "type": "core::integer::u64"
         },
         {
-          "name": "libraries",
-          "type": "core::array::Array::<world_factory::factory_models::FactoryConfigLibrary>"
+          "name": "models_len",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "events_len",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "libraries_len",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -2337,6 +2569,10 @@
           "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>"
         },
         {
+          "name": "config_revision",
+          "type": "core::integer::u64"
+        },
+        {
           "name": "contract_cursor",
           "type": "core::integer::u64"
         },
@@ -2350,14 +2586,6 @@
         },
         {
           "name": "event_cursor",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "permission_cursor",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "init_cursor",
           "type": "core::integer::u64"
         },
         {
@@ -2379,6 +2607,10 @@
           "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>"
         },
         {
+          "name": "config_revision",
+          "type": "core::integer::u64"
+        },
+        {
           "name": "contract_cursor",
           "type": "core::integer::u64"
         },
@@ -2392,14 +2624,6 @@
         },
         {
           "name": "event_cursor",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "permission_cursor",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "init_cursor",
           "type": "core::integer::u64"
         },
         {
@@ -2420,7 +2644,25 @@
     },
     {
       "type": "event",
-      "name": "world_factory::factory_models::m_FactoryConfigOwner::Event",
+      "name": "world_factory::factory_models::m_FactoryConfigContract::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "world_factory::factory_models::m_FactoryConfigEvent::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "world_factory::factory_models::m_FactoryConfigLibrary::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "world_factory::factory_models::m_FactoryConfigModel::Event",
       "kind": "enum",
       "variants": []
     },
@@ -2443,6 +2685,10 @@
               "type": "core::felt252"
             },
             {
+              "name": "max_actions",
+              "type": "core::integer::u64"
+            },
+            {
               "name": "factory_config_version",
               "type": "core::felt252"
             },
@@ -2463,12 +2709,110 @@
           "name": "set_factory_config",
           "inputs": [
             {
-              "name": "config",
-              "type": "world_factory::factory_models::FactoryConfig"
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "world_class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            },
+            {
+              "name": "default_namespace",
+              "type": "core::byte_array::ByteArray"
+            },
+            {
+              "name": "default_namespace_writer_all",
+              "type": "core::bool"
             }
           ],
           "outputs": [],
           "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_contracts",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "contracts",
+              "type": "core::array::Array::<world_factory::factory_models::FactoryConfigContractData>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_models",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "models",
+              "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_events",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "events",
+              "type": "core::array::Array::<core::starknet::class_hash::ClassHash>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_factory_config_libraries",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "core::felt252"
+            },
+            {
+              "name": "libraries",
+              "type": "core::array::Array::<world_factory::factory_models::FactoryConfigLibraryData>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_factory::interface::IWorldFactoryMMR",
+      "items": [
+        {
+          "type": "function",
+          "name": "get_factory_mmr_contract_version",
+          "inputs": [
+            {
+              "name": "addr",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
         }
       ]
     },
@@ -2593,6 +2937,36 @@
           "state_mutability": "view"
         }
       ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::mmr_models::MMRRegistration",
+      "members": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "version",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_factory::mmr_models::MMRRegistrationValue",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_factory::mmr_models::m_MMRRegistration::Event",
+      "kind": "enum",
+      "variants": []
     },
     {
       "type": "struct",

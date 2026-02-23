@@ -38,9 +38,7 @@ describe("runtime path defaults", () => {
 
     const cfg = loadConfig();
 
-    expect(cfg.manifestPath).toContain(".eternum-agent");
-    expect(cfg.manifestPath).toContain("manifest.json");
-    expect(cfg.manifestPath).not.toContain("contracts/game/manifest_local.json");
+    expect(cfg.manifestPath).toBeUndefined();
 
     expect(cfg.dataDir).toContain(".eternum-agent");
     expect(cfg.dataDir).toContain("data");
@@ -58,7 +56,7 @@ describe("runtime path defaults", () => {
 
     const cfg = loadConfig();
 
-    expect(cfg.manifestPath).toBe("/tmp/custom-agent-home/manifest.json");
+    expect(cfg.manifestPath).toBeUndefined();
     expect(cfg.dataDir).toBe("/tmp/custom-agent-home/data");
     expect(cfg.sessionBasePath).toBe("/tmp/custom-agent-home/.cartridge");
   });
