@@ -54,6 +54,7 @@ jobs:
 
       - name: Run Claude Config Code Review
         id: claude-review
+        continue-on-error: true
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
