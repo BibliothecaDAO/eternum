@@ -36,8 +36,15 @@ interface ContractCacheEntry {
   abi: unknown[];
 }
 
-function buildContractCache(manifest: Manifest): Map<string, ContractCacheEntry> {
+/** Global enum map built from ALL contract ABIs so cross-contract enums resolve. */
+type EnumMap = Map<string, { variants: { name: string; type: string }[] }>;
+
+function buildContractCache(manifest: Manifest): {
+  cache: Map<string, ContractCacheEntry>;
+  globalEnums: EnumMap;
+} {
   const cache = new Map<string, ContractCacheEntry>();
+  const globalEnums: EnumMap = new Map();
   const allContracts = extractAllFromManifest(manifest);
 
   for (const result of allContracts) {
@@ -46,12 +53,19 @@ function buildContractCache(manifest: Manifest): Map<string, ContractCacheEntry>
     const abi = rawContract?.abi ?? [];
     if (abi.length === 0) continue;
 
+    // Collect all enum definitions across every contract ABI
+    for (const entry of abi as any[]) {
+      if (entry.type === "enum" && entry.name !== "core::bool") {
+        globalEnums.set(entry.name, entry);
+      }
+    }
+
     // starknet.js v8 uses object-based constructor for Dojo manifest ABIs
     const contract = new Contract({ abi: abi as any[], address: result.address });
     cache.set(result.address, { contract, abi });
   }
 
-  return cache;
+  return { cache, globalEnums };
 }
 
 // ── Error extraction (mirrors action-registry pattern) ───────────────────────
@@ -149,6 +163,33 @@ function extractErrorMessage(err: any): string {
 
 // ── Debug logging ───────────────────────────────────────────────────────────
 
+function debugLogCoercion(
+  actionType: string,
+  entrypoint: string,
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): void {
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug",
+      "coercion.log",
+    );
+    mkdirSync(dirname(debugPath), { recursive: true });
+    const ts = new Date().toISOString();
+    const coerced: string[] = [];
+    for (const [k, v] of Object.entries(after)) {
+      if (v instanceof CairoCustomEnum) {
+        coerced.push(`${k}=${(v as CairoCustomEnum).activeVariant()}`);
+      }
+    }
+    const summary = coerced.length > 0 ? coerced.join(", ") : "(none)";
+    const keyChanges = Object.keys(before).filter((k) => !(k in after));
+    const renamed = keyChanges.length > 0 ? ` renamed=[${keyChanges.join(",")}]` : "";
+    writeFileSync(debugPath, `[${ts}] ${actionType}(${entrypoint}) enums=[${summary}]${renamed}\n`, { flag: "a" });
+  } catch (_) {}
+}
+
 function debugLogError(actionType: string, err: any): void {
   try {
     const debugPath = join(
@@ -179,7 +220,7 @@ export function createABIExecutor(
   account: Account,
   options: ABIExecutorOptions,
 ): ABIExecutor {
-  const contractCache = buildContractCache(manifest);
+  const { cache: contractCache, globalEnums } = buildContractCache(manifest);
   const { routes, cachedStateProvider, onBeforeExecute, onAfterExecute } = options;
 
   async function execute(action: GameAction): Promise<ActionResult> {
@@ -213,7 +254,10 @@ export function createABIExecutor(
 
     try {
       // Coerce plain numeric enum values to CairoCustomEnum instances
-      const coercedParams = coerceEnumParams(transformedParams, route.entrypoint, cached.abi as unknown[]);
+      const coercedParams = coerceEnumParams(transformedParams, route.entrypoint, cached.abi as unknown[], globalEnums);
+
+      // Debug: log coercion results so we can diagnose enum failures
+      debugLogCoercion(action.type, route.entrypoint, transformedParams, coercedParams);
 
       // Use Contract.populate() for ABI-aware calldata encoding
       const call: Call = cached.contract.populate(route.entrypoint, coercedParams as any);
@@ -259,9 +303,15 @@ export function coerceEnumParams(
   params: Record<string, unknown>,
   entrypoint: string,
   abi: unknown[],
+  globalEnums?: EnumMap,
 ): Record<string, unknown> {
-  // Build enum map: fully-qualified name → ABI enum entry
-  const enums = new Map<string, { variants: { name: string; type: string }[] }>();
+  // Build enum map from contract ABI, then merge global enums as fallback
+  // so cross-contract enum types (e.g., Direction defined in config_systems
+  // but used in troop_movement_systems) are always resolved.
+  const enums: EnumMap = new Map();
+  if (globalEnums) {
+    for (const [k, v] of globalEnums) enums.set(k, v);
+  }
   for (const entry of abi as any[]) {
     if (entry.type === "enum" && entry.name !== "core::bool") {
       enums.set(entry.name, entry);

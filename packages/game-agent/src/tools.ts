@@ -10,7 +10,8 @@ function logToolResponse(toolName: string, params: any, response: string) {
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-tool-responses.log",
+      "debug",
+      "tool-responses.log",
     );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();
