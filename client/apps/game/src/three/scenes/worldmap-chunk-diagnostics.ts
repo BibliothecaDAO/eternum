@@ -2,6 +2,7 @@ export type WorldmapChunkDiagnosticsEvent =
   | "transition_started"
   | "transition_committed"
   | "transition_rolled_back"
+  | "transition_prepare_stale_dropped"
   | "manager_update_started"
   | "manager_update_skipped_stale"
   | "manager_update_failed"
@@ -29,6 +30,7 @@ export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
   transitionCommitted: number;
   transitionRolledBack: number;
+  transitionPrepareStaleDropped: number;
   managerUpdateStarted: number;
   managerUpdateSkippedStale: number;
   managerUpdateFailed: number;
@@ -69,6 +71,7 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     transitionStarted: 0,
     transitionCommitted: 0,
     transitionRolledBack: 0,
+    transitionPrepareStaleDropped: 0,
     managerUpdateStarted: 0,
     managerUpdateSkippedStale: 0,
     managerUpdateFailed: 0,
@@ -115,6 +118,9 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "transition_rolled_back":
       diagnostics.transitionRolledBack += 1;
+      break;
+    case "transition_prepare_stale_dropped":
+      diagnostics.transitionPrepareStaleDropped += 1;
       break;
     case "manager_update_started":
       diagnostics.managerUpdateStarted += 1;
