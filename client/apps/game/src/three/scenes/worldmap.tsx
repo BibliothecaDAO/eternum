@@ -131,7 +131,11 @@ import {
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
-import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle";
+import {
+  applyWorldmapSwitchOffRuntimeState,
+  finalizePendingChunkFetchOwnership,
+  invalidateWorldmapSwitchOffTransitionState,
+} from "./worldmap-runtime-lifecycle";
 import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
@@ -2203,6 +2207,14 @@ export default class WorldmapScene extends HexagonScene {
 
   onSwitchOff() {
     this.isSwitchedOff = true;
+    const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
+      chunkTransitionToken: this.chunkTransitionToken,
+      isChunkTransitioning: this.isChunkTransitioning,
+      globalChunkSwitchPromise: this.globalChunkSwitchPromise,
+    });
+    this.chunkTransitionToken = switchOffTransitionState.chunkTransitionToken;
+    this.isChunkTransitioning = switchOffTransitionState.isChunkTransitioning;
+    this.globalChunkSwitchPromise = switchOffTransitionState.globalChunkSwitchPromise;
     this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
@@ -3647,10 +3659,17 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const fetchPromise = this.executeTileEntitiesFetch(fetchKey, minCol, maxCol, minRow, maxRow);
+    const ownedFetchPromise = fetchPromise.finally(() => {
+      finalizePendingChunkFetchOwnership({
+        pendingChunks: this.pendingChunks,
+        fetchKey,
+        fetchPromise: ownedFetchPromise,
+      });
+    });
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_started");
-    this.pendingChunks.set(fetchKey, fetchPromise);
+    this.pendingChunks.set(fetchKey, ownedFetchPromise);
 
-    return fetchPromise;
+    return ownedFetchPromise;
   }
 
   private async executeTileEntitiesFetch(
@@ -3691,8 +3710,6 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
-      // Always remove from pending chunks
-      this.pendingChunks.delete(fetchKey);
       this.endToriiFetch();
     }
   }
@@ -4392,6 +4409,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (!chunkSwitchActions.shouldCommitManagers) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
       if (this.currentChunk !== chunkKey) {
         this.visibilityManager?.unregisterChunk(chunkKey);
       }
