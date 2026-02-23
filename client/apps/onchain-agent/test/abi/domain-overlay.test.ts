@@ -18,7 +18,7 @@ import {
 } from "../../src/abi/domain-overlay";
 
 // Load real manifest from repo root
-const manifestPath = resolve(__dirname, "../../../../../manifest.json");
+const manifestPath = resolve(__dirname, "../manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 // ── Overlay key validation ───────────────────────────────────────────────────

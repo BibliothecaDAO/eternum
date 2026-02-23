@@ -12,7 +12,7 @@ import {
 } from "../../src/abi/parser";
 
 // Load real manifest from repo root
-const manifestPath = resolve(__dirname, "../../../../../manifest.json");
+const manifestPath = resolve(__dirname, "../manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 describe("simplifyType", () => {

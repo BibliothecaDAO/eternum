@@ -6,7 +6,7 @@ import { generateActions } from "../../src/abi/action-gen";
 import type { DomainOverlayMap } from "../../src/abi/types";
 
 // Load real manifest from repo root
-const manifestPath = resolve(__dirname, "../../../../../manifest.json");
+const manifestPath = resolve(__dirname, "../manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 // Mock account that records execute calls

@@ -5,7 +5,7 @@
  * starknet.js to encode calldata directly from the manifest ABI. Overlay
  * param transforms are applied before encoding.
  */
-import { Contract, type Account, type Call } from "starknet";
+import { Contract, CairoCustomEnum, type Account, type Call } from "starknet";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { ActionResult, ActionRoute, DomainOverlay, GameAction, Manifest } from "./types";
@@ -211,8 +211,11 @@ export function createABIExecutor(
     }
 
     try {
+      // Coerce plain numeric enum values to CairoCustomEnum instances
+      const coercedParams = coerceEnumParams(transformedParams, route.entrypoint, cached.abi as unknown[]);
+
       // Use Contract.populate() for ABI-aware calldata encoding
-      const call: Call = cached.contract.populate(route.entrypoint, transformedParams as any);
+      const call: Call = cached.contract.populate(route.entrypoint, coercedParams as any);
       const result = await account.execute(call);
       const txHash = result?.transaction_hash ?? (result as any)?.transactionHash ?? undefined;
 
@@ -237,6 +240,67 @@ export function createABIExecutor(
   }
 
   return { execute };
+}
+
+// ── Enum coercion ────────────────────────────────────────────────────────────
+
+/**
+ * Convert plain numeric enum values to CairoCustomEnum instances.
+ *
+ * starknet.js v8 Contract.populate() expects CairoCustomEnum objects for enum
+ * parameters, but the LLM provides plain numbers (e.g., category: 0 for Knight).
+ * This function bridges the gap by looking up enum definitions in the ABI and
+ * constructing the appropriate CairoCustomEnum for each enum-typed parameter.
+ */
+export function coerceEnumParams(
+  params: Record<string, unknown>,
+  entrypoint: string,
+  abi: unknown[],
+): Record<string, unknown> {
+  // Build enum map: fully-qualified name → ABI enum entry
+  const enums = new Map<string, { variants: { name: string; type: string }[] }>();
+  for (const entry of abi as any[]) {
+    if (entry.type === "enum" && entry.name !== "core::bool") {
+      enums.set(entry.name, entry);
+    }
+  }
+  if (enums.size === 0) return params;
+
+  // Find the entrypoint's inputs across all interfaces
+  let inputs: { name: string; type: string }[] | undefined;
+  for (const entry of abi as any[]) {
+    if (entry.type === "interface" && Array.isArray(entry.items)) {
+      const fn = entry.items.find(
+        (item: any) => item.type === "function" && item.name === entrypoint,
+      );
+      if (fn) {
+        inputs = fn.inputs;
+        break;
+      }
+    }
+  }
+  if (!inputs) return params;
+
+  const result = { ...params };
+  for (const input of inputs) {
+    const enumDef = enums.get(input.type);
+    if (!enumDef) continue;
+
+    const value = result[input.name];
+    if (value === undefined || value === null) continue;
+    if (value instanceof CairoCustomEnum) continue;
+
+    const index = typeof value === "number" ? value : Number(value);
+    if (Number.isNaN(index) || index < 0 || index >= enumDef.variants.length) continue;
+
+    const variantObj: Record<string, any> = {};
+    for (let i = 0; i < enumDef.variants.length; i++) {
+      variantObj[enumDef.variants[i].name] = i === index ? {} : undefined;
+    }
+    result[input.name] = new CairoCustomEnum(variantObj);
+  }
+
+  return result;
 }
 
 // ── Param transforms ─────────────────────────────────────────────────────────
