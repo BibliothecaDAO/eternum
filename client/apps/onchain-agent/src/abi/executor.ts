@@ -153,7 +153,8 @@ function debugLogError(actionType: string, err: any): void {
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-raw-errors.log",
+      "debug",
+      "raw-errors.log",
     );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();

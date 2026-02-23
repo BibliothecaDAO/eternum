@@ -85,7 +85,8 @@ function logAction(actionType: string, result: ActionResult) {
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-actions.log",
+      "debug",
+      "actions.log",
     );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();

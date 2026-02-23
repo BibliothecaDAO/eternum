@@ -292,6 +292,10 @@ export async function main() {
     runtimeConfig.toriiUrl = `${profile.toriiBaseUrl}/sql`;
     runtimeConfig.worldAddress = profile.worldAddress;
     runtimeConfig.chainId = deriveChainIdFromRpcUrl(runtimeConfig.rpcUrl) ?? runtimeConfig.chainId;
+
+    // Scope data dir per-world so debug logs land alongside world state
+    runtimeConfig.dataDir = path.join(runtimeConfig.dataDir, selected.name);
+    process.env.AGENT_DATA_DIR = runtimeConfig.dataDir;
   }
 
   console.log("  Connecting controller session...");

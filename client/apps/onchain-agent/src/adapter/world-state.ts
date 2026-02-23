@@ -924,7 +924,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-world-state.log",
+      "debug",
+      "world-state.log",
     );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();
@@ -1292,7 +1293,8 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-tick-prompt.log",
+      "debug",
+      "tick-prompt.log",
     );
     const ts = new Date().toISOString();
     writeFileSync(debugPath, `\n========== ${ts} ==========\n${result}\n`, { flag: "a" });

@@ -128,6 +128,9 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     config.dataDir = path.join(config.dataDir, options.world);
   }
 
+  // Propagate world-scoped dataDir so debug log helpers pick it up
+  process.env.AGENT_DATA_DIR = config.dataDir;
+
   // Ensure data dir is seeded (soul.md, HEARTBEAT.md, tasks/) even if `init` was never run
   seedDataDir(config.dataDir);
 
