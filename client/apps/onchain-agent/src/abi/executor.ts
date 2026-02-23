@@ -245,12 +245,14 @@ export function createABIExecutor(
 // ── Enum coercion ────────────────────────────────────────────────────────────
 
 /**
- * Convert plain numeric enum values to CairoCustomEnum instances.
+ * Convert plain numeric enum values to CairoCustomEnum instances and normalize
+ * camelCase param keys to the snake_case names the ABI expects.
  *
- * starknet.js v8 Contract.populate() expects CairoCustomEnum objects for enum
- * parameters, but the LLM provides plain numbers (e.g., category: 0 for Knight).
- * This function bridges the gap by looking up enum definitions in the ABI and
- * constructing the appropriate CairoCustomEnum for each enum-typed parameter.
+ * Handles two issues:
+ * 1. LLMs send camelCase keys (forStructureId) but ABIs use snake_case (for_structure_id)
+ * 2. starknet.js v8 Contract.populate() expects CairoCustomEnum objects for enum
+ *    parameters, but the LLM provides plain numbers (e.g., category: 0 for Knight)
+ * 3. Span<EnumType> parameters need each array element coerced individually
  */
 export function coerceEnumParams(
   params: Record<string, unknown>,
@@ -264,7 +266,6 @@ export function coerceEnumParams(
       enums.set(entry.name, entry);
     }
   }
-  if (enums.size === 0) return params;
 
   // Find the entrypoint's inputs across all interfaces
   let inputs: { name: string; type: string }[] | undefined;
@@ -281,23 +282,74 @@ export function coerceEnumParams(
   }
   if (!inputs) return params;
 
-  const result = { ...params };
+  // Normalize camelCase keys to snake_case ABI names
+  const result = normalizeParamKeys(params, inputs);
+
+  // Coerce enum values
   for (const input of inputs) {
-    const enumDef = enums.get(input.type);
-    if (!enumDef) continue;
-
-    const value = result[input.name];
-    if (value === undefined || value === null) continue;
-    if (value instanceof CairoCustomEnum) continue;
-
-    const index = typeof value === "number" ? value : Number(value);
-    if (Number.isNaN(index) || index < 0 || index >= enumDef.variants.length) continue;
-
-    const variantObj: Record<string, any> = {};
-    for (let i = 0; i < enumDef.variants.length; i++) {
-      variantObj[enumDef.variants[i].name] = i === index ? {} : undefined;
+    // Direct enum type
+    let enumDef = enums.get(input.type);
+    if (enumDef) {
+      result[input.name] = coerceOneEnum(result[input.name], enumDef);
+      continue;
     }
-    result[input.name] = new CairoCustomEnum(variantObj);
+
+    // Span<EnumType> — extract inner type from "core::array::Span::<...>"
+    const spanMatch = input.type.match(/^core::array::Span::<(.+)>$/);
+    if (spanMatch) {
+      enumDef = enums.get(spanMatch[1]);
+      if (enumDef && Array.isArray(result[input.name])) {
+        result[input.name] = (result[input.name] as unknown[]).map((v) => coerceOneEnum(v, enumDef!));
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Convert a single value to CairoCustomEnum if it's a plain number index. */
+function coerceOneEnum(
+  value: unknown,
+  enumDef: { variants: { name: string; type: string }[] },
+): unknown {
+  if (value === undefined || value === null) return value;
+  if (value instanceof CairoCustomEnum) return value;
+
+  const index = typeof value === "number" ? value : Number(value);
+  if (Number.isNaN(index) || index < 0 || index >= enumDef.variants.length) return value;
+
+  const variantObj: Record<string, any> = {};
+  for (let i = 0; i < enumDef.variants.length; i++) {
+    variantObj[enumDef.variants[i].name] = i === index ? {} : undefined;
+  }
+  return new CairoCustomEnum(variantObj);
+}
+
+/** Map camelCase param keys to the snake_case names the ABI expects. */
+function normalizeParamKeys(
+  params: Record<string, unknown>,
+  inputs: { name: string; type: string }[],
+): Record<string, unknown> {
+  const abiNames = new Set(inputs.map((i) => i.name));
+  const result: Record<string, unknown> = {};
+
+  // Build a lookup: snake-normalized key → original param key
+  const camelToSnake = (s: string) => s.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
+
+  for (const [key, value] of Object.entries(params)) {
+    if (abiNames.has(key)) {
+      // Key already matches ABI name
+      result[key] = value;
+    } else {
+      // Try converting camelCase → snake_case
+      const snake = camelToSnake(key);
+      if (abiNames.has(snake)) {
+        result[snake] = value;
+      } else {
+        // Keep as-is (unknown key)
+        result[key] = value;
+      }
+    }
   }
 
   return result;
