@@ -6,6 +6,8 @@
  * param transforms are applied before encoding.
  */
 import { Contract, type Account, type Call } from "starknet";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
 import type { ActionResult, ActionRoute, DomainOverlay, GameAction, Manifest } from "./types";
 import { extractAllFromManifest } from "./parser";
 
@@ -64,12 +66,16 @@ function decodeFeltHexStrings(text: string): string[] {
       if (n === 0n) continue;
       let h = n.toString(16);
       if (h.length % 2 !== 0) h = "0" + h;
+      // Skip values > 31 bytes — these are addresses/hashes, not short strings
+      if (h.length > 62) continue;
       let s = "";
+      const totalBytes = h.length / 2;
       for (let i = 0; i < h.length; i += 2) {
         const code = parseInt(h.slice(i, i + 2), 16);
         if (code >= 32 && code < 127) s += String.fromCharCode(code);
       }
-      if (s.length >= 3) decoded.push(s);
+      // Require ≥70% printable bytes AND at least 3 chars — filters random address fragments
+      if (s.length >= 3 && s.length / totalBytes >= 0.7) decoded.push(s);
     } catch {}
   }
   return [...new Set(decoded)];
@@ -91,6 +97,11 @@ function extractErrorMessage(err: any): string {
     const dataStr = typeof err.data === "string" ? err.data : JSON.stringify(err.data);
     sources.push(dataStr);
   }
+  // Cartridge WASM errors store execution error detail in `_data`
+  if (err?._data) {
+    const dataStr = typeof err._data === "string" ? err._data : JSON.stringify(err._data);
+    sources.push(dataStr);
+  }
   if (err?.revert_reason) sources.push(String(err.revert_reason));
   if (err?.revertReason) sources.push(String(err.revertReason));
 
@@ -109,6 +120,16 @@ function extractErrorMessage(err: any): string {
     if (labels.length > 0) return labels.join(", ");
   }
 
+  // Cairo execution traces: "Error message: <msg>" — collect all and return the most specific one
+  // Handle both real newlines and JSON-escaped \\n sequences
+  const errorMessages = [...raw.matchAll(/Error message:\s*(.+?)(?:\\\\n|\\n|\n|$)/gi)]
+    .map((m) => m[1].trim())
+    .filter((m) => m.length > 0);
+  if (errorMessages.length > 0) {
+    // The last Error message is typically the most specific (innermost call)
+    return errorMessages[errorMessages.length - 1];
+  }
+
   const revertDataMatch = raw.match(/(?:execution_revert|revert_error|revert_reason)["\s:]+([^"}\]]+)/i);
   if (revertDataMatch) return `Reverted: ${revertDataMatch[1].trim()}`;
 
@@ -124,6 +145,25 @@ function extractErrorMessage(err: any): string {
   const firstLine = msg.split("\n")[0].trim();
   if (firstLine.length > 200) return firstLine.slice(0, 200) + "...";
   return firstLine;
+}
+
+// ── Debug logging ───────────────────────────────────────────────────────────
+
+function debugLogError(actionType: string, err: any): void {
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug-raw-errors.log",
+    );
+    mkdirSync(dirname(debugPath), { recursive: true });
+    const ts = new Date().toISOString();
+    const obj: Record<string, unknown> = {};
+    for (const p of Object.getOwnPropertyNames(err)) obj[p] = err[p];
+    if (err?.baseError) obj.baseError = err.baseError;
+    if (err?.data) obj._data = err.data;
+    if (err?.cause) obj._cause = String(err.cause);
+    writeFileSync(debugPath, `[${ts}] ${actionType}\n${JSON.stringify(obj, null, 2)}\n\n`, { flag: "a" });
+  } catch (_) {}
 }
 
 // ── Executor factory ─────────────────────────────────────────────────────────
@@ -185,6 +225,7 @@ export function createABIExecutor(
       onAfterExecute?.(action.type, actionResult);
       return actionResult;
     } catch (err: any) {
+      debugLogError(action.type, err);
       const actionResult: ActionResult = {
         success: false,
         error: extractErrorMessage(err),

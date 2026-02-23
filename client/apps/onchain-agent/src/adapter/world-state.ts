@@ -847,8 +847,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   if (ownedEntityIds.length > 0) {
     try {
       const [balanceRows, buildingRows] = (await Promise.all([
-        client.sql.fetchResourceBalancesAndProduction(ownedEntityIds),
-        client.sql.fetchBuildingsByStructures(ownedEntityIds).catch(() => [] as any[]),
+        client.sql.fetchResourceBalances(ownedEntityIds),
+        (client.sql as any).fetchBuildingsByStructures?.(ownedEntityIds).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
       ])) as [any[], any[]];
 
       // Group building positions by structure entity ID → occupied inner coords
@@ -1225,7 +1225,7 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     }
     sections.push(lines.join("\n"));
   } else {
-    sections.push("### My Entities\n  None visible");
+    sections.push("### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm");
   }
 
   // Operating area — unified minimap around all owned entities

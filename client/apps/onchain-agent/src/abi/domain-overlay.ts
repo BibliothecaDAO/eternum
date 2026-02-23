@@ -836,8 +836,22 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     },
   },
 
+  "blitz_realm_systems::assign_realm_positions": {
+    hidden: true, // Part of the settle_blitz_realm composite — requires VRF in same multicall
+    description: "Assign realm positions using VRF randomness (use settle_blitz_realm instead)",
+  },
+
+  "blitz_realm_systems::settle_realms": {
+    hidden: true, // Part of the settle_blitz_realm composite — requires assign first
+    description: "Settle realms at assigned positions (use settle_blitz_realm instead)",
+    paramOverrides: {
+      settlement_count: { description: "Number of realms to settle (u8)" },
+    },
+  },
+
   "blitz_realm_systems::create": {
-    description: "Create (settle) your realm in the Blitz game",
+    hidden: true, // Dojo framework entrypoint — use settle_blitz_realm composite instead
+    description: "Dojo create entrypoint (deprecated — use settle_blitz_realm instead)",
   },
 
   // ── Name ───────────────────────────────────────────────────────────────────
@@ -944,7 +958,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Realm ──────────────────────────────────────────────────────────────────
 
   "realm_systems::create": {
-    description: "Create a new realm",
+    hidden: true,
   },
 
   // ── Village ────────────────────────────────────────────────────────────────

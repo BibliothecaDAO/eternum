@@ -58,6 +58,11 @@ describe("action-registry", () => {
         "update_whitelist",
         "upgrade_realm",
         "contribute_hyperstructure",
+        "obtain_entry_token",
+        "register",
+        "settle_realms",
+        "assign_realm_positions",
+        "make_hyperstructures",
         "move_to",
       ];
 

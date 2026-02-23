@@ -73,8 +73,8 @@ function createInspectRealmTool(client: EternumClient): AgentTool<any> {
         // Fetch base realm view and SQL enrichment data in parallel
         const [realm, balanceRows, buildingRows] = await Promise.all([
           client.view.realm(entityId),
-          client.sql.fetchResourceBalancesAndProduction([entityId]).catch(() => [] as any[]),
-          client.sql.fetchBuildingsByStructures([entityId]).catch(() => [] as any[]),
+          client.sql.fetchResourceBalances([entityId]).catch(() => [] as any[]),
+          (client.sql as any).fetchBuildingsByStructures?.([entityId]).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
         ]);
 
         const realmData = realm as any;

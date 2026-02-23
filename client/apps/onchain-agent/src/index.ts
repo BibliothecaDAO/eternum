@@ -8,7 +8,7 @@ import {
   type RuntimeConfigManager,
   type RuntimeConfigUpdateResult,
 } from "@bibliothecadao/game-agent";
-import { getModel } from "@mariozechner/pi-ai";
+import { getModel, type KnownProvider } from "@mariozechner/pi-ai";
 import { readFile } from "node:fs/promises";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -218,7 +218,7 @@ async function createRuntimeServices(
     rpcUrl: config.rpcUrl,
     toriiUrl: config.toriiUrl,
     worldAddress: config.worldAddress,
-    manifest,
+    manifest: manifest as any,
   });
   client.connect(account as any);
   const tokenConfig = worldProfile ? {
@@ -414,7 +414,7 @@ export async function main() {
 
     if (runtimeAgent && (changedKeys.has("modelProvider") || changedKeys.has("modelId"))) {
       try {
-        const nextModel = getModel(candidate.modelProvider, candidate.modelId);
+        const nextModel = (getModel as Function)(candidate.modelProvider, candidate.modelId);
         runtimeAgent.agent.setModel(nextModel);
         if (typeof (runtimeAgent.agent as any).setThinkingLevel === "function") {
           (runtimeAgent.agent as any).setThinkingLevel(nextModel.reasoning ? "medium" : "off");
@@ -466,7 +466,7 @@ export async function main() {
   // 4. Create the game agent
   //    First tick gets all reference handbooks prepended so the agent starts
   //    with full game knowledge before taking any actions.
-  const model = getModel(runtimeConfig.modelProvider, runtimeConfig.modelId);
+  const model = (getModel as Function)(runtimeConfig.modelProvider, runtimeConfig.modelId);
   let isFirstTick = true;
   const formatTickPromptWithHandbooks = (state: EternumWorldState): string => {
     const base = formatEternumTickPrompt(state);

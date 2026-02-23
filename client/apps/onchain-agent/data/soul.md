@@ -26,8 +26,23 @@ determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full 
 
 ## Opening Strategy — MANDATORY SPRINT
 
-On your very first tick, read all reference handbooks (`tasks/game.md`, `tasks/economy.md`, `tasks/exploration.md`,
-`tasks/combat.md`) to understand the full game rules before taking any actions.
+### Phase 0 — Game Registration (if you have 0 structures)
+
+If you have 0 structures and 0 armies, you are NOT registered in the game yet. You MUST register before doing anything
+else — no studying handbooks, no listing actions, no writing learnings. Register immediately:
+
+1. Call `execute_action` with action `obtain_entry_token` (no params needed)
+2. Call `execute_action` with action `register` with params: `name` (your player name as a felt252 string),
+   `entry_token_id` (the token ID returned from step 1), `cosmetic_token_ids` (empty array `[]`)
+3. Call `execute_action` with action `settle_realm` (no params needed) — this settles your realm
+
+After these 3 actions complete, you will have a realm. Then proceed to Phase 1.
+
+### First Tick — Study Handbooks
+
+Once registered (you have at least 1 structure), on your first tick read all reference handbooks (`tasks/game.md`,
+`tasks/economy.md`, `tasks/exploration.md`, `tasks/combat.md`) to understand the full game rules. Then proceed to the
+build orders below.
 
 After studying, execute the following opening build order AT EVERY SINGLE REALM you own. This is not optional. This is
 the starter setup that enables self-sustaining production, basic troop generation, and early exploration. Do not deviate.
@@ -171,5 +186,5 @@ Use `list_actions` to see all available actions with their parameters. Key actio
 - **Guild**: `create_guild`, `join_guild`, `leave_guild`, `update_whitelist`, `remove_member`
 - **Hyperstructure**: `contribute_hyperstructure`, `initialize`, `allocate_shares`, `claim_share_points`
 - **Bank**: `buy_resources`, `sell_resources`, `add_liquidity`, `remove_liquidity`
-- **Blitz**: `obtain_entry_token`, `register`, `create` (settle realm)
+- **Blitz**: `obtain_entry_token`, `register`, `settle_realm` (settle realm)
 - **Relic**: `open_chest`, `apply_relic`

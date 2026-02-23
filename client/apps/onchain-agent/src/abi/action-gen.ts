@@ -52,6 +52,8 @@ export function generateActions(
   const routes = new Map<string, ActionRoute>();
 
   const allContracts = extractAllFromManifest(manifest);
+  // Track which overlay key first claimed each action type for collision detection
+  const claimedBy = new Map<string, string>();
 
   for (const contract of allContracts) {
     if (!tagMatchesGame(contract.tag, gameName ?? null)) continue;
@@ -68,6 +70,19 @@ export function generateActions(
 
       // Determine action type name
       const actionType = overlay?.actionType ?? ep.name;
+
+      // Detect collisions — two entrypoints mapping to the same action type
+      const existing = claimedBy.get(actionType);
+      if (existing) {
+        console.warn(
+          `[action-gen] COLLISION: action type "${actionType}" from ${overlayKey} overwrites ${existing}. ` +
+            `Add an explicit actionType to the domain overlay for one of them.`,
+        );
+        // Remove the earlier duplicate from definitions to avoid schema enum errors
+        const idx = definitions.findIndex((d) => d.type === actionType);
+        if (idx !== -1) definitions.splice(idx, 1);
+      }
+      claimedBy.set(actionType, overlayKey);
 
       // Build param schemas
       const params = buildParamSchemas(ep, overlay?.paramOverrides);

@@ -1,10 +1,15 @@
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { execFile } from "node:child_process";
+import path from "node:path";
 import SessionProvider from "@cartridge/controller/session/node";
-import type { WalletAccount } from "starknet";
+import { ec, stark, encode, type WalletAccount } from "starknet";
+import { signerToGuid } from "@cartridge/controller-wasm";
 import type { WorldProfile } from "../world/types";
 import { extractFromABI, tagMatchesGame } from "../abi/parser";
 
 type SessionPolicies = ConstructorParameters<typeof SessionProvider>[0]["policies"];
+
+const KEYCHAIN_URL = "https://x.cartridge.gg";
 
 type PolicyMethod = { name: string; entrypoint: string; description?: string };
 
@@ -139,6 +144,26 @@ export function buildSessionPoliciesFromManifest(
     );
   }
 
+  // Ensure blitz_realm_systems has entrypoints that may be missing from manifest ABI
+  // (assign_realm_positions, settle_realms are used by the settle_blitz_realm composite)
+  for (const contract of entries) {
+    const item = contract as Record<string, unknown>;
+    const tag = normalizeTag(item.tag);
+    const address = normalizeAddress(item.address);
+    if (!tag || !address) continue;
+    if (!tag.includes("blitz_realm_systems")) continue;
+    const existing = contracts[address];
+    if (!existing) continue;
+    const mergedByEntrypoint = new Map<string, PolicyMethod>();
+    for (const m of existing.methods) mergedByEntrypoint.set(m.entrypoint, m);
+    for (const ep of ["assign_realm_positions", "settle_realms"]) {
+      if (!mergedByEntrypoint.has(ep)) {
+        mergedByEntrypoint.set(ep, { name: ep, entrypoint: ep });
+      }
+    }
+    contracts[address] = { methods: Array.from(mergedByEntrypoint.values()) };
+  }
+
   // Add VRF provider policy
   contracts[VRF_PROVIDER_ADDRESS] = {
     methods: [{ name: "VRF", entrypoint: "request_random" }],
@@ -147,7 +172,10 @@ export function buildSessionPoliciesFromManifest(
   // Add token policies from WorldProfile
   if (profile?.entryTokenAddress && profile.entryTokenAddress !== "0x0") {
     contracts[profile.entryTokenAddress] = {
-      methods: [{ name: "token_lock", entrypoint: "token_lock" }],
+      methods: [
+        { name: "token_lock", entrypoint: "token_lock" },
+        { name: "approve", entrypoint: "approve" },
+      ],
     };
   }
   if (profile?.feeTokenAddress) {
@@ -160,10 +188,56 @@ export function buildSessionPoliciesFromManifest(
   return { contracts, messages: buildMessageSigningPolicy(chain) } as SessionPolicies;
 }
 
+/**
+ * Decode, normalize, and store session data received from a Cartridge callback.
+ *
+ * Mirrors SessionProvider.connect() normalization:
+ * - Lowercase address and ownerGuid
+ * - Set guardianKeyGuid and metadataHash to "0x0"
+ * - Compute sessionKeyGuid from public key via signerToGuid
+ *
+ * Writes session.json in the format NodeBackend expects (object values, not JSON strings).
+ */
+export function storeSessionFromCallback(
+  basePath: string,
+  sessionDataBase64: string,
+): { address: string; username: string } {
+  const sessionFilePath = path.join(basePath, "session.json");
+
+  if (!existsSync(sessionFilePath)) {
+    throw new Error("No session.json with signer keypair found. Run 'axis auth' first.");
+  }
+  const raw = readFileSync(sessionFilePath, "utf-8");
+  const data = JSON.parse(raw);
+  const signerRaw = data.signer ?? data;
+  const signer = typeof signerRaw === "string" ? JSON.parse(signerRaw) : signerRaw;
+
+  const decoded = Buffer.from(sessionDataBase64, "base64").toString("utf-8");
+  const session = JSON.parse(decoded);
+
+  const formattedPk = encode.addHexPrefix(signer.pubKey);
+  session.address = session.address.toLowerCase();
+  session.ownerGuid = session.ownerGuid.toLowerCase();
+  session.guardianKeyGuid = "0x0";
+  session.metadataHash = "0x0";
+  session.sessionKeyGuid = signerToGuid({
+    starknet: { privateKey: formattedPk },
+  });
+
+  // Write in NodeBackend's format: values are objects, not JSON strings.
+  const backendData = { signer, session };
+  mkdirSync(basePath, { recursive: true });
+  writeFileSync(sessionFilePath, JSON.stringify(backendData, null, 2));
+
+  return { address: session.address, username: session.username ?? "" };
+}
+
 export class ControllerSession {
   private provider: SessionProvider;
-  private _callbackPromise?: Promise<string>;
-  private _resolveCallback?: ((data: string) => void) | null;
+  private config: ControllerSessionConfig;
+  private _resolveSessionData?: (data: string) => void;
+  private _authUrlPromise: Promise<string>;
+  private _resolveAuthUrl!: (url: string) => void;
 
   constructor(config: ControllerSessionConfig) {
     const policies = buildSessionPoliciesFromManifest(config.manifest, {
@@ -176,43 +250,23 @@ export class ControllerSession {
       policies,
       basePath: config.basePath ?? ".cartridge",
     });
+    this.config = config;
+    this._authUrlPromise = new Promise<string>((resolve) => {
+      this._resolveAuthUrl = resolve;
+    });
+  }
 
-    const backend = (this.provider as any)._backend;
-    if (backend) {
-      // Patch openLink: either capture URL via callback or open browser
-      if (config.onAuthUrl) {
-        const callback = config.onAuthUrl;
-        backend.openLink = (url: string) => {
-          callback(url);
-        };
-      } else {
-        backend.openLink = (url: string) => {
-          const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
-          execFile(openCmd, [url]);
-        };
-      }
-
-      // Override redirect URI when a custom callback URL is provided.
-      // This replaces the localhost callback server with an external URL
-      // (e.g. a public VPS endpoint) so remote browsers can redirect back.
-      if (config.callbackUrl) {
-        const customUrl = config.callbackUrl;
-        let resolveCallback: ((data: string) => void) | null = null;
-        this._callbackPromise = new Promise<string>((resolve) => {
-          resolveCallback = resolve;
-        });
-        this._resolveCallback = resolveCallback;
-
-        backend.getRedirectUri = async () => customUrl;
-        backend.waitForCallback = () => this._callbackPromise;
-      }
-    }
+  /**
+   * Resolves with the auth URL once connect() has generated it,
+   * or "" if an existing session was found (no auth needed).
+   */
+  waitForAuthUrl(): Promise<string> {
+    return this._authUrlPromise;
   }
 
   /**
    * Check for an existing valid session on disk.
-   * Returns the account if a session exists and hasn't expired, null otherwise.
-   * Does NOT trigger the browser auth flow.
+   * Delegates to SessionProvider.probe() — no patching needed.
    */
   async probe(): Promise<WalletAccount | null> {
     const account = await this.provider.probe();
@@ -222,32 +276,102 @@ export class ControllerSession {
   /**
    * Connect to the Cartridge Controller.
    *
-   * 1. Checks for an existing session on disk (probe).
-   * 2. If none, prints an auth URL to stdout and waits up to 5 minutes
-   *    for the human to approve in their browser.
-   * 3. Returns the session account once authorized.
+   * Custom implementation that mirrors SessionProvider.connect() but gives us
+   * control over URL construction and callback handling. Uses the documented
+   * Cartridge session URL format (https://docs.cartridge.gg).
    *
-   * Throws if the callback times out or the session cannot be established.
+   * Flow:
+   * 1. Probe for existing session
+   * 2. Generate ephemeral keypair, store signer
+   * 3. Set up callback listener (SDK's localhost server or external promise)
+   * 4. Construct session URL with redirect_uri and callback_uri
+   * 5. Emit URL via onAuthUrl or open browser
+   * 6. Wait for session data from callback
+   * 7. Decode, normalize, store via storeSessionFromCallback()
+   * 8. Probe to materialize SessionAccount
    */
   async connect(): Promise<WalletAccount> {
-    const account = await this.provider.connect();
+    const existing = await this.probe();
+    if (existing) {
+      this._resolveAuthUrl(""); // No auth needed
+      return existing;
+    }
+
+    const backend = (this.provider as any)._backend;
+    if (!backend) {
+      throw new Error("Cannot access SessionProvider backend");
+    }
+
+    // Generate ephemeral session keypair (same as SDK)
+    const pk = stark.randomAddress();
+    const publicKey = ec.starkCurve.getStarkKey(pk);
+    await backend.set("signer", JSON.stringify({ privKey: pk, pubKey: publicKey }));
+
+    // Set up callback listener
+    let redirectUri: string;
+    let sessionDataPromise: Promise<string>;
+
+    if (this.config.callbackUrl) {
+      // External callback URL — skip SDK's localhost server
+      redirectUri = this.config.callbackUrl;
+      sessionDataPromise = new Promise<string>((resolve) => {
+        this._resolveSessionData = resolve;
+      });
+    } else {
+      // Use SDK's built-in localhost callback server
+      redirectUri = await backend.getRedirectUri();
+      sessionDataPromise = backend.waitForCallback().then((data: string | null) => {
+        if (!data) throw new Error("Callback returned no session data");
+        return data;
+      });
+    }
+
+    // Construct session URL using Cartridge's documented format
+    const policies = (this.provider as any)._policies;
+    const params = new URLSearchParams();
+    params.set("public_key", publicKey);
+    params.set("redirect_uri", redirectUri);
+    params.set("redirect_query_name", "startapp");
+    params.set("policies", JSON.stringify(policies));
+    params.set("rpc_url", this.config.rpcUrl);
+    if (this.config.callbackUrl) {
+      params.set("callback_uri", this.config.callbackUrl);
+    }
+    const url = `${KEYCHAIN_URL}/session?${params.toString()}`;
+
+    // Signal URL is ready before awaiting callback
+    this._resolveAuthUrl(url);
+    if (this.config.onAuthUrl) {
+      this.config.onAuthUrl(url);
+    } else {
+      const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
+      execFile(openCmd, [url]);
+    }
+
+    // Wait for session data
+    const sessionData = await sessionDataPromise;
+
+    // Store session via shared helper
+    const basePath = this.config.basePath ?? ".cartridge";
+    storeSessionFromCallback(basePath, sessionData);
+
+    // Materialize SessionAccount via probe()
+    const account = await this.probe();
     if (!account) {
-      throw new Error(
-        "Controller session not established. The human must open the printed URL and approve the session.",
-      );
+      throw new Error("Session stored but probe() failed to materialize account");
     }
     return account;
   }
 
   /**
    * Feed session data received from an external callback endpoint.
-   * Used when callbackUrl is set — the API server receives the redirect
-   * and passes the session data here to complete the connect() flow.
+   * Used when callbackUrl is set — the HTTP server receives the redirect/POST
+   * and passes the base64-encoded session data here to complete connect().
    */
   feedCallbackData(sessionData: string): void {
-    if (this._resolveCallback) {
-      this._resolveCallback(sessionData);
-      this._resolveCallback = null;
+    if (this._resolveSessionData) {
+      this._resolveSessionData(sessionData);
+      this._resolveSessionData = undefined;
     }
   }
 

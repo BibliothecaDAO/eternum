@@ -22,16 +22,25 @@ CLI (cli.ts) → index.ts orchestrates:
 
 ### Source Layout
 
-- `src/cli.ts` — CLI router (run/init/doctor/--version)
-- `src/index.ts` — main orchestration, live reconfiguration
+- `src/cli.ts` — CLI router (all subcommands)
+- `src/cli-args.ts` — CLI argument parser
+- `src/index.ts` — TUI mode orchestration, live reconfiguration
+- `src/headless.ts` — headless mode orchestration (NDJSON output, HTTP API, stdin)
 - `src/config.ts` — env-driven config with defaults
+- `src/commands/` — standalone CLI subcommands (worlds, auth, auth-status, auth-url)
 - `src/world/` — world discovery, factory SQL resolution, manifest patching
-- `src/session/` — Cartridge Controller session auth
+- `src/session/` — Cartridge Controller session auth, artifact persistence, auth-approve, privatekey auth
 - `src/adapter/` — EternumGameAdapter, action registry (60+ actions), world state builder, simulation
+- `src/abi/` — ABI parser, action generator, executor, domain overlays, types
+- `src/api/` — HTTP steering API server (node:http)
+- `src/input/` — stdin JSON command reader
+- `src/output/` — NDJSON event emitter with verbosity filtering
 - `src/tui/` — terminal UI (app layout, world picker)
 - `src/tools/` — extra inspect tools (realm, explorer, market, bank)
 - `src/release/` — binary packaging for cross-platform releases
 - `src/build-plugins.ts` — Bun build plugins (WASM embed + pi-config embed) for standalone binary
+- `src/runtime-paths.ts` — bundled asset path resolution for standalone binary
+- `src/shutdown-gate.ts` — graceful shutdown coordination primitive
 - `build.ts` — two-step build script (bundle with plugins, then compile)
 
 ### Core Dependencies
@@ -74,10 +83,11 @@ Eternum-specific logic from the framework. `MutableGameAdapter` wraps it for hot
 
 ### Action Registry
 
-All 60+ game actions are registered in `adapter/action-registry.ts` using
-`register(type, description, params, handler)`. Each handler receives `(client, signer, params)` and returns
-`{ success, txHash?, error? }`. Param values support human-friendly suffixes (K/M/B/T) and are coerced via helpers like
-`num()`, `precisionAmount()`, `bigNumberish()`.
+All 60+ game actions are dynamically generated from the Starknet/Dojo manifest ABI via `initializeActions()` in
+`adapter/action-registry.ts`. The ABI parser (`abi/parser.ts`) extracts entrypoints, `abi/action-gen.ts` generates
+`ActionDefinition[]` and routing maps, and `abi/domain-overlay.ts` enriches raw ABI entries with Eternum-specific
+descriptions, param transforms, and pre-flight validation. Param values support human-friendly suffixes (K/M/B/T) via
+helpers like `num()` and `precisionAmount()` from the domain overlay module.
 
 ### World State Builder
 
@@ -109,6 +119,63 @@ these into the bundle. No filesystem reads at runtime.
 
 `world/discovery.ts` queries Factory SQL on slot/sepolia/mainnet chains, filters ended worlds, resolves contract
 addresses, patches the base manifest with live addresses, and derives chain IDs from RPC URL slugs.
+
+## Headless Mode
+
+Axis supports fully headless operation for AI orchestrators and remote server fleets.
+
+### CLI Commands
+
+```bash
+axis worlds [--json]                              # List discovered worlds
+axis auth <world|--all> [--approve] [--json]      # Generate auth + persist artifacts
+axis auth-status <world|--all> [--json]           # Check session validity
+axis auth-url <world>                              # Print raw auth URL
+axis run --headless --world=<name> [options]       # Run headlessly
+```
+
+### Headless Run Options
+
+```bash
+axis run --headless --world=<name>                 # NDJSON to stdout
+  --auth=session|privatekey                        # Auth strategy (default: session)
+  --api-port=<port> [--api-host=<host>]            # Enable HTTP steering API
+  --stdin                                          # Enable stdin steering
+  --verbosity=quiet|actions|decisions|all           # Output verbosity
+```
+
+### Artifact Directory
+
+`axis auth` persists all artifacts to `~/.eternum-agent/.cartridge/<worldName>/`:
+- `profile.json` — world profile (chain, rpc, torii, worldAddress)
+- `manifest.json` — resolved manifest with live contract addresses
+- `policy.json` — generated session policies
+- `auth.json` — auth URL, status, metadata
+
+### HTTP API (when --api-port is set)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | /prompt | Send prompt to agent |
+| GET | /status | Agent status |
+| GET | /state | World state snapshot |
+| GET | /events | SSE event stream |
+| POST | /config | Update runtime config |
+| POST | /shutdown | Graceful shutdown |
+
+### Fleet Setup Example
+
+```bash
+axis auth --all --approve --method=password --json > /tmp/auth.json
+for world in $(jq -r '.[].world' /tmp/auth.json); do
+  axis run --headless --world="$world" --api-port=$((3000+RANDOM%1000)) &
+done
+```
+
+### Design Docs
+
+- `docs/plans/2026-02-21-headless-mode-design.md` — full design spec
+- `docs/plans/2026-02-21-headless-mode-plan.md` — implementation plan
 
 ## Testing
 
