@@ -69,9 +69,7 @@ export async function moveExplorer(
   worldState: EternumWorldState,
 ): Promise<MoveResult> {
   // Find explorer's current position
-  const explorer = worldState.entities.find(
-    (e) => e.entityId === request.explorerId && e.type === "army",
-  );
+  const explorer = worldState.entities.find((e) => e.entityId === request.explorerId && e.type === "army");
 
   if (!explorer) {
     return {
@@ -87,13 +85,7 @@ export async function moveExplorer(
   const startRow = explorer.position.y;
 
   // Run pathfinding
-  const pathResult = findPath(
-    startCol,
-    startRow,
-    request.targetCol,
-    request.targetRow,
-    worldState.tileMap,
-  );
+  const pathResult = findPath(startCol, startRow, request.targetCol, request.targetRow, worldState.tileMap);
 
   if (!pathResult.found) {
     return {

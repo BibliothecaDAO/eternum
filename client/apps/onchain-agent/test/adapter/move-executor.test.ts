@@ -61,11 +61,16 @@ describe("moveExplorer", () => {
 
   it("returns error when explorer not found", async () => {
     const ws = makeWorldState([]);
-    const result = await moveExplorer(dummyClient, dummySigner, {
-      explorerId: 999,
-      targetCol: 10,
-      targetRow: 10,
-    }, ws);
+    const result = await moveExplorer(
+      dummyClient,
+      dummySigner,
+      {
+        explorerId: 999,
+        targetCol: 10,
+        targetRow: 10,
+      },
+      ws,
+    );
 
     expect(result.success).toBe(false);
     expect(result.pathFound).toBe(false);
@@ -73,14 +78,17 @@ describe("moveExplorer", () => {
   });
 
   it("returns success with 0 steps when already at target", async () => {
-    const ws = makeWorldState([
-      { type: "army", entityId: 1, position: { x: 5, y: 4 }, isOwned: true },
-    ]);
-    const result = await moveExplorer(dummyClient, dummySigner, {
-      explorerId: 1,
-      targetCol: 5,
-      targetRow: 4,
-    }, ws);
+    const ws = makeWorldState([{ type: "army", entityId: 1, position: { x: 5, y: 4 }, isOwned: true }]);
+    const result = await moveExplorer(
+      dummyClient,
+      dummySigner,
+      {
+        explorerId: 1,
+        targetCol: 5,
+        targetRow: 4,
+      },
+      ws,
+    );
 
     expect(result.success).toBe(true);
     expect(result.steps.length).toBe(0);
@@ -96,11 +104,16 @@ describe("moveExplorer", () => {
         { col: 2, row: 4, biome: BiomeType.Ocean }, // target is ocean
       ],
     );
-    const result = await moveExplorer(dummyClient, dummySigner, {
-      explorerId: 1,
-      targetCol: 2,
-      targetRow: 4,
-    }, ws);
+    const result = await moveExplorer(
+      dummyClient,
+      dummySigner,
+      {
+        explorerId: 1,
+        targetCol: 2,
+        targetRow: 4,
+      },
+      ws,
+    );
 
     expect(result.pathFound).toBe(false);
     expect(result.success).toBe(false);
@@ -113,18 +126,20 @@ describe("moveExplorer", () => {
       { col: 1, row: 4, biome: BiomeType.Grassland },
       { col: 2, row: 4, biome: BiomeType.Grassland },
     ];
-    const ws = makeWorldState(
-      [{ type: "army", entityId: 1, position: { x: 0, y: 4 }, isOwned: true }],
-      tiles,
-    );
+    const ws = makeWorldState([{ type: "army", entityId: 1, position: { x: 0, y: 4 }, isOwned: true }], tiles);
 
     mockExecuteAction.mockResolvedValue({ success: true, txHash: "0xabc" });
 
-    const result = await moveExplorer(dummyClient, dummySigner, {
-      explorerId: 1,
-      targetCol: 2,
-      targetRow: 4,
-    }, ws);
+    const result = await moveExplorer(
+      dummyClient,
+      dummySigner,
+      {
+        explorerId: 1,
+        targetCol: 2,
+        targetRow: 4,
+      },
+      ws,
+    );
 
     expect(result.success).toBe(true);
     expect(result.pathFound).toBe(true);
@@ -146,11 +161,16 @@ describe("moveExplorer", () => {
       .mockResolvedValueOnce({ success: false, error: "stamina depleted" })
       .mockResolvedValueOnce({ success: true, txHash: "0x3" }); // should never be called
 
-    const result = await moveExplorer(dummyClient, dummySigner, {
-      explorerId: 1,
-      targetCol: 3,
-      targetRow: 4,
-    }, ws);
+    const result = await moveExplorer(
+      dummyClient,
+      dummySigner,
+      {
+        explorerId: 1,
+        targetCol: 3,
+        targetRow: 4,
+      },
+      ws,
+    );
 
     expect(result.success).toBe(false);
     expect(result.pathFound).toBe(true);

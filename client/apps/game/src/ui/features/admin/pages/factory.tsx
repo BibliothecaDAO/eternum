@@ -1795,9 +1795,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             </label>
                                             <input
                                               type="text"
-                                              placeholder={
-                                                defaultBlitzFeeRecipient || "0x..."
-                                              }
+                                              placeholder={defaultBlitzFeeRecipient || "0x..."}
                                               value={getBlitzFeeRecipientForWorld(name)}
                                               onChange={(e) =>
                                                 setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))

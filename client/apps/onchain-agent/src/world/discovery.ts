@@ -203,7 +203,10 @@ async function fetchTokenAddresses(
 async function resolveFromFactories(
   chain: Chain,
   worldName: string,
-): Promise<{ contractsBySelector: Record<string, string>; deployment: { worldAddress: string | null; rpcUrl: string | null } | null }> {
+): Promise<{
+  contractsBySelector: Record<string, string>;
+  deployment: { worldAddress: string | null; rpcUrl: string | null } | null;
+}> {
   const factoryUrls = await getFactorySqlBaseUrls(chain);
 
   // Try each factory URL until we find one with contracts for this world

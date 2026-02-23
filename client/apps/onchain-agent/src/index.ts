@@ -39,7 +39,9 @@ function loadReferenceHandbooks(dataDir: string): string {
   const sections: string[] = [];
   let files: string[];
   try {
-    files = readdirSync(taskDir).filter((f: string) => f.endsWith(".md")).sort();
+    files = readdirSync(taskDir)
+      .filter((f: string) => f.endsWith(".md"))
+      .sort();
   } catch {
     return "";
   }
@@ -199,9 +201,7 @@ async function createRuntimeServices(
 
   // Each world gets its own session directory so switching worlds doesn't
   // invalidate the on-chain session registration (policies Merkle root).
-  const sessionBasePath = worldProfile
-    ? path.join(config.sessionBasePath, worldProfile.name)
-    : config.sessionBasePath;
+  const sessionBasePath = worldProfile ? path.join(config.sessionBasePath, worldProfile.name) : config.sessionBasePath;
 
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,

@@ -10,16 +10,21 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change                                                                                                                                             |
-| ------ | ---------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| U1     | 2026-02-23 00:00 | Codex  | Initial PRD+TDD from deep review of chunking paths, focused on rapid switch edges, switch-off/resume races, and test-first delivery milestones. |
+| Update | Date (UTC)       | Author | Change                                                                                                                                                                                                                                                  |
+| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1     | 2026-02-23 00:00 | Codex  | Initial PRD+TDD from deep review of chunking paths, focused on rapid switch edges, switch-off/resume races, and test-first delivery milestones.                                                                                                         |
 | U2     | 2026-02-23 00:00 | Review | Simplified design: removed lifecycle epoch (D1), use token invalidation (D3) as primary fix. Replaced fetch metadata payload with promise-identity guard. Demoted F3 to monitor-only. Resolved open questions. Consolidated TDD milestones from 6 to 3. |
 
 ## Executive Summary
 
-The existing `chunkTransitionToken` mechanism already gates transition commits via `resolveChunkSwitchActions`. However, `onSwitchOff` never invalidates the token, so in-flight transitions can complete and mutate scene state after teardown. The fetch finalizer unconditionally deletes pending entries by key, allowing stale completions to erase newer entries. The reversal policy seeds its baseline from absolute coordinates instead of deltas.
+The existing `chunkTransitionToken` mechanism already gates transition commits via `resolveChunkSwitchActions`. However,
+`onSwitchOff` never invalidates the token, so in-flight transitions can complete and mutate scene state after teardown.
+The fetch finalizer unconditionally deletes pending entries by key, allowing stale completions to erase newer entries.
+The reversal policy seeds its baseline from absolute coordinates instead of deltas.
 
-These share a single root cause: **switch-off does not invalidate in-flight ownership.** The fix is to invalidate the existing token on switch-off, add a promise-identity check to the fetch finalizer, and fix the reversal baseline. No new ownership dimensions or metadata types are needed.
+These share a single root cause: **switch-off does not invalidate in-flight ownership.** The fix is to invalidate the
+existing token on switch-off, add a promise-identity check to the fetch finalizer, and fix the reversal baseline. No new
+ownership dimensions or metadata types are needed.
 
 ## Problem Statement
 
@@ -40,9 +45,10 @@ Evidence:
 1. `onSwitchOff` resets state but does not advance `chunkTransitionToken`:
    `client/apps/game/src/three/scenes/worldmap.tsx:2204`.
 2. Transition commit unconditionally writes `currentChunk` and fans out manager updates:
-   `client/apps/game/src/three/scenes/worldmap.tsx:4401`.
-   `client/apps/game/src/three/scenes/worldmap.tsx:4408`.
-3. The existing stale-check at line 4362 (`transitionToken === this.chunkTransitionToken`) already gates the commit path — but since `onSwitchOff` never advances the token, an in-flight transition whose token was captured before switch-off still passes this check.
+   `client/apps/game/src/three/scenes/worldmap.tsx:4401`. `client/apps/game/src/three/scenes/worldmap.tsx:4408`.
+3. The existing stale-check at line 4362 (`transitionToken === this.chunkTransitionToken`) already gates the commit path
+   — but since `onSwitchOff` never advances the token, an in-flight transition whose token was captured before
+   switch-off still passes this check.
 
 Risk:
 
@@ -54,10 +60,8 @@ Root cause: The guard mechanism exists but is never triggered on switch-off.
 
 Evidence:
 
-1. Pending fetch map stores `Promise<boolean>` by fetch key only:
-   `client/apps/game/src/three/scenes/worldmap.tsx:3651`.
-2. Finalizer always deletes by key unconditionally:
-   `client/apps/game/src/three/scenes/worldmap.tsx:3695`.
+1. Pending fetch map stores `Promise<boolean>` by fetch key only: `client/apps/game/src/three/scenes/worldmap.tsx:3651`.
+2. Finalizer always deletes by key unconditionally: `client/apps/game/src/three/scenes/worldmap.tsx:3695`.
 3. Runtime lifecycle switch-off clears pending map wholesale:
    `client/apps/game/src/three/scenes/worldmap-runtime-lifecycle.ts:56`.
 
@@ -71,16 +75,16 @@ Risk:
 Evidence:
 
 1. Target chunk registration and grid update happen before stale determination:
-   `client/apps/game/src/three/scenes/worldmap.tsx:4326`.
-   `client/apps/game/src/three/scenes/worldmap.tsx:4355`.
-2. Stale branch primarily unregisters target chunk and returns:
-   `client/apps/game/src/three/scenes/worldmap.tsx:4394`.
+   `client/apps/game/src/three/scenes/worldmap.tsx:4326`. `client/apps/game/src/three/scenes/worldmap.tsx:4355`.
+2. Stale branch primarily unregisters target chunk and returns: `client/apps/game/src/three/scenes/worldmap.tsx:4394`.
 
 Risk:
 
 1. Partial prepare work (grid, bounds) can leak transiently when rapid transitions supersede each other.
 
-Assessment: Low severity. The next legitimate transition fully overwrites grid and bounds state. Explicit rollback would add its own race surface and complexity for marginal benefit. **Monitor only** — add a diagnostic counter for stale-prepare events and revisit if user-visible artifacts are reported.
+Assessment: Low severity. The next legitimate transition fully overwrites grid and bounds state. Explicit rollback would
+add its own race surface and complexity for marginal benefit. **Monitor only** — add a diagnostic counter for
+stale-prepare events and revisit if user-visible artifacts are reported.
 
 ### F4: Reversal direction baseline is seeded from absolute position on first movement
 
@@ -98,8 +102,7 @@ Risk:
 
 Evidence:
 
-1. Lifecycle tests are short-circuit focused:
-   `client/apps/game/src/three/scenes/worldmap-lifecycle.test.ts:18`.
+1. Lifecycle tests are short-circuit focused: `client/apps/game/src/three/scenes/worldmap-lifecycle.test.ts:18`.
 2. Runtime switch-off state helper tests are map-clearing focused:
    `client/apps/game/src/three/scenes/worldmap-runtime-lifecycle.test.ts:5`.
 3. Orchestration fixture covers success/failure/stale token but not switch-off/resume races:
@@ -144,22 +147,22 @@ Risk:
 
 ### Functional Requirements
 
-| ID   | Requirement                                                                                                                | Priority |
-| ---- | -------------------------------------------------------------------------------------------------------------------------- | -------- |
-| FR-1 | `switchOff`/`destroy` must increment `chunkTransitionToken` before state reset, invalidating all in-flight transitions.   | P0       |
-| FR-2 | `switchOff` must set `isChunkTransitioning = false` and retire `globalChunkSwitchPromise`.                                | P0       |
-| FR-3 | Fetch finalizer must check promise identity before deleting pending entry; stale finalizers must not delete new owners.    | P0       |
-| FR-4 | Reversal refresh decision must use movement deltas only; return null vector when no previous position exists.              | P1       |
-| FR-5 | Rapid boundary oscillation and switch-off/resume churn must be covered by deterministic behavior tests.                    | P0       |
-| FR-6 | Stale-prepare events should emit a diagnostic counter for monitoring.                                                      | P2       |
+| ID   | Requirement                                                                                                             | Priority |
+| ---- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-1 | `switchOff`/`destroy` must increment `chunkTransitionToken` before state reset, invalidating all in-flight transitions. | P0       |
+| FR-2 | `switchOff` must set `isChunkTransitioning = false` and retire `globalChunkSwitchPromise`.                              | P0       |
+| FR-3 | Fetch finalizer must check promise identity before deleting pending entry; stale finalizers must not delete new owners. | P0       |
+| FR-4 | Reversal refresh decision must use movement deltas only; return null vector when no previous position exists.           | P1       |
+| FR-5 | Rapid boundary oscillation and switch-off/resume churn must be covered by deterministic behavior tests.                 | P0       |
+| FR-6 | Stale-prepare events should emit a diagnostic counter for monitoring.                                                   | P2       |
 
 ### Non-Functional Requirements
 
-| ID    | Requirement                                                                            | Priority |
-| ----- | -------------------------------------------------------------------------------------- | -------- |
-| NFR-1 | Chunk-switch p95 latency regression <= 10% from baseline.                              | P0       |
-| NFR-2 | Tile fetch volume does not regress > 5% for same traversal script/path.                | P0       |
-| NFR-3 | New race tests are deterministic and stable in CI (no flaky timing assumptions).        | P0       |
+| ID    | Requirement                                                                              | Priority |
+| ----- | ---------------------------------------------------------------------------------------- | -------- |
+| NFR-1 | Chunk-switch p95 latency regression <= 10% from baseline.                                | P0       |
+| NFR-2 | Tile fetch volume does not regress > 5% for same traversal script/path.                  | P0       |
+| NFR-3 | New race tests are deterministic and stable in CI (no flaky timing assumptions).         | P0       |
 | NFR-4 | No additional warning/error log spam in expected stale-drop paths under rapid switching. | P1       |
 
 ## Invariants
@@ -178,7 +181,9 @@ In `onSwitchOff` (line 2204), **before** the existing state reset logic:
 2. Set `this.isChunkTransitioning = false`.
 3. Set `this.globalChunkSwitchPromise = undefined`.
 
-This is ~3 lines of code. The existing stale-check in `performChunkSwitch` at line 4362 (`transitionToken === this.chunkTransitionToken`) already prevents commit and manager fanout for invalidated tokens. No new guard mechanism needed.
+This is ~3 lines of code. The existing stale-check in `performChunkSwitch` at line 4362
+(`transitionToken === this.chunkTransitionToken`) already prevents commit and manager fanout for invalidated tokens. No
+new guard mechanism needed.
 
 Same treatment in `destroy` if it does not already delegate to `onSwitchOff`.
 
@@ -201,7 +206,8 @@ if (this.pendingChunks.get(fetchKey) === fetchPromise) {
 }
 ```
 
-This is a 1-line change (replacing the delete with a guarded delete). Zero new types, zero new fields. The `fetchPromise` reference is already in scope at the finalizer call site.
+This is a 1-line change (replacing the delete with a guarded delete). Zero new types, zero new fields. The
+`fetchPromise` reference is already in scope at the finalizer call site.
 
 Expected effects:
 
@@ -222,7 +228,8 @@ nextMovementVector: input.nextSwitchPosition
 nextMovementVector: input.previousMovementVector ?? null,
 ```
 
-Return the previous vector if available, otherwise `null`. The caller skips reversal detection when the vector is null. No absolute-coordinate seeding.
+Return the previous vector if available, otherwise `null`. The caller skips reversal detection when the vector is null.
+No absolute-coordinate seeding.
 
 Expected effects:
 
@@ -240,7 +247,8 @@ RED — write these tests first, verify they fail:
    - Manager fanout must be skipped when token is invalidated by switch-off.
    - `globalChunkSwitchPromise` must be undefined after switch-off.
 
-Test harness approach: Use deferred promises with manual resolution. Capture transition token before switch-off, call switch-off, then resolve the deferred transition promise. Assert no state mutation occurred.
+Test harness approach: Use deferred promises with manual resolution. Capture transition token before switch-off, call
+switch-off, then resolve the deferred transition promise. Assert no state mutation occurred.
 
 GREEN:
 
@@ -264,7 +272,8 @@ RED — write these tests first, verify they fail:
    - First-movement (no previous position) must return null vector, not absolute coordinates.
    - Second-movement reversal detection must be origin-independent.
 
-Test harness approach: For fetch ownership, create two promises for the same fetch key, store the second, resolve the first, assert second is still in the map. For reversal, add table-driven cases at non-origin positions.
+Test harness approach: For fetch ownership, create two promises for the same fetch key, store the second, resolve the
+first, assert second is still in the map. For reversal, add table-driven cases at non-origin positions.
 
 GREEN:
 
@@ -330,18 +339,23 @@ Exit criteria: All P0 tests green, NFR thresholds satisfied.
 
 ## Risks and Mitigations
 
-| Risk                                                          | Level | Mitigation                                                                                 |
-| ------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------ |
-| Over-guarding could suppress legitimate updates               | Low   | Token is only invalidated on switch-off/destroy, not during normal transitions.            |
-| Promise-identity check could retain stale entries on error    | Low   | The wholesale `.clear()` on switch-off already handles cleanup of abandoned entries.       |
-| Test flakiness in async race coverage                         | Med   | Use deferred promises with manual resolution; no wall-clock timing assumptions.            |
-| Stale prepared-state leak (F3) causes visible artifacts       | Low   | Monitor via diagnostic counter; revisit if user reports are received.                      |
+| Risk                                                       | Level | Mitigation                                                                           |
+| ---------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------ |
+| Over-guarding could suppress legitimate updates            | Low   | Token is only invalidated on switch-off/destroy, not during normal transitions.      |
+| Promise-identity check could retain stale entries on error | Low   | The wholesale `.clear()` on switch-off already handles cleanup of abandoned entries. |
+| Test flakiness in async race coverage                      | Med   | Use deferred promises with manual resolution; no wall-clock timing assumptions.      |
+| Stale prepared-state leak (F3) causes visible artifacts    | Low   | Monitor via diagnostic counter; revisit if user reports are received.                |
 
 ## Resolved Questions
 
-1. **Should pending fetches be actively aborted on switch-off?** No. Stale-drop only. AbortController adds transport-layer complexity for minimal gain — most in-flight fetches are near completion. The promise-identity guard ensures stale completions are harmless.
-2. **Should lifecycle epoch ownership propagate into manager internals?** No. Scene-level token invalidation is sufficient. The existing `resolveChunkSwitchActions` check prevents manager fanout before it starts. No new ownership dimension needed.
-3. **Should stale prepared-state cleanup restore grid immediately?** No. The next legitimate transition overwrites grid and bounds completely. Explicit rollback would add its own race surface. Monitor via diagnostic counter instead.
+1. **Should pending fetches be actively aborted on switch-off?** No. Stale-drop only. AbortController adds
+   transport-layer complexity for minimal gain — most in-flight fetches are near completion. The promise-identity guard
+   ensures stale completions are harmless.
+2. **Should lifecycle epoch ownership propagate into manager internals?** No. Scene-level token invalidation is
+   sufficient. The existing `resolveChunkSwitchActions` check prevents manager fanout before it starts. No new ownership
+   dimension needed.
+3. **Should stale prepared-state cleanup restore grid immediately?** No. The next legitimate transition overwrites grid
+   and bounds completely. Explicit rollback would add its own race surface. Monitor via diagnostic counter instead.
 
 ## Definition of Done
 

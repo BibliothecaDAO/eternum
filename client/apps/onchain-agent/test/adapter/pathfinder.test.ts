@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { findPath, getBiomeTravelCost, DEFAULT_COST_CONFIG, type TileInfo, type PathCostConfig } from "../../src/adapter/pathfinder";
+import {
+  findPath,
+  getBiomeTravelCost,
+  DEFAULT_COST_CONFIG,
+  type TileInfo,
+  type PathCostConfig,
+} from "../../src/adapter/pathfinder";
 import { BiomeTypeToId, BiomeType, Direction, TroopType } from "@bibliothecadao/types";
 
 // ---------------------------------------------------------------------------
@@ -7,9 +13,7 @@ import { BiomeTypeToId, BiomeType, Direction, TroopType } from "@bibliothecadao/
 // ---------------------------------------------------------------------------
 
 /** Build a tile map from a compact spec: {col, row, biome} */
-function makeTileMap(
-  tiles: { col: number; row: number; biome: BiomeType }[],
-): Map<string, TileInfo> {
+function makeTileMap(tiles: { col: number; row: number; biome: BiomeType }[]): Map<string, TileInfo> {
   const map = new Map<string, TileInfo>();
   for (const t of tiles) {
     map.set(`${t.col},${t.row}`, {
@@ -53,17 +57,13 @@ describe("pathfinder", () => {
     });
 
     it("returns found=false when target is ocean", () => {
-      const tileMap = makeTileMap([
-        { col: 10, row: 10, biome: BiomeType.Ocean },
-      ]);
+      const tileMap = makeTileMap([{ col: 10, row: 10, biome: BiomeType.Ocean }]);
       const result = findPath(5, 5, 10, 10, tileMap);
       expect(result.found).toBe(false);
     });
 
     it("returns found=false when target is deep ocean", () => {
-      const tileMap = makeTileMap([
-        { col: 6, row: 5, biome: BiomeType.DeepOcean },
-      ]);
+      const tileMap = makeTileMap([{ col: 6, row: 5, biome: BiomeType.DeepOcean }]);
       const result = findPath(5, 5, 6, 5, tileMap);
       expect(result.found).toBe(false);
     });
@@ -154,9 +154,7 @@ describe("pathfinder", () => {
     it("routes around an ocean tile", () => {
       // Grid: row 4, cols 0-4 all grassland, except (2,4) is ocean
       // Must detour through row 3 or 5
-      const tiles = [
-        ...fillRect(0, 3, 4, 5, BiomeType.Grassland),
-      ];
+      const tiles = [...fillRect(0, 3, 4, 5, BiomeType.Grassland)];
       // Override (2,4) with ocean
       const tileMap = makeTileMap(tiles);
       tileMap.set("2,4", {
@@ -182,7 +180,12 @@ describe("pathfinder", () => {
       ]);
       // Block all 6 neighbors of (5,4) — even row
       const oceanNeighbors = [
-        [6, 4], [6, 5], [5, 5], [4, 4], [5, 3], [6, 3],
+        [6, 4],
+        [6, 5],
+        [5, 5],
+        [4, 4],
+        [5, 3],
+        [6, 3],
       ];
       for (const [c, r] of oceanNeighbors) {
         tileMap.set(`${c},${r}`, {

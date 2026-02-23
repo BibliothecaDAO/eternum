@@ -1,6 +1,7 @@
 # Axis
 
-Autonomous AI agent that plays Eternum on StarkNet. Discovers active game worlds, authenticates via Cartridge Controller, and runs an LLM-driven tick loop that observes game state and executes on-chain actions.
+Autonomous AI agent that plays Eternum on StarkNet. Discovers active game worlds, authenticates via Cartridge
+Controller, and runs an LLM-driven tick loop that observes game state and executes on-chain actions.
 
 ## Install
 
@@ -47,18 +48,19 @@ The only required config is an LLM API key. Everything else is auto-discovered:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-On first run, the agent discovers active worlds via Cartridge Factory SQL, presents a TUI picker, and opens your browser to approve a Cartridge Controller session. After that, the tick loop starts automatically.
+On first run, the agent discovers active worlds via Cartridge Factory SQL, presents a TUI picker, and opens your browser
+to approve a Cartridge Controller session. After that, the tick loop starts automatically.
 
 Set `SLOT_NAME=<world>` to skip the picker and auto-select a world.
 
 ## CLI Commands
 
-| Command          | Description                                      |
-| ---------------- | ------------------------------------------------ |
-| `axis` / `axis run` | Start the agent (default)                    |
-| `axis init`      | Scaffold `~/.eternum-agent/` with default files  |
-| `axis doctor`    | Validate configuration and report issues         |
-| `axis --version` | Print version                                    |
+| Command             | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `axis` / `axis run` | Start the agent (default)                       |
+| `axis init`         | Scaffold `~/.eternum-agent/` with default files |
+| `axis doctor`       | Validate configuration and report issues        |
+| `axis --version`    | Print version                                   |
 
 ## Configuration
 
@@ -104,7 +106,10 @@ WORLD_ADDRESS=0x123...
 
 ## Authentication
 
-The agent uses [Cartridge Controller](https://github.com/cartridge-gg/controller) sessions -- no private keys in config. On first run, it opens a browser URL for you to approve the session with your Cartridge account (Passkeys/WebAuthn). The session persists to disk and reconnects automatically on restart. Delete `~/.eternum-agent/.cartridge/session.json` to force re-auth.
+The agent uses [Cartridge Controller](https://github.com/cartridge-gg/controller) sessions -- no private keys in config.
+On first run, it opens a browser URL for you to approve the session with your Cartridge account (Passkeys/WebAuthn). The
+session persists to disk and reconnects automatically on restart. Delete `~/.eternum-agent/.cartridge/session.json` to
+force re-auth.
 
 ## Build Release Archives
 
@@ -117,17 +122,19 @@ pnpm --dir client/apps/onchain-agent package:release \
 
 ## Further Reading
 
-| Document | Description |
-| -------- | ----------- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Full architecture reference (entry points, world discovery, adapter layer, TUI, config) |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | How the agent uses `@bibliothecadao/torii`, `client`, and `core` packages |
-| [docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | World discovery pipeline specification |
+| Document                                                                               | Description                                                                             |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                                           | Full architecture reference (entry points, world discovery, adapter layer, TUI, config) |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)                                           | How the agent uses `@bibliothecadao/torii`, `client`, and `core` packages               |
+| [docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | World discovery pipeline specification                                                  |
 
 ## Troubleshooting
 
-**Binary crashes (ENOENT, WASM errors):** Always build with `bun run build.ts --compile` -- direct `bun build` skips the plugins that embed manifests, WASM, and package.json.
+**Binary crashes (ENOENT, WASM errors):** Always build with `bun run build.ts --compile` -- direct `bun build` skips the
+plugins that embed manifests, WASM, and package.json.
 
-**TUI shows garbled output:** Never use `console.log` after the TUI starts. Use the `addSystemMessage()` callback from `createApp()`.
+**TUI shows garbled output:** Never use `console.log` after the TUI starts. Use the `addSystemMessage()` callback from
+`createApp()`.
 
 **Session expired:** Delete `~/.eternum-agent/.cartridge/session.json` and restart.
 

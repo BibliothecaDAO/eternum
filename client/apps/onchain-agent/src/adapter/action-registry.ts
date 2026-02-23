@@ -445,15 +445,44 @@ const TROOP_TIER = "0=T1, 1=T2, 2=T3";
 // ---------------------------------------------------------------------------
 
 const RESOURCE_TYPE_NAMES: Record<number, string> = {
-  1: "Stone", 2: "Coal", 3: "Wood", 4: "Copper", 5: "Ironwood", 6: "Obsidian",
-  7: "Gold", 8: "Silver", 9: "Mithral", 10: "Alchemical Silver", 11: "Cold Iron",
-  12: "Deep Crystal", 13: "Ruby", 14: "Diamonds", 15: "Hartwood", 16: "Ignium",
-  17: "Twilight Quartz", 18: "True Ice", 19: "Adamantine", 20: "Sapphire",
-  21: "Ethereal Silica", 22: "Dragonhide", 23: "Labor", 24: "Ancient Fragment",
-  25: "Donkey", 26: "Knight", 27: "Knight T2", 28: "Knight T3",
-  29: "Crossbowman", 30: "Crossbowman T2", 31: "Crossbowman T3",
-  32: "Paladin", 33: "Paladin T2", 34: "Paladin T3",
-  35: "Wheat", 36: "Fish", 37: "Lords", 38: "Essence",
+  1: "Stone",
+  2: "Coal",
+  3: "Wood",
+  4: "Copper",
+  5: "Ironwood",
+  6: "Obsidian",
+  7: "Gold",
+  8: "Silver",
+  9: "Mithral",
+  10: "Alchemical Silver",
+  11: "Cold Iron",
+  12: "Deep Crystal",
+  13: "Ruby",
+  14: "Diamonds",
+  15: "Hartwood",
+  16: "Ignium",
+  17: "Twilight Quartz",
+  18: "True Ice",
+  19: "Adamantine",
+  20: "Sapphire",
+  21: "Ethereal Silica",
+  22: "Dragonhide",
+  23: "Labor",
+  24: "Ancient Fragment",
+  25: "Donkey",
+  26: "Knight",
+  27: "Knight T2",
+  28: "Knight T3",
+  29: "Crossbowman",
+  30: "Crossbowman T2",
+  31: "Crossbowman T3",
+  32: "Paladin",
+  33: "Paladin T2",
+  34: "Paladin T3",
+  35: "Wheat",
+  36: "Fish",
+  37: "Lords",
+  38: "Essence",
 };
 
 // ---------------------------------------------------------------------------
@@ -472,9 +501,7 @@ register(
     // Pre-flight: check sender has sufficient balance for each resource
     const cached = getCachedWorldState();
     if (cached) {
-      const senderEntity = cached.entities.find(
-        (e) => e.entityId === num(p.senderEntityId) && e.type === "structure",
-      );
+      const senderEntity = cached.entities.find((e) => e.entityId === num(p.senderEntityId) && e.type === "structure");
       if (senderEntity?.resources) {
         const requested = resourceList(p.resources);
         for (const r of requested) {
@@ -682,9 +709,7 @@ register(
     // Pre-flight: check explorer has enough stamina to explore (30 per hex)
     const cached = getCachedWorldState();
     if (cached) {
-      const explorer = cached.entities.find(
-        (e) => e.entityId === num(p.explorerId) && e.type === "army" && e.isOwned,
-      );
+      const explorer = cached.entities.find((e) => e.entityId === num(p.explorerId) && e.type === "army" && e.isOwned);
       const dirs = numArray(p.directions);
       const staminaNeeded = 30 * Math.max(dirs.length, 1);
       if (explorer?.stamina !== undefined && explorer.stamina < staminaNeeded) {
@@ -1200,11 +1225,16 @@ register(
 
     const worldState = await _worldStateProvider(client);
 
-    const result = await moveExplorer(client, signer, {
-      explorerId: num(p.explorerId),
-      targetCol: num(p.targetCol),
-      targetRow: num(p.targetRow),
-    }, worldState);
+    const result = await moveExplorer(
+      client,
+      signer,
+      {
+        explorerId: num(p.explorerId),
+        targetCol: num(p.targetCol),
+        targetRow: num(p.targetRow),
+      },
+      worldState,
+    );
 
     if (!result.success) {
       return { success: false, error: result.summary };
@@ -1216,9 +1246,7 @@ register(
         summary: result.summary,
         stepsExecuted: result.steps.length,
         totalCost: result.pathResult.totalCost,
-        txHashes: result.steps
-          .map((s) => s.result.txHash)
-          .filter(Boolean),
+        txHashes: result.steps.map((s) => s.result.txHash).filter(Boolean),
       },
     };
   },

@@ -84,10 +84,7 @@ export interface ActionBatch {
 // ---------------------------------------------------------------------------
 
 /** Impassable biome IDs (deep ocean, ocean). */
-const IMPASSABLE_BIOMES = new Set([
-  BiomeTypeToId[BiomeType.DeepOcean],
-  BiomeTypeToId[BiomeType.Ocean],
-]);
+const IMPASSABLE_BIOMES = new Set([BiomeTypeToId[BiomeType.DeepOcean], BiomeTypeToId[BiomeType.Ocean]]);
 
 /**
  * Get the travel stamina cost for a specific biome and troop type.
@@ -97,10 +94,7 @@ const IMPASSABLE_BIOMES = new Set([
  * and penalties in forests/rain forests. All troops get reduced cost in ocean/deep ocean
  * (though those are typically impassable) and increased cost in scorched.
  */
-export function getBiomeTravelCost(
-  biome: BiomeType,
-  config: PathCostConfig,
-): number {
+export function getBiomeTravelCost(biome: BiomeType, config: PathCostConfig): number {
   const { baseTravelCost, biomeBonus, troopType } = config;
   const isPaladin = troopType === TroopType.Paladin;
 
@@ -157,12 +151,7 @@ function coordKey(col: number, row: number): string {
  * Hex distance using Coord.distance() from shared types.
  * Admissible heuristic — never overestimates.
  */
-function hexDistance(
-  fromCol: number,
-  fromRow: number,
-  toCol: number,
-  toRow: number,
-): number {
+function hexDistance(fromCol: number, fromRow: number, toCol: number, toRow: number): number {
   return new Coord(fromCol, fromRow).distance(new Coord(toCol, toRow));
 }
 
