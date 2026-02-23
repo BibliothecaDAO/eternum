@@ -1,5 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { beforeAll, describe, it, expect } from "vitest";
 import { getActionDefinitions, getAvailableActions } from "../src/adapter/action-registry";
+import { initializeTestActionRegistry } from "./utils/init-action-registry";
+
+beforeAll(() => {
+  initializeTestActionRegistry();
+});
 
 describe("action definitions", () => {
   it("every registered action has a definition (aliases share canonical type)", () => {

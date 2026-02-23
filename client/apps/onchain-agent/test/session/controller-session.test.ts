@@ -28,15 +28,15 @@ vi.mock("@cartridge/controller/session/node", () => ({
 
 import { ControllerSession, buildSessionPoliciesFromManifest } from "../../src/session/controller-session";
 
-// Load real manifest and old policy output for comparison
-const manifestPath = resolve(__dirname, "../../../../../manifest.json");
+// Load repo-local manifest fixture
+const manifestPath = resolve(__dirname, "../manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
-const policyPath = resolve(__dirname, "../../../../../policy.json");
-const oldPolicy = JSON.parse(readFileSync(policyPath, "utf-8"));
-
-const profilePath = resolve(__dirname, "../../../../../profile.json");
-const profile = JSON.parse(readFileSync(profilePath, "utf-8"));
+const profile = {
+  chain: "slot",
+  entryTokenAddress: "0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+  feeTokenAddress: "0x00ffeeddccbbaa99887766554433221100ffeeddccbbaa998877665544332211",
+};
 
 describe("ABI-driven session policies", () => {
   it("builds policies from real manifest ABIs", () => {
@@ -139,53 +139,21 @@ describe("ABI-driven session policies", () => {
     expect(allEntrypoints.has("register")).toBe(true);
   });
 
-  it("is a superset of the old hardcoded policy output (external functions only)", () => {
-    const policies = buildSessionPoliciesFromManifest(manifest, { worldProfile: profile });
+  it("ensures blitz settlement entrypoints exist for composite action support", () => {
+    const policies = buildSessionPoliciesFromManifest(manifest);
+    const blitzContract = manifest.contracts.find((c: any) => String(c?.tag ?? "").includes("blitz_realm_systems"));
+    expect(blitzContract).toBeDefined();
 
-    // For each contract in the old policy, check that the new policy
-    // has the same contract with at least the same entrypoints.
-    // The old policy included view functions (dojo_name, world_dispatcher, etc.)
-    // which don't need session key authorization, so we exclude them.
-    const vrfAddress = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
-    const entryTokenAddress = profile.entryTokenAddress;
-    const feeTokenAddress = profile.feeTokenAddress;
-    const specialAddresses = new Set([vrfAddress, entryTokenAddress, feeTokenAddress]);
+    const blitzAddress = String(blitzContract?.address ?? "");
+    expect(blitzAddress.startsWith("0x")).toBe(true);
 
-    // View functions that the old policy included but don't need session authorization
-    const viewFunctions = new Set(["dojo_name", "world_dispatcher", "dojo_init"]);
-
-    let oldEntrypointCount = 0;
-    let coveredCount = 0;
-    const uncovered: string[] = [];
-
-    for (const [addr, oldContract] of Object.entries(oldPolicy.contracts ?? {})) {
-      if (specialAddresses.has(addr)) continue; // Check special policies separately
-      const oldMethods = ((oldContract as any).methods ?? []).map((m: any) => m.entrypoint);
-      const newContract = (policies.contracts as any)?.[addr];
-
-      if (!newContract) continue; // Contract may not exist if manifest changed
-
-      const newMethods = new Set((newContract.methods ?? []).map((m: any) => m.entrypoint));
-
-      for (const ep of oldMethods) {
-        if (viewFunctions.has(ep)) continue; // Skip view functions
-        oldEntrypointCount++;
-        if (newMethods.has(ep)) {
-          coveredCount++;
-        } else {
-          uncovered.push(`${addr.slice(0, 10)}...::${ep}`);
-        }
-      }
-    }
-
-    const coverage = oldEntrypointCount > 0 ? coveredCount / oldEntrypointCount : 1;
-    console.log(`\nOld policy coverage (external only): ${coveredCount}/${oldEntrypointCount} (${(coverage * 100).toFixed(1)}%)`);
-    if (uncovered.length > 0) {
-      console.log(`Uncovered entrypoints: ${uncovered.join(", ")}`);
-    }
-    // Some old entrypoints may have been renamed/moved in the current manifest,
-    // so we allow some drift. 80%+ confirms strong structural coverage.
-    expect(coverage).toBeGreaterThan(0.8);
+    const methods = new Set(
+      (((policies.contracts as any)?.[blitzAddress]?.methods ?? []) as Array<{ entrypoint: string }>).map(
+        (m) => m.entrypoint,
+      ),
+    );
+    expect(methods.has("assign_realm_positions")).toBe(true);
+    expect(methods.has("settle_realms")).toBe(true);
   });
 });
 

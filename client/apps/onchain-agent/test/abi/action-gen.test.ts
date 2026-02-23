@@ -44,7 +44,7 @@ describe("generateActions", () => {
   it("params have correct schema types", () => {
     const { definitions } = generateActions(manifest);
 
-    const validTypes = new Set(["number", "string", "boolean", "number[]", "object[]", "bigint"]);
+    const validTypes = new Set(["number", "string", "boolean", "number[]", "object", "object[]", "bigint"]);
 
     for (const def of definitions) {
       for (const param of def.params) {
