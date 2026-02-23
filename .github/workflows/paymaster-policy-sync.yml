@@ -39,4 +39,3 @@ jobs:
             --chain "${{ github.event.inputs.network }}" \
             --game "${{ github.event.inputs.game_name }}" \
             --paymaster "empire"
-

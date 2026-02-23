@@ -36,7 +36,8 @@ export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<type
   return {
     name: "observe_game",
     label: "Observe Game",
-    description: "Get the current game world state including entities, resources, and tick information. Use this to refresh your view of the world between ticks.",
+    description:
+      "Get the current game world state including entities, resources, and tick information. Use this to refresh your view of the world between ticks.",
     parameters: observeSchema,
     async execute(_toolCallId, _params) {
       const state = await adapter.getWorldState();

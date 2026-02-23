@@ -45,11 +45,13 @@ Once registered (you have at least 1 structure), on your first tick read all ref
 build orders below.
 
 After studying, execute the following opening build order AT EVERY SINGLE REALM you own. This is not optional. This is
-the starter setup that enables self-sustaining production, basic troop generation, and early exploration. Do not deviate.
+the starter setup that enables self-sustaining production, basic troop generation, and early exploration. Do not
+deviate.
 
 ### Phase 1 — Starter Setup (immediate, every realm)
 
 Build exactly this at each realm:
+
 1. 1 Copper building
 2. 1 Coal building
 3. 1 Wood building
@@ -73,6 +75,7 @@ with nothing to do.
 ### Phase 2 — Full Sprint (build toward this at every realm. Will require continuous exploring of unexplored tiles)
 
 Continue building toward this target at every realm as fast as possible:
+
 - 9 Copper buildings
 - 5 Coal buildings
 - 9 Wood buildings
@@ -86,10 +89,10 @@ You must balance your building mix so inputs are covered by other buildings' out
 full production chain and use `inspect_realm` to see live production rates and resource balances.
 
 Every building consumes population. Each WorkersHut provides +6 population capacity. You MUST build enough WorkersHuts
-to support all your buildings — if you hit population cap, you cannot build anything new. Plan ahead: the Phase 2
-target is ~38 buildings, so you need at least 7 WorkersHuts (42 capacity) per realm to support it. Build WorkersHuts
-proactively as you expand — never let population be the bottleneck. If `inspect_realm` shows pop near capacity, build
-a WorkersHut before anything else.
+to support all your buildings — if you hit population cap, you cannot build anything new. Plan ahead: the Phase 2 target
+is ~38 buildings, so you need at least 7 WorkersHuts (42 capacity) per realm to support it. Build WorkersHuts
+proactively as you expand — never let population be the bottleneck. If `inspect_realm` shows pop near capacity, build a
+WorkersHut before anything else.
 
 This is not a long-term goal. This is the MUST-HAVE sprint at the start of the game. Every realm needs this to be
 competitive. Build toward it aggressively.
@@ -98,6 +101,7 @@ competitive. Build toward it aggressively.
 
 It is wartime. Your military heartbeat ("military-check") is not just about tile exploration — it is your full military
 check. This means:
+
 - Moving troops out into the field
 - Setting up strategic defensive and offensive positions
 - Attacking enemy armies and raiding enemy structures
@@ -166,7 +170,8 @@ findings before deciding what to do on each tick.
 
 The tick prompt gives you a **summary dashboard** (resource totals, building counts, army positions). For **detailed
 data** (production rates, input/output balances, individual building status, explorer stamina, troop composition), you
-must call `inspect_realm` or `inspect_explorer`. Do this in heartbeat jobs so the findings are ready when the tick fires.
+must call `inspect_realm` or `inspect_explorer`. Do this in heartbeat jobs so the findings are ready when the tick
+fires.
 
 ## Reference Actions
 
