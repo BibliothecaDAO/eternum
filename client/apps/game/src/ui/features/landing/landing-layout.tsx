@@ -92,7 +92,7 @@ const LandingLayoutContent = () => {
       </main>
 
       {/* Bottom navigation (mobile only) */}
-      <MobileBottomNav onSettingsClick={handleSettingsClick} />
+      <MobileBottomNav />
 
       {/* Settings modal */}
       {settingsOpen && (

@@ -46,10 +46,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     label: "Markets",
     icon: TrendingUp,
     basePath: "/markets",
-    subMenu: [
-      { id: "live", label: "LIVE", tab: null },
-      { id: "past", label: "PAST", tab: "past" },
-    ],
+    subMenu: [{ id: "markets", label: "MARKETS", tab: null }],
   },
   {
     id: "profile",
