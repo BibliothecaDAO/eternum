@@ -71,16 +71,23 @@ function createInspectRealmTool(client: EternumClient): AgentTool<any> {
     parameters: entityIdSchema,
     async execute(_toolCallId, { entityId }: { entityId: number }) {
       try {
+        // Use fetchResourceBalancesWithProduction for dynamic balance computation
+        const fetchBalances = (client.sql as any).fetchResourceBalancesWithProduction
+          ? (client.sql as any).fetchResourceBalancesWithProduction([entityId]).catch(() => [] as any[])
+          : client.sql.fetchResourceBalances([entityId]).catch(() => [] as any[]);
+
         // Fetch base realm view and SQL enrichment data in parallel
         const [realm, balanceRows, buildingRows] = await Promise.all([
           client.view.realm(entityId),
-          client.sql.fetchResourceBalances([entityId]).catch(() => [] as any[]),
+          fetchBalances,
           (client.sql as any).fetchBuildingsByStructures?.([entityId]).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
         ]);
 
         const realmData = realm as any;
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const FOOD_RESOURCES = new Set(["Wheat", "Fish"]);
 
-        // Enrich with resource balances and production from SQL
+        // Enrich with resource balances (including dynamic production) from SQL
         const balanceRow = (balanceRows as any[])?.[0];
         if (balanceRow) {
           const resources: Record<string, number> = {};
@@ -88,16 +95,32 @@ function createInspectRealmTool(client: EternumClient): AgentTool<any> {
           const troopReserves: string[] = [];
 
           for (const col of RESOURCE_BALANCE_COLUMNS) {
-            const hexVal = balanceRow[col.column];
-            if (hexVal && hexVal !== "0x0") {
-              const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
-              if (amount > 0) {
-                resources[col.name] = amount;
+            const prodPrefix = col.column.replace("_BALANCE", "_PRODUCTION");
+
+            // Compute dynamic balance: stored + produced since last update
+            const storedHex = balanceRow[col.column];
+            const storedBalance = storedHex && storedHex !== "0x0"
+              ? Number(parseHexBig(storedHex) / BigInt(RESOURCE_PRECISION))
+              : 0;
+
+            const buildingCount = Number(balanceRow[`${prodPrefix}.building_count`] ?? 0);
+            const productionRate = Number(parseHexBig(balanceRow[`${prodPrefix}.production_rate`]));
+            const lastUpdatedAt = Number(parseHexBig(balanceRow[`${prodPrefix}.last_updated_at`]));
+            const outputAmountLeft = Number(parseHexBig(balanceRow[`${prodPrefix}.output_amount_left`]));
+
+            let amount = storedBalance;
+            if (buildingCount > 0 && productionRate > 0 && lastUpdatedAt > 0) {
+              const elapsed = Math.max(0, nowSeconds - lastUpdatedAt);
+              let produced = Math.floor((elapsed * productionRate) / RESOURCE_PRECISION);
+              if (!FOOD_RESOURCES.has(col.name)) {
+                produced = Math.min(produced, Math.floor(outputAmountLeft / RESOURCE_PRECISION));
               }
+              amount += produced;
             }
-            // Production building count
-            const prodCol = `${col.column.replace("_BALANCE", "_PRODUCTION")}.building_count`;
-            const buildingCount = Number(balanceRow[prodCol] ?? 0);
+
+            if (amount > 0) {
+              resources[col.name] = amount;
+            }
             if (buildingCount > 0) {
               productions.push(`${col.name} x${buildingCount}`);
             }

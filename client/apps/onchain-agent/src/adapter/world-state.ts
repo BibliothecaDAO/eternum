@@ -212,6 +212,50 @@ function decodeFelt252(hex: string | null | undefined): string | undefined {
   }
 }
 
+// Food resources get unlimited production (no output_amount_left cap).
+const FOOD_RESOURCES = new Set(["Wheat", "Fish"]);
+
+/**
+ * Compute the current resource balance including dynamically-produced amounts.
+ * On-chain, resource balances are stored at the time of last harvest/transfer.
+ * The actual current balance = stored + production_rate × (now - last_updated_at),
+ * capped by output_amount_left for non-food resources.
+ */
+function computeDynamicBalance(
+  row: any,
+  balanceCol: string,
+  prodPrefix: string,
+  nowSeconds: number,
+  resourceName: string,
+): number {
+  // Parse stored balance
+  const hexVal = row[balanceCol];
+  const storedBalance = hexVal && hexVal !== "0x0"
+    ? Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION))
+    : 0;
+
+  // Parse production fields
+  const buildingCount = Number(row[`${prodPrefix}.building_count`] ?? 0);
+  const productionRate = Number(parseHexBig(row[`${prodPrefix}.production_rate`]));
+  const lastUpdatedAt = Number(parseHexBig(row[`${prodPrefix}.last_updated_at`]));
+  const outputAmountLeft = Number(parseHexBig(row[`${prodPrefix}.output_amount_left`]));
+
+  if (buildingCount === 0 || productionRate === 0 || lastUpdatedAt === 0) {
+    return storedBalance;
+  }
+
+  const elapsed = Math.max(0, nowSeconds - lastUpdatedAt);
+  let produced = Math.floor((elapsed * productionRate) / RESOURCE_PRECISION);
+
+  // Non-food production is capped by remaining output budget
+  if (!FOOD_RESOURCES.has(resourceName)) {
+    const maxOutput = Math.floor(outputAmountLeft / RESOURCE_PRECISION);
+    produced = Math.min(produced, maxOutput);
+  }
+
+  return storedBalance + produced;
+}
+
 const STRUCTURE_CATEGORY_NAMES: Record<number, string> = {
   1: "Realm",
   2: "Hyperstructure",
@@ -928,10 +972,17 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   const resources = new Map<string, number>();
   if (ownedEntityIds.length > 0) {
     try {
+      // Use fetchResourceBalancesWithProduction for dynamic balance computation
+      const fetchBalances = (client.sql as any).fetchResourceBalancesWithProduction
+        ? (client.sql as any).fetchResourceBalancesWithProduction(ownedEntityIds)
+        : client.sql.fetchResourceBalances(ownedEntityIds);
+
       const [balanceRows, buildingRows] = (await Promise.all([
-        client.sql.fetchResourceBalances(ownedEntityIds),
+        fetchBalances,
         (client.sql as any).fetchBuildingsByStructures?.(ownedEntityIds).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
       ])) as [any[], any[]];
+
+      const nowSeconds = Math.floor(Date.now() / 1000);
 
       // Group building positions by structure entity ID → occupied inner coords
       const buildingsByStructure = new Map<number, Set<string>>();
@@ -951,18 +1002,17 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
         const buildings: string[] = [];
 
         for (const col of RESOURCE_BALANCE_COLUMNS) {
-          // Parse balance
-          const hexVal = row[col.column];
-          if (hexVal && hexVal !== "0x0") {
-            const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
-            if (amount > 0) {
-              entityResources.set(col.name, amount);
-              resources.set(col.name, (resources.get(col.name) ?? 0) + amount);
-            }
+          const prodPrefix = col.column.replace("_BALANCE", "_PRODUCTION");
+
+          // Compute dynamic balance: stored + produced since last update
+          const amount = computeDynamicBalance(row, col.column, prodPrefix, nowSeconds, col.name);
+          if (amount > 0) {
+            entityResources.set(col.name, amount);
+            resources.set(col.name, (resources.get(col.name) ?? 0) + amount);
           }
+
           // Parse production building count
-          const prodCol = `${col.column.replace("_BALANCE", "_PRODUCTION")}.building_count`;
-          const buildingCount = Number(row[prodCol] ?? 0);
+          const buildingCount = Number(row[`${prodPrefix}.building_count`] ?? 0);
           if (buildingCount > 0) {
             buildings.push(`${col.name} x${buildingCount}`);
           }

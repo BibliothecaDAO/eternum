@@ -468,8 +468,13 @@ function coerceStructParams(
     const structDef = structs.get(input.type);
     if (!structDef) continue;
 
-    const val = result[input.name];
+    let val = result[input.name];
     if (val === undefined || val === null) continue;
+
+    // Unwrap single-element arrays — LLMs sometimes wrap structs in [{}]
+    if (Array.isArray(val) && val.length === 1 && typeof val[0] === "object" && val[0] !== null) {
+      val = val[0];
+    }
 
     // If the agent passed a non-object (e.g. a number), skip — can't coerce
     if (typeof val !== "object" || Array.isArray(val)) continue;

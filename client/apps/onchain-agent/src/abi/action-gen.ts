@@ -5,22 +5,9 @@
  * that the LLM uses to discover and call actions. Supports optional domain
  * overlays for game-specific enrichments (descriptions, param transforms, etc.).
  */
+import type { ActionParamSchema, ActionDefinition } from "@bibliothecadao/game-agent";
 import { extractAllFromManifest, getGameEntrypoints, tagMatchesGame, abiTypeToParamSchemaType, describeStructFields } from "./parser";
 import type { ABIEntrypoint, ABIParam, ContractABIResult, DomainOverlayMap, Manifest, ActionRoute } from "./types";
-
-// Re-declared to avoid import from game-agent (which may not be built).
-interface ActionParamSchema {
-  name: string;
-  type: "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint";
-  description: string;
-  required?: boolean;
-}
-
-interface ActionDefinition {
-  type: string;
-  description: string;
-  params: ActionParamSchema[];
-}
 
 // ── Action generation ────────────────────────────────────────────────────────
 
@@ -136,14 +123,13 @@ function buildParamSchemas(
     const override = paramOverrides?.[p.name];
     const schemaType = abiTypeToParamSchemaType(p.rawType, structNames);
 
-    // For struct params, include field descriptions so the LLM knows the shape
+    // For struct params, include field descriptions so the LLM knows the shape.
+    // If the domain overlay already provides a curated description, trust it.
     let description = override?.description ?? `${p.name} (${p.type})`;
-    if (structs) {
+    if (structs && !override?.description) {
       const structDesc = describeStructFields(p.rawType, structs);
       if (structDesc) {
-        description = override?.description
-          ? `${override.description} — pass as object: ${structDesc}`
-          : `${p.name} — pass as object: ${structDesc}`;
+        description = `${p.name} — pass as object: ${structDesc}`;
       }
     }
 

@@ -643,7 +643,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     description: "Destroy a building at a structure",
     paramOverrides: {
       structure_id: { description: "Structure entity ID" },
-      building_coord: { description: "Building coordinate {x, y}" },
+      building_coord: { description: "Building coordinate — pass as {x: number, y: number}" },
     },
   },
 
@@ -652,7 +652,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     description: "Pause production at a building",
     paramOverrides: {
       structure_id: { description: "Structure entity ID" },
-      building_coord: { description: "Building coordinate {x, y}" },
+      building_coord: { description: "Building coordinate — pass as {x: number, y: number}" },
     },
   },
 
@@ -661,7 +661,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     description: "Resume production at a paused building",
     paramOverrides: {
       structure_id: { description: "Structure entity ID" },
-      building_coord: { description: "Building coordinate {x, y}" },
+      building_coord: { description: "Building coordinate — pass as {x: number, y: number}" },
     },
   },
 
@@ -857,7 +857,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     description: "Open a relic chest at a coordinate with an explorer",
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID" },
-      chest_coord: { description: "Chest coordinate {x, y}" },
+      chest_coord: { description: "Chest coordinate — pass as {x: number, y: number}" },
     },
   },
 

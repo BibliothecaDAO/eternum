@@ -126,7 +126,7 @@ export function tagMatchesGame(tag: string, gameName: string | null): boolean {
 export function abiTypeToParamSchemaType(
   rawType: string,
   structNames?: Set<string>,
-): "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint" {
+): "number" | "string" | "boolean" | "number[]" | "object[]" | "object" | "bigint" {
   if (rawType === "core::bool") return "boolean";
 
   if (
@@ -152,8 +152,8 @@ export function abiTypeToParamSchemaType(
     return "object[]";
   }
 
-  // Struct types → "object[]" (closest available schema type for objects)
-  if (structNames?.has(rawType)) return "object[]";
+  // Struct types → "object" (single object, not an array)
+  if (structNames?.has(rawType)) return "object";
 
   // Game-specific enums (e.g., s1_eternum::models::troop::TroopType) → number (variant index)
   // Tuples → object[]

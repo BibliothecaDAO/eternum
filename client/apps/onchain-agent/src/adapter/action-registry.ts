@@ -7,7 +7,7 @@
  * "move_to" action is the only hand-written handler.
  */
 import type { EternumClient } from "@bibliothecadao/client";
-import type { ActionResult, GameAction } from "@bibliothecadao/game-agent";
+import type { ActionResult, GameAction, ActionDefinition } from "@bibliothecadao/game-agent";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { Account } from "starknet";
@@ -17,20 +17,6 @@ import { ETERNUM_OVERLAYS, createHiddenOverlays, num } from "../abi/domain-overl
 import type { Manifest } from "../abi/types";
 import { moveExplorer } from "./move-executor";
 import { buildWorldState, type EternumWorldState } from "./world-state";
-
-// Re-declared here to avoid tsup d.ts resolution issues with game-agent.
-interface ActionParamSchema {
-  name: string;
-  type: "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint";
-  description: string;
-  required?: boolean;
-}
-
-interface ActionDefinition {
-  type: string;
-  description: string;
-  params: ActionParamSchema[];
-}
 
 // ---------------------------------------------------------------------------
 // Module state — populated by initializeActions()
