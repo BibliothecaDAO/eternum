@@ -298,9 +298,9 @@ pnpm --dir client/apps/onchain-agent package:release \
 
 | Document | Description |
 | --- | --- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Full architecture reference (entry points, world discovery, adapter layer, TUI, config) |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | How the agent uses `@bibliothecadao/torii`, `client`, and `core` packages |
-| [docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md](docs/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | World discovery pipeline specification |
+| [docs/deprecated/ARCHITECTURE.md](docs/deprecated/ARCHITECTURE.md) | Full architecture reference (entry points, world discovery, adapter layer, TUI, config) |
+| [docs/deprecated/DEPENDENCIES.md](docs/deprecated/DEPENDENCIES.md) | How the agent uses `@bibliothecadao/torii`, `client`, and `core` packages |
+| [docs/deprecated/WORLD_PROFILE_AND_POLICY_PIPELINE.md](docs/deprecated/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | World discovery pipeline specification |
 
 ## Troubleshooting
 
