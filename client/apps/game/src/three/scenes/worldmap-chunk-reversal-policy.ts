@@ -21,12 +21,7 @@ export function resolveChunkReversalRefreshDecision(
   if (!input.previousSwitchPosition || !input.nextSwitchPosition) {
     return {
       shouldForceRefresh: false,
-      nextMovementVector: input.nextSwitchPosition
-        ? {
-            x: input.nextSwitchPosition.x,
-            z: input.nextSwitchPosition.z,
-          }
-        : input.previousMovementVector,
+      nextMovementVector: input.previousMovementVector ?? null,
     };
   }
 

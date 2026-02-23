@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 
 describe("resolveChunkReversalRefreshDecision", () => {
-  it("does not force on first measured movement", () => {
+  it("keeps movement vector null when there is no previous switch position", () => {
     const result = resolveChunkReversalRefreshDecision({
       previousSwitchPosition: null,
       nextSwitchPosition: { x: 10, z: 0 },
@@ -11,7 +11,7 @@ describe("resolveChunkReversalRefreshDecision", () => {
     });
 
     expect(result.shouldForceRefresh).toBe(false);
-    expect(result.nextMovementVector).toEqual({ x: 10, z: 0 });
+    expect(result.nextMovementVector).toBeNull();
   });
 
   it("forces refresh when direction reverses", () => {
@@ -48,5 +48,25 @@ describe("resolveChunkReversalRefreshDecision", () => {
 
     expect(result.shouldForceRefresh).toBe(false);
     expect(result.nextMovementVector).toEqual({ x: 10, z: 0 });
+  });
+
+  it("stays origin-independent across first and second movement decisions", () => {
+    const firstMovement = resolveChunkReversalRefreshDecision({
+      previousSwitchPosition: null,
+      nextSwitchPosition: { x: 110, z: 50 },
+      previousMovementVector: null,
+      minMovementDistance: 0.001,
+    });
+
+    const secondMovement = resolveChunkReversalRefreshDecision({
+      previousSwitchPosition: { x: 110, z: 50 },
+      nextSwitchPosition: { x: 100, z: 50 },
+      previousMovementVector: firstMovement.nextMovementVector,
+      minMovementDistance: 0.001,
+    });
+
+    expect(firstMovement.nextMovementVector).toBeNull();
+    expect(secondMovement.shouldForceRefresh).toBe(false);
+    expect(secondMovement.nextMovementVector).toEqual({ x: -10, z: 0 });
   });
 });

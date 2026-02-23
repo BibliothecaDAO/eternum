@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { applyWorldmapSwitchOffRuntimeState } from "./worldmap-runtime-lifecycle";
+import {
+  applyWorldmapSwitchOffRuntimeState,
+  finalizePendingChunkFetchOwnership,
+  invalidateWorldmapSwitchOffTransitionState,
+} from "./worldmap-runtime-lifecycle";
 
 describe("worldmap runtime lifecycle", () => {
   it("clears switch-off transient state and returns reset primitives", () => {
@@ -96,5 +100,43 @@ describe("worldmap runtime lifecycle", () => {
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
     expect(result.currentChunk).toBe("null");
     expect(result.isSwitchedOff).toBe(true);
+  });
+
+  it("invalidates chunk transition ownership when switching off", () => {
+    const inFlightSwitch = Promise.resolve();
+    const result = invalidateWorldmapSwitchOffTransitionState({
+      chunkTransitionToken: 4,
+      isChunkTransitioning: true,
+      globalChunkSwitchPromise: inFlightSwitch,
+    });
+
+    expect(result).toEqual({
+      chunkTransitionToken: 5,
+      isChunkTransitioning: false,
+      globalChunkSwitchPromise: null,
+    });
+  });
+
+  it("cleans up pending fetches by promise ownership identity", () => {
+    const fetchKey = "12,12:render";
+    const staleOwner = Promise.resolve(true);
+    const currentOwner = Promise.resolve(true);
+    const pendingChunks = new Map<string, Promise<boolean>>([[fetchKey, currentOwner]]);
+
+    const staleDeleteResult = finalizePendingChunkFetchOwnership({
+      pendingChunks,
+      fetchKey,
+      fetchPromise: staleOwner,
+    });
+    expect(staleDeleteResult).toBe(false);
+    expect(pendingChunks.get(fetchKey)).toBe(currentOwner);
+
+    const currentDeleteResult = finalizePendingChunkFetchOwnership({
+      pendingChunks,
+      fetchKey,
+      fetchPromise: currentOwner,
+    });
+    expect(currentDeleteResult).toBe(true);
+    expect(pendingChunks.size).toBe(0);
   });
 });

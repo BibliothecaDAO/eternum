@@ -23,6 +23,24 @@ interface WorldmapSwitchOffRuntimeStateResult {
   lastControlsCameraDistance: null;
 }
 
+interface WorldmapSwitchOffTransitionStateInput<TChunkSwitchPromise> {
+  chunkTransitionToken: number;
+  isChunkTransitioning: boolean;
+  globalChunkSwitchPromise: TChunkSwitchPromise | null;
+}
+
+interface WorldmapSwitchOffTransitionStateResult {
+  chunkTransitionToken: number;
+  isChunkTransitioning: boolean;
+  globalChunkSwitchPromise: null;
+}
+
+interface FinalizePendingChunkFetchOwnershipInput<TPendingChunk> {
+  pendingChunks: Map<string, TPendingChunk>;
+  fetchKey: string;
+  fetchPromise: TPendingChunk;
+}
+
 export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPendingChunk>({
   pendingArmyRemovals,
   pendingArmyRemovalMeta,
@@ -63,4 +81,33 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
     currentChunk: "null",
     lastControlsCameraDistance: null,
   };
+};
+
+/**
+ * Invalidate any in-flight chunk transition authority during switch-off.
+ */
+export const invalidateWorldmapSwitchOffTransitionState = <TChunkSwitchPromise>({
+  chunkTransitionToken,
+}: WorldmapSwitchOffTransitionStateInput<TChunkSwitchPromise>): WorldmapSwitchOffTransitionStateResult => {
+  return {
+    chunkTransitionToken: chunkTransitionToken + 1,
+    isChunkTransitioning: false,
+    globalChunkSwitchPromise: null,
+  };
+};
+
+/**
+ * Finalize pending fetch ownership only if the settling promise still owns the key.
+ */
+export const finalizePendingChunkFetchOwnership = <TPendingChunk>({
+  pendingChunks,
+  fetchKey,
+  fetchPromise,
+}: FinalizePendingChunkFetchOwnershipInput<TPendingChunk>): boolean => {
+  if (pendingChunks.get(fetchKey) !== fetchPromise) {
+    return false;
+  }
+
+  pendingChunks.delete(fetchKey);
+  return true;
 };
