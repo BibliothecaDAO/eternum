@@ -1,4 +1,5 @@
 import { useLootChestOpeningStore } from "@/hooks/store/use-loot-chest-opening-store";
+import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { Tabs } from "@/ui/design-system/atoms/tab/tabs";
 import { ChestOpeningExperience } from "@/ui/features/cosmetics/chest-opening";
 import { ChestEpoch } from "@/ui/features/cosmetics/chest-opening/hooks/use-chest-opening-flow";
@@ -22,13 +23,12 @@ import {
   COSMETICS_NETWORKS,
   type CosmeticsNetwork,
   DEFAULT_COSMETICS_NETWORK,
-  getStarknetChainIdForNetwork,
   resolveConnectedTxNetworkFromRuntime,
 } from "@/ui/features/cosmetics/config/networks";
 import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/cosmetics/lib/use-torii-cosmetics";
+import { switchWalletToChain, type WalletChainControllerLike } from "@/ui/utils/network-switch";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
 const resolveAssetImage = (uri?: string | null): string | null => {
   if (!uri) return null;
@@ -40,15 +40,9 @@ const resolveAssetImage = (uri?: string | null): string | null => {
   return uri;
 };
 
-interface ControllerConnectorLike {
-  switchStarknetChain?: (chainId: string) => Promise<boolean>;
-  openSettings?: () => void;
-  rpcUrl?: () => string;
-}
-
 export const LandingCosmetics = () => {
   const { chainId, connector } = useAccount();
-  const controller = (connector as { controller?: ControllerConnectorLike } | undefined)?.controller;
+  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
   const connectedTxNetwork = resolveConnectedTxNetworkFromRuntime({ chainId, controller });
   const [selectedNetwork, setSelectedNetwork] = useState<CosmeticsNetwork>(DEFAULT_COSMETICS_NETWORK);
   const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
@@ -178,28 +172,12 @@ export const LandingCosmetics = () => {
   }, [filteredItems, selectedId]);
 
   const handleSwitchNetwork = useCallback(async () => {
-    const targetLabel = COSMETICS_NETWORK_CONFIG[selectedNetwork].label;
-
-    if (!controller?.switchStarknetChain) {
-      toast.error(`Please switch to ${targetLabel} in your wallet, then retry.`);
-      controller?.openSettings?.();
-      return;
-    }
-
-    try {
-      const switched = await controller.switchStarknetChain(getStarknetChainIdForNetwork(selectedNetwork));
-      if (!switched) {
-        toast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
-        controller.openSettings?.();
-        return;
-      }
-
-      toast.success(`Switched to ${targetLabel}.`);
+    const switched = await switchWalletToChain({
+      controller,
+      targetChain: selectedNetwork,
+    });
+    if (switched) {
       setShowWrongNetworkPrompt(false);
-    } catch (error) {
-      console.error("Failed to switch network:", error);
-      toast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
-      controller.openSettings?.();
     }
   }, [controller, selectedNetwork]);
 
@@ -361,34 +339,14 @@ export const LandingCosmetics = () => {
         </LandingDojoProvider>
       )}
 
-      {showWrongNetworkPrompt && (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-gold/30 bg-black/95 p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold text-gold">Switch Network Required</h3>
-            <p className="mt-2 text-sm text-gold/75">
-              You're trying to open a {selectedNetworkLabel} chest while your wallet is on another chain.
-            </p>
-            <p className="mt-1 text-xs text-gold/55">Switch your wallet to {selectedNetworkLabel} to continue.</p>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowWrongNetworkPrompt(false)}
-                className="rounded-lg border border-gold/25 px-3 py-1.5 text-xs text-gold/80 hover:bg-gold/10"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSwitchNetwork()}
-                className="rounded-lg border border-gold/50 bg-gold/20 px-3 py-1.5 text-xs font-medium text-gold hover:bg-gold/30"
-              >
-                Switch To {selectedNetworkLabel}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SwitchNetworkPrompt
+        open={showWrongNetworkPrompt}
+        description={`You're trying to open a ${selectedNetworkLabel} chest while your wallet is on another chain.`}
+        hint={`Switch your wallet to ${selectedNetworkLabel} to continue.`}
+        switchLabel={`Switch To ${selectedNetworkLabel}`}
+        onClose={() => setShowWrongNetworkPrompt(false)}
+        onSwitch={handleSwitchNetwork}
+      />
     </>
   );
 };
