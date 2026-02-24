@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, View, StyleSheet} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ThemeProvider} from './providers/theme-provider';
 import {QueryProvider} from './providers/query-provider';
@@ -29,7 +30,9 @@ export default function App() {
         <ThemeProvider>
           <QueryProvider>
             <DojoProvider>
-              <AppNavigator />
+              <BottomSheetModalProvider>
+                <AppNavigator />
+              </BottomSheetModalProvider>
             </DojoProvider>
           </QueryProvider>
         </ThemeProvider>

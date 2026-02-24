@@ -14,12 +14,37 @@ import {useTheme} from '../providers/theme-provider';
 import {LoginScreen} from '../../screens/auth/login-screen';
 import {CommandScreen} from '../../screens/command/command-screen';
 import {RealmsScreen} from '../../screens/realms/realms-screen';
+import {RealmDetailScreen} from '../../screens/realms/realm-detail-screen';
 import {ArmiesScreen} from '../../screens/armies/armies-screen';
 import {TradeScreen} from '../../screens/trade/trade-screen';
 import {MoreScreen} from '../../screens/more/more-screen';
+import type {
+  RootStackParamList,
+  CommandStackParamList,
+  RealmsStackParamList,
+} from './types';
 
 const Tab = createBottomTabNavigator();
-const RootStack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+const CommandStack = createNativeStackNavigator<CommandStackParamList>();
+const RealmsStack = createNativeStackNavigator<RealmsStackParamList>();
+
+function CommandStackNavigator() {
+  return (
+    <CommandStack.Navigator screenOptions={{headerShown: false}}>
+      <CommandStack.Screen name="CommandDashboard" component={CommandScreen} />
+    </CommandStack.Navigator>
+  );
+}
+
+function RealmsStackNavigator() {
+  return (
+    <RealmsStack.Navigator screenOptions={{headerShown: false}}>
+      <RealmsStack.Screen name="RealmsList" component={RealmsScreen} />
+      <RealmsStack.Screen name="RealmDetail" component={RealmDetailScreen} />
+    </RealmsStack.Navigator>
+  );
+}
 
 function MainTabs() {
   const {colors} = useTheme();
@@ -37,14 +62,14 @@ function MainTabs() {
       }}>
       <Tab.Screen
         name="Command"
-        component={CommandScreen}
+        component={CommandStackNavigator}
         options={{
           tabBarIcon: ({color, size}) => <Sword color={color} size={size} />,
         }}
       />
       <Tab.Screen
         name="Realms"
-        component={RealmsScreen}
+        component={RealmsStackNavigator}
         options={{
           tabBarIcon: ({color, size}) => <Castle color={color} size={size} />,
         }}
@@ -82,7 +107,7 @@ function RootNavigator() {
   return (
     <RootStack.Navigator screenOptions={{headerShown: false}}>
       {isAuthenticated ? (
-        <RootStack.Screen name="Main" component={MainTabs} />
+        <RootStack.Screen name="MainTabs" component={MainTabs} />
       ) : (
         <RootStack.Screen
           name="Login"

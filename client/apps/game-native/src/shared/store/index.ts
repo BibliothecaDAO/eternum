@@ -7,8 +7,9 @@ import {
   createStructuresSlice,
 } from './slices/structures-slice';
 import {UISlice, createUISlice} from './slices/ui-slice';
+import {CommandSlice, createCommandSlice} from './slices/command-slice';
 
-export type Store = WorldSlice & AccountSlice & StructuresSlice & UISlice;
+export type Store = WorldSlice & AccountSlice & StructuresSlice & UISlice & CommandSlice;
 
 export const useStore = create<Store>()(
   subscribeWithSelector<Store>((set, _get) => ({
@@ -16,6 +17,7 @@ export const useStore = create<Store>()(
     ...createAccountSlice(set),
     ...createStructuresSlice(set),
     ...createUISlice(set),
+    ...createCommandSlice(set),
   })),
 );
 
