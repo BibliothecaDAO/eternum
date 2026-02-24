@@ -1,5 +1,5 @@
-import React, {useState, useMemo} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useCallback, useState, useMemo} from 'react';
+import {Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ChevronLeft} from 'lucide-react-native';
 import {useTheme} from '../../app/providers/theme-provider';
@@ -28,6 +28,13 @@ export function RealmDetailScreen({route, navigation}: RealmDetailScreenProps) {
   const {colors} = useTheme();
   const {realmEntityId} = route.params;
   const [activeTab, setActiveTab] = useState('resources');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    // TODO: Re-fetch from Torii
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   const realms = useRealmSummaries();
   const realm = useMemo(
@@ -65,12 +72,16 @@ export function RealmDetailScreen({route, navigation}: RealmDetailScreenProps) {
         <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
       </View>
 
-      <View style={styles.tabContent}>
+      <ScrollView
+        style={styles.tabContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+        }>
         {activeTab === 'resources' && <ResourcesTab entityId={realm.entityId} />}
         {activeTab === 'buildings' && <BuildingsTab realm={realm} />}
         {activeTab === 'military' && <MilitaryTab realm={realm} />}
         {activeTab === 'actions' && <ActionsTab realm={realm} />}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

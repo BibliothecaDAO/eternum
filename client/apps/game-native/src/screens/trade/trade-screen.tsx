@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useCallback, useState} from 'react';
+import {RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ArrowLeftRight} from 'lucide-react-native';
 import {useTheme} from '../../app/providers/theme-provider';
@@ -21,8 +21,15 @@ const TRADE_TABS = [
 export function TradeScreen() {
   const {colors} = useTheme();
   const [activeTab, setActiveTab] = useState('market');
+  const [refreshing, setRefreshing] = useState(false);
   const {openOrders} = useTradeOrders();
   const {readyToClaim} = useCaravans();
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    // TODO: Re-fetch from Torii
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   return (
     <SafeAreaView
@@ -46,7 +53,10 @@ export function TradeScreen() {
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+        }>
         {activeTab === 'market' && <MarketTab />}
         {activeTab === 'orders' && <OrdersTab />}
         {activeTab === 'caravans' && <CaravansTab />}

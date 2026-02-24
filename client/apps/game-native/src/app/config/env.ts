@@ -20,6 +20,7 @@ export const env = {
     '0x0000000000000000000000000000000000000000000000000000000000000001',
   VITE_PUBLIC_SLOT: 'eternum-blitz-slot-3',
   VITE_PUBLIC_GAME_VERSION: '',
+  VITE_PUBLIC_CHAT_URL: 'https://agent-chat-production-35e4.up.railway.app',
 };
 
 export type Env = typeof env;

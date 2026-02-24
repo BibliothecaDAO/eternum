@@ -1,5 +1,5 @@
-import React, {useCallback, useRef} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import React, {useCallback, useRef, useState} from 'react';
+import {RefreshControl, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {FlashList} from '@shopify/flash-list';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -23,8 +23,15 @@ export function ArmiesScreen() {
   const {colors} = useTheme();
   const navigation = useNavigation<ArmiesNav>();
   const {armies, totalCount, armiesByStatus} = useArmyList();
+  const [refreshing, setRefreshing] = useState(false);
   const moveSheetRef = useRef<BottomSheet>(null);
   const selectedArmyRef = useRef<ArmySummary | null>(null);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    // TODO: Re-fetch from Torii
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   const handleArmyPress = useCallback(
     (army: ArmySummary) => {
@@ -97,6 +104,9 @@ export function ArmiesScreen() {
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+          }
         />
       )}
 

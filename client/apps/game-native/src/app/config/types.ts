@@ -17,3 +17,13 @@ export type ArmiesStackParamList = {
   ArmiesList: undefined;
   ArmyDetail: {armyEntityId: number};
 };
+
+export type MoreStackParamList = {
+  MoreHome: undefined;
+  Chat: undefined;
+  Guild: undefined;
+  GuildDetail: {guildId: string};
+  Leaderboard: undefined;
+  Quests: undefined;
+  Lordpedia: undefined;
+};

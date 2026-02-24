@@ -1,5 +1,5 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Pressable, RefreshControl, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import {FlashList} from '@shopify/flash-list';
@@ -19,7 +19,14 @@ export function RealmsScreen({navigation}: {navigation: any}) {
   const realms = useRealmSummaries();
   const [viewMode, setViewMode] = useState<ViewMode>('deck');
   const [activePage, setActivePage] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const pagerRef = useRef<PagerView>(null);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    // TODO: Re-fetch from Torii
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   const handleRealmPress = useCallback((entityId: number) => {
     navigation.navigate('RealmDetail', {realmEntityId: entityId});
@@ -116,6 +123,9 @@ export function RealmsScreen({navigation}: {navigation: any}) {
             keyExtractor={item => String(item.entityId)}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+            }
           />
         </View>
       )}

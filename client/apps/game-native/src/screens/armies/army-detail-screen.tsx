@@ -1,5 +1,5 @@
-import React, {useRef, useCallback} from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useRef, useCallback, useState} from 'react';
+import {RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -59,9 +59,16 @@ export function ArmyDetailScreen({route, navigation}: Props) {
   const {armyEntityId} = route.params;
   const {army, neighborHexes, nearbyArmies} = useArmyDetail(armyEntityId);
 
+  const [refreshing, setRefreshing] = useState(false);
   const moveSheetRef = useRef<BottomSheet>(null);
   const exploreSheetRef = useRef<BottomSheet>(null);
   const attackSheetRef = useRef<BottomSheet>(null);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    // TODO: Re-fetch from Torii
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   const handleMoveConfirm = useCallback((_col: number, _row: number) => {
     // TODO: Wire to real move transaction
@@ -106,7 +113,12 @@ export function ArmyDetailScreen({route, navigation}: Props) {
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+        }>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>

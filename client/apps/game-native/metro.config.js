@@ -6,12 +6,31 @@ const monorepoRoot = path.resolve(__dirname, '../../..');
 
 // Path to our WASM shim (covers torii-wasm, controller-wasm, account-wasm)
 const wasmShim = path.resolve(__dirname, 'src/shims/torii-wasm.js');
+// Empty module shim for Node.js core modules not available in React Native
+const emptyShim = path.resolve(__dirname, 'src/shims/empty-module.js');
 
 // All WASM-based packages that need shimming
 const WASM_PACKAGES = [
   '@dojoengine/torii-wasm',
   '@cartridge/controller-wasm',
   '@cartridge/account-wasm',
+];
+
+// Node.js core modules that need to be shimmed for React Native
+// (required by ws, socket.io-client, and other Node.js-oriented packages)
+const NODE_CORE_MODULES = [
+  'stream',
+  'zlib',
+  'dns',
+  'net',
+  'tls',
+  'fs',
+  'http',
+  'https',
+  'child_process',
+  'os',
+  'path',
+  'crypto',
 ];
 
 const config = {
@@ -25,9 +44,11 @@ const config = {
       path.resolve(monorepoRoot, 'node_modules'),
     ],
     // Avoid duplicate React instances - force resolution from app's node_modules
+    // Also shim Node.js core modules that don't exist in React Native
     extraNodeModules: {
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-native': path.resolve(__dirname, 'node_modules/react-native'),
+      ...Object.fromEntries(NODE_CORE_MODULES.map(mod => [mod, emptyShim])),
     },
     // Don't try to resolve .web.js files in native context
     resolverMainFields: ['react-native', 'main', 'module'],

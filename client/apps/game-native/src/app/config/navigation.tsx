@@ -19,11 +19,18 @@ import {ArmiesScreen} from '../../screens/armies/armies-screen';
 import {ArmyDetailScreen} from '../../screens/armies/army-detail-screen';
 import {TradeScreen} from '../../screens/trade/trade-screen';
 import {MoreScreen} from '../../screens/more/more-screen';
+import {ChatScreen} from '../../screens/chat/chat-screen';
+import {GuildScreen} from '../../screens/guild/guild-screen';
+import {GuildDetailScreen} from '../../screens/guild/guild-detail-screen';
+import {LeaderboardScreen} from '../../screens/leaderboard/leaderboard-screen';
+import {QuestsScreen} from '../../screens/quests/quests-screen';
+import {LordpediaScreen} from '../../screens/lordpedia/lordpedia-screen';
 import type {
   RootStackParamList,
   CommandStackParamList,
   RealmsStackParamList,
   ArmiesStackParamList,
+  MoreStackParamList,
 } from './types';
 
 const Tab = createBottomTabNavigator();
@@ -31,6 +38,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 const CommandStack = createNativeStackNavigator<CommandStackParamList>();
 const RealmsStack = createNativeStackNavigator<RealmsStackParamList>();
 const ArmiesStack = createNativeStackNavigator<ArmiesStackParamList>();
+const MoreStack = createNativeStackNavigator<MoreStackParamList>();
 
 function CommandStackNavigator() {
   return (
@@ -55,6 +63,20 @@ function ArmiesStackNavigator() {
       <ArmiesStack.Screen name="ArmiesList" component={ArmiesScreen} />
       <ArmiesStack.Screen name="ArmyDetail" component={ArmyDetailScreen} />
     </ArmiesStack.Navigator>
+  );
+}
+
+function MoreStackNavigator() {
+  return (
+    <MoreStack.Navigator screenOptions={{headerShown: false}}>
+      <MoreStack.Screen name="MoreHome" component={MoreScreen} />
+      <MoreStack.Screen name="Chat" component={ChatScreen} />
+      <MoreStack.Screen name="Guild" component={GuildScreen} />
+      <MoreStack.Screen name="GuildDetail" component={GuildDetailScreen} />
+      <MoreStack.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <MoreStack.Screen name="Quests" component={QuestsScreen} />
+      <MoreStack.Screen name="Lordpedia" component={LordpediaScreen} />
+    </MoreStack.Navigator>
   );
 }
 
@@ -104,7 +126,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="More"
-        component={MoreScreen}
+        component={MoreStackNavigator}
         options={{
           tabBarIcon: ({color, size}) => <Menu color={color} size={size} />,
         }}
