@@ -18,6 +18,8 @@ import {
   Call,
   CallData,
   GetTransactionReceiptResponse,
+  ResourceBoundsBN,
+  UniversalDetails,
   uint256,
 } from "starknet";
 import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
@@ -25,6 +27,34 @@ import { BatchedTransactionDetail, TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType, BatchedTransactionDetail } from "./types";
 export { TransactionCostCategory, CATEGORY_BATCH_LIMITS, getTransactionCategory } from "./batch-config";
+
+const MIN_V3_L2_GAS_MAX_AMOUNT = 1_500_000_000n;
+const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
+const HUNDRED_PERCENT = 100n;
+
+const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
+  if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
+    return resourceBounds;
+  }
+
+  const currentMaxAmount = resourceBounds.l2_gas.max_amount;
+  const paddedMaxAmount =
+    (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
+  const nextMaxAmount = paddedMaxAmount > MIN_V3_L2_GAS_MAX_AMOUNT ? paddedMaxAmount : MIN_V3_L2_GAS_MAX_AMOUNT;
+
+  if (nextMaxAmount === currentMaxAmount) {
+    return resourceBounds;
+  }
+
+  return {
+    ...resourceBounds,
+    l2_gas: {
+      ...resourceBounds.l2_gas,
+      max_amount: nextMaxAmount,
+    },
+  };
+};
+
 type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
@@ -300,6 +330,35 @@ export class EternumProvider extends EnhancedDojoProvider {
     this.promiseQueue = new PromiseQueue(this);
   }
 
+  private async getV3ExecutionDetails(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): Promise<UniversalDetails> {
+    const details: UniversalDetails = { version: 3 };
+    const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
+    if (typeof estimateInvokeFee !== "function") {
+      return details;
+    }
+
+    try {
+      const estimate = (await estimateInvokeFee.call(signer, transactionDetails, {
+        version: 3,
+      })) as { resourceBounds?: ResourceBoundsBN };
+      const resourceBounds = withL2GasHeadroom(estimate?.resourceBounds);
+      if (!resourceBounds) {
+        return details;
+      }
+
+      return {
+        ...details,
+        resourceBounds,
+      };
+    } catch (error) {
+      console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error);
+      return details;
+    }
+  }
+
   private getTransactionSpanAttributes(
     transactionDetails: AllowArray<Call>,
     transactionMeta: TransactionFailureMeta,
@@ -485,9 +544,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const span = this.startTransactionSpan(transactionDetails, transactionMeta);
 
+    const executionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
+
     let tx;
     try {
-      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
+      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, executionDetails);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
