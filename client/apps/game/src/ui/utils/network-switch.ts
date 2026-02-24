@@ -110,7 +110,7 @@ export const getChainLabel = (chain: Chain): string => {
   }
 };
 
-export const getSwitchChainIdForChain = (chain: Chain): string => {
+const getSwitchChainIdForChain = (chain: Chain): string => {
   switch (chain) {
     case "mainnet":
       return constants.StarknetChainId.SN_MAIN;
