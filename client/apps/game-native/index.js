@@ -15,8 +15,13 @@ global.Buffer = Buffer;
 // TextEncoder/TextDecoder polyfill
 import 'text-encoding';
 
+// localStorage shim for @bibliothecadao/eternum compatibility
+// Uses in-memory cache backed by AsyncStorage (async init in App.tsx)
+import {storage} from './src/shared/lib/storage';
+global.localStorage = storage;
+
 import {AppRegistry} from 'react-native';
-import App from './App';
+import App from './src/app/App';
 import {name as appName} from './app.json';
 
 AppRegistry.registerComponent(appName, () => App);

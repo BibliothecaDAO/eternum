@@ -1,0 +1,1 @@
+export const UNDEFINED_STRUCTURE_ENTITY_ID = 0;
