@@ -299,9 +299,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     <div className={cn("font-jetbrains flex h-full flex-col gap-5", className)}>
       <div className="space-y-3">
         <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">Prediction Markets</h2>
-        <p className="text-sm text-white/65">
-          Terminal-style market board sorted by <span className="text-orange">all-time volume</span>. Odds are shown as percentages.
-        </p>
+        <p className="text-sm text-white/65">Track live odds and all-time volume across Slot and Mainnet markets.</p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070a10]/85 p-3">
