@@ -15,6 +15,12 @@ import { getContractByName } from "@dojoengine/core";
 import { Account, AccountInterface, Call, hash } from "starknet";
 
 import { env } from "../../../env";
+import {
+  fetchFirstBloodMetric,
+  fetchGameReviewCompetitiveMetrics,
+  fetchGameReviewMilestoneTimings,
+  type GameReviewValueMetric,
+} from "./game-review-stats-utils";
 
 const RANKING_BATCH_SIZE = 200;
 const LEADERBOARD_FETCH_LIMIT = 1000;
@@ -592,6 +598,12 @@ export interface GameReviewStats {
   totalT1TroopsCreated: number;
   totalT2TroopsCreated: number;
   totalT3TroopsCreated: number;
+  timeToFirstT3Seconds: GameReviewValueMetric | null;
+  timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
+  firstBlood: GameReviewValueMetric | null;
+  highestExploredTiles: GameReviewValueMetric | null;
+  mostTroopsKilled: GameReviewValueMetric | null;
+  biggestStructuresOwned: GameReviewValueMetric | null;
 }
 
 export interface GameReviewMapSnapshotTile {
@@ -910,6 +922,42 @@ const sumLeaderboardMetric = (
   return rows.reduce((total, row) => total + parseNumeric(row[key]), 0);
 };
 
+const getHighestExploredTilesMetric = (rows: LandingLeaderboardEntry[]): GameReviewValueMetric | null => {
+  let topPlayerAddress: string | null = null;
+  let topValue = Number.NEGATIVE_INFINITY;
+
+  for (const row of rows) {
+    const playerAddress = parseAddress(row.address);
+    if (!playerAddress) {
+      continue;
+    }
+
+    const exploredTiles = parseNumeric(row.exploredTiles);
+    if (!Number.isFinite(exploredTiles) || exploredTiles < 0) {
+      continue;
+    }
+
+    if (
+      topPlayerAddress == null ||
+      exploredTiles > topValue ||
+      (exploredTiles === topValue && playerAddress.localeCompare(topPlayerAddress) < 0)
+    ) {
+      topPlayerAddress = playerAddress;
+      topValue = exploredTiles;
+    }
+  }
+
+  if (!topPlayerAddress || !Number.isFinite(topValue) || topValue <= 0) {
+    return null;
+  }
+
+  return {
+    playerAddress: topPlayerAddress,
+    value: topValue,
+    timestamp: undefined,
+  };
+};
+
 const fetchRankedPlayersForSubmission = async (client: SqlApi): Promise<string[]> => {
   const rows = await client.fetchRegisteredPlayerPoints(LEADERBOARD_FETCH_LIMIT, 0);
 
@@ -1087,13 +1135,17 @@ export const fetchGameReviewData = async ({
 }): Promise<GameReviewData> => {
   const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
 
-  const [leaderboard, finalization, storyStats, transactionsCount, mapSnapshot] = await Promise.all([
-    fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
-    fetchReviewFinalizationMeta(toriiSqlBaseUrl),
-    fetchStoryStats(toriiSqlBaseUrl),
-    fetchTransactionsCount(toriiSqlBaseUrl),
-    fetchMapSnapshot(toriiSqlBaseUrl),
-  ]);
+  const [leaderboard, finalization, storyStats, transactionsCount, mapSnapshot, milestoneTimings, firstBlood, competitiveMetrics] =
+    await Promise.all([
+      fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
+      fetchReviewFinalizationMeta(toriiSqlBaseUrl),
+      fetchStoryStats(toriiSqlBaseUrl),
+      fetchTransactionsCount(toriiSqlBaseUrl),
+      fetchMapSnapshot(toriiSqlBaseUrl),
+      fetchGameReviewMilestoneTimings(toriiSqlBaseUrl),
+      fetchFirstBloodMetric(toriiSqlBaseUrl),
+      fetchGameReviewCompetitiveMetrics(toriiSqlBaseUrl),
+    ]);
 
   let topPlayers = leaderboard.slice(0, 3);
   if (topPlayers.length > 0) {
@@ -1149,6 +1201,12 @@ export const fetchGameReviewData = async ({
     totalT1TroopsCreated: storyStats.totalT1TroopsCreated,
     totalT2TroopsCreated: storyStats.totalT2TroopsCreated,
     totalT3TroopsCreated: storyStats.totalT3TroopsCreated,
+    timeToFirstT3Seconds: milestoneTimings.timeToFirstT3Seconds,
+    timeToFirstHyperstructureSeconds: milestoneTimings.timeToFirstHyperstructureSeconds,
+    firstBlood,
+    highestExploredTiles: getHighestExploredTilesMetric(leaderboard),
+    mostTroopsKilled: competitiveMetrics.mostTroopsKilled,
+    biggestStructuresOwned: competitiveMetrics.biggestStructuresOwned,
   };
 
   const rewards =
