@@ -21,8 +21,7 @@ export const ensureActiveWorldProfileWithUI = async (chain: Chain) => {
   const result = await applyWorldSelection(picked, chain);
   saveWorldProfile(result.profile);
   if (result.chainChanged) {
-    window.location.reload();
-    return new Promise(() => {});
+    console.log("[world] Chain changed from selector, continuing without page reload");
   }
   return result.profile;
 };
