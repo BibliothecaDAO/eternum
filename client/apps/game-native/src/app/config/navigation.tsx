@@ -16,18 +16,21 @@ import {CommandScreen} from '../../screens/command/command-screen';
 import {RealmsScreen} from '../../screens/realms/realms-screen';
 import {RealmDetailScreen} from '../../screens/realms/realm-detail-screen';
 import {ArmiesScreen} from '../../screens/armies/armies-screen';
+import {ArmyDetailScreen} from '../../screens/armies/army-detail-screen';
 import {TradeScreen} from '../../screens/trade/trade-screen';
 import {MoreScreen} from '../../screens/more/more-screen';
 import type {
   RootStackParamList,
   CommandStackParamList,
   RealmsStackParamList,
+  ArmiesStackParamList,
 } from './types';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const CommandStack = createNativeStackNavigator<CommandStackParamList>();
 const RealmsStack = createNativeStackNavigator<RealmsStackParamList>();
+const ArmiesStack = createNativeStackNavigator<ArmiesStackParamList>();
 
 function CommandStackNavigator() {
   return (
@@ -43,6 +46,15 @@ function RealmsStackNavigator() {
       <RealmsStack.Screen name="RealmsList" component={RealmsScreen} />
       <RealmsStack.Screen name="RealmDetail" component={RealmDetailScreen} />
     </RealmsStack.Navigator>
+  );
+}
+
+function ArmiesStackNavigator() {
+  return (
+    <ArmiesStack.Navigator screenOptions={{headerShown: false}}>
+      <ArmiesStack.Screen name="ArmiesList" component={ArmiesScreen} />
+      <ArmiesStack.Screen name="ArmyDetail" component={ArmyDetailScreen} />
+    </ArmiesStack.Navigator>
   );
 }
 
@@ -76,7 +88,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Armies"
-        component={ArmiesScreen}
+        component={ArmiesStackNavigator}
         options={{
           tabBarIcon: ({color, size}) => <Shield color={color} size={size} />,
         }}

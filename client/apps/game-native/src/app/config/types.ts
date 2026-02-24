@@ -12,3 +12,8 @@ export type RealmsStackParamList = {
   RealmsList: undefined;
   RealmDetail: {realmEntityId: number};
 };
+
+export type ArmiesStackParamList = {
+  ArmiesList: undefined;
+  ArmyDetail: {armyEntityId: number};
+};
