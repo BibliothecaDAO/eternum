@@ -1,7 +1,11 @@
 import type { MarketClass, MarketOutcome } from "@/pm/class";
+import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { getPmSqlApi } from "@/pm/hooks/queries";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { formatUnits } from "@/pm/utils";
+import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
+import { TokenIcon } from "@/ui/features/market/landing-markets/token-icon";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import Button from "@/ui/design-system/atoms/button";
@@ -10,7 +14,6 @@ import { MarketOdds } from "@/ui/features/market/landing-markets/market-odds";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
 import { MarketTimeline } from "@/ui/features/market/landing-markets/market-timeline";
 import { MarketActivity } from "@/ui/features/market/landing-markets/details/market-activity";
-import { MarketCreatedBy } from "@/ui/features/market/landing-markets/details/market-created-by";
 import { MarketFees } from "@/ui/features/market/landing-markets/details/market-fees";
 import { MarketHistory } from "@/ui/features/market/landing-markets/details/market-history";
 import { MarketPositions } from "@/ui/features/market/landing-markets/details/market-positions";
@@ -21,6 +24,7 @@ import { MarketVaultFees } from "@/ui/features/market/landing-markets/details/ma
 import { UserMessages } from "@/ui/features/market/landing-markets/details/user-messages";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
 import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-watch";
+import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
 import { ChevronDown, Play, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -163,6 +167,9 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
   const [refreshKey, setRefreshKey] = useState(0);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
   const { account } = useAccount();
+  const {
+    config: { manifest },
+  } = useDojoSdk();
 
   // Fetch fresh market data
   const marketId = useMemo(() => {
@@ -177,12 +184,24 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
 
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
-  const watchDisabled = watchState.status === "offline";
+  const showWatchButton = watchState.status === "ready" || watchState.status === "checking";
+  const watchDisabled = watchState.status !== "ready";
   const watchLoading = watchState.status === "checking" || isWatching;
 
   const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
 
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
+  const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
+
+  const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
+
+  const { balances } = useTokens(
+    {
+      accountAddresses: undefined,
+      contractAddresses: vaultPositionsAddress ? [vaultPositionsAddress] : [],
+    },
+    false,
+  );
 
   const outcomes = useMemo(() => market.getMarketOutcomes() ?? [], [market]);
 
@@ -240,7 +259,22 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
     () => formatCompactAmount(allTimeVolumeRaw, Number(market.collateralToken?.decimals ?? 18)),
     [allTimeVolumeRaw, market.collateralToken?.decimals],
   );
+  const liquidityDisplay = useMemo(() => market.getTvl() || "0", [market]);
+  const holdersCount = useMemo(() => {
+    if (!vaultPositionsAddress || positionIds.length === 0) return null;
+    const holders = new Set<string>();
+
+    balances.forEach((balance) => {
+      if (BigInt(balance.balance || 0) === 0n) return;
+      const isPositionToken = positionIds.some((id) => BigInt(balance.token_id || 0) === id);
+      if (!isPositionToken) return;
+      holders.add(balance.account_address);
+    });
+
+    return holders.size;
+  }, [balances, positionIds, vaultPositionsAddress]);
   const endLabel = formatTimeLeft(market.end_at ?? null);
+  const resolveLabel = formatTimeLeft(market.resolve_at ?? null);
 
   const showClaimPrimary = market.isResolved();
   const claimDisabled = isRedeeming || !account?.address || !hasAnythingToClaim;
@@ -250,8 +284,23 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
       <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">{market.title || "Untitled market"}</h2>
-            <MarketCreatedBy creator={market.creator} market={market} />
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">{market.title || "Untitled market"}</h2>
+              <span
+                className={cx(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
+                  chainLabel === "Mainnet"
+                    ? "border-blue-400/40 bg-blue-500/10 text-blue-300"
+                    : "border-emerald-400/40 bg-emerald-500/10 text-emerald-300",
+                )}
+              >
+                {chainLabel}
+              </span>
+              <MarketStatusBadge market={market} />
+            </div>
+            <p className="mt-1 text-sm text-white/70">
+              Created by <MaybeController address={market.creator} />
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -300,19 +349,21 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
               </button>
             ) : null}
 
-            <Button
-              size="xs"
-              variant="outline"
-              forceUppercase={false}
-              className="gap-2"
-              onClick={() => void watchMarket(market)}
-              isLoading={watchLoading}
-              disabled={watchDisabled}
-              title={watchDisabled ? "Game is offline" : "Watch game"}
-            >
-              <Play className="h-4 w-4" />
-              <span className="hidden md:inline">Watch</span>
-            </Button>
+            {showWatchButton ? (
+              <Button
+                size="xs"
+                variant="outline"
+                forceUppercase={false}
+                className="gap-2"
+                onClick={() => void watchMarket(market)}
+                isLoading={watchLoading}
+                disabled={watchDisabled}
+                title="Watch game"
+              >
+                <Play className="h-4 w-4" />
+                <span className="hidden md:inline">Watch</span>
+              </Button>
+            ) : null}
 
             <button
               type="button"
@@ -325,29 +376,36 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Chain</p>
-            <p className="mt-1 text-sm font-semibold text-white">{chainLabel}</p>
-          </div>
-
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Status</p>
-            <div className="mt-1">
-              <MarketStatusBadge market={market} />
-            </div>
-          </div>
-
+        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
           <div className="rounded-lg border border-orange/40 bg-orange/10 px-3 py-2">
             <p className="text-[10px] uppercase tracking-[0.12em] text-orange/80">All-time Volume</p>
-            <p className="mt-1 text-sm font-semibold text-orange">
+            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-orange">
               {volumeDisplay} {market.collateralToken?.symbol || ""}
+              <TokenIcon token={market.collateralToken} size={13} />
             </p>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Liquidity</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-white">
+              {liquidityDisplay}
+              <TokenIcon token={market.collateralToken} size={13} />
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Holders</p>
+            <p className="mt-1 text-sm font-semibold text-white">{holdersCount != null ? holdersCount : "--"}</p>
           </div>
 
           <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
             <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Trading Ends</p>
             <p className="mt-1 text-sm font-semibold text-white">{endLabel}</p>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Resolves In</p>
+            <p className="mt-1 text-sm font-semibold text-white">{resolveLabel}</p>
           </div>
         </div>
       </div>
