@@ -136,6 +136,11 @@ export interface MarketWithDetailsRow extends MarketRow {
   denominator?: string;
 }
 
+export interface MarketBuyAmountRow {
+  market_id: string;
+  amount_in: string;
+}
+
 interface MarketCountRow {
   total: string; // SQL returns string
 }
@@ -175,6 +180,13 @@ const PM_SQL_QUERIES = {
     ORDER BY market_id, "index"
   `,
 
+  // Raw buy amounts (hex-encoded uint256) for all-time volume aggregation in the UI.
+  MARKET_BUY_AMOUNTS_BY_MARKETS: `
+    SELECT market_id, amount_in
+    FROM "pm-MarketBuy"
+    WHERE market_id IN ({marketIds})
+  `,
+
   // Find market by prize distribution address in oracle_params
   // oracle_params is a JSON array where index 1 contains the prize address
   MARKET_BY_PRIZE_ADDRESS: `
@@ -196,7 +208,7 @@ const PM_SQL_QUERIES = {
 /**
  * PM SQL API Client class
  */
-class PmSqlApi {
+export class PmSqlApi {
   private readonly baseUrl: string;
 
   constructor(toriiUrl?: string) {
@@ -248,6 +260,20 @@ class PmSqlApi {
   }
 
   /**
+   * Fetch raw buy amounts for specific market IDs.
+   * `amount_in` is returned as hex and should be aggregated with BigInt client-side.
+   */
+  async fetchMarketBuyAmountsByMarkets(marketIds: string[]): Promise<MarketBuyAmountRow[]> {
+    if (marketIds.length === 0) return [];
+
+    const quotedIds = marketIds.map((id) => `'${id}'`).join(",");
+    const query = PM_SQL_QUERIES.MARKET_BUY_AMOUNTS_BY_MARKETS.replace("{marketIds}", quotedIds);
+
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<MarketBuyAmountRow>(url, "Failed to fetch market buy amounts");
+  }
+
+  /**
    * Fetch market by prize distribution address (found in oracle_params)
    * This is optimized for finding the game's prediction market without fetching all markets
    */
@@ -263,10 +289,21 @@ class PmSqlApi {
 
 // Singleton instance using default config
 let pmSqlApiInstance: PmSqlApi | null = null;
+const pmSqlApiByUrl = new Map<string, PmSqlApi>();
 
 export function getPmSqlApi(): PmSqlApi {
   if (!pmSqlApiInstance) {
     pmSqlApiInstance = new PmSqlApi();
   }
   return pmSqlApiInstance;
+}
+
+export function getPmSqlApiForUrl(toriiUrl: string): PmSqlApi {
+  const normalized = toriiUrl.replace(/\/+$/, "");
+  const cached = pmSqlApiByUrl.get(normalized);
+  if (cached) return cached;
+
+  const instance = new PmSqlApi(normalized);
+  pmSqlApiByUrl.set(normalized, instance);
+  return instance;
 }

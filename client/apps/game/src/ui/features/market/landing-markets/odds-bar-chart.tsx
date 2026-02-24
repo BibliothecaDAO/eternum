@@ -37,9 +37,6 @@ interface OddsBarChartProps {
 export const OddsBarChart = ({ market, maxVisible = 5, animated = true }: OddsBarChartProps) => {
   const outcomes = useMemo(() => getOutcomes(market), [market]);
 
-  // DEBUG: Log market outcomes for landing page
-  console.log("[Landing OddsBarChart] market.getMarketOutcomes():", market.getMarketOutcomes());
-
   const { sortedOutcomes, winningOutcomeOrdersSet } = useMemo(() => {
     const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
     const winningOutcomeOrders = resolvedPayouts
