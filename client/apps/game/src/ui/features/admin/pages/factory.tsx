@@ -445,15 +445,29 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
+    let cancelled = false;
+
     const defaultFactory = FACTORY_ADDRESSES[currentChain];
     if (defaultFactory) {
       setFactoryAddress(defaultFactory);
     }
 
-    const manifest = getManifestJsonString(currentChain);
-    if (manifest) {
-      setManifestJson(manifest);
-    }
+    const loadManifest = async () => {
+      try {
+        const manifest = await getManifestJsonString(currentChain);
+        if (!cancelled) {
+          // Always set the latest load result to avoid displaying stale manifests after chain switches.
+          setManifestJson(manifest);
+        }
+      } catch (error) {
+        console.error(`[factory] Failed to load manifest for chain '${currentChain}'`, error);
+        if (!cancelled) {
+          setManifestJson("");
+        }
+      }
+    };
+
+    void loadManifest();
 
     // Load stored world names
     setStoredWorldNames(getStoredWorldNames());
@@ -468,6 +482,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentChain]);
 
   // Generate world name when account name changes
