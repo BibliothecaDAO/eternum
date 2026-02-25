@@ -6,16 +6,7 @@ import {
 } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsHeroLeftCardWithSelector } from "@/ui/shared/components/blitz-awards-hero-left-card";
-import {
-  BlitzAwardsOptionFourCardWithSelector,
-  BlitzAwardsOptionFiveCardWithSelector,
-  BlitzAwardsOptionOneCardWithSelector,
-  BlitzAwardsOptionEightCardWithSelector,
-  BlitzAwardsOptionSevenCardWithSelector,
-  BlitzAwardsOptionSixCardWithSelector,
-  BlitzAwardsOptionThreeCardWithSelector,
-  BlitzAwardsOptionTwoCardWithSelector,
-} from "@/ui/shared/components/blitz-awards-variant-cards";
+import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
@@ -36,14 +27,7 @@ type ReviewStepId =
   | "personal"
   | "stats"
   | "awards"
-  | "awards-option-1"
-  | "awards-option-2"
-  | "awards-option-3"
-  | "awards-option-4"
-  | "awards-option-5"
   | "awards-option-6"
-  | "awards-option-7"
-  | "awards-option-8"
   | "map-fingerprint"
   | "leaderboard"
   | "submit-score"
@@ -80,14 +64,7 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
   personal: "Personal Score Card",
   stats: "Global Stats",
   awards: "Blitz Awards",
-  "awards-option-1": "Blitz Awards Option 1",
-  "awards-option-2": "Blitz Awards Option 2",
-  "awards-option-3": "Blitz Awards Option 3",
-  "awards-option-4": "Blitz Awards Option 4",
-  "awards-option-5": "Blitz Awards Option 5",
   "awards-option-6": "Blitz Awards Option 6",
-  "awards-option-7": "Blitz Awards Option 7",
-  "awards-option-8": "Blitz Awards Option 8",
   "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
   "submit-score": "Submit Score + MMR",
@@ -96,21 +73,11 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
 };
 
 const isAwardsStep = (step: ReviewStepId): boolean => {
-  return (
-    step === "awards" ||
-    step === "awards-option-1" ||
-    step === "awards-option-2" ||
-    step === "awards-option-3" ||
-    step === "awards-option-4" ||
-    step === "awards-option-5" ||
-    step === "awards-option-6" ||
-    step === "awards-option-7" ||
-    step === "awards-option-8"
-  );
+  return step === "awards" || step === "awards-option-6";
 };
 
 const isTimeFocusedAwardsStep = (step: ReviewStepId): boolean => {
-  return step === "awards-option-6" || step === "awards-option-7" || step === "awards-option-8";
+  return step === "awards-option-6";
 };
 
 const buildStepShareMessage = ({
@@ -652,14 +619,7 @@ export const GameReviewModal = ({
       "personal",
       "stats",
       "awards",
-      "awards-option-1",
-      "awards-option-2",
-      "awards-option-3",
-      "awards-option-4",
-      "awards-option-5",
       "awards-option-6",
-      "awards-option-7",
-      "awards-option-8",
       "map-fingerprint",
       "leaderboard",
       "submit-score",
@@ -1099,101 +1059,10 @@ export const GameReviewModal = ({
                 </div>
               )}
 
-              {currentStep === "awards-option-1" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionOneCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-2" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionTwoCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-3" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionThreeCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-4" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionFourCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-5" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionFiveCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
               {currentStep === "awards-option-6" && (
                 <div className="space-y-3">
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
                     <BlitzAwardsOptionSixCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-7" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionSevenCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-8" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionEightCardWithSelector
                       worldName={reviewData.worldName}
                       stats={reviewData.stats}
                       leaderboard={reviewData.leaderboard}

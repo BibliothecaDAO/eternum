@@ -68,43 +68,6 @@ interface WinnerIdentity {
   address?: string;
 }
 
-// Temporary preview fallbacks while active games can have sparse milestones.
-const MOCK_AWARD_PREVIEW: Record<
-  AwardId,
-  { value: number; playerAddress: string; playerName: string }
-> = {
-  "first-hyperstructure": {
-    value: 70 * 3600 + 33 * 60,
-    playerAddress: "0x1001",
-    playerName: "raschelox",
-  },
-  "first-blood": {
-    value: 70 * 3600 + 1 * 60,
-    playerAddress: "0x1002",
-    playerName: "ironcladx",
-  },
-  "first-t3": {
-    value: 72 * 3600 + 12 * 60,
-    playerAddress: "0x1003",
-    playerName: "valewarden",
-  },
-  "most-troops-killed": {
-    value: 7_950,
-    playerAddress: "0x1004",
-    playerName: "warbringer",
-  },
-  "highest-explored-tiles": {
-    value: 96,
-    playerAddress: "0x1005",
-    playerName: "credenceox",
-  },
-  "biggest-structures-owned": {
-    value: 3,
-    playerAddress: "0x1006",
-    playerName: "stonehelm",
-  },
-};
-
 const normalizeAddress = (value: string | null | undefined): string | null => {
   if (!value) return null;
 
@@ -162,15 +125,6 @@ const formatAwardValue = (metric: MetricValue, kind: AwardKind): string => {
   return kind === "time" ? formatDuration(metric.value) : formatValue(metric.value);
 };
 
-const withMockMetric = (id: AwardId, metric: MetricValue): MetricValue => {
-  if (metric) return metric;
-  const mock = MOCK_AWARD_PREVIEW[id];
-  return {
-    playerAddress: mock.playerAddress,
-    value: mock.value,
-  };
-};
-
 const getHeroValueSizeClass = (value: string): string => {
   const compactLength = value.replace(/\s+/g, "").length;
   if (compactLength >= 9) return "award-hero-value-sm";
@@ -190,12 +144,6 @@ const getOptionSixValueSizeClass = (value: string): string => {
 
 const buildLeaderboardIdentityLookup = (leaderboard: LandingLeaderboardEntry[]): Map<string, LeaderboardIdentity> => {
   const byAddress = new Map<string, LeaderboardIdentity>();
-
-  for (const mock of Object.values(MOCK_AWARD_PREVIEW)) {
-    const normalized = normalizeAddress(mock.playerAddress);
-    if (!normalized) continue;
-    byAddress.set(normalized, { displayName: mock.playerName });
-  }
 
   for (const entry of leaderboard) {
     const normalized = normalizeAddress(entry.address);
@@ -1258,37 +1206,37 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
           id: "first-hyperstructure",
           label: "First Hyperstructure",
           kind: "time",
-          metric: withMockMetric("first-hyperstructure", stats.timeToFirstHyperstructureSeconds),
+          metric: stats.timeToFirstHyperstructureSeconds,
         },
         {
           id: "first-blood",
           label: "First Blood",
           kind: "time",
-          metric: withMockMetric("first-blood", stats.firstBlood),
+          metric: stats.firstBlood,
         },
         {
           id: "first-t3",
           label: "First T3 Troops",
           kind: "time",
-          metric: withMockMetric("first-t3", stats.timeToFirstT3Seconds),
+          metric: stats.timeToFirstT3Seconds,
         },
         {
           id: "most-troops-killed",
           label: "Most Troops Killed",
           kind: "count",
-          metric: withMockMetric("most-troops-killed", stats.mostTroopsKilled),
+          metric: stats.mostTroopsKilled,
         },
         {
           id: "highest-explored-tiles",
           label: "Highest Explored Tiles",
           kind: "count",
-          metric: withMockMetric("highest-explored-tiles", stats.highestExploredTiles),
+          metric: stats.highestExploredTiles,
         },
         {
           id: "biggest-structures-owned",
           label: "Most Structures Owned",
           kind: "count",
-          metric: withMockMetric("biggest-structures-owned", stats.biggestStructuresOwned),
+          metric: stats.biggestStructuresOwned,
         },
       ];
 
@@ -1447,81 +1395,6 @@ const BlitzAwardsVariantCardWithSelector = ({
   );
 };
 
-export const BlitzAwardsOptionOneCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-one"
-      {...cardProps}
-    />
-  );
-};
-
-export const BlitzAwardsOptionTwoCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-two"
-      {...cardProps}
-    />
-  );
-};
-
-export const BlitzAwardsOptionThreeCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-three"
-      {...cardProps}
-    />
-  );
-};
-
-export const BlitzAwardsOptionFourCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-four"
-      {...cardProps}
-    />
-  );
-};
-
-export const BlitzAwardsOptionFiveCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-five"
-      {...cardProps}
-    />
-  );
-};
-
 export const BlitzAwardsOptionSixCardWithSelector = ({
   className,
   cardRef,
@@ -1532,36 +1405,6 @@ export const BlitzAwardsOptionSixCardWithSelector = ({
       className={className}
       cardRef={cardRef}
       variant="option-six"
-      {...cardProps}
-    />
-  );
-};
-
-export const BlitzAwardsOptionSevenCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-seven"
-      {...cardProps}
-    />
-  );
-};
-
-export const BlitzAwardsOptionEightCardWithSelector = ({
-  className,
-  cardRef,
-  ...cardProps
-}: BlitzAwardsVariantCardWithSelectorProps) => {
-  return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-eight"
       {...cardProps}
     />
   );
