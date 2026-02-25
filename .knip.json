@@ -1,6 +1,9 @@
 {
   "ignoreDependencies": ["@videos/.*"],
   "ignore": [
+    ".context/**",
+    "client/apps/game/.context/**",
+
     "**/*.js",
 
     "packages/**",
@@ -18,6 +21,9 @@
     "client/apps/bot/index.ts",
 
     "client/apps/eternum-mobile/**",
+
+    "client/apps/game/src/ui/shared/components/blitz-awards-hero-left-card.tsx",
+    "client/apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
 
     "client/apps/gg-xyz/**",
     "scripts/codemod-lucide-imports.mjs",

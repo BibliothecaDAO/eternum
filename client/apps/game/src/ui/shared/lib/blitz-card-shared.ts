@@ -288,6 +288,10 @@ export const BLITZ_CARD_BASE_STYLES = `
     opacity: 0.75;
   }
 
+  .blitz-card-root.no-player .powered {
+    left: 32px;
+  }
+
   .blitz-card-root .realms-logo {
     position: absolute;
     width: 93px;

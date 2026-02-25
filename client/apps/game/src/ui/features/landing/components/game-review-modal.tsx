@@ -5,7 +5,7 @@ import {
   type GameReviewData,
 } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
-import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
+import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
@@ -23,7 +23,7 @@ import { ScoreCardContent } from "./score-card-modal";
 type ReviewStepId =
   | "finished"
   | "personal"
-  | "stats"
+  | "awards"
   | "map-fingerprint"
   | "leaderboard"
   | "submit-score"
@@ -58,12 +58,20 @@ const formatValue = (value: number): string => numberFormatter.format(Math.max(0
 const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
   personal: "Personal Score Card",
-  stats: "Global Stats",
+  awards: "Blitz Awards",
   "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
   "submit-score": "Submit Score + MMR",
   "claim-rewards": "Claim Rewards",
   "next-game": "Next Deployed Games Calendar",
+};
+
+const isAwardsStep = (step: ReviewStepId): boolean => {
+  return step === "awards";
+};
+
+const isTimeFocusedAwardsStep = (step: ReviewStepId): boolean => {
+  return step === "awards";
 };
 
 const buildStepShareMessage = ({
@@ -77,13 +85,66 @@ const buildStepShareMessage = ({
 }): string => {
   const worldLabel = data.worldName;
 
-  if (step === "stats") {
+  if (isAwardsStep(step)) {
+    const normalizeAddress = (value: string | null | undefined): string | null => {
+      if (!value) return null;
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      try {
+        const prefixed = trimmed.startsWith("0x") || trimmed.startsWith("0X") ? trimmed : `0x${trimmed}`;
+        const parsed = BigInt(prefixed);
+        if (parsed === 0n) return null;
+        return `0x${parsed.toString(16)}`.toLowerCase();
+      } catch {
+        return null;
+      }
+    };
+
+    const formatDuration = (seconds: number): string => {
+      if (!Number.isFinite(seconds) || seconds < 0) return "None";
+      const total = Math.floor(seconds);
+      const hours = Math.floor(total / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      const remaining = total % 60;
+      if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+      if (minutes > 0) return `${minutes}m ${remaining}s`;
+      return `${remaining}s`;
+    };
+
+    const leaderboardNames = new Map<string, string>();
+    for (const entry of data.leaderboard) {
+      const normalized = normalizeAddress(entry.address);
+      if (!normalized) continue;
+      leaderboardNames.set(normalized, entry.displayName?.trim() || displayAddress(normalized));
+    }
+
+    const resolveWinnerName = (
+      metric: { playerAddress: string; value: number } | null,
+      formatter: (value: number) => string,
+    ): string => {
+      if (!metric) return "None";
+      const normalized = normalizeAddress(metric.playerAddress);
+      if (!normalized) return "None";
+      const name = leaderboardNames.get(normalized) || displayAddress(normalized);
+      return `${name} (${formatter(metric.value)})`;
+    };
+
+    const includeOnlyTimeMetrics = isTimeFocusedAwardsStep(step);
+
     return [
-      `${worldLabel} just ended on @realms_gg Blitz!`,
-      `${formatValue(data.stats.numberOfPlayers)} players battled across ${formatValue(data.stats.totalTilesExplored)} tiles with ${formatValue(data.stats.totalTransactions)} total transactions.`,
-      `${formatValue(data.stats.totalDeadTroops)} troops fell in battle.`,
+      `${worldLabel} Blitz Awards on @realms_gg:`,
+      `First Blood: ${resolveWinnerName(data.stats.firstBlood, formatDuration)}`,
+      `First T3 Troops: ${resolveWinnerName(data.stats.timeToFirstT3Seconds, formatDuration)}`,
+      `First Hyperstructure: ${resolveWinnerName(data.stats.timeToFirstHyperstructureSeconds, formatDuration)}`,
+      ...(includeOnlyTimeMetrics
+        ? []
+        : [
+            `Most Troops Killed: ${resolveWinnerName(data.stats.mostTroopsKilled, formatValue)}`,
+            `Highest Explored Tiles: ${resolveWinnerName(data.stats.highestExploredTiles, formatValue)}`,
+            `Most Structures Owned: ${resolveWinnerName(data.stats.biggestStructuresOwned, formatValue)}`,
+          ]),
       "",
-      "Think you can survive the next round?",
       "blitz.realms.world",
       "#Realms #Eternum #Starknet",
     ].join("\n");
@@ -468,7 +529,6 @@ export const GameReviewModal = ({
   const worldChain = world?.chain;
 
   const account = useAccountStore((state) => state.account);
-  const accountName = useAccountStore((state) => state.accountName);
 
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
@@ -524,21 +584,11 @@ export const GameReviewModal = ({
     return bestIndex;
   }, [mapFingerprintGoldLevel]);
 
-  const cardPlayer = useMemo(() => {
-    const name = accountName?.trim() || data?.personalScore?.displayName?.trim() || null;
-    const address = data?.personalScore?.address ?? account?.address ?? null;
-    if (!name && !address) return null;
-    return {
-      name: name || displayAddress(address ?? ""),
-      address: displayAddress(address ?? ""),
-    };
-  }, [accountName, data?.personalScore, account?.address]);
-
   const steps = useMemo<ReviewStepId[]>(() => {
     const ordered: ReviewStepId[] = [
       "finished",
       "personal",
-      "stats",
+      "awards",
       "map-fingerprint",
       "leaderboard",
       "submit-score",
@@ -553,7 +603,7 @@ export const GameReviewModal = ({
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "finished";
   const currentStepLabel = STEP_LABELS[currentStep];
   const isStepShareable = useMemo(() => {
-    if (currentStep === "stats" || currentStep === "leaderboard") {
+    if (isAwardsStep(currentStep) || currentStep === "leaderboard") {
       return true;
     }
 
@@ -953,13 +1003,13 @@ export const GameReviewModal = ({
                   </div>
                 ))}
 
-              {currentStep === "stats" && (
+              {currentStep === "awards" && (
                 <div className="space-y-3">
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzGameStatsCardWithSelector
+                    <BlitzAwardsOptionSixCardWithSelector
                       worldName={reviewData.worldName}
                       stats={reviewData.stats}
-                      player={cardPlayer}
+                      leaderboard={reviewData.leaderboard}
                     />
                   </div>
                 </div>
@@ -977,7 +1027,6 @@ export const GameReviewModal = ({
                             mode="biome"
                             zoom={mapFingerprintZoom}
                             goldLevel={mapFingerprintGoldLevel}
-                            player={cardPlayer}
                           />
                         </div>
                         <div className="inline-flex shrink-0 flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/40">
@@ -1036,7 +1085,6 @@ export const GameReviewModal = ({
                     <BlitzLeaderboardCardWithSelector
                       worldName={reviewData.worldName}
                       topPlayers={reviewData.topPlayers}
-                      player={cardPlayer}
                     />
                   </div>
                 </div>
