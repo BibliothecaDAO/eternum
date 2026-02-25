@@ -241,4 +241,34 @@ describe("coerceEnumParams", () => {
     const dirs = result.directions as CairoCustomEnum[];
     expect(dirs[0]).toBe(east); // Same reference
   });
+
+  it("normalizes a single Span<enum> scalar into a one-item array", () => {
+    const params = {
+      explorer_id: 42,
+      directions: 2, // NorthWest
+      explore: false,
+    };
+
+    const result = coerceEnumParams(params, "explorer_move", MOVEMENT_ABI);
+    const dirs = result.directions as CairoCustomEnum[];
+    expect(Array.isArray(dirs)).toBe(true);
+    expect(dirs).toHaveLength(1);
+    expect(dirs[0]).toBeInstanceOf(CairoCustomEnum);
+    expect(dirs[0].activeVariant()).toBe("NorthWest");
+  });
+
+  it("normalizes numeric-key objects for Span<enum> params", () => {
+    const params = {
+      explorer_id: 42,
+      directions: { 0: 1, 1: 3 }, // NorthEast, West
+      explore: false,
+    };
+
+    const result = coerceEnumParams(params, "explorer_move", MOVEMENT_ABI);
+    const dirs = result.directions as CairoCustomEnum[];
+    expect(Array.isArray(dirs)).toBe(true);
+    expect(dirs).toHaveLength(2);
+    expect(dirs[0].activeVariant()).toBe("NorthEast");
+    expect(dirs[1].activeVariant()).toBe("West");
+  });
 });

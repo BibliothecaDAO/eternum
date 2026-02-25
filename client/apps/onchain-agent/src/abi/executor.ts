@@ -353,13 +353,63 @@ export function coerceEnumParams(
     const spanMatch = input.type.match(/^core::array::Span::<(.+)>$/);
     if (spanMatch) {
       enumDef = enums.get(spanMatch[1]);
-      if (enumDef && Array.isArray(result[input.name])) {
-        result[input.name] = (result[input.name] as unknown[]).map((v) => coerceOneEnum(v, enumDef!));
+      if (enumDef) {
+        const spanValues = normalizeSpanValues(result[input.name]);
+        if (spanValues) {
+          result[input.name] = spanValues.map((v) => coerceOneEnum(v, enumDef!));
+        }
       }
     }
   }
 
   return result;
+}
+
+/**
+ * Normalize common LLM/tool-call variants of Span inputs into arrays.
+ * Examples:
+ * - 2                  -> [2]
+ * - "{\"0\":1,\"1\":3}" -> [1, 3]
+ * - {0: 1, 1: 3}       -> [1, 3]
+ */
+function normalizeSpanValues(value: unknown): unknown[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return [value];
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      const fromParsed = normalizeSpanValues(parsed);
+      if (fromParsed) return fromParsed;
+    } catch {
+      // Fall through to scalar handling
+    }
+    if (trimmed.includes(",")) {
+      return trimmed
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+    }
+    return [trimmed];
+  }
+
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const numericKeys = Object.keys(record)
+      .filter((k) => /^\d+$/.test(k))
+      .sort((a, b) => Number(a) - Number(b));
+    if (numericKeys.length > 0) {
+      return numericKeys.map((k) => record[k]);
+    }
+  }
+
+  return undefined;
 }
 
 /** Convert a single value to CairoCustomEnum if it's a plain number index. */
