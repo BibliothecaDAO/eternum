@@ -1,13 +1,11 @@
 # Axis Headless Mode Design
 
-**Date**: 2026-02-21
-**Status**: Approved
+**Date**: 2026-02-21 **Status**: Approved
 
 ## Goal
 
-Make Axis fully scriptable so an AI orchestrator can spawn, authenticate, steer, and
-monitor one or many Axis instances — all via CLI commands and structured JSON. No TUI, no
-browser, no human required at runtime.
+Make Axis fully scriptable so an AI orchestrator can spawn, authenticate, steer, and monitor one or many Axis instances
+— all via CLI commands and structured JSON. No TUI, no browser, no human required at runtime.
 
 ## Use Cases
 
@@ -37,8 +35,8 @@ axis --version                                     Print version (unchanged)
 
 ## Artifact Persistence
 
-Every `axis auth <world>` writes artifacts to a known directory. Subsequent commands read
-from there — no complex argument passing needed.
+Every `axis auth <world>` writes artifacts to a known directory. Subsequent commands read from there — no complex
+argument passing needed.
 
 ```
 ~/.eternum-agent/sessions/<worldName>/
@@ -51,12 +49,10 @@ from there — no complex argument passing needed.
 
 Rules:
 
-- `axis auth <world>` overwrites profile/manifest/policy/auth.json every time (world config
-  can change between games)
+- `axis auth <world>` overwrites profile/manifest/policy/auth.json every time (world config can change between games)
 - `.cartridge/` is managed by SessionProvider — Axis never writes to it directly
 - `axis auth-status <world>` reads auth.json + probes .cartridge/ session validity
-- `axis run --headless --world=<name>` reads profile.json + manifest.json to bootstrap,
-  skips discovery entirely
+- `axis run --headless --world=<name>` reads profile.json + manifest.json to bootstrap, skips discovery entirely
 - All paths are deterministic from worldName alone
 
 ## Auth Flows
@@ -144,17 +140,17 @@ When expired, AI re-runs: axis auth <world> --approve --json
 
 ### Event Types
 
-| Type      | When                     | Key Fields                          |
-|-----------|--------------------------|-------------------------------------|
-| startup   | Agent initialized        | world, chain, address               |
-| tick      | Tick cycle starts        | id, state summary                   |
-| decision  | LLM decides what to do   | reasoning, planned actions          |
-| action    | On-chain action executed | action, params, status, txHash/error|
-| heartbeat | Heartbeat job runs       | job id, mode                        |
-| prompt    | External prompt received | source (http/stdin), content        |
-| session   | Session status change    | status (active/expired/refreshing)  |
-| error     | Non-fatal error          | message                             |
-| shutdown  | Agent stopping           | reason                              |
+| Type      | When                     | Key Fields                           |
+| --------- | ------------------------ | ------------------------------------ |
+| startup   | Agent initialized        | world, chain, address                |
+| tick      | Tick cycle starts        | id, state summary                    |
+| decision  | LLM decides what to do   | reasoning, planned actions           |
+| action    | On-chain action executed | action, params, status, txHash/error |
+| heartbeat | Heartbeat job runs       | job id, mode                         |
+| prompt    | External prompt received | source (http/stdin), content         |
+| session   | Session status change    | status (active/expired/refreshing)   |
+| error     | Non-fatal error          | message                              |
+| shutdown  | Agent stopping           | reason                               |
 
 ### Verbosity Levels
 
@@ -180,17 +176,17 @@ Enabled with `--api-port`:
 axis run --headless --world=my-world --api-port=3000
 ```
 
-| Method | Path       | Purpose                          |
-|--------|------------|----------------------------------|
-| POST   | /prompt    | Send prompt to agent             |
-| GET    | /status    | Agent status, tick, session      |
-| GET    | /state     | Latest world state snapshot      |
-| GET    | /events    | SSE stream of NDJSON events      |
-| POST   | /config    | Update runtime config            |
-| POST   | /shutdown  | Graceful shutdown                |
+| Method | Path      | Purpose                     |
+| ------ | --------- | --------------------------- |
+| POST   | /prompt   | Send prompt to agent        |
+| GET    | /status   | Agent status, tick, session |
+| GET    | /state    | Latest world state snapshot |
+| GET    | /events   | SSE stream of NDJSON events |
+| POST   | /config   | Update runtime config       |
+| POST   | /shutdown | Graceful shutdown           |
 
-Binds to 127.0.0.1 by default. Use `--api-host=0.0.0.0` for network access (behind
-firewall). No built-in auth — use SSH tunneling or reverse proxy for remote access.
+Binds to 127.0.0.1 by default. Use `--api-host=0.0.0.0` for network access (behind firewall). No built-in auth — use SSH
+tunneling or reverse proxy for remote access.
 
 ### Stdin Pipe
 
@@ -239,16 +235,16 @@ tail -f logs/eternum-s1.jsonl | jq 'select(.type=="action")'
 
 ## Architecture Changes
 
-| Component              | Current                          | New                                            |
-|------------------------|----------------------------------|------------------------------------------------|
-| cli.ts                 | 4 commands (run/init/doctor/ver) | + worlds, auth, auth-status, auth-url          |
-| index.ts               | TUI-only orchestration           | Split into TUI path + headless path            |
-| controller-session.ts  | Always opens browser             | Suppress browser in headless, emit URL         |
-| New: output/           | --                               | JSON event emitter, verbosity filtering        |
-| New: api/              | --                               | HTTP server (node:http)                        |
-| New: auth-approve.ts   | --                               | agent-browser shell-out script                 |
-| config.ts              | Env vars only                    | + CLI flags merged over env vars               |
-| Session dir            | Flat .cartridge/ per world       | + profile/manifest/policy/auth.json            |
+| Component             | Current                          | New                                     |
+| --------------------- | -------------------------------- | --------------------------------------- |
+| cli.ts                | 4 commands (run/init/doctor/ver) | + worlds, auth, auth-status, auth-url   |
+| index.ts              | TUI-only orchestration           | Split into TUI path + headless path     |
+| controller-session.ts | Always opens browser             | Suppress browser in headless, emit URL  |
+| New: output/          | --                               | JSON event emitter, verbosity filtering |
+| New: api/             | --                               | HTTP server (node:http)                 |
+| New: auth-approve.ts  | --                               | agent-browser shell-out script          |
+| config.ts             | Env vars only                    | + CLI flags merged over env vars        |
+| Session dir           | Flat .cartridge/ per world       | + profile/manifest/policy/auth.json     |
 
 ## What Stays the Same
 

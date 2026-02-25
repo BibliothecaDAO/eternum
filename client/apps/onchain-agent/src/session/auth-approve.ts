@@ -113,9 +113,7 @@ async function approveWithPassword(options: ApproveOptions): Promise<void> {
 
 export async function runAuthApprove(options: ApproveOptions): Promise<void> {
   if (!checkAgentBrowserInstalled()) {
-    throw new Error(
-      `agent-browser not found -- install it or complete auth manually at: ${options.authUrl}`,
-    );
+    throw new Error(`agent-browser not found -- install it or complete auth manually at: ${options.authUrl}`);
   }
 
   switch (options.method) {
@@ -123,8 +121,6 @@ export async function runAuthApprove(options: ApproveOptions): Promise<void> {
       await approveWithPassword(options);
       break;
     default:
-      throw new Error(
-        `Auth method "${options.method}" is not yet supported for auto-approve. Supported: password`,
-      );
+      throw new Error(`Auth method "${options.method}" is not yet supported for auto-approve. Supported: password`);
   }
 }

@@ -51,10 +51,23 @@ describe("axis auth-status", () => {
 
   it("returns pending for world with pending auth", async () => {
     writeArtifacts(path.join(tmpDir, "test-world"), {
-      profile: { name: "test-world", chain: "slot", toriiBaseUrl: "", worldAddress: "0x1", contractsBySelector: {}, fetchedAt: 0 },
+      profile: {
+        name: "test-world",
+        chain: "slot",
+        toriiBaseUrl: "",
+        worldAddress: "0x1",
+        contractsBySelector: {},
+        fetchedAt: 0,
+      },
       manifest: { contracts: [] },
       policy: { contracts: {} },
-      auth: { url: "https://auth.example.com", status: "pending", worldName: "test-world", chain: "slot", createdAt: "2026-01-01T00:00:00.000Z" },
+      auth: {
+        url: "https://auth.example.com",
+        status: "pending",
+        worldName: "test-world",
+        chain: "slot",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
     });
 
     const output: string[] = [];
@@ -71,13 +84,27 @@ describe("axis auth-status", () => {
 
   it("lists all worlds with --all", async () => {
     writeArtifacts(path.join(tmpDir, "world-a"), {
-      profile: { name: "world-a", chain: "slot", toriiBaseUrl: "", worldAddress: "0x1", contractsBySelector: {}, fetchedAt: 0 },
+      profile: {
+        name: "world-a",
+        chain: "slot",
+        toriiBaseUrl: "",
+        worldAddress: "0x1",
+        contractsBySelector: {},
+        fetchedAt: 0,
+      },
       manifest: { contracts: [] },
       policy: { contracts: {} },
       auth: { url: "", status: "pending", worldName: "world-a", chain: "slot", createdAt: "" },
     });
     writeArtifacts(path.join(tmpDir, "world-b"), {
-      profile: { name: "world-b", chain: "sepolia", toriiBaseUrl: "", worldAddress: "0x2", contractsBySelector: {}, fetchedAt: 0 },
+      profile: {
+        name: "world-b",
+        chain: "sepolia",
+        toriiBaseUrl: "",
+        worldAddress: "0x2",
+        contractsBySelector: {},
+        fetchedAt: 0,
+      },
       manifest: { contracts: [] },
       policy: { contracts: {} },
       auth: { url: "", status: "pending", worldName: "world-b", chain: "sepolia", createdAt: "" },

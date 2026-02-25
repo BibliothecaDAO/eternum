@@ -87,10 +87,7 @@ function createCallbackServer(
   };
 }
 
-async function authSingleWorld(
-  world: DiscoveredWorld,
-  options: AuthOptions,
-): Promise<AuthResult> {
+async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Promise<AuthResult> {
   const config = loadConfig();
   const worldDir = path.join(config.sessionBasePath, world.name);
 
@@ -150,9 +147,8 @@ async function authSingleWorld(
     // 5. If using --callback-url, start a lightweight callback server
     let serverClose: (() => Promise<void>) | null = null;
     if (options.callbackUrl) {
-      const { close } = createCallbackServer(
-        options.callbackUrl,
-        (sessionData: string) => session.feedCallbackData(sessionData),
+      const { close } = createCallbackServer(options.callbackUrl, (sessionData: string) =>
+        session.feedCallbackData(sessionData),
       );
       serverClose = close;
     }
@@ -166,14 +162,16 @@ async function authSingleWorld(
       updateAuthStatus(worldDir, { url: authUrl });
 
       if (options.json) {
-        options.write(JSON.stringify({
-          world: world.name,
-          chain: world.chain,
-          status: "awaiting_approval",
-          url: authUrl,
-          callbackUrl: options.callbackUrl ?? null,
-          artifactDir: worldDir,
-        }));
+        options.write(
+          JSON.stringify({
+            world: world.name,
+            chain: world.chain,
+            status: "awaiting_approval",
+            url: authUrl,
+            callbackUrl: options.callbackUrl ?? null,
+            artifactDir: worldDir,
+          }),
+        );
         options.write("");
       } else {
         options.write(`  Approve at: ${authUrl}\n`);

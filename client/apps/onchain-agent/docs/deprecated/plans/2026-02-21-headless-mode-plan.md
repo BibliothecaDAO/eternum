@@ -2,11 +2,16 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Make Axis fully scriptable for AI orchestrators — headless runtime, structured JSON output, browser-free auth, HTTP/stdin steering.
+**Goal:** Make Axis fully scriptable for AI orchestrators — headless runtime, structured JSON output, browser-free auth,
+HTTP/stdin steering.
 
-**Architecture:** Add orthogonal layers (CLI arg parsing, JSON event emitter, HTTP server, auth-approve script) that compose with the existing TUI runtime. The `index.ts` main function splits into TUI and headless code paths based on parsed CLI flags. New subcommands (`worlds`, `auth`, `auth-status`, `auth-url`) are standalone functions in `cli.ts` that reuse existing `discovery.ts` and `controller-session.ts`.
+**Architecture:** Add orthogonal layers (CLI arg parsing, JSON event emitter, HTTP server, auth-approve script) that
+compose with the existing TUI runtime. The `index.ts` main function splits into TUI and headless code paths based on
+parsed CLI flags. New subcommands (`worlds`, `auth`, `auth-status`, `auth-url`) are standalone functions in `cli.ts`
+that reuse existing `discovery.ts` and `controller-session.ts`.
 
-**Tech Stack:** TypeScript, `node:http` for API server, `node:child_process` (`execFile` — NOT `exec`) for agent-browser shell-out, vitest for tests.
+**Tech Stack:** TypeScript, `node:http` for API server, `node:child_process` (`execFile` — NOT `exec`) for agent-browser
+shell-out, vitest for tests.
 
 ---
 
@@ -15,6 +20,7 @@
 Extract CLI flags and subcommands into a structured options object so all subsequent tasks can read parsed flags.
 
 **Files:**
+
 - Create: `src/cli-args.ts`
 - Modify: `src/cli.ts:173-208`
 - Test: `test/cli/cli-args.test.ts`
@@ -64,7 +70,14 @@ describe("parseCliArgs", () => {
   });
 
   it("parses auth <world> --approve --method=password", () => {
-    const opts = parseCliArgs(["auth", "my-world", "--approve", "--method=password", "--username=bot", "--password=pass123"]);
+    const opts = parseCliArgs([
+      "auth",
+      "my-world",
+      "--approve",
+      "--method=password",
+      "--username=bot",
+      "--password=pass123",
+    ]);
     expect(opts.command).toBe("auth");
     expect(opts.world).toBe("my-world");
     expect(opts.approve).toBe(true);
@@ -112,14 +125,23 @@ describe("parseCliArgs", () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/cli/cli-args.test.ts`
-Expected: FAIL — module not found
+Run: `pnpm --dir client/apps/onchain-agent test -- test/cli/cli-args.test.ts` Expected: FAIL — module not found
 
 **Step 3: Write minimal implementation**
 
 ```typescript
 // src/cli-args.ts
-export type Command = "run" | "worlds" | "auth" | "auth-status" | "auth-url" | "doctor" | "init" | "version" | "help" | "unknown";
+export type Command =
+  | "run"
+  | "worlds"
+  | "auth"
+  | "auth-status"
+  | "auth-url"
+  | "doctor"
+  | "init"
+  | "version"
+  | "help"
+  | "unknown";
 export type AuthMode = "session" | "privatekey";
 export type Verbosity = "quiet" | "actions" | "decisions" | "all";
 
@@ -206,8 +228,7 @@ export function parseCliArgs(args: string[]): CliOptions {
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/cli/cli-args.test.ts`
-Expected: PASS
+Run: `pnpm --dir client/apps/onchain-agent test -- test/cli/cli-args.test.ts` Expected: PASS
 
 **Step 5: Commit**
 
@@ -223,6 +244,7 @@ git commit -m "feat(onchain-agent): add CLI argument parser for headless mode"
 Create the NDJSON output layer that all headless code paths write through.
 
 **Files:**
+
 - Create: `src/output/json-emitter.ts`
 - Test: `test/output/json-emitter.test.ts`
 
@@ -289,14 +311,22 @@ describe("JsonEmitter", () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/output/json-emitter.test.ts`
-Expected: FAIL
+Run: `pnpm --dir client/apps/onchain-agent test -- test/output/json-emitter.test.ts` Expected: FAIL
 
 **Step 3: Write minimal implementation**
 
 ```typescript
 // src/output/json-emitter.ts
-export type EventType = "startup" | "tick" | "decision" | "action" | "heartbeat" | "prompt" | "session" | "error" | "shutdown";
+export type EventType =
+  | "startup"
+  | "tick"
+  | "decision"
+  | "action"
+  | "heartbeat"
+  | "prompt"
+  | "session"
+  | "error"
+  | "shutdown";
 export type Verbosity = "quiet" | "actions" | "decisions" | "all";
 
 export interface AgentEvent {
@@ -348,8 +378,7 @@ export class JsonEmitter {
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/output/json-emitter.test.ts`
-Expected: PASS
+Run: `pnpm --dir client/apps/onchain-agent test -- test/output/json-emitter.test.ts` Expected: PASS
 
 **Step 5: Commit**
 
@@ -365,6 +394,7 @@ git commit -m "feat(onchain-agent): add NDJSON event emitter with verbosity filt
 Create functions to write/read world artifacts (profile, manifest, policy, auth metadata) to the session directory.
 
 **Files:**
+
 - Create: `src/session/artifacts.ts`
 - Test: `test/session/artifacts.test.ts`
 
@@ -392,10 +422,24 @@ describe("artifacts", () => {
   it("writes profile, manifest, policy, and auth to world dir", () => {
     const worldDir = path.join(tmpDir, "test-world");
     writeArtifacts(worldDir, {
-      profile: { name: "test-world", chain: "slot", toriiBaseUrl: "http://example.com", rpcUrl: "http://rpc", worldAddress: "0x1", contractsBySelector: {}, fetchedAt: 1000 },
+      profile: {
+        name: "test-world",
+        chain: "slot",
+        toriiBaseUrl: "http://example.com",
+        rpcUrl: "http://rpc",
+        worldAddress: "0x1",
+        contractsBySelector: {},
+        fetchedAt: 1000,
+      },
       manifest: { contracts: [{ tag: "test", address: "0x2" }] },
       policy: { contracts: { "0x2": { methods: [{ name: "test", entrypoint: "test" }] } } },
-      auth: { url: "https://auth.example.com", status: "pending", worldName: "test-world", chain: "slot", createdAt: new Date().toISOString() },
+      auth: {
+        url: "https://auth.example.com",
+        status: "pending",
+        worldName: "test-world",
+        chain: "slot",
+        createdAt: new Date().toISOString(),
+      },
     });
 
     const profile = JSON.parse(readFileSync(path.join(worldDir, "profile.json"), "utf-8"));
@@ -414,10 +458,24 @@ describe("artifacts", () => {
   it("reads artifacts back from world dir", () => {
     const worldDir = path.join(tmpDir, "test-world");
     const original = {
-      profile: { name: "test-world", chain: "slot" as const, toriiBaseUrl: "http://example.com", rpcUrl: "http://rpc", worldAddress: "0x1", contractsBySelector: {}, fetchedAt: 1000 },
+      profile: {
+        name: "test-world",
+        chain: "slot" as const,
+        toriiBaseUrl: "http://example.com",
+        rpcUrl: "http://rpc",
+        worldAddress: "0x1",
+        contractsBySelector: {},
+        fetchedAt: 1000,
+      },
       manifest: { contracts: [{ tag: "test", address: "0x2" }] },
       policy: { contracts: {} },
-      auth: { url: "https://auth.example.com", status: "pending" as const, worldName: "test-world", chain: "slot", createdAt: new Date().toISOString() },
+      auth: {
+        url: "https://auth.example.com",
+        status: "pending" as const,
+        worldName: "test-world",
+        chain: "slot",
+        createdAt: new Date().toISOString(),
+      },
     };
     writeArtifacts(worldDir, original);
 
@@ -429,10 +487,24 @@ describe("artifacts", () => {
   it("reads auth status", () => {
     const worldDir = path.join(tmpDir, "test-world");
     writeArtifacts(worldDir, {
-      profile: { name: "w", chain: "slot", toriiBaseUrl: "", worldAddress: "0x1", contractsBySelector: {}, fetchedAt: 0 },
+      profile: {
+        name: "w",
+        chain: "slot",
+        toriiBaseUrl: "",
+        worldAddress: "0x1",
+        contractsBySelector: {},
+        fetchedAt: 0,
+      },
       manifest: { contracts: [] },
       policy: { contracts: {} },
-      auth: { url: "https://auth.example.com", status: "active", worldName: "w", chain: "slot", createdAt: new Date().toISOString(), address: "0xabc" },
+      auth: {
+        url: "https://auth.example.com",
+        status: "active",
+        worldName: "w",
+        chain: "slot",
+        createdAt: new Date().toISOString(),
+        address: "0xabc",
+      },
     });
 
     const status = readAuthStatus(worldDir);
@@ -449,8 +521,7 @@ describe("artifacts", () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/session/artifacts.test.ts`
-Expected: FAIL
+Run: `pnpm --dir client/apps/onchain-agent test -- test/session/artifacts.test.ts` Expected: FAIL
 
 **Step 3: Write minimal implementation**
 
@@ -511,8 +582,7 @@ export function updateAuthStatus(worldDir: string, updates: Partial<AuthMetadata
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/session/artifacts.test.ts`
-Expected: PASS
+Run: `pnpm --dir client/apps/onchain-agent test -- test/session/artifacts.test.ts` Expected: PASS
 
 **Step 5: Commit**
 
@@ -528,6 +598,7 @@ git commit -m "feat(onchain-agent): add artifact persistence layer for world ses
 Wire up world discovery as a standalone CLI subcommand with JSON output.
 
 **Files:**
+
 - Create: `src/commands/worlds.ts`
 - Modify: `src/cli.ts` (add command routing)
 - Test: `test/commands/worlds.test.ts`
@@ -568,8 +639,7 @@ describe("axis worlds", () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/commands/worlds.test.ts`
-Expected: FAIL
+Run: `pnpm --dir client/apps/onchain-agent test -- test/commands/worlds.test.ts` Expected: FAIL
 
 **Step 3: Write minimal implementation**
 
@@ -605,8 +675,7 @@ export async function runWorlds(options: WorldsOptions): Promise<number> {
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --dir client/apps/onchain-agent test -- test/commands/worlds.test.ts`
-Expected: PASS
+Run: `pnpm --dir client/apps/onchain-agent test -- test/commands/worlds.test.ts` Expected: PASS
 
 **Step 5: Commit**
 
@@ -619,9 +688,11 @@ git commit -m "feat(onchain-agent): add axis worlds subcommand with JSON output"
 
 ### Task 5: `axis auth` Subcommand
 
-Discover world, resolve manifest, build policies, generate auth URL, persist all artifacts. Optionally auto-approve via agent-browser.
+Discover world, resolve manifest, build policies, generate auth URL, persist all artifacts. Optionally auto-approve via
+agent-browser.
 
 **Files:**
+
 - Create: `src/commands/auth.ts`
 - Modify: `src/session/controller-session.ts:380-388` (suppress browser open, capture URL)
 - Modify: `src/cli.ts` (add command routing)
@@ -629,13 +700,18 @@ Discover world, resolve manifest, build policies, generate auth URL, persist all
 
 **Step 1: Write the failing test**
 
-Test that `runAuth` calls discovery, builds profile, resolves manifest, builds policies, writes artifacts, and returns JSON with the auth URL. Mock `discoverAllWorlds`, `buildWorldProfile`, `buildResolvedManifest`, `buildSessionPoliciesFromManifest`, and `SessionProvider`.
+Test that `runAuth` calls discovery, builds profile, resolves manifest, builds policies, writes artifacts, and returns
+JSON with the auth URL. Mock `discoverAllWorlds`, `buildWorldProfile`, `buildResolvedManifest`,
+`buildSessionPoliciesFromManifest`, and `SessionProvider`.
 
 **Step 2: Modify ControllerSession to support headless URL capture**
 
-In `src/session/controller-session.ts`, modify the constructor to accept an `onAuthUrl?: (url: string) => void` callback. When present, patch `backend.openLink` to call this callback instead of `execFile(open, ...)`. This allows `auth` command to capture the URL without opening a browser.
+In `src/session/controller-session.ts`, modify the constructor to accept an `onAuthUrl?: (url: string) => void`
+callback. When present, patch `backend.openLink` to call this callback instead of `execFile(open, ...)`. This allows
+`auth` command to capture the URL without opening a browser.
 
-Also add a `getAuthUrl()` method variant that triggers the SessionProvider but captures the URL instead of opening a browser.
+Also add a `getAuthUrl()` method variant that triggers the SessionProvider but captures the URL instead of opening a
+browser.
 
 **Step 3: Implement runAuth**
 
@@ -662,14 +738,10 @@ export async function runAuth(options: AuthOptions): Promise<number> {
   const config = loadConfig();
   const worlds = await discoverAllWorlds();
 
-  const targets = options.all
-    ? worlds
-    : worlds.filter((w) => w.name === options.world);
+  const targets = options.all ? worlds : worlds.filter((w) => w.name === options.world);
 
   if (targets.length === 0) {
-    const msg = options.world
-      ? `World "${options.world}" not found`
-      : "No worlds discovered";
+    const msg = options.world ? `World "${options.world}" not found` : "No worlds discovered";
     if (options.json) {
       options.write(JSON.stringify({ error: msg }));
     } else {
@@ -750,6 +822,7 @@ git commit -m "feat(onchain-agent): add axis auth subcommand with artifact persi
 Simple read-only commands that read from persisted artifacts.
 
 **Files:**
+
 - Create: `src/commands/auth-status.ts`
 - Create: `src/commands/auth-url.ts`
 - Modify: `src/cli.ts` (add routing)
@@ -757,11 +830,13 @@ Simple read-only commands that read from persisted artifacts.
 
 **Step 1: Write failing tests**
 
-Test `runAuthStatus` reads `auth.json` + probes session via `ControllerSession.probe()`. Test `runAuthUrl` reads `auth.json` and prints just the URL.
+Test `runAuthStatus` reads `auth.json` + probes session via `ControllerSession.probe()`. Test `runAuthUrl` reads
+`auth.json` and prints just the URL.
 
 **Step 2: Implement**
 
-`auth-status`: Read artifacts, create a ControllerSession from stored profile/manifest, call `probe()`. If probe returns an account, status is "active". Otherwise read auth.json status.
+`auth-status`: Read artifacts, create a ControllerSession from stored profile/manifest, call `probe()`. If probe returns
+an account, status is "active". Otherwise read auth.json status.
 
 `auth-url`: Read `auth.json`, print `auth.url` to stdout. Exit 1 if no auth.json exists.
 
@@ -781,12 +856,15 @@ git commit -m "feat(onchain-agent): add axis auth-status and auth-url subcommand
 Implement the `--approve` flag that automates the Cartridge Controller browser auth flow via `agent-browser`.
 
 **Files:**
+
 - Create: `src/session/auth-approve.ts`
 - Test: `test/session/auth-approve.test.ts`
 
 **Step 1: Write failing test**
 
-Test that `runAuthApprove` shells out to `agent-browser` commands in the correct sequence using `execFile` (NOT `exec` — see security note). Mock `node:child_process` `execFileSync` to capture commands. Test that it fails gracefully when `agent-browser` is not found.
+Test that `runAuthApprove` shells out to `agent-browser` commands in the correct sequence using `execFile` (NOT `exec` —
+see security note). Mock `node:child_process` `execFileSync` to capture commands. Test that it fails gracefully when
+`agent-browser` is not found.
 
 **Step 2: Implement**
 
@@ -816,9 +894,7 @@ export function checkAgentBrowserInstalled(): boolean {
 
 export async function runAuthApprove(options: ApproveOptions): Promise<void> {
   if (!checkAgentBrowserInstalled()) {
-    throw new Error(
-      `agent-browser not found -- install it or complete auth manually at: ${options.authUrl}`
-    );
+    throw new Error(`agent-browser not found -- install it or complete auth manually at: ${options.authUrl}`);
   }
 
   agentBrowser("open", options.authUrl);
@@ -855,9 +931,11 @@ git commit -m "feat(onchain-agent): add auth-approve script for automated browse
 
 ### Task 8: Headless Runtime Path
 
-Split the runtime into TUI and headless code paths. The headless path skips TUI creation, uses JsonEmitter for output, and reads artifacts from disk.
+Split the runtime into TUI and headless code paths. The headless path skips TUI creation, uses JsonEmitter for output,
+and reads artifacts from disk.
 
 **Files:**
+
 - Create: `src/headless.ts`
 - Modify: `src/index.ts:228-555` (extract shared setup into reusable functions)
 - Modify: `src/cli.ts` (route --headless to headless.ts)
@@ -865,15 +943,18 @@ Split the runtime into TUI and headless code paths. The headless path skips TUI 
 
 **Step 1: Write failing test**
 
-Test that `mainHeadless` reads artifacts from the world directory, creates the agent, emits a startup event to the JsonEmitter, and runs the tick loop.
+Test that `mainHeadless` reads artifacts from the world directory, creates the agent, emits a startup event to the
+JsonEmitter, and runs the tick loop.
 
 **Step 2: Extract shared setup from index.ts**
 
-Move `createRuntimeServices`, config management logic, and agent setup into functions that both `main()` (TUI) and `mainHeadless()` can call. Keep `main()` behavior identical.
+Move `createRuntimeServices`, config management logic, and agent setup into functions that both `main()` (TUI) and
+`mainHeadless()` can call. Keep `main()` behavior identical.
 
 **Step 3: Implement headless.ts**
 
 Key differences from TUI path:
+
 - No TUI creation — no `createApp()`, no `ProcessTerminal`
 - Uses `JsonEmitter` for all output to stdout
 - Reads artifacts from `sessionBasePath/<world>/` instead of running discovery
@@ -897,6 +978,7 @@ git commit -m "feat(onchain-agent): add headless runtime path with NDJSON output
 Lightweight HTTP server using `node:http` for the headless runtime.
 
 **Files:**
+
 - Create: `src/api/server.ts`
 - Test: `test/api/server.test.ts`
 
@@ -934,7 +1016,11 @@ export function createApiServer(deps: ApiDeps, port: number, host: string = "127
         respond(res, 200, deps.getState());
       } else if (req.method === "GET" && req.url === "/events") {
         // SSE stream
-        res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" });
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        });
         const unsub = deps.emitter.subscribe((event) => {
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         });
@@ -992,6 +1078,7 @@ git commit -m "feat(onchain-agent): add HTTP steering API for headless mode"
 Accept JSON commands from stdin in headless mode.
 
 **Files:**
+
 - Create: `src/input/stdin-reader.ts`
 - Modify: `src/headless.ts` (wire stdin reader)
 - Test: `test/input/stdin-reader.test.ts`
@@ -1052,6 +1139,7 @@ git commit -m "feat(onchain-agent): add stdin steering for headless mode"
 Support `--auth=privatekey` for fully autonomous operation without Controller sessions.
 
 **Files:**
+
 - Create: `src/session/privatekey-auth.ts`
 - Modify: `src/headless.ts` (use privatekey services when --auth=privatekey)
 - Test: `test/session/privatekey-auth.test.ts`
@@ -1072,7 +1160,8 @@ export function createPrivateKeyAccount(rpcUrl: string, privateKey: string, addr
 }
 ```
 
-Note: `address` is required — the account address must be known (can be derived from the private key or provided via env var `ACCOUNT_ADDRESS`).
+Note: `address` is required — the account address must be known (can be derived from the private key or provided via env
+var `ACCOUNT_ADDRESS`).
 
 **Step 3: Run tests, verify pass**
 
@@ -1090,12 +1179,14 @@ git commit -m "feat(onchain-agent): add private key auth path for headless mode"
 Replace the manual arg parsing in `cli.ts` with `parseCliArgs`, route all new subcommands.
 
 **Files:**
+
 - Modify: `src/cli.ts:173-208`
 - Modify: `test/cli/commands.test.ts`
 
 **Step 1: Rewrite runCli routing**
 
 Replace the `if/else` chain with a `switch` on `opts.command`. Route:
+
 - `version` → print version
 - `help` → print usage (update to show new commands)
 - `doctor` → existing `runDoctor` (add `--json` support)
@@ -1112,8 +1203,7 @@ Replace the `if/else` chain with a `switch` on `opts.command`. Route:
 
 **Step 3: Update and run all tests**
 
-Run: `pnpm --dir client/apps/onchain-agent test`
-Expected: All tests pass
+Run: `pnpm --dir client/apps/onchain-agent test` Expected: All tests pass
 
 **Step 4: Commit**
 
@@ -1129,6 +1219,7 @@ git commit -m "feat(onchain-agent): wire all headless subcommands into CLI route
 End-to-end test that exercises the full pipeline: worlds → auth → headless run → stdin prompt → shutdown.
 
 **Files:**
+
 - Create: `test/e2e/headless-flow.test.ts`
 
 Mock the network layer and SessionProvider but exercise the real CLI → headless → emitter → stdin pipeline.
@@ -1151,11 +1242,13 @@ git commit -m "test(onchain-agent): add headless flow integration test"
 ### Task 14: Update Documentation
 
 **Files:**
+
 - Modify: `client/apps/onchain-agent/CLAUDE.md` (add headless mode section)
 
 **Step 1: Add headless mode section to CLAUDE.md under "Build & Run"**
 
 Document:
+
 - New CLI commands and flags
 - Artifact directory structure
 - Auth flows (session vs privatekey vs --approve)

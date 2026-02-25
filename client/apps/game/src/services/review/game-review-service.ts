@@ -1135,17 +1135,25 @@ export const fetchGameReviewData = async ({
 }): Promise<GameReviewData> => {
   const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
 
-  const [leaderboard, finalization, storyStats, transactionsCount, mapSnapshot, milestoneTimings, firstBlood, competitiveMetrics] =
-    await Promise.all([
-      fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
-      fetchReviewFinalizationMeta(toriiSqlBaseUrl),
-      fetchStoryStats(toriiSqlBaseUrl),
-      fetchTransactionsCount(toriiSqlBaseUrl),
-      fetchMapSnapshot(toriiSqlBaseUrl),
-      fetchGameReviewMilestoneTimings(toriiSqlBaseUrl),
-      fetchFirstBloodMetric(toriiSqlBaseUrl),
-      fetchGameReviewCompetitiveMetrics(toriiSqlBaseUrl),
-    ]);
+  const [
+    leaderboard,
+    finalization,
+    storyStats,
+    transactionsCount,
+    mapSnapshot,
+    milestoneTimings,
+    firstBlood,
+    competitiveMetrics,
+  ] = await Promise.all([
+    fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
+    fetchReviewFinalizationMeta(toriiSqlBaseUrl),
+    fetchStoryStats(toriiSqlBaseUrl),
+    fetchTransactionsCount(toriiSqlBaseUrl),
+    fetchMapSnapshot(toriiSqlBaseUrl),
+    fetchGameReviewMilestoneTimings(toriiSqlBaseUrl),
+    fetchFirstBloodMetric(toriiSqlBaseUrl),
+    fetchGameReviewCompetitiveMetrics(toriiSqlBaseUrl),
+  ]);
 
   let topPlayers = leaderboard.slice(0, 3);
   if (topPlayers.length > 0) {

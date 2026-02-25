@@ -149,7 +149,12 @@ export function initializeActions(
         description: approveDesc,
         params: [
           { name: "token_address", type: "string", description: "Token contract address to approve", required: true },
-          { name: "spender", type: "string", description: "Contract address allowed to spend your tokens", required: true },
+          {
+            name: "spender",
+            type: "string",
+            description: "Contract address allowed to spend your tokens",
+            required: true,
+          },
           {
             name: "amount",
             type: "string",
@@ -236,11 +241,16 @@ async function handleMoveTo(
 
   const worldState = await _worldStateProvider(client);
 
-  const result = await moveExplorer(client, signer, {
-    explorerId: num(params.explorerId),
-    targetCol: num(params.targetCol),
-    targetRow: num(params.targetRow),
-  }, worldState);
+  const result = await moveExplorer(
+    client,
+    signer,
+    {
+      explorerId: num(params.explorerId),
+      targetCol: num(params.targetCol),
+      targetRow: num(params.targetRow),
+    },
+    worldState,
+  );
 
   if (!result.success) {
     return { success: false, error: result.summary };
@@ -252,9 +262,7 @@ async function handleMoveTo(
       summary: result.summary,
       stepsExecuted: result.steps.length,
       totalCost: result.pathResult.totalCost,
-      txHashes: result.steps
-        .map((s) => s.result.txHash)
-        .filter(Boolean),
+      txHashes: result.steps.map((s) => s.result.txHash).filter(Boolean),
     },
   };
 }
@@ -263,10 +271,7 @@ async function handleMoveTo(
 // approve_token handler (composite action)
 // ---------------------------------------------------------------------------
 
-async function handleApproveToken(
-  signer: Account,
-  params: Record<string, unknown>,
-): Promise<ActionResult> {
+async function handleApproveToken(signer: Account, params: Record<string, unknown>): Promise<ActionResult> {
   const tokenAddress = String(params.token_address ?? params.tokenAddress ?? "");
   const spender = String(params.spender ?? "");
   const rawAmount = BigInt(String(params.amount ?? "0"));
@@ -296,10 +301,7 @@ async function handleApproveToken(
 // lock_entry_token handler (composite action)
 // ---------------------------------------------------------------------------
 
-async function handleLockEntryToken(
-  signer: Account,
-  params: Record<string, unknown>,
-): Promise<ActionResult> {
+async function handleLockEntryToken(signer: Account, params: Record<string, unknown>): Promise<ActionResult> {
   const tokenAddress = String(params.token_address ?? params.tokenAddress ?? _tokenConfig.entryToken ?? "");
   const tokenId = BigInt(String(params.token_id ?? params.tokenId ?? "0"));
   const lockId = BigInt(String(params.lock_id ?? params.lockId ?? "0"));
@@ -337,10 +339,7 @@ async function handleLockEntryToken(
 
 const VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 
-async function handleSettleBlitzRealm(
-  signer: Account,
-  params: Record<string, unknown>,
-): Promise<ActionResult> {
+async function handleSettleBlitzRealm(signer: Account, params: Record<string, unknown>): Promise<ActionResult> {
   const blitzAddress = _blitzAddress;
   if (!blitzAddress) {
     return { success: false, error: "Blitz contract address not found in manifest routes" };
@@ -402,7 +401,9 @@ export function getAvailableActions(): string[] {
  * Look up a registered action handler by its type string.
  * @deprecated Use executeAction() instead.
  */
-export function getActionHandler(type: string): ((client: EternumClient, signer: Account, params: Record<string, unknown>) => Promise<ActionResult>) | undefined {
+export function getActionHandler(
+  type: string,
+): ((client: EternumClient, signer: Account, params: Record<string, unknown>) => Promise<ActionResult>) | undefined {
   if (!_actionTypes.has(type)) return undefined;
   // Return a function that delegates to executeAction
   return (client, signer, params) => executeAction(client, signer, { type, params });

@@ -1,9 +1,5 @@
 import { EternumClient } from "@bibliothecadao/client";
-import {
-  createHeartbeatLoop,
-  createGameAgent,
-  type HeartbeatJob,
-} from "@bibliothecadao/game-agent";
+import { createHeartbeatLoop, createGameAgent, type HeartbeatJob } from "@bibliothecadao/game-agent";
 import { getModel } from "@mariozechner/pi-ai";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -33,7 +29,9 @@ function loadReferenceHandbooks(dataDir: string): string {
   const sections: string[] = [];
   let files: string[];
   try {
-    files = readdirSync(taskDir).filter((f: string) => f.endsWith(".md")).sort();
+    files = readdirSync(taskDir)
+      .filter((f: string) => f.endsWith(".md"))
+      .sort();
   } catch {
     return "";
   }
@@ -182,7 +180,10 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       }
     } catch (probeError) {
       // SessionAccount WASM crashed — fall back to raw account from session.json
-      emitter.emit({ type: "error", message: `probe() failed: ${probeError instanceof Error ? probeError.stack ?? probeError.message : String(probeError)}` });
+      emitter.emit({
+        type: "error",
+        message: `probe() failed: ${probeError instanceof Error ? (probeError.stack ?? probeError.message) : String(probeError)}`,
+      });
       const sessionFilePath = path.join(sessionBasePath, "session.json");
       try {
         const raw = readFileSync(sessionFilePath, "utf-8");
@@ -217,18 +218,27 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
   });
   client.connect(account as any);
 
-  const tokenConfig = artifacts.profile ? {
-    feeToken: artifacts.profile.feeTokenAddress,
-    entryToken: artifacts.profile.entryTokenAddress,
-    worldAddress: config.worldAddress,
-  } : undefined;
+  const tokenConfig = artifacts.profile
+    ? {
+        feeToken: artifacts.profile.feeTokenAddress,
+        entryToken: artifacts.profile.entryTokenAddress,
+        worldAddress: config.worldAddress,
+      }
+    : undefined;
 
   // Find the blitz contract address from manifest for registration flow
   const blitzContract = (artifacts.manifest as any).contracts?.find(
     (c: any) => typeof c.tag === "string" && c.tag.includes("blitz_realm_systems"),
   );
   const blitzAddress: string = blitzContract?.address ?? "";
-  const adapter = new EternumGameAdapter(client, account as any, account.address, artifacts.manifest as any, config.gameName, tokenConfig);
+  const adapter = new EternumGameAdapter(
+    client,
+    account as any,
+    account.address,
+    artifacts.manifest as any,
+    config.gameName,
+    tokenConfig,
+  );
   const mutableAdapter = new MutableGameAdapter(adapter);
 
   emitter.emit({
@@ -267,7 +277,9 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
 
   const runtimeConfigManager = createRuntimeConfigManager({
     getConfig: () => config,
-    setConfig: (c) => { config = c; },
+    setConfig: (c) => {
+      config = c;
+    },
     getAgent: () => game,
     onMessage: (msg) => emitter.emit({ type: "config", message: msg }),
   });
