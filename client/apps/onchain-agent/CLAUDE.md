@@ -147,6 +147,7 @@ axis run --headless --world=<name>                 # NDJSON to stdout
 ### Artifact Directory
 
 `axis auth` persists all artifacts to `~/.eternum-agent/.cartridge/<worldName>/`:
+
 - `profile.json` — world profile (chain, rpc, torii, worldAddress)
 - `manifest.json` — resolved manifest with live contract addresses
 - `policy.json` — generated session policies
@@ -154,14 +155,14 @@ axis run --headless --world=<name>                 # NDJSON to stdout
 
 ### HTTP API (when --api-port is set)
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | /prompt | Send prompt to agent |
-| GET | /status | Agent status |
-| GET | /state | World state snapshot |
-| GET | /events | SSE event stream |
-| POST | /config | Update runtime config |
-| POST | /shutdown | Graceful shutdown |
+| Method | Path      | Purpose               |
+| ------ | --------- | --------------------- |
+| POST   | /prompt   | Send prompt to agent  |
+| GET    | /status   | Agent status          |
+| GET    | /state    | World state snapshot  |
+| GET    | /events   | SSE event stream      |
+| POST   | /config   | Update runtime config |
+| POST   | /shutdown | Graceful shutdown     |
 
 ### Fleet Setup Example
 

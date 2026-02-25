@@ -69,9 +69,7 @@ describe("ABI-driven session policies", () => {
     }
     expect(resourceAddr).toBeDefined();
 
-    const resourceMethods = ((policies.contracts as any)?.[resourceAddr!]?.methods ?? []).map(
-      (m: any) => m.entrypoint,
-    );
+    const resourceMethods = ((policies.contracts as any)?.[resourceAddr!]?.methods ?? []).map((m: any) => m.entrypoint);
     // Only external (state-mutating) functions are included in session policies.
     // View functions like dojo_name/world_dispatcher don't need session authorization.
     expect(resourceMethods).toContain("send");
@@ -180,9 +178,9 @@ describe("special policies", () => {
     const policies = buildSessionPoliciesFromManifest(manifest);
     const vrfAddress = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
     expect((policies.contracts as any)?.[vrfAddress]).toBeDefined();
-    expect((policies.contracts as any)?.[vrfAddress]?.methods?.some((m: any) => m.entrypoint === "request_random")).toBe(
-      true,
-    );
+    expect(
+      (policies.contracts as any)?.[vrfAddress]?.methods?.some((m: any) => m.entrypoint === "request_random"),
+    ).toBe(true);
   });
 
   it("includes token policies when worldProfile provides addresses", () => {

@@ -1,1 +1,1 @@
-export { ControllerSession, storeSessionFromCallback } from "./controller-session";
+export { ControllerSession } from "./controller-session";

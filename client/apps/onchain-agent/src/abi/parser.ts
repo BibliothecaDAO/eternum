@@ -166,10 +166,7 @@ export function abiTypeToParamSchemaType(
  * Build a human-readable description of a struct's fields for the LLM.
  * Returns null if the type is not a known struct.
  */
-export function describeStructFields(
-  rawType: string,
-  structs: Map<string, ABIParam[]>,
-): string | null {
+export function describeStructFields(rawType: string, structs: Map<string, ABIParam[]>): string | null {
   const fields = structs.get(rawType);
   if (!fields) return null;
   const fieldDescs = fields.map((f) => `${f.name}: ${f.type}`).join(", ");
