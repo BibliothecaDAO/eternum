@@ -136,7 +136,7 @@ export interface MarketWithDetailsRow extends MarketRow {
   denominator?: string;
 }
 
-export interface MarketBuyAmountRow {
+interface MarketBuyAmountRow {
   market_id: string;
   amount_in: string;
 }
@@ -208,7 +208,7 @@ const PM_SQL_QUERIES = {
 /**
  * PM SQL API Client class
  */
-export class PmSqlApi {
+class PmSqlApi {
   private readonly baseUrl: string;
 
   constructor(toriiUrl?: string) {

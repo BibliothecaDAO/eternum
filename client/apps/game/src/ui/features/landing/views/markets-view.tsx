@@ -118,7 +118,10 @@ const MarketTerminalCard = ({
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-white/10 bg-[#080b10]/90 p-4 shadow-[0_16px_40px_-24px_rgba(0,0,0,0.9)] transition-all duration-200 hover:border-orange/50 hover:bg-[#0b1017]">
       <div className="flex items-start gap-3">
-        <MarketImage market={item.market} className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-white/10" />
+        <MarketImage
+          market={item.market}
+          className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-white/10"
+        />
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
             <span
@@ -131,9 +134,13 @@ const MarketTerminalCard = ({
             >
               {chainLabel}
             </span>
-            <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">{shortMarketId(item.market.market_id)}</span>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+              {shortMarketId(item.market.market_id)}
+            </span>
           </div>
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white">{item.market.title || "Untitled market"}</h3>
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white">
+            {item.market.title || "Untitled market"}
+          </h3>
         </div>
         <MarketStatusBadge market={item.market} />
       </div>

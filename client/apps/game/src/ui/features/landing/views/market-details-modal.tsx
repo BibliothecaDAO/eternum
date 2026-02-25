@@ -151,7 +151,9 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
                 <ChevronDown className={cx("h-4 w-4 text-white/60 transition-transform", isOpen && "rotate-180")} />
               </button>
 
-              {isOpen ? <div className="border-t border-white/10 p-3">{renderTabContent(tab.key, market, refreshKey)}</div> : null}
+              {isOpen ? (
+                <div className="border-t border-white/10 p-3">{renderTabContent(tab.key, market, refreshKey)}</div>
+              ) : null}
             </div>
           );
         })}
@@ -285,7 +287,9 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">{market.title || "Untitled market"}</h2>
+              <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">
+                {market.title || "Untitled market"}
+              </h2>
               <span
                 className={cx(
                   "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
@@ -421,7 +425,9 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
               <MarketHistory market={market} refreshKey={refreshKey} />
 
               <section className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/55">Outcomes & Odds</h3>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/55">
+                  Outcomes & Odds
+                </h3>
                 <MarketOdds
                   market={market}
                   selectable

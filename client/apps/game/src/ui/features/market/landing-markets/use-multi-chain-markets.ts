@@ -107,7 +107,8 @@ const transformToMarketClass = (
   const rowAny = row as unknown as Record<string, string | undefined>;
   const getRowValue = (key: string): string | undefined => rowAny[key];
 
-  const feeCurveStart = getRowValue("model.Vault.fee_curve.Range.start") ?? getRowValue("model.Vault.fee_curve.Linear.start");
+  const feeCurveStart =
+    getRowValue("model.Vault.fee_curve.Range.start") ?? getRowValue("model.Vault.fee_curve.Linear.start");
   const feeCurveEnd = getRowValue("model.Vault.fee_curve.Range.end") ?? getRowValue("model.Vault.fee_curve.Linear.end");
   const feeShareCurveStart =
     getRowValue("model.Vault.fee_share_curve.Range.start") ?? getRowValue("model.Vault.fee_share_curve.Linear.start");
@@ -305,10 +306,7 @@ export function useMultiChainMarketCounts(chainFilter: MarketChainFilter) {
 
           try {
             const [all, live, awaiting, resolved] = await Promise.all([
-              api.fetchMarketsCount(
-                { status: MarketStatusFilter.All, type: MarketTypeFilter.All, oracle: "All" },
-                now,
-              ),
+              api.fetchMarketsCount({ status: MarketStatusFilter.All, type: MarketTypeFilter.All, oracle: "All" }, now),
               api.fetchMarketsCount(
                 { status: MarketStatusFilter.Open, type: MarketTypeFilter.All, oracle: "All" },
                 now,

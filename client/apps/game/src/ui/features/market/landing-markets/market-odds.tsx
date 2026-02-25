@@ -90,7 +90,8 @@ export const MarketOdds = ({
   }
 
   const isSelectable = selectable && !market.isEnded() && !market.isResolved();
-  const shouldCollapse = collapsible && typeof maxVisible === "number" && maxVisible > 0 && sortedOutcomes.length > maxVisible;
+  const shouldCollapse =
+    collapsible && typeof maxVisible === "number" && maxVisible > 0 && sortedOutcomes.length > maxVisible;
   const visibleOutcomes = shouldCollapse && !isExpanded ? sortedOutcomes.slice(0, maxVisible) : sortedOutcomes;
 
   return (

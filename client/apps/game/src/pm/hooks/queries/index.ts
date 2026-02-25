@@ -5,11 +5,9 @@
 export {
   getPmSqlApi,
   getPmSqlApiForUrl,
-  PmSqlApi,
   MarketStatusFilter,
   MarketTypeFilter,
   type MarketFiltersParams,
-  type MarketBuyAmountRow,
   type MarketWithDetailsRow,
   type VaultNumeratorRow,
 } from "./pm-sql-api";
