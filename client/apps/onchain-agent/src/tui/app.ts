@@ -1,11 +1,28 @@
 import type { Agent, AgentEvent } from "@mariozechner/pi-agent-core";
-import { TUI, ProcessTerminal, Container, Text, Markdown } from "@mariozechner/pi-tui";
+import { TUI, ProcessTerminal, Container, Text, Markdown, type MarkdownTheme } from "@mariozechner/pi-tui";
 import type { TickLoop } from "@bibliothecadao/game-agent";
 
 interface AppState {
   agent: Agent;
   ticker: TickLoop;
 }
+
+const defaultMarkdownTheme: MarkdownTheme = {
+  heading: (t: string) => t,
+  link: (t: string) => t,
+  linkUrl: (t: string) => t,
+  code: (t: string) => t,
+  codeBlock: (t: string) => t,
+  codeBlockBorder: (t: string) => t,
+  quote: (t: string) => t,
+  quoteBorder: (t: string) => t,
+  hr: (t: string) => t,
+  listBullet: (t: string) => t,
+  bold: (t: string) => t,
+  italic: (t: string) => t,
+  strikethrough: (t: string) => t,
+  underline: (t: string) => t,
+};
 
 /**
  * Create and start the TUI for the Eternum agent.
@@ -20,19 +37,17 @@ export function createApp(state: AppState) {
   const tui = new TUI(terminal);
 
   // -- Header --
-  const header = new Text();
-  header.text = formatHeader(state.ticker.tickCount, false);
+  const header = new Text(formatHeader(state.ticker.tickCount, false));
 
   // -- Chat container (event log) --
   const chat = new Container();
-  const welcomeMsg = new Text();
-  welcomeMsg.text =
-    "Eternum Agent started. Waiting for first tick...\nType a message and press Enter to steer the agent.\nPress Ctrl+C to exit.\n";
+  const welcomeMsg = new Text(
+    "Eternum Agent started. Waiting for first tick...\nType a message and press Enter to steer the agent.\nPress Ctrl+C to exit.\n",
+  );
   chat.addChild(welcomeMsg);
 
   // -- Input area --
-  const inputLabel = new Text();
-  inputLabel.text = "> ";
+  const inputLabel = new Text("> ");
   let inputBuffer = "";
 
   // -- Assemble layout --
@@ -43,83 +58,75 @@ export function createApp(state: AppState) {
   // -- Subscribe to agent events --
   const unsubscribe = state.agent.subscribe((event: AgentEvent) => {
     handleAgentEvent(event, chat, tui);
-    header.text = formatHeader(state.ticker.tickCount, state.agent.state.isStreaming);
+    header.setText(formatHeader(state.ticker.tickCount, state.agent.state.isStreaming));
     tui.requestRender();
   });
 
-  // -- Handle keyboard input --
-  const originalHandleInput = tui.handleInput?.bind(tui);
+  // -- Handle keyboard input via public API --
+  tui.addInputListener((data: string) => {
+    // Ctrl+C — raw mode swallows SIGINT, so emit it manually
+    if (data === "\x03") {
+      process.kill(process.pid, "SIGINT");
+      return { consume: true };
+    }
 
-  // Override to capture user text input
-  terminal.start(
-    (data: string) => {
-      // Ctrl+C
-      if (data === "\x03") {
-        return; // Let the process SIGINT handler deal with it
-      }
+    // Enter key
+    if (data === "\r" || data === "\n") {
+      if (inputBuffer.trim()) {
+        const userMsg = inputBuffer.trim();
+        inputBuffer = "";
+        inputLabel.setText("> ");
 
-      // Enter key
-      if (data === "\r" || data === "\n") {
-        if (inputBuffer.trim()) {
-          const userMsg = inputBuffer.trim();
-          inputBuffer = "";
-          inputLabel.text = "> ";
+        // Add user message to chat
+        const userText = new Text(`[You] ${userMsg}`);
+        chat.addChild(userText);
 
-          // Add user message to chat
-          const userText = new Text();
-          userText.text = `[You] ${userMsg}`;
-          chat.addChild(userText);
-
-          // Send to agent
-          if (state.agent.state.isStreaming) {
-            state.agent.steer({
-              role: "user",
-              content: [{ type: "text", text: userMsg }],
-              timestamp: Date.now(),
-            });
-          } else {
-            state.agent.prompt(userMsg).catch((err: Error) => {
-              const errText = new Text();
-              errText.text = `[Error] ${err.message}`;
-              chat.addChild(errText);
-              tui.requestRender();
-            });
-          }
-
-          tui.requestRender();
+        // Send to agent
+        if (state.agent.state.isStreaming) {
+          state.agent.steer({
+            role: "user",
+            content: [{ type: "text", text: userMsg }],
+            timestamp: Date.now(),
+          });
+        } else {
+          state.agent.prompt(userMsg).catch((err: Error) => {
+            const errText = new Text(`[Error] ${err.message}`);
+            chat.addChild(errText);
+            tui.requestRender();
+          });
         }
-        return;
-      }
 
-      // Backspace
-      if (data === "\x7f" || data === "\b") {
-        if (inputBuffer.length > 0) {
-          inputBuffer = inputBuffer.slice(0, -1);
-          inputLabel.text = `> ${inputBuffer}`;
-          tui.requestRender();
-        }
-        return;
-      }
-
-      // Regular character input
-      if (data.length === 1 && data.charCodeAt(0) >= 32) {
-        inputBuffer += data;
-        inputLabel.text = `> ${inputBuffer}`;
         tui.requestRender();
       }
-    },
-    () => tui.requestRender(),
-  );
+      return { consume: true };
+    }
 
-  terminal.hideCursor();
-  tui.requestRender();
+    // Backspace
+    if (data === "\x7f" || data === "\b") {
+      if (inputBuffer.length > 0) {
+        inputBuffer = inputBuffer.slice(0, -1);
+        inputLabel.setText(`> ${inputBuffer}`);
+        tui.requestRender();
+      }
+      return { consume: true };
+    }
+
+    // Regular character input
+    if (data.length === 1 && data.charCodeAt(0) >= 32) {
+      inputBuffer += data;
+      inputLabel.setText(`> ${inputBuffer}`);
+      tui.requestRender();
+      return { consume: true };
+    }
+  });
+
+  tui.start();
 
   return {
     tui,
     terminal,
     addSystemMessage(msg: string) {
-      const text = new Text();
-      text.text = `[System] ${msg}`;
+      const text = new Text(`[System] ${msg}`);
       chat.addChild(text);
       tui.requestRender();
     },
@@ -138,14 +145,12 @@ function formatHeader(tickCount: number, isStreaming: boolean): string {
 function handleAgentEvent(event: AgentEvent, chat: Container, tui: TUI) {
   switch (event.type) {
     case "agent_start": {
-      const text = new Text();
-      text.text = "[Agent] Starting...";
+      const text = new Text("[Agent] Starting...");
       chat.addChild(text);
       break;
     }
     case "agent_end": {
-      const text = new Text();
-      text.text = "[Agent] Done.\n";
+      const text = new Text("[Agent] Done.\n");
       chat.addChild(text);
       break;
     }
@@ -155,8 +160,7 @@ function handleAgentEvent(event: AgentEvent, chat: Container, tui: TUI) {
         if (Array.isArray(content)) {
           for (const block of content) {
             if (block.type === "text" && block.text.trim()) {
-              const md = new Markdown();
-              md.markdown = block.text;
+              const md = new Markdown(block.text, 0, 0, defaultMarkdownTheme);
               chat.addChild(md);
             }
           }
@@ -165,15 +169,13 @@ function handleAgentEvent(event: AgentEvent, chat: Container, tui: TUI) {
       break;
     }
     case "tool_execution_start": {
-      const text = new Text();
-      text.text = `  -> ${event.toolName}(${JSON.stringify(event.args).slice(0, 100)})`;
+      const text = new Text(`  -> ${event.toolName}(${JSON.stringify(event.args).slice(0, 100)})`);
       chat.addChild(text);
       break;
     }
     case "tool_execution_end": {
       const icon = event.isError ? "x" : "v";
-      const text = new Text();
-      text.text = `  ${icon} ${event.toolName} done`;
+      const text = new Text(`  ${icon} ${event.toolName} done`);
       chat.addChild(text);
       break;
     }

@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createMockClient, mockSigner } from "../utils/mock-client";
+import { testManifest } from "../utils/init-action-registry";
 
 // Mock the compute functions from @bibliothecadao/client used by simulation.ts
 vi.mock("@bibliothecadao/client", () => ({
@@ -19,9 +20,14 @@ vi.mock("@bibliothecadao/client", () => ({
 const { EternumGameAdapter } = await import("../../src/adapter/eternum-adapter");
 
 describe("EternumGameAdapter", () => {
+  beforeEach(() => {
+    vi.mocked(mockSigner.execute).mockReset();
+    vi.mocked(mockSigner.execute).mockResolvedValue({ transaction_hash: "0xabc123" });
+  });
+
   function createAdapter() {
     const client = createMockClient() as any;
-    const adapter = new EternumGameAdapter(client, mockSigner, "0xdeadbeef");
+    const adapter = new EternumGameAdapter(client, mockSigner, "0xdeadbeef", testManifest, "eternum");
     return { adapter, client };
   }
 
@@ -43,15 +49,15 @@ describe("EternumGameAdapter", () => {
       const result = await adapter.executeAction({
         type: "send_resources",
         params: {
-          senderEntityId: 1,
-          recipientEntityId: 2,
+          sender_structure_id: 1,
+          recipient_structure_id: 2,
           resources: [{ resourceType: 1, amount: 100 }],
         },
       });
 
       expect(result.success).toBe(true);
       expect(result.txHash).toBe("0xabc123");
-      expect(client.resources.send).toHaveBeenCalled();
+      expect(mockSigner.execute).toHaveBeenCalled();
     });
 
     it("returns error for unknown action types", async () => {

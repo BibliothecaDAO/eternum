@@ -158,4 +158,52 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback.mock.calls[0][0].structureName).toBe("Essence Rift 921");
   });
+
+  it("uses enhanced structure name when Structure component is unavailable", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 921,
+      col: 10,
+      row: 15,
+    });
+    getStructureInfoFromTileOccupierMock.mockReturnValue({
+      type: 4,
+      stage: 0,
+      level: 1,
+      hasWonder: false,
+    });
+    enhanceStructureDataMock.mockResolvedValue({
+      owner: { address: 123n, ownerName: "", guildName: "" },
+      guardArmies: [],
+      activeProductions: [],
+      battleData: undefined,
+      structureName: "Realm of Testing",
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          Hyperstructure: {},
+          Structure: {},
+          AddressName: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Structure.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({
+      value: [{}, undefined],
+      entity: "0x123",
+    });
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback.mock.calls[0][0].structureName).toBe("Realm of Testing");
+  });
 });

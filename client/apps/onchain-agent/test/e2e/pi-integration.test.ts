@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { EternumGameAdapter } from "../../src/adapter/eternum-adapter";
 import { createMockClient, mockSigner } from "../utils/mock-client";
+import { testManifest } from "../utils/init-action-registry";
 
 vi.mock("@bibliothecadao/client", () => ({
   computeStrength: (count: number, tier: number) => count * tier * 10,
@@ -35,8 +36,11 @@ function getText(toolResult: any): string {
 
 describe("pi package integration", () => {
   it("runs pi tools against the Eternum adapter end-to-end", async () => {
+    vi.mocked(mockSigner.execute).mockReset();
+    vi.mocked(mockSigner.execute).mockResolvedValue({ transaction_hash: "0xabc123" });
+
     const client = createMockClient() as any;
-    const adapter = new EternumGameAdapter(client, mockSigner, "0xdeadbeef");
+    const adapter = new EternumGameAdapter(client, mockSigner, "0xdeadbeef", testManifest, "eternum");
     const tools = createGameTools(adapter);
 
     const observeTool = tools.find((tool) => tool.name === "observe_game");
@@ -56,18 +60,16 @@ describe("pi package integration", () => {
         await executeTool!.execute("execute-1", {
           actionType: "move_explorer",
           params: {
-            explorerId: "42",
-            directions: ["1", "2"],
-            explore: "true",
+            explorer_id: 42,
+            directions: [1, 2],
+            explore: true,
           },
         }),
       ),
     );
 
     expect(executed.success).toBe(true);
-    expect(client.troops.move).toHaveBeenCalledOnce();
-    const [, moveProps] = client.troops.move.mock.calls[0];
-    expect(moveProps).toEqual({ explorerId: 42, directions: [1, 2], explore: true });
+    expect(mockSigner.execute).toHaveBeenCalled();
 
     const simulated = JSON.parse(
       getText(

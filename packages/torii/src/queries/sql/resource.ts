@@ -68,6 +68,17 @@ const PRODUCTION_COLS = RESOURCE_BALANCE_COLUMNS.map(
   (c) => `\`${c.column.replace("_BALANCE", "_PRODUCTION")}.building_count\``,
 ).join(", ");
 
+/** Full production columns needed for dynamic balance computation. */
+const PRODUCTION_FULL_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => {
+  const prefix = c.column.replace("_BALANCE", "_PRODUCTION");
+  return [
+    `\`${prefix}.building_count\``,
+    `\`${prefix}.production_rate\``,
+    `\`${prefix}.output_amount_left\``,
+    `\`${prefix}.last_updated_at\``,
+  ].join(", ");
+}).join(", ");
+
 export const RESOURCE_QUERIES = {
   /**
    * Fetch resource balances for a set of entity IDs.
@@ -86,6 +97,16 @@ export const RESOURCE_QUERIES = {
    */
   RESOURCE_BALANCES_AND_PRODUCTION: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_COLS}
+    FROM \`s1_eternum-Resource\`
+    WHERE entity_id IN ({entityIds});
+  `,
+
+  /**
+   * Fetch resource balances with full production data for dynamic balance computation.
+   * Includes production_rate, output_amount_left, and last_updated_at per resource.
+   */
+  RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION: `
+    SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_FULL_COLS}
     FROM \`s1_eternum-Resource\`
     WHERE entity_id IN ({entityIds});
   `,
