@@ -21,14 +21,21 @@ describe("generateActions", () => {
       expectedCount += getGameEntrypoints(contract).length;
     }
 
-    // definitions has one per entrypoint; routes may have fewer if
-    // different contracts share the same entrypoint name (last wins in the Map)
-    // When called without overlays, collisions can cause earlier duplicates to be removed
-    // (e.g., multiple contracts with a "create" entrypoint). definitions.length ≤ expectedCount.
+    // Collisions are auto-disambiguated, so no entrypoints should be dropped.
     expect(definitions.length).toBeGreaterThan(0);
-    expect(definitions.length).toBeLessThanOrEqual(expectedCount);
+    expect(definitions.length).toBe(expectedCount);
     expect(routes.size).toBeGreaterThan(0);
-    expect(routes.size).toBeLessThanOrEqual(expectedCount);
+    expect(routes.size).toBeGreaterThanOrEqual(expectedCount);
+  });
+
+  it("keeps colliding entrypoint names by auto-disambiguating later duplicates", () => {
+    const { definitions, routes } = generateActions(manifest);
+    const types = new Set(definitions.map((d) => d.type));
+
+    // Multiple contracts expose `create`; they should no longer overwrite each other.
+    expect(types.has("create")).toBe(true);
+    expect(Array.from(types).some((t) => t.endsWith("_create"))).toBe(true);
+    expect(Array.from(routes.keys()).some((t) => t.endsWith("_create"))).toBe(true);
   });
 
   it("every definition has type, description, and params", () => {
