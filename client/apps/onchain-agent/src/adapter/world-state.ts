@@ -118,6 +118,78 @@ function parseStamina(hex: string | null | undefined): number {
   return Number(parseHexBig(hex));
 }
 
+// ---------------------------------------------------------------------------
+// Stamina recalculation from on-chain config
+// ---------------------------------------------------------------------------
+
+interface StaminaConfig {
+  armiesTickInSeconds: number;
+  gainPerTick: number;
+  knightMax: number;
+  crossbowmanMax: number;
+  paladinMax: number;
+}
+
+const STAMINA_CONFIG_QUERY = `SELECT
+  "tick_config.armies_tick_in_seconds" AS armies_tick_in_seconds,
+  "troop_stamina_config.stamina_gain_per_tick" AS gain_per_tick,
+  "troop_stamina_config.stamina_knight_max" AS knight_max,
+  "troop_stamina_config.stamina_crossbowman_max" AS crossbowman_max,
+  "troop_stamina_config.stamina_paladin_max" AS paladin_max
+FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+async function fetchStaminaConfig(sqlBaseUrl: string): Promise<StaminaConfig | null> {
+  try {
+    const url = `${sqlBaseUrl}?query=${encodeURIComponent(STAMINA_CONFIG_QUERY)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const rows = (await resp.json()) as Record<string, unknown>[];
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      armiesTickInSeconds: Number(parseHexBig(row.armies_tick_in_seconds as string)) || 0,
+      gainPerTick: Number(parseHexBig(row.gain_per_tick as string)) || 0,
+      knightMax: Number(parseHexBig(row.knight_max as string)) || 0,
+      crossbowmanMax: Number(parseHexBig(row.crossbowman_max as string)) || 0,
+      paladinMax: Number(parseHexBig(row.paladin_max as string)) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Get max stamina for a troop type + tier using on-chain config. */
+function getMaxStamina(cfg: StaminaConfig, category: string | null | undefined, tier: string | null | undefined): number {
+  const name = troopCategoryName(category);
+  let base = 0;
+  if (name === "Knight") base = cfg.knightMax;
+  else if (name === "Paladin") base = cfg.paladinMax;
+  else if (name === "Crossbowman") base = cfg.crossbowmanMax;
+
+  const t = String(tier ?? "T1");
+  let tierBonus = 0;
+  if (t === "T2") tierBonus = 20;
+  else if (t === "T3") tierBonus = 40;
+
+  return base + tierBonus;
+}
+
+/** Recalculate current stamina based on time elapsed since last refill. */
+function recalculateStamina(
+  storedAmount: number,
+  updatedTick: number,
+  cfg: StaminaConfig,
+  category: string | null | undefined,
+  tier: string | null | undefined,
+): number {
+  if (cfg.armiesTickInSeconds <= 0) return storedAmount;
+  const currentTick = Math.floor(Date.now() / 1000 / cfg.armiesTickInSeconds);
+  if (updatedTick >= currentTick) return storedAmount;
+  const ticksPassed = currentTick - updatedTick;
+  const maxStamina = getMaxStamina(cfg, category, tier);
+  return Math.min(storedAmount + ticksPassed * cfg.gainPerTick, maxStamina);
+}
+
 /** Decode a felt252 hex string (e.g. "0x...626f6174") to a human-readable string.
  *  If the input is already a readable string (not hex), pass it through. */
 function decodeFelt252(hex: string | null | undefined): string | undefined {
@@ -138,6 +210,50 @@ function decodeFelt252(hex: string | null | undefined): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+// Food resources get unlimited production (no output_amount_left cap).
+const FOOD_RESOURCES = new Set(["Wheat", "Fish"]);
+
+/**
+ * Compute the current resource balance including dynamically-produced amounts.
+ * On-chain, resource balances are stored at the time of last harvest/transfer.
+ * The actual current balance = stored + production_rate × (now - last_updated_at),
+ * capped by output_amount_left for non-food resources.
+ */
+function computeDynamicBalance(
+  row: any,
+  balanceCol: string,
+  prodPrefix: string,
+  nowSeconds: number,
+  resourceName: string,
+): number {
+  // Parse stored balance
+  const hexVal = row[balanceCol];
+  const storedBalance = hexVal && hexVal !== "0x0"
+    ? Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION))
+    : 0;
+
+  // Parse production fields
+  const buildingCount = Number(row[`${prodPrefix}.building_count`] ?? 0);
+  const productionRate = Number(parseHexBig(row[`${prodPrefix}.production_rate`]));
+  const lastUpdatedAt = Number(parseHexBig(row[`${prodPrefix}.last_updated_at`]));
+  const outputAmountLeft = Number(parseHexBig(row[`${prodPrefix}.output_amount_left`]));
+
+  if (buildingCount === 0 || productionRate === 0 || lastUpdatedAt === 0) {
+    return storedBalance;
+  }
+
+  const elapsed = Math.max(0, nowSeconds - lastUpdatedAt);
+  let produced = Math.floor((elapsed * productionRate) / RESOURCE_PRECISION);
+
+  // Non-food production is capped by remaining output budget
+  if (!FOOD_RESOURCES.has(resourceName)) {
+    const maxOutput = Math.floor(outputAmountLeft / RESOURCE_PRECISION);
+    produced = Math.min(produced, maxOutput);
+  }
+
+  return storedBalance + produced;
 }
 
 const STRUCTURE_CATEGORY_NAMES: Record<number, string> = {
@@ -708,8 +824,11 @@ function getArmyActions(): string[] {
  * @returns A fully populated EternumWorldState
  */
 export async function buildWorldState(client: EternumClient, accountAddress: string): Promise<EternumWorldState> {
-  // 1. Fetch all data sources in parallel.
-  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs] =
+  // Extract Torii SQL base URL from the client's SqlApi (for config queries)
+  const sqlBaseUrl: string = (client.sql as any).baseUrl ?? "";
+
+  // 1. Fetch all data sources in parallel (including stamina config for recalculation).
+  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs, staminaCfg] =
     await Promise.all([
       client.view.player(accountAddress),
       client.view.market(),
@@ -718,6 +837,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       client.sql.fetchAllArmiesMapData(),
       client.sql.fetchAllTiles().catch(() => [] as any[]),
       client.sql.fetchBattleLogs().catch(() => [] as any[]),
+      sqlBaseUrl ? fetchStaminaConfig(sqlBaseUrl) : Promise.resolve(null),
     ]);
 
   const rawStructures: any[] = Array.isArray(allRawStructures) ? allRawStructures : [];
@@ -798,6 +918,12 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
     const owned = sameAddress(a.owner_address, accountAddress);
     const count = parseTroopCount(a.count);
     const tier = tierToNum(a.tier);
+    // Recalculate stamina based on tick regeneration (raw SQL value is stale)
+    const rawStamina = parseStamina(a.stamina_amount);
+    const updatedTick = Number(parseHexBig(a.stamina_updated_tick));
+    const stamina = staminaCfg
+      ? recalculateStamina(rawStamina, updatedTick, staminaCfg, a.category, a.tier)
+      : rawStamina;
     return {
       type: "army" as const,
       entityId: Number(a.entity_id ?? 0),
@@ -806,7 +932,7 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       isOwned: owned,
       position: { x: Number(a.coord_x ?? 0), y: Number(a.coord_y ?? 0) },
       strength: count > 0 ? computeStrength(count, tier) : 0,
-      stamina: parseStamina(a.stamina_amount),
+      stamina,
       isInBattle: Number(a.battle_cooldown_end ?? 0) > 0,
       troopSummary: buildTroopSummary(a),
       lastAttack: parseLastAttack(a),
@@ -846,10 +972,17 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   const resources = new Map<string, number>();
   if (ownedEntityIds.length > 0) {
     try {
+      // Use fetchResourceBalancesWithProduction for dynamic balance computation
+      const fetchBalances = (client.sql as any).fetchResourceBalancesWithProduction
+        ? (client.sql as any).fetchResourceBalancesWithProduction(ownedEntityIds)
+        : client.sql.fetchResourceBalances(ownedEntityIds);
+
       const [balanceRows, buildingRows] = (await Promise.all([
-        client.sql.fetchResourceBalancesAndProduction(ownedEntityIds),
-        client.sql.fetchBuildingsByStructures(ownedEntityIds).catch(() => [] as any[]),
+        fetchBalances,
+        (client.sql as any).fetchBuildingsByStructures?.(ownedEntityIds).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
       ])) as [any[], any[]];
+
+      const nowSeconds = Math.floor(Date.now() / 1000);
 
       // Group building positions by structure entity ID → occupied inner coords
       const buildingsByStructure = new Map<number, Set<string>>();
@@ -869,18 +1002,17 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
         const buildings: string[] = [];
 
         for (const col of RESOURCE_BALANCE_COLUMNS) {
-          // Parse balance
-          const hexVal = row[col.column];
-          if (hexVal && hexVal !== "0x0") {
-            const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
-            if (amount > 0) {
-              entityResources.set(col.name, amount);
-              resources.set(col.name, (resources.get(col.name) ?? 0) + amount);
-            }
+          const prodPrefix = col.column.replace("_BALANCE", "_PRODUCTION");
+
+          // Compute dynamic balance: stored + produced since last update
+          const amount = computeDynamicBalance(row, col.column, prodPrefix, nowSeconds, col.name);
+          if (amount > 0) {
+            entityResources.set(col.name, amount);
+            resources.set(col.name, (resources.get(col.name) ?? 0) + amount);
           }
+
           // Parse production building count
-          const prodCol = `${col.column.replace("_BALANCE", "_PRODUCTION")}.building_count`;
-          const buildingCount = Number(row[prodCol] ?? 0);
+          const buildingCount = Number(row[`${prodPrefix}.building_count`] ?? 0);
           if (buildingCount > 0) {
             buildings.push(`${col.name} x${buildingCount}`);
           }
@@ -924,7 +1056,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-world-state.log",
+      "debug",
+      "world-state.log",
     );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();
@@ -1225,7 +1358,7 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     }
     sections.push(lines.join("\n"));
   } else {
-    sections.push("### My Entities\n  None visible");
+    sections.push("### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm");
   }
 
   // Operating area — unified minimap around all owned entities
@@ -1292,7 +1425,8 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
   try {
     const debugPath = join(
       process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
-      "debug-tick-prompt.log",
+      "debug",
+      "tick-prompt.log",
     );
     const ts = new Date().toISOString();
     writeFileSync(debugPath, `\n========== ${ts} ==========\n${result}\n`, { flag: "a" });

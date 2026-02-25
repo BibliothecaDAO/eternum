@@ -407,6 +407,17 @@ export class SqlApi {
   }
 
   /**
+   * Fetch resource balances with full production data for dynamic balance computation.
+   * Includes production_rate, output_amount_left, and last_updated_at per resource.
+   */
+  async fetchResourceBalancesWithProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
+    if (entityIds.length === 0) return [];
+    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION.replace("{entityIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances with production");
+  }
+
+  /**
    * Fetch season ended info from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */

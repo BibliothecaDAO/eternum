@@ -5,6 +5,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config";
 import { resolveBundledPath } from "./runtime-paths";
+import { parseCliArgs } from "./cli-args";
+import { runWorlds } from "./commands/worlds";
+import { runAuth } from "./commands/auth";
+import { runAuthStatus } from "./commands/auth-status";
+import { runAuthUrl } from "./commands/auth-url";
+import { runAuthComplete } from "./commands/auth-complete";
 
 const CLI_COMMAND = "axis";
 const PAD = "  ";
@@ -31,7 +37,42 @@ function readVersion(): string {
 }
 
 function printUsage() {
-  console.log(`Usage: ${CLI_COMMAND} [--version|doctor|init|run]`);
+  console.log(`Usage: ${CLI_COMMAND} <command> [options]
+
+Commands:
+  run                       Run agent (TUI mode, default)
+  run --headless            Run agent headlessly with JSON output
+  worlds                    List discovered worlds
+  auth <world|--all>        Generate auth URL and persist artifacts
+  auth-complete <world>     Complete auth with redirect URL or session data
+  auth-status <world>       Check session validity
+  auth-url <world>          Print auth URL
+  doctor                    Check configuration
+  init                      Initialize data directories
+
+Auth options:
+  --callback-url=<url>      Public URL for auth callback (remote VPS)
+  --redirect-url=<url>      Paste redirect URL to complete auth offline
+  --session-data=<base64>   Raw session data to complete auth
+  --approve                 Auto-approve via agent-browser
+  --method=<type>           Auth method for --approve (password)
+  --username=<user>         Username for --approve
+  --password=<pass>         Password for --approve
+  --all                     Apply to all discovered worlds
+
+Run options:
+  --headless                Headless mode (no TUI)
+  --world=<name>            Target world
+  --auth=session|privatekey Auth strategy (default: session)
+  --api-port=<port>         Enable HTTP API
+  --api-host=<host>         API bind address (default: 127.0.0.1)
+  --stdin                   Enable stdin steering
+  --verbosity=<level>       Output verbosity (quiet|actions|decisions|all)
+
+General:
+  --json                    JSON output
+  --version, -v             Print version
+  --help, -h                Print this help`);
 }
 
 function printBanner() {
@@ -101,7 +142,7 @@ function copyIfMissing(sourcePath: string, destinationPath: string) {
   copyFileSync(sourcePath, destinationPath);
 }
 
-function seedDataDir(dataDir: string) {
+export function seedDataDir(dataDir: string) {
   mkdirSync(dataDir, { recursive: true });
 
   const bundledDataDir = resolveBundledPath("data");
@@ -157,10 +198,20 @@ function seedEnvFile() {
   );
 }
 
-function runInit(): number {
+function runInit(world?: string): number {
   const config = loadConfig();
 
+  // Seed base data dir
   seedDataDir(config.dataDir);
+
+  // If a world is specified, also seed the world-scoped data dir
+  // (this is where the agent actually reads at runtime)
+  if (world) {
+    const worldDataDir = path.join(config.dataDir, world);
+    seedDataDir(worldDataDir);
+    console.log(`Initialized world data directory: ${worldDataDir}`);
+  }
+
   mkdirSync(config.sessionBasePath, { recursive: true });
   seedEnvFile();
 
@@ -171,41 +222,91 @@ function runInit(): number {
 }
 
 export async function runCli(args: string[] = process.argv.slice(2)): Promise<number> {
-  const [firstArg] = args;
+  const opts = parseCliArgs(args);
+  const write = (s: string) => console.log(s);
 
-  if (!firstArg || firstArg === "run") {
-    printBanner();
-    try {
-      const { main } = await import("./index");
-      await main();
+  switch (opts.command) {
+    case "version":
+      console.log(readVersion());
       return 0;
-    } catch (error) {
-      console.error("Fatal error:", error);
+
+    case "help":
+      printUsage();
+      return 0;
+
+    case "doctor":
+      return runDoctor();
+
+    case "init":
+      return runInit(opts.world);
+
+    case "worlds":
+      return runWorlds({ json: opts.json, write });
+
+    case "auth":
+      return runAuth({
+        world: opts.world,
+        all: opts.all,
+        approve: opts.approve,
+        method: opts.method,
+        username: opts.username,
+        password: opts.password,
+        callbackUrl: opts.callbackUrl,
+        timeout: opts.timeout,
+        json: opts.json,
+        write,
+      });
+
+    case "auth-complete":
+      return runAuthComplete({
+        world: opts.world,
+        sessionData: opts.sessionData,
+        redirectUrl: opts.redirectUrl,
+        json: opts.json,
+        write,
+      });
+
+    case "auth-status":
+      return runAuthStatus({
+        world: opts.world,
+        all: opts.all,
+        json: opts.json,
+        write,
+      });
+
+    case "auth-url":
+      return runAuthUrl({ world: opts.world, write });
+
+    case "run":
+      if (opts.headless) {
+        if (!opts.world) {
+          console.error("--world=<name> is required for headless mode. Run 'axis auth <world>' first.");
+          return 1;
+        }
+        try {
+          const { mainHeadless } = await import("./headless");
+          await mainHeadless(opts);
+          return 0;
+        } catch (error) {
+          console.error("Fatal error:", error);
+          return 1;
+        }
+      }
+      printBanner();
+      try {
+        const { main } = await import("./index");
+        await main();
+        return 0;
+      } catch (error) {
+        console.error("Fatal error:", error);
+        return 1;
+      }
+
+    default:
+      console.error(`Unknown command: ${args[0]}`);
+      printUsage();
       return 1;
-    }
   }
-
-  if (firstArg === "--version" || firstArg === "-v") {
-    console.log(readVersion());
-    return 0;
-  }
-
-  if (firstArg === "doctor") {
-    return runDoctor();
-  }
-
-  if (firstArg === "init") {
-    return runInit();
-  }
-
-  if (firstArg === "help" || firstArg === "--help" || firstArg === "-h") {
-    printUsage();
-    return 0;
-  }
-
-  console.error(`Unknown command: ${firstArg}`);
-  printUsage();
-  return 1;
 }
 
 function isDirectExecution(metaUrl: string): boolean {

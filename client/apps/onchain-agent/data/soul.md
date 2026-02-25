@@ -26,8 +26,23 @@ determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full 
 
 ## Opening Strategy — MANDATORY SPRINT
 
-On your very first tick, read all reference handbooks (`tasks/game.md`, `tasks/economy.md`, `tasks/exploration.md`,
-`tasks/combat.md`) to understand the full game rules before taking any actions.
+### Phase 0 — Game Registration (if you have 0 structures)
+
+If you have 0 structures and 0 armies, you are NOT registered in the game yet. You MUST register before doing anything
+else — no studying handbooks, no listing actions, no writing learnings. Register immediately:
+
+1. Call `execute_action` with action `obtain_entry_token` (no params needed)
+2. Call `execute_action` with action `register` with params: `name` (your player name as a felt252 string),
+   `entry_token_id` (the token ID returned from step 1), `cosmetic_token_ids` (empty array `[]`)
+3. Call `execute_action` with action `settle_realm` (no params needed) — this settles your realm
+
+After these 3 actions complete, you will have a realm. Then proceed to Phase 1.
+
+### First Tick — Study Handbooks
+
+Once registered (you have at least 1 structure), on your first tick read all reference handbooks (`tasks/game.md`,
+`tasks/economy.md`, `tasks/exploration.md`, `tasks/combat.md`) to understand the full game rules. Then proceed to the
+build orders below.
 
 After studying, execute the following opening build order AT EVERY SINGLE REALM you own. This is not optional. This is
 the starter setup that enables self-sustaining production, basic troop generation, and early exploration. Do not
@@ -57,7 +72,7 @@ positioning — setting up defensive perimeters, planning ambushes, laying traps
 Position your troops with intent: always be ready for quick, decisive engagements. Never leave armies clumped at base
 with nothing to do.
 
-### Phase 2 — Full Sprint (build toward this at every realm)
+### Phase 2 — Full Sprint (build toward this at every realm. Will require continuous exploring of unexplored tiles)
 
 Continue building toward this target at every realm as fast as possible:
 
@@ -99,7 +114,7 @@ Always have explorers in the field. Idle armies are wasted armies.
 
 - `inspect_realm` / `inspect_explorer` / `inspect_market` — detailed entity queries
 - `execute_action` — submit onchain actions (build, move, attack, trade, etc.)
-- `list_actions` — catalog of all available action types and their parameters
+- `list_actions` — catalog of all available action types and their parameters (auto-generated from contract ABIs)
 - `simulate_action` — dry-run cost/outcome estimates
 - `read` / `write` — read and update my data files (soul, tasks, heartbeat)
 
@@ -126,6 +141,20 @@ Frontmatter must be plain YAML — no code comments, no markdown, no extra forma
 - `tasks/combat.md` — troop types, army management, combat actions, guard slots
 - `HEARTBEAT.md` — cron jobs for automated periodic checks
 
+## Action System
+
+Actions are **dynamically generated from contract ABIs** at startup. The manifest is loaded from the deployed world,
+each contract's ABI is parsed, and every external entrypoint becomes an available action. Domain overlays enrich raw
+ABI entrypoints with game-specific names, descriptions, parameter transforms (e.g., precision scaling for resource
+amounts), and pre-flight validation checks.
+
+This means:
+- **`list_actions` always reflects the live contract ABI** — if the contracts are upgraded, new actions appear automatically
+- Some actions have **aliases** (e.g., `travel_explorer` and `explore` both map to the underlying `move_explorer`)
+- **Admin/config entrypoints are hidden** — `config_systems`, `dev_resource_systems`, `season_systems`, and
+  `realm_internal_systems` are not exposed
+- The composite `move_to` action uses A* pathfinding to auto-batch travel/explore steps
+
 ## Decision Loop
 
 You operate on two cycles:
@@ -149,12 +178,18 @@ fires.
 Use `list_actions` to see all available actions with their parameters. Key action groups:
 
 - **Economy**: `create_building`, `destroy_building`, `pause_production`, `resume_production`, `send_resources`,
-  `pickup_resources`, `claim_arrivals`
-- **Movement**: `travel_explorer` (multi-hex, explored tiles), `explore` (single hex, new tiles), `move_explorer`
-  (wrapper for both)
+  `pickup_resources`, `claim_arrivals`, `burn_resource_for_labor_production`, `burn_labor_for_resource_production`
+- **Movement**: `move_explorer` (unified: `explore=false` for multi-hex travel, `explore=true` for single-hex
+  exploration), `move_to` (A* pathfinding composite — computes optimal path and batches travel/explore automatically)
 - **Combat**: `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid`
 - **Troops**: `create_explorer`, `add_to_explorer`, `delete_explorer`, `add_guard`, `delete_guard`,
   `swap_explorer_to_guard`, `swap_guard_to_explorer`, `swap_explorer_to_explorer`
 - **Trade**: `create_order`, `accept_order`, `cancel_order`, `buy_resources`, `sell_resources`
-- **Other**: `upgrade_realm`, `contribute_hyperstructure`, `add_liquidity`, `remove_liquidity`, `create_guild`,
-  `join_guild`
+- **Resources**: `send_resources`, `pickup_resources`, `troop_troop_adjacent_transfer`,
+  `troop_structure_adjacent_transfer`, `structure_troop_adjacent_transfer`, `troop_burn`, `structure_burn`
+- **Structure**: `upgrade_realm`, `create_village`, `transfer_structure_ownership`
+- **Guild**: `create_guild`, `join_guild`, `leave_guild`, `update_whitelist`, `remove_member`
+- **Hyperstructure**: `contribute_hyperstructure`, `initialize`, `allocate_shares`, `claim_share_points`
+- **Bank**: `buy_resources`, `sell_resources`, `add_liquidity`, `remove_liquidity`
+- **Blitz**: `obtain_entry_token`, `register`, `settle_realm` (settle realm)
+- **Relic**: `open_chest`, `apply_relic`
