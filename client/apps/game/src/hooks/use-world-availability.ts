@@ -3,14 +3,22 @@
  * This eliminates N+1 request patterns when checking multiple worlds
  * by caching results and sharing them across components.
  */
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { getFactorySqlBaseUrl } from "@/runtime/world";
+import { isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { normalizeSelector } from "@/runtime/world/normalize";
+import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
+import { RpcProvider } from "starknet";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
 const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
+const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
+const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
+const rpcProviderCache = new Map<string, RpcProvider>();
 
 /**
  * Calculate number of hyperstructures left to create based on max ring count and created count.
@@ -59,6 +67,31 @@ const parseMaybeHexToAddress = (v: unknown): string | null => {
   return `0x${bigIntVal.toString(16)}`;
 };
 
+const getCachedRpcProvider = (rpcUrl: string): RpcProvider => {
+  const existingProvider = rpcProviderCache.get(rpcUrl);
+  if (existingProvider) return existingProvider;
+  const provider = new RpcProvider({ nodeUrl: rpcUrl });
+  rpcProviderCache.set(rpcUrl, provider);
+  return provider;
+};
+
+const fetchTokenBalance = async (provider: RpcProvider, tokenAddress: string, accountAddress: string): Promise<bigint> => {
+  try {
+    const result = await provider.callContract({
+      contractAddress: tokenAddress,
+      entrypoint: "balance_of",
+      calldata: [accountAddress],
+    });
+
+    if (result.length < 2) return 0n;
+    const low = BigInt(result[0] ?? 0);
+    const high = BigInt(result[1] ?? 0);
+    return low + (high << 128n);
+  } catch {
+    return 0n;
+  }
+};
+
 export interface WorldConfigMeta {
   startMainAt: number | null;
   endAt: number | null;
@@ -77,11 +110,15 @@ export interface WorldConfigMeta {
   isPlayerRegistered: boolean | null;
   // Number of hyperstructures left to create (for forging)
   numHyperstructuresLeft: number | null;
+  // Reward distribution contract for this world
+  prizeDistributionAddress: string | null;
+  // Current fee-token balance held by the reward distribution contract
+  winnerJackpotAmount: bigint;
 }
 
 interface WorldRef {
   name: string;
-  chain?: string;
+  chain?: Chain;
 }
 
 export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.chain}:${world.name}` : world.name);
@@ -89,7 +126,7 @@ export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.
 interface WorldAvailability {
   worldKey: string;
   worldName: string;
-  chain?: string;
+  chain?: Chain;
   isAvailable: boolean;
   meta: WorldConfigMeta | null;
   isLoading: boolean;
@@ -133,12 +170,46 @@ const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: stri
   return null;
 };
 
+const fetchPrizeDistributionAddress = async (worldName: string, chain: Chain): Promise<string | null> => {
+  try {
+    const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+    if (!factorySqlBaseUrl) return null;
+
+    const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+    return contracts[prizeDistributionSelector] ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchWinnerJackpotAmount = async (
+  worldName: string,
+  chain: Chain,
+  feeTokenAddress: string,
+): Promise<{ prizeDistributionAddress: string | null; winnerJackpotAmount: bigint }> => {
+  const prizeDistributionAddress = await fetchPrizeDistributionAddress(worldName, chain);
+  if (!prizeDistributionAddress) {
+    return { prizeDistributionAddress: null, winnerJackpotAmount: 0n };
+  }
+
+  const rpcUrl = getRpcUrlForChain(chain);
+  const provider = getCachedRpcProvider(rpcUrl);
+  const winnerJackpotAmount = await fetchTokenBalance(provider, feeTokenAddress, prizeDistributionAddress);
+
+  return { prizeDistributionAddress, winnerJackpotAmount };
+};
+
 /**
  * Fetch world config metadata from Torii SQL endpoint.
  * Optionally fetches player registration status if playerAddress is provided.
  * Cached by React Query.
  */
-const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string | null): Promise<WorldConfigMeta> => {
+const fetchWorldConfigMeta = async (
+  toriiBaseUrl: string,
+  worldName: string,
+  chain?: Chain,
+  playerAddress?: string | null,
+): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
     startMainAt: null,
     endAt: null,
@@ -152,6 +223,8 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
     devModeOn: false,
     isPlayerRegistered: null,
     numHyperstructuresLeft: null,
+    prizeDistributionAddress: null,
+    winnerJackpotAmount: 0n,
   };
 
   try {
@@ -202,9 +275,28 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
       }
     }
 
-    // Fetch player registration status if address provided
+    // Run optional side fetches in parallel.
+    const sideFetches: Promise<void>[] = [];
     if (playerAddress) {
-      meta.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress);
+      sideFetches.push(
+        fetchPlayerRegistration(toriiBaseUrl, playerAddress).then((isRegistered) => {
+          meta.isPlayerRegistered = isRegistered;
+        }),
+      );
+    }
+    if (chain && meta.feeTokenAddress) {
+      sideFetches.push(
+        fetchWinnerJackpotAmount(worldName, chain, meta.feeTokenAddress).then(
+          ({ prizeDistributionAddress, winnerJackpotAmount }) => {
+            meta.prizeDistributionAddress = prizeDistributionAddress;
+            meta.winnerJackpotAmount = winnerJackpotAmount;
+          },
+        ),
+      );
+    }
+
+    if (sideFetches.length > 0) {
+      await Promise.all(sideFetches);
     }
   } catch {
     // Silently fail - metadata fetch is best-effort
@@ -219,6 +311,7 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
  */
 const checkWorldAvailability = async (
   worldName: string,
+  chain?: Chain,
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
@@ -228,7 +321,7 @@ const checkWorldAvailability = async (
     return { isAvailable: false, meta: null };
   }
 
-  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress);
+  const meta = await fetchWorldConfigMeta(toriiBaseUrl, worldName, chain, playerAddress);
   return { isAvailable: true, meta };
 };
 
@@ -245,7 +338,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
       queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world.name, playerAddress),
+      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress),
       enabled: enabled && !!world.name,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes

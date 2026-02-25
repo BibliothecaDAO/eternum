@@ -27,16 +27,20 @@ import { toast } from "sonner";
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
 /**
- * Format fee amount from wei to human-readable LORDS
+ * Format token amount from wei to human-readable LORDS
  */
-const formatFeeAmount = (amount: bigint): string => {
+const formatLordsAmount = (amount: bigint): string => {
+  if (amount === 0n) return "0";
+
   const divisor = 10n ** 18n;
   const whole = amount / divisor;
   const remainder = amount % divisor;
-  if (remainder === 0n) return whole.toString();
-  const decimal = (remainder * 100n) / divisor;
-  if (decimal === 0n) return whole.toString();
-  return `${whole}.${decimal.toString().padStart(2, "0")}`;
+  const wholeFormatted = whole.toLocaleString("en-US");
+  if (remainder === 0n) return wholeFormatted;
+
+  // Show the exact onchain value in LORDS units (18 decimals), trimming only trailing zeros.
+  const fraction = remainder.toString().padStart(18, "0").replace(/0+$/, "");
+  return `${wholeFormatted}.${fraction}`;
 };
 
 /**
@@ -127,6 +131,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
     config?.devModeOn ? "1" : "0",
     config?.mmrEnabled ? "1" : "0",
     config?.numHyperstructuresLeft ?? "",
+    config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
 };
 
@@ -174,6 +179,9 @@ const GameCard = ({
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
   // Show forge button when we have config (even if 0 left, show disabled)
   const showForgeButton = game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const lordsFeeAmount = game.config?.feeAmount ?? 0n;
+  const hasLordsFee = lordsFeeAmount > 0n;
+  const winnerJackpotAmount = game.config?.winnerJackpotAmount ?? 0n;
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
   const targetChainLabel = getChainLabel(game.chain);
@@ -190,7 +198,15 @@ const GameCard = ({
   );
 
   // Inline registration hook
-  const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
+  const {
+    register,
+    registrationStage,
+    isRegistering,
+    error,
+    canRegister,
+    isCheckingFeeBalance,
+    hasSufficientFeeBalance,
+  } = useWorldRegistration({
     worldName: game.name,
     chain: game.chain,
     config: game.config,
@@ -363,6 +379,15 @@ const GameCard = ({
                   <UserPlus className="w-3 h-3" />
                   Register
                 </button>
+              ) : isCheckingFeeBalance ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Checking fee
+                </div>
+              ) : !hasSufficientFeeBalance ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30">
+                  Insufficient balance
+                </div>
               ) : null}
             </>
           ) : !playerAddress && !showRegistered && canRegisterPeriod ? (
@@ -424,10 +449,11 @@ const GameCard = ({
           )}
         </div>
 
-        {/* Fee info (shown when can register) */}
-        {canRegister && feeAmount > 0n && !isRegistering && (
-          <div className="text-[10px] text-gold/50 text-center">Fee: {formatFeeAmount(feeAmount)} LORDS</div>
-        )}
+        {/* LORDS fee and winner jackpot */}
+        <div className="text-[10px] text-gold/50 text-center space-y-0.5">
+          {hasLordsFee && <div>Fee: {formatLordsAmount(lordsFeeAmount)} LORDS</div>}
+          <div>Total Prize: {formatLordsAmount(winnerJackpotAmount)} LORDS</div>
+        </div>
 
         {/* Error message - only show if not already registered */}
         {registrationStage === "error" && error && !showRegistered && (

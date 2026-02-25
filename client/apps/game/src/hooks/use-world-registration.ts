@@ -10,7 +10,7 @@ import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { env } from "../../env";
 import { useUsername } from "./use-username";
@@ -96,6 +96,10 @@ interface UseWorldRegistrationReturn {
   feeAmount: bigint;
   /** Whether registration is currently possible */
   canRegister: boolean;
+  /** Whether fee balance is being checked */
+  isCheckingFeeBalance: boolean;
+  /** Whether wallet has enough fee token balance for registration */
+  hasSufficientFeeBalance: boolean;
 }
 
 /**
@@ -156,6 +160,8 @@ export const useWorldRegistration = ({
 
   const [registrationStage, setRegistrationStage] = useState<RegistrationStage>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [isCheckingFeeBalance, setIsCheckingFeeBalance] = useState(false);
+  const [hasSufficientFeeBalance, setHasSufficientFeeBalance] = useState(true);
 
   // Cache resolved contracts
   const contractsCacheRef = useRef<Record<string, string> | null>(null);
@@ -163,6 +169,7 @@ export const useWorldRegistration = ({
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
+  const needsFeeBalanceCheck = Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
   // Check if registration is open
   const now = Date.now() / 1000;
@@ -185,9 +192,55 @@ export const useWorldRegistration = ({
     !!address &&
     !usernameLoading &&
     !!usernameFelt &&
+    !isCheckingFeeBalance &&
+    hasSufficientFeeBalance &&
     registrationStage === "idle";
 
   const isRegistering = registrationStage !== "idle" && registrationStage !== "done" && registrationStage !== "error";
+
+  // Pre-check fee token balance so "Register" is disabled when the wallet can't pay.
+  useEffect(() => {
+    let cancelled = false;
+    const feeTokenAddress = config?.feeTokenAddress;
+
+    const resetAsAvailable = () => {
+      setIsCheckingFeeBalance(false);
+      setHasSufficientFeeBalance(true);
+    };
+
+    if (!enabled || !address || !needsFeeBalanceCheck || !feeTokenAddress) {
+      resetAsAvailable();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const runBalanceCheck = async () => {
+      setIsCheckingFeeBalance(true);
+      try {
+        const rpcUrl = getRpcUrlForChain(chain);
+        const rpcProvider = new RpcProvider({ nodeUrl: rpcUrl });
+        const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, address);
+        if (!cancelled) {
+          setHasSufficientFeeBalance(currentBalance >= feeAmount);
+        }
+      } catch {
+        if (!cancelled) {
+          setHasSufficientFeeBalance(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingFeeBalance(false);
+        }
+      }
+    };
+
+    void runBalanceCheck();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, address, chain, config?.feeTokenAddress, feeAmount, needsFeeBalanceCheck]);
 
   /**
    * Resolve contract addresses from factory (cached)
@@ -418,5 +471,7 @@ export const useWorldRegistration = ({
     requiresEntryToken,
     feeAmount,
     canRegister,
+    isCheckingFeeBalance,
+    hasSufficientFeeBalance,
   };
 };
