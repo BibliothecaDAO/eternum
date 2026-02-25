@@ -6,27 +6,27 @@
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */
+import { useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { Castle, Check, Eye, Loader2, MapPin, Pickaxe, Play, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Eye, Loader2, Check, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
+import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useSyncStore } from "@/hooks/store/use-sync-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getWorldKey } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
-import { useSyncStore } from "@/hooks/store/use-sync-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getWorldKey } from "@/hooks/use-world-availability";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
@@ -1056,12 +1056,25 @@ export const GameEntryModal = ({
       const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
       const signer = account as unknown as Account;
 
-      debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
-      await signer.execute({
+      const { env } = await import("../../../../../env");
+      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+
+      const calls = [];
+      if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
+        calls.push({
+          contractAddress: vrfProviderAddress,
+          entrypoint: "request_random",
+          calldata: [blitzRealmSystemsAddress, 0, signer.address],
+        });
+      }
+      calls.push({
         contractAddress: blitzRealmSystemsAddress,
         entrypoint: "make_hyperstructures",
         calldata: [hyperstructureCount.toString()],
       });
+
+      debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
+      await signer.execute(calls);
 
       debugLog(worldName, "Hyperstructures forged!");
       // Update local count
