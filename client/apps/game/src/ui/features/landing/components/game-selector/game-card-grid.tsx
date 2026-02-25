@@ -173,7 +173,7 @@ const GameCard = ({
   // Forge hyperstructures button shown during registration period
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
   // Show forge button when we have config (even if 0 left, show disabled)
-  const showForgeButton = canRegisterPeriod && game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const showForgeButton = game.config?.numHyperstructuresLeft !== null && playerAddress;
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
   const targetChainLabel = getChainLabel(game.chain);

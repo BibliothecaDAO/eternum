@@ -4,6 +4,7 @@ const tuiMocks = vi.hoisted(() => {
   const state = {
     onData: undefined as ((data: string) => void) | undefined,
     onResize: undefined as (() => void) | undefined,
+    inputListener: undefined as ((data: string) => { consume: boolean } | void) | undefined,
     subscribeCallback: undefined as ((event: any) => void) | undefined,
     unsubscribe: vi.fn(),
     lastTui: undefined as any,
@@ -26,22 +27,38 @@ const tuiMocks = vi.hoisted(() => {
 
   class MockText {
     text = "";
+    constructor(text = "") {
+      this.text = text;
+    }
+    setText(next: string) {
+      this.text = next;
+    }
   }
 
   class MockMarkdown {
     markdown = "";
+    constructor(markdown = "") {
+      this.markdown = markdown;
+    }
   }
 
   class MockTUI {
     children: any[] = [];
     handleInput = vi.fn();
     requestRender = vi.fn();
+    start = vi.fn();
     stop = vi.fn();
     constructor(_terminal: any) {
       state.lastTui = this;
     }
     addChild(child: any) {
       this.children.push(child);
+    }
+    addInputListener(cb: (data: string) => { consume: boolean } | void) {
+      state.inputListener = cb;
+      state.onData = (data: string) => {
+        cb(data);
+      };
     }
   }
 
@@ -85,14 +102,19 @@ function createAgent(opts?: { isStreaming?: boolean; promptReject?: string }) {
 }
 
 describe("createApp", () => {
+  let processKillSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
+    processKillSpy = vi.spyOn(process, "kill").mockImplementation(() => true as any);
     tuiMocks.state.onData = undefined;
     tuiMocks.state.onResize = undefined;
+    tuiMocks.state.inputListener = undefined;
     tuiMocks.state.subscribeCallback = undefined;
     tuiMocks.state.unsubscribe.mockClear();
   });
 
   afterEach(() => {
+    processKillSpy.mockRestore();
     vi.clearAllMocks();
   });
 
@@ -153,6 +175,7 @@ describe("createApp", () => {
 
     expect(prompt).not.toHaveBeenCalled();
     expect(steer).not.toHaveBeenCalled();
+    expect(processKillSpy).toHaveBeenCalledWith(process.pid, "SIGINT");
   });
 
   it("handles backspace by editing the current input buffer", () => {
