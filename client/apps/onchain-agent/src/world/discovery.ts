@@ -172,6 +172,29 @@ export async function discoverAllWorlds(): Promise<DiscoveredWorld[]> {
   return results.flat();
 }
 
+/**
+ * Resolve a specific world by name, trying each chain directly.
+ * More reliable than discoverAllWorlds() for a known world name because it
+ * only needs the factory to resolve deployment data — not list all worlds.
+ */
+export async function findWorldByName(worldName: string): Promise<DiscoveredWorld | null> {
+  const attempts = await Promise.all(
+    DISCOVERABLE_CHAINS.map(async (chain): Promise<DiscoveredWorld | null> => {
+      try {
+        const { deployment } = await resolveFromFactories(chain, worldName);
+        if (deployment?.worldAddress) {
+          const { status } = await checkWorldAvailability(worldName);
+          return { name: worldName, chain, status };
+        }
+      } catch {
+        // Chain doesn't have this world
+      }
+      return null;
+    }),
+  );
+  return attempts.find((w): w is DiscoveredWorld => w !== null) ?? null;
+}
+
 const normalizeTokenAddress = (value: unknown): string | undefined => {
   if (value == null) return undefined;
   if (typeof value === "string") return value || undefined;

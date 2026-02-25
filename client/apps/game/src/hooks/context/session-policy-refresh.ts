@@ -24,6 +24,7 @@ import { buildPolicies } from "./policies";
  * without policies (session deferred until game selection).
  */
 let _lastPolicyHash = "";
+let _isRefreshingPolicies = false;
 
 function hashPolicies(manifest: unknown): string {
   try {
@@ -39,6 +40,8 @@ function hashPolicies(manifest: unknown): string {
 const hasPoliciesChanged = (): boolean => {
   return hashPolicies(dojoConfig.manifest) !== _lastPolicyHash;
 };
+
+export const isSessionPolicyRefreshInProgress = (): boolean => _isRefreshingPolicies;
 
 /**
  * Refresh the controller's session policies in-place and recreate the
@@ -62,57 +65,69 @@ export const refreshSessionPolicies = async (
   if (!provider.options) {
     return false;
   }
-  provider.options.policies = newPolicies;
+  _isRefreshingPolicies = true;
+  try {
+    provider.options.policies = newPolicies;
 
-  // 2. Destroy the old keychain iframe
-  if (provider.iframes?.keychain) {
-    const keychainIframe = provider.iframes.keychain;
+    // Keep the account object stable while we rotate the keychain iframe.
+    // This prevents transient "disconnect" state during bootstrap.
+    const previousAccount = provider.account;
 
-    // Remove the DOM elements
-    if (keychainIframe.container?.parentNode) {
-      keychainIframe.container.parentNode.removeChild(keychainIframe.container);
+    // 2. Destroy the old keychain iframe
+    if (provider.iframes?.keychain) {
+      const keychainIframe = provider.iframes.keychain;
+
+      // Remove the DOM elements
+      if (keychainIframe.container?.parentNode) {
+        keychainIframe.container.parentNode.removeChild(keychainIframe.container);
+      }
+
+      // Remove viewport meta tag injected by the iframe base class
+      const meta = document.getElementById("controller-viewport");
+      if (meta) {
+        meta.remove();
+      }
+
+      // Clear the iframe reference
+      provider.iframes.keychain = undefined;
     }
 
-    // Remove viewport meta tag injected by the iframe base class
-    const meta = document.getElementById("controller-viewport");
-    if (meta) {
-      meta.remove();
+    // 3. Clear only the keychain RPC connection
+    provider.keychain = undefined;
+
+    // 4. Create a fresh keychain iframe with updated policies
+    //    createKeychainIframe reads from this.options (now updated)
+    if (provider.createKeychainIframe && provider.iframes) {
+      provider.iframes.keychain = provider.createKeychainIframe();
     }
 
-    // Clear the iframe reference
-    provider.iframes.keychain = undefined;
-  }
-
-  // 3. Clear the keychain RPC connection and account
-  provider.keychain = undefined;
-  provider.account = undefined;
-
-  // 4. Create a fresh keychain iframe with updated policies
-  //    createKeychainIframe reads from this.options (now updated)
-  if (provider.createKeychainIframe && provider.iframes) {
-    provider.iframes.keychain = provider.createKeychainIframe();
-  }
-
-  // 5. Wait for the new keychain to be ready, then re-probe
-  if (provider.waitForKeychain) {
-    try {
-      await provider.waitForKeychain({ timeout: 10000 });
-    } catch {
-      // Timeout — keychain may still load eventually
+    // 5. Wait for the new keychain to be ready, then re-probe
+    if (provider.waitForKeychain) {
+      try {
+        await provider.waitForKeychain({ timeout: 10000 });
+      } catch {
+        // Timeout — keychain may still load eventually
+      }
     }
-  }
 
-  // 6. Re-probe to restore the account from keychain auth storage
-  if (provider.probe) {
-    try {
-      await provider.probe();
-    } catch {
-      // probe may fail if no prior session — that's OK
+    // 6. Re-probe to refresh account/session state from keychain
+    if (provider.probe) {
+      try {
+        await provider.probe();
+      } catch {
+        // probe may fail if no prior session — that's OK
+      }
     }
+
+    if (!provider.account && previousAccount) {
+      provider.account = previousAccount;
+    }
+
+    // 7. Update hash
+    _lastPolicyHash = hashPolicies(dojoConfig.manifest);
+
+    return true;
+  } finally {
+    _isRefreshingPolicies = false;
   }
-
-  // 7. Update hash
-  _lastPolicyHash = hashPolicies(dojoConfig.manifest);
-
-  return true;
 };

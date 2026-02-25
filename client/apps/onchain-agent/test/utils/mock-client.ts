@@ -9,6 +9,27 @@ import { vi } from "vitest";
  */
 export function createMockClient() {
   const fakeTxResult = { transaction_hash: "0xabc123" };
+  const fetchResourceBalancesWithProduction = vi.fn().mockResolvedValue([
+    {
+      entity_id: 1,
+      WOOD_BALANCE: "0x746A528800",
+      STONE_BALANCE: "0x45D964B800",
+      COAL_BALANCE: "0x0",
+      "WOOD_PRODUCTION.building_count": 2,
+      "STONE_PRODUCTION.building_count": 1,
+      "COAL_PRODUCTION.building_count": 0,
+      // Troop reserves: 200 Knight T1 (200 * 1e9 = 0x2E90EDD000)
+      KNIGHT_T1_BALANCE: "0x2E90EDD000",
+      KNIGHT_T2_BALANCE: "0x0",
+      KNIGHT_T3_BALANCE: "0x0",
+      CROSSBOWMAN_T1_BALANCE: "0x0",
+      CROSSBOWMAN_T2_BALANCE: "0x0",
+      CROSSBOWMAN_T3_BALANCE: "0x0",
+      PALADIN_T1_BALANCE: "0x0",
+      PALADIN_T2_BALANCE: "0x0",
+      PALADIN_T3_BALANCE: "0x0",
+    },
+  ]);
 
   return {
     view: {
@@ -207,27 +228,8 @@ export function createMockClient() {
           COAL_BALANCE: "0x0",
         },
       ]),
-      fetchResourceBalancesAndProduction: vi.fn().mockResolvedValue([
-        {
-          entity_id: 1,
-          WOOD_BALANCE: "0x746A528800",
-          STONE_BALANCE: "0x45D964B800",
-          COAL_BALANCE: "0x0",
-          "WOOD_PRODUCTION.building_count": 2,
-          "STONE_PRODUCTION.building_count": 1,
-          "COAL_PRODUCTION.building_count": 0,
-          // Troop reserves: 200 Knight T1 (200 * 1e9 = 0x2E90EDD000)
-          KNIGHT_T1_BALANCE: "0x2E90EDD000",
-          KNIGHT_T2_BALANCE: "0x0",
-          KNIGHT_T3_BALANCE: "0x0",
-          CROSSBOWMAN_T1_BALANCE: "0x0",
-          CROSSBOWMAN_T2_BALANCE: "0x0",
-          CROSSBOWMAN_T3_BALANCE: "0x0",
-          PALADIN_T1_BALANCE: "0x0",
-          PALADIN_T2_BALANCE: "0x0",
-          PALADIN_T3_BALANCE: "0x0",
-        },
-      ]),
+      fetchResourceBalancesWithProduction,
+      fetchResourceBalancesAndProduction: fetchResourceBalancesWithProduction,
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([
         {
           entity_id: 100,
@@ -417,4 +419,7 @@ export function createMockClient() {
 /**
  * A fake signer (Account) for testing purposes.
  */
-export const mockSigner = { address: "0xdeadbeef" } as any;
+export const mockSigner = {
+  address: "0xdeadbeef",
+  execute: vi.fn().mockResolvedValue({ transaction_hash: "0xabc123" }),
+} as any;

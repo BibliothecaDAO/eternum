@@ -19,7 +19,7 @@ jobs:
       Do NOT execute actions.
   - id: upgrade-check
     enabled: true
-    schedule: "1-59/3 * * * *"
+    schedule: 1-59/3 * * * *
     mode: observe
     timeoutSec: 30
     prompt: |
@@ -32,7 +32,7 @@ jobs:
       Write upgrade opportunities to tasks/learnings.md. Do NOT execute actions.
   - id: build-check
     enabled: true
-    schedule: "2-59/3 * * * *"
+    schedule: 2-59/3 * * * *
     mode: observe
     timeoutSec: 30
     prompt: |
@@ -60,15 +60,3 @@ jobs:
       Focus on rules you may have been violating or mechanics you
       haven't been leveraging. Do NOT overwrite existing learnings —
       append or revise specific entries.
----
-
-<!-- HEARTBEAT.md — Cron-style recurring jobs
-
-Stagger schedule (3-min cycle, 1-min offset):
-  military-check: 0, 3, 6, 9, ...
-  upgrade-check:  1, 4, 7, 10, ...
-  build-check:    2, 5, 8, 11, ...
-  study-handbooks: 0, 10, 20, 30, 40, 50
-
-Changes to this file are hot-reloaded (no restart needed).
--->

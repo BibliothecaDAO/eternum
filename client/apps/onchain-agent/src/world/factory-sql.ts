@@ -60,7 +60,7 @@ export const fetchFactoryRows = async (
   query: string,
 ): Promise<Record<string, unknown>[]> => {
   const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) {
     throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
   }

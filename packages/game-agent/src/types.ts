@@ -36,7 +36,7 @@ export interface GameAction {
  */
 export interface ActionParamSchema {
   name: string;
-  type: "number" | "string" | "boolean" | "number[]" | "object[]" | "bigint";
+  type: "number" | "string" | "boolean" | "number[]" | "object[]" | "object" | "bigint";
   description: string;
   required?: boolean;
 }

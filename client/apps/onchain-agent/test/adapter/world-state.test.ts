@@ -101,7 +101,7 @@ describe("buildWorldState", () => {
     expect(realm!.productionBuildings).toContain("Wood x2");
     expect(realm!.productionBuildings).toContain("Stone x1");
 
-    expect(client.sql.fetchResourceBalancesAndProduction).toHaveBeenCalledWith([1]);
+    expect(client.sql.fetchResourceBalancesWithProduction).toHaveBeenCalledWith([1]);
   });
 
   it("calls sql and view methods", async () => {
