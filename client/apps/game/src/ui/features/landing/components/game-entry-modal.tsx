@@ -1056,12 +1056,25 @@ export const GameEntryModal = ({
       const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
       const signer = account as unknown as Account;
 
-      debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
-      await signer.execute({
+      const { env } = await import("../../../../../env");
+      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+
+      const calls = [];
+      if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
+        calls.push({
+          contractAddress: vrfProviderAddress,
+          entrypoint: "request_random",
+          calldata: [blitzRealmSystemsAddress, 0, signer.address],
+        });
+      }
+      calls.push({
         contractAddress: blitzRealmSystemsAddress,
         entrypoint: "make_hyperstructures",
         calldata: [hyperstructureCount.toString()],
       });
+
+      debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
+      await signer.execute(calls);
 
       debugLog(worldName, "Hyperstructures forged!");
       // Update local count
