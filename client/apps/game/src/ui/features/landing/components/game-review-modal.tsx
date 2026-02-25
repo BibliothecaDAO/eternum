@@ -6,7 +6,6 @@ import {
 } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
-import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
@@ -24,7 +23,6 @@ import { ScoreCardContent } from "./score-card-modal";
 type ReviewStepId =
   | "finished"
   | "personal"
-  | "stats"
   | "awards"
   | "map-fingerprint"
   | "leaderboard"
@@ -60,7 +58,6 @@ const formatValue = (value: number): string => numberFormatter.format(Math.max(0
 const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
   personal: "Personal Score Card",
-  stats: "Global Stats",
   awards: "Blitz Awards",
   "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
@@ -87,18 +84,6 @@ const buildStepShareMessage = ({
   nextGame: GameData | null;
 }): string => {
   const worldLabel = data.worldName;
-
-  if (step === "stats") {
-    return [
-      `${worldLabel} just ended on @realms_gg Blitz!`,
-      `${formatValue(data.stats.numberOfPlayers)} players battled across ${formatValue(data.stats.totalTilesExplored)} tiles with ${formatValue(data.stats.totalTransactions)} total transactions.`,
-      `${formatValue(data.stats.totalDeadTroops)} troops fell in battle.`,
-      "",
-      "Think you can survive the next round?",
-      "blitz.realms.world",
-      "#Realms #Eternum #Starknet",
-    ].join("\n");
-  }
 
   if (isAwardsStep(step)) {
     const normalizeAddress = (value: string | null | undefined): string | null => {
@@ -614,7 +599,6 @@ export const GameReviewModal = ({
     const ordered: ReviewStepId[] = [
       "finished",
       "personal",
-      "stats",
       "awards",
       "map-fingerprint",
       "leaderboard",
@@ -630,7 +614,7 @@ export const GameReviewModal = ({
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "finished";
   const currentStepLabel = STEP_LABELS[currentStep];
   const isStepShareable = useMemo(() => {
-    if (currentStep === "stats" || isAwardsStep(currentStep) || currentStep === "leaderboard") {
+    if (isAwardsStep(currentStep) || currentStep === "leaderboard") {
       return true;
     }
 
@@ -1029,18 +1013,6 @@ export const GameReviewModal = ({
                     No personal score card is available for this account.
                   </div>
                 ))}
-
-              {currentStep === "stats" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzGameStatsCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
 
               {currentStep === "awards" && (
                 <div className="space-y-3">
