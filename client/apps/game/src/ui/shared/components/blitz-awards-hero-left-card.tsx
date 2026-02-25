@@ -70,6 +70,7 @@ const HERO_LEFT_AWARDS_CARD_STYLES = `
   .blitz-card-root .award-biggest-structures-owned {
     grid-column: 5 / span 2;
     grid-row: 3;
+    padding-top: 7px;
   }
 
   .blitz-card-root .award-bottom {
@@ -115,18 +116,24 @@ const HERO_LEFT_AWARDS_CARD_STYLES = `
     line-height: 38px;
     color: #ffffff;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums lining-nums;
   }
 
   .blitz-card-root .award-hero .award-value {
     margin-top: 6px;
-    font-size: 99px;
-    line-height: 102px;
+    font-size: 90px;
+    line-height: 94px;
   }
 
   .blitz-card-root .award-side .award-value {
     margin-top: 5px;
     font-size: 40px;
     line-height: 44px;
+  }
+
+  .blitz-card-root .award-first-blood .award-value {
+    font-size: 46px;
+    line-height: 50px;
   }
 
   .blitz-card-root .award-highlight-value .award-value {
@@ -143,13 +150,18 @@ const HERO_LEFT_AWARDS_CARD_STYLES = `
   }
 
   .blitz-card-root .award-empty.award-hero .award-value {
-    font-size: 84px;
-    line-height: 88px;
+    font-size: 76px;
+    line-height: 80px;
   }
 
   .blitz-card-root .award-empty.award-side .award-value {
     font-size: 34px;
     line-height: 38px;
+  }
+
+  .blitz-card-root .award-no-t3 .award-value {
+    color: #d0d0d0;
+    opacity: 0.72;
   }
 
   .blitz-card-root .award-empty.award-bottom .award-value {
@@ -172,12 +184,12 @@ const HERO_LEFT_AWARDS_CARD_STYLES = `
   }
 
   .blitz-card-root .award-side .award-winner-row {
-    margin-top: 6px;
+    margin-top: 4px;
   }
 
   .blitz-card-root .award-winner {
     font-family: "IM Fell English", serif;
-    font-style: italic;
+    font-style: normal;
     font-weight: 400;
     font-size: 20px;
     line-height: 24px;
@@ -230,6 +242,14 @@ type MetricValue = {
   timestamp?: number;
 } | null;
 
+type AwardId =
+  | "first-hyperstructure"
+  | "first-blood"
+  | "first-t3"
+  | "most-troops-killed"
+  | "highest-explored-tiles"
+  | "biggest-structures-owned";
+
 type AwardKind = "time" | "count";
 
 interface BlitzAwardsHeroLeftCardProps {
@@ -240,7 +260,7 @@ interface BlitzAwardsHeroLeftCardProps {
 }
 
 interface AwardItem {
-  id: string;
+  id: AwardId;
   label: string;
   kind: AwardKind;
   metric: MetricValue;
@@ -255,6 +275,43 @@ interface WinnerIdentity {
   name: string;
   address?: string;
 }
+
+// Temporary preview fallbacks while active games can have sparse milestones.
+const MOCK_AWARD_PREVIEW: Record<
+  AwardId,
+  { value: number; playerAddress: string; playerName: string }
+> = {
+  "first-hyperstructure": {
+    value: 70 * 3600 + 33 * 60,
+    playerAddress: "0x1001",
+    playerName: "raschelox",
+  },
+  "first-blood": {
+    value: 70 * 3600 + 1 * 60,
+    playerAddress: "0x1002",
+    playerName: "ironcladx",
+  },
+  "first-t3": {
+    value: 72 * 3600 + 12 * 60,
+    playerAddress: "0x1003",
+    playerName: "valewarden",
+  },
+  "most-troops-killed": {
+    value: 7_950,
+    playerAddress: "0x1004",
+    playerName: "warbringer",
+  },
+  "highest-explored-tiles": {
+    value: 96,
+    playerAddress: "0x1005",
+    playerName: "credenceox",
+  },
+  "biggest-structures-owned": {
+    value: 3,
+    playerAddress: "0x1006",
+    playerName: "stonehelm",
+  },
+};
 
 const normalizeAddress = (value: string | null | undefined): string | null => {
   if (!value) return null;
@@ -280,7 +337,7 @@ const formatDuration = (seconds: number): string => {
   const minutes = Math.floor((total % 3600) / 60);
   const remaining = total % 60;
 
-  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
   if (minutes > 0) return `${minutes}m ${remaining}s`;
   return `${remaining}s`;
 };
@@ -290,8 +347,23 @@ const formatAwardValue = (metric: MetricValue, kind: AwardKind): string => {
   return kind === "time" ? formatDuration(metric.value) : formatValue(metric.value);
 };
 
+const withMockMetric = (id: AwardId, metric: MetricValue): MetricValue => {
+  if (metric) return metric;
+  const mock = MOCK_AWARD_PREVIEW[id];
+  return {
+    playerAddress: mock.playerAddress,
+    value: mock.value,
+  };
+};
+
 const buildLeaderboardIdentityLookup = (leaderboard: LandingLeaderboardEntry[]): Map<string, LeaderboardIdentity> => {
   const byAddress = new Map<string, LeaderboardIdentity>();
+
+  for (const mock of Object.values(MOCK_AWARD_PREVIEW)) {
+    const normalized = normalizeAddress(mock.playerAddress);
+    if (!normalized) continue;
+    byAddress.set(normalized, { displayName: mock.playerName });
+  }
 
   for (const entry of leaderboard) {
     const normalized = normalizeAddress(entry.address);
@@ -342,37 +414,37 @@ const BlitzAwardsHeroLeftCard = forwardRef<SVGSVGElement, BlitzAwardsHeroLeftCar
           id: "first-hyperstructure",
           label: "First Hyperstructure",
           kind: "time",
-          metric: stats.timeToFirstHyperstructureSeconds,
+          metric: withMockMetric("first-hyperstructure", stats.timeToFirstHyperstructureSeconds),
         },
         {
           id: "first-blood",
           label: "First Blood",
           kind: "time",
-          metric: stats.firstBlood,
+          metric: withMockMetric("first-blood", stats.firstBlood),
         },
         {
           id: "first-t3",
           label: "First T3 Troops",
           kind: "time",
-          metric: stats.timeToFirstT3Seconds,
+          metric: withMockMetric("first-t3", stats.timeToFirstT3Seconds),
         },
         {
           id: "most-troops-killed",
           label: "Most Troops Killed",
           kind: "count",
-          metric: stats.mostTroopsKilled,
+          metric: withMockMetric("most-troops-killed", stats.mostTroopsKilled),
         },
         {
           id: "highest-explored-tiles",
           label: "Highest Explored Tiles",
           kind: "count",
-          metric: stats.highestExploredTiles,
+          metric: withMockMetric("highest-explored-tiles", stats.highestExploredTiles),
         },
         {
           id: "biggest-structures-owned",
           label: "Most Structures Owned",
           kind: "count",
-          metric: stats.biggestStructuresOwned,
+          metric: withMockMetric("biggest-structures-owned", stats.biggestStructuresOwned),
         },
       ],
       [stats],
@@ -410,12 +482,15 @@ const BlitzAwardsHeroLeftCard = forwardRef<SVGSVGElement, BlitzAwardsHeroLeftCar
                 (award.id === "first-blood" || award.id === "first-t3" || award.id === "first-hyperstructure") && !isEmpty;
               const isHero = award.id === "first-hyperstructure";
               const isSide = award.id === "first-blood" || award.id === "first-t3";
+              const isNoT3 = award.id === "first-t3" && isEmpty;
+              const displayValue = isNoT3 ? "No T3" : formatAwardValue(award.metric, award.kind);
               const cardClasses = [
                 "award",
                 `award-${award.id}`,
                 isHero ? "award-hero" : "",
                 isSide ? "award-side" : "",
                 !isHero && !isSide ? "award-bottom" : "",
+                isNoT3 ? "award-no-t3" : "",
                 isHighlightValue ? "award-highlight-value" : "",
                 isEmpty ? "award-empty" : "",
               ]
@@ -425,7 +500,7 @@ const BlitzAwardsHeroLeftCard = forwardRef<SVGSVGElement, BlitzAwardsHeroLeftCar
               return (
                 <div key={award.id} className={cardClasses}>
                   <div className="award-title">{award.label}</div>
-                  <div className="award-value">{formatAwardValue(award.metric, award.kind)}</div>
+                  <div className="award-value">{displayValue}</div>
                   {winner ? (
                     <div className="award-winner-row">
                       <div className="award-winner">{winner.name}</div>
