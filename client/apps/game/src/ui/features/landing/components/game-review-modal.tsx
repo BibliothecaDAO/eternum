@@ -5,7 +5,6 @@ import {
   type GameReviewData,
 } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
-import { BlitzAwardsHeroLeftCardWithSelector } from "@/ui/shared/components/blitz-awards-hero-left-card";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzGameStatsCardWithSelector } from "@/ui/shared/components/blitz-game-stats-card";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
@@ -27,7 +26,6 @@ type ReviewStepId =
   | "personal"
   | "stats"
   | "awards"
-  | "awards-option-6"
   | "map-fingerprint"
   | "leaderboard"
   | "submit-score"
@@ -64,7 +62,6 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
   personal: "Personal Score Card",
   stats: "Global Stats",
   awards: "Blitz Awards",
-  "awards-option-6": "Blitz Awards Option 6",
   "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
   "submit-score": "Submit Score + MMR",
@@ -73,11 +70,11 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
 };
 
 const isAwardsStep = (step: ReviewStepId): boolean => {
-  return step === "awards" || step === "awards-option-6";
+  return step === "awards";
 };
 
 const isTimeFocusedAwardsStep = (step: ReviewStepId): boolean => {
-  return step === "awards-option-6";
+  return step === "awards";
 };
 
 const buildStepShareMessage = ({
@@ -619,7 +616,6 @@ export const GameReviewModal = ({
       "personal",
       "stats",
       "awards",
-      "awards-option-6",
       "map-fingerprint",
       "leaderboard",
       "submit-score",
@@ -1047,19 +1043,6 @@ export const GameReviewModal = ({
               )}
 
               {currentStep === "awards" && (
-                <div className="space-y-3">
-                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsHeroLeftCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {currentStep === "awards-option-6" && (
                 <div className="space-y-3">
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
                     <BlitzAwardsOptionSixCardWithSelector
