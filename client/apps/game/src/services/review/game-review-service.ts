@@ -1211,10 +1211,15 @@ export const finalizeGameRankingAndMMR = async ({
   let rankingSubmitted = false;
   let mmrSubmitted = false;
   let mmrError: string | null = null;
+  const totalRegistrations = Math.max(finalization.registrationCount, finalization.registeredPlayers.length);
+  const useSingleRegistrantClaim = totalRegistrations === 1;
 
   if (!finalization.rankingFinalized) {
-    if (playersForSubmission.length === 1) {
-      const onlyPlayer = playersForSubmission[0];
+    if (useSingleRegistrantClaim) {
+      const onlyPlayer = finalization.registeredPlayers[0] ?? playersForSubmission[0];
+      if (!onlyPlayer) {
+        throw new Error("Single-registrant game detected but no registered player address was found.");
+      }
       const claimNoGameCall: Call = {
         contractAddress: prizeDistributionAddress,
         entrypoint: "blitz_prize_claim_no_game",
