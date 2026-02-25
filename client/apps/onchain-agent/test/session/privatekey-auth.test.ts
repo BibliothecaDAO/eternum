@@ -13,14 +13,10 @@ describe("privatekey-auth", () => {
   });
 
   it("throws when private key is missing", () => {
-    expect(() => createPrivateKeyAccount("http://localhost:5050", "", "0xdeadbeef")).toThrow(
-      "PRIVATE_KEY",
-    );
+    expect(() => createPrivateKeyAccount("http://localhost:5050", "", "0xdeadbeef")).toThrow("PRIVATE_KEY");
   });
 
   it("throws when address is missing", () => {
-    expect(() => createPrivateKeyAccount("http://localhost:5050", "0x1234", "")).toThrow(
-      "ACCOUNT_ADDRESS",
-    );
+    expect(() => createPrivateKeyAccount("http://localhost:5050", "0x1234", "")).toThrow("ACCOUNT_ADDRESS");
   });
 });

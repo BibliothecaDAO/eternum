@@ -144,16 +144,18 @@ Frontmatter must be plain YAML — no code comments, no markdown, no extra forma
 ## Action System
 
 Actions are **dynamically generated from contract ABIs** at startup. The manifest is loaded from the deployed world,
-each contract's ABI is parsed, and every external entrypoint becomes an available action. Domain overlays enrich raw
-ABI entrypoints with game-specific names, descriptions, parameter transforms (e.g., precision scaling for resource
-amounts), and pre-flight validation checks.
+each contract's ABI is parsed, and every external entrypoint becomes an available action. Domain overlays enrich raw ABI
+entrypoints with game-specific names, descriptions, parameter transforms (e.g., precision scaling for resource amounts),
+and pre-flight validation checks.
 
 This means:
-- **`list_actions` always reflects the live contract ABI** — if the contracts are upgraded, new actions appear automatically
+
+- **`list_actions` always reflects the live contract ABI** — if the contracts are upgraded, new actions appear
+  automatically
 - Some actions have **aliases** (e.g., `travel_explorer` and `explore` both map to the underlying `move_explorer`)
 - **Admin/config entrypoints are hidden** — `config_systems`, `dev_resource_systems`, `season_systems`, and
   `realm_internal_systems` are not exposed
-- The composite `move_to` action uses A* pathfinding to auto-batch travel/explore steps
+- The composite `move_to` action uses A\* pathfinding to auto-batch travel/explore steps
 
 ## Decision Loop
 
@@ -180,7 +182,7 @@ Use `list_actions` to see all available actions with their parameters. Key actio
 - **Economy**: `create_building`, `destroy_building`, `pause_production`, `resume_production`, `send_resources`,
   `pickup_resources`, `claim_arrivals`, `burn_resource_for_labor_production`, `burn_labor_for_resource_production`
 - **Movement**: `move_explorer` (unified: `explore=false` for multi-hex travel, `explore=true` for single-hex
-  exploration), `move_to` (A* pathfinding composite — computes optimal path and batches travel/explore automatically)
+  exploration), `move_to` (A\* pathfinding composite — computes optimal path and batches travel/explore automatically)
 - **Combat**: `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid`
 - **Troops**: `create_explorer`, `add_to_explorer`, `delete_explorer`, `add_guard`, `delete_guard`,
   `swap_explorer_to_guard`, `swap_guard_to_explorer`, `swap_explorer_to_explorer`
