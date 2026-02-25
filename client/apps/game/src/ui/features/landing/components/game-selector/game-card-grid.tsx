@@ -11,6 +11,7 @@ import type { WorldSelectionInput } from "@/runtime/world";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import {
   getChainLabel,
   resolveConnectedTxChainFromRuntime,
@@ -182,6 +183,7 @@ const GameCard = ({
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
   const winnerJackpotAmount = game.config?.winnerJackpotAmount ?? 0n;
+  const isMainnetGame = game.chain === "mainnet";
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
   const targetChainLabel = getChainLabel(game.chain);
@@ -384,7 +386,7 @@ const GameCard = ({
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Checking fee
                 </div>
-              ) : !hasSufficientFeeBalance ? (
+              ) : !hasSufficientFeeBalance && isMainnetGame ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30">
                   Insufficient balance
                 </div>
@@ -449,11 +451,51 @@ const GameCard = ({
           )}
         </div>
 
-        {/* LORDS fee and winner jackpot */}
-        <div className="text-[10px] text-gold/50 text-center space-y-0.5">
-          {hasLordsFee && <div>Fee: {formatLordsAmount(lordsFeeAmount)} LORDS</div>}
-          <div>Total Prize: {formatLordsAmount(winnerJackpotAmount)} LORDS</div>
-        </div>
+        {/* Only show fee/prize economics for mainnet games */}
+        {isMainnetGame && (
+          <div className="relative overflow-hidden rounded border border-gold/25 bg-gradient-to-b from-gold/[0.07] to-transparent">
+            {/* Animated shimmer sweep */}
+            <div
+              className="absolute inset-0 animate-shimmer pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, transparent 0%, rgba(223,170,84,0.1) 50%, transparent 100%)",
+                backgroundSize: "200% 100%",
+              }}
+            />
+            {/* Corner ornaments */}
+            <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 border-t border-l border-gold/35" />
+            <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 border-t border-r border-gold/35" />
+            <div className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 border-b border-l border-gold/35" />
+            <div className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 border-b border-r border-gold/35" />
+
+            <div className="relative px-2.5 py-1.5">
+              {/* Prize Pool - main attraction */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 shrink-0">
+                  <Trophy className="w-2.5 h-2.5 text-gold/70" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-gold/55">Prize Pool</span>
+                </div>
+                <div className="flex items-center gap-0.5 min-w-0">
+                  <span className="text-[13px] font-bold text-gold tabular-nums text-shadow-glow-yellow-xs truncate">
+                    {formatLordsAmount(winnerJackpotAmount)}
+                  </span>
+                  <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="shrink-0 ml-0.5" />
+                </div>
+              </div>
+
+              {/* Entry Fee - secondary */}
+              {hasLordsFee && (
+                <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-gold/[0.12]">
+                  <span className="text-[8px] uppercase tracking-wider text-white/30 shrink-0">Entry Fee</span>
+                  <span className="flex items-center gap-0.5 text-[9px] text-white/40 tabular-nums">
+                    {formatLordsAmount(lordsFeeAmount)}
+                    <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="opacity-40" />
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Error message - only show if not already registered */}
         {registrationStage === "error" && error && !showRegistered && (

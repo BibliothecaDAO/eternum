@@ -169,7 +169,8 @@ export const useWorldRegistration = ({
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
-  const needsFeeBalanceCheck = Boolean(config?.feeTokenAddress && feeAmount > 0n);
+  const requiresFeeBalanceForRegistration = chain === "mainnet";
+  const needsFeeBalanceCheck = requiresFeeBalanceForRegistration && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
   // Check if registration is open
   const now = Date.now() / 1000;
