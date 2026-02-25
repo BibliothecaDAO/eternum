@@ -11,7 +11,7 @@ import type { AgentConfig } from "./config";
 // Agent handle — the subset of GameAgentResult used by config management
 // ---------------------------------------------------------------------------
 
-export interface AgentHandle {
+interface AgentHandle {
   ticker: {
     start(): void;
     stop(): void;
@@ -27,7 +27,7 @@ export interface AgentHandle {
 // Config path aliases & backend keys
 // ---------------------------------------------------------------------------
 
-export const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
+const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
   rpcurl: "rpcUrl",
   "world.rpcurl": "rpcUrl",
   toriiurl: "toriiUrl",
@@ -54,7 +54,7 @@ export const CONFIG_PATH_ALIASES: Record<string, keyof AgentConfig> = {
   "agent.datadir": "dataDir",
 };
 
-export const BACKEND_KEYS = new Set<keyof AgentConfig>([
+const BACKEND_KEYS = new Set<keyof AgentConfig>([
   "rpcUrl",
   "toriiUrl",
   "worldAddress",
@@ -68,12 +68,12 @@ export const BACKEND_KEYS = new Set<keyof AgentConfig>([
 // Parsers
 // ---------------------------------------------------------------------------
 
-export function resolveConfigPath(pathValue: string): keyof AgentConfig | null {
+function resolveConfigPath(pathValue: string): keyof AgentConfig | null {
   const normalized = pathValue.trim().toLowerCase();
   return CONFIG_PATH_ALIASES[normalized] ?? null;
 }
 
-export function parseBoolean(value: unknown, key: string): boolean {
+function parseBoolean(value: unknown, key: string): boolean {
   if (typeof value === "boolean") {
     return value;
   }
@@ -85,7 +85,7 @@ export function parseBoolean(value: unknown, key: string): boolean {
   throw new Error(`Invalid boolean for ${key}`);
 }
 
-export function parsePositiveInt(value: unknown, key: string): number {
+function parsePositiveInt(value: unknown, key: string): number {
   const numeric = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numeric) || numeric <= 0) {
     throw new Error(`Invalid positive number for ${key}`);
@@ -93,14 +93,14 @@ export function parsePositiveInt(value: unknown, key: string): number {
   return Math.floor(numeric);
 }
 
-export function parseString(value: unknown, key: string): string {
+function parseString(value: unknown, key: string): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`Invalid string for ${key}`);
   }
   return value.trim();
 }
 
-export function parseConfigValue(key: keyof AgentConfig, value: unknown): AgentConfig[keyof AgentConfig] {
+function parseConfigValue(key: keyof AgentConfig, value: unknown): AgentConfig[keyof AgentConfig] {
   switch (key) {
     case "tickIntervalMs":
       return parsePositiveInt(value, key);
@@ -145,7 +145,7 @@ function updateResultForKey(
 // Factory
 // ---------------------------------------------------------------------------
 
-export interface RuntimeConfigDeps {
+interface RuntimeConfigDeps {
   getConfig: () => AgentConfig;
   setConfig: (config: AgentConfig) => void;
   getAgent: () => AgentHandle | null;

@@ -1,4 +1,4 @@
-export type EventType =
+type EventType =
   | "startup"
   | "tick"
   | "decision"
@@ -9,9 +9,9 @@ export type EventType =
   | "config"
   | "error"
   | "shutdown";
-export type Verbosity = "quiet" | "actions" | "decisions" | "all";
+type Verbosity = "quiet" | "actions" | "decisions" | "all";
 
-export interface AgentEvent {
+interface AgentEvent {
   type: EventType;
   [key: string]: unknown;
 }

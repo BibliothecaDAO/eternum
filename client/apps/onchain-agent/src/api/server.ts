@@ -10,7 +10,7 @@ export interface ApiDeps {
   emitter: JsonEmitter;
 }
 
-export interface AuthCallbackHandler {
+interface AuthCallbackHandler {
   /** Called when /auth/callback receives session data from Cartridge redirect */
   onCallback: (sessionData: string) => void;
 }

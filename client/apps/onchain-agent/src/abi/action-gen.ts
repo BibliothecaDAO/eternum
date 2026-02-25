@@ -17,7 +17,7 @@ import type { ABIEntrypoint, ABIParam, ContractABIResult, DomainOverlayMap, Mani
 
 // ── Action generation ────────────────────────────────────────────────────────
 
-export interface GeneratedActions {
+interface GeneratedActions {
   /** Action definitions for the LLM (passed to createGameAgent) */
   definitions: ActionDefinition[];
   /** Routing table: action type → contract info for execution */

@@ -17,7 +17,7 @@ import { extractAllFromManifest, getGameEntrypoints } from "./parser";
 /** On-chain amounts (troops, resources) must be multiplied by this factor. */
 export const RESOURCE_PRECISION = 1_000_000_000;
 
-export const RESOURCE_IDS =
+const RESOURCE_IDS =
   "Resource IDs: 1=Stone, 2=Coal, 3=Wood, 4=Copper, 5=Ironwood, 6=Obsidian, 7=Gold, 8=Silver, " +
   "9=Mithral, 10=AlchemicalSilver, 11=ColdIron, 12=DeepCrystal, 13=Ruby, 14=Diamonds, " +
   "15=Hartwood, 16=Ignium, 17=TwilightQuartz, 18=TrueIce, 19=Adamantine, 20=Sapphire, " +
@@ -25,7 +25,7 @@ export const RESOURCE_IDS =
   "26=Knight, 27=KnightT2, 28=KnightT3, 29=Crossbowman, 30=CrossbowmanT2, 31=CrossbowmanT3, " +
   "32=Paladin, 33=PaladinT2, 34=PaladinT3, 35=Wheat, 36=Fish, 37=Lords, 38=Essence";
 
-export const BUILDING_TYPES =
+const BUILDING_TYPES =
   "Building IDs: 0=None, 1=WorkersHut, 2=Storehouse, 3=Stone, 4=Coal, 5=Wood, 6=Copper, " +
   "7=Ironwood, 8=Obsidian, 9=Gold, 10=Silver, 11=Mithral, 12=AlchemicalSilver, 13=ColdIron, " +
   "14=DeepCrystal, 15=Ruby, 16=Diamonds, 17=Hartwood, 18=Ignium, 19=TwilightQuartz, " +
@@ -34,7 +34,7 @@ export const BUILDING_TYPES =
   "31=CrossbowmanT1, 32=CrossbowmanT2, 33=CrossbowmanT3, 34=PaladinT1, 35=PaladinT2, " +
   "36=PaladinT3, 37=Wheat, 38=Fish, 39=Essence";
 
-export const BUILDING_GUIDE =
+const BUILDING_GUIDE =
   "BUILDING GUIDE — build cost (simple=Labor only | complex=Labor+resources), per-tick production consumption:\n" +
   "Economy:\n" +
   "  1:WorkersHut — simple:60L | complex:20L+20Wood | pop:0, +6 population\n" +

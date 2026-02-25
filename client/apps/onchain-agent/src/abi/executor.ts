@@ -18,7 +18,7 @@ export interface ABIExecutor {
   execute: (action: GameAction) => Promise<ActionResult>;
 }
 
-export interface ABIExecutorOptions {
+interface ABIExecutorOptions {
   /** Routing table from action-gen: action type → contract info. */
   routes: Map<string, ActionRoute>;
   /** Pre-flight hooks can return an error string to abort before tx. */

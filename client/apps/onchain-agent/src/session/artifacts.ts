@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { WorldProfile } from "../world/types";
 
-export interface AuthMetadata {
+interface AuthMetadata {
   url: string;
   status: "pending" | "active" | "expired" | "none";
   worldName: string;
@@ -12,7 +12,7 @@ export interface AuthMetadata {
   address?: string;
 }
 
-export interface WorldArtifacts {
+interface WorldArtifacts {
   profile: WorldProfile;
   manifest: { contracts: unknown[] };
   policy: Record<string, unknown>;
