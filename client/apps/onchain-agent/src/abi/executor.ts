@@ -5,7 +5,7 @@
  * starknet.js to encode calldata directly from the manifest ABI. Overlay
  * param transforms are applied before encoding.
  */
-import { Contract, CairoCustomEnum, type Account, type Call } from "starknet";
+import { Contract, CairoCustomEnum, CallData, type Account, type Call } from "starknet";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { ActionResult, ActionRoute, DomainOverlay, GameAction, Manifest } from "./types";
@@ -254,17 +254,31 @@ export function createABIExecutor(
     }
 
     try {
-      // Coerce plain numeric enum values to CairoCustomEnum instances
-      const coercedParams = coerceEnumParams(transformedParams, route.entrypoint, cached.abi as unknown[], globalEnums);
+      // Normalize Span values (handles LLM sending numbers/strings instead of arrays)
+      // but do NOT coerce to CairoCustomEnum — we use CallData.compile() with raw
+      // numeric indices which avoids the bundler class identity mismatch.
+      const normalizedParams = normalizeSpanParams(transformedParams, route.entrypoint, cached.abi as unknown[], globalEnums);
 
       // Coerce struct params: ensure object shape with default fields
-      const structCoerced = coerceStructParams(coercedParams, route.entrypoint, cached.abi as unknown[], globalStructs);
+      const structCoerced = coerceStructParams(normalizedParams, route.entrypoint, cached.abi as unknown[], globalStructs);
+
+      // Ensure Span/Array params exist — starknet.js crashes on undefined arrays.
+      ensureSpanParams(structCoerced, route.entrypoint, cached.abi as unknown[]);
 
       // Debug: log coercion results so we can diagnose enum failures
       debugLogCoercion(action.type, route.entrypoint, transformedParams, structCoerced);
 
-      // Use Contract.populate() for ABI-aware calldata encoding
-      const call: Call = cached.contract.populate(route.entrypoint, structCoerced as any);
+      // Build Call object manually using CallData.compile() with raw values.
+      // We CANNOT use Contract.populate() because bun bundling creates a separate
+      // CairoCustomEnum class identity, causing starknet.js's internal instanceof
+      // checks to fail (unwrap/activeVariant "is not a function" errors).
+      // CallData.compile() with raw numeric enum indices works correctly.
+      const positionalArgs = toPositionalArgs(structCoerced, route.entrypoint, cached.abi as unknown[]);
+      const call: Call = {
+        contractAddress: route.contractAddress,
+        entrypoint: route.entrypoint,
+        calldata: CallData.compile(positionalArgs),
+      };
       const result = await account.execute(call);
       const txHash = result?.transaction_hash ?? (result as any)?.transactionHash ?? undefined;
 
@@ -540,6 +554,131 @@ function coerceStructParams(
   }
 
   return result;
+}
+
+// ── Span normalization (without CairoCustomEnum) ─────────────────────────────
+
+/**
+ * Normalize params for CallData.compile() — handles Span values and key mapping
+ * but does NOT coerce to CairoCustomEnum (avoids bundler class identity issues).
+ * Raw numeric enum indices work fine with CallData.compile().
+ */
+function normalizeSpanParams(
+  params: Record<string, unknown>,
+  entrypoint: string,
+  abi: unknown[],
+  _globalEnums?: EnumMap,
+): Record<string, unknown> {
+  let inputs: { name: string; type: string }[] | undefined;
+  for (const entry of abi as any[]) {
+    if (entry.type === "interface" && Array.isArray(entry.items)) {
+      const fn = entry.items.find(
+        (item: any) => item.type === "function" && item.name === entrypoint,
+      );
+      if (fn) {
+        inputs = fn.inputs;
+        break;
+      }
+    }
+  }
+  if (!inputs) return params;
+
+  // Normalize camelCase keys to snake_case ABI names
+  const result = normalizeParamKeys(params, inputs);
+
+  // Normalize Span values (ensure arrays)
+  for (const input of inputs) {
+    if (
+      input.type.startsWith("core::array::Span::") ||
+      input.type.startsWith("core::array::Array::")
+    ) {
+      const val = result[input.name];
+      if (val !== undefined && val !== null && !Array.isArray(val)) {
+        // Use normalizeSpanValues from frontboat's fix
+        const normalized = normalizeSpanValues(val);
+        if (normalized) result[input.name] = normalized;
+      }
+    }
+  }
+
+  return result;
+}
+
+// ── Positional args conversion ───────────────────────────────────────────────
+
+/**
+ * Convert a named params object to a positional args array matching ABI input order.
+ *
+ * starknet.js v8's Contract.populate() has two code paths:
+ * - Array args → passed directly to parseCalldataField (no instanceof checks)
+ * - Object args → routed through orderPropsByAbi which does instanceof CairoCustomEnum
+ *   checks that fail when the bundle creates a separate class identity.
+ *
+ * By converting to positional args we bypass the broken orderPropsByAbi entirely.
+ */
+function toPositionalArgs(
+  params: Record<string, unknown>,
+  entrypoint: string,
+  abi: unknown[],
+): unknown[] {
+  let inputs: { name: string; type: string }[] | undefined;
+  for (const entry of abi as any[]) {
+    if (entry.type === "interface" && Array.isArray(entry.items)) {
+      const fn = entry.items.find(
+        (item: any) => item.type === "function" && item.name === entrypoint,
+      );
+      if (fn) {
+        inputs = fn.inputs;
+        break;
+      }
+    }
+  }
+  if (!inputs) return Object.values(params);
+  return inputs.map((input) => params[input.name]);
+}
+
+// ── Span param safety ────────────────────────────────────────────────────────
+
+/**
+ * Ensure all Span/Array ABI params exist in the params object.
+ * starknet.js v8 crashes with "myArray.map is not a function" if a Span param
+ * is undefined. This function:
+ * 1. Defaults missing Span params to []
+ * 2. Wraps non-array Span values in an array
+ */
+function ensureSpanParams(
+  params: Record<string, unknown>,
+  entrypoint: string,
+  abi: unknown[],
+): void {
+  let inputs: { name: string; type: string }[] | undefined;
+  for (const entry of abi as any[]) {
+    if (entry.type === "interface" && Array.isArray(entry.items)) {
+      const fn = entry.items.find(
+        (item: any) => item.type === "function" && item.name === entrypoint,
+      );
+      if (fn) {
+        inputs = fn.inputs;
+        break;
+      }
+    }
+  }
+  if (!inputs) return;
+
+  for (const input of inputs) {
+    if (
+      input.type.startsWith("core::array::Span::") ||
+      input.type.startsWith("core::array::Array::")
+    ) {
+      const val = params[input.name];
+      if (val === undefined || val === null) {
+        params[input.name] = [];
+      } else if (!Array.isArray(val)) {
+        // Single value → wrap in array
+        params[input.name] = [val];
+      }
+    }
+  }
 }
 
 // ── Param transforms ─────────────────────────────────────────────────────────
