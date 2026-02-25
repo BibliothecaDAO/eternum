@@ -1,6 +1,8 @@
 # Axis
 
-Autonomous AI agent that plays Eternum -- a hex-grid strategy game on StarkNet. Discovers active game worlds, authenticates via Cartridge Controller, and runs an LLM-driven tick loop that observes game state and executes on-chain actions.
+Autonomous AI agent that plays Eternum -- a hex-grid strategy game on StarkNet. Discovers active game worlds,
+authenticates via Cartridge Controller, and runs an LLM-driven tick loop that observes game state and executes on-chain
+actions.
 
 ## Features
 
@@ -59,44 +61,46 @@ The only required config is an LLM API key. Everything else is auto-discovered:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-On first run, the agent discovers active worlds via Cartridge Factory SQL, presents a TUI picker, and opens your browser to approve a Cartridge Controller session. After that, the tick loop starts automatically.
+On first run, the agent discovers active worlds via Cartridge Factory SQL, presents a TUI picker, and opens your browser
+to approve a Cartridge Controller session. After that, the tick loop starts automatically.
 
 Set `SLOT_NAME=<world>` to skip the picker and auto-select a world.
 
 ## CLI Commands
 
-| Command | Description |
-| --- | --- |
-| `axis` / `axis run` | Start the agent in TUI mode (default) |
-| `axis run --headless` | Start the agent headlessly with NDJSON output |
-| `axis worlds` | List discovered worlds across all chains |
-| `axis auth <world>` | Generate auth URL, persist artifacts, and wait for approval |
-| `axis auth-complete <world>` | Complete auth with a redirect URL or raw session data |
-| `axis auth-status <world>` | Check whether a session is active, expired, or pending |
-| `axis auth-url <world>` | Print the stored auth URL for a world |
-| `axis doctor` | Validate configuration and report issues |
-| `axis init` | Scaffold `~/.eternum-agent/` with default data files and `.env` |
-| `axis --version` / `axis -v` | Print version |
-| `axis --help` / `axis -h` | Print usage help |
+| Command                      | Description                                                     |
+| ---------------------------- | --------------------------------------------------------------- |
+| `axis` / `axis run`          | Start the agent in TUI mode (default)                           |
+| `axis run --headless`        | Start the agent headlessly with NDJSON output                   |
+| `axis worlds`                | List discovered worlds across all chains                        |
+| `axis auth <world>`          | Generate auth URL, persist artifacts, and wait for approval     |
+| `axis auth-complete <world>` | Complete auth with a redirect URL or raw session data           |
+| `axis auth-status <world>`   | Check whether a session is active, expired, or pending          |
+| `axis auth-url <world>`      | Print the stored auth URL for a world                           |
+| `axis doctor`                | Validate configuration and report issues                        |
+| `axis init`                  | Scaffold `~/.eternum-agent/` with default data files and `.env` |
+| `axis --version` / `axis -v` | Print version                                                   |
+| `axis --help` / `axis -h`    | Print usage help                                                |
 
 ## Run Options
 
 All flags apply to `axis run`:
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `--headless` | off | Headless mode -- no TUI, emits NDJSON to stdout |
-| `--world=<name>` | _(none)_ | Target world (required for headless mode) |
-| `--auth=session\|privatekey` | `session` | Auth strategy: Cartridge session or raw private key |
-| `--api-port=<port>` | _(disabled)_ | Enable HTTP API on this port |
-| `--api-host=<host>` | `127.0.0.1` | Bind address for the HTTP API |
-| `--stdin` | off | Enable stdin JSON command reader |
-| `--verbosity=<level>` | `decisions` | Output filter: `quiet`, `actions`, `decisions`, `all` |
-| `--json` | off | JSON output for non-run commands |
+| Flag                         | Default      | Description                                           |
+| ---------------------------- | ------------ | ----------------------------------------------------- |
+| `--headless`                 | off          | Headless mode -- no TUI, emits NDJSON to stdout       |
+| `--world=<name>`             | _(none)_     | Target world (required for headless mode)             |
+| `--auth=session\|privatekey` | `session`    | Auth strategy: Cartridge session or raw private key   |
+| `--api-port=<port>`          | _(disabled)_ | Enable HTTP API on this port                          |
+| `--api-host=<host>`          | `127.0.0.1`  | Bind address for the HTTP API                         |
+| `--stdin`                    | off          | Enable stdin JSON command reader                      |
+| `--verbosity=<level>`        | `decisions`  | Output filter: `quiet`, `actions`, `decisions`, `all` |
+| `--json`                     | off          | JSON output for non-run commands                      |
 
 ## Headless Mode
 
-Headless mode runs the agent without a TUI, designed for AI orchestrators, remote servers, and multi-agent fleets. It requires `--world` and a pre-authenticated session (via `axis auth`).
+Headless mode runs the agent without a TUI, designed for AI orchestrators, remote servers, and multi-agent fleets. It
+requires `--world` and a pre-authenticated session (via `axis auth`).
 
 ```bash
 axis run --headless --world=my-world --api-port=3000 --stdin
@@ -104,16 +108,17 @@ axis run --headless --world=my-world --api-port=3000 --stdin
 
 ### NDJSON Output
 
-All agent events stream to stdout as newline-delimited JSON. Each line contains a `type` field and an ISO 8601 `ts` timestamp.
+All agent events stream to stdout as newline-delimited JSON. Each line contains a `type` field and an ISO 8601 `ts`
+timestamp.
 
 Event types and their verbosity levels:
 
-| Verbosity | Event Types Included |
-| --- | --- |
-| `quiet` | `error`, `session`, `shutdown` |
-| `actions` | + `action` |
+| Verbosity   | Event Types Included                           |
+| ----------- | ---------------------------------------------- |
+| `quiet`     | `error`, `session`, `shutdown`                 |
+| `actions`   | + `action`                                     |
 | `decisions` | + `decision`, `heartbeat`, `prompt`, `startup` |
-| `all` | + `tick` |
+| `all`       | + `tick`                                       |
 
 Example output:
 
@@ -128,15 +133,15 @@ Example output:
 
 Enable with `--api-port=<port>`. All endpoints accept and return JSON.
 
-| Method | Path | Body | Description |
-| --- | --- | --- | --- |
-| `POST` | `/prompt` | `{"content": "..."}` | Send a prompt to the agent's LLM queue |
-| `GET` | `/status` | -- | Agent status (tick count, session, loop state, world) |
-| `GET` | `/state` | -- | World state snapshot |
-| `GET` | `/events` | -- | SSE stream of all agent events (`text/event-stream`) |
-| `POST` | `/config` | `{"changes": [{"path": "...", "value": ...}]}` | Update runtime configuration |
-| `POST` | `/shutdown` | -- | Graceful shutdown |
-| `GET/POST` | `/auth/callback` | -- | Cartridge auth callback receiver |
+| Method     | Path             | Body                                           | Description                                           |
+| ---------- | ---------------- | ---------------------------------------------- | ----------------------------------------------------- |
+| `POST`     | `/prompt`        | `{"content": "..."}`                           | Send a prompt to the agent's LLM queue                |
+| `GET`      | `/status`        | --                                             | Agent status (tick count, session, loop state, world) |
+| `GET`      | `/state`         | --                                             | World state snapshot                                  |
+| `GET`      | `/events`        | --                                             | SSE stream of all agent events (`text/event-stream`)  |
+| `POST`     | `/config`        | `{"changes": [{"path": "...", "value": ...}]}` | Update runtime configuration                          |
+| `POST`     | `/shutdown`      | --                                             | Graceful shutdown                                     |
+| `GET/POST` | `/auth/callback` | --                                             | Cartridge auth callback receiver                      |
 
 Example -- steer the agent via HTTP:
 
@@ -174,26 +179,26 @@ done
 
 ### Environment Variables
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `ANTHROPIC_API_KEY` | _(required for anthropic)_ | Anthropic API key |
-| `OPENAI_API_KEY` | _(required for openai)_ | OpenAI API key |
-| `MODEL_PROVIDER` | `anthropic` | LLM provider (`anthropic`, `openai`, `openrouter`, `google`) |
-| `MODEL_ID` | `claude-sonnet-4-5-20250929` | LLM model ID |
-| `CHAIN` | `slot` | Chain: `slot`, `slottest`, `local`, `sepolia`, `mainnet` |
-| `SLOT_NAME` | _(optional)_ | Auto-select a discovered world by name (skips TUI picker) |
-| `GAME_NAME` | `eternum` | Game identifier used for session scoping |
-| `CHAIN_ID` | _(auto-derived)_ | StarkNet chain ID hex; derived from RPC URL or chain default |
-| `TICK_INTERVAL_MS` | `60000` | Tick loop interval in milliseconds |
-| `LOOP_ENABLED` | `true` | Auto-start tick loop on launch |
-| `ETERNUM_AGENT_HOME` | `~/.eternum-agent` | Base directory for all runtime files |
-| `DATA_DIR` | `$ETERNUM_AGENT_HOME/data` | Data directory (soul, tasks, heartbeat, debug logs) |
-| `SESSION_BASE_PATH` | `$ETERNUM_AGENT_HOME/.cartridge` | Cartridge Controller session storage |
-| `PRIVATE_KEY` | _(optional)_ | StarkNet private key (headless `--auth=privatekey` mode) |
-| `ACCOUNT_ADDRESS` | _(optional)_ | StarkNet account address (headless `--auth=privatekey` mode) |
-| `MASTER_ADDRESS` | _(optional)_ | Master account address for auto fee-token top-up (non-mainnet) |
-| `MASTER_PRIVATE_KEY` | _(optional)_ | Master account private key for auto fee-token top-up |
-| `CARTRIDGE_API_BASE` | `https://api.cartridge.gg` | Cartridge API base URL for world discovery |
+| Variable             | Default                          | Description                                                    |
+| -------------------- | -------------------------------- | -------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`  | _(required for anthropic)_       | Anthropic API key                                              |
+| `OPENAI_API_KEY`     | _(required for openai)_          | OpenAI API key                                                 |
+| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (`anthropic`, `openai`, `openrouter`, `google`)   |
+| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | LLM model ID                                                   |
+| `CHAIN`              | `slot`                           | Chain: `slot`, `slottest`, `local`, `sepolia`, `mainnet`       |
+| `SLOT_NAME`          | _(optional)_                     | Auto-select a discovered world by name (skips TUI picker)      |
+| `GAME_NAME`          | `eternum`                        | Game identifier used for session scoping                       |
+| `CHAIN_ID`           | _(auto-derived)_                 | StarkNet chain ID hex; derived from RPC URL or chain default   |
+| `TICK_INTERVAL_MS`   | `60000`                          | Tick loop interval in milliseconds                             |
+| `LOOP_ENABLED`       | `true`                           | Auto-start tick loop on launch                                 |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Base directory for all runtime files                           |
+| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Data directory (soul, tasks, heartbeat, debug logs)            |
+| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Cartridge Controller session storage                           |
+| `PRIVATE_KEY`        | _(optional)_                     | StarkNet private key (headless `--auth=privatekey` mode)       |
+| `ACCOUNT_ADDRESS`    | _(optional)_                     | StarkNet account address (headless `--auth=privatekey` mode)   |
+| `MASTER_ADDRESS`     | _(optional)_                     | Master account address for auto fee-token top-up (non-mainnet) |
+| `MASTER_PRIVATE_KEY` | _(optional)_                     | Master account private key for auto fee-token top-up           |
+| `CARTRIDGE_API_BASE` | `https://api.cartridge.gg`       | Cartridge API base URL for world discovery                     |
 
 ### Manual Overrides (Skip Discovery)
 
@@ -234,7 +239,10 @@ WORLD_ADDRESS=0x123...
 
 ### TUI Mode (default)
 
-The agent uses [Cartridge Controller](https://github.com/cartridge-gg/controller) sessions -- no private keys in config. On first run, it opens a browser URL for you to approve the session with your Cartridge account (Passkeys/WebAuthn). The session persists to disk and reconnects automatically on restart. Delete `~/.eternum-agent/.cartridge/session.json` to force re-auth.
+The agent uses [Cartridge Controller](https://github.com/cartridge-gg/controller) sessions -- no private keys in config.
+On first run, it opens a browser URL for you to approve the session with your Cartridge account (Passkeys/WebAuthn). The
+session persists to disk and reconnects automatically on restart. Delete `~/.eternum-agent/.cartridge/session.json` to
+force re-auth.
 
 ### Headless Mode
 
@@ -265,18 +273,18 @@ PRIVATE_KEY=0x... ACCOUNT_ADDRESS=0x... axis run --headless --world=my-world --a
 
 ## Auth Commands
 
-| Flag | Applies To | Description |
-| --- | --- | --- |
-| `--all` | `auth`, `auth-status` | Apply to all discovered worlds |
-| `--approve` | `auth` | Auto-approve via agent-browser (no manual browser step) |
-| `--method=<type>` | `auth` | Auth method for `--approve` (e.g., `password`) |
-| `--username=<user>` | `auth` | Username for `--approve` |
-| `--password=<pass>` | `auth` | Password for `--approve` |
-| `--callback-url=<url>` | `auth` | Public URL for auth callback (remote VPS) |
-| `--timeout=<ms>` | `auth` | Approval wait timeout in milliseconds |
-| `--redirect-url=<url>` | `auth-complete` | Paste redirect URL to complete auth offline |
-| `--session-data=<base64>` | `auth-complete` | Raw session data to complete auth offline |
-| `--json` | `auth`, `auth-complete`, `auth-status`, `worlds` | JSON output |
+| Flag                      | Applies To                                       | Description                                             |
+| ------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| `--all`                   | `auth`, `auth-status`                            | Apply to all discovered worlds                          |
+| `--approve`               | `auth`                                           | Auto-approve via agent-browser (no manual browser step) |
+| `--method=<type>`         | `auth`                                           | Auth method for `--approve` (e.g., `password`)          |
+| `--username=<user>`       | `auth`                                           | Username for `--approve`                                |
+| `--password=<pass>`       | `auth`                                           | Password for `--approve`                                |
+| `--callback-url=<url>`    | `auth`                                           | Public URL for auth callback (remote VPS)               |
+| `--timeout=<ms>`          | `auth`                                           | Approval wait timeout in milliseconds                   |
+| `--redirect-url=<url>`    | `auth-complete`                                  | Paste redirect URL to complete auth offline             |
+| `--session-data=<base64>` | `auth-complete`                                  | Raw session data to complete auth offline               |
+| `--json`                  | `auth`, `auth-complete`, `auth-status`, `worlds` | JSON output                                             |
 
 ## Testing
 
@@ -296,24 +304,30 @@ pnpm --dir client/apps/onchain-agent package:release \
 
 ## Further Reading
 
-| Document | Description |
-| --- | --- |
-| [docs/deprecated/ARCHITECTURE.md](docs/deprecated/ARCHITECTURE.md) | Full architecture reference (entry points, world discovery, adapter layer, TUI, config) |
-| [docs/deprecated/DEPENDENCIES.md](docs/deprecated/DEPENDENCIES.md) | How the agent uses `@bibliothecadao/torii`, `client`, and `core` packages |
-| [docs/deprecated/WORLD_PROFILE_AND_POLICY_PIPELINE.md](docs/deprecated/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | World discovery pipeline specification |
+| Document                                                                                                     | Description                                                                             |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| [docs/deprecated/ARCHITECTURE.md](docs/deprecated/ARCHITECTURE.md)                                           | Full architecture reference (entry points, world discovery, adapter layer, TUI, config) |
+| [docs/deprecated/DEPENDENCIES.md](docs/deprecated/DEPENDENCIES.md)                                           | How the agent uses `@bibliothecadao/torii`, `client`, and `core` packages               |
+| [docs/deprecated/WORLD_PROFILE_AND_POLICY_PIPELINE.md](docs/deprecated/WORLD_PROFILE_AND_POLICY_PIPELINE.md) | World discovery pipeline specification                                                  |
 
 ## Troubleshooting
 
-**Binary crashes (ENOENT, WASM errors):** Always build with `bun run build.ts --compile` -- direct `bun build` skips the plugins that embed manifests, WASM, and package.json.
+**Binary crashes (ENOENT, WASM errors):** Always build with `bun run build.ts --compile` -- direct `bun build` skips the
+plugins that embed manifests, WASM, and package.json.
 
-**TUI shows garbled output:** Never use `console.log` after the TUI starts. Use the `addSystemMessage()` callback from `createApp()`.
+**TUI shows garbled output:** Never use `console.log` after the TUI starts. Use the `addSystemMessage()` callback from
+`createApp()`.
 
-**Session expired:** Delete `~/.eternum-agent/.cartridge/session.json` and restart. For headless mode, re-run `axis auth <world>`.
+**Session expired:** Delete `~/.eternum-agent/.cartridge/session.json` and restart. For headless mode, re-run
+`axis auth <world>`.
 
 **No worlds found:** Check that the Cartridge Factory API is reachable. Try `CHAIN=sepolia` or `CHAIN=mainnet`.
 
-**Headless mode requires `--world`:** The agent needs a pre-authenticated world to skip the TUI picker. Run `axis auth <world>` first, then `axis run --headless --world=<world>`.
+**Headless mode requires `--world`:** The agent needs a pre-authenticated world to skip the TUI picker. Run
+`axis auth <world>` first, then `axis run --headless --world=<world>`.
 
-**Private key auth fails:** Verify both `PRIVATE_KEY` and `ACCOUNT_ADDRESS` are set. The account must be deployed on the target chain.
+**Private key auth fails:** Verify both `PRIVATE_KEY` and `ACCOUNT_ADDRESS` are set. The account must be deployed on the
+target chain.
 
-**Auto top-up not working:** `MASTER_ADDRESS` and `MASTER_PRIVATE_KEY` must both be set. Top-up only runs on non-mainnet chains and only when the agent's fee token balance is below the world's registration fee.
+**Auto top-up not working:** `MASTER_ADDRESS` and `MASTER_PRIVATE_KEY` must both be set. Top-up only runs on non-mainnet
+chains and only when the agent's fee token balance is below the world's registration fee.

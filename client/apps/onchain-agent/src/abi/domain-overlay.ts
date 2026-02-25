@@ -190,12 +190,7 @@ export function contributionTuples(v: unknown): [number, number][] {
 // ── Contract suffixes to hide from the LLM ───────────────────────────────────
 
 /** Contract suffixes that should not be exposed to the LLM (admin/config/dev). */
-export const HIDDEN_SUFFIXES = [
-  "config_systems",
-  "dev_resource_systems",
-  "season_systems",
-  "realm_internal_systems",
-];
+export const HIDDEN_SUFFIXES = ["config_systems", "dev_resource_systems", "season_systems", "realm_internal_systems"];
 
 /**
  * Generate hidden overlays for all entrypoints in the given contract suffixes.
@@ -244,9 +239,7 @@ function preflightCreateExplorer(params: Record<string, unknown>, cachedState?: 
   const state = cachedState as any;
   if (!state?.entities) return null;
   const structureId = num(params.for_structure_id);
-  const structure = state.entities.find(
-    (e: any) => e.entityId === structureId && e.type === "structure" && e.isOwned,
-  );
+  const structure = state.entities.find((e: any) => e.entityId === structureId && e.type === "structure" && e.isOwned);
   if (structure?.armies && structure.armies.max > 0 && structure.armies.current >= structure.armies.max) {
     return `Structure has ${structure.armies.current}/${structure.armies.max} armies. Upgrade realm level or delete an army first.`;
   }
@@ -261,9 +254,7 @@ function preflightExplorerMove(params: Record<string, unknown>, cachedState?: un
   const state = cachedState as any;
   if (!state?.entities) return null;
   const explorerId = num(params.explorer_id);
-  const explorer = state.entities.find(
-    (e: any) => e.entityId === explorerId && e.type === "army" && e.isOwned,
-  );
+  const explorer = state.entities.find((e: any) => e.entityId === explorerId && e.type === "army" && e.isOwned);
   const dirs = numArray(params.directions);
   const staminaNeeded = 30 * Math.max(dirs.length, 1);
   if (explorer?.stamina !== undefined && explorer.stamina < staminaNeeded) {
@@ -410,8 +401,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "troop_management_systems::explorer_add": {
     actionType: "add_to_explorer",
-    description:
-      "Add more troops to an existing explorer (explorer must be adjacent to its home structure)",
+    description: "Add more troops to an existing explorer (explorer must be adjacent to its home structure)",
     paramOverrides: {
       to_explorer_id: { description: "Explorer entity ID to reinforce" },
       amount: {
@@ -835,7 +825,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
       count: { description: "Number of hyperstructures to create" },
     },
   },
-
 
   "blitz_realm_systems::create": {
     hidden: true, // Dojo framework entrypoint — use settle_blitz_realm composite instead

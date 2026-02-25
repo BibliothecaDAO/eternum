@@ -4,7 +4,13 @@ import type { Account } from "starknet";
 import type { Manifest } from "../abi/types";
 import type { EternumWorldState } from "./world-state";
 import { buildWorldState } from "./world-state";
-import { executeAction, setWorldStateProvider, setCachedWorldState, initializeActions, type TokenConfig } from "./action-registry";
+import {
+  executeAction,
+  setWorldStateProvider,
+  setCachedWorldState,
+  initializeActions,
+  type TokenConfig,
+} from "./action-registry";
 import { simulateAction } from "./simulation";
 
 /**

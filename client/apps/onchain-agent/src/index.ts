@@ -1,9 +1,5 @@
 import { EternumClient } from "@bibliothecadao/client";
-import {
-  createHeartbeatLoop,
-  createGameAgent,
-  type HeartbeatJob,
-} from "@bibliothecadao/game-agent";
+import { createHeartbeatLoop, createGameAgent, type HeartbeatJob } from "@bibliothecadao/game-agent";
 import { getModel } from "@mariozechner/pi-ai";
 import { readFile } from "node:fs/promises";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
@@ -113,12 +109,21 @@ async function createRuntimeServices(
     manifest: manifest as any,
   });
   client.connect(account as any);
-  const tokenConfig = worldProfile ? {
-    feeToken: worldProfile.feeTokenAddress,
-    entryToken: worldProfile.entryTokenAddress,
-    worldAddress: config.worldAddress,
-  } : undefined;
-  const adapter = new EternumGameAdapter(client, account as any, account.address, manifest as any, config.gameName, tokenConfig);
+  const tokenConfig = worldProfile
+    ? {
+        feeToken: worldProfile.feeTokenAddress,
+        entryToken: worldProfile.entryTokenAddress,
+        worldAddress: config.worldAddress,
+      }
+    : undefined;
+  const adapter = new EternumGameAdapter(
+    client,
+    account as any,
+    account.address,
+    manifest as any,
+    config.gameName,
+    tokenConfig,
+  );
   return { client, account, session, adapter };
 }
 
@@ -217,7 +222,9 @@ export async function main() {
 
   const runtimeConfigManager = createRuntimeConfigManager({
     getConfig: () => runtimeConfig,
-    setConfig: (c) => { runtimeConfig = c; },
+    setConfig: (c) => {
+      runtimeConfig = c;
+    },
     getAgent: () => runtimeAgent,
     onBackendKeysChanged: async (candidate, changedKeys) => {
       const nextServices = await createRuntimeServices(candidate, resolvedManifest, currentWorldProfile);

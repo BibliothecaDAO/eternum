@@ -1,4 +1,15 @@
-export type Command = "run" | "worlds" | "auth" | "auth-complete" | "auth-status" | "auth-url" | "doctor" | "init" | "version" | "help" | "unknown";
+export type Command =
+  | "run"
+  | "worlds"
+  | "auth"
+  | "auth-complete"
+  | "auth-status"
+  | "auth-url"
+  | "doctor"
+  | "init"
+  | "version"
+  | "help"
+  | "unknown";
 export type AuthMode = "session" | "privatekey";
 export type Verbosity = "quiet" | "actions" | "decisions" | "all";
 
@@ -24,7 +35,16 @@ export interface CliOptions {
   rawArgs: string[];
 }
 
-const COMMANDS = new Set<Command>(["run", "worlds", "auth", "auth-complete", "auth-status", "auth-url", "doctor", "init"]);
+const COMMANDS = new Set<Command>([
+  "run",
+  "worlds",
+  "auth",
+  "auth-complete",
+  "auth-status",
+  "auth-url",
+  "doctor",
+  "init",
+]);
 
 const VALID_VERBOSITIES = new Set<Verbosity>(["quiet", "actions", "decisions", "all"]);
 
