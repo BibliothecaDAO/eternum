@@ -484,9 +484,10 @@ export class WorldUpdateListener {
 
                 const isBlitz = getIsBlitz();
                 const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
+                const enhancedStructureName = enhancedData.structureName?.trim();
                 const structureName = structureComponent
                   ? getStructureName(structureComponent, isBlitz).name
-                  : `${fallbackTypeName} ${rawOccupierId}`;
+                  : enhancedStructureName || `${fallbackTypeName} ${rawOccupierId}`;
 
                 const battleData = enhancedData.battleData
                   ? {

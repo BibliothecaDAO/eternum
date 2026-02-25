@@ -8,9 +8,17 @@ import {
 } from "@/hooks/use-world-availability";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
 import type { WorldSelectionInput } from "@/runtime/world";
+import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import {
+  getChainLabel,
+  resolveConnectedTxChainFromRuntime,
+  switchWalletToChain,
+  type WalletChainControllerLike,
+} from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
+import { useAccount } from "@starknet-react/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -72,18 +80,16 @@ const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
  * Chain badge - shows which network the game is on
  */
 const ChainBadge = ({ chain }: { chain: Chain }) => {
-  const isMainnet = chain === "mainnet";
+  const chainStyles: Record<Chain, string> = {
+    mainnet: "text-brilliance/70 bg-brilliance/10 border border-brilliance/20",
+    sepolia: "text-orange/70 bg-orange/10 border border-orange/20",
+    slot: "text-gold/70 bg-gold/10 border border-gold/20",
+    slottest: "text-gold/70 bg-gold/10 border border-gold/20",
+    local: "text-white/70 bg-white/10 border border-white/20",
+  };
+
   return (
-    <span
-      className={cn(
-        "text-[8px] font-medium px-1 py-0.5 rounded",
-        isMainnet
-          ? "text-brilliance/70 bg-brilliance/10 border border-brilliance/20"
-          : "text-gold/70 bg-gold/10 border border-gold/20",
-      )}
-    >
-      {isMainnet ? "Mainnet" : "Slot"}
-    </span>
+    <span className={cn("text-[8px] font-medium px-1 py-0.5 rounded", chainStyles[chain])}>{getChainLabel(chain)}</span>
   );
 };
 
@@ -148,6 +154,13 @@ const GameCard = ({
   playerAddress,
   showChainBadge = false,
 }: GameCardProps) => {
+  const { chainId, connector, address } = useAccount();
+  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
+  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
+  const hasConnectedWallet = Boolean(address);
+  const canInteractOnCurrentNetwork =
+    !hasConnectedWallet || (connectedTxChain !== null && connectedTxChain === game.chain);
+
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
@@ -162,6 +175,19 @@ const GameCard = ({
   // Show forge button when we have config (even if 0 left, show disabled)
   const showForgeButton = canRegisterPeriod && game.config?.numHyperstructuresLeft !== null && playerAddress;
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
+  const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
+  const targetChainLabel = getChainLabel(game.chain);
+
+  const runWithNetworkGuard = useCallback(
+    (action: () => void) => {
+      if (!canInteractOnCurrentNetwork) {
+        setShowWrongNetworkPrompt(true);
+        return;
+      }
+      action();
+    },
+    [canInteractOnCurrentNetwork],
+  );
 
   // Inline registration hook
   const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
@@ -173,27 +199,39 @@ const GameCard = ({
   });
 
   // Handle registration with toast notification
-  const handleRegister = useCallback(async () => {
-    try {
-      await register();
-    } catch (err) {
-      console.error("Registration failed:", err);
-    }
-  }, [register]);
+  const handleRegister = useCallback(() => {
+    runWithNetworkGuard(() => {
+      void register().catch((err) => {
+        console.error("Registration failed:", err);
+      });
+    });
+  }, [register, runWithNetworkGuard]);
 
   const handleForgeClick = useCallback(() => {
     if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
 
-    setIsForgeButtonPending(true);
+    runWithNetworkGuard(() => {
+      setIsForgeButtonPending(true);
 
-    void Promise.resolve(onForgeHyperstructures())
-      .catch((err) => {
-        console.error("Forge action failed:", err);
-      })
-      .finally(() => {
-        setIsForgeButtonPending(false);
-      });
-  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending]);
+      void Promise.resolve(onForgeHyperstructures())
+        .catch((err) => {
+          console.error("Forge action failed:", err);
+        })
+        .finally(() => {
+          setIsForgeButtonPending(false);
+        });
+    });
+  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
+
+  const handleSwitchNetwork = useCallback(async () => {
+    const switched = await switchWalletToChain({
+      controller,
+      targetChain: game.chain,
+    });
+    if (switched) {
+      setShowWrongNetworkPrompt(false);
+    }
+  }, [controller, game.chain]);
 
   // Show success toast when registration completes
   useEffect(() => {
@@ -286,7 +324,7 @@ const GameCard = ({
           {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
-              onClick={onPlay}
+              onClick={() => runWithNetworkGuard(onPlay)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
@@ -334,7 +372,7 @@ const GameCard = ({
           {/* See Score button for ended games where player participated */}
           {isEnded && showRegistered && onSeeScore && (
             <button
-              onClick={onSeeScore}
+              onClick={() => runWithNetworkGuard(onSeeScore)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 transition-colors",
@@ -374,7 +412,7 @@ const GameCard = ({
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
-              onClick={onSpectate}
+              onClick={() => runWithNetworkGuard(onSpectate)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
                 "bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10",
@@ -398,6 +436,14 @@ const GameCard = ({
           </div>
         )}
       </div>
+      <SwitchNetworkPrompt
+        open={showWrongNetworkPrompt}
+        description={`You're trying to interact with ${game.name} while your wallet is on another chain.`}
+        hint={`Switch your wallet to ${targetChainLabel} to continue.`}
+        switchLabel={`Switch To ${targetChainLabel}`}
+        onClose={() => setShowWrongNetworkPrompt(false)}
+        onSwitch={handleSwitchNetwork}
+      />
     </div>
   );
 };

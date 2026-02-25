@@ -130,7 +130,7 @@ export const resolveConnectedTxNetworkFromRuntime = ({
   return fromControllerRpc ?? resolveConnectedTxNetwork(chainId);
 };
 
-export const getStarknetChainIdForNetwork = (network: CosmeticsNetwork): string =>
+const getStarknetChainIdForNetwork = (network: CosmeticsNetwork): string =>
   network === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA;
 
 const resolveCurrentTxNetwork = (): CosmeticsNetwork | null => {

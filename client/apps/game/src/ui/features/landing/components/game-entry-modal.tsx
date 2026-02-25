@@ -17,6 +17,9 @@ import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
+import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
+import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { normalizeSelector } from "@/runtime/world/normalize";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -26,8 +29,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
+import type { Account } from "starknet";
 
 const DEBUG_MODAL = false;
+const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
 
 const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
@@ -606,13 +611,13 @@ export const GameEntryModal = ({
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
     let result: ModalPhase;
-    if (bootstrapError || bootstrapStatus === "error") {
+    if (isForgeMode) {
+      // Forge mode does not require game bootstrap or settlement checks
+      result = "forge";
+    } else if (bootstrapError || bootstrapStatus === "error") {
       result = "error";
     } else if (bootstrapStatus !== "ready") {
       result = "loading";
-    } else if (isForgeMode) {
-      // Forge mode - skip all checks and go straight to forge phase
-      result = "forge";
     } else if (isSpectateMode) {
       result = "ready";
     } else if (!checksComplete) {
@@ -836,6 +841,10 @@ export const GameEntryModal = ({
       debugLog(worldName, "Modal not open, skipping bootstrap");
       return;
     }
+    if (isForgeMode) {
+      debugLog(worldName, "Forge mode active, skipping game bootstrap");
+      return;
+    }
 
     debugLog(worldName, "Starting bootstrap for", worldName, "chain:", chain);
 
@@ -890,7 +899,7 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [isOpen, worldName, chain, updateTask]);
+  }, [isOpen, isForgeMode, worldName, chain, updateTask]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -1025,22 +1034,33 @@ export const GameEntryModal = ({
 
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
-    debugLog(worldName, "handleForgeHyperstructures called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
-    if (!setupResult || !account) return;
+    debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
+    if (!account) return;
 
     setIsForging(true);
 
     try {
-      const { systemCalls } = setupResult;
-      const { env } = await import("../../../../../env");
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+      if (!factorySqlBaseUrl) {
+        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
+      }
 
-      // Determine how many hyperstructures to forge based on chain
-      const hyperstructureCount = env.VITE_PUBLIC_CHAIN === "mainnet" ? 1 : 4;
+      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      const selector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
+      const blitzRealmSystemsAddress = contracts[selector];
+      if (!blitzRealmSystemsAddress) {
+        throw new Error("blitz_realm_systems contract not found for selected world");
+      }
+
+      const batchSize = chain === "mainnet" ? 1 : 4;
+      const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
+      const signer = account as unknown as Account;
 
       debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
-      await systemCalls.blitz_realm_make_hyperstructures({
-        signer: account,
-        count: hyperstructureCount,
+      await signer.execute({
+        contractAddress: blitzRealmSystemsAddress,
+        entrypoint: "make_hyperstructures",
+        calldata: [hyperstructureCount.toString()],
       });
 
       debugLog(worldName, "Hyperstructures forged!");
@@ -1055,7 +1075,7 @@ export const GameEntryModal = ({
     } finally {
       setIsForging(false);
     }
-  }, [setupResult, account, worldName, chain, queryClient]);
+  }, [account, worldName, chain, queryClient, numHyperstructuresLeft]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
