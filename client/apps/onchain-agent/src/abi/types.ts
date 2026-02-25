@@ -36,14 +36,14 @@ export interface ContractABIResult {
 
 // ── Policy types ─────────────────────────────────────────────────────────────
 
-export interface PolicyMethod {
+interface PolicyMethod {
   name: string;
   entrypoint: string;
   selector: string;
   description: string;
 }
 
-export interface GeneratedPolicies {
+interface GeneratedPolicies {
   contracts: Record<string, { methods: PolicyMethod[] }>;
   coverage: Map<string, string[]>;
 }

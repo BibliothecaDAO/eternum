@@ -10,13 +10,13 @@ import { hash } from "starknet";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export interface ABIParam {
+interface ABIParam {
   name: string;
   type: string;
   rawType: string;
 }
 
-export interface ABIEntrypoint {
+interface ABIEntrypoint {
   name: string;
   selector: string;
   state_mutability: "external" | "view";
@@ -27,12 +27,12 @@ export interface ABIEntrypoint {
   signature: string;
 }
 
-export interface ABIStruct {
+interface ABIStruct {
   name: string;
   members: ABIParam[];
 }
 
-export interface ContractABIResult {
+interface ContractABIResult {
   tag: string;
   suffix: string;
   address: string;
@@ -41,7 +41,7 @@ export interface ContractABIResult {
   structs: Map<string, ABIParam[]>;
 }
 
-export interface PolicyMethod {
+interface PolicyMethod {
   name: string;
   entrypoint: string;
   selector: string;
@@ -156,7 +156,7 @@ export function extractAllFromManifest(manifest: { contracts?: ManifestContract[
 
 // ── Policy generation ────────────────────────────────────────────────────────
 
-export interface GeneratedPolicies {
+interface GeneratedPolicies {
   /** Contract address → policy methods */
   contracts: Record<string, { methods: PolicyMethod[] }>;
   /** Which suffixes were found and processed */
@@ -201,7 +201,10 @@ export function generatePoliciesFromManifest(
 
     if (methods.length > 0 && result.address) {
       contracts[result.address] = { methods };
-      coverage.set(result.suffix, methods.map((m) => m.entrypoint));
+      coverage.set(
+        result.suffix,
+        methods.map((m) => m.entrypoint),
+      );
     }
   }
 

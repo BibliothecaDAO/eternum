@@ -154,16 +154,16 @@ export interface GameReviewValueMetric {
   timestamp?: number;
 }
 
-export interface GameReviewMilestoneTimings {
+interface GameReviewMilestoneTimings {
   timeToFirstT3Seconds: GameReviewValueMetric | null;
   timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
 }
 
-export interface GameReviewBiggestArmyMetric extends GameReviewValueMetric {
+interface GameReviewBiggestArmyMetric extends GameReviewValueMetric {
   tier: 1 | 2 | 3;
 }
 
-export interface GameReviewCompetitiveMetrics {
+interface GameReviewCompetitiveMetrics {
   mostTroopsKilled: GameReviewValueMetric | null;
   biggestStructuresOwned: GameReviewValueMetric | null;
 }
@@ -597,9 +597,7 @@ const computeMostTroopsKilled = (rows: BattleKillsRow[]): GameReviewValueMetric 
   return pickTopMetric(killsByPlayer);
 };
 
-export const fetchGameReviewMilestoneTimings = async (
-  toriiSqlBaseUrl: string,
-): Promise<GameReviewMilestoneTimings> => {
+export const fetchGameReviewMilestoneTimings = async (toriiSqlBaseUrl: string): Promise<GameReviewMilestoneTimings> => {
   try {
     const [seasonStartRows, blitzStartRows, firstT3Rows, firstHyperRows] = await Promise.all([
       queryToriiSql<StartMainRow>(
@@ -624,7 +622,8 @@ export const fetchGameReviewMilestoneTimings = async (
       ),
     ]);
 
-    const gameStartAt = parseBigIntValue(seasonStartRows[0]?.start_main_at) ?? parseBigIntValue(blitzStartRows[0]?.start_main_at);
+    const gameStartAt =
+      parseBigIntValue(seasonStartRows[0]?.start_main_at) ?? parseBigIntValue(blitzStartRows[0]?.start_main_at);
 
     return {
       timeToFirstT3Seconds: buildFirstMilestoneMetric({
@@ -664,7 +663,8 @@ export const fetchFirstBloodMetric = async (toriiSqlBaseUrl: string): Promise<Ga
       ),
     ]);
 
-    const gameStartAt = parseBigIntValue(seasonStartRows[0]?.start_main_at) ?? parseBigIntValue(blitzStartRows[0]?.start_main_at);
+    const gameStartAt =
+      parseBigIntValue(seasonStartRows[0]?.start_main_at) ?? parseBigIntValue(blitzStartRows[0]?.start_main_at);
     const capturedAt = parseBigIntValue(firstBloodRows[0]?.captured_at);
     const attackerOwnerAddress = normalizeNonZeroAddress(firstBloodRows[0]?.attacker_owner_address);
     const elapsedSeconds = elapsedSecondsSince(gameStartAt, capturedAt);
@@ -685,9 +685,7 @@ export const fetchFirstBloodMetric = async (toriiSqlBaseUrl: string): Promise<Ga
   }
 };
 
-export const fetchBiggestArmyCreatedMetric = async (
-  toriiSqlBaseUrl: string,
-): Promise<GameReviewBiggestArmyMetric | null> => {
+const fetchBiggestArmyCreatedMetric = async (toriiSqlBaseUrl: string): Promise<GameReviewBiggestArmyMetric | null> => {
   try {
     const creationRows = await queryToriiSql<ExplorerCreationRow>(
       toriiSqlBaseUrl,
@@ -700,9 +698,7 @@ export const fetchBiggestArmyCreatedMetric = async (
   }
 };
 
-export const fetchBiggestStructuresOwnedMetric = async (
-  toriiSqlBaseUrl: string,
-): Promise<GameReviewValueMetric | null> => {
+const fetchBiggestStructuresOwnedMetric = async (toriiSqlBaseUrl: string): Promise<GameReviewValueMetric | null> => {
   try {
     const structureRows = await queryToriiSql<StructureOwnerRow>(
       toriiSqlBaseUrl,
@@ -716,9 +712,7 @@ export const fetchBiggestStructuresOwnedMetric = async (
   }
 };
 
-export const fetchBiggestHexesOccupiedMetric = async (
-  toriiSqlBaseUrl: string,
-): Promise<GameReviewValueMetric | null> => {
+const fetchBiggestHexesOccupiedMetric = async (toriiSqlBaseUrl: string): Promise<GameReviewValueMetric | null> => {
   try {
     const sqlClient = new SqlApi(toriiSqlBaseUrl);
     const [structureRows, explorerRows, tiles] = await Promise.all([
@@ -745,11 +739,7 @@ export const fetchGameReviewCompetitiveMetrics = async (
   try {
     const [structureRowsResult, battleKillsRowsResult] = await Promise.allSettled([
       queryToriiSql<StructureOwnerRow>(toriiSqlBaseUrl, REVIEW_STRUCTURE_OWNERS_QUERY, "Failed to fetch structures"),
-      queryToriiSql<BattleKillsRow>(
-        toriiSqlBaseUrl,
-        REVIEW_BATTLE_KILLS_QUERY,
-        "Failed to fetch battle kill metrics",
-      ),
+      queryToriiSql<BattleKillsRow>(toriiSqlBaseUrl, REVIEW_BATTLE_KILLS_QUERY, "Failed to fetch battle kill metrics"),
     ]);
 
     const structureRows = structureRowsResult.status === "fulfilled" ? structureRowsResult.value : [];

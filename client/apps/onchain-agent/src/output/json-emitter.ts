@@ -1,7 +1,17 @@
-export type EventType = "startup" | "tick" | "decision" | "action" | "heartbeat" | "prompt" | "session" | "config" | "error" | "shutdown";
-export type Verbosity = "quiet" | "actions" | "decisions" | "all";
+type EventType =
+  | "startup"
+  | "tick"
+  | "decision"
+  | "action"
+  | "heartbeat"
+  | "prompt"
+  | "session"
+  | "config"
+  | "error"
+  | "shutdown";
+type Verbosity = "quiet" | "actions" | "decisions" | "all";
 
-export interface AgentEvent {
+interface AgentEvent {
   type: EventType;
   [key: string]: unknown;
 }
@@ -13,8 +23,29 @@ export interface AgentEvent {
 const VERBOSITY_FILTER: Record<Verbosity, Set<EventType>> = {
   quiet: new Set(["error", "session", "shutdown"]),
   actions: new Set(["error", "session", "shutdown", "action"]),
-  decisions: new Set(["error", "session", "shutdown", "action", "decision", "heartbeat", "prompt", "startup", "config"]),
-  all: new Set(["error", "session", "shutdown", "action", "decision", "heartbeat", "prompt", "startup", "config", "tick"]),
+  decisions: new Set([
+    "error",
+    "session",
+    "shutdown",
+    "action",
+    "decision",
+    "heartbeat",
+    "prompt",
+    "startup",
+    "config",
+  ]),
+  all: new Set([
+    "error",
+    "session",
+    "shutdown",
+    "action",
+    "decision",
+    "heartbeat",
+    "prompt",
+    "startup",
+    "config",
+    "tick",
+  ]),
 };
 
 type EventSubscriber = (event: AgentEvent) => void;
