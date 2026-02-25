@@ -80,7 +80,8 @@ function createInspectRealmTool(client: EternumClient): AgentTool<any> {
         const [realm, balanceRows, buildingRows] = await Promise.all([
           client.view.realm(entityId),
           fetchBalances,
-          (client.sql as any).fetchBuildingsByStructures?.([entityId]).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
+          (client.sql as any).fetchBuildingsByStructures?.([entityId]).catch(() => [] as any[]) ??
+            Promise.resolve([] as any[]),
         ]);
 
         const realmData = realm as any;
@@ -99,9 +100,8 @@ function createInspectRealmTool(client: EternumClient): AgentTool<any> {
 
             // Compute dynamic balance: stored + produced since last update
             const storedHex = balanceRow[col.column];
-            const storedBalance = storedHex && storedHex !== "0x0"
-              ? Number(parseHexBig(storedHex) / BigInt(RESOURCE_PRECISION))
-              : 0;
+            const storedBalance =
+              storedHex && storedHex !== "0x0" ? Number(parseHexBig(storedHex) / BigInt(RESOURCE_PRECISION)) : 0;
 
             const buildingCount = Number(balanceRow[`${prodPrefix}.building_count`] ?? 0);
             const productionRate = Number(parseHexBig(balanceRow[`${prodPrefix}.production_rate`]));

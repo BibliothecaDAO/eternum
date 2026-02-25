@@ -75,7 +75,11 @@ const getCachedRpcProvider = (rpcUrl: string): RpcProvider => {
   return provider;
 };
 
-const fetchTokenBalance = async (provider: RpcProvider, tokenAddress: string, accountAddress: string): Promise<bigint> => {
+const fetchTokenBalance = async (
+  provider: RpcProvider,
+  tokenAddress: string,
+  accountAddress: string,
+): Promise<bigint> => {
   try {
     const result = await provider.callContract({
       contractAddress: tokenAddress,

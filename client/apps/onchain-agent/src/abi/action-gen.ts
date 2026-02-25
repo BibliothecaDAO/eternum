@@ -6,7 +6,13 @@
  * overlays for game-specific enrichments (descriptions, param transforms, etc.).
  */
 import type { ActionParamSchema, ActionDefinition } from "@bibliothecadao/game-agent";
-import { extractAllFromManifest, getGameEntrypoints, tagMatchesGame, abiTypeToParamSchemaType, describeStructFields } from "./parser";
+import {
+  extractAllFromManifest,
+  getGameEntrypoints,
+  tagMatchesGame,
+  abiTypeToParamSchemaType,
+  describeStructFields,
+} from "./parser";
 import type { ABIEntrypoint, ABIParam, ContractABIResult, DomainOverlayMap, Manifest, ActionRoute } from "./types";
 
 // ── Action generation ────────────────────────────────────────────────────────

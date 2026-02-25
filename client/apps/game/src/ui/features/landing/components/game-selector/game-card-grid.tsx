@@ -844,7 +844,7 @@ export const UnifiedGameGrid = ({
         ) : (
           <div className="flex gap-3 p-1">
             {games.map((game) => (
-              <div key={game.worldKey} className="flex-shrink-0 w-[320px]">
+              <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
                 <GameCard
                   game={game}
                   onPlay={() =>

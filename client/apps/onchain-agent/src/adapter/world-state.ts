@@ -159,7 +159,11 @@ async function fetchStaminaConfig(sqlBaseUrl: string): Promise<StaminaConfig | n
 }
 
 /** Get max stamina for a troop type + tier using on-chain config. */
-function getMaxStamina(cfg: StaminaConfig, category: string | null | undefined, tier: string | null | undefined): number {
+function getMaxStamina(
+  cfg: StaminaConfig,
+  category: string | null | undefined,
+  tier: string | null | undefined,
+): number {
   const name = troopCategoryName(category);
   let base = 0;
   if (name === "Knight") base = cfg.knightMax;
@@ -230,9 +234,7 @@ function computeDynamicBalance(
 ): number {
   // Parse stored balance
   const hexVal = row[balanceCol];
-  const storedBalance = hexVal && hexVal !== "0x0"
-    ? Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION))
-    : 0;
+  const storedBalance = hexVal && hexVal !== "0x0" ? Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION)) : 0;
 
   // Parse production fields
   const buildingCount = Number(row[`${prodPrefix}.building_count`] ?? 0);
@@ -979,7 +981,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
 
       const [balanceRows, buildingRows] = (await Promise.all([
         fetchBalances,
-        (client.sql as any).fetchBuildingsByStructures?.(ownedEntityIds).catch(() => [] as any[]) ?? Promise.resolve([] as any[]),
+        (client.sql as any).fetchBuildingsByStructures?.(ownedEntityIds).catch(() => [] as any[]) ??
+          Promise.resolve([] as any[]),
       ])) as [any[], any[]];
 
       const nowSeconds = Math.floor(Date.now() / 1000);
@@ -1358,7 +1361,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     }
     sections.push(lines.join("\n"));
   } else {
-    sections.push("### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm");
+    sections.push(
+      "### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm",
+    );
   }
 
   // Operating area — unified minimap around all owned entities

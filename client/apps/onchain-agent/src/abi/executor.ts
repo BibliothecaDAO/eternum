@@ -215,11 +215,7 @@ function debugLogError(actionType: string, err: any): void {
  * Uses starknet.js Contract.populate() for ABI-aware calldata encoding
  * and account.execute() for transaction submission.
  */
-export function createABIExecutor(
-  manifest: Manifest,
-  account: Account,
-  options: ABIExecutorOptions,
-): ABIExecutor {
+export function createABIExecutor(manifest: Manifest, account: Account, options: ABIExecutorOptions): ABIExecutor {
   const { cache: contractCache, globalEnums } = buildContractCache(manifest);
   const globalStructs = buildGlobalStructMap(manifest);
   const { routes, cachedStateProvider, onBeforeExecute, onAfterExecute } = options;
@@ -257,10 +253,20 @@ export function createABIExecutor(
       // Normalize Span values (handles LLM sending numbers/strings instead of arrays)
       // but do NOT coerce to CairoCustomEnum — we use CallData.compile() with raw
       // numeric indices which avoids the bundler class identity mismatch.
-      const normalizedParams = normalizeSpanParams(transformedParams, route.entrypoint, cached.abi as unknown[], globalEnums);
+      const normalizedParams = normalizeSpanParams(
+        transformedParams,
+        route.entrypoint,
+        cached.abi as unknown[],
+        globalEnums,
+      );
 
       // Coerce struct params: ensure object shape with default fields
-      const structCoerced = coerceStructParams(normalizedParams, route.entrypoint, cached.abi as unknown[], globalStructs);
+      const structCoerced = coerceStructParams(
+        normalizedParams,
+        route.entrypoint,
+        cached.abi as unknown[],
+        globalStructs,
+      );
 
       // Ensure Span/Array params exist — starknet.js crashes on undefined arrays.
       ensureSpanParams(structCoerced, route.entrypoint, cached.abi as unknown[]);
@@ -340,9 +346,7 @@ export function coerceEnumParams(
   let inputs: { name: string; type: string }[] | undefined;
   for (const entry of abi as any[]) {
     if (entry.type === "interface" && Array.isArray(entry.items)) {
-      const fn = entry.items.find(
-        (item: any) => item.type === "function" && item.name === entrypoint,
-      );
+      const fn = entry.items.find((item: any) => item.type === "function" && item.name === entrypoint);
       if (fn) {
         inputs = fn.inputs;
         break;
@@ -427,10 +431,7 @@ function normalizeSpanValues(value: unknown): unknown[] | undefined {
 }
 
 /** Convert a single value to CairoCustomEnum if it's a plain number index. */
-function coerceOneEnum(
-  value: unknown,
-  enumDef: { variants: { name: string; type: string }[] },
-): unknown {
+function coerceOneEnum(value: unknown, enumDef: { variants: { name: string; type: string }[] }): unknown {
   if (value === undefined || value === null) return value;
   if (value instanceof CairoCustomEnum) return value;
 
@@ -516,9 +517,7 @@ function coerceStructParams(
   let inputs: { name: string; type: string }[] | undefined;
   for (const entry of abi as any[]) {
     if (entry.type === "interface" && Array.isArray(entry.items)) {
-      const fn = entry.items.find(
-        (item: any) => item.type === "function" && item.name === entrypoint,
-      );
+      const fn = entry.items.find((item: any) => item.type === "function" && item.name === entrypoint);
       if (fn) {
         inputs = fn.inputs;
         break;
@@ -572,9 +571,7 @@ function normalizeSpanParams(
   let inputs: { name: string; type: string }[] | undefined;
   for (const entry of abi as any[]) {
     if (entry.type === "interface" && Array.isArray(entry.items)) {
-      const fn = entry.items.find(
-        (item: any) => item.type === "function" && item.name === entrypoint,
-      );
+      const fn = entry.items.find((item: any) => item.type === "function" && item.name === entrypoint);
       if (fn) {
         inputs = fn.inputs;
         break;
@@ -588,10 +585,7 @@ function normalizeSpanParams(
 
   // Normalize Span values (ensure arrays)
   for (const input of inputs) {
-    if (
-      input.type.startsWith("core::array::Span::") ||
-      input.type.startsWith("core::array::Array::")
-    ) {
+    if (input.type.startsWith("core::array::Span::") || input.type.startsWith("core::array::Array::")) {
       const val = result[input.name];
       if (val !== undefined && val !== null && !Array.isArray(val)) {
         // Use normalizeSpanValues from frontboat's fix
@@ -616,17 +610,11 @@ function normalizeSpanParams(
  *
  * By converting to positional args we bypass the broken orderPropsByAbi entirely.
  */
-function toPositionalArgs(
-  params: Record<string, unknown>,
-  entrypoint: string,
-  abi: unknown[],
-): unknown[] {
+function toPositionalArgs(params: Record<string, unknown>, entrypoint: string, abi: unknown[]): unknown[] {
   let inputs: { name: string; type: string }[] | undefined;
   for (const entry of abi as any[]) {
     if (entry.type === "interface" && Array.isArray(entry.items)) {
-      const fn = entry.items.find(
-        (item: any) => item.type === "function" && item.name === entrypoint,
-      );
+      const fn = entry.items.find((item: any) => item.type === "function" && item.name === entrypoint);
       if (fn) {
         inputs = fn.inputs;
         break;
@@ -646,17 +634,11 @@ function toPositionalArgs(
  * 1. Defaults missing Span params to []
  * 2. Wraps non-array Span values in an array
  */
-function ensureSpanParams(
-  params: Record<string, unknown>,
-  entrypoint: string,
-  abi: unknown[],
-): void {
+function ensureSpanParams(params: Record<string, unknown>, entrypoint: string, abi: unknown[]): void {
   let inputs: { name: string; type: string }[] | undefined;
   for (const entry of abi as any[]) {
     if (entry.type === "interface" && Array.isArray(entry.items)) {
-      const fn = entry.items.find(
-        (item: any) => item.type === "function" && item.name === entrypoint,
-      );
+      const fn = entry.items.find((item: any) => item.type === "function" && item.name === entrypoint);
       if (fn) {
         inputs = fn.inputs;
         break;
@@ -666,10 +648,7 @@ function ensureSpanParams(
   if (!inputs) return;
 
   for (const input of inputs) {
-    if (
-      input.type.startsWith("core::array::Span::") ||
-      input.type.startsWith("core::array::Array::")
-    ) {
+    if (input.type.startsWith("core::array::Span::") || input.type.startsWith("core::array::Array::")) {
       const val = params[input.name];
       if (val === undefined || val === null) {
         params[input.name] = [];
@@ -683,10 +662,7 @@ function ensureSpanParams(
 
 // ── Param transforms ─────────────────────────────────────────────────────────
 
-function applyParamTransforms(
-  params: Record<string, unknown>,
-  overlay?: DomainOverlay,
-): Record<string, unknown> {
+function applyParamTransforms(params: Record<string, unknown>, overlay?: DomainOverlay): Record<string, unknown> {
   if (!overlay?.paramOverrides) return params;
 
   const result = { ...params };

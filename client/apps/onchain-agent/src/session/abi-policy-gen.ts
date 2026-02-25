@@ -201,7 +201,10 @@ export function generatePoliciesFromManifest(
 
     if (methods.length > 0 && result.address) {
       contracts[result.address] = { methods };
-      coverage.set(result.suffix, methods.map((m) => m.entrypoint));
+      coverage.set(
+        result.suffix,
+        methods.map((m) => m.entrypoint),
+      );
     }
   }
 

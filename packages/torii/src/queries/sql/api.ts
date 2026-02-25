@@ -412,7 +412,10 @@ export class SqlApi {
    */
   async fetchResourceBalancesWithProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
     if (entityIds.length === 0) return [];
-    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION.replace("{entityIds}", entityIds.join(","));
+    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION.replace(
+      "{entityIds}",
+      entityIds.join(","),
+    );
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances with production");
   }
