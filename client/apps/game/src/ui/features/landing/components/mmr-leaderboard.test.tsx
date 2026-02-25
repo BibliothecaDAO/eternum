@@ -15,6 +15,12 @@ vi.mock("@/ui/features/market/landing-markets/maybe-controller", () => ({
   ),
 }));
 
+vi.mock("@/hooks/use-player-avatar", () => ({
+  useAvatarProfiles: vi.fn(() => ({ data: [] })),
+  normalizeAvatarAddress: vi.fn((address: string | null | undefined) => (address ? address.toLowerCase() : null)),
+  getAvatarUrl: vi.fn((address: string, customAvatarUrl?: string | null) => customAvatarUrl ?? `/avatar/${address}`),
+}));
+
 vi.mock("starknet", () => ({
   hash: {
     getSelectorFromName: vi.fn(() => "0xselector"),
@@ -158,5 +164,20 @@ describe("MMRLeaderboard", () => {
       expect(container.textContent).toContain("Tier");
       expect(container.textContent).toContain("Iron");
     });
+  });
+
+  it("renders player avatars in leaderboard rows", async () => {
+    await act(async () => {
+      root.render(<MMRLeaderboard />);
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(container.querySelector("tbody img")).not.toBeNull();
+    });
+
+    const avatarImage = container.querySelector("tbody img") as HTMLImageElement;
+    expect(avatarImage.getAttribute("src")).toContain("/avatar/0x456");
+    expect(avatarImage.getAttribute("alt")).toContain("avatar");
   });
 });

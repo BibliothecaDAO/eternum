@@ -30,6 +30,8 @@ const LoadingSpinner = () => (
 export const ProfileView = ({ className }: ProfileViewProps) => {
   const [searchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as ProfileTab) || "profile";
+  const selectedPlayerAddress = searchParams.get("player");
+  const selectedPlayerName = searchParams.get("name");
 
   const renderContent = () => {
     switch (activeTab) {
@@ -51,7 +53,7 @@ export const ProfileView = ({ className }: ProfileViewProps) => {
       default:
         return (
           <Suspense fallback={<LoadingSpinner />}>
-            <LandingPlayer />
+            <LandingPlayer selectedPlayerAddress={selectedPlayerAddress} selectedPlayerName={selectedPlayerName} />
           </Suspense>
         );
     }
