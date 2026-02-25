@@ -66,20 +66,8 @@ export function generateActions(
       if (overlay?.hidden) continue;
 
       // Determine action type name
-      const actionType = overlay?.actionType ?? ep.name;
-
-      // Detect collisions — two entrypoints mapping to the same action type
-      const existing = claimedBy.get(actionType);
-      if (existing) {
-        console.warn(
-          `[action-gen] COLLISION: action type "${actionType}" from ${overlayKey} overwrites ${existing}. ` +
-            `Add an explicit actionType to the domain overlay for one of them.`,
-        );
-        // Remove the earlier duplicate from definitions to avoid schema enum errors
-        const idx = definitions.findIndex((d) => d.type === actionType);
-        if (idx !== -1) definitions.splice(idx, 1);
-      }
-      claimedBy.set(actionType, overlayKey);
+      const requestedActionType = overlay?.actionType ?? ep.name;
+      const actionType = reserveUniqueActionType(requestedActionType, contract.suffix, overlayKey, claimedBy);
 
       // Build param schemas
       const params = buildParamSchemas(ep, overlay?.paramOverrides, globalStructs, structNames);
@@ -102,13 +90,41 @@ export function generateActions(
       // Register aliases (share the same route and definition reference)
       if (overlay?.aliases) {
         for (const alias of overlay.aliases) {
-          routes.set(alias, route);
+          const aliasType = reserveUniqueActionType(alias, contract.suffix, `${overlayKey} (alias)`, claimedBy);
+          routes.set(aliasType, route);
         }
       }
     }
   }
 
   return { definitions, routes };
+}
+
+function reserveUniqueActionType(
+  requestedActionType: string,
+  contractSuffix: string,
+  ownerKey: string,
+  claimedBy: Map<string, string>,
+): string {
+  if (!claimedBy.has(requestedActionType)) {
+    claimedBy.set(requestedActionType, ownerKey);
+    return requestedActionType;
+  }
+
+  const existing = claimedBy.get(requestedActionType)!;
+  let candidate = `${contractSuffix}_${requestedActionType}`;
+  let i = 2;
+  while (claimedBy.has(candidate)) {
+    candidate = `${contractSuffix}_${requestedActionType}_${i}`;
+    i += 1;
+  }
+
+  console.warn(
+    `[action-gen] COLLISION: action type "${requestedActionType}" from ${ownerKey} conflicts with ${existing}. ` +
+      `Renaming to "${candidate}". Add an explicit actionType in overlays to control the public name.`,
+  );
+  claimedBy.set(candidate, ownerKey);
+  return candidate;
 }
 
 // ── Param schema building ────────────────────────────────────────────────────
