@@ -404,7 +404,10 @@ const BlitzAwardsHeroLeftCard = forwardRef<SVGSVGElement, BlitzAwardsHeroLeftCar
 
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
-        <div className="blitz-card-root card-gold" aria-label={`${worldName} Blitz Awards hero-left card`}>
+        <div
+          className={`blitz-card-root card-gold ${player ? "" : "no-player"}`}
+          aria-label={`${worldName} Blitz Awards hero-left card`}
+        >
           <style dangerouslySetInnerHTML={{ __html: HERO_LEFT_AWARDS_CARD_STYLES }} />
 
           <div className="bg-mark" />
@@ -427,11 +430,12 @@ const BlitzAwardsHeroLeftCard = forwardRef<SVGSVGElement, BlitzAwardsHeroLeftCar
               const winner = winnersByAward[index];
               const isEmpty = award.metric == null;
               const isHighlightValue =
-                (award.id === "first-blood" || award.id === "first-t3" || award.id === "first-hyperstructure") && !isEmpty;
+                (award.id === "first-blood" || award.id === "first-t3" || award.id === "first-hyperstructure") &&
+                !isEmpty;
               const isHero = award.id === "first-hyperstructure";
               const isSide = award.id === "first-blood" || award.id === "first-t3";
               const isNoT3 = award.id === "first-t3" && isEmpty;
-              const displayValue = isNoT3 ? "No T3" : formatAwardValue(award.metric, award.kind);
+              const displayValue = isNoT3 ? "None" : formatAwardValue(award.metric, award.kind);
               const cardClasses = [
                 "award",
                 `award-${award.id}`,

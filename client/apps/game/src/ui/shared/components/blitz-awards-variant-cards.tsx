@@ -27,6 +27,7 @@ type AwardId =
   | "biggest-structures-owned";
 
 type AwardKind = "time" | "count";
+type OptionSixMetricIconId = "first-hyperstructure" | "first-blood" | "first-t3";
 
 type AwardsCardVariant =
   | "option-one"
@@ -140,6 +141,72 @@ const getOptionSixValueSizeClass = (value: string): string => {
   if (compactLength >= 7) return "option-six-value-md";
   if (compactLength >= 6) return "option-six-value-lg";
   return "option-six-value-xl";
+};
+
+const getOptionSixMetricIconId = (awardId: AwardId): OptionSixMetricIconId | null => {
+  if (awardId === "first-hyperstructure" || awardId === "first-blood" || awardId === "first-t3") {
+    return awardId;
+  }
+  return null;
+};
+
+const OptionSixMetricIcon = ({ iconId }: { iconId: OptionSixMetricIconId }) => {
+  if (iconId === "first-hyperstructure") {
+    return (
+      <svg viewBox="0 0 20 20" role="presentation" aria-hidden="true">
+        <path
+          d="M10 1.9 16.1 5.4v7.2L10 16.1 3.9 12.6V5.4Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinejoin="round"
+        />
+        <path d="M10 5.5v6.2M7.3 8.6h5.4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (iconId === "first-blood") {
+    return (
+      <svg viewBox="0 0 20 20" role="presentation" aria-hidden="true">
+        <path
+          d="M10 1.6S4.8 7.7 4.8 10.9a5.2 5.2 0 0 0 10.4 0c0-3.2-5.2-9.3-5.2-9.3Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="0.5"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 20 20" role="presentation" aria-hidden="true">
+      <path
+        d="M4.2 7.6 10 2.2l5.8 5.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+      <path
+        d="M4.2 12.1 10 6.7l5.8 5.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+      <path
+        d="M4.2 16.6 10 11.2l5.8 5.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
 };
 
 const buildLeaderboardIdentityLookup = (leaderboard: LandingLeaderboardEntry[]): Map<string, LeaderboardIdentity> => {
@@ -927,14 +994,32 @@ const OPTION_SIX_STYLES = `
   }
 
   .blitz-card-root.variant-option-six .award-index {
-    margin-bottom: 6px;
-    font-family: "Montserrat", sans-serif;
-    font-weight: 700;
-    font-size: 11px;
-    line-height: 13px;
-    letter-spacing: 1.6px;
-    color: rgba(237, 182, 74, 0.58);
-    text-transform: uppercase;
+    margin-bottom: 8px;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.35));
+  }
+
+  .blitz-card-root.variant-option-six .award-index svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+
+  .blitz-card-root.variant-option-six .award-index-first-hyperstructure {
+    color: #f5d898;
+  }
+
+  .blitz-card-root.variant-option-six .award-index-first-blood {
+    color: #f0c26c;
+  }
+
+  .blitz-card-root.variant-option-six .award-index-first-t3 {
+    color: #e9b85c;
   }
 
   .blitz-card-root.variant-option-six .award-value,
@@ -1260,7 +1345,7 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
         <div
-          className={`blitz-card-root card-gold ${AWARDS_CARD_VARIANT_ROOT_CLASS[variant]}`}
+          className={`blitz-card-root card-gold ${AWARDS_CARD_VARIANT_ROOT_CLASS[variant]} ${player ? "" : "no-player"}`}
           aria-label={`${worldName} Blitz Awards ${variant} card`}
         >
           <style dangerouslySetInnerHTML={{ __html: cardStyles }} />
@@ -1285,12 +1370,13 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
               const winner = winnersByAward[index];
               const isEmpty = award.metric == null;
               const isHighlightValue =
-                (award.id === "first-blood" || award.id === "first-t3" || award.id === "first-hyperstructure") && !isEmpty;
+                (award.id === "first-blood" || award.id === "first-t3" || award.id === "first-hyperstructure") &&
+                !isEmpty;
               const isHero = award.id === "first-hyperstructure";
               const isSide = award.id === "first-blood" || award.id === "first-t3";
               const isNoT3 = award.id === "first-t3" && isEmpty;
               const rawDisplayValue = isNoT3
-                ? "No T3"
+                ? "None"
                 : variant === "option-six" && award.kind === "time"
                   ? formatOptionSixDuration(award.metric?.value ?? Number.NaN)
                   : formatAwardValue(award.metric, award.kind);
@@ -1298,8 +1384,7 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
               const heroValueSizeClass = isHero ? getHeroValueSizeClass(displayValue) : "";
               const optionSixValueSizeClass =
                 variant === "option-six" && award.kind === "time" ? getOptionSixValueSizeClass(rawDisplayValue) : "";
-              const optionSixMetricIndex =
-                variant === "option-six" ? (award.id === "first-hyperstructure" ? "01" : award.id === "first-blood" ? "02" : "03") : null;
+              const optionSixMetricIconId = variant === "option-six" ? getOptionSixMetricIconId(award.id) : null;
               const cardClasses = [
                 "award",
                 `award-${award.id}`,
@@ -1315,9 +1400,15 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
 
               return (
                 <div key={award.id} className={cardClasses}>
-                  {optionSixMetricIndex ? <div className="award-index">{optionSixMetricIndex}</div> : null}
+                  {optionSixMetricIconId ? (
+                    <div className={`award-index award-index-${optionSixMetricIconId}`}>
+                      <OptionSixMetricIcon iconId={optionSixMetricIconId} />
+                    </div>
+                  ) : null}
                   <div className="award-title">{award.label}</div>
-                  <div className={["award-value", heroValueSizeClass, optionSixValueSizeClass].filter(Boolean).join(" ")}>
+                  <div
+                    className={["award-value", heroValueSizeClass, optionSixValueSizeClass].filter(Boolean).join(" ")}
+                  >
                     {displayValue}
                   </div>
                   {winner ? (
@@ -1401,11 +1492,6 @@ export const BlitzAwardsOptionSixCardWithSelector = ({
   ...cardProps
 }: BlitzAwardsVariantCardWithSelectorProps) => {
   return (
-    <BlitzAwardsVariantCardWithSelector
-      className={className}
-      cardRef={cardRef}
-      variant="option-six"
-      {...cardProps}
-    />
+    <BlitzAwardsVariantCardWithSelector className={className} cardRef={cardRef} variant="option-six" {...cardProps} />
   );
 };

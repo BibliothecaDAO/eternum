@@ -276,7 +276,10 @@ const BlitzMapFingerprintCard = forwardRef<SVGSVGElement, BlitzMapFingerprintCar
 
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
-        <div className="blitz-card-root card-gold" aria-label={`${worldName} Map Fingerprint card`}>
+        <div
+          className={`blitz-card-root card-gold ${player ? "" : "no-player"}`}
+          aria-label={`${worldName} Map Fingerprint card`}
+        >
           <style dangerouslySetInnerHTML={{ __html: MAP_FINGERPRINT_CARD_STYLES }} />
 
           <div className="bg-mark" />

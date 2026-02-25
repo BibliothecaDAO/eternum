@@ -175,7 +175,10 @@ const BlitzGameStatsCard = forwardRef<SVGSVGElement, BlitzGameStatsCardProps>(({
 
   const cardMarkup = (
     <foreignObject width="100%" height="100%">
-      <div className="blitz-card-root card-gold" aria-label={`${worldName} Game Stats card`}>
+      <div
+        className={`blitz-card-root card-gold ${player ? "" : "no-player"}`}
+        aria-label={`${worldName} Game Stats card`}
+      >
         <style dangerouslySetInnerHTML={{ __html: GAME_STATS_CARD_STYLES }} />
 
         <div className="bg-mark" />

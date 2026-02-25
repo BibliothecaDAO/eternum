@@ -529,7 +529,6 @@ export const GameReviewModal = ({
   const worldChain = world?.chain;
 
   const account = useAccountStore((state) => state.account);
-  const accountName = useAccountStore((state) => state.accountName);
 
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
@@ -584,16 +583,6 @@ export const GameReviewModal = ({
     });
     return bestIndex;
   }, [mapFingerprintGoldLevel]);
-
-  const cardPlayer = useMemo(() => {
-    const name = accountName?.trim() || data?.personalScore?.displayName?.trim() || null;
-    const address = data?.personalScore?.address ?? account?.address ?? null;
-    if (!name && !address) return null;
-    return {
-      name: name || displayAddress(address ?? ""),
-      address: displayAddress(address ?? ""),
-    };
-  }, [accountName, data?.personalScore, account?.address]);
 
   const steps = useMemo<ReviewStepId[]>(() => {
     const ordered: ReviewStepId[] = [
@@ -1021,7 +1010,6 @@ export const GameReviewModal = ({
                       worldName={reviewData.worldName}
                       stats={reviewData.stats}
                       leaderboard={reviewData.leaderboard}
-                      player={cardPlayer}
                     />
                   </div>
                 </div>
@@ -1039,7 +1027,6 @@ export const GameReviewModal = ({
                             mode="biome"
                             zoom={mapFingerprintZoom}
                             goldLevel={mapFingerprintGoldLevel}
-                            player={cardPlayer}
                           />
                         </div>
                         <div className="inline-flex shrink-0 flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/40">
@@ -1098,7 +1085,6 @@ export const GameReviewModal = ({
                     <BlitzLeaderboardCardWithSelector
                       worldName={reviewData.worldName}
                       topPlayers={reviewData.topPlayers}
-                      player={cardPlayer}
                     />
                   </div>
                 </div>
