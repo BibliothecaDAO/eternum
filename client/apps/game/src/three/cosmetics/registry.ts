@@ -326,6 +326,16 @@ const DEFAULT_EXTRA_ARMY_SKINS: CosmeticRegistryEntry[] = [
       trait: CosmeticTraitType.TroopArmor,
     },
   },
+  {
+    id: "army:Knight:T1:winter-soldier",
+    category: "army-skin",
+    appliesTo: [formatArmyCosmeticTarget(TroopType.Knight, TroopTier.T1)],
+    assetPaths: ["units/winter_soldier_animated.glb"],
+    metadata: {
+      displayName: "Winter Soldier",
+      trait: CosmeticTraitType.TroopArmor,
+    },
+  },
 ];
 
 const DEFAULT_EXTRA_STRUCTURE_SKINS: CosmeticRegistryEntry[] = [

@@ -781,6 +781,10 @@ export default class WorldmapScene extends HexagonScene {
           this.addCombatRelationship(attackerId, defenderId);
           this.recalculateArrowsForEntity(attackerId);
           this.recalculateArrowsForEntity(defenderId);
+
+          // Trigger attack animations for both combatants
+          this.armyManager.playAttackAnimation(attackerId);
+          this.armyManager.playAttackAnimation(defenderId);
         }
 
         const uiStore = useUIStore.getState();
