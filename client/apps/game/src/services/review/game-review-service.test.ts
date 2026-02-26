@@ -9,9 +9,8 @@ const TEST_TRIAL_ID_HEX = "0x00000000000000000000000000001c6b";
 const TEST_LORDS_SHARE_HEX = "0x1bc16d674ec80000"; // 2 LORDS with 18 decimals
 
 const fetchLandingLeaderboardMock = vi.fn<(...args: unknown[]) => Promise<LandingLeaderboardEntry[]>>();
-const fetchLandingLeaderboardEntryByAddressMock = vi.fn<
-  (...args: unknown[]) => Promise<LandingLeaderboardEntry | null>
->();
+const fetchLandingLeaderboardEntryByAddressMock =
+  vi.fn<(...args: unknown[]) => Promise<LandingLeaderboardEntry | null>>();
 const fetchWithErrorHandlingMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
 
 vi.mock("@/services/leaderboard/landing-leaderboard-service", () => ({

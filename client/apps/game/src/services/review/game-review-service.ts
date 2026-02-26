@@ -673,6 +673,14 @@ export interface GameReviewData {
   rewards: GameReviewRewards | null;
 }
 
+export interface GameReviewClaimSummary {
+  canClaimNow: boolean;
+  alreadyClaimed: boolean;
+  lordsWonFormatted: string;
+  chestsClaimedEstimate: number;
+  claimBlockedReason: string | null;
+}
+
 interface FinalizeGameReviewResult {
   rankingSubmitted: boolean;
   mmrSubmitted: boolean;
@@ -1256,6 +1264,45 @@ export const fetchGameReviewData = async ({
     mapSnapshot,
     finalization,
     rewards,
+  };
+};
+
+export const fetchGameReviewClaimSummary = async ({
+  worldName,
+  chain,
+  playerAddress,
+}: {
+  worldName: string;
+  chain: Chain;
+  playerAddress: string;
+}): Promise<GameReviewClaimSummary> => {
+  // Keep the chain param for stable query keys and future chain-dependent claim policies.
+  void chain;
+
+  const normalizedPlayerAddress = parseAddress(playerAddress);
+  if (!normalizedPlayerAddress) {
+    throw new Error("Missing player address for claim summary.");
+  }
+
+  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
+  const [finalization, personalScore] = await Promise.all([
+    fetchReviewFinalizationMeta(toriiSqlBaseUrl),
+    fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl).catch(() => null),
+  ]);
+
+  const rewards = await fetchReviewRewards({
+    toriiSqlBaseUrl,
+    playerAddress: normalizedPlayerAddress,
+    finalization,
+    personalScore,
+  });
+
+  return {
+    canClaimNow: rewards.canClaimNow,
+    alreadyClaimed: rewards.alreadyClaimed,
+    lordsWonFormatted: rewards.lordsWonFormatted,
+    chestsClaimedEstimate: rewards.chestsClaimedEstimate,
+    claimBlockedReason: rewards.claimBlockedReason,
   };
 };
 
