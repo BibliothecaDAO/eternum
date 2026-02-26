@@ -1,0 +1,43 @@
+name: Grant Prize Distributor Minter Role
+
+on:
+  workflow_dispatch:
+    inputs:
+      game_name:
+        description: "Game/world name (example: waterbox-batch-cooking)"
+        required: true
+
+jobs:
+  grant-minter-role:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Patch manifest and grant MINTER_ROLE via multicall
+        env:
+          NO_COLOR: ""
+          CI_MAINNET_ACCOUNT_ADDRESS: ${{ secrets.CI_MAINNET_ACCOUNT_ADDRESS }}
+          CI_MAINNET_PRIVATE_KEY: ${{ secrets.CI_MAINNET_PRIVATE_KEY }}
+          CI_MAINNET_RPC_URL: ${{ vars.CI_MAINNET_RPC_URL || 'https://api.cartridge.gg/x/starknet/mainnet' }}
+          CARTRIDGE_API_BASE: ${{ vars.CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
+        run: |
+          pnpm dlx tsx scripts/ci/roles/grant-prize-distributor-minter-role.ts \
+            --chain mainnet \
+            --game "${{ github.event.inputs.game_name }}"
