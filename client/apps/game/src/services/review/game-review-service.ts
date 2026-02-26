@@ -110,11 +110,21 @@ const buildReviewFinalRankForPlayerQuery = (playerAddress: string) => `
   FROM "s1_eternum-PlayerRank" pr
   INNER JOIN "s1_eternum-PlayersRankFinal" pf
     ON pf.trial_id = pr.trial_id
-  WHERE lower(pr.player) = lower('${playerAddress}')
+  WHERE ltrim(lower(CAST(pr.player AS TEXT)), '0x') = ltrim(lower('${playerAddress}'), '0x')
     AND pf.trial_id > 0
   ORDER BY pf.trial_id DESC
   LIMIT 1;
 `;
+
+const buildTrialIdMatchCondition = (columnName: string, trialId: bigint): string => {
+  const trialIdDecimal = trialId.toString();
+  const trialIdHexNoPrefix = trialId.toString(16).toLowerCase();
+
+  return `(
+    CAST(${columnName} AS TEXT) = '${trialIdDecimal}'
+    OR ltrim(lower(CAST(${columnName} AS TEXT)), '0x') = '${trialIdHexNoPrefix}'
+  )`;
+};
 
 const buildReviewRankPrizeQuery = (trialId: bigint, rank: number) => `
   SELECT
@@ -122,7 +132,7 @@ const buildReviewRankPrizeQuery = (trialId: bigint, rank: number) => `
     total_prize_amount,
     grant_elite_nft
   FROM "s1_eternum-RankPrize"
-  WHERE trial_id = '${trialId.toString()}'
+  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
     AND rank = '${rank}'
   LIMIT 1;
 `;
@@ -130,7 +140,7 @@ const buildReviewRankPrizeQuery = (trialId: bigint, rank: number) => `
 const buildReviewRankTrialQuery = (trialId: bigint) => `
   SELECT total_player_count_committed
   FROM "s1_eternum-PlayersRankTrial"
-  WHERE trial_id = '${trialId.toString()}'
+  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
   LIMIT 1;
 `;
 
@@ -139,7 +149,7 @@ const buildReviewRegisteredPointsQuery = (playerAddress: string) => `
     registered_points,
     prize_claimed
   FROM "s1_eternum-PlayerRegisteredPoints"
-  WHERE lower(address) = lower('${playerAddress}')
+  WHERE ltrim(lower(CAST(address AS TEXT)), '0x') = ltrim(lower('${playerAddress}'), '0x')
   LIMIT 1;
 `;
 
@@ -1008,10 +1018,12 @@ const fetchReviewRewards = async ({
   toriiSqlBaseUrl,
   playerAddress,
   finalization,
+  personalScore,
 }: {
   toriiSqlBaseUrl: string;
   playerAddress: string;
   finalization: ReviewFinalizationMeta;
+  personalScore: LandingLeaderboardEntry | null;
 }): Promise<GameReviewRewards> => {
   const [playerPointsRows, chestRows, seasonRows] = await Promise.all([
     queryToriiSql<PlayerRegisteredPointsRow>(
@@ -1062,8 +1074,14 @@ const fetchReviewRewards = async ({
     "Failed to fetch player final rank",
   );
 
-  const playerRank = parseInteger(playerRankRows[0]?.rank);
-  const paid = parseBoolean(playerRankRows[0]?.paid) || playerPrizeClaimed;
+  const playerRankFromModel = parseInteger(playerRankRows[0]?.rank);
+  const playerRankFromLeaderboard =
+    typeof personalScore?.rank === "number" && Number.isFinite(personalScore.rank) && personalScore.rank > 0
+      ? Math.trunc(personalScore.rank)
+      : null;
+  const playerRank =
+    playerRankFromModel != null && playerRankFromModel > 0 ? playerRankFromModel : playerRankFromLeaderboard;
+  const paid = parseBoolean(playerRankRows[0]?.paid) || playerPrizeClaimed || Boolean(personalScore?.prizeClaimed);
   const trialIdFromPlayerRank = parseBigIntValue(playerRankRows[0]?.trial_id);
   const finalTrialId = trialIdFromPlayerRank ?? finalization.finalTrialId;
 
@@ -1224,6 +1242,7 @@ export const fetchGameReviewData = async ({
           toriiSqlBaseUrl,
           playerAddress: normalizedPlayerAddress,
           finalization,
+          personalScore,
         });
 
   return {
@@ -1385,7 +1404,18 @@ export const claimGameReviewRewards = async ({
     calldata: [1, normalizedAddress],
   };
 
-  await signer.execute([claimCall]);
+  const calls: Call[] = [];
+  const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+  if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
+    calls.push({
+      contractAddress: vrfProviderAddress,
+      entrypoint: "request_random",
+      calldata: [prizeDistributionAddress, 0, signer.address],
+    });
+  }
+  calls.push(claimCall);
+
+  await signer.execute(calls);
 
   return {
     claimed: true,

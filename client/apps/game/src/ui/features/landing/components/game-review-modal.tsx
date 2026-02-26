@@ -55,6 +55,23 @@ const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return fallback;
+};
+
 const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
   personal: "Personal Score Card",
@@ -296,6 +313,7 @@ const SubmitScoreStep = ({
   nowTs,
   hasSigner,
   isSubmitting,
+  submitError,
   onSubmit,
   onRequireSignIn,
 }: {
@@ -303,6 +321,7 @@ const SubmitScoreStep = ({
   nowTs: number;
   hasSigner: boolean;
   isSubmitting: boolean;
+  submitError: string | null;
   onSubmit: () => void;
   onRequireSignIn: () => void;
 }) => {
@@ -365,6 +384,16 @@ const SubmitScoreStep = ({
           Scores are already finalized. Retry MMR update independently if the previous MMR submission failed.
         </div>
       )}
+      {isSubmitting && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Transaction pending. Confirm in your wallet and wait for onchain confirmation.
+        </div>
+      )}
+      {submitError && !isSubmitting && (
+        <div className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-lightest">
+          {submitError}
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
@@ -400,12 +429,14 @@ const ClaimRewardsStep = ({
   data,
   hasSigner,
   isClaiming,
+  claimError,
   onClaim,
   onRequireSignIn,
 }: {
   data: GameReviewData;
   hasSigner: boolean;
   isClaiming: boolean;
+  claimError: string | null;
   onClaim: () => void;
   onRequireSignIn: () => void;
 }) => {
@@ -466,6 +497,16 @@ const ClaimRewardsStep = ({
       {!hasSigner && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
           Connect a wallet to claim rewards.
+        </div>
+      )}
+      {isClaiming && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Claim transaction pending. Confirm in your wallet and wait for onchain confirmation.
+        </div>
+      )}
+      {claimError && !isClaiming && (
+        <div className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-lightest">
+          {claimError}
         </div>
       )}
 
@@ -547,6 +588,8 @@ export const GameReviewModal = ({
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   const [mapFingerprintZoom, setMapFingerprintZoom] = useState<number>(MAP_FINGERPRINT_DEFAULT_ZOOM);
   const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
+  const [submitTxError, setSubmitTxError] = useState<string | null>(null);
+  const [claimTxError, setClaimTxError] = useState<string | null>(null);
   const currentMapZoomIndex = useMemo(() => {
     const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
       (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
@@ -663,6 +706,8 @@ export const GameReviewModal = ({
     setFrozenSnapshot(null);
     setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
     setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
+    setSubmitTxError(null);
+    setClaimTxError(null);
   }, [isOpen, worldName, worldChain]);
 
   useEffect(() => {
@@ -696,7 +741,11 @@ export const GameReviewModal = ({
         signer: account,
       });
     },
+    onMutate: () => {
+      setSubmitTxError(null);
+    },
     onSuccess: async (result) => {
+      setSubmitTxError(null);
       if (result.mmrError) {
         toast("Score submission completed with MMR pending.", {
           description: `${result.totalPlayers} players processed. Retry MMR independently from this step.`,
@@ -715,20 +764,23 @@ export const GameReviewModal = ({
     },
     onError: (caughtError) => {
       console.error("Failed to submit score/MMR", caughtError);
-      const errorMessage = caughtError instanceof Error ? caughtError.message : String(caughtError);
+      const errorMessage = getErrorMessage(caughtError, "Unknown error while submitting score/MMR.");
       const isGracePeriodError = errorMessage.toLowerCase().includes("registration grace period is not over");
 
       if (isGracePeriodError && reviewData) {
         const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
+        const description =
+          secondsUntilOpen != null && secondsUntilOpen > 0
+            ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
+            : "Submission opens once the game and registration grace period end.";
+        setSubmitTxError(`Score submission is not open yet. ${description}`);
         toast.error("Score submission is not open yet.", {
-          description:
-            secondsUntilOpen != null && secondsUntilOpen > 0
-              ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
-              : "Submission opens once the game and registration grace period end.",
+          description,
         });
         return;
       }
 
+      setSubmitTxError(errorMessage);
       toast.error("Failed to submit score or MMR.", { description: errorMessage });
     },
   });
@@ -746,13 +798,19 @@ export const GameReviewModal = ({
         playerAddress: account.address,
       });
     },
+    onMutate: () => {
+      setClaimTxError(null);
+    },
     onSuccess: async () => {
+      setClaimTxError(null);
       toast.success("Rewards claimed.");
       await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
     },
     onError: (caughtError) => {
       console.error("Failed to claim rewards", caughtError);
-      toast.error("Failed to claim rewards.");
+      const errorMessage = getErrorMessage(caughtError, "Unknown error while claiming rewards.");
+      setClaimTxError(errorMessage);
+      toast.error("Failed to claim rewards.", { description: errorMessage });
     },
   });
 
@@ -1096,6 +1154,7 @@ export const GameReviewModal = ({
                   nowTs={nowTs}
                   hasSigner={Boolean(account)}
                   isSubmitting={finalizeMutation.isPending}
+                  submitError={submitTxError}
                   onSubmit={handleSubmitScore}
                   onRequireSignIn={onRequireSignIn}
                 />
@@ -1106,6 +1165,7 @@ export const GameReviewModal = ({
                   data={reviewData}
                   hasSigner={Boolean(account)}
                   isClaiming={claimRewardsMutation.isPending}
+                  claimError={claimTxError}
                   onClaim={handleClaimRewards}
                   onRequireSignIn={onRequireSignIn}
                 />
