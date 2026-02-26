@@ -1,5 +1,6 @@
-import Button from "@/ui/design-system/atoms/button";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import Button from "@/ui/design-system/atoms/button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
@@ -8,13 +9,14 @@ import { useMemo, useState } from "react";
 
 export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => {
   const {
-    account: { account },
     setup: {
       components,
       systemCalls: { blitz_prize_claim },
       network,
     },
   } = useDojo();
+
+  const account = useAccountStore((state) => state.account);
 
   const [isLoading, setIsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
