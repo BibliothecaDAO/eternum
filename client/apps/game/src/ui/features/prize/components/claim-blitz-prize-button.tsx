@@ -5,7 +5,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => {
   const {
@@ -59,12 +59,13 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
     [worldCfgEntities],
   );
   const [decimals, setDecimals] = useState<number | null>(null);
-  useMemo(() => {
+  useEffect(() => {
     (async () => {
       try {
         const feeToken = worldCfg?.blitz_registration_config?.fee_token as unknown as string | undefined;
-        if (!feeToken) return;
-        const result: any = await network.provider.callAndReturnResult(account, {
+        const connectedAccount = account;
+        if (!feeToken || !connectedAccount) return;
+        const result: any = await network.provider.callAndReturnResult(connectedAccount, {
           contractAddress: feeToken,
           entrypoint: "decimals",
           calldata: [],
@@ -76,7 +77,7 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [worldCfg?.blitz_registration_config?.fee_token]);
+  }, [account, network.provider, worldCfg?.blitz_registration_config?.fee_token]);
 
   const formatTokenAmount = (amount?: bigint) => {
     if (typeof amount !== "bigint") return "-";
@@ -92,10 +93,11 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
   };
 
   const onClaim = async () => {
-    if (!canClaim) return;
+    const connectedAccount = account;
+    if (!canClaim || !connectedAccount) return;
     setIsLoading(true);
     try {
-      await blitz_prize_claim({ signer: account, players: [account.address] });
+      await blitz_prize_claim({ signer: connectedAccount, players: [connectedAccount.address] });
     } catch (e) {
       console.error(e);
     } finally {
