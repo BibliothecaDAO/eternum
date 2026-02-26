@@ -902,21 +902,6 @@ export const GameReviewModal = ({
         claimedRewardsOptimisticKeys.add(claimOptimisticKey);
       }
       setClaimedRewardsLocally(true);
-      queryClient.setQueryData<GameReviewData | undefined>(reviewQueryKey, (previous) => {
-        if (!previous || !previous.rewards) {
-          return previous;
-        }
-
-        return {
-          ...previous,
-          rewards: {
-            ...previous.rewards,
-            canClaimNow: false,
-            alreadyClaimed: true,
-            claimBlockedReason: "Rewards already claimed.",
-          },
-        };
-      });
       queryClient.setQueryData<GameReviewClaimSummary | undefined>(reviewClaimSummaryQueryKey, (previous) => {
         if (!previous) {
           return previous;
