@@ -27,6 +27,7 @@
 
     "client/apps/gg-xyz/**",
     "scripts/codemod-lucide-imports.mjs",
+    "scripts/ci/roles/grant-prize-distributor-minter-role.ts",
     "config/**",
     "contracts/**",
 
