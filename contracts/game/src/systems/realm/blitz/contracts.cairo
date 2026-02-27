@@ -19,7 +19,7 @@ pub mod blitz_realm_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
+    use crate::constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID, blitz_produceable_resources};
     use crate::models::config::{
         BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzHypersSettlementConfig,
         BlitzHypersSettlementConfigImpl, BlitzPlayerRegisterList, BlitzRealmPlayerRegister, BlitzRealmPositionRegister,
@@ -28,6 +28,7 @@ pub mod blitz_realm_systems {
         WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
+    use crate::models::hyperstructure::HyperstructureGlobals;
     use crate::models::map::TileImpl;
     use crate::models::name::AddressName;
     use crate::models::position::{Coord, CoordImpl};
@@ -227,21 +228,30 @@ pub mod blitz_realm_systems {
                 world, selector!("blitz_settlement_config"),
             );
             let map_center: Coord = CoordImpl::center(ref world);
-            let mut coords: Array<Coord> = blitz_settlement_config.generate_coords(map_center);
-            // let player_position_spot_number: u16 = blitz_registration_config.registration_count;
-
             // this allows dev mode registration as opposed to the previous line
             let player_position_spot_number: u16 = blitz_registration_config.registration_count
                 - blitz_registration_config.assigned_positions_count;
+            let is_duel_1v1 = BlitzSettlementConfigImpl::is_duel_1v1_mode(
+                blitz_registration_config.registration_count_max,
+            );
+            let mut coords: Array<Coord> = if is_duel_1v1 {
+                blitz_settlement_config.duel_spot_coords(map_center, player_position_spot_number)
+            } else {
+                blitz_settlement_config.generate_coords(map_center)
+            };
 
             let mut blitz_position_register: BlitzRealmPositionRegister = BlitzRealmPositionRegister {
                 spot_number: player_position_spot_number, coords: coords.span(),
             };
             world.write_model(@blitz_position_register);
 
-            // save the updated blitz settlement config
-            blitz_settlement_config.next();
-            WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
+            if !is_duel_1v1 {
+                // save the updated blitz settlement config
+                blitz_settlement_config.next();
+                WorldConfigUtilImpl::set_member(
+                    ref world, selector!("blitz_settlement_config"), blitz_settlement_config,
+                );
+            }
 
             // store structure reservation
             for coord in coords {
@@ -257,20 +267,26 @@ pub mod blitz_realm_systems {
             // Where P is num registered players
             // and R is hyperstructure ring count
 
-            let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
-            let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
-                WorldConfigUtilImpl::get_member(
-                world, blitz_hyperstructure_settlement_config_selector,
-            );
-            let registration_count = blitz_registration_config.registration_count.into();
-            let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
-            let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
-            if max_ring_count_squared.is_zero()
-                || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
-                blitz_hyperstructure_settlement_config.max_ring_count += 1;
-                WorldConfigUtilImpl::set_member(
-                    ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+            if !is_duel_1v1 {
+                let blitz_hyperstructure_settlement_config_selector: felt252 = selector!(
+                    "blitz_hypers_settlement_config",
                 );
+                let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
+                    WorldConfigUtilImpl::get_member(
+                    world, blitz_hyperstructure_settlement_config_selector,
+                );
+                let registration_count = blitz_registration_config.registration_count.into();
+                let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
+                let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
+                if max_ring_count_squared.is_zero()
+                    || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
+                    blitz_hyperstructure_settlement_config.max_ring_count += 1;
+                    WorldConfigUtilImpl::set_member(
+                        ref world,
+                        blitz_hyperstructure_settlement_config_selector,
+                        blitz_hyperstructure_settlement_config,
+                    );
+                }
             }
 
             // set name for the player
@@ -323,6 +339,39 @@ pub mod blitz_realm_systems {
             let troop_stamina_config: TroopStaminaConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("troop_stamina_config"),
             );
+            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
+            let is_duel_1v1 = BlitzSettlementConfigImpl::is_duel_1v1_mode(
+                blitz_registration_config.registration_count_max,
+            );
+
+            if is_duel_1v1 {
+                let map_center: Coord = CoordImpl::center(ref world);
+                let max_count = BlitzSettlementConfigImpl::duel_hyperstructure_count();
+
+                for i in 0..count {
+                    let hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+                    if hyperstructure_globals.created_count >= max_count.into() {
+                        break;
+                    }
+
+                    let index: u8 = hyperstructure_globals.created_count.try_into().unwrap();
+                    let next_coord = BlitzSettlementConfigImpl::duel_hyperstructure_coord(map_center, index);
+                    iHyperstructureDiscoveryImpl::create(
+                        ref world,
+                        next_coord,
+                        Zero::zero(),
+                        map_config,
+                        troop_limit_config,
+                        troop_stamina_config,
+                        vrf_seed + i.into(),
+                        true,
+                        true,
+                    );
+                }
+                return;
+            }
 
             // create center hyperstructure [when num hyperstructures is 0]
             let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
@@ -365,14 +414,29 @@ pub mod blitz_realm_systems {
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure all hyperstructures have been created
-            let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
-                WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_hypers_settlement_config"),
+            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
             );
-            assert!(
-                !blitz_hyperstructure_settlement_config.is_valid_ring(),
-                "Eternum: Not all hyperstructures have been created",
+            let is_duel_1v1 = BlitzSettlementConfigImpl::is_duel_1v1_mode(
+                blitz_registration_config.registration_count_max,
             );
+            if is_duel_1v1 {
+                let hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+                assert!(
+                    hyperstructure_globals.created_count
+                        >= BlitzSettlementConfigImpl::duel_hyperstructure_count().into(),
+                    "Eternum: Not all hyperstructures have been created",
+                );
+            } else {
+                let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
+                    WorldConfigUtilImpl::get_member(
+                    world, selector!("blitz_hypers_settlement_config"),
+                );
+                assert!(
+                    !blitz_hyperstructure_settlement_config.is_valid_ring(),
+                    "Eternum: Not all hyperstructures have been created",
+                );
+            }
 
             // ensure player registered
             let caller: ContractAddress = starknet::get_caller_address();
