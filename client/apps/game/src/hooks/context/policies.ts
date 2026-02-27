@@ -10,15 +10,26 @@ const isNonZeroAddress = (address?: string | null): address is string => {
   return typeof address === "string" && address.length > 0 && !/^0x0*$/i.test(address);
 };
 
-const getTokenPolicies = () => {
+type TokenPolicyOptions = {
+  feeTokenAddress?: string | null;
+  entryTokenAddress?: string | null;
+};
+
+const getTokenPolicies = ({ feeTokenAddress, entryTokenAddress }: TokenPolicyOptions = {}) => {
   const activeWorld = getActiveWorld();
-  const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
-  const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+  const resolvedEntryTokenAddress =
+    entryTokenAddress !== undefined
+      ? entryTokenAddress
+      : (activeWorld?.entryTokenAddress ?? env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS);
+  const resolvedFeeTokenAddress =
+    feeTokenAddress !== undefined
+      ? feeTokenAddress
+      : (activeWorld?.feeTokenAddress ?? env.VITE_PUBLIC_FEE_TOKEN_ADDRESS);
 
   return {
-    ...(isNonZeroAddress(entryTokenAddress)
+    ...(isNonZeroAddress(resolvedEntryTokenAddress)
       ? {
-          [entryTokenAddress]: {
+          [resolvedEntryTokenAddress]: {
             methods: [
               {
                 name: "token_lock",
@@ -28,9 +39,9 @@ const getTokenPolicies = () => {
           },
         }
       : {}),
-    ...(isNonZeroAddress(feeTokenAddress)
+    ...(isNonZeroAddress(resolvedFeeTokenAddress)
       ? {
-          [feeTokenAddress]: {
+          [resolvedFeeTokenAddress]: {
             methods: [
               {
                 name: "approve",
@@ -45,14 +56,42 @@ const getTokenPolicies = () => {
 
 type ForgePolicyOptions = {
   blitzRealmSystemsAddress: string;
-  vrfProviderAddress?: string;
+  vrfProviderAddress?: string | null;
 };
 
-export const buildForgePolicies = ({ blitzRealmSystemsAddress, vrfProviderAddress }: ForgePolicyOptions) =>
+type RegisterPolicyOptions = {
+  blitzRealmSystemsAddress: string;
+  feeTokenAddress?: string | null;
+  entryTokenAddress?: string | null;
+  vrfProviderAddress?: string | null;
+};
+
+type BlitzActionPolicyOptions = {
+  blitzRealmSystemsAddress: string;
+  vrfProviderAddress?: string | null;
+  feeTokenAddress?: string | null;
+  entryTokenAddress?: string | null;
+};
+
+export const buildBlitzActionPolicies = ({
+  blitzRealmSystemsAddress,
+  vrfProviderAddress,
+  feeTokenAddress,
+  entryTokenAddress,
+}: BlitzActionPolicyOptions) =>
   toSessionPolicies({
     contracts: {
+      ...getTokenPolicies({ feeTokenAddress, entryTokenAddress }),
       [blitzRealmSystemsAddress]: {
         methods: [
+          {
+            name: "register",
+            entrypoint: "register",
+          },
+          {
+            name: "obtain_entry_token",
+            entrypoint: "obtain_entry_token",
+          },
           {
             name: "make_hyperstructures",
             entrypoint: "make_hyperstructures",
@@ -74,56 +113,20 @@ export const buildForgePolicies = ({ blitzRealmSystemsAddress, vrfProviderAddres
     },
   });
 
-type RegisterPolicyOptions = {
-  blitzRealmSystemsAddress: string;
-  feeTokenAddress?: string | null;
-  entryTokenAddress?: string | null;
-};
+export const buildForgePolicies = ({ blitzRealmSystemsAddress, vrfProviderAddress }: ForgePolicyOptions) =>
+  buildBlitzActionPolicies({ blitzRealmSystemsAddress, vrfProviderAddress });
 
 export const buildRegisterPolicies = ({
   blitzRealmSystemsAddress,
   feeTokenAddress,
   entryTokenAddress,
+  vrfProviderAddress,
 }: RegisterPolicyOptions) =>
-  toSessionPolicies({
-    contracts: {
-      [blitzRealmSystemsAddress]: {
-        methods: [
-          {
-            name: "register",
-            entrypoint: "register",
-          },
-          {
-            name: "obtain_entry_token",
-            entrypoint: "obtain_entry_token",
-          },
-        ],
-      },
-      ...(isNonZeroAddress(feeTokenAddress)
-        ? {
-            [feeTokenAddress]: {
-              methods: [
-                {
-                  name: "approve",
-                  entrypoint: "approve",
-                },
-              ],
-            },
-          }
-        : {}),
-      ...(isNonZeroAddress(entryTokenAddress)
-        ? {
-            [entryTokenAddress]: {
-              methods: [
-                {
-                  name: "token_lock",
-                  entrypoint: "token_lock",
-                },
-              ],
-            },
-          }
-        : {}),
-    },
+  buildBlitzActionPolicies({
+    blitzRealmSystemsAddress,
+    feeTokenAddress,
+    entryTokenAddress,
+    vrfProviderAddress,
   });
 
 export const buildPolicies = (manifest: any) =>

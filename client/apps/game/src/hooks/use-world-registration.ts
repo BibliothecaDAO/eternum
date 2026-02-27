@@ -280,9 +280,10 @@ export const useWorldRegistration = ({
           blitzRealmSystemsAddress,
           feeTokenAddress: config?.feeTokenAddress,
           entryTokenAddress: config?.entryTokenAddress,
+          vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
         });
 
-        await refreshSessionPoliciesWithPolicies(connector, registerPolicies, `register:${chain}:${worldName}`);
+        await refreshSessionPoliciesWithPolicies(connector, registerPolicies, `blitz-actions:${chain}:${worldName}`);
       } catch (policyError) {
         console.warn("Failed to refresh registration session policies:", policyError);
       }

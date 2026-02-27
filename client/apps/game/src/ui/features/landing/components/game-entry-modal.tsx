@@ -834,6 +834,8 @@ export const GameEntryModal = ({
     return Math.max(0, averagePerHyperstructure * (forgeAllTargetCount - forgeAllCompletedCount));
   }, [forgeAllElapsedMs, forgeAllCompletedCount, forgeAllTargetCount]);
 
+  const blitzActionPolicyScope = useMemo(() => `blitz-actions:${chain}:${worldName}`, [chain, worldName]);
+
   const resolveForgeCallTargets = useCallback(async (): Promise<ForgeCallTargets> => {
     if (forgeCallTargetsRef.current) {
       return forgeCallTargetsRef.current;
@@ -872,8 +874,8 @@ export const GameEntryModal = ({
     const forgeTargets = await resolveForgeCallTargets();
     const forgePolicies = buildForgePolicies(forgeTargets);
 
-    return refreshSessionPoliciesWithPolicies(connector, forgePolicies, "forge");
-  }, [resolveForgeCallTargets]);
+    return refreshSessionPoliciesWithPolicies(connector, forgePolicies, blitzActionPolicyScope);
+  }, [resolveForgeCallTargets, blitzActionPolicyScope]);
 
   // In forge mode, update session once on modal open for the selected world.
   useEffect(() => {
