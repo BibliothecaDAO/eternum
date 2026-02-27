@@ -1470,8 +1470,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const { structure } = this.getHexagonEntity(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
-    const hasActiveEntityAction =
-      selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
+    const hasActiveEntityAction = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
 
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 

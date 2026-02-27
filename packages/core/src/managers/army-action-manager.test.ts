@@ -115,7 +115,9 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       overrideFeltStart,
     );
 
-    const highlightedHexes = new Set(actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`));
+    const highlightedHexes = new Set(
+      actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`),
+    );
 
     expect(highlightedHexes).toEqual(toNormalizedNeighborSet(overrideFeltStart));
   });
@@ -123,9 +125,19 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   it("falls back to ExplorerTroops coord when no override is provided", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 
-    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0, 0x123n as any);
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
 
-    const highlightedHexes = new Set(actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`));
+    const highlightedHexes = new Set(
+      actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`),
+    );
 
     expect(highlightedHexes).toEqual(toNormalizedNeighborSet(oldFeltStart));
   });

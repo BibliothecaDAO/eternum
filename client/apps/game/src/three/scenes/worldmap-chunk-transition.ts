@@ -230,7 +230,9 @@ export function resolveEntityActionPathLookup<TActionPath>(
  * External entity-action sync can clear ownership when actions disappear, but
  * must never mint or refresh ownership tokens.
  */
-export function resolveEntityActionPathsTransitionTokenSync(input: EntityActionPathsTransitionTokenSyncInput): number | null {
+export function resolveEntityActionPathsTransitionTokenSync(
+  input: EntityActionPathsTransitionTokenSyncInput,
+): number | null {
   const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
   const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
   if (!hasActivePaths) {

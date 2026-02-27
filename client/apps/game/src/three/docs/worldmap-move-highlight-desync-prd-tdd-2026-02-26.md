@@ -2,7 +2,8 @@
 
 ## Overview
 
-- Feature: Eliminate one-hex desync between move-available highlights and interactive click/hover resolution during rapid chunk switching.
+- Feature: Eliminate one-hex desync between move-available highlights and interactive click/hover resolution during
+  rapid chunk switching.
 - Status: Implemented v1.0
 - Owner: Three / Worldmap
 - Created: 2026-02-26
@@ -17,7 +18,8 @@
 
 ## Problem Statement
 
-When chunk transitions happen quickly, hexes shown as available movement targets can appear offset by one hex relative to what click/hover selection resolves.
+When chunk transitions happen quickly, hexes shown as available movement targets can appear offset by one hex relative
+to what click/hover selection resolves.
 
 The issue is user-visible as:
 
@@ -26,11 +28,13 @@ The issue is user-visible as:
 
 ## Current Findings (Scope Input)
 
-1. `getHexForWorldPosition` uses row-first rounding and parity offset reconstruction, which can resolve to a neighboring hex near boundaries:
+1. `getHexForWorldPosition` uses row-first rounding and parity offset reconstruction, which can resolve to a neighboring
+   hex near boundaries:
    - `client/apps/game/src/three/utils/utils.ts`
 2. Interactive picking depends on that conversion:
    - `client/apps/game/src/three/managers/interactive-hex-manager.ts`
-3. Highlight rendering uses forward mapping (`hex -> world`) and can remain visually consistent while picking (`world -> hex`) is not:
+3. Highlight rendering uses forward mapping (`hex -> world`) and can remain visually consistent while picking
+   (`world -> hex`) is not:
    - `client/apps/game/src/three/managers/highlight-hex-manager.ts`
 4. Rapid chunk transitions increase boundary/corner interactions and stale visual windows:
    - `client/apps/game/src/three/scenes/worldmap.tsx`
@@ -117,7 +121,8 @@ Exit:
 
 ## Acceptance Criteria
 
-1. No observed one-hex offset between rendered move highlights and picked/action-resolved hexes in rapid switch scenarios.
+1. No observed one-hex offset between rendered move highlights and picked/action-resolved hexes in rapid switch
+   scenarios.
 2. New tests demonstrate red->green for conversion, interaction, and chunk-switch behavior.
 3. Existing worldmap chunk transition suites remain green.
 
