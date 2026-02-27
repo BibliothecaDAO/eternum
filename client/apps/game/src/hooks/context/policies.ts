@@ -17,7 +17,7 @@ type TokenPolicyOptions = {
   entryTokenAddress?: string | null;
 };
 
-export type BuildPoliciesOptions = TokenPolicyOptions & {
+type BuildPoliciesOptions = TokenPolicyOptions & {
   vrfProviderAddress?: string | null;
 };
 
@@ -65,81 +65,6 @@ const getTokenPolicies = ({ feeTokenAddress, entryTokenAddress }: TokenPolicyOpt
       : {}),
   };
 };
-
-type ForgePolicyOptions = {
-  blitzRealmSystemsAddress: string;
-  vrfProviderAddress?: string | null;
-};
-
-type RegisterPolicyOptions = {
-  blitzRealmSystemsAddress: string;
-  feeTokenAddress?: string | null;
-  entryTokenAddress?: string | null;
-  vrfProviderAddress?: string | null;
-};
-
-type BlitzActionPolicyOptions = {
-  blitzRealmSystemsAddress: string;
-  vrfProviderAddress?: string | null;
-  feeTokenAddress?: string | null;
-  entryTokenAddress?: string | null;
-};
-
-export const buildBlitzActionPolicies = ({
-  blitzRealmSystemsAddress,
-  vrfProviderAddress,
-  feeTokenAddress,
-  entryTokenAddress,
-}: BlitzActionPolicyOptions) =>
-  toSessionPolicies({
-    contracts: {
-      ...getTokenPolicies({ feeTokenAddress, entryTokenAddress }),
-      [blitzRealmSystemsAddress]: {
-        methods: [
-          {
-            name: "register",
-            entrypoint: "register",
-          },
-          {
-            name: "obtain_entry_token",
-            entrypoint: "obtain_entry_token",
-          },
-          {
-            name: "make_hyperstructures",
-            entrypoint: "make_hyperstructures",
-          },
-        ],
-      },
-      ...(isNonZeroAddress(vrfProviderAddress)
-        ? {
-            [vrfProviderAddress]: {
-              methods: [
-                {
-                  name: "request_random",
-                  entrypoint: "request_random",
-                },
-              ],
-            },
-          }
-        : {}),
-    },
-  });
-
-export const buildForgePolicies = ({ blitzRealmSystemsAddress, vrfProviderAddress }: ForgePolicyOptions) =>
-  buildBlitzActionPolicies({ blitzRealmSystemsAddress, vrfProviderAddress });
-
-export const buildRegisterPolicies = ({
-  blitzRealmSystemsAddress,
-  feeTokenAddress,
-  entryTokenAddress,
-  vrfProviderAddress,
-}: RegisterPolicyOptions) =>
-  buildBlitzActionPolicies({
-    blitzRealmSystemsAddress,
-    feeTokenAddress,
-    entryTokenAddress,
-    vrfProviderAddress,
-  });
 
 export const buildWorldPolicies = ({
   chain,

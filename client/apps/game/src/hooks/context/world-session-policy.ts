@@ -6,7 +6,7 @@ import { buildWorldPolicies } from "./policies";
 import { refreshSessionPoliciesWithPolicies } from "./session-policy-refresh";
 import { env } from "../../../env";
 
-export const buildWorldPolicyScope = (chain: Chain, worldName: string) => `world:${chain}:${worldName}`;
+const buildWorldPolicyScope = (chain: Chain, worldName: string) => `world:${chain}:${worldName}`;
 
 export const resolveWorldPolicyProfile = async (chain: Chain, worldName: string): Promise<WorldProfile> => {
   const activeWorld = getActiveWorld();

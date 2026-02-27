@@ -16,10 +16,11 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
-import { applyWorldSelection, getActiveWorld } from "@/runtime/world";
+import { applyWorldSelection } from "@/runtime/world";
+import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
+import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import type { WorldProfile } from "@/runtime/world/types";
-import { ensureWorldSessionPolicies, resolveWorldPolicyProfile } from "@/hooks/context/world-session-policy";
+import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -29,7 +30,6 @@ import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
-import { refreshBootstrapPoliciesIfNeeded } from "./game-entry-modal.session-refresh";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -38,47 +38,6 @@ const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
     console.log("[GameEntryModal]", ..._args);
   }
-};
-
-const FORGE_ALL_MAX_RETRIES = 3;
-const FORGE_ALL_RETRY_BASE_DELAY_MS = 800;
-const FORGE_ALL_STEP_DELAY_MS = 250;
-
-const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
-
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error ?? "");
-};
-
-const isRetryableForgeQueueError = (error: unknown) => {
-  const message = getErrorMessage(error).toLowerCase();
-
-  return (
-    message.includes("pending") ||
-    message.includes("already processing") ||
-    message.includes("already pending") ||
-    message.includes("not ready") ||
-    message.includes("nonce") ||
-    message.includes("busy") ||
-    message.includes("rate limit") ||
-    message.includes("429")
-  );
-};
-
-const formatDuration = (milliseconds: number) => {
-  const totalSeconds = Math.max(0, Math.round(milliseconds / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
-  }
-
-  return `${seconds}s`;
 };
 
 // Types
@@ -91,12 +50,6 @@ type HyperstructureInfo = {
   entityId: number;
   initialized: boolean;
   name: string;
-};
-
-type ForgeCallTargets = {
-  profile: WorldProfile;
-  blitzRealmSystemsAddress: string;
-  vrfProviderAddress?: string;
 };
 
 type SettleFinishValue = {
@@ -461,33 +414,15 @@ const HyperstructurePhase = ({
 const ForgeHyperstructuresPhase = ({
   numHyperstructuresLeft,
   isForging,
-  isPreparingSession,
-  isForgeAllRunning,
-  forgeAllCompletedCount,
-  forgeAllTargetCount,
-  forgeAllEstimatedRemainingMs,
-  forgeAllElapsedMs,
   onForge,
-  onForgeAll,
   onClose,
 }: {
   numHyperstructuresLeft: number;
   isForging: boolean;
-  isPreparingSession: boolean;
-  isForgeAllRunning: boolean;
-  forgeAllCompletedCount: number;
-  forgeAllTargetCount: number;
-  forgeAllEstimatedRemainingMs: number | null;
-  forgeAllElapsedMs: number | null;
   onForge: () => void;
-  onForgeAll: () => void;
   onClose: () => void;
 }) => {
   const allForged = numHyperstructuresLeft <= 0;
-  const isBusy = isForging || isPreparingSession;
-  const hasForgeAllProgress = forgeAllTargetCount > 0;
-  const forgeAllProgressPercent =
-    forgeAllTargetCount > 0 ? Math.min(100, (forgeAllCompletedCount / forgeAllTargetCount) * 100) : 0;
 
   return (
     <div className="flex flex-col items-center">
@@ -505,53 +440,12 @@ const ForgeHyperstructuresPhase = ({
         </p>
       </div>
 
-      {hasForgeAllProgress && (
-        <div className="w-full rounded-lg border border-gold/20 bg-black/25 p-3 mb-4">
-          <div className="flex items-center justify-between text-xs text-gold/70 mb-2">
-            <span>Forge Queue</span>
-            <span>
-              {forgeAllCompletedCount} / {forgeAllTargetCount}
-            </span>
-          </div>
-          <div className="h-2 bg-brown/50 rounded-full overflow-hidden mb-2">
-            <motion.div
-              className="h-full bg-gradient-to-r from-amber-500/80 to-gold rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${forgeAllProgressPercent}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-gold/55">
-            <span>
-              {isForgeAllRunning
-                ? "Queue active - sign each wallet prompt to continue"
-                : forgeAllCompletedCount >= forgeAllTargetCount
-                  ? "Forge All complete"
-                  : "Queue paused"}
-            </span>
-            <span>{Math.round(forgeAllProgressPercent)}%</span>
-          </div>
-          {(isForgeAllRunning || forgeAllCompletedCount > 0) && (
-            <div className="mt-2 flex items-center justify-between text-[11px] text-gold/50">
-              <span>
-                {forgeAllElapsedMs !== null ? `Elapsed: ${formatDuration(forgeAllElapsedMs)}` : "Elapsed: --"}
-              </span>
-              <span>
-                {forgeAllEstimatedRemainingMs !== null
-                  ? `ETA: ${formatDuration(forgeAllEstimatedRemainingMs)}`
-                  : "ETA: estimating..."}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
       {!allForged && (
         <>
           {/* Forge button - golden orb style similar to HyperstructureForge */}
           <motion.button
             onClick={onForge}
-            disabled={isBusy}
+            disabled={isForging}
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -579,7 +473,7 @@ const ForgeHyperstructuresPhase = ({
 
             {/* Content */}
             <div className="flex items-center justify-center w-full h-full text-4xl font-black text-amber-900">
-              {isBusy ? (
+              {isForging ? (
                 <motion.img
                   src="/images/logos/eternum-loader.png"
                   className="w-8 h-8"
@@ -599,7 +493,7 @@ const ForgeHyperstructuresPhase = ({
             </div>
 
             {/* Sparkles */}
-            {!isBusy && (
+            {!isForging && (
               <>
                 {[0, 1, 2].map((i) => (
                   <motion.div
@@ -625,21 +519,8 @@ const ForgeHyperstructuresPhase = ({
             )}
           </motion.button>
 
-          <Button
-            onClick={onForgeAll}
-            disabled={isBusy || isForgeAllRunning || numHyperstructuresLeft <= 0}
-            className="w-full h-10 !text-brown !bg-gold rounded-md mb-2"
-            forceUppercase={false}
-          >
-            {isForgeAllRunning ? "Forge All in Progress..." : `Forge All (${numHyperstructuresLeft})`}
-          </Button>
-
           <p className="text-xs text-gold/50 text-center mb-4">
-            {isPreparingSession
-              ? "Preparing forge session..."
-              : isForgeAllRunning
-                ? "Auto-submitting the next forge after each signed transaction."
-                : `Click to forge ${numHyperstructuresLeft} hyperstructure${numHyperstructuresLeft !== 1 ? "s" : ""}`}
+            Click to forge {numHyperstructuresLeft} hyperstructure{numHyperstructuresLeft !== 1 ? "s" : ""}
           </p>
         </>
       )}
@@ -694,52 +575,13 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
-  const [isPreparingForgeSession, setIsPreparingForgeSession] = useState(false);
-  const [isForgeAllRunning, setIsForgeAllRunning] = useState(false);
-  const [forgeAllTargetCount, setForgeAllTargetCount] = useState(0);
-  const [forgeAllCompletedCount, setForgeAllCompletedCount] = useState(0);
-  const [forgeAllStartedAt, setForgeAllStartedAt] = useState<number | null>(null);
-  const [forgeAllNow, setForgeAllNow] = useState<number>(Date.now());
-  const forgeCallTargetsRef = useRef<ForgeCallTargets | null>(null);
-  const forgeAllCancelledRef = useRef(false);
   const hasEnteredGameRef = useRef(false);
 
   useEffect(() => {
     if (!isOpen) {
       hasEnteredGameRef.current = false;
-      forgeAllCancelledRef.current = true;
-      forgeCallTargetsRef.current = null;
-      setIsForgeAllRunning(false);
-      setForgeAllTargetCount(0);
-      setForgeAllCompletedCount(0);
-      setForgeAllStartedAt(null);
-      setIsPreparingForgeSession(false);
-      setIsForging(false);
-    } else {
-      forgeAllCancelledRef.current = false;
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    forgeAllCancelledRef.current = true;
-    forgeCallTargetsRef.current = null;
-    setIsForgeAllRunning(false);
-    setForgeAllTargetCount(0);
-    setForgeAllCompletedCount(0);
-    setForgeAllStartedAt(null);
-  }, [worldName, chain]);
-
-  useEffect(() => {
-    if (!isForgeAllRunning) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setForgeAllNow(Date.now());
-    }, 1000);
-
-    return () => window.clearInterval(interval);
-  }, [isForgeAllRunning]);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -815,95 +657,6 @@ export const GameEntryModal = ({
     needsSettlement,
     worldName,
   ]);
-
-  const forgeAllElapsedMs = useMemo(() => {
-    if (!forgeAllStartedAt) {
-      return null;
-    }
-
-    const now = isForgeAllRunning ? forgeAllNow : Date.now();
-    return Math.max(0, now - forgeAllStartedAt);
-  }, [forgeAllStartedAt, isForgeAllRunning, forgeAllNow]);
-
-  const forgeAllEstimatedRemainingMs = useMemo(() => {
-    if (!forgeAllElapsedMs || forgeAllCompletedCount <= 0 || forgeAllTargetCount <= forgeAllCompletedCount) {
-      return null;
-    }
-
-    const averagePerHyperstructure = forgeAllElapsedMs / forgeAllCompletedCount;
-    return Math.max(0, averagePerHyperstructure * (forgeAllTargetCount - forgeAllCompletedCount));
-  }, [forgeAllElapsedMs, forgeAllCompletedCount, forgeAllTargetCount]);
-
-  const resolveForgeCallTargets = useCallback(async (): Promise<ForgeCallTargets> => {
-    if (forgeCallTargetsRef.current) {
-      return forgeCallTargetsRef.current;
-    }
-
-    const profile = await resolveWorldPolicyProfile(chain, worldName);
-    const contracts = profile.contractsBySelector;
-    const selector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
-    const blitzRealmSystemsAddress = contracts[selector];
-    if (!blitzRealmSystemsAddress) {
-      throw new Error("blitz_realm_systems contract not found for selected world");
-    }
-
-    const { env } = await import("../../../../../env");
-    const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
-    const hasVrfProvider = Boolean(vrfProviderAddress) && !/^0x0*$/i.test(vrfProviderAddress);
-
-    forgeCallTargetsRef.current = {
-      profile,
-      blitzRealmSystemsAddress,
-      vrfProviderAddress: hasVrfProvider ? vrfProviderAddress : undefined,
-    };
-
-    return forgeCallTargetsRef.current;
-  }, [chain, worldName]);
-
-  const ensureForgeSessionPolicies = useCallback(async (profile?: WorldProfile): Promise<boolean> => {
-    const connector = useAccountStore.getState().connector;
-    if (!connector) {
-      return false;
-    }
-    return ensureWorldSessionPolicies({
-      connector,
-      chain,
-      worldName,
-      profile,
-    });
-  }, [chain, worldName]);
-
-  // In forge mode, update session once on modal open for the selected world.
-  useEffect(() => {
-    if (!isOpen || !isForgeMode || !account) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const prepareForgeSession = async () => {
-      setIsPreparingForgeSession(true);
-      try {
-        const { profile } = await resolveForgeCallTargets();
-        const updated = await ensureForgeSessionPolicies(profile);
-        if (updated) {
-          debugLog(worldName, "Forge session policies updated");
-        }
-      } catch (error) {
-        debugLog(worldName, "Failed to prepare forge session policies:", error);
-      } finally {
-        if (!cancelled) {
-          setIsPreparingForgeSession(false);
-        }
-      }
-    };
-
-    void prepareForgeSession();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, isForgeMode, account, ensureForgeSessionPolicies, resolveForgeCallTargets, worldName]);
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
@@ -1110,7 +863,7 @@ export const GameEntryModal = ({
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
         updateTask("world", "running");
-        const selection = await applyWorldSelection({ name: worldName, chain }, chain);
+        await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
         debugLog(worldName, "World selection complete");
 
@@ -1121,32 +874,15 @@ export const GameEntryModal = ({
         debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
 
         // After bootstrap patches the manifest with the selected world's
-        // contract addresses, refresh session policies only for interactive
-        // flows. Spectate should never trigger signing prompts.
+        // contract addresses, refresh the controller's session policies
+        // if they changed. This recreates the keychain iframe with correct
+        // policies and re-probes to restore the user's account.
         const connector = useAccountStore.getState().connector;
-        const activeWorld = getActiveWorld();
-        const policyProfile =
-          activeWorld?.name === worldName
-            ? activeWorld
-            : selection.profile?.name === worldName
-              ? selection.profile
-              : undefined;
-        const policyChain = policyProfile?.chain ?? chain;
-        const updated = await refreshBootstrapPoliciesIfNeeded({
-          connector,
-          isSpectateMode,
-          refreshPolicies: () =>
-            ensureWorldSessionPolicies({
-              connector,
-              chain: policyChain,
-              worldName,
-              profile: policyProfile,
-            }),
-        });
-        if (updated) {
-          debugLog(worldName, "Session policies refreshed for new world");
-        } else if (connector && !isSpectateMode) {
-          debugLog(worldName, "Session policies already refreshed for scope, skipping bootstrap refresh");
+        if (connector) {
+          const updated = await refreshSessionPolicies(connector);
+          if (updated) {
+            debugLog(worldName, "Session policies refreshed for new world");
+          }
         }
 
         // Mark all tasks complete
@@ -1163,14 +899,7 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [
-    isOpen,
-    isForgeMode,
-    isSpectateMode,
-    worldName,
-    chain,
-    updateTask,
-  ]);
+  }, [isOpen, isForgeMode, worldName, chain, updateTask]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -1303,24 +1032,35 @@ export const GameEntryModal = ({
     }
   }, [setupResult, account, handleEnterGame, worldName]);
 
-  const executeForgeBatch = useCallback(
-    async (remainingHyperstructures: number): Promise<number> => {
-      if (!account) {
-        throw new Error("No account connected");
+  // Forge hyperstructures handler - creates new hyperstructures during registration period
+  const handleForgeHyperstructures = useCallback(async () => {
+    debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
+    if (!account) return;
+
+    setIsForging(true);
+
+    try {
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+      if (!factorySqlBaseUrl) {
+        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
       }
 
-      const forgeTargets = await resolveForgeCallTargets();
-      // Ensure the selected world's forge policy is present before execute.
-      await ensureForgeSessionPolicies(forgeTargets.profile);
-      const { blitzRealmSystemsAddress, vrfProviderAddress } = forgeTargets;
+      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      const selector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
+      const blitzRealmSystemsAddress = contracts[selector];
+      if (!blitzRealmSystemsAddress) {
+        throw new Error("blitz_realm_systems contract not found for selected world");
+      }
 
       const batchSize = chain === "mainnet" ? 1 : 4;
-      const hyperstructureCount =
-        remainingHyperstructures > 0 ? Math.min(remainingHyperstructures, batchSize) : batchSize;
+      const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
       const signer = account as unknown as Account;
 
+      const { env } = await import("../../../../../env");
+      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+
       const calls = [];
-      if (vrfProviderAddress) {
+      if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
         calls.push({
           contractAddress: vrfProviderAddress,
           entrypoint: "request_random",
@@ -1336,106 +1076,19 @@ export const GameEntryModal = ({
       debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
       await signer.execute(calls);
 
+      debugLog(worldName, "Hyperstructures forged!");
+      // Update local count
+      setNumHyperstructuresLeft((prev) => Math.max(0, prev - hyperstructureCount));
+
       // Invalidate the world availability cache so the count updates on the landing page
       const worldKey = getWorldKey({ name: worldName, chain });
       queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
-
-      return hyperstructureCount;
-    },
-    [account, ensureForgeSessionPolicies, resolveForgeCallTargets, worldName, chain, queryClient],
-  );
-
-  // Single forge batch (manual click)
-  const handleForgeHyperstructures = useCallback(async () => {
-    debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
-    if (!account || numHyperstructuresLeft <= 0 || isForgeAllRunning) return;
-
-    setIsForging(true);
-
-    try {
-      const forged = await executeForgeBatch(numHyperstructuresLeft);
-      setNumHyperstructuresLeft((prev) => Math.max(0, prev - forged));
-      debugLog(worldName, "Hyperstructures forged!");
     } catch (error) {
       debugLog(worldName, "Forge hyperstructures failed:", error);
     } finally {
       setIsForging(false);
     }
-  }, [account, numHyperstructuresLeft, isForgeAllRunning, executeForgeBatch, worldName]);
-
-  // Forge all remaining hyperstructures sequentially (one tx prompt after another)
-  const handleForgeAllHyperstructures = useCallback(async () => {
-    debugLog(worldName, "handleForgeAllHyperstructures called - hasAccount:", !!account);
-    if (!account || numHyperstructuresLeft <= 0 || isForgeAllRunning) return;
-
-    forgeAllCancelledRef.current = false;
-
-    const totalToForge = numHyperstructuresLeft;
-    let remaining = totalToForge;
-
-    setIsForging(true);
-    setIsForgeAllRunning(true);
-    setForgeAllTargetCount(totalToForge);
-    setForgeAllCompletedCount(0);
-    setForgeAllStartedAt(Date.now());
-    setForgeAllNow(Date.now());
-
-    try {
-      while (remaining > 0 && !forgeAllCancelledRef.current) {
-        let forgedInBatch = 0;
-        let attempt = 0;
-
-        while (attempt < FORGE_ALL_MAX_RETRIES && !forgeAllCancelledRef.current) {
-          try {
-            forgedInBatch = await executeForgeBatch(remaining);
-            break;
-          } catch (error) {
-            attempt += 1;
-            const shouldRetry = attempt < FORGE_ALL_MAX_RETRIES && isRetryableForgeQueueError(error);
-
-            debugLog(worldName, "Forge-all batch failed", {
-              attempt,
-              maxAttempts: FORGE_ALL_MAX_RETRIES,
-              retryable: shouldRetry,
-              error: getErrorMessage(error),
-            });
-
-            if (!shouldRetry) {
-              throw error;
-            }
-
-            await wait(FORGE_ALL_RETRY_BASE_DELAY_MS * attempt);
-          }
-        }
-
-        if (forgeAllCancelledRef.current) {
-          break;
-        }
-
-        if (forgedInBatch <= 0) {
-          throw new Error("Forge queue could not submit the next batch");
-        }
-
-        remaining = Math.max(0, remaining - forgedInBatch);
-
-        const completed = totalToForge - remaining;
-        setForgeAllCompletedCount(completed);
-        setNumHyperstructuresLeft(remaining);
-
-        debugLog(worldName, "Forge-all progress:", completed, "/", totalToForge);
-
-        if (remaining > 0) {
-          // Give wallet/provider a short cooldown between sequential submissions.
-          await wait(FORGE_ALL_STEP_DELAY_MS);
-        }
-      }
-    } catch (error) {
-      debugLog(worldName, "Forge all hyperstructures failed:", error);
-    } finally {
-      setIsForgeAllRunning(false);
-      setIsForging(false);
-    }
-  }, [account, numHyperstructuresLeft, isForgeAllRunning, executeForgeBatch, worldName]);
+  }, [account, worldName, chain, queryClient, numHyperstructuresLeft]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
@@ -1592,14 +1245,7 @@ export const GameEntryModal = ({
                 <ForgeHyperstructuresPhase
                   numHyperstructuresLeft={numHyperstructuresLeft}
                   isForging={isForging}
-                  isPreparingSession={isPreparingForgeSession}
-                  isForgeAllRunning={isForgeAllRunning}
-                  forgeAllCompletedCount={forgeAllCompletedCount}
-                  forgeAllTargetCount={forgeAllTargetCount}
-                  forgeAllEstimatedRemainingMs={forgeAllEstimatedRemainingMs}
-                  forgeAllElapsedMs={forgeAllElapsedMs}
                   onForge={handleForgeHyperstructures}
-                  onForgeAll={handleForgeAllHyperstructures}
                   onClose={onClose}
                 />
               </motion.div>
