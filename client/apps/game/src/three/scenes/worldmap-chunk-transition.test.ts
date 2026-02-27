@@ -3,6 +3,8 @@ import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveEntityActionPathsTransitionTokenSync,
+  resolveEntityActionPathsTransitionTokenForForcedRefresh,
+  shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldClearEntitySelectionForEntityActionTransition,
   resolveRefreshCompletionActions,
   resolveDuplicateTileUpdateMode,
@@ -297,6 +299,89 @@ describe("resolveEntityActionPathsTransitionTokenSync", () => {
         selectedEntityId: 11,
         actionPathCount: 0,
         previousTransitionToken: 14,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("shouldClearEntitySelectionForMissingActionPathOwnership", () => {
+  it("clears when selected entity has active paths but no ownership token", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 2,
+        actionPathsTransitionToken: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not clear when there are no active paths", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 0,
+        actionPathsTransitionToken: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not clear when no entity is selected", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: null,
+        actionPathCount: 2,
+        actionPathsTransitionToken: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not clear when ownership token is present", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 2,
+        actionPathsTransitionToken: 12,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolveEntityActionPathsTransitionTokenForForcedRefresh", () => {
+  it("re-stamps ownership to latest token on same-chunk forced refresh", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 3,
+        currentChunk: "16,16",
+        targetChunk: "16,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: 51,
+      }),
+    ).toBe(52);
+  });
+
+  it("does not change ownership for non-local forced refreshes", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 3,
+        currentChunk: "16,16",
+        targetChunk: "32,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: 51,
+      }),
+    ).toBe(51);
+  });
+
+  it("clears ownership when forced refresh runs without active selection paths", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 0,
+        currentChunk: "16,16",
+        targetChunk: "16,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: 51,
       }),
     ).toBeNull();
   });

@@ -113,9 +113,11 @@ import {
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
   resolveEntityActionPathLookup,
+  resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldClearEntitySelectionForEntityActionTransition,
+  shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
@@ -2021,6 +2023,14 @@ export default class WorldmapScene extends HexagonScene {
       selectedEntityId: this.state.entityActions.selectedEntityId,
       actionPathCount: this.state.entityActions.actionPaths.size,
       previousTransitionToken: this.actionPathsTransitionToken,
+    });
+  }
+
+  private isMissingActionPathOwnershipState(): boolean {
+    return shouldClearEntitySelectionForMissingActionPathOwnership({
+      selectedEntityId: this.state.entityActions.selectedEntityId,
+      actionPathCount: this.state.entityActions.actionPaths.size,
+      actionPathsTransitionToken: this.actionPathsTransitionToken,
     });
   }
 
@@ -4315,6 +4325,14 @@ export default class WorldmapScene extends HexagonScene {
 
     if (force) {
       const transitionToken = ++this.chunkTransitionToken;
+      this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: this.state.entityActions.selectedEntityId,
+        actionPathCount: this.state.entityActions.actionPaths.size,
+        currentChunk: this.currentChunk,
+        targetChunk: chunkKey,
+        nextTransitionToken: transitionToken,
+        previousTransitionToken: this.actionPathsTransitionToken,
+      });
       this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
       try {
         await this.globalChunkSwitchPromise;
@@ -5156,6 +5174,10 @@ export default class WorldmapScene extends HexagonScene {
         (nextEntityActions, previousEntityActions) => {
           this.state.entityActions = nextEntityActions;
           this.syncEntityActionPathsTransitionToken();
+          if (this.isMissingActionPathOwnershipState()) {
+            this.clearEntitySelection();
+            return;
+          }
           if (
             shouldClearEntitySelectionForEntityActionTransition(
               previousEntityActions?.selectedEntityId,
@@ -5218,6 +5240,10 @@ export default class WorldmapScene extends HexagonScene {
 
     this.state.entityActions = uiState.entityActions;
     this.syncEntityActionPathsTransitionToken();
+    if (this.isMissingActionPathOwnershipState()) {
+      this.clearEntitySelection();
+      return;
+    }
     this.state.selectedHex = uiState.selectedHex;
     // NOTE: isSoundOn and effectsLevel removed - AudioManager is now the source of truth
 

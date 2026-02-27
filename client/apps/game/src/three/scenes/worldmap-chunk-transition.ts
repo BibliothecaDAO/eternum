@@ -40,6 +40,21 @@ interface EntityActionPathsTransitionTokenSyncInput {
   previousTransitionToken: number | null;
 }
 
+interface EntityActionPathsTransitionTokenForcedRefreshInput {
+  selectedEntityId: unknown;
+  actionPathCount: number;
+  currentChunk: string;
+  targetChunk: string;
+  nextTransitionToken: number;
+  previousTransitionToken: number | null;
+}
+
+interface MissingActionPathOwnershipDecisionInput {
+  selectedEntityId: unknown;
+  actionPathCount: number;
+  actionPathsTransitionToken: number | null;
+}
+
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
@@ -222,6 +237,38 @@ export function resolveEntityActionPathsTransitionTokenSync(input: EntityActionP
   }
 
   return input.previousTransitionToken;
+}
+
+/**
+ * Forced refreshes that stay in the same chunk should preserve action-path
+ * continuity by re-stamping ownership to the latest transition token.
+ */
+export function resolveEntityActionPathsTransitionTokenForForcedRefresh(
+  input: EntityActionPathsTransitionTokenForcedRefreshInput,
+): number | null {
+  const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
+  const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
+  if (!hasActivePaths) {
+    return null;
+  }
+
+  if (input.currentChunk === input.targetChunk) {
+    return input.nextTransitionToken;
+  }
+
+  return input.previousTransitionToken;
+}
+
+/**
+ * Selected entity + active paths without an ownership token is an inconsistent
+ * state that should be cleared to avoid dead, non-interactive selections.
+ */
+export function shouldClearEntitySelectionForMissingActionPathOwnership(
+  input: MissingActionPathOwnershipDecisionInput,
+): boolean {
+  const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
+  const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
+  return hasActivePaths && input.actionPathsTransitionToken === null;
 }
 
 /**
