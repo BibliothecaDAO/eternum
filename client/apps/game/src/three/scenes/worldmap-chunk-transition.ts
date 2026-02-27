@@ -21,6 +21,19 @@ interface ManagerUpdateDecisionInput {
   targetChunk: string;
 }
 
+interface EntityActionPathLookupInput<TActionPath> {
+  selectedEntityId: unknown;
+  clickedHexKey: string | null;
+  actionPaths: Map<string, TActionPath>;
+  actionPathsTransitionToken: number | null;
+  latestTransitionToken: number;
+}
+
+interface EntityActionPathLookupResult<TActionPath> {
+  shouldClearStaleSelection: boolean;
+  actionPath: TActionPath | null;
+}
+
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
@@ -148,6 +161,43 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
   }
 
   return input.currentChunk === input.targetChunk;
+}
+
+/**
+ * Resolve action-path lookup under chunk-transition ownership rules.
+ * Prevents stale action-path maps from being used after rapid transition churn.
+ */
+export function resolveEntityActionPathLookup<TActionPath>(
+  input: EntityActionPathLookupInput<TActionPath>,
+): EntityActionPathLookupResult<TActionPath> {
+  if (input.selectedEntityId === null || input.selectedEntityId === undefined) {
+    return {
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    };
+  }
+
+  if (!input.clickedHexKey || input.actionPaths.size === 0) {
+    return {
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    };
+  }
+
+  if (
+    input.actionPathsTransitionToken === null ||
+    input.actionPathsTransitionToken !== input.latestTransitionToken
+  ) {
+    return {
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    };
+  }
+
+  return {
+    shouldClearStaleSelection: false,
+    actionPath: input.actionPaths.get(input.clickedHexKey) ?? null,
+  };
 }
 
 /**

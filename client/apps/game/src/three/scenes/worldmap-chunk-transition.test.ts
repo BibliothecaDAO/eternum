@@ -23,6 +23,7 @@ import {
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   resolveControlsChangeChunkRefreshPlan,
+  resolveEntityActionPathLookup,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -133,6 +134,68 @@ describe("shouldRunManagerUpdate", () => {
         targetChunk: "24,24",
       }),
     ).toBe(true);
+  });
+});
+
+describe("resolveEntityActionPathLookup", () => {
+  it("returns the clicked action path when transition ownership matches", () => {
+    const matchingPath = [{ id: "target-a" }];
+    const result = resolveEntityActionPathLookup({
+      selectedEntityId: 77,
+      clickedHexKey: "10,12",
+      actionPaths: new Map<string, Array<{ id: string }>>([["10,12", matchingPath]]),
+      actionPathsTransitionToken: 14,
+      latestTransitionToken: 14,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: matchingPath,
+    });
+  });
+
+  it("suppresses stale action-path usage when transition token changed", () => {
+    const result = resolveEntityActionPathLookup({
+      selectedEntityId: 77,
+      clickedHexKey: "10,12",
+      actionPaths: new Map<string, Array<{ id: string }>>([["10,12", [{ id: "stale" }]]]),
+      actionPathsTransitionToken: 14,
+      latestTransitionToken: 15,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    });
+  });
+
+  it("rejects stale lookup during rapid switch churn and accepts refreshed ownership", () => {
+    const staleResult = resolveEntityActionPathLookup({
+      selectedEntityId: 99,
+      clickedHexKey: "22,8",
+      actionPaths: new Map<string, Array<{ id: string }>>([["22,8", [{ id: "stale-target" }]]]),
+      actionPathsTransitionToken: 30,
+      latestTransitionToken: 31,
+    });
+
+    expect(staleResult).toEqual({
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    });
+
+    const freshPath = [{ id: "fresh-target" }];
+    const freshResult = resolveEntityActionPathLookup({
+      selectedEntityId: 99,
+      clickedHexKey: "22,8",
+      actionPaths: new Map<string, Array<{ id: string }>>([["22,8", freshPath]]),
+      actionPathsTransitionToken: 31,
+      latestTransitionToken: 31,
+    });
+
+    expect(freshResult).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: freshPath,
+    });
   });
 });
 

@@ -112,6 +112,7 @@ import {
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
+  resolveEntityActionPathLookup,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
@@ -482,6 +483,7 @@ export default class WorldmapScene extends HexagonScene {
   // Global chunk switching coordination
   private globalChunkSwitchPromise: Promise<void> | null = null;
   private chunkTransitionToken = 0;
+  private actionPathsTransitionToken: number | null = null;
   private chunkDiagnostics: WorldmapChunkDiagnostics = createWorldmapChunkDiagnostics();
   private chunkDiagnosticsBaselines: WorldmapChunkDiagnosticsBaselineEntry[] = [];
 
@@ -1475,8 +1477,21 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
-      const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
-      if (actionPath && account) {
+      const actionPathLookup = resolveEntityActionPathLookup({
+        selectedEntityId,
+        clickedHexKey: ActionPaths.posKey(hexCoords, true),
+        actionPaths,
+        actionPathsTransitionToken: this.actionPathsTransitionToken,
+        latestTransitionToken: this.chunkTransitionToken,
+      });
+
+      if (actionPathLookup.shouldClearStaleSelection) {
+        this.clearEntitySelection();
+        return;
+      }
+
+      if (actionPathLookup.actionPath && account) {
+        const actionPath = actionPathLookup.actionPath;
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
@@ -1710,7 +1725,7 @@ export default class WorldmapScene extends HexagonScene {
       ContractAddress(playerAddress),
     );
 
-    this.state.updateEntityActionActionPaths(actionPaths.getPaths());
+    this.updateEntityActionPaths(actionPaths.getPaths());
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
 
@@ -1899,7 +1914,7 @@ export default class WorldmapScene extends HexagonScene {
     const paths = actionPaths.getPaths();
     const highlightedHexes = actionPaths.getHighlightedHexes();
 
-    this.state.updateEntityActionActionPaths(paths);
+    this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
     // Show selection pulse for the selected army
@@ -1991,9 +2006,20 @@ export default class WorldmapScene extends HexagonScene {
     this.clearEntitySelection();
   }
 
+  private updateEntityActionPaths(actionPaths: Map<string, ActionPath[]>) {
+    this.state.updateEntityActionActionPaths(actionPaths);
+    this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;
+  }
+
+  private syncEntityActionPathsTransitionToken(): void {
+    const hasActivePaths =
+      this.state.entityActions.selectedEntityId !== null && this.state.entityActions.actionPaths.size > 0;
+    this.actionPathsTransitionToken = hasActivePaths ? this.chunkTransitionToken : null;
+  }
+
   private clearEntitySelection() {
     this.highlightHexManager.highlightHexes([]);
-    this.state.updateEntityActionActionPaths(new Map());
+    this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.selectionPulseManager.clearOwnershipPulses();
@@ -5122,6 +5148,7 @@ export default class WorldmapScene extends HexagonScene {
         (state) => state.entityActions,
         (armyActions) => {
           this.state.entityActions = armyActions;
+          this.syncEntityActionPathsTransitionToken();
         },
       ),
     );
@@ -5184,6 +5211,7 @@ export default class WorldmapScene extends HexagonScene {
     this.updatePlayerStructures(uiState.playerStructures);
 
     this.state.entityActions = uiState.entityActions;
+    this.syncEntityActionPathsTransitionToken();
     this.state.selectedHex = uiState.selectedHex;
     // NOTE: isSoundOn and effectsLevel removed - AudioManager is now the source of truth
 
