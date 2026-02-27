@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
@@ -23,6 +24,8 @@ import { useMemo } from "react";
 import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entities/layout";
 
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
+import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
+import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
 
@@ -49,6 +52,7 @@ export const CompactDefenseDisplay = ({
   const {
     setup: { components },
   } = useDojo();
+  const { currentArmiesTick } = useBlockTimestamp();
   const isBanner = variant === "banner";
   const canOpenModal = Boolean(canManageDefense && structureId && structureId > 0);
   const structureComponent = useMemo(() => {
@@ -129,6 +133,9 @@ export const CompactDefenseDisplay = ({
 
   const renderSlot = (defense: DefenseTroop) => {
     const troopCount = Number(defense.troops.count || 0);
+    const staminaSnapshot = getGuardStaminaSnapshot(defense.troops, currentArmiesTick);
+    const staminaCurrent = staminaSnapshot?.current;
+    const staminaMax = staminaSnapshot?.max;
     const rawSlot = Number(defense.slot ?? 0);
     const guardSlotKey = (
       Object.prototype.hasOwnProperty.call(GUARD_SLOT_NAMES, rawSlot) ? rawSlot : rawSlot + 1
@@ -188,24 +195,30 @@ export const CompactDefenseDisplay = ({
             </span>
           </>
         ) : (
-          <div className="flex items-center gap-1">
-            <span
-              className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
-            >
-              <span className="relative z-10">{defense.troops.tier}</span>
-            </span>
-            <ResourceIcon
-              withTooltip={false}
-              resource={
-                resources.find(
-                  (r) =>
-                    r.id === getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
-                )?.trait || ""
-              }
-              size={isBanner ? "xs" : "sm"}
-              className="shrink-0"
-            />
-            <span className={cn(valueTextClass, "text-gold/90 font-medium")}>{currencyFormat(troopCount, 0)}</span>
+          <div className="flex min-w-0 w-full flex-col gap-0.5">
+            <div className="flex items-center gap-1 min-w-0">
+              <span
+                className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
+              >
+                <span className="relative z-10">{defense.troops.tier}</span>
+              </span>
+              <ResourceIcon
+                withTooltip={false}
+                resource={
+                  resources.find(
+                    (r) =>
+                      r.id ===
+                      getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
+                  )?.trait || ""
+                }
+                size={isBanner ? "xs" : "sm"}
+                className="shrink-0"
+              />
+              <span className={cn(valueTextClass, "text-gold/90 font-medium truncate")}>
+                {currencyFormat(troopCount, 0)}
+              </span>
+            </div>
+            <GuardStaminaBar current={staminaCurrent} max={staminaMax} />
           </div>
         )}
       </div>

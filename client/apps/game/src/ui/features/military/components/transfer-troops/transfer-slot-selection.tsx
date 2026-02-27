@@ -5,6 +5,7 @@ import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier, Troo
 import clsx from "clsx";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Timer from "lucide-react/dist/esm/icons/timer";
+import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "../help-container";
 
 interface SlotTroopInfo {
@@ -13,6 +14,8 @@ interface SlotTroopInfo {
     tier: TroopTier;
     category: TroopType;
     count: number;
+    staminaCurrent?: number;
+    staminaMax?: number;
   };
   cooldownEnd?: number;
 }
@@ -58,7 +61,13 @@ export const TransferSlotSelection = ({
   lastGuardSlot,
   currentBlockTimestamp,
 }: TransferSlotSelectionProps) => {
-  const renderTroopPill = (troop?: { tier: TroopTier; category: TroopType; count: number }) => {
+  const renderTroopPill = (troop?: {
+    tier: TroopTier;
+    category: TroopType;
+    count: number;
+    staminaCurrent?: number;
+    staminaMax?: number;
+  }) => {
     if (!troop) {
       return (
         <div className="flex items-center gap-2">
@@ -91,6 +100,7 @@ export const TransferSlotSelection = ({
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-gold">{countLabel}</div>
           <div className="text-xxs uppercase tracking-wide text-gold/70">{typeLabel}</div>
+          <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} className="mt-1" />
         </div>
       </div>
     );
