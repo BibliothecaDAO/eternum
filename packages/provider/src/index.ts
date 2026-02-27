@@ -330,6 +330,46 @@ export class EternumProvider extends EnhancedDojoProvider {
     this.promiseQueue = new PromiseQueue(this);
   }
 
+  private normalizeAddress(address: BigNumberish | undefined): string | undefined {
+    if (address === undefined || address === null) {
+      return undefined;
+    }
+
+    try {
+      return `0x${BigInt(address).toString(16)}`;
+    } catch {
+      return String(address).toLowerCase();
+    }
+  }
+
+  private isVrfRequestRandomCall(call: Call): boolean {
+    if (call.entrypoint !== "request_random") {
+      return false;
+    }
+
+    const providerAddress = this.normalizeAddress(this.VRF_PROVIDER_ADDRESS);
+    const callAddress = this.normalizeAddress(call.contractAddress);
+    return providerAddress !== undefined && providerAddress === callAddress;
+  }
+
+  private dedupeVrfRequestCalls(transactionDetails: AllowArray<Call>): AllowArray<Call> {
+    if (!Array.isArray(transactionDetails)) {
+      return transactionDetails;
+    }
+
+    let foundVrfRequest = false;
+    return transactionDetails.filter((detail) => {
+      if (!this.isVrfRequestRandomCall(detail)) {
+        return true;
+      }
+      if (foundVrfRequest) {
+        return false;
+      }
+      foundVrfRequest = true;
+      return true;
+    });
+  }
+
   private async getV3ExecutionDetails(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
@@ -515,10 +555,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
     batchDetails?: BatchedTransactionDetail[],
   ) {
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
+    const sanitizedTransactionDetails = this.dedupeVrfRequestCalls(transactionDetails);
+    if (Array.isArray(transactionDetails) && Array.isArray(sanitizedTransactionDetails)) {
+      const removedVrfCalls = transactionDetails.length - sanitizedTransactionDetails.length;
+      if (removedVrfCalls > 0) {
+        console.warn(`[provider] Removed ${removedVrfCalls} duplicate VRF request_random call(s) from transaction`);
+      }
     }
-    const isMultipleTransactions = Array.isArray(transactionDetails);
+
+    if (typeof window !== "undefined") {
+      console.log({ signer, transactionDetails: sanitizedTransactionDetails });
+    }
+    const isMultipleTransactions = Array.isArray(sanitizedTransactionDetails);
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -527,28 +575,28 @@ export class EternumProvider extends EnhancedDojoProvider {
       // For multiple calls, use the first call's entrypoint
       txType =
         TransactionType[
-          transactionDetails
+          sanitizedTransactionDetails
             // remove VRF provider call from the list to define the transaction type
-            .filter((detail) => detail.contractAddress !== this.VRF_PROVIDER_ADDRESS)[0]
+            .filter((detail) => !this.isVrfRequestRandomCall(detail))[0]
             ?.entrypoint.toUpperCase() as keyof typeof TransactionType
         ];
     } else {
-      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
+      txType = TransactionType[sanitizedTransactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
 
     const transactionMeta = {
       type: txType,
-      ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+      ...(isMultipleTransactions && { transactionCount: sanitizedTransactionDetails.length }),
       ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
     };
 
-    const span = this.startTransactionSpan(transactionDetails, transactionMeta);
+    const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
 
-    const executionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
+    const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
 
     let tx;
     try {
-      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, executionDetails);
+      tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
