@@ -105,6 +105,7 @@ import {
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
+import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveControlsChangeChunkRefreshPlan,
@@ -1908,6 +1909,22 @@ export default class WorldmapScene extends HexagonScene {
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const armyPosition = this.armiesPositions.get(selectedEntityId);
+    const explorerTroopsCoord = getComponentValue(
+      this.dojo.components.ExplorerTroops,
+      getEntityIdFromKeys([BigInt(selectedEntityId)]),
+    )?.coord;
+    const { startPositionOverride, hasDivergentOrigin } = resolveArmyActionPathOrigin({
+      feltCenter: FELT_CENTER(),
+      worldmapArmyPosition: armyPosition,
+      explorerTroopsCoord,
+    });
+
+    if (import.meta.env.DEV && hasDivergentOrigin && armyPosition) {
+      console.warn(
+        `[DEBUG] Action-path origin divergence for army ${selectedEntityId}: worldmap=(${armyPosition.col},${armyPosition.row}), ecs=(${explorerTroopsCoord?.x},${explorerTroopsCoord?.y})`,
+      );
+    }
 
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
@@ -1917,6 +1934,7 @@ export default class WorldmapScene extends HexagonScene {
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
+      startPositionOverride,
     );
 
     const paths = actionPaths.getPaths();
@@ -1929,7 +1947,6 @@ export default class WorldmapScene extends HexagonScene {
     const selectedArmyData = this.armyManager
       .getArmies()
       .find((army) => Number(army.entityId) === Number(selectedEntityId));
-    const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
