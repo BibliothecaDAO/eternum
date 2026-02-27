@@ -488,6 +488,7 @@ export default class WorldmapScene extends HexagonScene {
   private globalChunkSwitchPromise: Promise<void> | null = null;
   private chunkTransitionToken = 0;
   private actionPathsTransitionToken: number | null = null;
+  private isApplyingLocalActionPathUpdate = false;
   private chunkDiagnostics: WorldmapChunkDiagnostics = createWorldmapChunkDiagnostics();
   private chunkDiagnosticsBaselines: WorldmapChunkDiagnosticsBaselineEntry[] = [];
 
@@ -2014,8 +2015,15 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private updateEntityActionPaths(actionPaths: Map<string, ActionPath[]>) {
-    this.state.updateEntityActionActionPaths(actionPaths);
+    // Stamp token before publishing store updates to avoid transient null-token
+    // windows inside synchronous subscribers.
     this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;
+    this.isApplyingLocalActionPathUpdate = true;
+    try {
+      this.state.updateEntityActionActionPaths(actionPaths);
+    } finally {
+      this.isApplyingLocalActionPathUpdate = false;
+    }
   }
 
   private syncEntityActionPathsTransitionToken(): void {
@@ -2031,6 +2039,7 @@ export default class WorldmapScene extends HexagonScene {
       selectedEntityId: this.state.entityActions.selectedEntityId,
       actionPathCount: this.state.entityActions.actionPaths.size,
       actionPathsTransitionToken: this.actionPathsTransitionToken,
+      allowPendingLocalOwnership: this.isApplyingLocalActionPathUpdate,
     });
   }
 

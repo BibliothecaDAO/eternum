@@ -344,6 +344,17 @@ describe("shouldClearEntitySelectionForMissingActionPathOwnership", () => {
       }),
     ).toBe(false);
   });
+
+  it("does not clear while local action-path ownership stamping is pending", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 2,
+        actionPathsTransitionToken: null,
+        allowPendingLocalOwnership: true,
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("resolveEntityActionPathsTransitionTokenForForcedRefresh", () => {

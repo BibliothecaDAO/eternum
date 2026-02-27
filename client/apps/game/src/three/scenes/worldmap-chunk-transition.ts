@@ -53,6 +53,7 @@ interface MissingActionPathOwnershipDecisionInput {
   selectedEntityId: unknown;
   actionPathCount: number;
   actionPathsTransitionToken: number | null;
+  allowPendingLocalOwnership?: boolean;
 }
 
 interface ShortcutNavigationRefreshDecisionInput {
@@ -268,7 +269,7 @@ export function shouldClearEntitySelectionForMissingActionPathOwnership(
 ): boolean {
   const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
   const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
-  return hasActivePaths && input.actionPathsTransitionToken === null;
+  return hasActivePaths && input.actionPathsTransitionToken === null && !input.allowPendingLocalOwnership;
 }
 
 /**
