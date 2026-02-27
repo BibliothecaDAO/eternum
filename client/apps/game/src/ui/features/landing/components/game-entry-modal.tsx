@@ -16,12 +16,10 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
-import { applyWorldSelection } from "@/runtime/world";
-import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
-import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { applyWorldSelection, getActiveWorld } from "@/runtime/world";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { buildForgePolicies } from "@/hooks/context/policies";
-import { refreshSessionPolicies, refreshSessionPoliciesWithPolicies } from "@/hooks/context/session-policy-refresh";
+import type { WorldProfile } from "@/runtime/world/types";
+import { ensureWorldSessionPolicies, resolveWorldPolicyProfile } from "@/hooks/context/world-session-policy";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -31,6 +29,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
+import { refreshBootstrapPoliciesIfNeeded } from "./game-entry-modal.session-refresh";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -95,6 +94,7 @@ type HyperstructureInfo = {
 };
 
 type ForgeCallTargets = {
+  profile: WorldProfile;
   blitzRealmSystemsAddress: string;
   vrfProviderAddress?: string;
 };
@@ -834,19 +834,13 @@ export const GameEntryModal = ({
     return Math.max(0, averagePerHyperstructure * (forgeAllTargetCount - forgeAllCompletedCount));
   }, [forgeAllElapsedMs, forgeAllCompletedCount, forgeAllTargetCount]);
 
-  const blitzActionPolicyScope = useMemo(() => `blitz-actions:${chain}:${worldName}`, [chain, worldName]);
-
   const resolveForgeCallTargets = useCallback(async (): Promise<ForgeCallTargets> => {
     if (forgeCallTargetsRef.current) {
       return forgeCallTargetsRef.current;
     }
 
-    const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-    if (!factorySqlBaseUrl) {
-      throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
-    }
-
-    const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+    const profile = await resolveWorldPolicyProfile(chain, worldName);
+    const contracts = profile.contractsBySelector;
     const selector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
     const blitzRealmSystemsAddress = contracts[selector];
     if (!blitzRealmSystemsAddress) {
@@ -858,6 +852,7 @@ export const GameEntryModal = ({
     const hasVrfProvider = Boolean(vrfProviderAddress) && !/^0x0*$/i.test(vrfProviderAddress);
 
     forgeCallTargetsRef.current = {
+      profile,
       blitzRealmSystemsAddress,
       vrfProviderAddress: hasVrfProvider ? vrfProviderAddress : undefined,
     };
@@ -865,17 +860,18 @@ export const GameEntryModal = ({
     return forgeCallTargetsRef.current;
   }, [chain, worldName]);
 
-  const ensureForgeSessionPolicies = useCallback(async (): Promise<boolean> => {
+  const ensureForgeSessionPolicies = useCallback(async (profile?: WorldProfile): Promise<boolean> => {
     const connector = useAccountStore.getState().connector;
     if (!connector) {
       return false;
     }
-
-    const forgeTargets = await resolveForgeCallTargets();
-    const forgePolicies = buildForgePolicies(forgeTargets);
-
-    return refreshSessionPoliciesWithPolicies(connector, forgePolicies, blitzActionPolicyScope);
-  }, [resolveForgeCallTargets, blitzActionPolicyScope]);
+    return ensureWorldSessionPolicies({
+      connector,
+      chain,
+      worldName,
+      profile,
+    });
+  }, [chain, worldName]);
 
   // In forge mode, update session once on modal open for the selected world.
   useEffect(() => {
@@ -888,7 +884,8 @@ export const GameEntryModal = ({
     const prepareForgeSession = async () => {
       setIsPreparingForgeSession(true);
       try {
-        const updated = await ensureForgeSessionPolicies();
+        const { profile } = await resolveForgeCallTargets();
+        const updated = await ensureForgeSessionPolicies(profile);
         if (updated) {
           debugLog(worldName, "Forge session policies updated");
         }
@@ -906,7 +903,7 @@ export const GameEntryModal = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, isForgeMode, account, ensureForgeSessionPolicies, worldName]);
+  }, [isOpen, isForgeMode, account, ensureForgeSessionPolicies, resolveForgeCallTargets, worldName]);
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
@@ -1113,7 +1110,7 @@ export const GameEntryModal = ({
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
         updateTask("world", "running");
-        await applyWorldSelection({ name: worldName, chain }, chain);
+        const selection = await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
         debugLog(worldName, "World selection complete");
 
@@ -1127,11 +1124,29 @@ export const GameEntryModal = ({
         // contract addresses, refresh session policies only for interactive
         // flows. Spectate should never trigger signing prompts.
         const connector = useAccountStore.getState().connector;
-        if (connector && !isSpectateMode) {
-          const updated = await refreshSessionPolicies(connector);
-          if (updated) {
-            debugLog(worldName, "Session policies refreshed for new world");
-          }
+        const activeWorld = getActiveWorld();
+        const policyProfile =
+          activeWorld?.name === worldName
+            ? activeWorld
+            : selection.profile?.name === worldName
+              ? selection.profile
+              : undefined;
+        const policyChain = policyProfile?.chain ?? chain;
+        const updated = await refreshBootstrapPoliciesIfNeeded({
+          connector,
+          isSpectateMode,
+          refreshPolicies: () =>
+            ensureWorldSessionPolicies({
+              connector,
+              chain: policyChain,
+              worldName,
+              profile: policyProfile,
+            }),
+        });
+        if (updated) {
+          debugLog(worldName, "Session policies refreshed for new world");
+        } else if (connector && !isSpectateMode) {
+          debugLog(worldName, "Session policies already refreshed for scope, skipping bootstrap refresh");
         }
 
         // Mark all tasks complete
@@ -1148,7 +1163,14 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [isOpen, isForgeMode, isSpectateMode, worldName, chain, updateTask]);
+  }, [
+    isOpen,
+    isForgeMode,
+    isSpectateMode,
+    worldName,
+    chain,
+    updateTask,
+  ]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -1287,9 +1309,10 @@ export const GameEntryModal = ({
         throw new Error("No account connected");
       }
 
+      const forgeTargets = await resolveForgeCallTargets();
       // Ensure the selected world's forge policy is present before execute.
-      await ensureForgeSessionPolicies();
-      const { blitzRealmSystemsAddress, vrfProviderAddress } = await resolveForgeCallTargets();
+      await ensureForgeSessionPolicies(forgeTargets.profile);
+      const { blitzRealmSystemsAddress, vrfProviderAddress } = forgeTargets;
 
       const batchSize = chain === "mainnet" ? 1 : 4;
       const hyperstructureCount =
