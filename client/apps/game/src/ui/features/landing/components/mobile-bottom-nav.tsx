@@ -3,7 +3,6 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { getSectionFromPath, getActiveSubItem } from "../context/navigation-config";
 
 interface MobileBottomNavProps {
-  onSettingsClick?: () => void;
   className?: string;
 }
 
@@ -12,7 +11,7 @@ interface MobileBottomNavProps {
  * Shows contextual sub-items based on the current section.
  * Hidden on desktop (replaced by sidebar).
  */
-export const MobileBottomNav = ({ onSettingsClick, className }: MobileBottomNavProps) => {
+export const MobileBottomNav = ({ className }: MobileBottomNavProps) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -21,12 +20,15 @@ export const MobileBottomNav = ({ onSettingsClick, className }: MobileBottomNavP
   const activeSubItem = getActiveSubItem(activeSection, currentTab);
 
   const handleTabClick = (tab: string | null) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+
     if (tab === null) {
-      // Remove tab param for default tab
-      setSearchParams({});
+      nextSearchParams.delete("tab");
     } else {
-      setSearchParams({ tab });
+      nextSearchParams.set("tab", tab);
     }
+
+    setSearchParams(nextSearchParams);
   };
 
   return (

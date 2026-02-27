@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { MarketClass, MarketOutcome } from "@/pm/class";
 import { getOutcomeColor } from "@/pm/constants/market-outcome-colors";
@@ -16,8 +16,7 @@ const formatOdds = (value: unknown) => {
   return `${num.toFixed(num % 1 === 0 ? 0 : 1)}%`;
 };
 
-const getOddsValue = (outcome: MarketOutcome) =>
-  (outcome as any)?.odds ?? (outcome as any)?.price ?? (outcome as any)?.odds;
+const getOddsValue = (outcome: MarketOutcome) => outcome.odds;
 
 const getOutcomes = (market: MarketClass): MarketOutcome[] => {
   const outcomes = market.getMarketOutcomes();
@@ -38,13 +37,18 @@ export const MarketOdds = ({
   selectable = false,
   onSelect,
   selectedOutcomeIndex,
+  maxVisible,
+  collapsible = false,
 }: {
   market: MarketClass;
   selectable?: boolean;
   onSelect?: (outcome: MarketOutcome) => void;
   selectedOutcomeIndex?: number;
+  maxVisible?: number;
+  collapsible?: boolean;
 }) => {
   const outcomes = useMemo(() => getOutcomes(market), [market]);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const { sortedOutcomes, winningOutcomeOrdersSet } = useMemo(() => {
     const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
@@ -55,7 +59,7 @@ export const MarketOdds = ({
 
     const baseSorted = outcomes
       .map((outcome, idx) => {
-        const normalizedOrder = Number((outcome as any)?.index);
+        const normalizedOrder = Number(outcome.index);
         return { outcome, order: Number.isFinite(normalizedOrder) ? normalizedOrder : idx };
       })
       .toSorted((a, b) => {
@@ -86,10 +90,13 @@ export const MarketOdds = ({
   }
 
   const isSelectable = selectable && !market.isEnded() && !market.isResolved();
+  const shouldCollapse =
+    collapsible && typeof maxVisible === "number" && maxVisible > 0 && sortedOutcomes.length > maxVisible;
+  const visibleOutcomes = shouldCollapse && !isExpanded ? sortedOutcomes.slice(0, maxVisible) : sortedOutcomes;
 
   return (
     <div className="flex flex-col gap-2">
-      {sortedOutcomes.map(({ outcome, order }) => {
+      {visibleOutcomes.map(({ outcome, order }) => {
         const oddsRaw = getOddsValue(outcome);
         const odds = formatOdds(oddsRaw);
         const isSelected = isSelectable && selectedOutcomeIndex === order;
@@ -110,7 +117,7 @@ export const MarketOdds = ({
 
         return (
           <button
-            key={(outcome as any)?.id ?? order}
+            key={`${outcome.index}-${order}`}
             className={cx(
               "group relative flex min-h-[56px] items-center justify-between overflow-hidden rounded-sm border px-3 py-2.5 text-left text-xs transition-all duration-200",
               isWinner ? "border-progress-bar-good/60 bg-progress-bar-good/10" : "border-gold/20 bg-brown/40",
@@ -170,6 +177,16 @@ export const MarketOdds = ({
           </button>
         );
       })}
+
+      {shouldCollapse ? (
+        <button
+          type="button"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white/70 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white"
+        >
+          {isExpanded ? "Show Top 4" : `Show All Players (${sortedOutcomes.length})`}
+        </button>
+      ) : null}
     </div>
   );
 };

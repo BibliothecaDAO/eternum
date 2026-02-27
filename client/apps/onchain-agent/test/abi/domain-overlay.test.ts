@@ -181,10 +181,7 @@ describe("overlays integrate with generateActions", () => {
       "contribute_hyperstructure",
     ];
 
-    const allTypes = new Set([
-      ...definitions.map((d) => d.type),
-      ...routes.keys(),
-    ]);
+    const allTypes = new Set([...definitions.map((d) => d.type), ...routes.keys()]);
 
     const missing: string[] = [];
     for (const actionType of OLD_ACTION_TYPES) {
@@ -448,18 +445,14 @@ describe("pre-flight: explorer_move", () => {
 
   it("passes when explorer has enough stamina", () => {
     const state = {
-      entities: [
-        { entityId: 1, type: "army", isOwned: true, stamina: 60 },
-      ],
+      entities: [{ entityId: 1, type: "army", isOwned: true, stamina: 60 }],
     };
     expect(preflight({ explore: true, explorer_id: 1, directions: [0] }, state)).toBeNull();
   });
 
   it("fails when explorer has insufficient stamina", () => {
     const state = {
-      entities: [
-        { entityId: 1, type: "army", isOwned: true, stamina: 10 },
-      ],
+      entities: [{ entityId: 1, type: "army", isOwned: true, stamina: 10 }],
     };
     const result = preflight({ explore: true, explorer_id: 1, directions: [0] }, state);
     expect(result).toContain("stamina");

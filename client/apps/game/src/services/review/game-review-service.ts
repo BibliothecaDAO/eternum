@@ -15,6 +15,12 @@ import { getContractByName } from "@dojoengine/core";
 import { Account, AccountInterface, Call, hash } from "starknet";
 
 import { env } from "../../../env";
+import {
+  fetchFirstBloodMetric,
+  fetchGameReviewCompetitiveMetrics,
+  fetchGameReviewMilestoneTimings,
+  type GameReviewValueMetric,
+} from "./game-review-stats-utils";
 
 const RANKING_BATCH_SIZE = 200;
 const LEADERBOARD_FETCH_LIMIT = 1000;
@@ -104,11 +110,21 @@ const buildReviewFinalRankForPlayerQuery = (playerAddress: string) => `
   FROM "s1_eternum-PlayerRank" pr
   INNER JOIN "s1_eternum-PlayersRankFinal" pf
     ON pf.trial_id = pr.trial_id
-  WHERE lower(pr.player) = lower('${playerAddress}')
+  WHERE ltrim(lower(CAST(pr.player AS TEXT)), '0x') = ltrim(lower('${playerAddress}'), '0x')
     AND pf.trial_id > 0
   ORDER BY pf.trial_id DESC
   LIMIT 1;
 `;
+
+const buildTrialIdMatchCondition = (columnName: string, trialId: bigint): string => {
+  const trialIdDecimal = trialId.toString();
+  const trialIdHexNoPrefix = trialId.toString(16).toLowerCase();
+
+  return `(
+    CAST(${columnName} AS TEXT) = '${trialIdDecimal}'
+    OR ltrim(lower(CAST(${columnName} AS TEXT)), '0x') = '${trialIdHexNoPrefix}'
+  )`;
+};
 
 const buildReviewRankPrizeQuery = (trialId: bigint, rank: number) => `
   SELECT
@@ -116,7 +132,7 @@ const buildReviewRankPrizeQuery = (trialId: bigint, rank: number) => `
     total_prize_amount,
     grant_elite_nft
   FROM "s1_eternum-RankPrize"
-  WHERE trial_id = '${trialId.toString()}'
+  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
     AND rank = '${rank}'
   LIMIT 1;
 `;
@@ -124,7 +140,7 @@ const buildReviewRankPrizeQuery = (trialId: bigint, rank: number) => `
 const buildReviewRankTrialQuery = (trialId: bigint) => `
   SELECT total_player_count_committed
   FROM "s1_eternum-PlayersRankTrial"
-  WHERE trial_id = '${trialId.toString()}'
+  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
   LIMIT 1;
 `;
 
@@ -133,7 +149,7 @@ const buildReviewRegisteredPointsQuery = (playerAddress: string) => `
     registered_points,
     prize_claimed
   FROM "s1_eternum-PlayerRegisteredPoints"
-  WHERE lower(address) = lower('${playerAddress}')
+  WHERE ltrim(lower(CAST(address AS TEXT)), '0x') = ltrim(lower('${playerAddress}'), '0x')
   LIMIT 1;
 `;
 
@@ -592,6 +608,12 @@ export interface GameReviewStats {
   totalT1TroopsCreated: number;
   totalT2TroopsCreated: number;
   totalT3TroopsCreated: number;
+  timeToFirstT3Seconds: GameReviewValueMetric | null;
+  timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
+  firstBlood: GameReviewValueMetric | null;
+  highestExploredTiles: GameReviewValueMetric | null;
+  mostTroopsKilled: GameReviewValueMetric | null;
+  biggestStructuresOwned: GameReviewValueMetric | null;
 }
 
 export interface GameReviewMapSnapshotTile {
@@ -649,6 +671,14 @@ export interface GameReviewData {
   mapSnapshot: GameReviewMapSnapshot;
   finalization: ReviewFinalizationMeta;
   rewards: GameReviewRewards | null;
+}
+
+export interface GameReviewClaimSummary {
+  canClaimNow: boolean;
+  alreadyClaimed: boolean;
+  lordsWonFormatted: string;
+  chestsClaimedEstimate: number;
+  claimBlockedReason: string | null;
 }
 
 interface FinalizeGameReviewResult {
@@ -910,6 +940,42 @@ const sumLeaderboardMetric = (
   return rows.reduce((total, row) => total + parseNumeric(row[key]), 0);
 };
 
+const getHighestExploredTilesMetric = (rows: LandingLeaderboardEntry[]): GameReviewValueMetric | null => {
+  let topPlayerAddress: string | null = null;
+  let topValue = Number.NEGATIVE_INFINITY;
+
+  for (const row of rows) {
+    const playerAddress = parseAddress(row.address);
+    if (!playerAddress) {
+      continue;
+    }
+
+    const exploredTiles = parseNumeric(row.exploredTiles);
+    if (!Number.isFinite(exploredTiles) || exploredTiles < 0) {
+      continue;
+    }
+
+    if (
+      topPlayerAddress == null ||
+      exploredTiles > topValue ||
+      (exploredTiles === topValue && playerAddress.localeCompare(topPlayerAddress) < 0)
+    ) {
+      topPlayerAddress = playerAddress;
+      topValue = exploredTiles;
+    }
+  }
+
+  if (!topPlayerAddress || !Number.isFinite(topValue) || topValue <= 0) {
+    return null;
+  }
+
+  return {
+    playerAddress: topPlayerAddress,
+    value: topValue,
+    timestamp: undefined,
+  };
+};
+
 const fetchRankedPlayersForSubmission = async (client: SqlApi): Promise<string[]> => {
   const rows = await client.fetchRegisteredPlayerPoints(LEADERBOARD_FETCH_LIMIT, 0);
 
@@ -960,10 +1026,12 @@ const fetchReviewRewards = async ({
   toriiSqlBaseUrl,
   playerAddress,
   finalization,
+  personalScore,
 }: {
   toriiSqlBaseUrl: string;
   playerAddress: string;
   finalization: ReviewFinalizationMeta;
+  personalScore: LandingLeaderboardEntry | null;
 }): Promise<GameReviewRewards> => {
   const [playerPointsRows, chestRows, seasonRows] = await Promise.all([
     queryToriiSql<PlayerRegisteredPointsRow>(
@@ -1014,8 +1082,14 @@ const fetchReviewRewards = async ({
     "Failed to fetch player final rank",
   );
 
-  const playerRank = parseInteger(playerRankRows[0]?.rank);
-  const paid = parseBoolean(playerRankRows[0]?.paid) || playerPrizeClaimed;
+  const playerRankFromModel = parseInteger(playerRankRows[0]?.rank);
+  const playerRankFromLeaderboard =
+    typeof personalScore?.rank === "number" && Number.isFinite(personalScore.rank) && personalScore.rank > 0
+      ? Math.trunc(personalScore.rank)
+      : null;
+  const playerRank =
+    playerRankFromModel != null && playerRankFromModel > 0 ? playerRankFromModel : playerRankFromLeaderboard;
+  const paid = parseBoolean(playerRankRows[0]?.paid) || playerPrizeClaimed || Boolean(personalScore?.prizeClaimed);
   const trialIdFromPlayerRank = parseBigIntValue(playerRankRows[0]?.trial_id);
   const finalTrialId = trialIdFromPlayerRank ?? finalization.finalTrialId;
 
@@ -1087,12 +1161,24 @@ export const fetchGameReviewData = async ({
 }): Promise<GameReviewData> => {
   const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
 
-  const [leaderboard, finalization, storyStats, transactionsCount, mapSnapshot] = await Promise.all([
+  const [
+    leaderboard,
+    finalization,
+    storyStats,
+    transactionsCount,
+    mapSnapshot,
+    milestoneTimings,
+    firstBlood,
+    competitiveMetrics,
+  ] = await Promise.all([
     fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl),
     fetchReviewFinalizationMeta(toriiSqlBaseUrl),
     fetchStoryStats(toriiSqlBaseUrl),
     fetchTransactionsCount(toriiSqlBaseUrl),
     fetchMapSnapshot(toriiSqlBaseUrl),
+    fetchGameReviewMilestoneTimings(toriiSqlBaseUrl),
+    fetchFirstBloodMetric(toriiSqlBaseUrl),
+    fetchGameReviewCompetitiveMetrics(toriiSqlBaseUrl),
   ]);
 
   let topPlayers = leaderboard.slice(0, 3);
@@ -1149,6 +1235,12 @@ export const fetchGameReviewData = async ({
     totalT1TroopsCreated: storyStats.totalT1TroopsCreated,
     totalT2TroopsCreated: storyStats.totalT2TroopsCreated,
     totalT3TroopsCreated: storyStats.totalT3TroopsCreated,
+    timeToFirstT3Seconds: milestoneTimings.timeToFirstT3Seconds,
+    timeToFirstHyperstructureSeconds: milestoneTimings.timeToFirstHyperstructureSeconds,
+    firstBlood,
+    highestExploredTiles: getHighestExploredTilesMetric(leaderboard),
+    mostTroopsKilled: competitiveMetrics.mostTroopsKilled,
+    biggestStructuresOwned: competitiveMetrics.biggestStructuresOwned,
   };
 
   const rewards =
@@ -1158,6 +1250,7 @@ export const fetchGameReviewData = async ({
           toriiSqlBaseUrl,
           playerAddress: normalizedPlayerAddress,
           finalization,
+          personalScore,
         });
 
   return {
@@ -1171,6 +1264,45 @@ export const fetchGameReviewData = async ({
     mapSnapshot,
     finalization,
     rewards,
+  };
+};
+
+export const fetchGameReviewClaimSummary = async ({
+  worldName,
+  chain,
+  playerAddress,
+}: {
+  worldName: string;
+  chain: Chain;
+  playerAddress: string;
+}): Promise<GameReviewClaimSummary> => {
+  // Keep the chain param for stable query keys and future chain-dependent claim policies.
+  void chain;
+
+  const normalizedPlayerAddress = parseAddress(playerAddress);
+  if (!normalizedPlayerAddress) {
+    throw new Error("Missing player address for claim summary.");
+  }
+
+  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
+  const [finalization, personalScore] = await Promise.all([
+    fetchReviewFinalizationMeta(toriiSqlBaseUrl),
+    fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl).catch(() => null),
+  ]);
+
+  const rewards = await fetchReviewRewards({
+    toriiSqlBaseUrl,
+    playerAddress: normalizedPlayerAddress,
+    finalization,
+    personalScore,
+  });
+
+  return {
+    canClaimNow: rewards.canClaimNow,
+    alreadyClaimed: rewards.alreadyClaimed,
+    lordsWonFormatted: rewards.lordsWonFormatted,
+    chestsClaimedEstimate: rewards.chestsClaimedEstimate,
+    claimBlockedReason: rewards.claimBlockedReason,
   };
 };
 
@@ -1211,10 +1343,15 @@ export const finalizeGameRankingAndMMR = async ({
   let rankingSubmitted = false;
   let mmrSubmitted = false;
   let mmrError: string | null = null;
+  const totalRegistrations = Math.max(finalization.registrationCount, finalization.registeredPlayers.length);
+  const useSingleRegistrantClaim = totalRegistrations === 1;
 
   if (!finalization.rankingFinalized) {
-    if (playersForSubmission.length === 1) {
-      const onlyPlayer = playersForSubmission[0];
+    if (useSingleRegistrantClaim) {
+      const onlyPlayer = finalization.registeredPlayers[0] ?? playersForSubmission[0];
+      if (!onlyPlayer) {
+        throw new Error("Single-registrant game detected but no registered player address was found.");
+      }
       const claimNoGameCall: Call = {
         contractAddress: prizeDistributionAddress,
         entrypoint: "blitz_prize_claim_no_game",
@@ -1319,7 +1456,18 @@ export const claimGameReviewRewards = async ({
     calldata: [1, normalizedAddress],
   };
 
-  await signer.execute([claimCall]);
+  const calls: Call[] = [];
+  const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+  if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
+    calls.push({
+      contractAddress: vrfProviderAddress,
+      entrypoint: "request_random",
+      calldata: [prizeDistributionAddress, 0, signer.address],
+    });
+  }
+  calls.push(claimCall);
+
+  await signer.execute(calls);
 
   return {
     claimed: true,

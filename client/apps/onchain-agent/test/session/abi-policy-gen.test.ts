@@ -180,33 +180,64 @@ describe("comparison with hardcoded POLICY_METHODS_BY_SUFFIX", () => {
   // (excluding dojo_name and world_dispatcher which are Dojo framework introspection)
   const HARDCODED: Record<string, string[]> = {
     resource_systems: [
-      "approve", "send", "pickup", "arrivals_offload", "deposit", "withdraw",
-      "troop_troop_adjacent_transfer", "troop_structure_adjacent_transfer",
-      "structure_troop_adjacent_transfer", "structure_burn", "troop_burn",
+      "approve",
+      "send",
+      "pickup",
+      "arrivals_offload",
+      "deposit",
+      "withdraw",
+      "troop_troop_adjacent_transfer",
+      "troop_structure_adjacent_transfer",
+      "structure_troop_adjacent_transfer",
+      "structure_burn",
+      "troop_burn",
     ],
     troop_management_systems: [
-      "explorer_create", "explorer_add", "explorer_delete", "guard_add", "guard_delete",
-      "explorer_explorer_swap", "explorer_guard_swap", "guard_explorer_swap",
+      "explorer_create",
+      "explorer_add",
+      "explorer_delete",
+      "guard_add",
+      "guard_delete",
+      "explorer_explorer_swap",
+      "explorer_guard_swap",
+      "guard_explorer_swap",
     ],
     troop_movement_systems: ["explorer_move", "explorer_extract_reward"],
     troop_battle_systems: ["attack_explorer_vs_explorer", "attack_explorer_vs_guard", "attack_guard_vs_explorer"],
     troop_raid_systems: ["raid_explorer_vs_guard"],
     trade_systems: ["create_order", "accept_order", "cancel_order"],
     production_systems: [
-      "create_building", "destroy_building", "pause_building_production", "resume_building_production",
-      "burn_resource_for_labor_production", "burn_labor_for_resource_production", "burn_resource_for_resource_production",
+      "create_building",
+      "destroy_building",
+      "pause_building_production",
+      "resume_building_production",
+      "burn_resource_for_labor_production",
+      "burn_labor_for_resource_production",
+      "burn_resource_for_resource_production",
     ],
     swap_systems: ["buy", "sell"],
     bank_systems: ["create_banks"],
     liquidity_systems: ["add", "remove"],
     guild_systems: [
-      "create_guild", "join_guild", "leave_guild", "whitelist_player",
-      "transfer_guild_ownership", "remove_guild_member", "remove_player_from_whitelist",
-      "update_whitelist", "remove_member",
+      "create_guild",
+      "join_guild",
+      "leave_guild",
+      "whitelist_player",
+      "transfer_guild_ownership",
+      "remove_guild_member",
+      "remove_player_from_whitelist",
+      "update_whitelist",
+      "remove_member",
     ],
     realm_systems: ["create"],
     structure_systems: ["level_up"],
-    hyperstructure_systems: ["initialize", "contribute", "claim_share_points", "allocate_shares", "update_construction_access"],
+    hyperstructure_systems: [
+      "initialize",
+      "contribute",
+      "claim_share_points",
+      "allocate_shares",
+      "update_construction_access",
+    ],
     config_systems: ["set_agent_config", "set_world_config"],
     name_systems: ["set_address_name"],
     ownership_systems: ["transfer_structure_ownership", "transfer_agent_ownership"],
@@ -214,7 +245,14 @@ describe("comparison with hardcoded POLICY_METHODS_BY_SUFFIX", () => {
     relic_systems: ["open_chest", "apply_relic"],
     season_systems: ["register_to_leaderboard", "claim_leaderboard_rewards"],
     village_systems: ["upgrade", "create"],
-    blitz_realm_systems: ["make_hyperstructures", "register", "obtain_entry_token", "create", "assign_realm_positions", "settle_realms"],
+    blitz_realm_systems: [
+      "make_hyperstructures",
+      "register",
+      "obtain_entry_token",
+      "create",
+      "assign_realm_positions",
+      "settle_realms",
+    ],
   };
 
   const abiResults = extractAllFromManifest(manifest);
@@ -315,9 +353,7 @@ describe("comparison with hardcoded POLICY_METHODS_BY_SUFFIX", () => {
       if (!abiData) continue;
 
       const abiExternal = new Set(
-        abiData.entrypoints
-          .filter((e) => !e.isFramework && e.state_mutability === "external")
-          .map((e) => e.name),
+        abiData.entrypoints.filter((e) => !e.isFramework && e.state_mutability === "external").map((e) => e.name),
       );
 
       for (const fn of hardcodedFns) {

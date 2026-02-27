@@ -92,7 +92,7 @@ const LandingLayoutContent = () => {
       </main>
 
       {/* Bottom navigation (mobile only) */}
-      <MobileBottomNav onSettingsClick={handleSettingsClick} />
+      <MobileBottomNav />
 
       {/* Settings modal */}
       {settingsOpen && (
@@ -139,7 +139,12 @@ const LandingModalHost = () => {
   }, [showModal, toggleModal]);
 
   return (
-    <BlankOverlayContainer zIndex={120} open={showModal} onPointerDown={onOverlayDown}>
+    <BlankOverlayContainer
+      zIndex={120}
+      open={showModal}
+      onPointerDown={onOverlayDown}
+      className="bg-black/75 backdrop-blur-[2px]"
+    >
       {modalContent}
     </BlankOverlayContainer>
   );

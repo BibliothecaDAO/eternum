@@ -108,6 +108,35 @@ const GAME_STATS_CARD_STYLES = `
     opacity: 0.5;
     margin-top: 8px;
   }
+
+  .blitz-card-root .milestone-list {
+    margin-top: 16px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .blitz-card-root .milestone-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .blitz-card-root .milestone-label {
+    font-family: "IM Fell English", serif;
+    font-style: italic;
+    font-size: 15px;
+    line-height: 18px;
+    color: #ffffff;
+    opacity: 0.65;
+  }
+
+  .blitz-card-root .milestone-value {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 20px;
+    color: #ffffff;
+  }
 `;
 
 interface BlitzGameStatsCardProps {
@@ -116,14 +145,40 @@ interface BlitzGameStatsCardProps {
   player?: { name: string; address: string } | null;
 }
 
+const formatDuration = (seconds: number | null): string => {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) {
+    return "N/A";
+  }
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${remainingSeconds}s`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+
+  return `${remainingSeconds}s`;
+};
+
 const BlitzGameStatsCard = forwardRef<SVGSVGElement, BlitzGameStatsCardProps>(({ worldName, stats, player }, ref) => {
   const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
   const totalTroops = stats.totalT1TroopsCreated + stats.totalT2TroopsCreated + stats.totalT3TroopsCreated;
   const troopBreakdown = `T1: ${formatValue(stats.totalT1TroopsCreated)} · T2: ${formatValue(stats.totalT2TroopsCreated)} · T3: ${formatValue(stats.totalT3TroopsCreated)}`;
+  const firstT3Duration = formatDuration(stats.timeToFirstT3Seconds?.value ?? null);
+  const firstHyperstructureDuration = formatDuration(stats.timeToFirstHyperstructureSeconds?.value ?? null);
 
   const cardMarkup = (
     <foreignObject width="100%" height="100%">
-      <div className="blitz-card-root card-gold" aria-label={`${worldName} Game Stats card`}>
+      <div
+        className={`blitz-card-root card-gold ${player ? "" : "no-player"}`}
+        aria-label={`${worldName} Game Stats card`}
+      >
         <style dangerouslySetInnerHTML={{ __html: GAME_STATS_CARD_STYLES }} />
 
         <div className="bg-mark" />
@@ -177,6 +232,16 @@ const BlitzGameStatsCard = forwardRef<SVGSVGElement, BlitzGameStatsCardProps>(({
           <div className="troop-label">Troops Created</div>
           <div className="troop-hero-value">{formatValue(totalTroops)}</div>
           <div className="troop-breakdown">{troopBreakdown}</div>
+          <div className="milestone-list">
+            <div className="milestone-row">
+              <span className="milestone-label">First T3:</span>
+              <span className="milestone-value">{firstT3Duration}</span>
+            </div>
+            <div className="milestone-row">
+              <span className="milestone-label">First Hyperstructure:</span>
+              <span className="milestone-value">{firstHyperstructureDuration}</span>
+            </div>
+          </div>
         </div>
 
         {player && (

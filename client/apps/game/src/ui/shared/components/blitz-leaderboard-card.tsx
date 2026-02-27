@@ -250,7 +250,10 @@ const BlitzLeaderboardCard = forwardRef<SVGSVGElement, BlitzLeaderboardCardProps
 
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
-        <div className="blitz-card-root card-gold" aria-label={`${worldName} Final Leaderboard card`}>
+        <div
+          className={`blitz-card-root card-gold ${player ? "" : "no-player"}`}
+          aria-label={`${worldName} Final Leaderboard card`}
+        >
           <style dangerouslySetInnerHTML={{ __html: LEADERBOARD_CARD_STYLES }} />
 
           <div className="bg-mark" />

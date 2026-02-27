@@ -4,19 +4,23 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import {
   getAvatarUrl,
+  normalizeAvatarAddress,
   useAvatarGallery,
   useAvatarHistory,
   useDeleteAvatar,
   useGenerateAvatar,
   useMyAvatar,
+  usePlayerAvatar,
   useSelectAvatar,
 } from "@/hooks/use-player-avatar";
+import { fetchLandingLeaderboardEntryByAddress } from "@/services/leaderboard/landing-leaderboard-service";
 import TextInput from "@/ui/design-system/atoms/text-input";
 
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
+import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
 import {
   getMMRTierFromRaw,
@@ -26,6 +30,7 @@ import {
   toMmrIntegerFromRaw,
 } from "@/ui/utils/mmr-tiers";
 import type { MMRTier } from "@/ui/utils/mmr-tiers";
+import { displayAddress } from "@/ui/utils/utils";
 import { toHexString } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { motion, AnimatePresence } from "framer-motion";
@@ -84,6 +89,19 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+interface LandingPlayerProps {
+  selectedPlayerAddress?: string | null;
+  selectedPlayerName?: string | null;
+  variant?: "full" | "trimmed";
+}
+
+const getNormalizedProfileAddress = (address: string | null | undefined): string | null => {
+  const normalized = normalizeAvatarAddress(address);
+  if (!normalized) return null;
+  if (normalized === "0x0") return null;
+  return normalized;
+};
+
 // Animated number using requestAnimationFrame (ref-based to avoid setState-in-effect lint).
 // Inner span is targeted by rAF so framer-motion on the outer span doesn't conflict.
 const AnimatedMMR = ({ value }: { value: string }) => {
@@ -130,15 +148,27 @@ const AnimatedMMR = ({ value }: { value: string }) => {
   );
 };
 
-export const LandingPlayer = () => {
+export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, variant = "full" }: LandingPlayerProps) => {
   const account = useAccountStore((state) => state.account);
   const accountName = useAccountStore((state) => state.accountName);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+  const connectedPlayerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+  const normalizedConnectedAddress = getNormalizedProfileAddress(connectedPlayerAddress);
+  const normalizedSelectedAddress = getNormalizedProfileAddress(selectedPlayerAddress);
+  const viewedPlayerAddress = normalizedSelectedAddress ?? normalizedConnectedAddress;
+  const isOwnProfile = viewedPlayerAddress != null && viewedPlayerAddress === normalizedConnectedAddress;
 
   const { username: cartridgeUsername, isLoading: isCartridgeUsernameLoading } = useCartridgeUsername();
-  const displayName = accountName || cartridgeUsername || "";
-  const hasDisplayName = Boolean(displayName);
-  const playerId = playerAddress ?? "";
+  const ownDisplayName = accountName || cartridgeUsername || "";
+  const hasOwnDisplayName = Boolean(ownDisplayName);
+  const playerId = connectedPlayerAddress ?? "";
+  const [resolvedPlayerName, setResolvedPlayerName] = useState<string | null>(null);
+
+  const selectedPlayerNameTrimmed = selectedPlayerName?.trim() || null;
+  const externalPlayerName = selectedPlayerNameTrimmed || resolvedPlayerName;
+  const displayName = isOwnProfile
+    ? ownDisplayName || "Anonymous"
+    : externalPlayerName || (viewedPlayerAddress ? displayAddress(viewedPlayerAddress) : "Anonymous");
+  const isTrimmed = variant === "trimmed";
 
   const [selectedChain, setSelectedChain] = useState<Chain>(DEFAULT_CHAIN);
 
@@ -156,6 +186,31 @@ export const LandingPlayer = () => {
   }, [selectedChain]);
 
   const mmrTokenAddress = useMemo(() => MMR_TOKEN_BY_CHAIN[selectedChain], [selectedChain]);
+
+  useEffect(() => {
+    if (!viewedPlayerAddress || isOwnProfile || selectedPlayerNameTrimmed) {
+      setResolvedPlayerName(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadPlayerName = async () => {
+      try {
+        const entry = await fetchLandingLeaderboardEntryByAddress(viewedPlayerAddress);
+        if (cancelled) return;
+        setResolvedPlayerName(entry?.displayName?.trim() || null);
+      } catch {
+        if (cancelled) return;
+        setResolvedPlayerName(null);
+      }
+    };
+
+    void loadPlayerName();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOwnProfile, selectedPlayerNameTrimmed, viewedPlayerAddress]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -179,13 +234,14 @@ export const LandingPlayer = () => {
   const [showAvatarSection, setShowAvatarSection] = useState(false);
   const [avatarTabIndex, setAvatarTabIndex] = useState(0);
   const [lastGeneratedImages, setLastGeneratedImages] = useState<string[]>([]);
-  const { data: myAvatar, isLoading: isLoadingAvatar } = useMyAvatar(playerId, playerId, displayName);
-  const { data: avatarHistory } = useAvatarHistory(playerId, playerId, displayName, 1);
+  const { data: myAvatar, isLoading: isLoadingAvatar } = useMyAvatar(playerId, playerId, ownDisplayName);
+  const { data: avatarHistory } = useAvatarHistory(playerId, playerId, ownDisplayName, 1);
   const { data: galleryItems, isLoading: isGalleryLoading } = useAvatarGallery(40);
+  const { data: viewedAvatar, isLoading: isLoadingViewedAvatar } = usePlayerAvatar(viewedPlayerAddress);
 
-  const generateAvatar = useGenerateAvatar(playerId, playerId, displayName);
-  const deleteAvatar = useDeleteAvatar(playerId, playerId, displayName);
-  const selectAvatar = useSelectAvatar(playerId, playerId, displayName);
+  const generateAvatar = useGenerateAvatar(playerId, playerId, ownDisplayName);
+  const deleteAvatar = useDeleteAvatar(playerId, playerId, ownDisplayName);
+  const selectAvatar = useSelectAvatar(playerId, playerId, ownDisplayName);
   const dailyGenerationLimit = 1;
   const hasReachedDailyLimit = (myAvatar?.generationCount ?? 0) >= dailyGenerationLimit;
   const resetCountdownLabel = useMemo(() => {
@@ -203,7 +259,7 @@ export const LandingPlayer = () => {
 
   // Fetch global player MMR from the selected chain
   useEffect(() => {
-    if (!playerAddress) {
+    if (!viewedPlayerAddress) {
       setPlayerMMR(null);
       setIsLoadingMMR(false);
       return;
@@ -221,9 +277,9 @@ export const LandingPlayer = () => {
       setPlayerMMR(null);
 
       try {
-        let normalizedPlayerAddress = playerAddress;
+        let normalizedPlayerAddress = viewedPlayerAddress;
         try {
-          normalizedPlayerAddress = toHexString(BigInt(playerAddress));
+          normalizedPlayerAddress = toHexString(BigInt(viewedPlayerAddress));
         } catch {
           // Keep the original address if normalization fails.
         }
@@ -283,7 +339,7 @@ export const LandingPlayer = () => {
     return () => {
       cancelled = true;
     };
-  }, [mmrTokenAddress, playerAddress, rpcUrl]);
+  }, [mmrTokenAddress, rpcUrl, viewedPlayerAddress]);
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formattedMMR = useMemo(() => {
@@ -349,7 +405,7 @@ export const LandingPlayer = () => {
         return;
       }
 
-      if (!playerAddress || !hasDisplayName) {
+      if (!connectedPlayerAddress || !hasOwnDisplayName) {
         toast.error("Connect with Cartridge to select an avatar.");
         return;
       }
@@ -362,16 +418,23 @@ export const LandingPlayer = () => {
         toast.error(getErrorMessage(error, "Failed to set avatar. Please try again."));
       }
     },
-    [hasDisplayName, myAvatar?.avatarUrl, playerAddress, selectAvatar],
+    [connectedPlayerAddress, hasOwnDisplayName, myAvatar?.avatarUrl, selectAvatar],
   );
 
-  const isLoadingAvatarOrAccount =
-    isLoadingAvatar || (Boolean(playerAddress) && !hasDisplayName && isCartridgeUsernameLoading);
+  const isLoadingAvatarOrAccount = isOwnProfile
+    ? isLoadingAvatar || (Boolean(connectedPlayerAddress) && !hasOwnDisplayName && isCartridgeUsernameLoading)
+    : isLoadingViewedAvatar;
 
-  const currentAvatarUrl = useMemo(
-    () => getAvatarUrl(playerAddress || "", myAvatar?.avatarUrl),
-    [playerAddress, myAvatar?.avatarUrl],
-  );
+  const currentAvatarUrl = useMemo(() => {
+    if (!viewedPlayerAddress) {
+      return getAvatarUrl("", null);
+    }
+    if (isOwnProfile) {
+      return getAvatarUrl(viewedPlayerAddress, myAvatar?.avatarUrl);
+    }
+    return getAvatarUrl(viewedPlayerAddress, viewedAvatar?.avatarUrl);
+  }, [isOwnProfile, myAvatar?.avatarUrl, viewedAvatar?.avatarUrl, viewedPlayerAddress]);
+  const profileAvatarAlt = isOwnProfile ? "Your avatar" : `${displayName} avatar`;
   const hasCustomAvatar = !!myAvatar?.avatarUrl;
   const latestGeneratedImages = useMemo(() => {
     if (lastGeneratedImages.length > 0) {
@@ -394,7 +457,7 @@ export const LandingPlayer = () => {
     return [];
   }, [avatarHistory, lastGeneratedImages]);
 
-  const canSelectFromGallery = Boolean(playerAddress && hasDisplayName);
+  const canSelectFromGallery = Boolean(isOwnProfile && connectedPlayerAddress && hasOwnDisplayName);
   const tierHex = getTierHex(playerTier);
   const nextTierHex = getTierHex(nextTier);
   const mmrShareLabel = useMemo(() => {
@@ -410,13 +473,22 @@ export const LandingPlayer = () => {
     const shareName = (displayName || "Anonymous").trim();
     const tierLabel = playerTier?.name ?? "Unranked";
     const mmrLabel = mmrShareLabel ? `${mmrShareLabel} MMR` : "No MMR yet";
-    const profileUrl =
-      typeof window !== "undefined"
-        ? new URL("/profile", window.location.origin).toString()
-        : "https://blitz.realms.world/profile";
+    const profileUrl = (() => {
+      if (typeof window === "undefined") {
+        return "https://blitz.realms.world/profile";
+      }
 
-    return `My Realms Blitz profile\n\nPlayer: ${shareName}\nTier: ${tierLabel}\nMMR: ${mmrLabel}\n${profileUrl}\n\n#RealmsBlitz #Eternum`;
-  }, [displayName, mmrShareLabel, playerTier?.name]);
+      const url = new URL("/profile", window.location.origin);
+      if (!isOwnProfile && viewedPlayerAddress) {
+        url.searchParams.set("player", viewedPlayerAddress);
+      }
+      return url.toString();
+    })();
+
+    const profileTitle = isOwnProfile ? "My Realms Blitz profile" : "Realms Blitz profile";
+
+    return `${profileTitle}\n\nPlayer: ${shareName}\nTier: ${tierLabel}\nMMR: ${mmrLabel}\n${profileUrl}\n\n#RealmsBlitz #Eternum`;
+  }, [displayName, isOwnProfile, mmrShareLabel, playerTier?.name, viewedPlayerAddress]);
 
   const handleCopyProfilePng = useCallback(async () => {
     if (!profileCardRef.current) {
@@ -454,7 +526,7 @@ export const LandingPlayer = () => {
   }, [profileShareMessage]);
 
   // --- Not connected state ---
-  if (!playerAddress) {
+  if (!viewedPlayerAddress) {
     return (
       <section className="w-full max-w-2xl mx-auto">
         <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/50 p-10 text-center backdrop-blur-xl">
@@ -525,7 +597,7 @@ export const LandingPlayer = () => {
                     <img
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       src={currentAvatarUrl}
-                      alt="Your avatar"
+                      alt={profileAvatarAlt}
                     />
                   )}
                 </div>
@@ -585,27 +657,14 @@ export const LandingPlayer = () => {
                       </span>
                       <span className="text-xs font-medium uppercase tracking-widest text-white/30">MMR</span>
                       {playerTier && (
-                        <motion.span
-                          className="relative ml-1 rounded-md border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider"
-                          style={{
-                            color: tierHex,
-                            borderColor: `${tierHex}30`,
-                            backgroundColor: `${tierHex}0a`,
-                          }}
+                        <motion.div
+                          className="ml-1"
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.3, delay: 0.3 }}
                         >
-                          {/* Shimmer effect */}
-                          <span
-                            className="absolute inset-0 rounded-md animate-[shimmer_3s_ease-in-out_infinite] opacity-0"
-                            style={{
-                              background: `linear-gradient(110deg, transparent 30%, ${tierHex}15 50%, transparent 70%)`,
-                              backgroundSize: "200% 100%",
-                            }}
-                          />
-                          <span className="relative">{playerTier.name}</span>
-                        </motion.span>
+                          <MMRTierBadge tier={playerTier} size="md" />
+                        </motion.div>
                       )}
                     </div>
 
@@ -646,7 +705,9 @@ export const LandingPlayer = () => {
                 ) : (
                   <div className="space-y-1">
                     <span className="text-lg text-white/40">No MMR yet</span>
-                    <p className="text-xs text-white/25">Play a Blitz round to earn your rank</p>
+                    <p className="text-xs text-white/25">
+                      {isOwnProfile ? "Play a Blitz round to earn your rank" : "This player has no MMR yet"}
+                    </p>
                   </div>
                 )}
               </div>
@@ -654,246 +715,264 @@ export const LandingPlayer = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            onClick={handleCopyProfilePng}
-            variant="gold"
-            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
-            isLoading={isCopyingProfileCard}
-            disabled={isCopyingProfileCard}
-          >
-            <Copy className="h-4 w-4" />
-            <span>{isCopyingProfileCard ? "Preparing image..." : "Copy PNG"}</span>
-          </Button>
-          <Button
-            onClick={handleShareProfileOnX}
-            variant="outline"
-            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
-          >
-            <Share2 className="h-4 w-4" />
-            <span>Share on X</span>
-          </Button>
-        </div>
+        {!isTrimmed && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              onClick={handleCopyProfilePng}
+              variant="gold"
+              className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+              forceUppercase={false}
+              isLoading={isCopyingProfileCard}
+              disabled={isCopyingProfileCard}
+            >
+              <Copy className="h-4 w-4" />
+              <span>{isCopyingProfileCard ? "Preparing image..." : "Copy PNG"}</span>
+            </Button>
+            <Button
+              onClick={handleShareProfileOnX}
+              variant="outline"
+              className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+              forceUppercase={false}
+            >
+              <Share2 className="h-4 w-4" />
+              <span>Share on X</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* ═══ AVATAR CUSTOMIZATION (collapsible) ═══ */}
-      <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
-        {/* Collapsed preview / toggle */}
-        <button
-          type="button"
-          onClick={() => setShowAvatarSection((prev) => !prev)}
-          aria-expanded={showAvatarSection}
-          className="w-full flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-white/[0.02]"
-        >
-          <div className="h-8 w-8 rounded-lg overflow-hidden border border-white/10 flex-shrink-0">
-            <img className="h-full w-full object-cover" src={currentAvatarUrl} alt="" />
-          </div>
-          <div className="flex-1 text-left">
-            <span className="text-sm text-white/60">Customize Avatar</span>
-          </div>
-          <motion.div animate={{ rotate: showAvatarSection ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown className="w-4 h-4 text-white/30" />
-          </motion.div>
-        </button>
-
-        {/* Expandable section */}
-        <AnimatePresence initial={false}>
-          {showAvatarSection && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden"
+      {!isTrimmed ? (
+        isOwnProfile ? (
+          <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
+            {/* Collapsed preview / toggle */}
+            <button
+              type="button"
+              onClick={() => setShowAvatarSection((prev) => !prev)}
+              aria-expanded={showAvatarSection}
+              className="w-full flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-white/[0.02]"
             >
-              <div className="px-5 pb-5 pt-2 space-y-4 border-t border-white/[0.04]">
-                <div className="flex flex-col sm:flex-row gap-5 items-start">
-                  {/* Avatar Preview */}
-                  <div className="flex-shrink-0 mx-auto sm:mx-0">
-                    <div className="w-32 h-32 rounded-xl overflow-hidden border border-white/10 bg-brown/30">
-                      {isLoadingAvatarOrAccount ? (
-                        <div className="h-full w-full flex items-center justify-center bg-white/[0.03]">
-                          <Loader2 className="w-6 h-6 animate-spin text-gold/50" />
-                        </div>
-                      ) : (
-                        <img className="h-full w-full object-cover" src={currentAvatarUrl} alt="Your avatar" />
-                      )}
-                    </div>
-                    {myAvatar && myAvatar.generationCount !== undefined && (
-                      <p className="text-[11px] text-white/30 text-center mt-2">
-                        {myAvatar.generationCount}/{dailyGenerationLimit} daily
-                      </p>
-                    )}
-                    {hasReachedDailyLimit && (
-                      <p className="text-[10px] text-amber-300/50 text-center mt-1">
-                        Limit reached{resetCountdownLabel ? ` · ${resetCountdownLabel}` : ""}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Avatar Controls */}
-                  <div className="flex-1 space-y-3 w-full">
-                    <Tabs
-                      variant="selection"
-                      selectedIndex={avatarTabIndex}
-                      onChange={(index) => setAvatarTabIndex(index)}
-                      className="space-y-3"
-                    >
-                      <Tabs.List className="grid grid-cols-2 gap-2">
-                        <Tabs.Tab className="!mx-0 text-xs">Generate</Tabs.Tab>
-                        <Tabs.Tab className="!mx-0 text-xs">Gallery</Tabs.Tab>
-                      </Tabs.List>
-
-                      <Tabs.Panels className="flex-1">
-                        <Tabs.Panel className="space-y-3">
-                          <div>
-                            <label className="text-xs text-white/40 block mb-1.5">
-                              Describe your avatar (e.g., "cyberpunk warrior")
-                            </label>
-                            <TextInput
-                              value={avatarPrompt}
-                              onChange={(value) => setAvatarPrompt(value)}
-                              placeholder="Enter description..."
-                              className="w-full"
-                              disabled={generateAvatar.isPending}
-                              maxLength={500}
-                            />
-                          </div>
-
-                          {generateAvatar.isError && (
-                            <div className="text-xs text-red-400/80 bg-red-900/10 border border-red-700/20 rounded-lg px-2.5 py-1.5">
-                              {getErrorMessage(generateAvatar.error, "Failed to generate avatar")}
-                            </div>
-                          )}
-
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={handleGenerateAvatar}
-                              variant="gold"
-                              className="flex-1 justify-center gap-2 !px-3 !py-1.5"
-                              forceUppercase={false}
-                              isLoading={generateAvatar.isPending}
-                              disabled={
-                                generateAvatar.isPending ||
-                                !avatarPrompt.trim() ||
-                                !hasDisplayName ||
-                                hasReachedDailyLimit
-                              }
-                            >
-                              <Sparkles className="w-4 h-4" />
-                              <span>
-                                {generateAvatar.isPending
-                                  ? "Generating..."
-                                  : hasCustomAvatar
-                                    ? "Regenerate"
-                                    : "Generate"}
-                              </span>
-                            </Button>
-
-                            {hasCustomAvatar && (
-                              <Button
-                                onClick={handleDeleteAvatar}
-                                variant="outline"
-                                className="justify-center gap-2 !px-3 !py-1.5"
-                                forceUppercase={false}
-                                isLoading={deleteAvatar.isPending}
-                                disabled={deleteAvatar.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Delete</span>
-                              </Button>
-                            )}
-                          </div>
-
-                          {latestGeneratedImages.length > 0 ? (
-                            <div className="space-y-2">
-                              <p className="text-xs text-white/30">Latest generation</p>
-                              <AvatarImageGrid
-                                images={latestGeneratedImages}
-                                selectedUrl={myAvatar?.avatarUrl}
-                                onSelect={handleSelectAvatar}
-                                isSelecting={selectAvatar.isPending}
-                              />
-                            </div>
-                          ) : (
-                            <p className="text-xs text-white/30">Generate an avatar to see your options.</p>
-                          )}
-
-                          {!hasDisplayName && (
-                            <p className="text-xs text-yellow-400/60">
-                              Connect with Cartridge to create a custom avatar
-                            </p>
-                          )}
-                        </Tabs.Panel>
-
-                        <Tabs.Panel className="space-y-3">
-                          {isGalleryLoading ? (
-                            <div className="flex items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] py-6">
-                              <Loader2 className="w-5 h-5 animate-spin text-gold/40" />
-                            </div>
-                          ) : galleryItems && galleryItems.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                              {galleryItems.map((item, index) => {
-                                const isOwnImage = Boolean(
-                                  item.cartridgeUsername && item.cartridgeUsername === displayName,
-                                );
-                                const isSelected = myAvatar?.avatarUrl === item.imageUrl;
-                                const canSelect = canSelectFromGallery && isOwnImage;
-
-                                return (
-                                  <div key={`${item.imageUrl}-${index}`} className="space-y-1">
-                                    <button
-                                      type="button"
-                                      className={`group relative w-full overflow-hidden rounded-lg border bg-black/20 transition ${
-                                        isSelected ? "border-gold/50" : "border-white/[0.06] hover:border-white/15"
-                                      } ${!canSelect || isSelected ? "cursor-default" : ""}`}
-                                      onClick={() => {
-                                        if (!canSelect || isSelected) return;
-                                        void handleSelectAvatar(item.imageUrl);
-                                      }}
-                                      disabled={!canSelect || isSelected || selectAvatar.isPending}
-                                      aria-pressed={isSelected}
-                                    >
-                                      <img
-                                        className="h-24 w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                                        src={item.imageUrl}
-                                        alt={item.prompt}
-                                      />
-                                      {canSelect && (
-                                        <div
-                                          className={`absolute inset-0 flex items-end justify-center pb-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-150 ${
-                                            isSelected
-                                              ? "bg-black/50 text-gold"
-                                              : "bg-black/0 text-transparent group-hover:bg-black/40 group-hover:text-gold"
-                                          }`}
-                                        >
-                                          {isSelected ? "Active" : "Use"}
-                                        </div>
-                                      )}
-                                    </button>
-                                    <p className="text-[11px] text-white/30 truncate">{item.prompt}</p>
-                                    {item.cartridgeUsername && (
-                                      <p className="text-[10px] text-white/20">@{item.cartridgeUsername}</p>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-white/30">No creations yet. Be the first to generate.</p>
-                          )}
-                        </Tabs.Panel>
-                      </Tabs.Panels>
-                    </Tabs>
-                  </div>
-                </div>
+              <div className="h-8 w-8 rounded-lg overflow-hidden border border-white/10 flex-shrink-0">
+                <img className="h-full w-full object-cover" src={currentAvatarUrl} alt="" />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              <div className="flex-1 text-left">
+                <span className="text-sm text-white/60">Customize Avatar</span>
+              </div>
+              <motion.div animate={{ rotate: showAvatarSection ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="w-4 h-4 text-white/30" />
+              </motion.div>
+            </button>
+
+            {/* Expandable section */}
+            <AnimatePresence initial={false}>
+              {showAvatarSection && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-5 pt-2 space-y-4 border-t border-white/[0.04]">
+                    <div className="flex flex-col sm:flex-row gap-5 items-start">
+                      {/* Avatar Preview */}
+                      <div className="flex-shrink-0 mx-auto sm:mx-0">
+                        <div className="w-32 h-32 rounded-xl overflow-hidden border border-white/10 bg-brown/30">
+                          {isLoadingAvatarOrAccount ? (
+                            <div className="h-full w-full flex items-center justify-center bg-white/[0.03]">
+                              <Loader2 className="w-6 h-6 animate-spin text-gold/50" />
+                            </div>
+                          ) : (
+                            <img className="h-full w-full object-cover" src={currentAvatarUrl} alt={profileAvatarAlt} />
+                          )}
+                        </div>
+                        {myAvatar && myAvatar.generationCount !== undefined && (
+                          <p className="text-[11px] text-white/30 text-center mt-2">
+                            {myAvatar.generationCount}/{dailyGenerationLimit} daily
+                          </p>
+                        )}
+                        {hasReachedDailyLimit && (
+                          <p className="text-[10px] text-amber-300/50 text-center mt-1">
+                            Limit reached{resetCountdownLabel ? ` · ${resetCountdownLabel}` : ""}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Avatar Controls */}
+                      <div className="flex-1 space-y-3 w-full">
+                        <Tabs
+                          variant="selection"
+                          selectedIndex={avatarTabIndex}
+                          onChange={(index) => setAvatarTabIndex(index)}
+                          className="space-y-3"
+                        >
+                          <Tabs.List className="grid grid-cols-2 gap-2">
+                            <Tabs.Tab className="!mx-0 text-xs">Generate</Tabs.Tab>
+                            <Tabs.Tab className="!mx-0 text-xs">Gallery</Tabs.Tab>
+                          </Tabs.List>
+
+                          <Tabs.Panels className="flex-1">
+                            <Tabs.Panel className="space-y-3">
+                              <div>
+                                <label className="text-xs text-white/40 block mb-1.5">
+                                  Describe your avatar (e.g., "cyberpunk warrior")
+                                </label>
+                                <TextInput
+                                  value={avatarPrompt}
+                                  onChange={(value) => setAvatarPrompt(value)}
+                                  placeholder="Enter description..."
+                                  className="w-full"
+                                  disabled={generateAvatar.isPending}
+                                  maxLength={500}
+                                />
+                              </div>
+
+                              {generateAvatar.isError && (
+                                <div className="text-xs text-red-400/80 bg-red-900/10 border border-red-700/20 rounded-lg px-2.5 py-1.5">
+                                  {getErrorMessage(generateAvatar.error, "Failed to generate avatar")}
+                                </div>
+                              )}
+
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={handleGenerateAvatar}
+                                  variant="gold"
+                                  className="flex-1 justify-center gap-2 !px-3 !py-1.5"
+                                  forceUppercase={false}
+                                  isLoading={generateAvatar.isPending}
+                                  disabled={
+                                    generateAvatar.isPending ||
+                                    !avatarPrompt.trim() ||
+                                    !hasOwnDisplayName ||
+                                    hasReachedDailyLimit
+                                  }
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                  <span>
+                                    {generateAvatar.isPending
+                                      ? "Generating..."
+                                      : hasCustomAvatar
+                                        ? "Regenerate"
+                                        : "Generate"}
+                                  </span>
+                                </Button>
+
+                                {hasCustomAvatar && (
+                                  <Button
+                                    onClick={handleDeleteAvatar}
+                                    variant="outline"
+                                    className="justify-center gap-2 !px-3 !py-1.5"
+                                    forceUppercase={false}
+                                    isLoading={deleteAvatar.isPending}
+                                    disabled={deleteAvatar.isPending}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete</span>
+                                  </Button>
+                                )}
+                              </div>
+
+                              {latestGeneratedImages.length > 0 ? (
+                                <div className="space-y-2">
+                                  <p className="text-xs text-white/30">Latest generation</p>
+                                  <AvatarImageGrid
+                                    images={latestGeneratedImages}
+                                    selectedUrl={myAvatar?.avatarUrl}
+                                    onSelect={handleSelectAvatar}
+                                    isSelecting={selectAvatar.isPending}
+                                  />
+                                </div>
+                              ) : (
+                                <p className="text-xs text-white/30">Generate an avatar to see your options.</p>
+                              )}
+
+                              {!hasOwnDisplayName && (
+                                <p className="text-xs text-yellow-400/60">
+                                  Connect with Cartridge to create a custom avatar
+                                </p>
+                              )}
+                            </Tabs.Panel>
+
+                            <Tabs.Panel className="space-y-3">
+                              {isGalleryLoading ? (
+                                <div className="flex items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] py-6">
+                                  <Loader2 className="w-5 h-5 animate-spin text-gold/40" />
+                                </div>
+                              ) : galleryItems && galleryItems.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                  {galleryItems.map((item, index) => {
+                                    const isOwnImage = Boolean(
+                                      item.cartridgeUsername && item.cartridgeUsername === ownDisplayName,
+                                    );
+                                    const isSelected = myAvatar?.avatarUrl === item.imageUrl;
+                                    const canSelect = canSelectFromGallery && isOwnImage;
+
+                                    return (
+                                      <div key={`${item.imageUrl}-${index}`} className="space-y-1">
+                                        <button
+                                          type="button"
+                                          className={`group relative w-full overflow-hidden rounded-lg border bg-black/20 transition ${
+                                            isSelected ? "border-gold/50" : "border-white/[0.06] hover:border-white/15"
+                                          } ${!canSelect || isSelected ? "cursor-default" : ""}`}
+                                          onClick={() => {
+                                            if (!canSelect || isSelected) return;
+                                            void handleSelectAvatar(item.imageUrl);
+                                          }}
+                                          disabled={!canSelect || isSelected || selectAvatar.isPending}
+                                          aria-pressed={isSelected}
+                                        >
+                                          <img
+                                            className="h-24 w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                            src={item.imageUrl}
+                                            alt={item.prompt}
+                                          />
+                                          {canSelect && (
+                                            <div
+                                              className={`absolute inset-0 flex items-end justify-center pb-2 text-[11px] font-semibold uppercase tracking-wide transition-all duration-150 ${
+                                                isSelected
+                                                  ? "bg-black/50 text-gold"
+                                                  : "bg-black/0 text-transparent group-hover:bg-black/40 group-hover:text-gold"
+                                              }`}
+                                            >
+                                              {isSelected ? "Active" : "Use"}
+                                            </div>
+                                          )}
+                                        </button>
+                                        <p className="text-[11px] text-white/30 truncate">{item.prompt}</p>
+                                        {item.cartridgeUsername && (
+                                          <p className="text-[10px] text-white/20">@{item.cartridgeUsername}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-white/30">No creations yet. Be the first to generate.</p>
+                              )}
+                            </Tabs.Panel>
+                          </Tabs.Panels>
+                        </Tabs>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/[0.06] bg-black/30 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg overflow-hidden border border-white/10 flex-shrink-0">
+                <img className="h-full w-full object-cover" src={currentAvatarUrl} alt={profileAvatarAlt} />
+              </div>
+              <div>
+                <div className="text-sm text-white/70">Viewing {displayName}</div>
+                <div className="text-xs text-white/40">Avatar customization is only available on your own profile.</div>
+              </div>
+            </div>
+          </div>
+        )
+      ) : null}
     </section>
   );
 };

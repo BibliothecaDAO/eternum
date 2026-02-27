@@ -1,7 +1,7 @@
 import path from "node:path";
 import { loadConfig } from "../config";
 import { readArtifacts, updateAuthStatus } from "../session/artifacts";
-import { storeSessionFromCallback } from "../session/controller-session";
+import { storeSessionFromCallback } from "../session";
 
 interface AuthCompleteOptions {
   world?: string;

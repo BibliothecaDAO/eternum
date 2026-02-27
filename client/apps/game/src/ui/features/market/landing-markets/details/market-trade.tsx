@@ -2,7 +2,7 @@ import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
 import X from "lucide-react/dist/esm/icons/x";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
@@ -24,6 +24,12 @@ import { TokenIcon } from "../token-icon";
 import { useMarketRedeem } from "../use-market-redeem";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
+const RISK_ACK_SESSION_KEY = "pm_trade_risk_ack_v1";
+
+const getStoredRiskAck = () => {
+  if (typeof window === "undefined") return false;
+  return window.sessionStorage.getItem(RISK_ACK_SESSION_KEY) === "1";
+};
 
 /**
  * Confirmation dialog rendered in a portal
@@ -53,10 +59,18 @@ const TradeConfirmDialog = ({
   onConfirm: () => void;
   isSubmitting: boolean;
 }) => {
-  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
-  useEffect(() => {
-    if (!open) setHasAcknowledgedRisk(false);
-  }, [open]);
+  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState<boolean>(() => getStoredRiskAck());
+
+  const handleRiskChange = (checked: boolean) => {
+    setHasAcknowledgedRisk(checked);
+
+    if (typeof window === "undefined") return;
+    if (checked) {
+      window.sessionStorage.setItem(RISK_ACK_SESSION_KEY, "1");
+    } else {
+      window.sessionStorage.removeItem(RISK_ACK_SESSION_KEY);
+    }
+  };
 
   if (!open) return null;
 
@@ -166,7 +180,7 @@ const TradeConfirmDialog = ({
             <input
               type="checkbox"
               checked={hasAcknowledgedRisk}
-              onChange={(e) => setHasAcknowledgedRisk(e.target.checked)}
+              onChange={(event) => handleRiskChange(event.target.checked)}
               className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-gold"
             />
             <span className="text-gold/80">I understand and accept the risks</span>
