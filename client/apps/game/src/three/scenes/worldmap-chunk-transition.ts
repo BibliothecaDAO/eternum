@@ -21,6 +21,41 @@ interface ManagerUpdateDecisionInput {
   targetChunk: string;
 }
 
+interface EntityActionPathLookupInput<TActionPath> {
+  hasSelectedEntity: boolean;
+  clickedHexKey: string | null;
+  actionPaths: Map<string, TActionPath>;
+  actionPathsTransitionToken: number | null;
+  latestTransitionToken: number;
+}
+
+interface EntityActionPathLookupResult<TActionPath> {
+  shouldClearStaleSelection: boolean;
+  actionPath: TActionPath | null;
+}
+
+interface EntityActionPathsTransitionTokenSyncInput {
+  selectedEntityId: unknown;
+  actionPathCount: number;
+  previousTransitionToken: number | null;
+}
+
+interface EntityActionPathsTransitionTokenForcedRefreshInput {
+  selectedEntityId: unknown;
+  actionPathCount: number;
+  currentChunk: string;
+  targetChunk: string;
+  nextTransitionToken: number;
+  previousTransitionToken: number | null;
+}
+
+interface MissingActionPathOwnershipDecisionInput {
+  selectedEntityId: unknown;
+  actionPathCount: number;
+  actionPathsTransitionToken: number | null;
+  allowPendingLocalOwnership?: boolean;
+}
+
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
@@ -148,6 +183,108 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
   }
 
   return input.currentChunk === input.targetChunk;
+}
+
+/**
+ * Resolve action-path lookup under chunk-transition ownership rules.
+ * Prevents stale action-path maps from being used after rapid transition churn.
+ */
+export function resolveEntityActionPathLookup<TActionPath>(
+  input: EntityActionPathLookupInput<TActionPath>,
+): EntityActionPathLookupResult<TActionPath> {
+  if (!input.hasSelectedEntity) {
+    return {
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    };
+  }
+
+  if (!input.clickedHexKey || input.actionPaths.size === 0) {
+    return {
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    };
+  }
+
+  if (input.actionPathsTransitionToken === null) {
+    return {
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    };
+  }
+
+  if (input.actionPathsTransitionToken !== input.latestTransitionToken) {
+    return {
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    };
+  }
+
+  return {
+    shouldClearStaleSelection: false,
+    actionPath: input.actionPaths.get(input.clickedHexKey) ?? null,
+  };
+}
+
+/**
+ * External entity-action sync can clear ownership when actions disappear, but
+ * must never mint or refresh ownership tokens.
+ */
+export function resolveEntityActionPathsTransitionTokenSync(
+  input: EntityActionPathsTransitionTokenSyncInput,
+): number | null {
+  const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
+  const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
+  if (!hasActivePaths) {
+    return null;
+  }
+
+  return input.previousTransitionToken;
+}
+
+/**
+ * Forced refreshes that stay in the same chunk should preserve action-path
+ * continuity by re-stamping ownership to the latest transition token.
+ */
+export function resolveEntityActionPathsTransitionTokenForForcedRefresh(
+  input: EntityActionPathsTransitionTokenForcedRefreshInput,
+): number | null {
+  const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
+  const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
+  if (!hasActivePaths) {
+    return null;
+  }
+
+  if (input.currentChunk === input.targetChunk) {
+    return input.nextTransitionToken;
+  }
+
+  return input.previousTransitionToken;
+}
+
+/**
+ * Selected entity + active paths without an ownership token is an inconsistent
+ * state that should be cleared to avoid dead, non-interactive selections.
+ */
+export function shouldClearEntitySelectionForMissingActionPathOwnership(
+  input: MissingActionPathOwnershipDecisionInput,
+): boolean {
+  const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
+  const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
+  return hasActivePaths && input.actionPathsTransitionToken === null && !input.allowPendingLocalOwnership;
+}
+
+/**
+ * Selection clear side effects should run only on defined -> nullish
+ * transitions to avoid re-entrant duplicate clears.
+ */
+export function shouldClearEntitySelectionForEntityActionTransition(
+  previousSelectedEntityId: unknown,
+  nextSelectedEntityId: unknown,
+): boolean {
+  const hadSelection = previousSelectedEntityId !== null && previousSelectedEntityId !== undefined;
+  const hasSelection = nextSelectedEntityId !== null && nextSelectedEntityId !== undefined;
+  return hadSelection && !hasSelection;
 }
 
 /**
