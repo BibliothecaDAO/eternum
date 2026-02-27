@@ -1341,7 +1341,7 @@ export default class WorldmapScene extends HexagonScene {
     this.hoverLabelManager.onHexHover(hexCoords);
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
-    if (selectedEntityId && actionPaths.size > 0) {
+    if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
@@ -1462,7 +1462,8 @@ export default class WorldmapScene extends HexagonScene {
 
     const { structure } = this.getHexagonEntity(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
-    const hasActiveEntityAction = Boolean(selectedEntityId && actionPaths.size > 0);
+    const hasActiveEntityAction =
+      selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
 
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
@@ -1476,9 +1477,9 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
+    if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0 && hexCoords) {
       const actionPathLookup = resolveEntityActionPathLookup({
-        selectedEntityId,
+        hasSelectedEntity: true,
         clickedHexKey: ActionPaths.posKey(hexCoords, true),
         actionPaths,
         actionPathsTransitionToken: this.actionPathsTransitionToken,
@@ -5181,7 +5182,7 @@ export default class WorldmapScene extends HexagonScene {
       useUIStore.subscribe(
         (state) => state.entityActions.selectedEntityId,
         (selectedEntityId) => {
-          if (!selectedEntityId) this.clearEntitySelection();
+          if (selectedEntityId === null || selectedEntityId === undefined) this.clearEntitySelection();
         },
       ),
     );
@@ -5220,7 +5221,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const selectedEntityId = uiState.entityActions.selectedEntityId;
-    if (!selectedEntityId) {
+    if (selectedEntityId === null || selectedEntityId === undefined) {
       this.clearEntitySelection();
     } else {
       this.state.updateEntityActionSelectedEntityId(selectedEntityId);

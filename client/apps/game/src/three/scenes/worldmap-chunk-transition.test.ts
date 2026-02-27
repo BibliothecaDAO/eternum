@@ -141,7 +141,7 @@ describe("resolveEntityActionPathLookup", () => {
   it("returns the clicked action path when transition ownership matches", () => {
     const matchingPath = [{ id: "target-a" }];
     const result = resolveEntityActionPathLookup({
-      selectedEntityId: 77,
+      hasSelectedEntity: true,
       clickedHexKey: "10,12",
       actionPaths: new Map<string, Array<{ id: string }>>([["10,12", matchingPath]]),
       actionPathsTransitionToken: 14,
@@ -156,7 +156,7 @@ describe("resolveEntityActionPathLookup", () => {
 
   it("suppresses stale action-path usage when transition token changed", () => {
     const result = resolveEntityActionPathLookup({
-      selectedEntityId: 77,
+      hasSelectedEntity: true,
       clickedHexKey: "10,12",
       actionPaths: new Map<string, Array<{ id: string }>>([["10,12", [{ id: "stale" }]]]),
       actionPathsTransitionToken: 14,
@@ -171,7 +171,7 @@ describe("resolveEntityActionPathLookup", () => {
 
   it("rejects stale lookup during rapid switch churn and accepts refreshed ownership", () => {
     const staleResult = resolveEntityActionPathLookup({
-      selectedEntityId: 99,
+      hasSelectedEntity: true,
       clickedHexKey: "22,8",
       actionPaths: new Map<string, Array<{ id: string }>>([["22,8", [{ id: "stale-target" }]]]),
       actionPathsTransitionToken: 30,
@@ -185,7 +185,7 @@ describe("resolveEntityActionPathLookup", () => {
 
     const freshPath = [{ id: "fresh-target" }];
     const freshResult = resolveEntityActionPathLookup({
-      selectedEntityId: 99,
+      hasSelectedEntity: true,
       clickedHexKey: "22,8",
       actionPaths: new Map<string, Array<{ id: string }>>([["22,8", freshPath]]),
       actionPathsTransitionToken: 31,
@@ -195,6 +195,52 @@ describe("resolveEntityActionPathLookup", () => {
     expect(freshResult).toEqual({
       shouldClearStaleSelection: false,
       actionPath: freshPath,
+    });
+  });
+
+  it("does not clear selection when token is temporarily unavailable", () => {
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "10,12",
+      actionPaths: new Map<string, Array<{ id: string }>>([["10,12", [{ id: "pending" }]]]),
+      actionPathsTransitionToken: null,
+      latestTransitionToken: 22,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    });
+  });
+
+  it("treats falsy selection IDs as valid when caller indicates selected", () => {
+    const path = [{ id: "zero-id-target" }];
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "1,1",
+      actionPaths: new Map<string, Array<{ id: string }>>([["1,1", path]]),
+      actionPathsTransitionToken: 8,
+      latestTransitionToken: 8,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: path,
+    });
+  });
+
+  it("returns no-op when no entity is selected", () => {
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: false,
+      clickedHexKey: "1,1",
+      actionPaths: new Map<string, Array<{ id: string }>>([["1,1", [{ id: "ignored" }]]]),
+      actionPathsTransitionToken: 8,
+      latestTransitionToken: 8,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: null,
     });
   });
 });

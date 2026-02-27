@@ -140,6 +140,10 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   const estimatedRow = Math.round(worldPosition.z / vertDist);
   const estimatedOffset = getRowOffset(estimatedRow, horizDist);
   const estimatedCol = Math.round((worldPosition.x + estimatedOffset) / horizDist);
+  const originX = estimatedCol * horizDist - estimatedOffset;
+  const originZ = estimatedRow * vertDist;
+  const localWorldX = worldPosition.x - originX;
+  const localWorldZ = worldPosition.z - originZ;
 
   let bestRow = estimatedRow;
   let bestCol = estimatedCol;
@@ -148,12 +152,14 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   for (let row = estimatedRow - 1; row <= estimatedRow + 1; row += 1) {
     const rowOffset = getRowOffset(row, horizDist);
     const nearestColForRow = Math.round((worldPosition.x + rowOffset) / horizDist);
+    const localCenterZ = (row - estimatedRow) * vertDist;
 
     for (let col = nearestColForRow - 1; col <= nearestColForRow + 1; col += 1) {
-      const centerX = col * horizDist - rowOffset;
-      const centerZ = row * vertDist;
-      const dx = worldPosition.x - centerX;
-      const dz = worldPosition.z - centerZ;
+      // Compare in a local coordinate frame near the estimated cell to avoid
+      // precision loss at very large world coordinates.
+      const localCenterX = (col - estimatedCol) * horizDist - (rowOffset - estimatedOffset);
+      const dx = localWorldX - localCenterX;
+      const dz = localWorldZ - localCenterZ;
       const distanceSquared = dx * dx + dz * dz;
 
       if (

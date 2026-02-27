@@ -22,7 +22,7 @@ interface ManagerUpdateDecisionInput {
 }
 
 interface EntityActionPathLookupInput<TActionPath> {
-  selectedEntityId: unknown;
+  hasSelectedEntity: boolean;
   clickedHexKey: string | null;
   actionPaths: Map<string, TActionPath>;
   actionPathsTransitionToken: number | null;
@@ -170,7 +170,7 @@ export function shouldRunManagerUpdate(input: ManagerUpdateDecisionInput): boole
 export function resolveEntityActionPathLookup<TActionPath>(
   input: EntityActionPathLookupInput<TActionPath>,
 ): EntityActionPathLookupResult<TActionPath> {
-  if (input.selectedEntityId === null || input.selectedEntityId === undefined) {
+  if (!input.hasSelectedEntity) {
     return {
       shouldClearStaleSelection: false,
       actionPath: null,
@@ -184,10 +184,14 @@ export function resolveEntityActionPathLookup<TActionPath>(
     };
   }
 
-  if (
-    input.actionPathsTransitionToken === null ||
-    input.actionPathsTransitionToken !== input.latestTransitionToken
-  ) {
+  if (input.actionPathsTransitionToken === null) {
+    return {
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    };
+  }
+
+  if (input.actionPathsTransitionToken !== input.latestTransitionToken) {
     return {
       shouldClearStaleSelection: true,
       actionPath: null,
