@@ -101,14 +101,15 @@ vi.mock("@/three/utils/hex-geometry-debug", () => ({
 }));
 
 const { InteractiveHexManager } = await import("./interactive-hex-manager");
+type ResolveSubject = {
+  visibleHexes: Set<string>;
+  allHexes: Set<string>;
+  isRenderingAllHexes: boolean;
+  position: THREE.Vector3;
+};
 
-function createResolveSubject(visibleHexKeys: string[]): InteractiveHexManager {
-  const subject = Object.create(InteractiveHexManager.prototype) as InteractiveHexManager & {
-    visibleHexes: Set<string>;
-    allHexes: Set<string>;
-    isRenderingAllHexes: boolean;
-    position: THREE.Vector3;
-  };
+function createResolveSubject(visibleHexKeys: string[]): ResolveSubject {
+  const subject = Object.create((InteractiveHexManager as any).prototype) as ResolveSubject;
 
   subject.visibleHexes = new Set(visibleHexKeys);
   subject.allHexes = new Set();
