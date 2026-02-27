@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveEntityActionPathsTransitionTokenSync,
+  resolveEntityActionPathsTransitionTokenForForcedRefresh,
+  shouldClearEntitySelectionForMissingActionPathOwnership,
+  shouldClearEntitySelectionForEntityActionTransition,
   resolveRefreshCompletionActions,
   resolveDuplicateTileUpdateMode,
   resolveDuplicateTileUpdateActions,
@@ -23,6 +27,7 @@ import {
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   resolveControlsChangeChunkRefreshPlan,
+  resolveEntityActionPathLookup,
 } from "./worldmap-chunk-transition";
 
 describe("resolveChunkSwitchActions", () => {
@@ -133,6 +138,277 @@ describe("shouldRunManagerUpdate", () => {
         targetChunk: "24,24",
       }),
     ).toBe(true);
+  });
+});
+
+describe("resolveEntityActionPathLookup", () => {
+  it("returns the clicked action path when transition ownership matches", () => {
+    const matchingPath = [{ id: "target-a" }];
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "10,12",
+      actionPaths: new Map<string, Array<{ id: string }>>([["10,12", matchingPath]]),
+      actionPathsTransitionToken: 14,
+      latestTransitionToken: 14,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: matchingPath,
+    });
+  });
+
+  it("suppresses stale action-path usage when transition token changed", () => {
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "10,12",
+      actionPaths: new Map<string, Array<{ id: string }>>([["10,12", [{ id: "stale" }]]]),
+      actionPathsTransitionToken: 14,
+      latestTransitionToken: 15,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    });
+  });
+
+  it("rejects stale lookup during rapid switch churn and accepts refreshed ownership", () => {
+    const staleResult = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "22,8",
+      actionPaths: new Map<string, Array<{ id: string }>>([["22,8", [{ id: "stale-target" }]]]),
+      actionPathsTransitionToken: 30,
+      latestTransitionToken: 31,
+    });
+
+    expect(staleResult).toEqual({
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    });
+
+    const freshPath = [{ id: "fresh-target" }];
+    const freshResult = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "22,8",
+      actionPaths: new Map<string, Array<{ id: string }>>([["22,8", freshPath]]),
+      actionPathsTransitionToken: 31,
+      latestTransitionToken: 31,
+    });
+
+    expect(freshResult).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: freshPath,
+    });
+  });
+
+  it("keeps stale lookup blocked after external sync churn preserves older ownership token", () => {
+    const preservedToken = resolveEntityActionPathsTransitionTokenSync({
+      selectedEntityId: 77,
+      actionPathCount: 1,
+      previousTransitionToken: 30,
+    });
+
+    expect(preservedToken).toBe(30);
+
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "22,8",
+      actionPaths: new Map<string, Array<{ id: string }>>([["22,8", [{ id: "stale-after-sync" }]]]),
+      actionPathsTransitionToken: preservedToken,
+      latestTransitionToken: 31,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    });
+  });
+
+  it("does not clear selection when token is temporarily unavailable", () => {
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "10,12",
+      actionPaths: new Map<string, Array<{ id: string }>>([["10,12", [{ id: "pending" }]]]),
+      actionPathsTransitionToken: null,
+      latestTransitionToken: 22,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    });
+  });
+
+  it("treats falsy selection IDs as valid when caller indicates selected", () => {
+    const path = [{ id: "zero-id-target" }];
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "1,1",
+      actionPaths: new Map<string, Array<{ id: string }>>([["1,1", path]]),
+      actionPathsTransitionToken: 8,
+      latestTransitionToken: 8,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: path,
+    });
+  });
+
+  it("returns no-op when no entity is selected", () => {
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: false,
+      clickedHexKey: "1,1",
+      actionPaths: new Map<string, Array<{ id: string }>>([["1,1", [{ id: "ignored" }]]]),
+      actionPathsTransitionToken: 8,
+      latestTransitionToken: 8,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: false,
+      actionPath: null,
+    });
+  });
+});
+
+describe("resolveEntityActionPathsTransitionTokenSync", () => {
+  it("does not re-stamp stale ownership token during external sync with active paths", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenSync({
+        selectedEntityId: 11,
+        actionPathCount: 4,
+        previousTransitionToken: 14,
+      }),
+    ).toBe(14);
+  });
+
+  it("does not mint ownership when active paths exist without a prior token", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenSync({
+        selectedEntityId: 11,
+        actionPathCount: 4,
+        previousTransitionToken: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("clears ownership token when active paths disappear", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenSync({
+        selectedEntityId: 11,
+        actionPathCount: 0,
+        previousTransitionToken: 14,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("shouldClearEntitySelectionForMissingActionPathOwnership", () => {
+  it("clears when selected entity has active paths but no ownership token", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 2,
+        actionPathsTransitionToken: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not clear when there are no active paths", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 0,
+        actionPathsTransitionToken: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not clear when no entity is selected", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: null,
+        actionPathCount: 2,
+        actionPathsTransitionToken: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not clear when ownership token is present", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 2,
+        actionPathsTransitionToken: 12,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not clear while local action-path ownership stamping is pending", () => {
+    expect(
+      shouldClearEntitySelectionForMissingActionPathOwnership({
+        selectedEntityId: 33,
+        actionPathCount: 2,
+        actionPathsTransitionToken: null,
+        allowPendingLocalOwnership: true,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolveEntityActionPathsTransitionTokenForForcedRefresh", () => {
+  it("re-stamps ownership to latest token on same-chunk forced refresh", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 3,
+        currentChunk: "16,16",
+        targetChunk: "16,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: 51,
+      }),
+    ).toBe(52);
+  });
+
+  it("does not change ownership for non-local forced refreshes", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 3,
+        currentChunk: "16,16",
+        targetChunk: "32,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: 51,
+      }),
+    ).toBe(51);
+  });
+
+  it("clears ownership when forced refresh runs without active selection paths", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 0,
+        currentChunk: "16,16",
+        targetChunk: "16,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: 51,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("shouldClearEntitySelectionForEntityActionTransition", () => {
+  it("clears only on defined -> null transition", () => {
+    expect(shouldClearEntitySelectionForEntityActionTransition(42, null)).toBe(true);
+  });
+
+  it("does not clear for repeated null -> null callbacks", () => {
+    expect(shouldClearEntitySelectionForEntityActionTransition(null, null)).toBe(false);
+  });
+
+  it("treats falsy IDs as valid selected values for transition checks", () => {
+    expect(shouldClearEntitySelectionForEntityActionTransition(0, null)).toBe(true);
   });
 });
 
