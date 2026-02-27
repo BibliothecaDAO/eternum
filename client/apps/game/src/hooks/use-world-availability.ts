@@ -12,7 +12,7 @@ import { useQueries } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
@@ -97,6 +97,7 @@ const fetchTokenBalance = async (
 };
 
 export interface WorldConfigMeta {
+  startSettlingAt: number | null;
   startMainAt: number | null;
   endAt: number | null;
   registrationCount: number | null;
@@ -215,6 +216,7 @@ const fetchWorldConfigMeta = async (
   playerAddress?: string | null,
 ): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
+    startSettlingAt: null,
     startMainAt: null,
     endAt: null,
     registrationCount: null,
@@ -237,6 +239,7 @@ const fetchWorldConfigMeta = async (
     if (!response.ok) return meta;
     const [row] = (await response.json()) as Record<string, unknown>[];
     if (row) {
+      if (row.start_settling_at != null) meta.startSettlingAt = parseMaybeHexToNumber(row.start_settling_at) ?? null;
       if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
       if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
       if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
