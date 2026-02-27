@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveEntityActionPathsTransitionTokenSync,
+  shouldClearEntitySelectionForEntityActionTransition,
   resolveRefreshCompletionActions,
   resolveDuplicateTileUpdateMode,
   resolveDuplicateTileUpdateActions,
@@ -198,6 +200,29 @@ describe("resolveEntityActionPathLookup", () => {
     });
   });
 
+  it("keeps stale lookup blocked after external sync churn preserves older ownership token", () => {
+    const preservedToken = resolveEntityActionPathsTransitionTokenSync({
+      selectedEntityId: 77,
+      actionPathCount: 1,
+      previousTransitionToken: 30,
+    });
+
+    expect(preservedToken).toBe(30);
+
+    const result = resolveEntityActionPathLookup({
+      hasSelectedEntity: true,
+      clickedHexKey: "22,8",
+      actionPaths: new Map<string, Array<{ id: string }>>([["22,8", [{ id: "stale-after-sync" }]]]),
+      actionPathsTransitionToken: preservedToken,
+      latestTransitionToken: 31,
+    });
+
+    expect(result).toEqual({
+      shouldClearStaleSelection: true,
+      actionPath: null,
+    });
+  });
+
   it("does not clear selection when token is temporarily unavailable", () => {
     const result = resolveEntityActionPathLookup({
       hasSelectedEntity: true,
@@ -242,6 +267,52 @@ describe("resolveEntityActionPathLookup", () => {
       shouldClearStaleSelection: false,
       actionPath: null,
     });
+  });
+});
+
+describe("resolveEntityActionPathsTransitionTokenSync", () => {
+  it("does not re-stamp stale ownership token during external sync with active paths", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenSync({
+        selectedEntityId: 11,
+        actionPathCount: 4,
+        previousTransitionToken: 14,
+      }),
+    ).toBe(14);
+  });
+
+  it("does not mint ownership when active paths exist without a prior token", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenSync({
+        selectedEntityId: 11,
+        actionPathCount: 4,
+        previousTransitionToken: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("clears ownership token when active paths disappear", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenSync({
+        selectedEntityId: 11,
+        actionPathCount: 0,
+        previousTransitionToken: 14,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("shouldClearEntitySelectionForEntityActionTransition", () => {
+  it("clears only on defined -> null transition", () => {
+    expect(shouldClearEntitySelectionForEntityActionTransition(42, null)).toBe(true);
+  });
+
+  it("does not clear for repeated null -> null callbacks", () => {
+    expect(shouldClearEntitySelectionForEntityActionTransition(null, null)).toBe(false);
+  });
+
+  it("treats falsy IDs as valid selected values for transition checks", () => {
+    expect(shouldClearEntitySelectionForEntityActionTransition(0, null)).toBe(true);
   });
 });
 

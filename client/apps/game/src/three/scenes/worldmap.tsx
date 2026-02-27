@@ -113,7 +113,9 @@ import {
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
   resolveEntityActionPathLookup,
+  resolveEntityActionPathsTransitionTokenSync,
   shouldRequestTileRefreshForStructureBoundsChange,
+  shouldClearEntitySelectionForEntityActionTransition,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
@@ -1341,6 +1343,8 @@ export default class WorldmapScene extends HexagonScene {
     this.hoverLabelManager.onHexHover(hexCoords);
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
+    // Entity IDs can be valid falsy values (for example 0), so nullish checks
+    // are required to distinguish "no selection" from a real selected entity.
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
@@ -2013,9 +2017,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private syncEntityActionPathsTransitionToken(): void {
-    const hasActivePaths =
-      this.state.entityActions.selectedEntityId !== null && this.state.entityActions.actionPaths.size > 0;
-    this.actionPathsTransitionToken = hasActivePaths ? this.chunkTransitionToken : null;
+    this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenSync({
+      selectedEntityId: this.state.entityActions.selectedEntityId,
+      actionPathCount: this.state.entityActions.actionPaths.size,
+      previousTransitionToken: this.actionPathsTransitionToken,
+    });
   }
 
   private clearEntitySelection() {
@@ -5147,9 +5153,17 @@ export default class WorldmapScene extends HexagonScene {
     this.storeSubscriptions.push(
       useUIStore.subscribe(
         (state) => state.entityActions,
-        (armyActions) => {
-          this.state.entityActions = armyActions;
+        (nextEntityActions, previousEntityActions) => {
+          this.state.entityActions = nextEntityActions;
           this.syncEntityActionPathsTransitionToken();
+          if (
+            shouldClearEntitySelectionForEntityActionTransition(
+              previousEntityActions?.selectedEntityId,
+              nextEntityActions.selectedEntityId,
+            )
+          ) {
+            this.clearEntitySelection();
+          }
         },
       ),
     );
@@ -5174,15 +5188,6 @@ export default class WorldmapScene extends HexagonScene {
           if (this.controls) {
             this.controls.enableZoom = enableMapZoom;
           }
-        },
-      ),
-    );
-
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.entityActions.selectedEntityId,
-        (selectedEntityId) => {
-          if (selectedEntityId === null || selectedEntityId === undefined) this.clearEntitySelection();
         },
       ),
     );

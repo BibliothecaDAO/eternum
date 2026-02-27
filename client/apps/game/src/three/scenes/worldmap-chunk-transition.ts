@@ -34,6 +34,12 @@ interface EntityActionPathLookupResult<TActionPath> {
   actionPath: TActionPath | null;
 }
 
+interface EntityActionPathsTransitionTokenSyncInput {
+  selectedEntityId: unknown;
+  actionPathCount: number;
+  previousTransitionToken: number | null;
+}
+
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
@@ -202,6 +208,33 @@ export function resolveEntityActionPathLookup<TActionPath>(
     shouldClearStaleSelection: false,
     actionPath: input.actionPaths.get(input.clickedHexKey) ?? null,
   };
+}
+
+/**
+ * External entity-action sync can clear ownership when actions disappear, but
+ * must never mint or refresh ownership tokens.
+ */
+export function resolveEntityActionPathsTransitionTokenSync(input: EntityActionPathsTransitionTokenSyncInput): number | null {
+  const hasSelectedEntity = input.selectedEntityId !== null && input.selectedEntityId !== undefined;
+  const hasActivePaths = hasSelectedEntity && input.actionPathCount > 0;
+  if (!hasActivePaths) {
+    return null;
+  }
+
+  return input.previousTransitionToken;
+}
+
+/**
+ * Selection clear side effects should run only on defined -> nullish
+ * transitions to avoid re-entrant duplicate clears.
+ */
+export function shouldClearEntitySelectionForEntityActionTransition(
+  previousSelectedEntityId: unknown,
+  nextSelectedEntityId: unknown,
+): boolean {
+  const hadSelection = previousSelectedEntityId !== null && previousSelectedEntityId !== undefined;
+  const hasSelection = nextSelectedEntityId !== null && nextSelectedEntityId !== undefined;
+  return hadSelection && !hasSelection;
 }
 
 /**
