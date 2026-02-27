@@ -6,43 +6,130 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { messages } from "./signing-policy";
 
-// Get entry token address from active world profile, fallback to env var
-const activeWorld = getActiveWorld();
-const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
-const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+const isNonZeroAddress = (address?: string | null): address is string => {
+  return typeof address === "string" && address.length > 0 && !/^0x0*$/i.test(address);
+};
 
-const entryTokenPolicies =
-  entryTokenAddress && entryTokenAddress !== "0x0"
-    ? {
-        [entryTokenAddress]: {
-          methods: [
-            {
-              name: "token_lock",
-              entrypoint: "token_lock",
-            },
-          ],
-        },
-      }
-    : {};
+const getTokenPolicies = () => {
+  const activeWorld = getActiveWorld();
+  const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
+  const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
 
-const feeTokenPolicies = feeTokenAddress
-  ? {
-      [feeTokenAddress]: {
+  return {
+    ...(isNonZeroAddress(entryTokenAddress)
+      ? {
+          [entryTokenAddress]: {
+            methods: [
+              {
+                name: "token_lock",
+                entrypoint: "token_lock",
+              },
+            ],
+          },
+        }
+      : {}),
+    ...(isNonZeroAddress(feeTokenAddress)
+      ? {
+          [feeTokenAddress]: {
+            methods: [
+              {
+                name: "approve",
+                entrypoint: "approve",
+              },
+            ],
+          },
+        }
+      : {}),
+  };
+};
+
+type ForgePolicyOptions = {
+  blitzRealmSystemsAddress: string;
+  vrfProviderAddress?: string;
+};
+
+export const buildForgePolicies = ({ blitzRealmSystemsAddress, vrfProviderAddress }: ForgePolicyOptions) =>
+  toSessionPolicies({
+    contracts: {
+      [blitzRealmSystemsAddress]: {
         methods: [
           {
-            name: "approve",
-            entrypoint: "approve",
+            name: "make_hyperstructures",
+            entrypoint: "make_hyperstructures",
           },
         ],
       },
-    }
-  : {};
+      ...(isNonZeroAddress(vrfProviderAddress)
+        ? {
+            [vrfProviderAddress]: {
+              methods: [
+                {
+                  name: "request_random",
+                  entrypoint: "request_random",
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+  });
+
+type RegisterPolicyOptions = {
+  blitzRealmSystemsAddress: string;
+  feeTokenAddress?: string | null;
+  entryTokenAddress?: string | null;
+};
+
+export const buildRegisterPolicies = ({
+  blitzRealmSystemsAddress,
+  feeTokenAddress,
+  entryTokenAddress,
+}: RegisterPolicyOptions) =>
+  toSessionPolicies({
+    contracts: {
+      [blitzRealmSystemsAddress]: {
+        methods: [
+          {
+            name: "register",
+            entrypoint: "register",
+          },
+          {
+            name: "obtain_entry_token",
+            entrypoint: "obtain_entry_token",
+          },
+        ],
+      },
+      ...(isNonZeroAddress(feeTokenAddress)
+        ? {
+            [feeTokenAddress]: {
+              methods: [
+                {
+                  name: "approve",
+                  entrypoint: "approve",
+                },
+              ],
+            },
+          }
+        : {}),
+      ...(isNonZeroAddress(entryTokenAddress)
+        ? {
+            [entryTokenAddress]: {
+              methods: [
+                {
+                  name: "token_lock",
+                  entrypoint: "token_lock",
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+  });
 
 export const buildPolicies = (manifest: any) =>
   toSessionPolicies({
     contracts: {
-      ...entryTokenPolicies,
-      ...feeTokenPolicies,
+      ...getTokenPolicies(),
       [getContractByName(manifest, "s1_eternum", "blitz_realm_systems").address]: {
         methods: [
           {

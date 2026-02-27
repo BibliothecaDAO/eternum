@@ -6,6 +6,9 @@
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { buildRegisterPolicies } from "@/hooks/context/policies";
+import { refreshSessionPoliciesWithPolicies } from "@/hooks/context/session-policy-refresh";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
@@ -156,6 +159,7 @@ export const useWorldRegistration = ({
   enabled = true,
 }: UseWorldRegistrationProps): UseWorldRegistrationReturn => {
   const { account, address } = useAccount();
+  const connector = useAccountStore((state) => state.connector);
   const { usernameFelt, isLoading: usernameLoading } = useUsername();
 
   const [registrationStage, setRegistrationStage] = useState<RegistrationStage>("idle");
@@ -267,6 +271,25 @@ export const useWorldRegistration = ({
     return address;
   }, []);
 
+  const ensureRegistrationSessionPolicies = useCallback(
+    async (blitzRealmSystemsAddress: string): Promise<void> => {
+      if (!connector) return;
+
+      try {
+        const registerPolicies = buildRegisterPolicies({
+          blitzRealmSystemsAddress,
+          feeTokenAddress: config?.feeTokenAddress,
+          entryTokenAddress: config?.entryTokenAddress,
+        });
+
+        await refreshSessionPoliciesWithPolicies(connector, registerPolicies, `register:${chain}:${worldName}`);
+      } catch (policyError) {
+        console.warn("Failed to refresh registration session policies:", policyError);
+      }
+    },
+    [connector, config?.feeTokenAddress, config?.entryTokenAddress, chain, worldName],
+  );
+
   /**
    * Build calls to obtain entry token (approve fee + mint)
    */
@@ -377,6 +400,8 @@ export const useWorldRegistration = ({
       const contracts = await resolveContracts();
       const blitzSystemsAddress = await getBlitzRealmSystemsAddress(contracts);
 
+      await ensureRegistrationSessionPolicies(blitzSystemsAddress);
+
       // Cast account to starknet Account for execute
       const starknetAccount = account as unknown as Account;
 
@@ -459,6 +484,7 @@ export const useWorldRegistration = ({
     requiresEntryToken,
     resolveContracts,
     getBlitzRealmSystemsAddress,
+    ensureRegistrationSessionPolicies,
     buildObtainTokenCalls,
     buildRegisterCalls,
     waitForEntryToken,

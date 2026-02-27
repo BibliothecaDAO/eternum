@@ -1,7 +1,14 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeries, type FactorySeries } from "@/hooks/use-factory-series";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
+import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { Controller } from "@/ui/modules/controller/controller";
+import {
+  getChainLabel,
+  resolveConnectedTxChainFromRuntime,
+  switchWalletToChain,
+  type WalletChainControllerLike,
+} from "@/ui/utils/network-switch";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { EternumProvider } from "@bibliothecadao/provider";
 import type { Config as EternumConfig } from "@bibliothecadao/types";
@@ -44,6 +51,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import XCircle from "lucide-react/dist/esm/icons/x-circle";
+import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
@@ -273,11 +281,19 @@ interface FactoryPageProps {
   embedded?: boolean;
 }
 
+type FactorySelectableChain = "mainnet" | "slot";
+
 export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const navigate = useNavigate();
-  const { account, accountName } = useAccountStore();
+  const { account, accountName, connector } = useAccountStore();
+  const { chainId } = useAccount();
+  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
+  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
+  const [showSwitchNetworkPrompt, setShowSwitchNetworkPrompt] = useState(false);
 
-  const currentChain = env.VITE_PUBLIC_CHAIN as ChainType;
+  const defaultFactoryChain: FactorySelectableChain = env.VITE_PUBLIC_CHAIN === "mainnet" ? "mainnet" : "slot";
+  const [currentChain, setCurrentChain] = useState<FactorySelectableChain>(defaultFactoryChain);
+
   const { refreshStatuses, checkIndexerExists, getWorldDeployedAddressLocal } = useFactoryAdmin(currentChain);
   const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
   const defaultBlitzRegistration = useMemo(() => getDefaultBlitzRegistrationConfig(currentChain), [currentChain]);
@@ -403,6 +419,29 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     [blitzFeeRecipientOverrides, defaultBlitzFeeRecipient],
   );
 
+  const handleFactoryChainToggle = useCallback(
+    (targetChain: FactorySelectableChain) => {
+      if (targetChain === currentChain) return;
+      setCurrentChain(targetChain);
+
+      if (account?.address && connectedTxChain !== targetChain) {
+        setShowSwitchNetworkPrompt(true);
+      }
+    },
+    [account?.address, connectedTxChain, currentChain],
+  );
+
+  const handleSwitchWalletNetwork = useCallback(async () => {
+    const switched = await switchWalletToChain({
+      controller,
+      targetChain: currentChain,
+    });
+
+    if (switched) {
+      setShowSwitchNetworkPrompt(false);
+    }
+  }, [controller, currentChain]);
+
   // Check indexer and deployment status for all stored worlds
   const checkAllWorldStatuses = useCallback(async () => {
     const worlds = getStoredWorldNames();
@@ -496,6 +535,16 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       setCurrentWorldName(newWorldName);
     }
   }, [accountName, worldName]);
+
+  useEffect(() => {
+    setMaxActions(getDefaultMaxActionsForChain(currentChain));
+  }, [currentChain]);
+
+  useEffect(() => {
+    if (connectedTxChain === currentChain) {
+      setShowSwitchNetworkPrompt(false);
+    }
+  }, [connectedTxChain, currentChain]);
 
   // Check indexer and deployment statuses when stored world names change
   useEffect(() => {
@@ -1004,10 +1053,27 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                       )}
                     </div>
                   </div>
-                  <div className="px-4 py-2 bg-black/40 rounded-xl border border-gold/20">
-                    <span className="text-xs font-bold text-gold/70 uppercase tracking-wide">
-                      Network: {currentChain}
-                    </span>
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-gold/70 uppercase tracking-wide block">Network</span>
+                    <div className="inline-flex rounded-xl border border-gold/20 bg-black/40 p-1">
+                      {(["slot", "mainnet"] as const).map((chain) => {
+                        const isActive = currentChain === chain;
+                        return (
+                          <button
+                            key={chain}
+                            type="button"
+                            onClick={() => handleFactoryChainToggle(chain)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                              isActive
+                                ? "bg-gold/25 text-gold border border-gold/40"
+                                : "text-gold/60 hover:text-gold hover:bg-gold/10 border border-transparent"
+                            }`}
+                          >
+                            {getChainLabel(chain)}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -2558,6 +2624,15 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
           </div>
         )}
       </div>
+
+      <SwitchNetworkPrompt
+        open={showSwitchNetworkPrompt}
+        description={`Factory is set to ${getChainLabel(currentChain)}.`}
+        hint={`Switch your wallet network to ${getChainLabel(currentChain)} to keep deploy/config transactions aligned.`}
+        switchLabel={`Switch to ${getChainLabel(currentChain)}`}
+        onClose={() => setShowSwitchNetworkPrompt(false)}
+        onSwitch={handleSwitchWalletNetwork}
+      />
     </div>
   );
 };
