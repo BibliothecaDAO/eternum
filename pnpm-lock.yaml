@@ -7,11 +7,11 @@ settings:
 catalogs:
   default:
     '@cartridge/connector':
-      specifier: ^0.12.1
-      version: 0.12.2
+      specifier: 0.13.10-alpha.1
+      version: 0.13.10-alpha.1
     '@cartridge/controller':
-      specifier: ^0.12.1
-      version: 0.12.2
+      specifier: 0.13.10-alpha.1
+      version: 0.13.10-alpha.1
     '@dojoengine/core':
       specifier: 1.7.0-preview.3
       version: 1.7.0-preview.3
@@ -85,10 +85,10 @@ importers:
     dependencies:
       '@cartridge/connector':
         specifier: 'catalog:'
-        version: 0.12.2(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 0.13.10-alpha.1(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@cartridge/controller':
         specifier: 'catalog:'
-        version: 0.12.2(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 0.13.10-alpha.1(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/react':
         specifier: 'catalog:'
         version: 1.7.0-preview.3(@types/node@20.19.33)(@types/react@18.3.28)(bufferutil@4.1.0)(immer@11.1.4)(jsdom@28.1.0(@noble/hashes@1.8.0))(react@18.3.1)(starknet@8.9.2)(terser@5.46.0)(type-fest@0.21.3)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -801,7 +801,7 @@ importers:
         version: 5.0.3
       '@starknet-react/core':
         specifier: 'catalog:'
-        version: 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
+        version: 5.0.3(bufferutil@4.1.0)(get-starknet-core@3.3.5(starknet@8.9.2))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@tanstack/react-query':
         specifier: ^5.59.15
         version: 5.90.21(react@18.3.1)
@@ -843,7 +843,7 @@ importers:
         version: 8.9.2
       starknetkit:
         specifier: 'catalog:'
-        version: 2.12.2(3eea9ed6b7d00e41b769c05cd8406548)
+        version: 2.12.2(kzhepswfnyg64kd7v4t47tqs3y)
       storybook:
         specifier: ^8.3.2
         version: 8.6.17(bufferutil@4.1.0)(prettier@3.8.1)(utf-8-validate@5.0.10)
@@ -952,16 +952,16 @@ importers:
         version: link:../../../packages/types
       '@cartridge/controller':
         specifier: ^0.13.4
-        version: 0.13.9(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
+        version: 0.13.9(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@cartridge/controller-wasm':
         specifier: 0.9.4
         version: 0.9.4
       '@mariozechner/pi-agent-core':
         specifier: ^0.52.7
-        version: 0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)
+        version: 0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)
       '@mariozechner/pi-ai':
         specifier: ^0.52.7
-        version: 0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)
+        version: 0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)
       '@mariozechner/pi-tui':
         specifier: ^0.52.7
         version: 0.52.12
@@ -2367,19 +2367,16 @@ packages:
   '@cartridge/account-wasm@0.7.13':
     resolution: {integrity: sha512-2/cFS96jN31N9piK2Hs/Egxz6cstJ9gV8pgBrqo5vSPckFv2yD9u/8euqDD26MJtLnDa59OYefNJBbKgsK9vHg==}
 
-  '@cartridge/connector@0.12.2':
-    resolution: {integrity: sha512-l6vpSzHiiwegfu42h7ENxyj1KFd0s5qjZSkeXrTUlgl74ci6jEnhwRfcJxEdBI0OS9tiJMwF1FIO3sg+Kan5FA==}
+  '@cartridge/connector@0.13.10-alpha.1':
+    resolution: {integrity: sha512-FLktE7z1HndvxLVOMIZG+FySlzaRTanWAcaFBlJPGyVVuX0W/V6wZBIooowfB62S17k7dqP3+E/6L6auQobJyw==}
     peerDependencies:
       '@starknet-react/core': ^5.0.1
-
-  '@cartridge/controller-wasm@0.9.1':
-    resolution: {integrity: sha512-MfPj/6prknofOlECO9I+NI/pjoyg/ek9Rk0yPOEUi5Gs85f1GMogkAbvyiOmDjNGj6G/tIowJI8x2wBstO1aRQ==}
 
   '@cartridge/controller-wasm@0.9.4':
     resolution: {integrity: sha512-hkvXPhAnjY57MhdJfUWK5htCFeOv06ChwYtrsx3AKJRnNW9HU25dfWHqWPdy875/2KmqIBDVTdoxddhoHgmrBw==}
 
-  '@cartridge/controller@0.12.2':
-    resolution: {integrity: sha512-+dwSiKupd2uTUPday/uLLEEDGMAga/6NWNvhMXF+1v45E/WPjJS5Gq6WLnhB9xnwlx1Q5Q5AaDMe2mG+dK8MyA==}
+  '@cartridge/controller@0.13.10-alpha.1':
+    resolution: {integrity: sha512-vtCcVhvjpxYm/vQ5Ln4DuEkJjIEqXBZIul5j6vt0c0RsbnzkpH84uZEmqQs0lYSD8bxaGcmpPWfkmic29YdFKw==}
 
   '@cartridge/controller@0.13.9':
     resolution: {integrity: sha512-LVjoBN8/Fa2Hv5bjOUBWcaJSxFthqr5JikUPZo3NERnLloUHOtGQs6HnIFOwP4N5i0A+GyTJVLa+fmk49ZJERg==}
@@ -15256,6 +15253,12 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
+  '@anthropic-ai/sdk@0.73.0(zod@3.25.76)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 3.25.76
+
   '@anthropic-ai/sdk@0.73.0(zod@4.3.6)':
     dependencies:
       json-schema-to-ts: 3.1.1
@@ -15309,7 +15312,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@argent/x-ui@1.109.1(d7f601654351ba4ea713fa6770f03e1b)':
+  '@argent/x-ui@1.109.1(x5inlag3snqxppko66w3uwcf6u)':
     dependencies:
       '@chakra-ui/react': 2.10.9(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(framer-motion@11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@emotion/react': 11.14.0(@types/react@18.3.28)(react@18.3.1)
@@ -16778,10 +16781,9 @@ snapshots:
 
   '@cartridge/account-wasm@0.7.13': {}
 
-  '@cartridge/connector@0.12.2(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@cartridge/connector@0.13.10-alpha.1(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@cartridge/controller': 0.12.2(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@starknet-io/get-starknet-wallet-standard': 5.0.0-beta.0(typescript@5.9.3)(zod@3.25.76)
+      '@cartridge/controller': 0.13.10-alpha.1(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@starknet-react/core': 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -16815,14 +16817,13 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@cartridge/controller-wasm@0.9.1': {}
-
   '@cartridge/controller-wasm@0.9.4': {}
 
-  '@cartridge/controller@0.12.2(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@cartridge/controller@0.13.10-alpha.1(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@cartridge/controller-wasm': 0.9.1
+      '@cartridge/controller-wasm': 0.9.4
       '@cartridge/penpal': 6.2.4
+      '@starknet-io/get-starknet-wallet-standard': 5.0.0-beta.0(typescript@5.9.3)(zod@3.25.76)
       '@starknet-io/types-js': 0.9.1
       '@telegram-apps/sdk': 2.11.3
       '@turnkey/sdk-browser': 4.3.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -16866,15 +16867,15 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@cartridge/controller@0.13.9(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@cartridge/controller@0.13.9(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@cartridge/controller-wasm': 0.9.4
       '@cartridge/penpal': 6.2.4
-      '@starknet-io/get-starknet-wallet-standard': 5.0.0-beta.0(typescript@5.9.3)(zod@4.3.6)
+      '@starknet-io/get-starknet-wallet-standard': 5.0.0-beta.0(typescript@5.9.3)(zod@3.25.76)
       '@starknet-io/types-js': 0.9.1
       '@telegram-apps/sdk': 2.11.3
-      '@turnkey/sdk-browser': 4.3.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@walletconnect/ethereum-provider': 2.23.6(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@turnkey/sdk-browser': 4.3.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/ethereum-provider': 2.23.6(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       bs58: 6.0.0
       cbor-x: 1.6.0
       ethers: 6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -16914,7 +16915,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@cartridge/controller@0.7.13(@metamask/sdk@0.32.1(bufferutil@4.1.0)(encoding@0.1.13)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(open@10.2.0)(react-dom@18.3.1(react@18.3.1))(react-native@0.84.0(@babel/core@7.29.0)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(starknet@8.9.2)(starknetkit@2.12.2(3eea9ed6b7d00e41b769c05cd8406548))(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@cartridge/controller@0.7.13(@metamask/sdk@0.32.1(bufferutil@4.1.0)(encoding@0.1.13)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(open@10.2.0)(react-dom@18.3.1(react@18.3.1))(react-native@0.84.0(@babel/core@7.29.0)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(starknet@8.9.2)(starknetkit@2.12.2(kzhepswfnyg64kd7v4t47tqs3y))(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@cartridge/account-wasm': 0.7.13
       '@cartridge/penpal': 6.2.4
@@ -16930,7 +16931,7 @@ snapshots:
       mipd: 0.0.7(typescript@5.9.3)
       open: 10.2.0
       starknet: 8.9.2
-      starknetkit: 2.12.2(3eea9ed6b7d00e41b769c05cd8406548)
+      starknetkit: 2.12.2(kzhepswfnyg64kd7v4t47tqs3y)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -19093,9 +19094,45 @@ snapshots:
       std-env: 3.10.0
       yoctocolors: 2.1.2
 
+  '@mariozechner/pi-agent-core@0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)':
+    dependencies:
+      '@mariozechner/pi-ai': 0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@modelcontextprotocol/sdk'
+      - aws-crt
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+      - ws
+      - zod
+
   '@mariozechner/pi-agent-core@0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)':
     dependencies:
       '@mariozechner/pi-ai': 0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)
+    transitivePeerDependencies:
+      - '@modelcontextprotocol/sdk'
+      - aws-crt
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+      - ws
+      - zod
+
+  '@mariozechner/pi-ai@0.52.12(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)':
+    dependencies:
+      '@anthropic-ai/sdk': 0.73.0(zod@3.25.76)
+      '@aws-sdk/client-bedrock-runtime': 3.992.0
+      '@google/genai': 1.41.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@mistralai/mistralai': 1.10.0
+      '@sinclair/typebox': 0.34.48
+      ajv: 8.18.0
+      ajv-formats: 3.0.1(ajv@8.18.0)
+      chalk: 5.6.2
+      openai: 6.10.0(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76)
+      partial-json: 0.1.7
+      proxy-agent: 6.5.0
+      undici: 7.22.0
+      zod-to-json-schema: 3.25.1(zod@3.25.76)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - aws-crt
@@ -21559,7 +21596,7 @@ snapshots:
   '@scure/bip32@1.3.2':
     dependencies:
       '@noble/curves': 1.2.0
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.3
       '@scure/base': 1.1.9
 
   '@scure/bip32@1.4.0':
@@ -21576,7 +21613,7 @@ snapshots:
 
   '@scure/bip39@1.2.1':
     dependencies:
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.3
       '@scure/base': 1.1.9
 
   '@scure/bip39@1.3.0':
@@ -22679,16 +22716,6 @@ snapshots:
       - typescript
       - zod
 
-  '@starknet-io/get-starknet-wallet-standard@5.0.0-beta.0(typescript@5.9.3)(zod@4.3.6)':
-    dependencies:
-      '@starknet-io/types-js': 0.7.10
-      '@wallet-standard/base': 1.1.0
-      '@wallet-standard/features': 1.1.0
-      ox: 0.4.4(typescript@5.9.3)(zod@4.3.6)
-    transitivePeerDependencies:
-      - typescript
-      - zod
-
   '@starknet-io/get-starknet@4.0.8':
     dependencies:
       '@starknet-io/get-starknet-core': 4.0.8
@@ -22727,6 +22754,23 @@ snapshots:
       abi-wan-kanabi: 2.2.4
       eventemitter3: 5.0.4
       get-starknet-core: 4.0.0
+      react: 18.3.1
+      starknet: 8.9.2
+      viem: 2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+
+  '@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@3.3.5(starknet@8.9.2))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+    dependencies:
+      '@starknet-io/types-js': 0.7.10
+      '@starknet-react/chains': 5.0.3
+      '@tanstack/react-query': 5.90.21(react@18.3.1)
+      abi-wan-kanabi: 2.2.4
+      eventemitter3: 5.0.4
+      get-starknet-core: 3.3.5(starknet@6.24.1(encoding@0.1.13))
       react: 18.3.1
       starknet: 8.9.2
       viem: 2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -30303,6 +30347,11 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
+  openai@6.10.0(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      zod: 3.25.76
+
   openai@6.10.0(ws@8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6):
     optionalDependencies:
       ws: 8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -30417,20 +30466,6 @@ snapshots:
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
       abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
-      eventemitter3: 5.0.1
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - zod
-
-  ox@0.4.4(typescript@5.9.3)(zod@4.3.6):
-    dependencies:
-      '@adraffy/ens-normalize': 1.11.1
-      '@noble/curves': 1.9.7
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.9.3
@@ -32253,10 +32288,10 @@ snapshots:
       pako: 2.1.0
       ts-mixer: 6.0.4
 
-  starknetkit@2.12.2(3eea9ed6b7d00e41b769c05cd8406548):
+  starknetkit@2.12.2(kzhepswfnyg64kd7v4t47tqs3y):
     dependencies:
-      '@argent/x-ui': 1.109.1(d7f601654351ba4ea713fa6770f03e1b)
-      '@cartridge/controller': 0.7.13(@metamask/sdk@0.32.1(bufferutil@4.1.0)(encoding@0.1.13)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(open@10.2.0)(react-dom@18.3.1(react@18.3.1))(react-native@0.84.0(@babel/core@7.29.0)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(starknet@8.9.2)(starknetkit@2.12.2(3eea9ed6b7d00e41b769c05cd8406548))(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@argent/x-ui': 1.109.1(x5inlag3snqxppko66w3uwcf6u)
+      '@cartridge/controller': 0.7.13(@metamask/sdk@0.32.1(bufferutil@4.1.0)(encoding@0.1.13)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(open@10.2.0)(react-dom@18.3.1(react@18.3.1))(react-native@0.84.0(@babel/core@7.29.0)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(starknet@8.9.2)(starknetkit@2.12.2(kzhepswfnyg64kd7v4t47tqs3y))(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
       '@starknet-io/get-starknet': 4.0.8
       '@starknet-io/get-starknet-core': 4.0.8
       '@starknet-io/types-js': 0.7.10

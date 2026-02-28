@@ -3,9 +3,11 @@
  * Supports full entry token flow: obtain token -> wait for confirmation -> register.
  * On non-mainnet environments, auto-tops up fee tokens from master account if needed.
  */
-import { getFactorySqlBaseUrl } from "@/runtime/world";
-import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { resolveWorldPolicyProfile } from "@/hooks/context/world-session-policy";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { ensureWorldSessionPolicies } from "@/hooks/context/world-session-policy";
+import type { WorldProfile } from "@/runtime/world/types";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
@@ -18,7 +20,6 @@ import type { WorldConfigMeta } from "./use-world-availability";
 
 // Known contract selector for blitz_realm_systems
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
-
 /**
  * Fetch ERC20 token balance using RPC call
  */
@@ -156,6 +157,7 @@ export const useWorldRegistration = ({
   enabled = true,
 }: UseWorldRegistrationProps): UseWorldRegistrationReturn => {
   const { account, address } = useAccount();
+  const connector = useAccountStore((state) => state.connector);
   const { usernameFelt, isLoading: usernameLoading } = useUsername();
 
   const [registrationStage, setRegistrationStage] = useState<RegistrationStage>("idle");
@@ -165,6 +167,7 @@ export const useWorldRegistration = ({
 
   // Cache resolved contracts
   const contractsCacheRef = useRef<Record<string, string> | null>(null);
+  const worldProfileCacheRef = useRef<WorldProfile | null>(null);
 
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
@@ -249,12 +252,10 @@ export const useWorldRegistration = ({
   const resolveContracts = useCallback(async (): Promise<Record<string, string>> => {
     if (contractsCacheRef.current) return contractsCacheRef.current;
 
-    const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-    if (!factorySqlBaseUrl) throw new Error("Factory SQL not available for this chain");
-
-    const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
-    contractsCacheRef.current = contracts;
-    return contracts;
+    const profile = await resolveWorldPolicyProfile(chain, worldName);
+    worldProfileCacheRef.current = profile;
+    contractsCacheRef.current = profile.contractsBySelector;
+    return profile.contractsBySelector;
   }, [chain, worldName]);
 
   /**
@@ -266,6 +267,25 @@ export const useWorldRegistration = ({
     if (!address) throw new Error("blitz_realm_systems contract not found for this world");
     return address;
   }, []);
+
+  const ensureRegistrationSessionPolicies = useCallback(
+    async (profile?: WorldProfile | null): Promise<void> => {
+      const liveConnector = useAccountStore.getState().connector ?? connector;
+      if (!liveConnector) return;
+
+      try {
+        await ensureWorldSessionPolicies({
+          connector: liveConnector,
+          chain,
+          worldName,
+          profile: profile ?? worldProfileCacheRef.current ?? undefined,
+        });
+      } catch (policyError) {
+        console.warn("Failed to refresh registration session policies:", policyError);
+      }
+    },
+    [connector, chain, worldName],
+  );
 
   /**
    * Build calls to obtain entry token (approve fee + mint)
@@ -375,7 +395,10 @@ export const useWorldRegistration = ({
     try {
       // Resolve contracts
       const contracts = await resolveContracts();
+      const worldProfile = worldProfileCacheRef.current;
       const blitzSystemsAddress = await getBlitzRealmSystemsAddress(contracts);
+
+      await ensureRegistrationSessionPolicies(worldProfile);
 
       // Cast account to starknet Account for execute
       const starknetAccount = account as unknown as Account;
@@ -453,12 +476,12 @@ export const useWorldRegistration = ({
     account,
     address,
     config,
-    worldName,
     chain,
     feeAmount,
     requiresEntryToken,
     resolveContracts,
     getBlitzRealmSystemsAddress,
+    ensureRegistrationSessionPolicies,
     buildObtainTokenCalls,
     buildRegisterCalls,
     waitForEntryToken,

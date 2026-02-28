@@ -18,8 +18,8 @@ packages:
 autoInstallPeers: true
 
 catalog:
-  "@cartridge/connector": ^0.12.1
-  "@cartridge/controller": ^0.12.1
+  "@cartridge/connector": 0.13.10-alpha.1
+  "@cartridge/controller": 0.13.10-alpha.1
   "@dojoengine/core": 1.7.0-preview.3
   "@dojoengine/predeployed-connector": 1.7.0-preview.3
   "@dojoengine/react": 1.7.0-preview.3
