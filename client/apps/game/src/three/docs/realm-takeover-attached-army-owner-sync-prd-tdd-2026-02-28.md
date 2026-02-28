@@ -17,8 +17,8 @@
 
 ## Problem Statement
 
-After a realm is taken over, armies attached to that realm can remain visually and interactively mapped to the old
-owner (color, mine/enemy classification, and owner-dependent behavior) until a later unrelated army update happens.
+After a realm is taken over, armies attached to that realm can remain visually and interactively mapped to the old owner
+(color, mine/enemy classification, and owner-dependent behavior) until a later unrelated army update happens.
 
 User-visible symptoms:
 
@@ -37,8 +37,8 @@ User-visible symptoms:
    refreshed from structure-owner changes unless an army update arrives:
    - `client/apps/game/src/three/scenes/worldmap.tsx:1205`
    - `client/apps/game/src/three/scenes/worldmap.tsx:2533`
-4. Army owner linkage is structure-based (`ownerStructureId` / explorer owner points to structure id), so structure owner
-   can change without immediate direct army stream owner delta:
+4. Army owner linkage is structure-based (`ownerStructureId` / explorer owner points to structure id), so structure
+   owner can change without immediate direct army stream owner delta:
    - `packages/core/src/systems/world-update-listener.ts:333`
    - `client/apps/game/src/hooks/use-exploration-automation-runner.ts:36`
 
