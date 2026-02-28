@@ -105,6 +105,7 @@ import {
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
+import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
@@ -820,8 +821,12 @@ export default class WorldmapScene extends HexagonScene {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onStructureUpdate((update) => {
         this.incrementToriiBoundsCounter("structures");
+        const previousStructureOwner = this.getTrackedStructureOwner(update.entityId);
         this.updateStructureHexes(update);
         this.structureManager.updateStructureLabelFromStructureUpdate(update);
+        if (previousStructureOwner !== update.owner.address) {
+          this.syncAttachedArmiesForStructureOwner(update);
+        }
       }),
     );
 
@@ -1214,6 +1219,94 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     return undefined;
+  }
+
+  private getTrackedStructureOwner(entityId: ID): ContractAddress | undefined {
+    const structurePosition = this.structuresPositions.get(entityId);
+    if (structurePosition) {
+      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
+    }
+
+    for (const rowMap of this.structureHexes.values()) {
+      for (const structure of rowMap.values()) {
+        if (structure.id === entityId) {
+          return structure.owner;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private getTrackedArmyOwner(entityId: ID): ContractAddress | undefined {
+    const armyPosition = this.armiesPositions.get(entityId);
+    if (armyPosition) {
+      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
+    }
+
+    for (const rowMap of this.armyHexes.values()) {
+      for (const army of rowMap.values()) {
+        if (army.id === entityId) {
+          return army.owner;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private syncAttachedArmiesForStructureOwner(update: {
+    entityId: ID;
+    owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  }): void {
+    const structureOwnerAddress = update.owner.address;
+    if (structureOwnerAddress === undefined) {
+      return;
+    }
+
+    const attachedArmyIds = new Set<ID>();
+
+    this.armyManager
+      .syncAttachedArmiesOwnerForStructure({
+        structureId: update.entityId,
+        ownerAddress: structureOwnerAddress,
+        ownerName: update.owner.ownerName,
+        guildName: update.owner.guildName,
+      })
+      .forEach((armyId) => attachedArmyIds.add(armyId));
+
+    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
+      if (ownerStructureId === update.entityId) {
+        attachedArmyIds.add(armyId);
+      }
+    });
+
+    attachedArmyIds.forEach((armyId) => {
+      const resolvedOwnerAddress = resolveAttachedArmyOwnerFromStructure({
+        existingArmyOwner: this.getTrackedArmyOwner(armyId),
+        incomingStructureOwner: structureOwnerAddress,
+      });
+
+      let armyPosition = this.armiesPositions.get(armyId);
+      if (!armyPosition) {
+        const army = this.armyManager.getArmy(armyId);
+        if (army) {
+          const normalized = army.hexCoords.getNormalized();
+          armyPosition = { col: normalized.x, row: normalized.y };
+        }
+      }
+
+      if (!armyPosition) {
+        return;
+      }
+
+      this.updateArmyHexes({
+        entityId: armyId,
+        hexCoords: armyPosition,
+        ownerAddress: resolvedOwnerAddress,
+        ownerStructureId: update.entityId,
+      });
+    });
   }
 
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {

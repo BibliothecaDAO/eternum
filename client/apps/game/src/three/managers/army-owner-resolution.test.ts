@@ -64,4 +64,55 @@ describe("resolveArmyOwnerState", () => {
       guildName: "Green",
     });
   });
+
+  it("is idempotent when same owner payload repeats", () => {
+    const first = resolveArmyOwnerState({
+      existingOwner: {
+        address: 900n,
+        ownerName: "Dawn",
+        guildName: "Gold",
+      },
+      incomingOwner: {
+        address: 900n,
+        ownerName: "Dawn",
+        guildName: "Gold",
+      },
+    });
+
+    const second = resolveArmyOwnerState({
+      existingOwner: first,
+      incomingOwner: {
+        address: 900n,
+        ownerName: "Dawn",
+        guildName: "Gold",
+      },
+    });
+
+    expect(first).toEqual(second);
+  });
+
+  it("tracks latest owner across rapid A->B->A transitions", () => {
+    const ownerA = {
+      address: 111n,
+      ownerName: "A",
+      guildName: "Alpha",
+    };
+    const ownerB = {
+      address: 222n,
+      ownerName: "B",
+      guildName: "Beta",
+    };
+
+    const afterB = resolveArmyOwnerState({
+      existingOwner: ownerA,
+      incomingOwner: ownerB,
+    });
+    const backToA = resolveArmyOwnerState({
+      existingOwner: afterB,
+      incomingOwner: ownerA,
+    });
+
+    expect(afterB).toEqual(ownerB);
+    expect(backToA).toEqual(ownerA);
+  });
 });
