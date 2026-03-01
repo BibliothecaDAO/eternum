@@ -1,40 +1,22 @@
+/**
+ * Unified inspect tool — look up any hex or entity by coordinates or entity ID.
+ * Returns enriched data from the cached world state with display coords,
+ * direction labels, formatted numbers — same quality as the tick prompt.
+ */
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { EternumClient } from "@bibliothecadao/client";
-import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS } from "@bibliothecadao/torii";
-import { parseHexBig, BUILDING_NAMES, unpackBuildingCountsFromHex } from "../adapter/world-state";
+import { getNeighborHexes, getDirectionBetweenAdjacentHexes, BiomeIdToType } from "@bibliothecadao/types";
+import { setCachedWorldState } from "../adapter/action-registry";
+import {
+  buildWorldState,
+  toContract,
+  getMapCenter,
+  type EternumWorldState,
+  type EternumEntity,
+} from "../adapter/world-state";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 
-// Inline JSON Schema objects (avoids @sinclair/typebox dependency in onchain-agent)
-const entityIdSchema = {
-  type: "object" as const,
-  properties: {
-    entityId: { type: "number" as const, description: "The entity ID to inspect" },
-  },
-  required: ["entityId"],
-};
-
-const bankIdSchema = {
-  type: "object" as const,
-  properties: {
-    bankEntityId: { type: "number" as const, description: "The bank entity ID to inspect" },
-  },
-  required: ["bankEntityId"],
-};
-
-const emptySchema = { type: "object" as const, properties: {} };
-
-/**
- * Serialize a view result, truncating if it exceeds a reasonable size for the LLM context.
- * Most views are fine, but mapArea or market with many entries could get large.
- */
-function serializeView(data: unknown, maxChars = 8000): string {
-  const json = JSON.stringify(data, null, 2);
-  if (json.length <= maxChars) return json;
-  return json.slice(0, maxChars) + `\n... (truncated, ${json.length} chars total)`;
-}
-
-/** Log what the agent sees from tool calls. */
 function logToolResponse(toolName: string, params: any, response: string) {
   try {
     const debugPath = join(
@@ -44,244 +26,286 @@ function logToolResponse(toolName: string, params: any, response: string) {
     );
     mkdirSync(dirname(debugPath), { recursive: true });
     const ts = new Date().toISOString();
-    const paramStr = params ? JSON.stringify(params) : "";
-    writeFileSync(debugPath, `\n[${ts}] ${toolName}(${paramStr})\n${response}\n`, { flag: "a" });
+    writeFileSync(debugPath, `\n[${ts}] ${toolName}(${JSON.stringify(params)})\n${response}\n`, { flag: "a" });
   } catch (_) {}
 }
 
-const RESOURCE_PRECISION = 1_000_000_000;
+function fmtNum(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return "0";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1e12) return `${sign}${+(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}${+(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}${+(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${sign}${+(abs / 1e3).toFixed(2)}K`;
+  return `${sign}${abs}`;
+}
 
-/**
- * Inspect a specific realm/structure — returns full detail including resources,
- * production rates, buildings with costs, guard slots, explorers, arrivals, and orders.
- *
- * Enriches base ViewClient data with direct SQL queries for resource balances,
- * production building counts, troop reserves, and building details.
- */
-function createInspectRealmTool(client: EternumClient): AgentTool<any> {
-  return {
-    name: "inspect_realm",
-    label: "Inspect Realm",
+function toDisplay(contractCoord: number): number {
+  return contractCoord - getMapCenter();
+}
+
+function fmtPos(x: number, y: number): string {
+  return `(${toDisplay(x)},${toDisplay(y)})`;
+}
+
+function biomeName(id: number): string {
+  if (id === 0) return "Unexplored";
+  return BiomeIdToType[id] ?? `Biome${id}`;
+}
+
+function formatTimeAgo(unixSeconds: number): string {
+  if (!unixSeconds) return "";
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - unixSeconds;
+  if (diff < 0) return "just now";
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+/** Format a full entity detail block — same quality as tick prompt. */
+function formatEntityDetail(e: EternumEntity, ownedEntities: EternumEntity[]): string {
+  const lines: string[] = [];
+  const rel = computeRelLabel(e.position.x, e.position.y, ownedEntities);
+
+  if (e.type === "structure") {
+    const owner = e.isOwned ? "MINE" : e.ownerName || e.owner.slice(0, 10) + "...";
+    lines.push(`[${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)} ${rel}`);
+
+    if (e.resources && e.resources.size > 0) {
+      const resParts = Array.from(e.resources.entries())
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => `${k}: ${fmtNum(v)}`);
+      if (resParts.length > 0) lines.push(`  Resources: ${resParts.join(", ")}`);
+    }
+    if (e.buildingSlots) {
+      const { used, total, buildings } = e.buildingSlots;
+      lines.push(`  Slots: ${used}/${total} (${total - used} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`);
+    }
+    if (e.freeSlots && e.freeSlots.length > 0 && e.buildingSlots && e.buildingSlots.total - e.buildingSlots.used > 0) {
+      lines.push(`  Free paths: ${e.freeSlots.join(",")}`);
+    }
+    if (e.population) {
+      lines.push(`  Pop: ${e.population.current}/${e.population.capacity}`);
+    }
+    if (e.nextUpgrade) {
+      lines.push(`  Upgrade → ${e.nextUpgrade.name}: ${e.nextUpgrade.cost}`);
+    } else if (e.nextUpgrade === null) {
+      lines.push(`  Max level`);
+    }
+    if (e.armies && e.armies.current > 0) {
+      lines.push(`  Armies: ${e.armies.current}/${e.armies.max}`);
+    }
+    if (e.guardSlots) {
+      for (const s of e.guardSlots) {
+        lines.push(`  Guard ${s.slot}: ${s.troops}`);
+      }
+    }
+    if (e.troopsInReserve && e.troopsInReserve.length > 0) {
+      lines.push(`  Reserves: ${e.troopsInReserve.join(", ")}`);
+    }
+    if (e.lastAttack) {
+      lines.push(`  Last attacked by #${e.lastAttack.attackerId} ${formatTimeAgo(e.lastAttack.timestamp)}`);
+    }
+  } else {
+    // Army
+    const owner = e.isOwned ? "MINE" : e.ownerName || e.owner.slice(0, 10) + "...";
+    const battle = e.isInBattle ? " IN BATTLE" : "";
+    lines.push(`[Army] id=${e.entityId} ${e.troopSummary ?? "no troops"} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)}${battle} ${rel}`);
+    if (e.lastAttack) {
+      const pos = e.lastAttack.pos ? ` from ${fmtPos(e.lastAttack.pos.x, e.lastAttack.pos.y)}` : "";
+      lines.push(`  Last attacked by #${e.lastAttack.attackerId}${pos} ${formatTimeAgo(e.lastAttack.timestamp)}`);
+    }
+    if (e.lastDefense) {
+      lines.push(`  Last defended against #${e.lastDefense.defenderId} ${formatTimeAgo(e.lastDefense.timestamp)}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/** Compute relative label from a position to nearest owned entity. */
+function computeRelLabel(x: number, y: number, owned: EternumEntity[]): string {
+  if (owned.length === 0) return "";
+  let nearest = owned[0];
+  let bestDist = Infinity;
+  for (const e of owned) {
+    const dx = e.position.x - x;
+    const dy = e.position.y - y;
+    const d = Math.max(Math.abs(dx), Math.abs(dy)); // Chebyshev approx
+    if (d < bestDist) { bestDist = d; nearest = e; }
+  }
+  if (bestDist === 0) return "";
+
+  const dx = x - nearest.position.x;
+  const dy = y - nearest.position.y;
+  let dir = "";
+  if (dy > 0 && dx === 0) dir = "N";
+  else if (dy > 0 && dx > 0) dir = "NE";
+  else if (dy > 0 && dx < 0) dir = "NW";
+  else if (dy < 0 && dx === 0) dir = "S";
+  else if (dy < 0 && dx > 0) dir = "SE";
+  else if (dy < 0 && dx < 0) dir = "SW";
+  else if (dx > 0) dir = "E";
+  else dir = "W";
+
+  const label = nearest.type === "structure" ? nearest.structureType ?? "structure" : "army";
+
+  if (bestDist === 1) {
+    const hexDir = getDirectionBetweenAdjacentHexes(
+      { col: nearest.position.x, row: nearest.position.y },
+      { col: x, row: y },
+    );
+    if (hexDir !== null) {
+      return `[adjacent ${dir} of your ${label}#${nearest.entityId}, move dir=${hexDir}]`;
+    }
+  }
+  return `[${bestDist} ${dir} of your ${label}#${nearest.entityId}]`;
+}
+
+const inspectSchema = {
+  type: "object" as const,
+  properties: {
+    x: { type: "number" as const, description: "Display x coordinate to inspect" },
+    y: { type: "number" as const, description: "Display y coordinate to inspect" },
+    entityId: { type: "number" as const, description: "Entity ID to inspect (alternative to coordinates)" },
+  },
+};
+
+export function createInspectTools(client: EternumClient, accountAddress: string): AgentTool<any>[] {
+
+  const inspectTool: AgentTool<any> = {
+    name: "inspect",
+    label: "Inspect",
     description:
-      "Get detailed info about a specific realm/structure: resource inventories with balances, " +
-      "production rates (per tick, active/paused, time remaining), buildings (category, level, " +
-      "resource costs), guard troop details per slot (type, tier, count, strength), " +
-      "explorer summaries, incoming resource arrivals, outgoing trade orders, relics, " +
-      "active battles, and nearby entities.",
-    parameters: entityIdSchema,
-    async execute(_toolCallId, { entityId }: { entityId: number }) {
+      "Inspect a hex tile or entity. Pass display coordinates (x, y) to see everything at and around that position, " +
+      "or pass entityId to look up a specific structure/army. Returns enriched data with display coords, " +
+      "direction labels, biome info, and formatted values — same quality as the tick prompt.",
+    parameters: inspectSchema,
+    async execute(_toolCallId, params: { x?: number; y?: number; entityId?: number }) {
       try {
-        // Use fetchResourceBalancesWithProduction for dynamic balance computation
-        const fetchBalances = (client.sql as any).fetchResourceBalancesWithProduction
-          ? (client.sql as any).fetchResourceBalancesWithProduction([entityId]).catch(() => [] as any[])
-          : client.sql.fetchResourceBalances([entityId]).catch(() => [] as any[]);
+        // Fetch fresh world state
+        const state = await buildWorldState(client, accountAddress);
+        setCachedWorldState(state);
 
-        // Fetch base realm view and SQL enrichment data in parallel
-        const [realm, balanceRows, buildingRows] = await Promise.all([
-          client.view.realm(entityId),
-          fetchBalances,
-          (client.sql as any).fetchBuildingsByStructures?.([entityId]).catch(() => [] as any[]) ??
-            Promise.resolve([] as any[]),
-        ]);
+        const ownedEntities = state.entities.filter((e) => e.isOwned);
+        let targetX: number;
+        let targetY: number;
 
-        const realmData = realm as any;
-        const nowSeconds = Math.floor(Date.now() / 1000);
-        const FOOD_RESOURCES = new Set(["Wheat", "Fish"]);
-
-        // Enrich with resource balances (including dynamic production) from SQL
-        const balanceRow = (balanceRows as any[])?.[0];
-        if (balanceRow) {
-          const resources: Record<string, number> = {};
-          const productions: string[] = [];
-          const troopReserves: string[] = [];
-
-          for (const col of RESOURCE_BALANCE_COLUMNS) {
-            const prodPrefix = col.column.replace("_BALANCE", "_PRODUCTION");
-
-            // Compute dynamic balance: stored + produced since last update
-            const storedHex = balanceRow[col.column];
-            const storedBalance =
-              storedHex && storedHex !== "0x0" ? Number(parseHexBig(storedHex) / BigInt(RESOURCE_PRECISION)) : 0;
-
-            const buildingCount = Number(balanceRow[`${prodPrefix}.building_count`] ?? 0);
-            const productionRate = Number(parseHexBig(balanceRow[`${prodPrefix}.production_rate`]));
-            const lastUpdatedAt = Number(parseHexBig(balanceRow[`${prodPrefix}.last_updated_at`]));
-            const outputAmountLeft = Number(parseHexBig(balanceRow[`${prodPrefix}.output_amount_left`]));
-
-            let amount = storedBalance;
-            if (buildingCount > 0 && productionRate > 0 && lastUpdatedAt > 0) {
-              const elapsed = Math.max(0, nowSeconds - lastUpdatedAt);
-              let produced = Math.floor((elapsed * productionRate) / RESOURCE_PRECISION);
-              if (!FOOD_RESOURCES.has(col.name)) {
-                produced = Math.min(produced, Math.floor(outputAmountLeft / RESOURCE_PRECISION));
-              }
-              amount += produced;
-            }
-
-            if (amount > 0) {
-              resources[col.name] = amount;
-            }
-            if (buildingCount > 0) {
-              productions.push(`${col.name} x${buildingCount}`);
-            }
+        if (params.entityId !== undefined) {
+          // Look up by entity ID
+          const entity = state.entities.find((e) => e.entityId === params.entityId);
+          if (!entity) {
+            const text = `Entity #${params.entityId} not found in current view radius.`;
+            logToolResponse("inspect", params, text);
+            return { content: [{ type: "text" as const, text }], details: { found: false } };
           }
-
-          for (const col of TROOP_BALANCE_COLUMNS) {
-            const hexVal = balanceRow[col.column];
-            if (hexVal && hexVal !== "0x0") {
-              const amount = Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION));
-              if (amount > 0) {
-                troopReserves.push(`${col.name}: ${amount}`);
-              }
-            }
-          }
-
-          if (Object.keys(resources).length > 0) realmData.resources = resources;
-          if (productions.length > 0) realmData.productions = productions;
-          if (troopReserves.length > 0) realmData.troopReserves = troopReserves;
+          targetX = entity.position.x;
+          targetY = entity.position.y;
+        } else if (params.x !== undefined && params.y !== undefined) {
+          // Convert display coords to contract coords
+          targetX = toContract(params.x);
+          targetY = toContract(params.y);
+        } else {
+          const text = "Pass either (x, y) display coordinates or entityId.";
+          logToolResponse("inspect", params, text);
+          return { content: [{ type: "text" as const, text }], details: { found: false } };
         }
 
-        // Enrich with building details from SQL
-        const buildings = buildingRows as any[];
-        if (buildings.length > 0) {
-          realmData.buildings = buildings.map((b: any) => {
-            const catId = Number(b.building_category ?? 0);
-            return {
-              category: BUILDING_NAMES[catId] ?? `Type${catId}`,
-              categoryId: catId,
-              innerCol: b.inner_col,
-              innerRow: b.inner_row,
-              paused: Boolean(b.paused),
-            };
-          });
+        const lines: string[] = [];
+        lines.push(`## Inspect ${fmtPos(targetX, targetY)}`);
+
+        // Tile info
+        const tileKey = `${targetX},${targetY}`;
+        const tile = state.tileMap.get(tileKey);
+        if (tile) {
+          lines.push(`Biome: ${biomeName(tile.biome)}`);
+          if (tile.occupierType > 0) {
+            lines.push(`Occupier: type=${tile.occupierType} id=${tile.occupierId}`);
+          }
+        } else {
+          lines.push(`Tile: Unexplored`);
         }
 
-        const text = serializeView(realmData);
-        logToolResponse("inspect_realm", { entityId }, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { entityId, found: true },
-        };
+        // Entities at this position
+        const entitiesHere = state.entities.filter(
+          (e) => e.position.x === targetX && e.position.y === targetY,
+        );
+        if (entitiesHere.length > 0) {
+          lines.push("");
+          lines.push(`### Entities at this position (${entitiesHere.length})`);
+          for (const e of entitiesHere) {
+            lines.push(formatEntityDetail(e, ownedEntities));
+          }
+        }
+
+        // Neighbors — what's on the 6 adjacent hexes
+        const neighbors = getNeighborHexes(targetX, targetY);
+        const neighborEntities: { dir: number; dirName: string; entities: EternumEntity[]; biome: string }[] = [];
+
+        const dirNames = ["East", "NE", "NW", "West", "SW", "SE"];
+        for (const n of neighbors) {
+          const nKey = `${n.col},${n.row}`;
+          const nTile = state.tileMap.get(nKey);
+          const nEnts = state.entities.filter(
+            (e) => e.position.x === n.col && e.position.y === n.row,
+          );
+          const biome = nTile ? biomeName(nTile.biome) : "Unexplored";
+          if (nEnts.length > 0 || biome !== "Unexplored") {
+            neighborEntities.push({
+              dir: n.direction,
+              dirName: dirNames[n.direction],
+              entities: nEnts,
+              biome,
+            });
+          }
+        }
+
+        if (neighborEntities.length > 0) {
+          lines.push("");
+          lines.push(`### Adjacent hexes`);
+          for (const n of neighborEntities) {
+            const entStr = n.entities.length > 0
+              ? n.entities.map((e) => {
+                  if (e.type === "structure") return `${e.structureType} #${e.entityId} (${e.isOwned ? "MINE" : e.ownerName || "enemy"})`;
+                  return `Army #${e.entityId} ${e.troopSummary ?? ""} str=${fmtNum(e.strength ?? 0)} (${e.isOwned ? "MINE" : e.ownerName || "enemy"})`;
+                }).join("; ")
+              : "empty";
+            lines.push(`  dir=${n.dir} (${n.dirName}): ${n.biome} — ${entStr}`);
+          }
+        }
+
+        // Recent battles involving entities at this position
+        const entityIdsHere = new Set(entitiesHere.map((e) => e.entityId));
+        const battles = state.recentBattles.filter(
+          (b) => entityIdsHere.has(b.attackerId) || entityIdsHere.has(b.defenderId),
+        );
+        if (battles.length > 0) {
+          lines.push("");
+          lines.push(`### Recent battles here`);
+          for (const b of battles) {
+            const ago = formatTimeAgo(b.timestamp);
+            if (b.type === "raid") {
+              lines.push(`  Raid: #${b.attackerId} → #${b.defenderId} — ${b.raidSuccess ? "SUCCESS" : "FAILED"} ${ago}`);
+            } else {
+              const winner = b.winnerId ? `winner=#${b.winnerId}` : "no winner";
+              lines.push(`  Battle: #${b.attackerId} vs #${b.defenderId} — ${winner} ${ago}`);
+            }
+          }
+        }
+
+        const text = lines.join("\n");
+        logToolResponse("inspect", params, text);
+        return { content: [{ type: "text" as const, text }], details: { found: true } };
       } catch (err: any) {
-        const text = `Error inspecting realm ${entityId}: ${err?.message ?? err}`;
-        logToolResponse("inspect_realm", { entityId }, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { entityId, found: false },
-        };
+        const text = `Error inspecting: ${err?.message ?? err}`;
+        logToolResponse("inspect", params, text);
+        return { content: [{ type: "text" as const, text }], details: { found: false } };
       }
     },
   };
-}
 
-/**
- * Inspect a specific explorer/army — returns stamina, troops, carried resources,
- * battle status, nearby entities, and recent events.
- */
-function createInspectExplorerTool(client: EternumClient): AgentTool<any> {
-  return {
-    name: "inspect_explorer",
-    label: "Inspect Explorer",
-    description:
-      "Get detailed info about a specific explorer/army: current stamina and max stamina, " +
-      "troop composition (type, tier, count per guard slot, total strength), carried resources " +
-      "with balances, battle status and current battle reference, nearby entities " +
-      "(other explorers, structures), and recent combat/movement events.",
-    parameters: entityIdSchema,
-    async execute(_toolCallId, { entityId }: { entityId: number }) {
-      try {
-        const explorer = await client.view.explorer(entityId);
-        const text = serializeView(explorer);
-        logToolResponse("inspect_explorer", { entityId }, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { entityId, found: true },
-        };
-      } catch (err: any) {
-        const text = `Error inspecting explorer ${entityId}: ${err?.message ?? err}`;
-        logToolResponse("inspect_explorer", { entityId }, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { entityId, found: false },
-        };
-      }
-    },
-  };
-}
-
-/**
- * Inspect the market — AMM pool states, recent swaps, open orders, and player LP positions.
- */
-function createInspectMarketTool(client: EternumClient): AgentTool<any> {
-  return {
-    name: "inspect_market",
-    label: "Inspect Market",
-    description:
-      "Get current market state: AMM liquidity pool balances and prices per resource, " +
-      "recent swap history, open trade orders (with maker/taker/resource types/amounts/expiry), " +
-      "and your LP positions.",
-    parameters: emptySchema,
-    async execute() {
-      try {
-        const market = await client.view.market();
-        const text = serializeView(market);
-        logToolResponse("inspect_market", {}, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { found: true },
-        };
-      } catch (err: any) {
-        const text = `Error inspecting market: ${err?.message ?? err}`;
-        logToolResponse("inspect_market", {}, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { found: false },
-        };
-      }
-    },
-  };
-}
-
-/**
- * Inspect a bank — pool states, recent swaps, and LP positions at a specific bank.
- */
-function createInspectBankTool(client: EternumClient): AgentTool<any> {
-  return {
-    name: "inspect_bank",
-    label: "Inspect Bank",
-    description:
-      "Get bank details: AMM pool balances/prices for each resource, recent swap activity, " +
-      "and your LP positions at a specific bank entity.",
-    parameters: bankIdSchema,
-    async execute(_toolCallId, { bankEntityId }: { bankEntityId: number }) {
-      try {
-        const bank = await client.view.bank(bankEntityId);
-        const text = serializeView(bank);
-        logToolResponse("inspect_bank", { bankEntityId }, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { bankEntityId, found: true },
-        };
-      } catch (err: any) {
-        const text = `Error inspecting bank ${bankEntityId}: ${err?.message ?? err}`;
-        logToolResponse("inspect_bank", { bankEntityId }, text);
-        return {
-          content: [{ type: "text", text }],
-          details: { bankEntityId, found: false },
-        };
-      }
-    },
-  };
-}
-
-/**
- * All inspection tools for detailed game state queries.
- */
-export function createInspectTools(client: EternumClient): AgentTool<any>[] {
-  return [
-    createInspectRealmTool(client),
-    createInspectExplorerTool(client),
-    createInspectMarketTool(client),
-    createInspectBankTool(client),
-  ];
+  return [inspectTool];
 }

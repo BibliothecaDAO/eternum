@@ -66,6 +66,8 @@ export interface Manifest {
 export interface ParamOverride {
   /** Override the parameter description for the LLM */
   description?: string;
+  /** Override the parameter type in the action schema (e.g., "number[]" instead of "object[]") */
+  type?: "number" | "string" | "boolean" | "number[]" | "object[]" | "object" | "bigint";
   /** Transform the param value before passing to Contract.populate() */
   transform?: (v: unknown) => unknown;
 }

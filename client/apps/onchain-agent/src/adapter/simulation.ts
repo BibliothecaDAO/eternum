@@ -1,6 +1,14 @@
 import type { SimulationResult, GameAction } from "@bibliothecadao/game-agent";
 import { computeStrength, computeOutputAmount, computeBuildingCost } from "@bibliothecadao/client";
 
+function requireParam(params: Record<string, unknown>, name: string): number {
+  const v = params[name];
+  if (v === undefined || v === null) {
+    throw new Error(`Missing required parameter: ${name}`);
+  }
+  return Number(v);
+}
+
 /**
  * Simulate a game action using pure compute functions.
  * Returns predicted outcomes without executing on chain.
@@ -12,20 +20,20 @@ export function simulateAction(action: GameAction): SimulationResult {
       case "attack_guard":
       case "guard_attack_explorer":
       case "raid": {
-        const troops = Number(action.params.amount ?? action.params.count ?? 0);
-        const tier = Number(action.params.tier ?? 1);
-        const strength = computeStrength(troops, tier);
         return {
           success: true,
-          outcome: { estimatedStrength: strength },
-          cost: { troops },
+          outcome: {
+            message:
+              "Use the simulate_battle or simulate_raid tool instead — " +
+              "they provide full damage predictions with biome bonuses and tier multipliers.",
+          },
         };
       }
 
       case "create_explorer":
       case "add_guard": {
-        const troops = Number(action.params.amount ?? 0);
-        const tier = Number(action.params.tier ?? 1);
+        const troops = requireParam(action.params, "amount");
+        const tier = requireParam(action.params, "tier");
         const strength = computeStrength(troops, tier);
         return {
           success: true,
@@ -36,11 +44,11 @@ export function simulateAction(action: GameAction): SimulationResult {
 
       case "buy_resources":
       case "sell_resources": {
-        const amount = Number(action.params.amount ?? 0);
-        const reserveIn = Number(action.params.reserveIn ?? 1000);
-        const reserveOut = Number(action.params.reserveOut ?? 1000);
-        const feeNum = Number(action.params.feeNum ?? 0);
-        const feeDenom = Number(action.params.feeDenom ?? 1000);
+        const amount = requireParam(action.params, "amount");
+        const reserveIn = requireParam(action.params, "reserveIn");
+        const reserveOut = requireParam(action.params, "reserveOut");
+        const feeNum = requireParam(action.params, "feeNum");
+        const feeDenom = requireParam(action.params, "feeDenom");
         const output = computeOutputAmount(amount, reserveIn, reserveOut, feeNum, feeDenom);
         return {
           success: true,
@@ -50,30 +58,24 @@ export function simulateAction(action: GameAction): SimulationResult {
       }
 
       case "create_building": {
-        const category = Number(action.params.buildingCategory ?? 0);
-        const baseCosts = Array.isArray(action.params.baseCosts)
-          ? action.params.baseCosts
-              .map((cost: any) => ({
-                resourceId: Number(cost?.resourceId ?? 0),
-                name: String(cost?.name ?? ""),
-                amount: Number(cost?.amount ?? 0),
-              }))
-              .filter((cost) => Number.isFinite(cost.resourceId) && cost.amount >= 0)
-          : [];
-        const existingCount = Number(action.params.existingCount ?? 0);
-        const costPercentIncrease = Number(action.params.costPercentIncrease ?? 0);
-
-        if (baseCosts.length === 0) {
+        const category = requireParam(action.params, "buildingCategory");
+        const baseCosts = action.params.baseCosts;
+        if (!Array.isArray(baseCosts) || baseCosts.length === 0) {
           return {
-            success: true,
-            outcome: {
-              buildingCategory: category,
-              message: "No baseCosts provided; cannot estimate resource cost.",
-            },
+            success: false,
+            error: "baseCosts array is required for building cost simulation.",
           };
         }
 
-        const costs = computeBuildingCost(baseCosts, existingCount, costPercentIncrease);
+        const parsedCosts = baseCosts.map((cost: any) => ({
+          resourceId: requireParam(cost, "resourceId"),
+          name: String(cost?.name ?? ""),
+          amount: requireParam(cost, "amount"),
+        }));
+        const existingCount = requireParam(action.params, "existingCount");
+        const costPercentIncrease = requireParam(action.params, "costPercentIncrease");
+
+        const costs = computeBuildingCost(parsedCosts, existingCount, costPercentIncrease);
         return {
           success: true,
           outcome: { buildingCategory: category },
@@ -83,8 +85,8 @@ export function simulateAction(action: GameAction): SimulationResult {
 
       default:
         return {
-          success: true,
-          outcome: { message: `No simulation model for action type: ${action.type}` },
+          success: false,
+          error: `No simulation model for action type: ${action.type}. Use simulate_battle for combat predictions.`,
         };
     }
   } catch (err: any) {

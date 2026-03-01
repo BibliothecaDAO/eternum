@@ -137,7 +137,7 @@ function reserveUniqueActionType(
 
 function buildParamSchemas(
   ep: ABIEntrypoint,
-  paramOverrides?: Record<string, { description?: string; transform?: (v: unknown) => unknown }>,
+  paramOverrides?: Record<string, { description?: string; type?: ActionParamSchema["type"]; transform?: (v: unknown) => unknown }>,
   structs?: Map<string, ABIParam[]>,
   structNames?: Set<string>,
 ): ActionParamSchema[] {
@@ -157,7 +157,7 @@ function buildParamSchemas(
 
     return {
       name: p.name,
-      type: schemaType,
+      type: override?.type ?? schemaType,
       description,
       required: true,
     };
