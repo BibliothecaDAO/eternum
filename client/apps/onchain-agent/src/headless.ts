@@ -13,8 +13,10 @@ import { readArtifacts } from "./session/artifacts";
 import { createPrivateKeyAccount } from "./session/privatekey-auth";
 import { deriveChainIdFromRpcUrl } from "./world/normalize";
 import { createInspectTools } from "./tools/inspect-tools";
+import { createCombatTools } from "./tools/combat-tools";
+import { createMcpTools, type McpConnection } from "./tools/mcp-tools";
 import { getActionDefinitions } from "./adapter/action-registry";
-import { formatEternumTickPrompt, type EternumWorldState } from "./adapter/world-state";
+import { formatEternumTickPrompt, formatEternumTickDiff, type EternumWorldState } from "./adapter/world-state";
 import { JsonEmitter } from "./output/json-emitter";
 import { createApiServer } from "./api/server";
 import { startStdinReader } from "./input/stdin-reader";
@@ -215,8 +217,16 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     toriiUrl: config.toriiUrl,
     worldAddress: config.worldAddress,
     manifest: artifacts.manifest as any,
+    vrfProviderAddress: "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f",
   });
   client.connect(account as any);
+
+  // Fetch game config to sync tick interval with on-chain armies tick
+  const sqlBaseUrl = `${artifacts.profile.toriiBaseUrl}/sql`;
+  const { fetchWorldConfig, getWorldConfig } = await import("./adapter/world-config");
+  await fetchWorldConfig(sqlBaseUrl);
+  const gameTickMs = getWorldConfig().armiesTickInSeconds * 1000;
+  if (gameTickMs > 0) config.tickIntervalMs = gameTickMs;
 
   const tokenConfig = artifacts.profile
     ? {
@@ -251,8 +261,8 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
   // Create game agent
   const model = (getModel as Function)(config.modelProvider, config.modelId);
   let isFirstTick = true;
-  const formatTickPromptWithHandbooks = (state: EternumWorldState): string => {
-    const base = formatEternumTickPrompt(state);
+  const formatTickPromptWithHandbooks = (state: EternumWorldState, prevState: EternumWorldState | null): string => {
+    const base = formatEternumTickDiff(state, prevState);
     const needsRegistration = state.player.structures === 0 && state.player.armies === 0;
 
     if (needsRegistration) {
@@ -284,13 +294,14 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     onMessage: (msg) => emitter.emit({ type: "config", message: msg }),
   });
 
+  const mcp = await createMcpTools(config.toriiUrl);
   game = createGameAgent({
     adapter: mutableAdapter,
     dataDir: config.dataDir,
     model,
     tickIntervalMs: config.tickIntervalMs,
     runtimeConfigManager,
-    extraTools: createInspectTools(client),
+    extraTools: [...createInspectTools(client, account.address), ...createCombatTools(client), ...mcp.tools],
     actionDefs: getActionDefinitions(),
     formatTickPrompt: formatTickPromptWithHandbooks,
     onTickError: (err) => {
@@ -377,6 +388,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     ticker.stop();
     await disposeAgent();
     client.disconnect();
+    await mcp.close();
     if (apiClose) await apiClose();
     if (stdinClose) stdinClose();
     gate.shutdown();

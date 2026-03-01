@@ -15,14 +15,15 @@
   },
   "dependencies": {
     "@bibliothecadao/client": "workspace:*",
-    "@bibliothecadao/types": "workspace:*",
     "@bibliothecadao/game-agent": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
     "@cartridge/controller": "^0.13.4",
     "@cartridge/controller-wasm": "0.9.4",
     "@mariozechner/pi-agent-core": "^0.52.7",
     "@mariozechner/pi-ai": "^0.52.7",
     "@mariozechner/pi-tui": "^0.52.7",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "starknet": "catalog:",
     "tsx": "^4.21.0"
   },

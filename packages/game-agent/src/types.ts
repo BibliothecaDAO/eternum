@@ -79,8 +79,8 @@ export interface GameAgentConfig<TState extends WorldState = WorldState> {
   dataDir: string;
   model?: Model<any>;
   tickIntervalMs?: number;
-  /** Custom tick prompt formatter. Receives full state, returns prompt string for the agent. */
-  formatTickPrompt?: (state: TState) => string;
+  /** Custom tick prompt formatter. Receives current state and previous state (null on first tick). */
+  formatTickPrompt?: (state: TState, prevState: TState | null) => string;
 }
 
 export interface RuntimeConfigChange {

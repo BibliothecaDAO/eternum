@@ -1,9 +1,29 @@
 import type { WorldState } from "@bibliothecadao/game-agent";
 import type { EternumClient } from "@bibliothecadao/client";
-import { computeStrength } from "@bibliothecadao/client";
-import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS } from "@bibliothecadao/torii";
+import { computeStrength, computeBalance, computeStamina } from "@bibliothecadao/client";
+import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS, hexToBigInt } from "@bibliothecadao/torii";
+import {
+  Coord,
+  Direction,
+  getNeighborHexes,
+  getDirectionBetweenAdjacentHexes,
+  BiomeIdToType,
+  TileOccupier,
+  RESOURCE_PRECISION as TYPES_RESOURCE_PRECISION,
+  BuildingTypeToString,
+  BuildingType,
+  EternumStructureTypeToNameMapping,
+  StructureType,
+  RealmLevelNames,
+  RealmLevels,
+  getLevelName,
+  GuardSlot,
+  GUARD_SLOT_NAMES,
+  BUILDINGS_CENTER,
+} from "@bibliothecadao/types";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { fetchWorldConfig, getWorldConfig } from "./world-config";
 
 /**
  * An entity in the Eternum world, representing a structure or army
@@ -77,7 +97,37 @@ export interface EternumWorldState extends WorldState<EternumEntity> {
 }
 
 /** Visibility radius (in hexes) around each owned entity. */
-const VIEW_RADIUS = 5;
+const VIEW_RADIUS = 10;
+
+// ---------------------------------------------------------------------------
+// Coordinate normalization — contract space ↔ display space
+// ---------------------------------------------------------------------------
+
+const BASE_MAP_CENTER = 2147483646;
+
+/** Get the map center from cached WorldConfig. */
+export function getMapCenter(): number {
+  try {
+    return BASE_MAP_CENTER - getWorldConfig().mapCenterOffset;
+  } catch {
+    return BASE_MAP_CENTER;
+  }
+}
+
+/** Convert contract coordinate to display coordinate. */
+function toDisplay(contractCoord: number): number {
+  return contractCoord - getMapCenter();
+}
+
+/** Convert display coordinate to contract coordinate. */
+export function toContract(displayCoord: number): number {
+  return displayCoord + getMapCenter();
+}
+
+/** Format a position as display coordinates for the tick prompt. */
+function fmtPos(x: number, y: number): string {
+  return `(${toDisplay(x)},${toDisplay(y)})`;
+}
 
 type Pos = { x: number; y: number };
 
@@ -95,17 +145,10 @@ function nearAnyOwned(pos: Pos, centers: Pos[]): boolean {
 // Helpers for raw SQL data parsing
 // ---------------------------------------------------------------------------
 
-const RESOURCE_PRECISION = 1_000_000_000;
+const RESOURCE_PRECISION = Number(TYPES_RESOURCE_PRECISION);
 
-/** Parse a hex string to a BigInt, then to number. Returns 0 for null/invalid. */
-export function parseHexBig(hex: string | null | undefined): bigint {
-  if (!hex || hex === "0x0") return 0n;
-  try {
-    return BigInt(hex);
-  } catch {
-    return 0n;
-  }
-}
+/** @deprecated Use hexToBigInt from @bibliothecadao/torii directly. */
+export const parseHexBig = (hex: string | null | undefined): bigint => hexToBigInt(hex as string | null);
 
 /** Parse a hex count and divide by RESOURCE_PRECISION to get actual troop count. */
 function parseTroopCount(hex: string | null | undefined): number {
@@ -130,28 +173,16 @@ interface StaminaConfig {
   paladinMax: number;
 }
 
-const STAMINA_CONFIG_QUERY = `SELECT
-  "tick_config.armies_tick_in_seconds" AS armies_tick_in_seconds,
-  "troop_stamina_config.stamina_gain_per_tick" AS gain_per_tick,
-  "troop_stamina_config.stamina_knight_max" AS knight_max,
-  "troop_stamina_config.stamina_crossbowman_max" AS crossbowman_max,
-  "troop_stamina_config.stamina_paladin_max" AS paladin_max
-FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-
-async function fetchStaminaConfig(sqlBaseUrl: string): Promise<StaminaConfig | null> {
+/** Build StaminaConfig from the cached WorldConfig. */
+function getStaminaConfig(): StaminaConfig | null {
   try {
-    const url = `${sqlBaseUrl}?query=${encodeURIComponent(STAMINA_CONFIG_QUERY)}`;
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const rows = (await resp.json()) as Record<string, unknown>[];
-    const row = rows[0];
-    if (!row) return null;
+    const wc = getWorldConfig();
     return {
-      armiesTickInSeconds: Number(parseHexBig(row.armies_tick_in_seconds as string)) || 0,
-      gainPerTick: Number(parseHexBig(row.gain_per_tick as string)) || 0,
-      knightMax: Number(parseHexBig(row.knight_max as string)) || 0,
-      crossbowmanMax: Number(parseHexBig(row.crossbowman_max as string)) || 0,
-      paladinMax: Number(parseHexBig(row.paladin_max as string)) || 0,
+      armiesTickInSeconds: wc.armiesTickInSeconds,
+      gainPerTick: wc.staminaGainPerTick,
+      knightMax: wc.staminaKnightMax,
+      crossbowmanMax: wc.staminaCrossbowmanMax,
+      paladinMax: wc.staminaPaladinMax,
     };
   } catch {
     return null;
@@ -178,7 +209,7 @@ function getMaxStamina(
   return base + tierBonus;
 }
 
-/** Recalculate current stamina based on time elapsed since last refill. */
+/** Recalculate current stamina using computeStamina from @bibliothecadao/client. */
 function recalculateStamina(
   storedAmount: number,
   updatedTick: number,
@@ -188,10 +219,14 @@ function recalculateStamina(
 ): number {
   if (cfg.armiesTickInSeconds <= 0) return storedAmount;
   const currentTick = Math.floor(Date.now() / 1000 / cfg.armiesTickInSeconds);
-  if (updatedTick >= currentTick) return storedAmount;
-  const ticksPassed = currentTick - updatedTick;
   const maxStamina = getMaxStamina(cfg, category, tier);
-  return Math.min(storedAmount + ticksPassed * cfg.gainPerTick, maxStamina);
+  return computeStamina({
+    currentAmount: storedAmount,
+    lastUpdateTick: updatedTick,
+    currentTick,
+    maxStamina,
+    regenPerTick: cfg.gainPerTick,
+  }).current;
 }
 
 /** Decode a felt252 hex string (e.g. "0x...626f6174") to a human-readable string.
@@ -232,42 +267,29 @@ function computeDynamicBalance(
   nowSeconds: number,
   resourceName: string,
 ): number {
-  // Parse stored balance
   const hexVal = row[balanceCol];
-  const storedBalance = hexVal && hexVal !== "0x0" ? Number(parseHexBig(hexVal) / BigInt(RESOURCE_PRECISION)) : 0;
-
-  // Parse production fields
+  const rawBalance = hexVal && hexVal !== "0x0" ? Number(hexToBigInt(hexVal)) : 0;
   const buildingCount = Number(row[`${prodPrefix}.building_count`] ?? 0);
-  const productionRate = Number(parseHexBig(row[`${prodPrefix}.production_rate`]));
-  const lastUpdatedAt = Number(parseHexBig(row[`${prodPrefix}.last_updated_at`]));
-  const outputAmountLeft = Number(parseHexBig(row[`${prodPrefix}.output_amount_left`]));
+  const productionRate = Number(hexToBigInt(row[`${prodPrefix}.production_rate`]));
+  const lastUpdatedAt = Number(hexToBigInt(row[`${prodPrefix}.last_updated_at`]));
+  const outputAmountLeft = Number(hexToBigInt(row[`${prodPrefix}.output_amount_left`]));
 
-  if (buildingCount === 0 || productionRate === 0 || lastUpdatedAt === 0) {
-    return storedBalance;
-  }
-
-  const elapsed = Math.max(0, nowSeconds - lastUpdatedAt);
-  let produced = Math.floor((elapsed * productionRate) / RESOURCE_PRECISION);
-
-  // Non-food production is capped by remaining output budget
-  if (!FOOD_RESOURCES.has(resourceName)) {
-    const maxOutput = Math.floor(outputAmountLeft / RESOURCE_PRECISION);
-    produced = Math.min(produced, maxOutput);
-  }
-
-  return storedBalance + produced;
+  return computeBalance({
+    rawBalance,
+    productionRate,
+    lastUpdatedAt,
+    currentTick: nowSeconds,
+    isFood: FOOD_RESOURCES.has(resourceName),
+    outputAmountLeft,
+    buildingCount,
+    storageCapacityKg: Infinity,
+    storageUsedKg: 0,
+    resourceWeightKg: 0,
+  }).balance;
 }
 
-const STRUCTURE_CATEGORY_NAMES: Record<number, string> = {
-  1: "Realm",
-  2: "Hyperstructure",
-  3: "Bank",
-  4: "Mine",
-  5: "Village",
-};
-
 function structureCategoryName(cat: number): string {
-  return STRUCTURE_CATEGORY_NAMES[cat] ?? "Unknown";
+  return EternumStructureTypeToNameMapping[cat as StructureType] ?? "Unknown";
 }
 
 /** Troop category — DB returns strings like "Knight", "Paladin", "Crossbowman". */
@@ -327,12 +349,15 @@ function buildGuardSummary(raw: any): string | undefined {
   return parts.length > 0 ? parts.join(" + ") : undefined;
 }
 
-/** Build per-slot guard details: [{slot: "Alpha", troops: "2900 Knight T1"}, ...]. */
+/** Build per-slot guard details with proper slot names from types package. */
 function buildGuardSlots(raw: any): { slot: string; troops: string }[] {
+  const slotKeys = ["alpha", "bravo", "charlie", "delta"] as const;
+  const slotEnums = [GuardSlot.Alpha, GuardSlot.Bravo, GuardSlot.Charlie, GuardSlot.Delta];
   const slots: { slot: string; troops: string }[] = [];
-  for (const slot of ["alpha", "bravo", "charlie", "delta"] as const) {
+  for (let i = 0; i < slotKeys.length; i++) {
+    const slot = slotKeys[i];
     const count = parseTroopCount(raw[`${slot}_count`]);
-    const label = slot.charAt(0).toUpperCase() + slot.slice(1);
+    const label = GUARD_SLOT_NAMES[slotEnums[i]];
     if (count > 0) {
       const cat = troopCategoryName(raw[`${slot}_category`]);
       const tier = troopTierLabel(raw[`${slot}_tier`]);
@@ -381,33 +406,8 @@ function sameAddress(a: string | null | undefined, b: string | null | undefined)
 // Building slot parsing — unpack packed_counts from structure data
 // ---------------------------------------------------------------------------
 
-export const BUILDING_NAMES: Record<number, string> = {
-  1: "WorkersHut",
-  3: "Stone",
-  4: "Coal",
-  5: "Wood",
-  6: "Copper",
-  7: "Ironwood",
-  9: "Gold",
-  11: "Mithral",
-  13: "ColdIron",
-  21: "Adamantine",
-  24: "Dragonhide",
-  25: "Labor",
-  27: "Donkey",
-  28: "KnightT1",
-  29: "KnightT2",
-  30: "KnightT3",
-  31: "CrossbowT1",
-  32: "CrossbowT2",
-  33: "CrossbowT3",
-  34: "PaladinT1",
-  35: "PaladinT2",
-  36: "PaladinT3",
-  37: "Wheat",
-  38: "Fish",
-  39: "Essence",
-};
+// Re-export BuildingTypeToString as BUILDING_NAMES for backward compat with inspect-tools
+export const BUILDING_NAMES: Record<number, string> = BuildingTypeToString as Record<number, string>;
 
 /** Unpack 3 packed u128 hex strings into an array of 48 8-bit building counts. */
 export function unpackBuildingCountsFromHex(
@@ -451,20 +451,13 @@ function buildBuildingSlots(raw: any): { used: number; total: number; buildings:
 // using even-r hex neighbors to find which inner coords are unoccupied
 // ---------------------------------------------------------------------------
 
-const INNER_CENTER = { x: 10, y: 10 };
-
-/** Walk a direction path from center and return the resulting inner coord. */
+/** Walk a direction path from building center and return the resulting inner coord. */
 function walkDirections(dirs: number[]): { x: number; y: number } {
-  let { x, y } = INNER_CENTER;
+  let pos = new Coord(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]);
   for (const d of dirs) {
-    const n = hexNeighbors(x, y);
-    const next = n[d];
-    if (next) {
-      x = next.x;
-      y = next.y;
-    }
+    pos = pos.neighbor(d as Direction);
   }
-  return { x, y };
+  return { x: pos.x, y: pos.y };
 }
 
 /** Generate all valid direction paths for rings 1..maxRing. */
@@ -554,8 +547,7 @@ function computePopulation(counts: number[]): { current: number; capacity: numbe
   return { current, capacity: BASE_POPULATION_CAPACITY + granted };
 }
 
-// Realm upgrade levels: 0=Settlement, 1=City, 2=Kingdom, 3=Empire (max)
-const REALM_LEVEL_NAMES = ["Settlement", "City", "Kingdom", "Empire"];
+// Realm upgrade costs — kept here because they're game-balance values not in types package
 const REALM_UPGRADE_COSTS: Record<number, { name: string; cost: string }> = {
   0: { name: "City", cost: "180 Labor, 1200 Wheat, 200 Essence" },
   1: { name: "Kingdom", cost: "360 Labor, 2400 Wheat, 600 Essence, 180 Wood" },
@@ -571,108 +563,41 @@ function getNextUpgrade(level: number): { name: string; cost: string } | null {
 // Tile biome and occupier lookups (matches TileOccupier enum from @bibliothecadao/types)
 // ---------------------------------------------------------------------------
 
-const BIOME_NAMES: Record<number, string> = {
-  0: "Unexplored",
-  1: "DeepOcean",
-  2: "Ocean",
-  3: "Beach",
-  4: "Scorched",
-  5: "Bare",
-  6: "Tundra",
-  7: "Snow",
-  8: "Desert",
-  9: "Shrubland",
-  10: "Taiga",
-  11: "Grassland",
-  12: "Forest",
-  13: "RainForest",
-  14: "SubtropicalDesert",
-  15: "TropicalForest",
-  16: "TropicalRainForest",
-};
-
-const OCCUPIER_NAMES: Record<number, string> = {
-  0: "",
-  1: "Realm L1",
-  2: "Realm L2",
-  3: "Realm L3",
-  4: "Realm L4",
-  5: "WonderRealm L1",
-  6: "WonderRealm L2",
-  7: "WonderRealm L3",
-  8: "WonderRealm L4",
-  9: "Hyperstructure L1",
-  10: "Hyperstructure L2",
-  11: "Hyperstructure L3",
-  12: "FragmentMine",
-  13: "Village",
-  14: "Bank",
-  15: "Explorer Knight T1",
-  16: "Explorer Knight T2",
-  17: "Explorer Knight T3",
-  18: "Explorer Paladin T1",
-  19: "Explorer Paladin T2",
-  20: "Explorer Paladin T3",
-  21: "Explorer Crossbow T1",
-  22: "Explorer Crossbow T2",
-  23: "Explorer Crossbow T3",
-  24: "Agent Knight T1",
-  25: "Agent Knight T2",
-  26: "Agent Knight T3",
-  27: "Agent Paladin T1",
-  28: "Agent Paladin T2",
-  29: "Agent Paladin T3",
-  30: "Agent Crossbow T1",
-  31: "Agent Crossbow T2",
-  32: "Agent Crossbow T3",
-  33: "Quest",
-  34: "Chest",
-  35: "Spire",
-};
-
-// ---------------------------------------------------------------------------
-// Hex neighbor calculation — even-r offset coordinates (matches Cairo contract)
-// ---------------------------------------------------------------------------
-
-const DIR_NAMES = ["East", "NE", "NW", "West", "SW", "SE"] as const;
-
-/** Compute the 6 hex neighbors of a position using even-r offset coords. */
-function hexNeighbors(x: number, y: number): { dir: string; dirId: number; x: number; y: number }[] {
-  if (y % 2 === 0) {
-    // Even row
-    return [
-      { dir: "East", dirId: 0, x: x + 1, y },
-      { dir: "NE", dirId: 1, x: x + 1, y: y + 1 },
-      { dir: "NW", dirId: 2, x, y: y + 1 },
-      { dir: "West", dirId: 3, x: x - 1, y },
-      { dir: "SW", dirId: 4, x, y: y - 1 },
-      { dir: "SE", dirId: 5, x: x + 1, y: y - 1 },
-    ];
-  }
-  // Odd row
-  return [
-    { dir: "East", dirId: 0, x: x + 1, y },
-    { dir: "NE", dirId: 1, x, y: y + 1 },
-    { dir: "NW", dirId: 2, x: x - 1, y: y + 1 },
-    { dir: "West", dirId: 3, x: x - 1, y },
-    { dir: "SW", dirId: 4, x: x - 1, y: y - 1 },
-    { dir: "SE", dirId: 5, x, y: y - 1 },
-  ];
+// Biome names from types package. ID 0 = unexplored (not in BiomeIdToType).
+function biomeName(id: number): string {
+  if (id === 0) return "Unexplored";
+  return BiomeIdToType[id] ?? `Biome${id}`;
 }
+
+// Occupier names from TileOccupier enum — camelCase to human-readable
+function occupierName(id: number): string {
+  if (id === 0) return "";
+  const raw = TileOccupier[id];
+  if (!raw) return `Type${id}`;
+  // Convert camelCase to spaced: "RealmRegularLevel1" → "Realm L1"
+  return raw
+    .replace(/Regular/g, "")
+    .replace(/Level(\d)/g, " L$1")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/T(\d)(Daydreams)?/g, " T$1$2")
+    .trim();
+}
+
+
 
 /** BFS to collect all hex positions within `radius` steps of (cx, cy). */
 function hexTilesInRadius(cx: number, cy: number, radius: number): Set<string> {
   const visited = new Set<string>();
   visited.add(`${cx},${cy}`);
-  let frontier: { x: number; y: number }[] = [{ x: cx, y: cy }];
+  let frontier: { col: number; row: number }[] = [{ col: cx, row: cy }];
   for (let r = 0; r < radius; r++) {
-    const next: { x: number; y: number }[] = [];
+    const next: { col: number; row: number }[] = [];
     for (const pos of frontier) {
-      for (const n of hexNeighbors(pos.x, pos.y)) {
-        const key = `${n.x},${n.y}`;
+      for (const n of getNeighborHexes(pos.col, pos.row)) {
+        const key = `${n.col},${n.row}`;
         if (!visited.has(key)) {
           visited.add(key);
-          next.push({ x: n.x, y: n.y });
+          next.push({ col: n.col, row: n.row });
         }
       }
     }
@@ -681,7 +606,71 @@ function hexTilesInRadius(cx: number, cy: number, radius: number): Set<string> {
   return visited;
 }
 
-const OPERATING_AREA_RADIUS = 3;
+const OPERATING_AREA_RADIUS = 10;
+
+// ---------------------------------------------------------------------------
+// Direction labels — relative position from nearest owned entity
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a cardinal direction label from one position to another.
+ * In the Eternum hex grid, higher Y = North on the game map.
+ */
+function cardinalDirection(dx: number, dy: number): string {
+  if (dx === 0 && dy === 0) return "here";
+  if (dy > 0 && dx === 0) return "N";
+  if (dy > 0 && dx > 0) return "NE";
+  if (dy > 0 && dx < 0) return "NW";
+  if (dy < 0 && dx === 0) return "S";
+  if (dy < 0 && dx > 0) return "SE";
+  if (dy < 0 && dx < 0) return "SW";
+  if (dx > 0) return "E";
+  return "W";
+}
+
+/**
+ * Compute a relative label from a target position to the nearest owned entity.
+ * For adjacent tiles (distance 1), includes the exact hex direction number
+ * so the agent can use it directly in move_explorer without guessing.
+ */
+function computeRelativeLabel(
+  targetX: number,
+  targetY: number,
+  ownedEntities: EternumEntity[],
+): string {
+  if (ownedEntities.length === 0) return "";
+
+  let nearest = ownedEntities[0];
+  let bestDist = Infinity;
+
+  for (const e of ownedEntities) {
+    const dist = new Coord(e.position.x, e.position.y).distance(new Coord(targetX, targetY));
+    if (dist < bestDist) {
+      bestDist = dist;
+      nearest = e;
+    }
+  }
+
+  if (bestDist === 0) return "";
+
+  const dx = targetX - nearest.position.x;
+  const dy = targetY - nearest.position.y;
+  const dir = cardinalDirection(dx, dy);
+  const label = nearest.type === "structure" ? nearest.structureType ?? "structure" : "army";
+
+  // For adjacent tiles, compute the exact hex direction number
+  if (bestDist === 1) {
+    const hexDir = getDirectionBetweenAdjacentHexes(
+      { col: nearest.position.x, row: nearest.position.y },
+      { col: targetX, row: targetY },
+    );
+    if (hexDir !== null) {
+      return `[adjacent ${dir} of your ${label}#${nearest.entityId}, move dir=${hexDir}]`;
+    }
+  }
+
+  return `[${bestDist} ${dir} of your ${label}#${nearest.entityId}]`;
+}
 
 /** Build the operating area section for the tick prompt. */
 function buildOperatingArea(
@@ -701,24 +690,30 @@ function buildOperatingArea(
 
   // Categorize tiles
   const unexplored: string[] = [];
+  const exploredEmpty: string[] = [];
   const enemyStructures: string[] = [];
   const enemyArmies: string[] = [];
-  const claimable: string[] = [];
-  let exploredEmptyCount = 0;
 
   for (const key of areaTiles) {
     if (ownedPositions.has(key)) continue; // already shown in My Entities
+    const [xStr, yStr] = key.split(",");
+    const tx = parseInt(xStr, 10);
+    const ty = parseInt(yStr, 10);
     const tile = tileMap.get(key);
+    const displayPos = fmtPos(tx, ty);
     if (!tile || tile.biome === 0) {
-      unexplored.push(`(${key})`);
+      const rel = computeRelativeLabel(tx, ty, ownedEntities);
+      unexplored.push(`${displayPos} ${rel}`);
       continue;
     }
+    const tileBiomeName = biomeName(tile.biome);
     if (tile.occupierType === 0) {
-      exploredEmptyCount++;
+      exploredEmpty.push(`${displayPos} ${tileBiomeName}`);
       continue;
     }
-    const name = OCCUPIER_NAMES[tile.occupierType] ?? `Type${tile.occupierType}`;
-    const label = `${name}${tile.occupierId ? ` #${tile.occupierId}` : ""} @(${key})`;
+    const name = occupierName(tile.occupierType);
+    const rel = computeRelativeLabel(tx, ty, ownedEntities);
+    const label = `${name}${tile.occupierId ? ` #${tile.occupierId}` : ""} @${displayPos} ${tileBiomeName} ${rel}`;
     // Bandits occupy structures with occupierType matching structure types (1-14)
     // Armies are types 15-32
     if (tile.occupierType >= 15 && tile.occupierType <= 32) {
@@ -741,7 +736,10 @@ function buildOperatingArea(
   if (enemyArmies.length > 0) {
     lines.push(`  Armies: ${enemyArmies.join(", ")}`);
   }
-  lines.push(`  Explored empty: ${exploredEmptyCount} tiles`);
+  if (exploredEmpty.length > 0) {
+    lines.push(`  Explored tiles: ${exploredEmpty.join(", ")}`);
+  }
+  lines.push(`  Biome affects combat ±30%. Check tile biome before attacking.`);
   return lines.join("\n");
 }
 
@@ -829,8 +827,12 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
   // Extract Torii SQL base URL from the client's SqlApi (for config queries)
   const sqlBaseUrl: string = (client.sql as any).baseUrl ?? "";
 
-  // 1. Fetch all data sources in parallel (including stamina config for recalculation).
-  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs, staminaCfg] =
+  // Fetch WorldConfig (cached after first call) — provides map center, stamina, combat config
+  if (sqlBaseUrl) await fetchWorldConfig(sqlBaseUrl);
+  const staminaCfg = getStaminaConfig();
+
+  // 1. Fetch all data sources in parallel.
+  const [playerView, marketView, leaderboardView, allRawStructures, allRawArmies, allTiles, allBattleLogs] =
     await Promise.all([
       client.view.player(accountAddress),
       client.view.market(),
@@ -839,7 +841,6 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
       client.sql.fetchAllArmiesMapData(),
       client.sql.fetchAllTiles().catch(() => [] as any[]),
       client.sql.fetchBattleLogs().catch(() => [] as any[]),
-      sqlBaseUrl ? fetchStaminaConfig(sqlBaseUrl) : Promise.resolve(null),
     ]);
 
   const rawStructures: any[] = Array.isArray(allRawStructures) ? allRawStructures : [];
@@ -1212,7 +1213,8 @@ export async function buildWorldState(client: EternumClient, accountAddress: str
 // Tick prompt formatter — human-readable world state for the agent
 // ---------------------------------------------------------------------------
 
-function formatEntityLine(e: EternumEntity): string {
+function formatEntityLine(e: EternumEntity, ownedEntities?: EternumEntity[]): string {
+  const rel = ownedEntities ? " " + computeRelativeLabel(e.position.x, e.position.y, ownedEntities) : "";
   if (e.type === "structure") {
     const guard = e.guardSummary
       ? ` | guard: ${fmtNum(e.guardStrength ?? 0)} [${e.guardSummary}]`
@@ -1220,14 +1222,14 @@ function formatEntityLine(e: EternumEntity): string {
         ? ` | guard: ${fmtNum(e.guardStrength)}`
         : "";
     const owner = e.isOwned ? "MINE" : e.ownerName || shortAddr(e.owner);
-    const lvlName = REALM_LEVEL_NAMES[e.level ?? 0] ?? `L${e.level}`;
-    return `  [${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0}(${lvlName}) owner=${owner} pos=(${e.position.x},${e.position.y})${guard}`;
+    const lvlName = getLevelName(e.level ?? 0) ?? `L${e.level}`;
+    return `  [${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0}(${lvlName}) owner=${owner} pos=${fmtPos(e.position.x, e.position.y)}${guard}${rel}`;
   }
   // army
   const owner = e.isOwned ? "MINE" : e.ownerName || shortAddr(e.owner);
   const troops = e.troopSummary ?? "no troops";
   const battle = e.isInBattle ? " IN BATTLE" : "";
-  return `  [Army] id=${e.entityId} ${troops} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=(${e.position.x},${e.position.y})${battle}`;
+  return `  [Army] id=${e.entityId} ${troops} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)}${battle}${rel}`;
 }
 
 /** Format a unix timestamp as a relative time string like "5m ago" or "2h ago". */
@@ -1247,6 +1249,281 @@ function shortAddr(addr: string): string {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
+// ---------------------------------------------------------------------------
+// State diff helpers
+// ---------------------------------------------------------------------------
+
+/** Diff two resource maps. Returns only changed resources with deltas. */
+function diffResources(
+  current: Map<string, number> | undefined,
+  prev: Map<string, number> | undefined,
+): { changed: { name: string; value: number; delta: number }[]; unchangedCount: number } {
+  const changed: { name: string; value: number; delta: number }[] = [];
+  let unchangedCount = 0;
+  const cur = current ?? new Map<string, number>();
+  const prv = prev ?? new Map<string, number>();
+
+  for (const [name, value] of cur) {
+    const prevVal = prv.get(name) ?? 0;
+    const delta = value - prevVal;
+    if (delta !== 0 || !prv.has(name)) {
+      changed.push({ name, value, delta });
+    } else {
+      unchangedCount++;
+    }
+  }
+  return { changed, unchangedCount };
+}
+
+/** Diff two entity arrays keyed by entityId. */
+function diffEntities(
+  current: EternumEntity[],
+  prev: EternumEntity[],
+): {
+  added: EternumEntity[];
+  removed: EternumEntity[];
+  changed: { entity: EternumEntity; changes: string[] }[];
+  unchangedCount: number;
+} {
+  const prevMap = new Map(prev.map((e) => [e.entityId, e]));
+  const curMap = new Map(current.map((e) => [e.entityId, e]));
+
+  const added: EternumEntity[] = [];
+  const changed: { entity: EternumEntity; changes: string[] }[] = [];
+  let unchangedCount = 0;
+
+  for (const e of current) {
+    const p = prevMap.get(e.entityId);
+    if (!p) {
+      added.push(e);
+      continue;
+    }
+    const changes = entityFieldChanges(e, p);
+    if (changes.length > 0) {
+      changed.push({ entity: e, changes });
+    } else {
+      unchangedCount++;
+    }
+  }
+
+  const removed = prev.filter((e) => !curMap.has(e.entityId));
+  return { added, removed, changed, unchangedCount };
+}
+
+/** Compare two entities and return human-readable field changes. */
+function entityFieldChanges(cur: EternumEntity, prev: EternumEntity): string[] {
+  const changes: string[] = [];
+
+  if (cur.position.x !== prev.position.x || cur.position.y !== prev.position.y) {
+    changes.push(`pos=${fmtPos(cur.position.x, cur.position.y)} [was ${fmtPos(prev.position.x, prev.position.y)}]`);
+  }
+  if (cur.stamina !== undefined && prev.stamina !== undefined && cur.stamina !== prev.stamina) {
+    changes.push(`stam=${fmtNum(cur.stamina)} [was ${fmtNum(prev.stamina)}]`);
+  }
+  if (cur.strength !== undefined && prev.strength !== undefined && cur.strength !== prev.strength) {
+    changes.push(`str=${fmtNum(cur.strength)} [was ${fmtNum(prev.strength)}]`);
+  }
+  if (cur.isInBattle !== prev.isInBattle) {
+    changes.push(cur.isInBattle ? "IN BATTLE" : "battle ended");
+  }
+  if (cur.level !== undefined && prev.level !== undefined && cur.level !== prev.level) {
+    changes.push(`lvl=${cur.level} [was ${prev.level}]`);
+  }
+  if (cur.guardStrength !== undefined && prev.guardStrength !== undefined && cur.guardStrength !== prev.guardStrength) {
+    changes.push(`guard=${fmtNum(cur.guardStrength)} [was ${fmtNum(prev.guardStrength)}]`);
+  }
+
+  // Resource changes for structures
+  if (cur.resources && prev.resources) {
+    const resDiff = diffResources(cur.resources, prev.resources);
+    if (resDiff.changed.length > 0) {
+      const parts = resDiff.changed.map((r) => {
+        const sign = r.delta >= 0 ? "+" : "";
+        return `${r.name}: ${fmtNum(r.value)} (${sign}${fmtNum(r.delta)})`;
+      });
+      changes.push(`resources: ${parts.join(", ")}`);
+    }
+  }
+
+  return changes;
+}
+
+/** Diff two tile maps. Returns newly explored tiles and occupier changes. */
+function diffTileMap(
+  current: Map<string, { biome: number; occupierType: number; occupierId: number }>,
+  prev: Map<string, { biome: number; occupierType: number; occupierId: number }>,
+): { newlyExplored: string[]; occupierChanged: string[]; unchangedCount: number } {
+  const newlyExplored: string[] = [];
+  const occupierChanged: string[] = [];
+  let unchangedCount = 0;
+
+  for (const [key, tile] of current) {
+    const prevTile = prev.get(key);
+    if (!prevTile) {
+      if (tile.biome !== 0) {
+        const [xStr, yStr] = key.split(",");
+        newlyExplored.push(`${fmtPos(parseInt(xStr), parseInt(yStr))} ${biomeName(tile.biome)}`);
+      }
+      continue;
+    }
+    if (tile.occupierType !== prevTile.occupierType || tile.occupierId !== prevTile.occupierId) {
+      const [xStr, yStr] = key.split(",");
+      const name = occupierName(tile.occupierType);
+      occupierChanged.push(
+        `${fmtPos(parseInt(xStr), parseInt(yStr))} ${name}${tile.occupierId ? ` #${tile.occupierId}` : ""}`,
+      );
+    } else {
+      unchangedCount++;
+    }
+  }
+  return { newlyExplored, occupierChanged, unchangedCount };
+}
+
+/**
+ * Format a state diff for tick steering. Shows only what changed since prevState.
+ * If prevState is null (first tick), delegates to the full formatter.
+ */
+export function formatEternumTickDiff(
+  state: EternumWorldState,
+  prevState: EternumWorldState | null,
+): string {
+  if (!prevState) return formatEternumTickPrompt(state);
+
+  const sections: string[] = [];
+
+  // Header
+  sections.push(`## Tick ${state.tick} - State Update (since tick ${prevState.tick})\nCoordinates are display-space. Use them directly in actions.`);
+
+  // Player summary with deltas
+  const p = state.player;
+  const pp = prevState.player;
+  const playerName = decodeFelt252(p.name) || p.name || "Unknown";
+  const ptsDelta = p.points - pp.points;
+  const rankDelta = pp.rank - p.rank; // positive = improved
+  const ptsStr = ptsDelta !== 0 ? ` ${ptsDelta >= 0 ? "+" : ""}${ptsDelta}` : "";
+  const rankStr = rankDelta !== 0 ? ` (${rankDelta > 0 ? "+" : ""}${rankDelta} rank)` : "";
+  sections.push(`### You: ${playerName} (rank ${p.rank}${rankStr}, ${p.points} pts${ptsStr})\nStructures: ${p.structures} | Armies: ${p.armies}`);
+
+  // Resources diff
+  const resDiff = diffResources(state.resources, prevState.resources);
+  if (resDiff.changed.length > 0) {
+    const lines = resDiff.changed.map((r) => {
+      const sign = r.delta >= 0 ? "+" : "";
+      return `  ${r.name}: ${fmtNum(r.value)} (${sign}${fmtNum(r.delta)})`;
+    });
+    sections.push(`### Resources [${resDiff.changed.length} changed]\n${lines.join("\n")}`);
+  }
+
+  // Entity section — always include compact inventory so the agent never forgets what it owns
+  const myStructures = state.entities.filter((e) => e.isOwned && e.type === "structure");
+  const myArmies = state.entities.filter((e) => e.isOwned && e.type === "army");
+  const prevMyStructures = prevState.entities.filter((e) => e.isOwned && e.type === "structure");
+  const prevMyArmies = prevState.entities.filter((e) => e.isOwned && e.type === "army");
+
+  const entityLines: string[] = ["### My Entities"];
+
+  // Always: compact inventory of all owned entities
+  if (myStructures.length > 0) {
+    entityLines.push(
+      `Structures: ${myStructures.map((e) => `${e.structureType}#${e.entityId} ${fmtPos(e.position.x, e.position.y)}`).join(" | ")}`,
+    );
+  }
+  if (myArmies.length > 0) {
+    entityLines.push(
+      `Armies: ${myArmies.map((e) => `#${e.entityId} ${e.troopSummary ?? "?"} ${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} ${fmtPos(e.position.x, e.position.y)}${e.isInBattle ? " BATTLE" : ""}`).join(" | ")}`,
+    );
+  }
+
+  // Then: changes only
+  const sDiff = diffEntities(myStructures, prevMyStructures);
+  const aDiff = diffEntities(myArmies, prevMyArmies);
+  const hasEntityChanges =
+    sDiff.added.length > 0 || sDiff.removed.length > 0 || sDiff.changed.length > 0 ||
+    aDiff.added.length > 0 || aDiff.removed.length > 0 || aDiff.changed.length > 0;
+
+  if (hasEntityChanges) {
+    entityLines.push("Changes:");
+    for (const a of sDiff.added) entityLines.push(`  + ${formatEntityLine(a)} (NEW)`);
+    for (const r of sDiff.removed) entityLines.push(`  - [${r.structureType ?? "?"}] id=${r.entityId} (removed)`);
+    for (const c of sDiff.changed) entityLines.push(`  [${c.entity.structureType ?? "?"}] id=${c.entity.entityId} — ${c.changes.join(" | ")}`);
+    for (const a of aDiff.added) entityLines.push(`  + ${formatEntityLine(a, myStructures)} (NEW)`);
+    for (const r of aDiff.removed) entityLines.push(`  - [Army] id=${r.entityId} ${r.troopSummary ?? ""} (destroyed/left)`);
+    for (const c of aDiff.changed) entityLines.push(`  [Army] id=${c.entity.entityId} ${c.entity.troopSummary ?? ""} — ${c.changes.join(" | ")}`);
+  }
+
+  sections.push(entityLines.join("\n"));
+
+  // Tile map diff
+  const tileDiff = diffTileMap(state.tileMap, prevState.tileMap);
+  if (tileDiff.newlyExplored.length > 0 || tileDiff.occupierChanged.length > 0) {
+    const lines: string[] = [`### Map Changes`];
+    if (tileDiff.newlyExplored.length > 0) {
+      lines.push(`  Newly explored: ${tileDiff.newlyExplored.join(", ")}`);
+    }
+    if (tileDiff.occupierChanged.length > 0) {
+      lines.push(`  Occupier changed: ${tileDiff.occupierChanged.join(", ")}`);
+    }
+    sections.push(lines.join("\n"));
+  }
+
+  // Nearby entities diff
+  const enemyEntities = state.entities.filter((e) => !e.isOwned);
+  const prevEnemyEntities = prevState.entities.filter((e) => !e.isOwned);
+  const ownedEntities = state.entities.filter((e) => e.isOwned);
+  const eDiff = diffEntities(enemyEntities, prevEnemyEntities);
+  if (eDiff.added.length > 0 || eDiff.removed.length > 0 || eDiff.changed.length > 0) {
+    const lines: string[] = ["### Nearby Changes"];
+    for (const a of eDiff.added) lines.push(`  + ${formatEntityLine(a, ownedEntities)} (entered radius)`);
+    for (const r of eDiff.removed) lines.push(`  - ${r.type === "structure" ? r.structureType : "Army"} #${r.entityId} (left radius)`);
+    for (const c of eDiff.changed) {
+      if (c.changes.length > 0) lines.push(`  ${c.entity.type === "structure" ? c.entity.structureType : "Army"} #${c.entity.entityId} — ${c.changes.join(" | ")}`);
+    }
+    sections.push(lines.join("\n"));
+  }
+
+  // New battles only
+  const newBattles = state.recentBattles.filter((b) => b.timestamp > prevState.timestamp);
+  if (newBattles.length > 0) {
+    const lines = ["### New Battles"];
+    for (const b of newBattles) {
+      const ago = formatTimeAgo(b.timestamp);
+      if (b.type === "raid") {
+        const result = b.raidSuccess ? "SUCCESS" : "FAILED";
+        lines.push(`  Raid: #${b.attackerId} → #${b.defenderId} — ${result} ${ago}`);
+      } else {
+        const winner = b.winnerId ? `winner=#${b.winnerId}` : "no winner";
+        lines.push(`  Battle: #${b.attackerId} vs #${b.defenderId} — ${winner} ${ago}`);
+      }
+    }
+    sections.push(lines.join("\n"));
+  }
+
+  // Leaderboard — only if changed
+  const prevTopNames = prevState.leaderboard.topPlayers.map((p) => `${p.name}:${p.points}`).join(",");
+  const curTopNames = state.leaderboard.topPlayers.map((p) => `${p.name}:${p.points}`).join(",");
+  if (prevTopNames !== curTopNames && state.leaderboard.topPlayers.length > 0) {
+    const lb = state.leaderboard.topPlayers
+      .map((p, i) => `  ${i + 1}. ${decodeFelt252(p.name) || p.name}: ${p.points} pts`)
+      .join("\n");
+    sections.push(`### Leaderboard\n${lb}`);
+  }
+
+  const result = sections.join("\n\n");
+
+  // Debug log
+  try {
+    const debugPath = join(
+      process.env.AGENT_DATA_DIR || join(process.env.HOME || "/tmp", ".eternum-agent", "data"),
+      "debug",
+      "tick-prompt.log",
+    );
+    const ts = new Date().toISOString();
+    writeFileSync(debugPath, `\n========== ${ts} [DIFF] ==========\n${result}\n`, { flag: "a" });
+  } catch (_) {}
+
+  return result;
+}
+
 /**
  * Format the full world state into a clear, actionable prompt for the agent.
  * This replaces the generic "Entities: N" with a detailed breakdown.
@@ -1255,7 +1532,7 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
   const sections: string[] = [];
 
   // Header
-  sections.push(`## Tick ${state.tick} - World State`);
+  sections.push(`## Tick ${state.tick} - World State\nCoordinates are display-space (relative to map center). Use them directly in move_to and other actions.`);
 
   // Player summary
   const p = state.player;
@@ -1350,11 +1627,11 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     if (myArmies.length > 0) {
       lines.push(`Armies (actions: ${getArmyActions().join(", ")})`);
       for (const e of myArmies) {
-        lines.push(formatEntityLine(e));
+        lines.push(formatEntityLine(e, myStructures));
         // Last attack/defense on this army
         if (e.lastAttack) {
           const ago = formatTimeAgo(e.lastAttack.timestamp);
-          const pos = e.lastAttack.pos ? ` from (${e.lastAttack.pos.x},${e.lastAttack.pos.y})` : "";
+          const pos = e.lastAttack.pos ? ` from ${fmtPos(e.lastAttack.pos.x, e.lastAttack.pos.y)}` : "";
           lines.push(`    ⚔ Last attacked by #${e.lastAttack.attackerId}${pos} ${ago}`);
         }
       }
@@ -1373,16 +1650,16 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     sections.push(operatingArea);
   }
 
-  // Nearby entities (not mine)
+  // Nearby entities (not mine) — with direction labels relative to owned entities
   if (enemyStructures.length > 0 || enemyArmies.length > 0) {
     const lines = ["### Nearby (other players)"];
     if (enemyStructures.length > 0) {
       lines.push("Structures:");
-      for (const e of enemyStructures) lines.push(formatEntityLine(e));
+      for (const e of enemyStructures) lines.push(formatEntityLine(e, ownedEntities));
     }
     if (enemyArmies.length > 0) {
       lines.push("Armies:");
-      for (const e of enemyArmies) lines.push(formatEntityLine(e));
+      for (const e of enemyArmies) lines.push(formatEntityLine(e, ownedEntities));
     }
     sections.push(lines.join("\n"));
   }
