@@ -1,0 +1,51 @@
+name: Torii Indexer Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      indexer_name:
+        description: "Torii indexer name to delete (e.g. adam-8)"
+        required: true
+      slot_team:
+        description: "Cartridge Slot team name"
+        required: false
+        default: "realms-eternum"
+
+env:
+  SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+
+jobs:
+  cleanup:
+    name: 🗑️ Delete Torii Indexer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install Slot CLI
+        run: |
+          set -euo pipefail
+          curl -L https://slot.cartridge.sh | bash
+          ~/.config/.slot/bin/slotup
+          echo "$HOME/.config/.slot/bin" >> $GITHUB_PATH
+          echo "Slot version: $(~/.config/.slot/bin/slot --version)"
+
+      - name: Delete Torii indexer
+        env:
+          TEAM: ${{ github.event.inputs.slot_team }}
+          NAME: ${{ github.event.inputs.indexer_name }}
+        run: |
+          set -euo pipefail
+          echo "Deleting Torii indexer: $NAME (team: $TEAM)"
+          slot d delete --team "$TEAM" "$NAME" torii -f
+          echo "✅ Deleted: $NAME"
+
+      - name: Summary
+        if: always()
+        env:
+          NAME: ${{ github.event.inputs.indexer_name }}
+        run: |
+          {
+            echo "## Torii Cleanup";
+            echo "- Deleted: \`$NAME\`";
+            echo "- At: $(date -u '+%Y-%m-%d %H:%M:%S UTC')";
+          } >> "$GITHUB_STEP_SUMMARY"
