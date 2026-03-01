@@ -5,7 +5,7 @@
  * starknet.js to encode calldata directly from the manifest ABI. Overlay
  * param transforms are applied before encoding.
  */
-import { Contract, CairoCustomEnum, CallData, type Account, type Call } from "starknet";
+import { Contract, CairoCustomEnum, CallData, type Account, type Call, type RawArgs } from "starknet";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { ActionResult, ActionRoute, DomainOverlay, GameAction, Manifest } from "./types";
@@ -283,7 +283,7 @@ export function createABIExecutor(manifest: Manifest, account: Account, options:
       const call: Call = {
         contractAddress: route.contractAddress,
         entrypoint: route.entrypoint,
-        calldata: CallData.compile(positionalArgs),
+        calldata: CallData.compile(positionalArgs as RawArgs),
       };
       const result = await account.execute(call);
       const txHash = result?.transaction_hash ?? (result as any)?.transactionHash ?? undefined;

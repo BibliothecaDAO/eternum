@@ -65,7 +65,11 @@ export function createGameAgent<TState extends WorldState = WorldState>(
   let currentDataDir = options.dataDir;
 
   const buildTools = () => {
-    const gameTools = createGameTools(adapter, actionDefs);
+    // observe_game always gets full state (null prevState), not a diff
+    const fullStateFormatter = customFormatTickPrompt
+      ? (state: any) => customFormatTickPrompt(state, null)
+      : undefined;
+    const gameTools = createGameTools(adapter, actionDefs, fullStateFormatter);
     const fileTools = includeDataTools ? [createReadTool(currentDataDir), createWriteTool(currentDataDir)] : [];
     const configTools = runtimeConfigManager ? createAgentConfigTools(runtimeConfigManager) : [];
     return [...gameTools, ...fileTools, ...configTools, ...extraTools] as AgentTool[];
@@ -83,6 +87,73 @@ export function createGameAgent<TState extends WorldState = WorldState>(
     return messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
   };
 
+  /**
+   * Context window management — prune old messages when context gets too large.
+   * Keeps the most recent messages and always preserves the latest user message
+   * (current world state). Estimates tokens as content.length / 4.
+   */
+  const MAX_CONTEXT_CHARS = 400_000; // ~100K tokens — leave headroom for model's limit
+  const PRUNE_TARGET_CHARS = 200_000; // prune down to ~50K tokens
+
+  const transformContext = async (messages: AgentMessage[]): Promise<AgentMessage[]> => {
+    // Estimate total context size
+    let totalChars = 0;
+    for (const m of messages) {
+      const msg = m as Message;
+      if (typeof msg.content === "string") {
+        totalChars += msg.content.length;
+      } else if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if ("text" in block) totalChars += block.text.length;
+        }
+      }
+    }
+
+    if (totalChars <= MAX_CONTEXT_CHARS) return messages;
+
+    // Need to prune. Keep messages from the end until we hit the target.
+    let kept = 0;
+    let cutIndex = messages.length;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i] as Message;
+      let msgChars = 0;
+      if (typeof msg.content === "string") {
+        msgChars = msg.content.length;
+      } else if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if ("text" in block) msgChars += block.text.length;
+        }
+      }
+      kept += msgChars;
+      if (kept > PRUNE_TARGET_CHARS) {
+        cutIndex = i + 1;
+        break;
+      }
+    }
+
+    // Always keep at least the last message
+    if (cutIndex >= messages.length) cutIndex = messages.length - 1;
+
+    const pruned = messages.slice(cutIndex);
+
+    // Inject a summary note so the agent knows history was trimmed
+    const droppedCount = messages.length - pruned.length;
+    if (droppedCount > 0) {
+      // Reload system prompt from disk after compaction — picks up latest
+      // learnings/priorities that may have been written since startup
+      const freshPrompt = buildSystemPromptFromDataDir(currentDataDir);
+      agent.setSystemPrompt(freshPrompt);
+
+      pruned.unshift({
+        role: "user" as const,
+        content: `[Context compacted: ${droppedCount} older messages dropped. System prompt reloaded with latest task files. Use observe_game for current state.]`,
+        timestamp: Date.now(),
+      } as AgentMessage);
+    }
+
+    return pruned;
+  };
+
   // Create agent
   const agentOptions: ConstructorParameters<typeof Agent>[0] = {
     initialState: {
@@ -93,6 +164,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
       messages: [],
     },
     convertToLlm,
+    transformContext,
   };
 
   if (streamFn) {
@@ -100,28 +172,69 @@ export function createGameAgent<TState extends WorldState = WorldState>(
   }
 
   const agent = new Agent(agentOptions);
-  let promptQueue = Promise.resolve();
 
+  // Track whether the agent is currently processing a prompt
+  let agentBusy = false;
+  let previousState: TState | null = null;
+
+  /**
+   * Enqueue a prompt for the agent. If the agent is idle, starts a new run.
+   * If busy, uses followUp() so it's processed after the current work finishes.
+   */
   const enqueuePrompt = (prompt: string): Promise<void> => {
-    const run = async () => {
-      await agent.prompt(prompt);
-    };
-    // Keep the queue alive after failures so later prompts can still run.
-    promptQueue = promptQueue.then(run, run);
-    return promptQueue;
+    if (agentBusy) {
+      agent.followUp({
+        role: "user" as const,
+        content: prompt,
+        timestamp: Date.now(),
+      });
+      return Promise.resolve();
+    }
+    agentBusy = true;
+    const p = agent.prompt(prompt);
+    p.then(
+      () => {
+        agentBusy = false;
+      },
+      () => {
+        agentBusy = false;
+      },
+    );
+    return p;
   };
 
-  // Create tick loop
+  // Create tick loop — fires on fixed cadence, steers agent with fresh state
   const ticker = createTickLoop({
     intervalMs: tickIntervalMs,
     onTick: async () => {
-      const nextPrompt = buildSystemPromptFromDataDir(currentDataDir);
-      if (nextPrompt !== agent.state.systemPrompt) {
-        agent.setSystemPrompt(nextPrompt);
-      }
+      // Fetch fresh world state
       const state = await adapter.getWorldState();
-      const prompt = customFormatTickPrompt ? customFormatTickPrompt(state) : formatTickPrompt(state);
-      await enqueuePrompt(prompt);
+      const prompt = customFormatTickPrompt
+        ? customFormatTickPrompt(state, previousState)
+        : formatTickPrompt(state);
+      previousState = state;
+
+      if (agentBusy) {
+        // Agent is mid-run — steer with fresh state.
+        // Delivered after current tool execution, skips remaining queued tools.
+        agent.steer({
+          role: "user" as const,
+          content: `[WORLD STATE UPDATE]\n\n${prompt}`,
+          timestamp: Date.now(),
+        });
+      } else {
+        // Agent is idle — start a new run (don't block the tick loop)
+        agentBusy = true;
+        agent.prompt(prompt).then(
+          () => {
+            agentBusy = false;
+          },
+          (err) => {
+            agentBusy = false;
+            onTickError?.(err instanceof Error ? err : new Error(String(err)));
+          },
+        );
+      }
     },
     onError:
       onTickError ??

@@ -11,28 +11,36 @@
  */
 import type { DomainOverlayMap, Manifest } from "./types";
 import { extractAllFromManifest, getGameEntrypoints } from "./parser";
+import { toContract, getMapCenter } from "../adapter/world-state";
+import {
+  ResourcesIds,
+  RESOURCE_PRECISION as TYPES_RESOURCE_PRECISION,
+  BuildingType,
+  BuildingTypeToString,
+  Direction,
+  DirectionName,
+  resources as resourceDefs,
+} from "@bibliothecadao/types";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Constants (generated from @bibliothecadao/types) ──────────────────────
 
 /** On-chain amounts (troops, resources) must be multiplied by this factor. */
-export const RESOURCE_PRECISION = 1_000_000_000;
+export const RESOURCE_PRECISION = TYPES_RESOURCE_PRECISION;
 
+// Generate "Resource IDs: 1=Stone, 2=Coal, ..." from the resources array
 const RESOURCE_IDS =
-  "Resource IDs: 1=Stone, 2=Coal, 3=Wood, 4=Copper, 5=Ironwood, 6=Obsidian, 7=Gold, 8=Silver, " +
-  "9=Mithral, 10=AlchemicalSilver, 11=ColdIron, 12=DeepCrystal, 13=Ruby, 14=Diamonds, " +
-  "15=Hartwood, 16=Ignium, 17=TwilightQuartz, 18=TrueIce, 19=Adamantine, 20=Sapphire, " +
-  "21=EtherealSilica, 22=Dragonhide, 23=Labor, 24=AncientFragment, 25=Donkey, " +
-  "26=Knight, 27=KnightT2, 28=KnightT3, 29=Crossbowman, 30=CrossbowmanT2, 31=CrossbowmanT3, " +
-  "32=Paladin, 33=PaladinT2, 34=PaladinT3, 35=Wheat, 36=Fish, 37=Lords, 38=Essence";
+  "Resource IDs: " +
+  resourceDefs
+    .filter((r) => r.id <= 38) // Core resources only (not relics)
+    .map((r) => `${r.id}=${r.trait}`)
+    .join(", ");
 
+// Generate "Building IDs: 0=None, 1=WorkersHut, ..." from BuildingTypeToString
 const BUILDING_TYPES =
-  "Building IDs: 0=None, 1=WorkersHut, 2=Storehouse, 3=Stone, 4=Coal, 5=Wood, 6=Copper, " +
-  "7=Ironwood, 8=Obsidian, 9=Gold, 10=Silver, 11=Mithral, 12=AlchemicalSilver, 13=ColdIron, " +
-  "14=DeepCrystal, 15=Ruby, 16=Diamonds, 17=Hartwood, 18=Ignium, 19=TwilightQuartz, " +
-  "20=TrueIce, 21=Adamantine, 22=Sapphire, 23=EtherealSilica, 24=Dragonhide, 25=Labor, " +
-  "26=AncientFragment, 27=Donkey, 28=KnightT1, 29=KnightT2, 30=KnightT3, " +
-  "31=CrossbowmanT1, 32=CrossbowmanT2, 33=CrossbowmanT3, 34=PaladinT1, 35=PaladinT2, " +
-  "36=PaladinT3, 37=Wheat, 38=Fish, 39=Essence";
+  "Building IDs: " +
+  Object.entries(BuildingTypeToString)
+    .map(([id, name]) => `${id}=${name}`)
+    .join(", ");
 
 const BUILDING_GUIDE =
   "BUILDING GUIDE — build cost (simple=Labor only | complex=Labor+resources), per-tick production consumption:\n" +
@@ -70,50 +78,26 @@ const BUILDING_GUIDE =
   "Slots: Level 0=6, Level 1=18, Level 2=36. Formula: 3*(level+1)*(level+2). Use directions to path from center hex.\n" +
   "Priority: Wheat farms first (all production needs Wheat), then Labor, then resource buildings, then military.";
 
-const DIR = "0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE";
+// Direction IDs for the LLM: "0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE"
+const DIR_ABBREV: Record<number, string> = {
+  [Direction.EAST]: "East",
+  [Direction.NORTH_EAST]: "NE",
+  [Direction.NORTH_WEST]: "NW",
+  [Direction.WEST]: "West",
+  [Direction.SOUTH_WEST]: "SW",
+  [Direction.SOUTH_EAST]: "SE",
+};
+const DIR = Object.entries(DIR_ABBREV)
+  .map(([id, name]) => `${id}=${name}`)
+  .join(", ");
+
 const TROOP_CATEGORY = "0=Knight, 1=Paladin, 2=Crossbowman";
 const TROOP_TIER = "0=T1, 1=T2, 2=T3";
 
-const RESOURCE_TYPE_NAMES: Record<number, string> = {
-  1: "Stone",
-  2: "Coal",
-  3: "Wood",
-  4: "Copper",
-  5: "Ironwood",
-  6: "Obsidian",
-  7: "Gold",
-  8: "Silver",
-  9: "Mithral",
-  10: "Alchemical Silver",
-  11: "Cold Iron",
-  12: "Deep Crystal",
-  13: "Ruby",
-  14: "Diamonds",
-  15: "Hartwood",
-  16: "Ignium",
-  17: "Twilight Quartz",
-  18: "True Ice",
-  19: "Adamantine",
-  20: "Sapphire",
-  21: "Ethereal Silica",
-  22: "Dragonhide",
-  23: "Labor",
-  24: "Ancient Fragment",
-  25: "Donkey",
-  26: "Knight",
-  27: "Knight T2",
-  28: "Knight T3",
-  29: "Crossbowman",
-  30: "Crossbowman T2",
-  31: "Crossbowman T3",
-  32: "Paladin",
-  33: "Paladin T2",
-  34: "Paladin T3",
-  35: "Wheat",
-  36: "Fish",
-  37: "Lords",
-  38: "Essence",
-};
+// Generate resource name lookup from resources array
+const RESOURCE_TYPE_NAMES: Record<number, string> = Object.fromEntries(
+  resourceDefs.map((r) => [r.id, r.trait]),
+);
 
 // ── Param transform helpers ──────────────────────────────────────────────────
 
@@ -145,16 +129,43 @@ export function numArray(v: unknown): number[] {
   return [];
 }
 
+/** Transform a {x, y} coord from display space to contract space. */
+function displayCoordsToContract(v: unknown): unknown {
+  if (typeof v !== "object" || v === null) return v;
+  const obj = v as Record<string, unknown>;
+  return {
+    x: toContract(num(obj.x)),
+    y: toContract(num(obj.y)),
+  };
+}
+
+/** Extract resource ID from an object, trying known key names. Throws if none found. */
+function extractResourceId(r: Record<string, unknown>, index: number): number {
+  const id = r.resourceType ?? r.resource_type ?? r.resourceId ?? r.resource_id;
+  if (id === undefined || id === null) {
+    throw new Error(
+      `Resource entry at index ${index} has no resourceType or resourceId. ` +
+      `Pass [{resourceType: <id>, amount: <n>}, ...]. ${RESOURCE_IDS}`,
+    );
+  }
+  return num(id);
+}
+
+/** Extract amount from an object. Throws if missing. */
+function extractAmount(r: Record<string, unknown>, index: number): number {
+  if (r.amount === undefined || r.amount === null) {
+    throw new Error(`Resource entry at index ${index} has no amount.`);
+  }
+  return precisionAmount(r.amount);
+}
+
 /**
  * Transform LLM resource array [{resourceType, amount}, ...] into
  * ABI-compatible Span<(u8, u128)> tuples: [[type, precisionAmount], ...]
  */
 export function resourceTuples(v: unknown): [number, number][] {
   if (!Array.isArray(v)) return [];
-  return v.map((r: any) => [
-    num(r.resourceType ?? r.resource_type ?? r.resourceId ?? r.resource_id ?? 0),
-    precisionAmount(r.amount ?? 0),
-  ]);
+  return v.map((r: any, i: number) => [extractResourceId(r, i), extractAmount(r, i)]);
 }
 
 /**
@@ -163,10 +174,7 @@ export function resourceTuples(v: unknown): [number, number][] {
  */
 export function stealResourceTuples(v: unknown): [number, number][] {
   if (!Array.isArray(v)) return [];
-  return v.map((r: any) => [
-    num(r.resourceId ?? r.resource_id ?? r.resourceType ?? r.resource_type ?? 0),
-    precisionAmount(r.amount ?? 0),
-  ]);
+  return v.map((r: any, i: number) => [extractResourceId(r, i), extractAmount(r, i)]);
 }
 
 /**
@@ -212,14 +220,14 @@ export function createHiddenOverlays(manifest: Manifest, suffixes: string[] = HI
 
 /**
  * Pre-flight: check sender has sufficient resource balance.
- * Fail-open: returns null (passes) if cached state is unavailable.
+ * Returns error if cached state is unavailable — do not execute blind.
  */
 function preflightSendResources(params: Record<string, unknown>, cachedState?: unknown): string | null {
   const state = cachedState as any;
-  if (!state?.entities) return null;
+  if (!state?.entities) return "World state not available for balance check. Call observe_game first.";
   const senderId = num(params.sender_structure_id);
   const sender = state.entities.find((e: any) => e.entityId === senderId && e.type === "structure");
-  if (!sender?.resources) return null;
+  if (!sender?.resources) return `Structure #${senderId} not found or has no resources.`;
   const resources = resourceTuples(params.resources);
   for (const [resourceType, rawAmount] of resources) {
     const name = RESOURCE_TYPE_NAMES[resourceType] ?? `Resource#${resourceType}`;
@@ -401,15 +409,14 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "troop_management_systems::explorer_add": {
     actionType: "add_to_explorer",
-    description: "Add more troops to an existing explorer (explorer must be adjacent to its home structure)",
+    description:
+      "Add more troops to an existing explorer. Explorer must be adjacent to its home structure. " +
+      "home_direction is auto-computed — do not pass it.",
     paramOverrides: {
       to_explorer_id: { description: "Explorer entity ID to reinforce" },
       amount: {
         description: "Number of troops to add",
         transform: precisionAmount,
-      },
-      home_direction: {
-        description: `Direction FROM the explorer TO its home structure (${DIR}). Check explorer's neighbor tiles to find which direction the structure is in.`,
       },
     },
   },
@@ -502,7 +509,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     aliases: ["travel_explorer", "explore"],
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID" },
-      directions: { description: `Array of hex directions (${DIR})` },
+      directions: { description: `Array of hex direction numbers: ${DIR}. Example: [0] for East, [1,0] for NE then East.`, type: "number[]" },
       explore: {
         description:
           "false = travel through already-explored tiles (cheap). true = explore new tile (expensive, awards VP)",
@@ -620,6 +627,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
       structure_id: { description: "Structure entity ID to build at" },
       directions: {
         description: `Path from center hex to building slot — MUST have at least 1 direction. Direction IDs: ${DIR}. Use paths listed above per ring.`,
+        type: "number[]",
       },
       building_category: { description: `Building category ID. ${BUILDING_TYPES}` },
       use_simple: {
@@ -846,7 +854,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     description: "Open a relic chest at a coordinate with an explorer",
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID" },
-      chest_coord: { description: "Chest coordinate — pass as {x: number, y: number}" },
+      chest_coord: {
+        description: "Chest coordinate — pass as {x: number, y: number} using display coordinates from world state",
+        transform: displayCoordsToContract,
+      },
     },
   },
 

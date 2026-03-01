@@ -13,10 +13,11 @@ import { join, dirname } from "node:path";
 import type { Account } from "starknet";
 import { generateActions, mergeCompositeActions } from "../abi/action-gen";
 import { createABIExecutor, type ABIExecutor } from "../abi/executor";
-import { ETERNUM_OVERLAYS, createHiddenOverlays, num } from "../abi/domain-overlay";
+import { ETERNUM_OVERLAYS, createHiddenOverlays, num, bool, numArray, precisionAmount } from "../abi/domain-overlay";
+import { getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import type { Manifest } from "../abi/types";
 import { moveExplorer } from "./move-executor";
-import { buildWorldState, type EternumWorldState } from "./world-state";
+import { buildWorldState, type EternumWorldState, toContract, getMapCenter } from "./world-state";
 
 // ---------------------------------------------------------------------------
 // Module state — populated by initializeActions()
@@ -138,8 +139,8 @@ export function initializeActions(
           "batches travel/explore actions, and executes them sequentially. Stops on first failure.",
         params: [
           { name: "explorerId", type: "number", description: "Explorer entity ID to move", required: true },
-          { name: "targetCol", type: "number", description: "Target column (x coordinate)", required: true },
-          { name: "targetRow", type: "number", description: "Target row (y coordinate)", required: true },
+          { name: "targetCol", type: "number", description: "Target column (x) — use the display coordinates shown in world state", required: true },
+          { name: "targetRow", type: "number", description: "Target row (y) — use the display coordinates shown in world state", required: true },
         ],
       },
     },
@@ -168,18 +169,12 @@ export function initializeActions(
     {
       definition: {
         type: "lock_entry_token",
-        description: lockDesc,
+        description: lockDesc + " Lock ID is always 69 (hardcoded).",
         params: [
           {
             name: "token_id",
             type: "number",
             description: "Entry token ID to lock (obtained from obtain_entry_token)",
-            required: true,
-          },
-          {
-            name: "lock_id",
-            type: "number",
-            description: "Lock ID from blitz registration config (query via inspect_sql if unknown)",
             required: true,
           },
           {
@@ -241,13 +236,16 @@ async function handleMoveTo(
 
   const worldState = await _worldStateProvider(client);
 
+  const targetCol = toContract(num(params.targetCol));
+  const targetRow = toContract(num(params.targetRow));
+
   const result = await moveExplorer(
     client,
     signer,
     {
       explorerId: num(params.explorerId),
-      targetCol: num(params.targetCol),
-      targetRow: num(params.targetRow),
+      targetCol,
+      targetRow,
     },
     worldState,
   );
@@ -304,16 +302,13 @@ async function handleApproveToken(signer: Account, params: Record<string, unknow
 async function handleLockEntryToken(signer: Account, params: Record<string, unknown>): Promise<ActionResult> {
   const tokenAddress = String(params.token_address ?? params.tokenAddress ?? _tokenConfig.entryToken ?? "");
   const tokenId = BigInt(String(params.token_id ?? params.tokenId ?? "0"));
-  const lockId = BigInt(String(params.lock_id ?? params.lockId ?? "0"));
+  const lockId = BigInt(69); // Always 69 — hardcoded constant
 
   if (!tokenAddress) {
     return { success: false, error: "token_address is required (or set via entryToken config)" };
   }
   if (tokenId === 0n) {
     return { success: false, error: "token_id is required and must be non-zero" };
-  }
-  if (lockId === 0n) {
-    return { success: false, error: "lock_id is required and must be non-zero" };
   }
 
   // token_id is u256 (low, high), lock_id is felt252
@@ -350,32 +345,160 @@ async function handleSettleBlitzRealm(signer: Account, params: Record<string, un
     return { success: false, error: "settlement_count must be at least 1" };
   }
 
-  // Build multicall: VRF request_random + assign_realm_positions + settle_realms
-  const calls = [
-    {
+  // Step 1: VRF randomness request
+  try {
+    await signer.execute({
       contractAddress: VRF_PROVIDER_ADDRESS,
       entrypoint: "request_random",
       calldata: [blitzAddress, "0", signer.address],
-    },
-    {
+    });
+  } catch (err: any) {
+    return { success: false, error: `Step 1/3 failed — VRF request_random: ${err?.message ?? String(err)}` };
+  }
+
+  // Step 2: Assign realm positions
+  try {
+    await signer.execute({
       contractAddress: blitzAddress,
       entrypoint: "assign_realm_positions",
       calldata: [],
-    },
-    {
+    });
+  } catch (err: any) {
+    return { success: false, error: `Step 2/3 failed — assign_realm_positions: ${err?.message ?? String(err)}` };
+  }
+
+  // Step 3: Settle realms
+  try {
+    const result = await signer.execute({
       contractAddress: blitzAddress,
       entrypoint: "settle_realms",
       calldata: [settlementCount.toString()],
-    },
-  ];
-
-  try {
-    const result = await signer.execute(calls);
+    });
     const txHash = result?.transaction_hash ?? (result as any)?.transactionHash;
     return { success: true, txHash, data: { settlementCount } };
   } catch (err: any) {
-    return { success: false, error: err?.message ?? String(err) };
+    return { success: false, error: `Step 3/3 failed — settle_realms: ${err?.message ?? String(err)}` };
   }
+}
+
+// ---------------------------------------------------------------------------
+// move_explorer handler — uses provider for explore (VRF multicall), ABI for travel
+// ---------------------------------------------------------------------------
+
+async function handleMoveExplorer(
+  client: EternumClient,
+  signer: Account,
+  params: Record<string, unknown>,
+): Promise<ActionResult> {
+  const explorerId = num(params.explorer_id ?? params.explorerId);
+  const directions = numArray(params.directions);
+  const explore = bool(params.explore);
+
+  if (!explorerId) {
+    return { success: false, error: "explorer_id is required" };
+  }
+  if (directions.length === 0) {
+    return { success: false, error: "directions must be a non-empty array" };
+  }
+
+  if (explore) {
+    // Explore requires VRF + move + extract_reward as a multicall.
+    // client.troops.explore() does this correctly via the provider.
+    try {
+      const result = await client.troops.explore(signer as any, {
+        explorerId,
+        directions,
+      });
+      const txHash = result?.transaction_hash ?? (result as any)?.transactionHash;
+      return { success: true, txHash };
+    } catch (err: any) {
+      return { success: false, error: err?.message ?? String(err) };
+    }
+  }
+
+  // Travel (explore=false) — single call, no VRF needed. Fall through to ABI executor.
+  if (!_executor) {
+    return { success: false, error: "Action registry not initialized." };
+  }
+  return _executor.execute({ type: "move_explorer", params });
+}
+
+// ---------------------------------------------------------------------------
+// add_to_explorer handler — auto-compute home_direction
+// ---------------------------------------------------------------------------
+
+async function handleAddToExplorer(
+  client: EternumClient,
+  signer: Account,
+  params: Record<string, unknown>,
+): Promise<ActionResult> {
+  const explorerId = num(params.to_explorer_id ?? params.toExplorerId);
+  const amount = params.amount;
+
+  if (!explorerId) {
+    return { success: false, error: "to_explorer_id is required" };
+  }
+  if (!amount) {
+    return { success: false, error: "amount is required" };
+  }
+
+  // Look up explorer and its home structure from cached world state
+  if (!_cachedWorldState) {
+    return { success: false, error: "World state not available. Wait for next tick." };
+  }
+
+  const explorer = _cachedWorldState.entities.find(
+    (e) => e.entityId === explorerId && e.type === "army" && e.isOwned,
+  );
+  if (!explorer) {
+    return { success: false, error: `Explorer #${explorerId} not found in your armies.` };
+  }
+
+  // Find the explorer's home structure — the nearest owned structure
+  const ownedStructures = _cachedWorldState.entities.filter((e) => e.type === "structure" && e.isOwned);
+  if (ownedStructures.length === 0) {
+    return { success: false, error: "No owned structures found." };
+  }
+
+  // Try to find an adjacent structure
+  let homeDirection: number | null = null;
+  let homeStructure: typeof ownedStructures[0] | undefined;
+
+  for (const s of ownedStructures) {
+    const dir = getDirectionBetweenAdjacentHexes(
+      { col: explorer.position.x, row: explorer.position.y },
+      { col: s.position.x, row: s.position.y },
+    );
+    if (dir !== null) {
+      homeDirection = dir;
+      homeStructure = s;
+      break;
+    }
+  }
+
+  if (homeDirection === null || !homeStructure) {
+    const explorerPos = `(${explorer.position.x},${explorer.position.y})`;
+    const structPositions = ownedStructures
+      .map((s) => `#${s.entityId} @(${s.position.x},${s.position.y})`)
+      .join(", ");
+    return {
+      success: false,
+      error: `Explorer #${explorerId} at ${explorerPos} is not adjacent to any owned structure. Structures: ${structPositions}. Move the explorer adjacent first.`,
+    };
+  }
+
+  // Pass through to ABI executor with computed home_direction
+  if (!_executor) {
+    return { success: false, error: "Action registry not initialized." };
+  }
+  return _executor.execute({
+    type: "add_to_explorer",
+    params: {
+      to_explorer_id: explorerId,
+      amount,
+      home_direction: homeDirection,
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +540,20 @@ export async function executeAction(client: EternumClient, signer: Account, acti
   // Composite actions handled specially
   if (action.type === "move_to") {
     const result = await handleMoveTo(client, signer, action.params);
+    logAction(action.type, result);
+    return result;
+  }
+
+  // move_explorer with explore=true needs VRF multicall via provider
+  if (action.type === "move_explorer" && bool(action.params.explore)) {
+    const result = await handleMoveExplorer(client, signer, action.params);
+    logAction(action.type, result);
+    return result;
+  }
+
+  // add_to_explorer — auto-compute home_direction from world state
+  if (action.type === "add_to_explorer") {
+    const result = await handleAddToExplorer(client, signer, action.params);
     logAction(action.type, result);
     return result;
   }
