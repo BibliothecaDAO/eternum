@@ -58,8 +58,8 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 
   .blitz-card-root .lords-icon {
-    width: 54px;
-    height: 54px;
+    width: 64px;
+    height: 64px;
     object-fit: contain;
     filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.35));
   }
