@@ -550,12 +550,6 @@ const ClaimRewardsStep = ({
               <p className="mt-1 text-sm text-gold/75">{chestsClaimedReason}</p>
             </div>
           )}
-          {hasEliteTicketReason && (
-            <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-gold/60">Elite tickets won details</p>
-              <p className="mt-1 text-sm text-gold/75">{eliteTicketReason}</p>
-            </div>
-          )}
         </div>
       )}
 
