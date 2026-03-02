@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Eye, Loader2, Check, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
@@ -23,13 +23,14 @@ import { ensureWorldSessionPolicies, resolveWorldPolicyProfile } from "@/hooks/c
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getWorldKey } from "@/hooks/use-world-availability";
+import { fetchWorldHyperstructuresLeft, getWorldKey } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
 import { refreshBootstrapPoliciesIfNeeded } from "./game-entry-modal.session-refresh";
+import { reconcileActiveForgeRemaining, resolveForgeSeedRemaining } from "./game-entry-modal.forge-queue";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -43,6 +44,9 @@ const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
 const FORGE_ALL_MAX_RETRIES = 3;
 const FORGE_ALL_RETRY_BASE_DELAY_MS = 800;
 const FORGE_ALL_STEP_DELAY_MS = 250;
+const FORGE_WORLD_LIVE_POLL_MS = 5_000;
+const FORGE_ALL_SETTLE_RECHECKS = 8;
+const FORGE_ALL_SETTLE_RECHECK_DELAY_MS = 2_000;
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
@@ -704,6 +708,16 @@ export const GameEntryModal = ({
   const forgeAllCancelledRef = useRef(false);
   const hasEnteredGameRef = useRef(false);
 
+  const { data: liveHyperstructuresLeft } = useQuery({
+    queryKey: ["worldHyperstructuresLeft", chain, worldName],
+    queryFn: () => fetchWorldHyperstructuresLeft(worldName),
+    enabled: isOpen && isForgeMode,
+    staleTime: 0,
+    refetchInterval: isOpen && isForgeMode ? FORGE_WORLD_LIVE_POLL_MS : false,
+    refetchIntervalInBackground: false,
+    retry: 1,
+  });
+
   useEffect(() => {
     if (!isOpen) {
       hasEnteredGameRef.current = false;
@@ -719,6 +733,27 @@ export const GameEntryModal = ({
       forgeAllCancelledRef.current = false;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isForgeMode || liveHyperstructuresLeft == null) {
+      return;
+    }
+
+    setNumHyperstructuresLeft((previous) => {
+      // While queue is idle, trust live value so players see newly available forge work
+      // without manually refreshing.
+      if (!isForgeAllRunning && !isForging) {
+        return liveHyperstructuresLeft;
+      }
+
+      // During active forging, keep a monotonic downward counter to avoid stale spikes.
+      if (previous <= 0) {
+        return liveHyperstructuresLeft;
+      }
+
+      return Math.min(previous, liveHyperstructuresLeft);
+    });
+  }, [isOpen, isForgeMode, liveHyperstructuresLeft, isForgeAllRunning, isForging]);
 
   useEffect(() => {
     forgeAllCancelledRef.current = true;
@@ -1339,6 +1374,7 @@ export const GameEntryModal = ({
       // Invalidate the world availability cache so the count updates on the landing page
       const worldKey = getWorldKey({ name: worldName, chain });
       queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+      queryClient.invalidateQueries({ queryKey: ["worldHyperstructuresLeft", chain, worldName] });
 
       return hyperstructureCount;
     },
@@ -1353,7 +1389,15 @@ export const GameEntryModal = ({
     setIsForging(true);
 
     try {
-      const forged = await executeForgeBatch(numHyperstructuresLeft);
+      const latestLeft = await fetchWorldHyperstructuresLeft(worldName);
+      const forgeableLeft = resolveForgeSeedRemaining(numHyperstructuresLeft, latestLeft);
+
+      if (forgeableLeft <= 0) {
+        setNumHyperstructuresLeft(0);
+        return;
+      }
+
+      const forged = await executeForgeBatch(forgeableLeft);
       setNumHyperstructuresLeft((prev) => Math.max(0, prev - forged));
       debugLog(worldName, "Hyperstructures forged!");
     } catch (error) {
@@ -1370,18 +1414,56 @@ export const GameEntryModal = ({
 
     forgeAllCancelledRef.current = false;
 
-    const totalToForge = numHyperstructuresLeft;
+    const latestLeft = await fetchWorldHyperstructuresLeft(worldName);
+    const totalToForge = resolveForgeSeedRemaining(numHyperstructuresLeft, latestLeft);
+    if (totalToForge <= 0) {
+      setNumHyperstructuresLeft(0);
+      return;
+    }
     let remaining = totalToForge;
+    let dynamicTargetCount = totalToForge;
 
     setIsForging(true);
     setIsForgeAllRunning(true);
-    setForgeAllTargetCount(totalToForge);
+    setForgeAllTargetCount(dynamicTargetCount);
     setForgeAllCompletedCount(0);
     setForgeAllStartedAt(Date.now());
     setForgeAllNow(Date.now());
 
     try {
-      while (remaining > 0 && !forgeAllCancelledRef.current) {
+      while (!forgeAllCancelledRef.current) {
+        const liveLeft = await fetchWorldHyperstructuresLeft(worldName);
+        const reconciledRemaining = reconcileActiveForgeRemaining(remaining, liveLeft);
+        if (reconciledRemaining !== remaining) {
+          remaining = reconciledRemaining;
+          setNumHyperstructuresLeft(reconciledRemaining);
+        }
+
+        if (remaining <= 0) {
+          let additionalRemaining = 0;
+          for (let attempt = 0; attempt < FORGE_ALL_SETTLE_RECHECKS; attempt++) {
+            if (forgeAllCancelledRef.current) {
+              break;
+            }
+            await wait(FORGE_ALL_SETTLE_RECHECK_DELAY_MS);
+            const recheckLeft = await fetchWorldHyperstructuresLeft(worldName);
+            if (recheckLeft != null && recheckLeft > 0) {
+              additionalRemaining = recheckLeft;
+              break;
+            }
+          }
+
+          if (additionalRemaining <= 0) {
+            break;
+          }
+
+          remaining = additionalRemaining;
+          dynamicTargetCount += additionalRemaining;
+          setForgeAllTargetCount(dynamicTargetCount);
+          setNumHyperstructuresLeft(additionalRemaining);
+          continue;
+        }
+
         let forgedInBatch = 0;
         let attempt = 0;
 
@@ -1418,11 +1500,11 @@ export const GameEntryModal = ({
 
         remaining = Math.max(0, remaining - forgedInBatch);
 
-        const completed = totalToForge - remaining;
+        const completed = Math.max(0, dynamicTargetCount - remaining);
         setForgeAllCompletedCount(completed);
         setNumHyperstructuresLeft(remaining);
 
-        debugLog(worldName, "Forge-all progress:", completed, "/", totalToForge);
+        debugLog(worldName, "Forge-all progress:", completed, "/", dynamicTargetCount);
 
         if (remaining > 0) {
           // Give wallet/provider a short cooldown between sequential submissions.
