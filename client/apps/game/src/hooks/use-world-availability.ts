@@ -8,14 +8,11 @@ import { isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
-import type { Query } from "@tanstack/react-query";
 import { useQueries } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
 const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-const WORLD_HYPERSTRUCTURE_CONFIG_QUERY =
-  'SELECT "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;';
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
@@ -206,36 +203,6 @@ const fetchWinnerJackpotAmount = async (
   return { prizeDistributionAddress, winnerJackpotAmount };
 };
 
-const fetchNumHyperstructuresLeftFromTorii = async (toriiBaseUrl: string): Promise<number | null> => {
-  const worldConfigUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_HYPERSTRUCTURE_CONFIG_QUERY)}`;
-  const worldConfigResponse = await fetch(worldConfigUrl);
-  if (!worldConfigResponse.ok) return null;
-
-  const [worldConfigRow] = (await worldConfigResponse.json()) as Record<string, unknown>[];
-  const maxRingCount = parseMaybeHexToNumber(worldConfigRow?.max_ring_count) ?? 0;
-  if (maxRingCount <= 0) return 0;
-
-  const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
-  const globalsResponse = await fetch(globalsUrl);
-  if (!globalsResponse.ok) {
-    return calculateHyperstructuresLeft(maxRingCount, 0);
-  }
-
-  const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
-  const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-  return calculateHyperstructuresLeft(maxRingCount, createdCount);
-};
-
-export const fetchWorldHyperstructuresLeft = async (worldName: string): Promise<number | null> => {
-  const toriiBaseUrl = buildToriiBaseUrl(worldName);
-
-  try {
-    return await fetchNumHyperstructuresLeftFromTorii(toriiBaseUrl);
-  } catch {
-    return null;
-  }
-};
-
 /**
  * Fetch world config metadata from Torii SQL endpoint.
  * Optionally fetches player registration status if playerAddress is provided.
@@ -290,11 +257,24 @@ const fetchWorldConfigMeta = async (
         meta.devModeOn = devVal != null && devVal !== 0;
       }
 
-      // Calculate hyperstructures left from max_ring_count + created_count
-      if (row.max_ring_count != null) {
-        const numHyperstructuresLeft = await fetchNumHyperstructuresLeftFromTorii(toriiBaseUrl);
-        if (numHyperstructuresLeft != null) {
-          meta.numHyperstructuresLeft = numHyperstructuresLeft;
+      // Calculate hyperstructures left from max_ring_count
+      const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
+      if (maxRingCount > 0) {
+        // Fetch created count from HyperstructureGlobals
+        try {
+          const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
+          const globalsResponse = await fetch(globalsUrl);
+          if (globalsResponse.ok) {
+            const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
+            const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount);
+          } else {
+            // If no globals exist yet, all hyperstructures are available
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+          }
+        } catch {
+          // If query fails, calculate based on zero created
+          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
         }
       }
     }
@@ -366,21 +346,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       enabled: enabled && !!world.name,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
-      // Poll faster for worlds that still have hyperstructures to forge so landing counters stay live.
-      refetchInterval: (query: Query) => {
-        const data = query.state.data as
-          | {
-              meta?: {
-                numHyperstructuresLeft?: number | null;
-              };
-            }
-          | undefined;
-        const left = data?.meta?.numHyperstructuresLeft;
-        if (typeof left === "number" && left > 0) {
-          return 5 * 1000;
-        }
-        return 30 * 1000;
-      },
+      refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations/forges
       refetchIntervalInBackground: false, // Only refetch when tab is active
       retry: 1,
     })),
