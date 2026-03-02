@@ -1,0 +1,90 @@
+---
+layout: docs
+title: Axis Headless and API
+---
+
+# Axis Headless and API
+
+Headless mode is designed for orchestrators, remote servers, and multi-agent fleets.
+
+## Start Headless
+
+Pre-authenticate first (`axis auth <world>`), then run:
+
+```bash
+axis run --headless --world=my-world --api-port=3000 --stdin
+```
+
+`--world` is required in headless mode.
+
+## NDJSON Event Stream
+
+Headless mode emits newline-delimited JSON to stdout.
+
+Common event types:
+
+- `startup`
+- `session`
+- `decision`
+- `action`
+- `prompt`
+- `heartbeat`
+- `error`
+- `shutdown`
+
+Verbosity filters:
+
+- `quiet`: `error`, `session`, `shutdown`
+- `actions`: `quiet` + `action`
+- `decisions`: `actions` + `decision`, `heartbeat`, `prompt`, `startup`
+- `all`: `decisions` + `tick`
+
+## HTTP API
+
+Enable with `--api-port`.
+
+| Method     | Path             | Purpose                     |
+| ---------- | ---------------- | --------------------------- |
+| `POST`     | `/prompt`        | Queue a prompt              |
+| `GET`      | `/status`        | Agent status                |
+| `GET`      | `/state`         | World state snapshot        |
+| `GET`      | `/events`        | SSE stream                  |
+| `POST`     | `/config`        | Runtime config updates      |
+| `POST`     | `/shutdown`      | Graceful shutdown           |
+| `GET/POST` | `/auth/callback` | Cartridge callback endpoint |
+
+Prompt example:
+
+```bash
+curl -X POST http://127.0.0.1:3000/prompt \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"Build a farm at your main realm"}'
+```
+
+Runtime config example:
+
+```bash
+curl -X POST http://127.0.0.1:3000/config \
+  -H 'Content-Type: application/json' \
+  -d '{"changes":[{"path":"tickIntervalMs","value":30000}]}'
+```
+
+## Stdin Control
+
+If `--stdin` is set (or stdin is non-TTY), send one JSON object per line:
+
+```jsonl
+{"type":"prompt","content":"Scout north"}
+{"type":"config","changes":[{"path":"tickIntervalMs","value":45000}]}
+{"type":"shutdown"}
+```
+
+## Fleet Pattern
+
+```bash
+axis auth --all --json > /tmp/auth.json
+
+for world in $(jq -r '.[].world' /tmp/auth.json); do
+  axis run --headless --world="$world" --api-port=$((3000 + RANDOM % 1000)) &
+done
+```
