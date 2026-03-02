@@ -108,10 +108,13 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 
   .blitz-card-root .reward-card {
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    background: rgba(0, 0, 0, 0.42);
     border-radius: 14px;
     padding: 14px 16px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 10px 30px rgba(0, 0, 0, 0.28);
   }
 
   .blitz-card-root .reward-label {
