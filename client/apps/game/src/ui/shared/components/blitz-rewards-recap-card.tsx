@@ -29,6 +29,10 @@ const REWARDS_RECAP_CARD_STYLES = `
     filter: invert(1) brightness(1.7);
   }
 
+  .blitz-card-root .bg-smoke {
+    opacity: 0.1;
+  }
+
   .blitz-card-root .hero-metric {
     position: absolute;
     left: 32px;
