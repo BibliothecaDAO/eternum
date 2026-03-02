@@ -538,6 +538,7 @@ const ClaimRewardsStep = ({
           chestsWon={chestsWon}
           eliteTicketsWon={eliteTicketEarned}
           rank={finalRank}
+          rightMarkVariant="bold"
           player={cardPlayer}
         />
       </div>

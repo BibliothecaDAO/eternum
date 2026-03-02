@@ -22,6 +22,32 @@ const REWARDS_RECAP_CARD_STYLES = `
   ${BLITZ_CARD_EMERALD_THEME}
   ${BLITZ_CARD_NEUTRAL_THEME}
 
+  .blitz-card-root .right-mark {
+    position: absolute;
+    right: 32px;
+    top: 32px;
+    object-fit: contain;
+    filter:
+      invert(1)
+      brightness(1.08)
+      drop-shadow(0 0 10px rgba(0, 0, 0, 0.38));
+    mix-blend-mode: screen;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .blitz-card-root .right-mark-subtle {
+    width: 73px;
+    height: 64px;
+    opacity: 0.3;
+  }
+
+  .blitz-card-root .right-mark-bold {
+    width: 73px;
+    height: 64px;
+    opacity: 0.44;
+  }
+
   .blitz-card-root .hero-metric {
     position: absolute;
     left: 32px;
@@ -121,6 +147,7 @@ interface BlitzRewardsRecapCardProps {
   chestsWon: number;
   eliteTicketsWon: number;
   rank: number | null;
+  rightMarkVariant?: "subtle" | "bold";
   player?: { name: string; address: string } | null;
 }
 
@@ -149,7 +176,7 @@ const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
 };
 
 const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
-  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, player }, ref) => {
+  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, rightMarkVariant = "subtle", player }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
     const theme = resolveCardTheme(rank);
     const safeEliteTickets = eliteTicketsWon > 0 ? 1 : 0;
@@ -168,6 +195,12 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
           <div className="bg-layer gradient-overlay" />
           <div className="bg-layer dark-overlay" />
 
+          <img
+            className={`right-mark right-mark-${rightMarkVariant}`}
+            src="/images/logos/Eternum-Mark-Black.png"
+            alt=""
+            aria-hidden="true"
+          />
           <img className="corner-mark" src="/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
 
           <div className="title-stack">
