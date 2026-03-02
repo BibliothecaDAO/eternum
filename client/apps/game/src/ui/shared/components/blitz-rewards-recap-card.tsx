@@ -58,8 +58,8 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 
   .blitz-card-root .lords-icon {
-    width: 72px;
-    height: 72px;
+    width: 84px;
+    height: 84px;
     margin-left: -12px;
     margin-top: 12px;
     object-fit: contain;
@@ -185,7 +185,7 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
 
           <div className="title-stack">
             <span className="eyebrow">{worldName}</span>
-            <span className="title">Rewards Recap</span>
+            <span className="title">Rewards</span>
           </div>
 
           <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
