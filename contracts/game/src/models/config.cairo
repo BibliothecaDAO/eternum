@@ -474,6 +474,54 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
         4
     }
 
+    fn is_duel_1v1_mode(registration_count_max: u16) -> bool {
+        registration_count_max == 2
+    }
+
+    /// Returns the fixed 3-realm spot for 1v1 mode.
+    /// `spot_number` must be `1` or `2`.
+    fn duel_spot_coords(self: BlitzSettlementConfig, map_center: Coord, spot_number: u16) -> Array<Coord> {
+        assert!(spot_number == 1 || spot_number == 2, "duel spot number must be 1 or 2");
+
+        // opposite sides to keep both players mirrored on the map
+        let fixed_side = if spot_number == 1 {
+            0
+        } else {
+            3
+        };
+
+        let mut fixed = BlitzSettlementConfig {
+            base_distance: self.base_distance,
+            side: fixed_side,
+            step: 1,
+            point: 1,
+            single_realm_mode: false,
+        };
+        fixed.generate_coords(map_center)
+    }
+
+    /// Returns fixed hyperstructure positions for 1v1 mode.
+    fn duel_hyperstructure_coords(map_center: Coord) -> Array<Coord> {
+        let d = Self::step_tile_distance();
+        array![
+            map_center.neighbor_after_distance(Direction::NorthEast, d), map_center,
+            map_center.neighbor_after_distance(Direction::SouthWest, d),
+        ]
+    }
+
+    fn duel_hyperstructure_count() -> u8 {
+        3
+    }
+
+    fn duel_hyperstructure_coord(map_center: Coord, index: u8) -> Coord {
+        match index {
+            0 => map_center.neighbor_after_distance(Direction::NorthEast, Self::step_tile_distance()),
+            1 => map_center,
+            2 => map_center.neighbor_after_distance(Direction::SouthWest, Self::step_tile_distance()),
+            _ => panic!("duel hyperstructure index out of range"),
+        }
+    }
+
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
 
     fn generate_coords(ref self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
@@ -1040,3 +1088,48 @@ pub struct BlitzCosmeticAttrsRegister {
     pub attrs: Span<u128>,
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::models::config::{BlitzSettlementConfig, BlitzSettlementConfigImpl};
+    use crate::models::position::Coord;
+
+    #[test]
+    fn duel_spot_has_three_coords() {
+        let map_center = Coord { alt: false, x: 1000, y: 1000 };
+        let cfg = BlitzSettlementConfig { base_distance: 8, side: 0, step: 1, point: 1, single_realm_mode: false };
+
+        let coords_spot_one: Array<Coord> = cfg.duel_spot_coords(map_center, 1);
+        let coords_spot_two: Array<Coord> = cfg.duel_spot_coords(map_center, 2);
+
+        assert!(coords_spot_one.len() == 3, "spot 1 must have 3 coords");
+        assert!(coords_spot_two.len() == 3, "spot 2 must have 3 coords");
+    }
+
+    #[test]
+    fn duel_spots_do_not_overlap() {
+        let map_center = Coord { alt: false, x: 1000, y: 1000 };
+        let cfg = BlitzSettlementConfig { base_distance: 8, side: 0, step: 1, point: 1, single_realm_mode: false };
+
+        let coords_spot_one: Array<Coord> = cfg.duel_spot_coords(map_center, 1);
+        let coords_spot_two: Array<Coord> = cfg.duel_spot_coords(map_center, 2);
+
+        let mut i = 0;
+        while i < coords_spot_one.len() {
+            let coord_one = *coords_spot_one.at(i);
+            let mut j = 0;
+            while j < coords_spot_two.len() {
+                let coord_two = *coords_spot_two.at(j);
+                assert!(coord_one != coord_two, "duel spots must not overlap");
+                j += 1;
+            }
+            i += 1;
+        };
+    }
+
+    #[test]
+    fn duel_hyperstructures_has_three_coords() {
+        let map_center = Coord { alt: false, x: 1000, y: 1000 };
+        let hyper_coords: Array<Coord> = BlitzSettlementConfigImpl::duel_hyperstructure_coords(map_center);
+        assert!(hyper_coords.len() == 3, "duel hyperstructures must have exactly 3 coords");
+    }
+}
