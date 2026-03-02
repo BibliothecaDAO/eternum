@@ -9,12 +9,13 @@ import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
+import { BlitzRewardsRecapCardWithSelector } from "@/ui/shared/components/blitz-rewards-recap-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
 import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, Shield, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "sonner";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
@@ -58,6 +59,17 @@ const CLAIM_RECONCILIATION_POLL_MS = 5_000;
 const CLAIM_RECONCILIATION_MAX_ATTEMPTS = 12;
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
+
+const formatLordsWonDisplay = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "0";
+
+  const [whole, fractional] = trimmed.split(".");
+  if (!fractional) return whole;
+
+  const limitedFractional = fractional.slice(0, 2).replace(/0+$/, "");
+  return limitedFractional ? `${whole}.${limitedFractional}` : whole;
+};
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error && error.message) {
@@ -226,6 +238,28 @@ const buildStepShareMessage = ({
     return [
       `${worldLabel} personal result:`,
       `Rank #${data.personalScore.rank} with ${formatValue(data.personalScore.points)} points.`,
+      "",
+      "blitz.realms.world",
+      "#Realms #Eternum #Starknet",
+    ].join("\n");
+  }
+
+  if (step === "claim-rewards" && data.rewards) {
+    const finalRank =
+      typeof data.personalScore?.rank === "number" &&
+      Number.isFinite(data.personalScore.rank) &&
+      data.personalScore.rank > 0
+        ? `#${Math.trunc(data.personalScore.rank)}`
+        : "Unranked";
+    const eliteTicketsWon = data.rewards.eliteTicketEarned ? 1 : 0;
+    const lordsWon = formatLordsWonDisplay(data.rewards.lordsWonFormatted);
+
+    return [
+      `${worldLabel} rewards recap on @realms_gg Blitz:`,
+      `Final rank: ${finalRank}`,
+      `$LORDS won: +${lordsWon}`,
+      `Chests won: +${formatValue(data.rewards.chestsClaimedEstimate)}`,
+      `Elite tickets won: +${eliteTicketsWon}`,
       "",
       "blitz.realms.world",
       "#Realms #Eternum #Starknet",
@@ -452,6 +486,7 @@ const ClaimRewardsStep = ({
   claimError,
   onClaim,
   onRequireSignIn,
+  captureRef,
 }: {
   data: GameReviewData;
   hasSigner: boolean;
@@ -459,19 +494,34 @@ const ClaimRewardsStep = ({
   claimError: string | null;
   onClaim: () => void;
   onRequireSignIn: () => void;
+  captureRef: MutableRefObject<HTMLDivElement | null>;
 }) => {
   const rewards = data.rewards;
   const scoreSubmitted = rewards?.scoreSubmitted ?? data.finalization.rankingFinalized;
   const alreadyClaimed = rewards?.alreadyClaimed ?? false;
   const canClaimNow = rewards?.canClaimNow ?? false;
   const claimBlockedReason = rewards?.claimBlockedReason;
-  const lordsWon = rewards?.lordsWonFormatted ?? "0";
-  const chestsClaimedEstimate = rewards?.chestsClaimedEstimate ?? 0;
+  const lordsWon = formatLordsWonDisplay(rewards?.lordsWonFormatted ?? "0");
+  const chestsWon = rewards?.chestsClaimedEstimate ?? 0;
   const chestsClaimedReason = rewards?.chestsClaimedReason ?? "No chest estimate available.";
   const eliteTicketEarned = rewards?.eliteTicketEarned ? 1 : 0;
   const eliteTicketReason =
     rewards?.eliteTicketReason ??
     "Elite ticket eligibility is available once score is submitted and final ranking is available.";
+  const finalRank =
+    typeof data.personalScore?.rank === "number" &&
+    Number.isFinite(data.personalScore.rank) &&
+    data.personalScore.rank > 0
+      ? Math.trunc(data.personalScore.rank)
+      : null;
+  const cardPlayer = data.personalScore
+    ? {
+        name: data.personalScore.displayName?.trim() || displayAddress(data.personalScore.address),
+        address: displayAddress(data.personalScore.address),
+      }
+    : null;
+  const hasChestReason = chestsClaimedReason.trim().length > 0;
+  const hasEliteTicketReason = eliteTicketReason.trim().length > 0;
 
   return (
     <div className="space-y-4">
@@ -481,22 +531,33 @@ const ClaimRewardsStep = ({
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">$LORDS won</p>
-          <p className="mt-1 text-sm text-white">{lordsWon}</p>
-        </div>
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests claimed</p>
-          <p className="mt-1 text-sm text-white">{formatValue(chestsClaimedEstimate)}</p>
-          <p className="mt-1 text-xs text-gold/70">{chestsClaimedReason}</p>
-        </div>
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Elite ticket earned</p>
-          <p className="mt-1 text-sm text-white">{eliteTicketEarned}</p>
-          <p className="mt-1 text-xs text-gold/70">{eliteTicketReason}</p>
-        </div>
+      <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+        <BlitzRewardsRecapCardWithSelector
+          worldName={data.worldName}
+          lordsWon={lordsWon}
+          chestsWon={chestsWon}
+          eliteTicketsWon={eliteTicketEarned}
+          rank={finalRank}
+          player={cardPlayer}
+        />
       </div>
+
+      {(hasChestReason || hasEliteTicketReason) && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {hasChestReason && (
+            <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests won details</p>
+              <p className="mt-1 text-sm text-gold/75">{chestsClaimedReason}</p>
+            </div>
+          )}
+          {hasEliteTicketReason && (
+            <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-gold/60">Elite tickets won details</p>
+              <p className="mt-1 text-sm text-gold/75">{eliteTicketReason}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {!scoreSubmitted && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
@@ -686,6 +747,10 @@ export const GameReviewModal = ({
       return true;
     }
 
+    if (currentStep === "claim-rewards") {
+      return Boolean(data?.rewards);
+    }
+
     if (currentStep === "map-fingerprint") {
       return Boolean(data?.mapSnapshot.available);
     }
@@ -695,7 +760,7 @@ export const GameReviewModal = ({
     }
 
     return false;
-  }, [currentStep, data?.mapSnapshot.available, data?.personalScore]);
+  }, [currentStep, data?.mapSnapshot.available, data?.personalScore, data?.rewards]);
 
   const reviewData = useMemo<GameReviewData | null>(() => {
     if (!data) return null;
@@ -1280,6 +1345,7 @@ export const GameReviewModal = ({
                   claimError={claimTxError}
                   onClaim={handleClaimRewards}
                   onRequireSignIn={onRequireSignIn}
+                  captureRef={captureRef}
                 />
               )}
 
