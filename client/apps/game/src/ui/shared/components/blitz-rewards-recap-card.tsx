@@ -25,7 +25,7 @@ const REWARDS_RECAP_CARD_STYLES = `
   .blitz-card-root .right-mark {
     position: absolute;
     right: 32px;
-    top: 32px;
+    top: 104px;
     object-fit: contain;
     filter:
       invert(1)
@@ -39,13 +39,13 @@ const REWARDS_RECAP_CARD_STYLES = `
   .blitz-card-root .right-mark-subtle {
     width: 73px;
     height: 64px;
-    opacity: 0.3;
+    opacity: 0.36;
   }
 
   .blitz-card-root .right-mark-bold {
     width: 73px;
     height: 64px;
-    opacity: 0.44;
+    opacity: 0.52;
   }
 
   .blitz-card-root .hero-metric {
