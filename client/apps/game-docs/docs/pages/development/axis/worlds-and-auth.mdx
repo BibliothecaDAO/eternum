@@ -1,0 +1,91 @@
+---
+layout: docs
+title: Axis Worlds and Auth
+---
+
+# Axis Worlds and Auth
+
+## World Discovery
+
+By default, Axis discovers active worlds using Cartridge factory SQL and only surfaces worlds that are `upcoming` or `ongoing`.
+
+List discovered worlds:
+
+```bash
+axis worlds
+```
+
+Auto-select a world and skip TUI picker:
+
+```bash
+SLOT_NAME=my-world axis run
+```
+
+## Session Auth (Default)
+
+Axis uses Cartridge Controller session auth by default.
+
+Interactive auth for one world:
+
+```bash
+axis auth my-world
+```
+
+Auth all worlds:
+
+```bash
+axis auth --all
+```
+
+Check status:
+
+```bash
+axis auth-status my-world
+axis auth-status --all
+```
+
+Print stored auth URL:
+
+```bash
+axis auth-url my-world
+```
+
+## Headless/Remote Auth Patterns
+
+### Callback URL (VPS or remote host)
+
+```bash
+axis auth my-world --callback-url=http://my-host:3000
+```
+
+### Offline completion
+
+```bash
+axis auth-complete my-world --redirect-url="https://.../auth/callback?startapp=..."
+# or
+axis auth-complete my-world --session-data="<base64>"
+```
+
+### Auto-approve
+
+```bash
+axis auth my-world --approve --method=password --username=me --password=secret
+```
+
+Auto-approve requires `agent-browser` on `PATH`, and currently supports `password` method only.
+
+## Private Key Fallback
+
+```bash
+PRIVATE_KEY=0x... ACCOUNT_ADDRESS=0x... axis run --headless --world=my-world --auth=privatekey
+```
+
+## Session and Artifact Layout
+
+Axis stores world-scoped artifacts under `~/.eternum-agent/.cartridge/<world>/`:
+
+- `profile.json`: resolved world profile
+- `manifest.json`: manifest patched with live contracts
+- `policy.json`: generated session policy
+- `session.json`: stored session data
+- `auth.json`: auth URL/status metadata
