@@ -40,8 +40,44 @@ const REWARDS_RECAP_CARD_STYLES = `
     opacity: 0.75;
   }
 
+  .blitz-card-root .rank-badge {
+    margin-top: 10px;
+    padding: 10px 16px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 10px 28px rgba(0, 0, 0, 0.3);
+  }
+
+  .blitz-card-root.card-gold .rank-badge {
+    background: linear-gradient(135deg, rgba(191, 149, 63, 0.26), rgba(0, 0, 0, 0.28));
+    border-color: rgba(252, 246, 186, 0.38);
+  }
+
+  .blitz-card-root.card-silver .rank-badge {
+    background: linear-gradient(135deg, rgba(172, 172, 172, 0.26), rgba(0, 0, 0, 0.28));
+    border-color: rgba(248, 248, 248, 0.36);
+  }
+
+  .blitz-card-root.card-bronze .rank-badge {
+    background: linear-gradient(135deg, rgba(146, 85, 24, 0.28), rgba(0, 0, 0, 0.28));
+    border-color: rgba(201, 142, 83, 0.38);
+  }
+
+  .blitz-card-root.card-neutral .rank-badge {
+    background: linear-gradient(135deg, rgba(105, 28, 135, 0.28), rgba(0, 0, 0, 0.28));
+    border-color: rgba(164, 104, 191, 0.36);
+  }
+
+  .blitz-card-root.card-emerald .rank-badge {
+    background: linear-gradient(135deg, rgba(78, 139, 135, 0.28), rgba(0, 0, 0, 0.28));
+    border-color: rgba(123, 255, 230, 0.34);
+  }
+
   .blitz-card-root .rank-value {
-    margin-top: 8px;
+    margin-top: 0;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     font-size: 96px;
@@ -211,7 +247,9 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
 
           <div className="rank-panel">
             <div className="rank-label">Final Rank</div>
-            <div className="rank-value">{rankLabel}</div>
+            <div className="rank-badge">
+              <div className="rank-value">{rankLabel}</div>
+            </div>
           </div>
 
           <div className="hero-metric">
