@@ -24,7 +24,7 @@ const REWARDS_RECAP_CARD_STYLES = `
 
   .blitz-card-root .rank-panel {
     position: absolute;
-    right: 32px;
+    right: 64px;
     top: 132px;
     width: 240px;
     z-index: 4;
