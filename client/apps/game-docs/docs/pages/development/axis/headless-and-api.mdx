@@ -43,14 +43,14 @@ Verbosity filters:
 
 Enable with `--api-port`.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | `/prompt` | Queue a prompt |
-| `GET` | `/status` | Agent status |
-| `GET` | `/state` | World state snapshot |
-| `GET` | `/events` | SSE stream |
-| `POST` | `/config` | Runtime config updates |
-| `POST` | `/shutdown` | Graceful shutdown |
+| Method     | Path             | Purpose                     |
+| ---------- | ---------------- | --------------------------- |
+| `POST`     | `/prompt`        | Queue a prompt              |
+| `GET`      | `/status`        | Agent status                |
+| `GET`      | `/state`         | World state snapshot        |
+| `GET`      | `/events`        | SSE stream                  |
+| `POST`     | `/config`        | Runtime config updates      |
+| `POST`     | `/shutdown`      | Graceful shutdown           |
 | `GET/POST` | `/auth/callback` | Cartridge callback endpoint |
 
 Prompt example:
