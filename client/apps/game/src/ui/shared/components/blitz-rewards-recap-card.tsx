@@ -22,54 +22,29 @@ const REWARDS_RECAP_CARD_STYLES = `
   ${BLITZ_CARD_EMERALD_THEME}
   ${BLITZ_CARD_NEUTRAL_THEME}
 
-  .blitz-card-root .summary-strip {
+  .blitz-card-root .rank-panel {
     position: absolute;
-    left: 32px;
+    right: 32px;
     top: 132px;
-    width: 896px;
-    min-height: 132px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(0, 0, 0, 0.22);
-    border-radius: 16px;
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr;
-    align-items: stretch;
+    width: 240px;
     z-index: 4;
+    text-align: right;
   }
 
-  .blitz-card-root .summary-item {
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .blitz-card-root .summary-item + .summary-item {
-    border-left: 1px solid rgba(255, 255, 255, 0.14);
-  }
-
-  .blitz-card-root .summary-label {
+  .blitz-card-root .rank-label {
     font-family: "IM Fell English", serif;
     font-style: italic;
-    font-size: 18px;
-    line-height: 22px;
+    font-size: 24px;
+    line-height: 30px;
     color: #ffffff;
     opacity: 0.75;
   }
 
-  .blitz-card-root .summary-value {
+  .blitz-card-root .rank-value {
+    margin-top: 8px;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
-    font-size: 48px;
-    line-height: 1;
-    color: var(--points-color);
-  }
-
-  .blitz-card-root .summary-value-hero {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    font-size: 72px;
+    font-size: 96px;
     line-height: 1;
     background: var(--rank-gradient);
     -webkit-text-fill-color: transparent;
@@ -78,17 +53,83 @@ const REWARDS_RECAP_CARD_STYLES = `
     text-fill-color: transparent;
   }
 
-  .blitz-card-root .summary-lords-row {
+  .blitz-card-root .hero-metric {
+    position: absolute;
+    left: 32px;
+    top: 132px;
+    width: 640px;
+    z-index: 4;
+  }
+
+  .blitz-card-root .hero-label {
+    font-family: "IM Fell English", serif;
+    font-style: italic;
+    font-size: 24px;
+    line-height: 30px;
+    color: #ffffff;
+    opacity: 0.75;
+  }
+
+  .blitz-card-root .hero-value-row {
+    margin-top: 8px;
     display: flex;
     align-items: center;
     gap: 14px;
   }
 
   .blitz-card-root .lords-icon {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     object-fit: contain;
     filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.35));
+  }
+
+  .blitz-card-root .hero-value {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+    font-size: 84px;
+    line-height: 1;
+    background: var(--rank-gradient);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-fill-color: transparent;
+  }
+
+  .blitz-card-root .reward-grid {
+    position: absolute;
+    left: 32px;
+    top: 304px;
+    width: 640px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    z-index: 4;
+  }
+
+  .blitz-card-root .reward-card {
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+
+  .blitz-card-root .reward-label {
+    font-family: "IM Fell English", serif;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 22px;
+    color: #ffffff;
+    opacity: 0.75;
+  }
+
+  .blitz-card-root .reward-value {
+    margin-top: 8px;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+    font-size: 58px;
+    line-height: 1;
+    color: var(--points-color);
   }
 `;
 
@@ -165,25 +206,27 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
 
           <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
 
-          <div className="summary-strip">
-            <div className="summary-item">
-              <div className="summary-label">Final Rank</div>
-              <div className="summary-value-hero">{rankLabel}</div>
+          <div className="rank-panel">
+            <div className="rank-label">Final Rank</div>
+            <div className="rank-value">{rankLabel}</div>
+          </div>
+
+          <div className="hero-metric">
+            <div className="hero-label">$LORDS won</div>
+            <div className="hero-value-row">
+              <img className="lords-icon" src="/tokens/lords.png" alt="LORDS token icon" />
+              <div className="hero-value">+{lordsWon}</div>
             </div>
-            <div className="summary-item">
-              <div className="summary-label">$LORDS won</div>
-              <div className="summary-lords-row">
-                <img className="lords-icon" src="/tokens/lords.png" alt="LORDS token icon" />
-                <div className="summary-value-hero">+{lordsWon}</div>
-              </div>
+          </div>
+
+          <div className="reward-grid">
+            <div className="reward-card">
+              <div className="reward-label">Chests won</div>
+              <div className="reward-value">+{formatValue(chestsWon)}</div>
             </div>
-            <div className="summary-item">
-              <div className="summary-label">Chests won</div>
-              <div className="summary-value">+{formatValue(chestsWon)}</div>
-            </div>
-            <div className="summary-item">
-              <div className="summary-label">Elite tickets won</div>
-              <div className="summary-value">+{safeEliteTickets}</div>
+            <div className="reward-card">
+              <div className="reward-label">Elite tickets won</div>
+              <div className="reward-value">+{safeEliteTickets}</div>
             </div>
           </div>
 
