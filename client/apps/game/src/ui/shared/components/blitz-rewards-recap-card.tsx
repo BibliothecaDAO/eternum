@@ -109,6 +109,11 @@ const REWARDS_RECAP_CARD_STYLES = `
     font-weight: 800;
     font-size: 84px;
     line-height: 1;
+    letter-spacing: -0.012em;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
     background: var(--rank-gradient);
     -webkit-text-fill-color: transparent;
     -webkit-background-clip: text;
@@ -152,6 +157,11 @@ const REWARDS_RECAP_CARD_STYLES = `
     font-weight: 800;
     font-size: 58px;
     line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
     color: var(--points-color);
   }
 `;
