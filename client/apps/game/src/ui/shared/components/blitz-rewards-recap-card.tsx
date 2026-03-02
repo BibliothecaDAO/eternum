@@ -192,7 +192,7 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
             <div className="hero-label">$LORDS won</div>
             <div className="hero-value-row">
               <div className="hero-value">+{lordsWon}</div>
-              <img className="lords-icon" src="/tokens/lords.png" alt="LORDS token icon" />
+              <img className="lords-icon" src="/assets/icons/resources/Lords.svg" alt="LORDS token icon" />
             </div>
           </div>
 
