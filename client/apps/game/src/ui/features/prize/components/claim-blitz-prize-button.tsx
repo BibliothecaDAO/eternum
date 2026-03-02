@@ -1,22 +1,20 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => {
   const {
+    account: { account },
     setup: {
       components,
       systemCalls: { blitz_prize_claim },
       network,
     },
   } = useDojo();
-
-  const account = useAccountStore((state) => state.account);
 
   const [isLoading, setIsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -59,13 +57,12 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
     [worldCfgEntities],
   );
   const [decimals, setDecimals] = useState<number | null>(null);
-  useEffect(() => {
+  useMemo(() => {
     (async () => {
       try {
         const feeToken = worldCfg?.blitz_registration_config?.fee_token as unknown as string | undefined;
-        const connectedAccount = account;
-        if (!feeToken || !connectedAccount) return;
-        const result: any = await network.provider.callAndReturnResult(connectedAccount, {
+        if (!feeToken) return;
+        const result: any = await network.provider.callAndReturnResult(account, {
           contractAddress: feeToken,
           entrypoint: "decimals",
           calldata: [],
@@ -77,7 +74,7 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, network.provider, worldCfg?.blitz_registration_config?.fee_token]);
+  }, [worldCfg?.blitz_registration_config?.fee_token]);
 
   const formatTokenAmount = (amount?: bigint) => {
     if (typeof amount !== "bigint") return "-";
@@ -93,11 +90,10 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
   };
 
   const onClaim = async () => {
-    const connectedAccount = account;
-    if (!canClaim || !connectedAccount) return;
+    if (!canClaim) return;
     setIsLoading(true);
     try {
-      await blitz_prize_claim({ signer: connectedAccount, players: [connectedAccount.address] });
+      await blitz_prize_claim({ signer: account, players: [account.address] });
     } catch (e) {
       console.error(e);
     } finally {

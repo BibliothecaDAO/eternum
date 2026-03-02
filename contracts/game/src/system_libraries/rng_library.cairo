@@ -41,12 +41,10 @@ pub trait IRNGlibrary<T> {
 
 #[dojo::library]
 mod rng_library {
-    use core::num::traits::Zero;
-    use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::models::config::WorldConfigUtilImpl;
-    use crate::models::rng::{RNG, RNGImpl};
+    use crate::models::rng::RNGImpl;
     use crate::utils::random;
     use crate::utils::random::VRFImpl;
 
@@ -57,16 +55,14 @@ mod rng_library {
     #[abi(embed_v0)]
     pub impl RngLibraryImpl of super::IRNGlibrary<ContractState> {
         /// Derive a VRF-based seed for a given owner using the configured provider.
-        fn get_random_number(self: @ContractState, player: ContractAddress, mut world: WorldStorage) -> u256 {
+        fn get_random_number(self: @ContractState, player: ContractAddress, world: WorldStorage) -> u256 {
             let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
                 world, selector!("vrf_provider_address"),
             );
+            let tx_seed = VRFImpl::seed(player, vrf_provider);
             let tx_hash = starknet::get_tx_info().unbox().transaction_hash;
-            let mut rng: RNG = world.read_model(tx_hash);
-            if rng.seed.is_zero() {
-                rng.seed = VRFImpl::seed(player, vrf_provider);
-            }
-            RNGImpl::ensure_unique_tx_seed(ref world, ref rng).seed
+            let mut world = world;
+            RNGImpl::ensure_unique_tx_seed(ref world, tx_hash, tx_seed).seed
         }
 
         /// Get a random number in [0, upper_bound) derived from the provided seed and salt.
@@ -152,7 +148,7 @@ mod rng_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IRNGlibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"rng_library_v0_1_13").expect('rng_library not found.');
+        let (_, class_hash) = world.dns(@"rng_library_v0_1_12").expect('rng_library not found.');
         super::IRNGlibraryLibraryDispatcher { class_hash }
     }
 }

@@ -92,14 +92,12 @@ const LearnContent = ({
   onSpectate,
   onForgeHyperstructures,
   onSeeScore,
-  onClaimRewards,
   onRegistrationComplete,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onSeeScore: (selection: WorldSelection) => void;
-  onClaimRewards: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
 }) => (
   <div className="flex flex-col gap-4">
@@ -193,7 +191,6 @@ const LearnContent = ({
         onSpectate={onSpectate}
         onForgeHyperstructures={onForgeHyperstructures}
         onSeeScore={onSeeScore}
-        onClaimRewards={onClaimRewards}
         onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
         hideHeader
@@ -297,7 +294,6 @@ const PlayTabContent = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
-  onClaimRewards,
   onForgeHyperstructures,
   onRegistrationComplete,
   onRefresh,
@@ -308,7 +304,6 @@ const PlayTabContent = ({
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
-  onClaimRewards: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
   onRefresh: () => void;
@@ -406,7 +401,6 @@ const PlayTabContent = ({
               onSelectGame={onSelectGame}
               onSpectate={onSpectate}
               onSeeScore={onSeeScore}
-              onClaimRewards={onClaimRewards}
               onRegistrationComplete={onRegistrationComplete}
               devModeFilter={false}
               statusFilter="ended"
@@ -441,7 +435,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
-  const [reviewInitialStep, setReviewInitialStep] = useState<"claim-rewards" | undefined>(undefined);
   const [endedGames, setEndedGames] = useState<GameData[]>([]);
 
   // Refresh state
@@ -507,12 +500,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
-    setReviewInitialStep(undefined);
-    setReviewWorld(selection);
-  }, []);
-
-  const handleClaimRewards = useCallback((selection: WorldSelection) => {
-    setReviewInitialStep("claim-rewards");
     setReviewWorld(selection);
   }, []);
 
@@ -540,7 +527,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   const handleCloseReviewModal = useCallback(() => {
     dismissReviewForWorld(reviewWorld);
-    setReviewInitialStep(undefined);
     setReviewWorld(null);
   }, [dismissReviewForWorld, reviewWorld]);
 
@@ -562,7 +548,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
     if (!candidate.worldAddress) return;
     if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
 
-    setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
   }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
 
@@ -575,7 +560,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSpectate={handleSpectate}
             onForgeHyperstructures={handleForgeHyperstructures}
             onSeeScore={handleSeeScore}
-            onClaimRewards={handleClaimRewards}
             onRegistrationComplete={handleRegistrationComplete}
           />
         );
@@ -590,7 +574,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
-            onClaimRewards={handleClaimRewards}
             onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
@@ -627,7 +610,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}
           nextGame={null}
-          initialStep={reviewInitialStep}
           showUpcomingGamesStep={true}
           onClose={handleCloseReviewModal}
           onRegistrationComplete={handleRegistrationComplete}
