@@ -105,6 +105,7 @@ import {
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
+import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveControlsChangeChunkRefreshPlan,
@@ -112,7 +113,12 @@ import {
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
   resolveChunkSwitchActions,
+  resolveEntityActionPathLookup,
+  resolveEntityActionPathsTransitionTokenForForcedRefresh,
+  resolveEntityActionPathsTransitionTokenSync,
   shouldRequestTileRefreshForStructureBoundsChange,
+  shouldClearEntitySelectionForEntityActionTransition,
+  shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
@@ -482,6 +488,8 @@ export default class WorldmapScene extends HexagonScene {
   // Global chunk switching coordination
   private globalChunkSwitchPromise: Promise<void> | null = null;
   private chunkTransitionToken = 0;
+  private actionPathsTransitionToken: number | null = null;
+  private isApplyingLocalActionPathUpdate = false;
   private chunkDiagnostics: WorldmapChunkDiagnostics = createWorldmapChunkDiagnostics();
   private chunkDiagnosticsBaselines: WorldmapChunkDiagnosticsBaselineEntry[] = [];
 
@@ -1339,7 +1347,9 @@ export default class WorldmapScene extends HexagonScene {
     this.hoverLabelManager.onHexHover(hexCoords);
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
-    if (selectedEntityId && actionPaths.size > 0) {
+    // Entity IDs can be valid falsy values (for example 0), so nullish checks
+    // are required to distinguish "no selection" from a real selected entity.
+    if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
@@ -1460,7 +1470,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const { structure } = this.getHexagonEntity(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
-    const hasActiveEntityAction = Boolean(selectedEntityId && actionPaths.size > 0);
+    const hasActiveEntityAction = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
 
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
@@ -1474,9 +1484,22 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
-      const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
-      if (actionPath && account) {
+    if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0 && hexCoords) {
+      const actionPathLookup = resolveEntityActionPathLookup({
+        hasSelectedEntity: true,
+        clickedHexKey: ActionPaths.posKey(hexCoords, true),
+        actionPaths,
+        actionPathsTransitionToken: this.actionPathsTransitionToken,
+        latestTransitionToken: this.chunkTransitionToken,
+      });
+
+      if (actionPathLookup.shouldClearStaleSelection) {
+        this.clearEntitySelection();
+        return;
+      }
+
+      if (actionPathLookup.actionPath && account) {
+        const actionPath = actionPathLookup.actionPath;
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
@@ -1710,7 +1733,7 @@ export default class WorldmapScene extends HexagonScene {
       ContractAddress(playerAddress),
     );
 
-    this.state.updateEntityActionActionPaths(actionPaths.getPaths());
+    this.updateEntityActionPaths(actionPaths.getPaths());
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
 
@@ -1885,6 +1908,22 @@ export default class WorldmapScene extends HexagonScene {
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const armyPosition = this.armiesPositions.get(selectedEntityId);
+    const explorerTroopsCoord = getComponentValue(
+      this.dojo.components.ExplorerTroops,
+      getEntityIdFromKeys([BigInt(selectedEntityId)]),
+    )?.coord;
+    const { startPositionOverride, hasDivergentOrigin } = resolveArmyActionPathOrigin({
+      feltCenter: FELT_CENTER(),
+      worldmapArmyPosition: armyPosition,
+      explorerTroopsCoord,
+    });
+
+    if (import.meta.env.DEV && hasDivergentOrigin && armyPosition) {
+      console.warn(
+        `[DEBUG] Action-path origin divergence for army ${selectedEntityId}: worldmap=(${armyPosition.col},${armyPosition.row}), ecs=(${explorerTroopsCoord?.x},${explorerTroopsCoord?.y})`,
+      );
+    }
 
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
@@ -1894,19 +1933,19 @@ export default class WorldmapScene extends HexagonScene {
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
+      startPositionOverride,
     );
 
     const paths = actionPaths.getPaths();
     const highlightedHexes = actionPaths.getHighlightedHexes();
 
-    this.state.updateEntityActionActionPaths(paths);
+    this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
     // Show selection pulse for the selected army
     const selectedArmyData = this.armyManager
       .getArmies()
       .find((army) => Number(army.entityId) === Number(selectedEntityId));
-    const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
@@ -1991,9 +2030,38 @@ export default class WorldmapScene extends HexagonScene {
     this.clearEntitySelection();
   }
 
+  private updateEntityActionPaths(actionPaths: Map<string, ActionPath[]>) {
+    // Stamp token before publishing store updates to avoid transient null-token
+    // windows inside synchronous subscribers.
+    this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;
+    this.isApplyingLocalActionPathUpdate = true;
+    try {
+      this.state.updateEntityActionActionPaths(actionPaths);
+    } finally {
+      this.isApplyingLocalActionPathUpdate = false;
+    }
+  }
+
+  private syncEntityActionPathsTransitionToken(): void {
+    this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenSync({
+      selectedEntityId: this.state.entityActions.selectedEntityId,
+      actionPathCount: this.state.entityActions.actionPaths.size,
+      previousTransitionToken: this.actionPathsTransitionToken,
+    });
+  }
+
+  private isMissingActionPathOwnershipState(): boolean {
+    return shouldClearEntitySelectionForMissingActionPathOwnership({
+      selectedEntityId: this.state.entityActions.selectedEntityId,
+      actionPathCount: this.state.entityActions.actionPaths.size,
+      actionPathsTransitionToken: this.actionPathsTransitionToken,
+      allowPendingLocalOwnership: this.isApplyingLocalActionPathUpdate,
+    });
+  }
+
   private clearEntitySelection() {
     this.highlightHexManager.highlightHexes([]);
-    this.state.updateEntityActionActionPaths(new Map());
+    this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.selectionPulseManager.clearOwnershipPulses();
@@ -4282,6 +4350,14 @@ export default class WorldmapScene extends HexagonScene {
 
     if (force) {
       const transitionToken = ++this.chunkTransitionToken;
+      this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: this.state.entityActions.selectedEntityId,
+        actionPathCount: this.state.entityActions.actionPaths.size,
+        currentChunk: this.currentChunk,
+        targetChunk: chunkKey,
+        nextTransitionToken: transitionToken,
+        previousTransitionToken: this.actionPathsTransitionToken,
+      });
       this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
       try {
         await this.globalChunkSwitchPromise;
@@ -5120,8 +5196,21 @@ export default class WorldmapScene extends HexagonScene {
     this.storeSubscriptions.push(
       useUIStore.subscribe(
         (state) => state.entityActions,
-        (armyActions) => {
-          this.state.entityActions = armyActions;
+        (nextEntityActions, previousEntityActions) => {
+          this.state.entityActions = nextEntityActions;
+          this.syncEntityActionPathsTransitionToken();
+          if (this.isMissingActionPathOwnershipState()) {
+            this.clearEntitySelection();
+            return;
+          }
+          if (
+            shouldClearEntitySelectionForEntityActionTransition(
+              previousEntityActions?.selectedEntityId,
+              nextEntityActions.selectedEntityId,
+            )
+          ) {
+            this.clearEntitySelection();
+          }
         },
       ),
     );
@@ -5146,15 +5235,6 @@ export default class WorldmapScene extends HexagonScene {
           if (this.controls) {
             this.controls.enableZoom = enableMapZoom;
           }
-        },
-      ),
-    );
-
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.entityActions.selectedEntityId,
-        (selectedEntityId) => {
-          if (!selectedEntityId) this.clearEntitySelection();
         },
       ),
     );
@@ -5184,6 +5264,11 @@ export default class WorldmapScene extends HexagonScene {
     this.updatePlayerStructures(uiState.playerStructures);
 
     this.state.entityActions = uiState.entityActions;
+    this.syncEntityActionPathsTransitionToken();
+    if (this.isMissingActionPathOwnershipState()) {
+      this.clearEntitySelection();
+      return;
+    }
     this.state.selectedHex = uiState.selectedHex;
     // NOTE: isSoundOn and effectsLevel removed - AudioManager is now the source of truth
 
@@ -5192,7 +5277,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const selectedEntityId = uiState.entityActions.selectedEntityId;
-    if (!selectedEntityId) {
+    if (selectedEntityId === null || selectedEntityId === undefined) {
       this.clearEntitySelection();
     } else {
       this.state.updateEntityActionSelectedEntityId(selectedEntityId);
