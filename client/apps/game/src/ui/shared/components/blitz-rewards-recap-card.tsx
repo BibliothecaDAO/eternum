@@ -126,7 +126,7 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 `;
 
-export type BlitzCardTheme = "gold" | "silver" | "bronze" | "neutral" | "emerald";
+type BlitzCardTheme = "gold" | "silver" | "bronze" | "neutral" | "emerald";
 
 interface BlitzRewardsRecapCardProps {
   worldName: string;
@@ -134,7 +134,6 @@ interface BlitzRewardsRecapCardProps {
   chestsWon: number;
   eliteTicketsWon: number;
   rank: number | null;
-  themeOverride?: BlitzCardTheme;
   player?: { name: string; address: string } | null;
 }
 
@@ -163,9 +162,9 @@ const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
 };
 
 const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
-  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, themeOverride, player }, ref) => {
+  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, player }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
-    const theme = themeOverride ?? resolveCardTheme(rank);
+    const theme = resolveCardTheme(rank);
     const safeEliteTickets = eliteTicketsWon > 0 ? 1 : 0;
 
     const cardMarkup = (
