@@ -1,7 +1,6 @@
 import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 import {
   BLITZ_CARD_BASE_STYLES,
   BLITZ_CARD_BRONZE_THEME,
@@ -12,6 +11,7 @@ import {
   BLITZ_CARD_SILVER_THEME,
   formatBlitzValue as formatValue,
 } from "../lib/blitz-card-shared";
+import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 
 const REWARDS_RECAP_CARD_STYLES = `
   ${BLITZ_CARD_FONT_IMPORT}
@@ -22,30 +22,11 @@ const REWARDS_RECAP_CARD_STYLES = `
   ${BLITZ_CARD_EMERALD_THEME}
   ${BLITZ_CARD_NEUTRAL_THEME}
 
-  .blitz-card-root .right-mark {
-    position: absolute;
-    right: 32px;
-    top: 104px;
-    object-fit: contain;
-    filter:
-      invert(1)
-      brightness(1.08)
-      drop-shadow(0 0 10px rgba(0, 0, 0, 0.38));
-    mix-blend-mode: screen;
-    z-index: 3;
-    pointer-events: none;
-  }
-
-  .blitz-card-root .right-mark-subtle {
-    width: 73px;
-    height: 64px;
-    opacity: 0.36;
-  }
-
-  .blitz-card-root .right-mark-bold {
-    width: 73px;
-    height: 64px;
-    opacity: 0.52;
+  .blitz-card-root .bg-mark {
+    left: auto;
+    right: -${BLITZ_CARD_DIMENSIONS.width / 2}px;
+    opacity: 0.10;
+    filter: invert(1) brightness(1.7);
   }
 
   .blitz-card-root .hero-metric {
@@ -147,7 +128,6 @@ interface BlitzRewardsRecapCardProps {
   chestsWon: number;
   eliteTicketsWon: number;
   rank: number | null;
-  rightMarkVariant?: "subtle" | "bold";
   player?: { name: string; address: string } | null;
 }
 
@@ -176,7 +156,7 @@ const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
 };
 
 const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
-  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, rightMarkVariant = "subtle", player }, ref) => {
+  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, player }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
     const theme = resolveCardTheme(rank);
     const safeEliteTickets = eliteTicketsWon > 0 ? 1 : 0;
@@ -195,12 +175,6 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
           <div className="bg-layer gradient-overlay" />
           <div className="bg-layer dark-overlay" />
 
-          <img
-            className={`right-mark right-mark-${rightMarkVariant}`}
-            src="/images/logos/Eternum-Mark-Black.png"
-            alt=""
-            aria-hidden="true"
-          />
           <img className="corner-mark" src="/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
 
           <div className="title-stack">
@@ -213,8 +187,8 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
           <div className="hero-metric">
             <div className="hero-label">$LORDS won</div>
             <div className="hero-value-row">
-              <img className="lords-icon" src="/tokens/lords.png" alt="LORDS token icon" />
               <div className="hero-value">+{lordsWon}</div>
+              <img className="lords-icon" src="/tokens/lords.png" alt="LORDS token icon" />
             </div>
           </div>
 
