@@ -43,13 +43,13 @@ const REWARDS_RECAP_CARD_STYLES = `
 
   .blitz-card-root .rank-value-row {
     margin-top: 8px;
-    display: inline-flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-    gap: 4px;
+    position: relative;
+    display: inline-block;
+    padding-right: 42px;
   }
 
   .blitz-card-root .rank-value {
+    display: block;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     font-size: 96px;
@@ -62,10 +62,12 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 
   .blitz-card-root .rank-suffix {
-    margin-top: 14px;
+    position: absolute;
+    top: 8px;
+    right: 0;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
-    font-size: 44px;
+    font-size: 36px;
     line-height: 1;
     background: var(--suffix-gradient);
     -webkit-text-fill-color: transparent;
