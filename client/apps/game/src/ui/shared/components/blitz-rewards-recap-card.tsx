@@ -10,6 +10,7 @@ import {
   BLITZ_CARD_GOLD_THEME,
   BLITZ_CARD_NEUTRAL_THEME,
   BLITZ_CARD_SILVER_THEME,
+  formatBlitzRankParts,
   formatBlitzValue as formatValue,
 } from "../lib/blitz-card-shared";
 
@@ -40,49 +41,33 @@ const REWARDS_RECAP_CARD_STYLES = `
     opacity: 0.75;
   }
 
-  .blitz-card-root .rank-badge {
-    margin-top: 10px;
-    padding: 10px 16px 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(0, 0, 0, 0.28);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 10px 28px rgba(0, 0, 0, 0.3);
-  }
-
-  .blitz-card-root.card-gold .rank-badge {
-    background: linear-gradient(135deg, rgba(191, 149, 63, 0.26), rgba(0, 0, 0, 0.28));
-    border-color: rgba(252, 246, 186, 0.38);
-  }
-
-  .blitz-card-root.card-silver .rank-badge {
-    background: linear-gradient(135deg, rgba(172, 172, 172, 0.26), rgba(0, 0, 0, 0.28));
-    border-color: rgba(248, 248, 248, 0.36);
-  }
-
-  .blitz-card-root.card-bronze .rank-badge {
-    background: linear-gradient(135deg, rgba(146, 85, 24, 0.28), rgba(0, 0, 0, 0.28));
-    border-color: rgba(201, 142, 83, 0.38);
-  }
-
-  .blitz-card-root.card-neutral .rank-badge {
-    background: linear-gradient(135deg, rgba(105, 28, 135, 0.28), rgba(0, 0, 0, 0.28));
-    border-color: rgba(164, 104, 191, 0.36);
-  }
-
-  .blitz-card-root.card-emerald .rank-badge {
-    background: linear-gradient(135deg, rgba(78, 139, 135, 0.28), rgba(0, 0, 0, 0.28));
-    border-color: rgba(123, 255, 230, 0.34);
+  .blitz-card-root .rank-value-row {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 4px;
   }
 
   .blitz-card-root .rank-value {
-    margin-top: 0;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     font-size: 96px;
     line-height: 1;
     background: var(--rank-gradient);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-fill-color: transparent;
+  }
+
+  .blitz-card-root .rank-suffix {
+    margin-top: 14px;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+    font-size: 44px;
+    line-height: 1;
+    background: var(--suffix-gradient);
     -webkit-text-fill-color: transparent;
     -webkit-background-clip: text;
     background-clip: text;
@@ -183,14 +168,6 @@ interface BlitzRewardsRecapCardProps {
   player?: { name: string; address: string } | null;
 }
 
-const formatRank = (rank: number | null): string => {
-  if (rank == null || !Number.isFinite(rank) || rank < 1) {
-    return "--";
-  }
-
-  return `#${Math.trunc(rank)}`;
-};
-
 const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
   if (!rank || rank < 1) {
     return "gold";
@@ -218,7 +195,7 @@ const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
 const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
   ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, player }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
-    const rankLabel = formatRank(rank);
+    const { value: rankValue, suffix: rankSuffix } = formatBlitzRankParts(rank);
     const theme = resolveCardTheme(rank);
     const safeEliteTickets = eliteTicketsWon > 0 ? 1 : 0;
 
@@ -247,8 +224,9 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
 
           <div className="rank-panel">
             <div className="rank-label">Final Rank</div>
-            <div className="rank-badge">
-              <div className="rank-value">{rankLabel}</div>
+            <div className="rank-value-row">
+              <div className="rank-value">{rankValue}</div>
+              {rankSuffix ? <div className="rank-suffix">{rankSuffix.toLowerCase()}</div> : null}
             </div>
           </div>
 
