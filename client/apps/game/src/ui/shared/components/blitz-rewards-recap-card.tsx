@@ -10,7 +10,6 @@ import {
   BLITZ_CARD_GOLD_THEME,
   BLITZ_CARD_NEUTRAL_THEME,
   BLITZ_CARD_SILVER_THEME,
-  formatBlitzRankParts,
   formatBlitzValue as formatValue,
 } from "../lib/blitz-card-shared";
 
@@ -22,56 +21,6 @@ const REWARDS_RECAP_CARD_STYLES = `
   ${BLITZ_CARD_BRONZE_THEME}
   ${BLITZ_CARD_EMERALD_THEME}
   ${BLITZ_CARD_NEUTRAL_THEME}
-
-  .blitz-card-root .rank-panel {
-    position: absolute;
-    right: 64px;
-    top: 132px;
-    width: 240px;
-    z-index: 4;
-    text-align: right;
-  }
-
-  .blitz-card-root .rank-label {
-    font-family: "IM Fell English", serif;
-    font-style: italic;
-    font-size: 24px;
-    line-height: 30px;
-    color: #ffffff;
-    opacity: 0.75;
-  }
-
-  .blitz-card-root .rank-value-row {
-    margin-top: 8px;
-    display: inline-flex;
-    align-items: baseline;
-    justify-content: flex-end;
-    gap: 4px;
-  }
-
-  .blitz-card-root .rank-value {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    font-size: 96px;
-    line-height: 1;
-    background: var(--rank-gradient);
-    -webkit-text-fill-color: transparent;
-    -webkit-background-clip: text;
-    background-clip: text;
-    text-fill-color: transparent;
-  }
-
-  .blitz-card-root .rank-suffix {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    font-size: 44px;
-    line-height: 1;
-    background: var(--suffix-gradient);
-    -webkit-text-fill-color: transparent;
-    -webkit-background-clip: text;
-    background-clip: text;
-    text-fill-color: transparent;
-  }
 
   .blitz-card-root .hero-metric {
     position: absolute;
@@ -202,7 +151,6 @@ const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
 const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
   ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, player }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
-    const { value: rankValue, suffix: rankSuffix } = formatBlitzRankParts(rank);
     const theme = resolveCardTheme(rank);
     const safeEliteTickets = eliteTicketsWon > 0 ? 1 : 0;
 
@@ -228,14 +176,6 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
           </div>
 
           <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
-
-          <div className="rank-panel">
-            <div className="rank-label">Final Rank</div>
-            <div className="rank-value-row">
-              <span className="rank-value">{rankValue}</span>
-              {rankSuffix ? <span className="rank-suffix">{rankSuffix}</span> : null}
-            </div>
-          </div>
 
           <div className="hero-metric">
             <div className="hero-label">$LORDS won</div>
