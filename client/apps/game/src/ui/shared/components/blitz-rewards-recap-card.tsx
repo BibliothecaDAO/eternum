@@ -43,13 +43,13 @@ const REWARDS_RECAP_CARD_STYLES = `
 
   .blitz-card-root .rank-value-row {
     margin-top: 8px;
-    position: relative;
-    display: inline-block;
-    padding-right: 42px;
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 4px;
   }
 
   .blitz-card-root .rank-value {
-    display: block;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     font-size: 96px;
@@ -62,12 +62,9 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 
   .blitz-card-root .rank-suffix {
-    position: absolute;
-    top: 8px;
-    right: 0;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
-    font-size: 36px;
+    font-size: 44px;
     line-height: 1;
     background: var(--suffix-gradient);
     -webkit-text-fill-color: transparent;
@@ -227,8 +224,8 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
           <div className="rank-panel">
             <div className="rank-label">Final Rank</div>
             <div className="rank-value-row">
-              <div className="rank-value">{rankValue}</div>
-              {rankSuffix ? <div className="rank-suffix">{rankSuffix.toLowerCase()}</div> : null}
+              <span className="rank-value">{rankValue}</span>
+              {rankSuffix ? <span className="rank-suffix">{rankSuffix}</span> : null}
             </div>
           </div>
 
