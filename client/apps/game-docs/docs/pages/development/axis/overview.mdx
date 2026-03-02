@@ -1,0 +1,42 @@
+---
+layout: docs
+title: Axis Overview
+---
+
+# Axis Overview
+
+Axis is the official Eternum onchain agent CLI.
+
+It discovers active worlds, authenticates with Cartridge Controller sessions, observes world state, and executes onchain
+actions through an LLM-driven tick loop.
+
+## What Axis Does
+
+- Discovers live worlds across `slot`, `sepolia`, and `mainnet`
+- Authenticates with Cartridge sessions (no private key required by default)
+- Runs in interactive TUI mode or headless server mode
+- Executes game actions generated from ABI at runtime
+- Persists memory and strategy files per world
+- Exposes HTTP + stdin control surfaces in headless mode
+
+## Runtime Flow
+
+1. Resolve config from env
+2. Discover or resolve target world
+3. Build world profile and manifest
+4. Authenticate session
+5. Start the tick loop and heartbeat jobs
+6. Observe, reason, and execute actions
+
+## TUI vs Headless
+
+- Use TUI when running manually and selecting worlds interactively
+- Use headless for VPS/CI/fleet orchestration and external control via API/stdin
+
+## Read Next
+
+- [Install and Run](/development/axis/install-and-run)
+- [World Discovery and Auth](/development/axis/worlds-and-auth)
+- [Headless Mode and API](/development/axis/headless-and-api)
+- [Configuration and Operations](/development/axis/configuration-and-operations)
+- [CLI Reference](/development/axis/cli-reference)

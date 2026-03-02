@@ -48,738 +48,6 @@ import { HomePage } from "vocs/components";
 
 ---
 
-file: docs/pages/blitz/achievements.mdx
-meta: {}
-
-# 🏆 Achievements
-
-*Work in Progress*
-
-
-
----
-
-file: docs/pages/blitz/game-entry.mdx
-meta: {
-  "title": "Game Entry",
-  "description": "How to enter and compete in Blitz"
-}
-
-# Game Entry
-
-While an Eternum season is a single game instance that unfolds over several weeks, Blitz games are frequently hosted to
-allow players to jump into the action at a time that suits them. Competitive Blitz tournaments, composed of Warrior and
-Elite bracket games are organized into 'series' that are hosted in the development period between Eternum seasons.
-Recruit and Gladiator bracket games are hosted continuously on a rotating timetable.
-
-Unlike Eternum, Blitz does not require ownership of Realms NFTs or Season Passes for entry. Entry requirements and
-stakes are determined by the bracket that players choose to compete in. Both human and AI agent players are welcome to
-participate, competing under the same onchain rules.
-
-## Bracket System
-
-Blitz gameplay is structured around multiple brackets with varying stakes and entry requirements, catering to different
-playstyles and competitiveness levels.
-
-🍻 **Recruit Bracket - No Stakes**
-
-Free-to-enter bracket for introduction, playtesting and practice, allowing players to experience Blitz gameplay with no
-stakes. Recruit games run multiple times per day on a rotating schedule to encourage participation from players in all
-time zones.
-
-💰 **Gladiator Bracket - $LORDS Stakes**
-
-Competitive games with $LORDS stakes. Players pay a $LORDS entry fee, contributing to a shared prize pool which is split
-between top-ranking Lords by score at the end of the game. All players have a chance to earn additional Loot Chest
-rewards. Games run daily on a rotating schedule.
-
-🏅 **Warrior Bracket - Series Games**
-
-These games form the bulk of a competitive Blitz Series. Players pay a $LORDS entry fee, contributing to a shared prize
-pool which is split between top-ranking Lords by score at the end of the game. All players have a chance at earning
-additional rewards in the form of Blitz Rewards Chests. The highest placing players can also win tradable NFT invites to
-the Elite bracket. Games run according to the series schedule, but primarily during prime time for key timezones (USA,
-Europe, Asia-Pacific).
-
-🏆 **Elite Bracket - Series Finals**
-
-Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz Series.
-Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost). These games offer large, DAO-funded prize
-pools along with coveted Elite Blitz Rewards Chests. A limited number of Elite games are run at the end of a Blitz
-series.
-
-## Realm Control Mechanics
-
-Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
-other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
-forces, territorial positioning, and resource management to survive and thrive within the intense 90-minute game
-duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed world
-state.
-
-
-
----
-
-file: docs/pages/blitz/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Blitz"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
-
-Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 90-minute match,
-players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
-Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
-high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset,
-making Blitz a true test of strategic mastery regardless of who—or what—controls the armies. The no-stakes Recruit
-bracket allows new players to learn the
-game, while experienced Lords can sharpen their skills in preparation for higher-stakes games. Lords can compete for
-$LORDS token stakes in Gladiator bracket, while Warrior bracket games form the core of a Blitz 'series'—where success
-brings additional Loot Chest rewards and invitations to the coveted Elite bracket, which offers even greater prizes!
-
-## Rule Summary
-
-### Game Duration
-
-Each Blitz game runs for exactly **90 minutes**. Time is measured in Eternum Days, which are six minutes long and divided
-into six 'phases'.
-
-### Realms
-
-* **Three Starting Realms**: Each player starts with three Realms, evenly spaced apart in a triangle formation.
-* **Equal Capability**: At the start of the game, all Realms in Blitz are functionally identical.
-* **Unrestricted Building**: Players can construct any resource building they wish, restricted only by build space and
-  population.
-* **No Wonders or Villages**: Wonders and the Village system are not present in Blitz.
-* **Conquest Mechanics**: All Realms are vulnerable to capture by other players; deployed armies of a captured Realm
-  become the property of the conquering Lord, while any troops stored in the structure or in transit to it are destroyed
-  (this destruction rule applies to all player-owned structures).
-
-### Materials
-
-* **Simplified Resources**: Only 9 resources are available - Wood, Coal, Copper, Ironwood, Cold Iron, Gold, Adamantine,
-  Mithril, and Dragonhide.
-* **Simplified Food**: Only 1 food type - Wheat.
-* **Essence**: New material found by exploring the map and interacting with World Structures, required for some
-  production, buildings and upgrades.
-* **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'labor mode' production.
-* **Donkeys**: Required for moving materials around the world, essential for logistics.
-* **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
-* **Restricted Bridging**: Players may only bridge Relics into the game (not out). Other materials can't be bridged.
-  *Note: This feature is a work in progress, the tokenized Relics and Relic Chest system is not active yet.*
-* **Donkey Cost**: Donkeys only cost food to produce (no $LORDS cost).
-* **No P2P Transfers**: No direct transfers or trade between players.
-
-### Buildings
-
-* **Construction**: 'Resource mode' and 'labor mode' building systems.
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed at game start.
-  * **Resource Buildings**: Specific buildings for each of the 9 resources.
-  * **Economic Buildings**: Includes Farms, Worker Huts, and Markets.
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  are upgraded.
-
-### Production
-
-* **Production Types**:
-  * **Food**: Wheat can be produced without inputs.
-  * **Resources**: Require combinations of other resources (resource mode) or labor (labor mode).
-  * **Labor**: Produced by the Keep at a steady rate.
-  * **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
-    as inputs.
-  * **Donkeys**: One-time-use transport, consumed after a single journey.
-* **Altered Rates**: All production rates are increased relative to production requirements for the fast-paced game
-  format.
-
-### World Map
-
-* **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
-  neighbors.
-* **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
-  and labor. Resources cannot be discovered through exploration.
-* **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
-* **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase, +120 per Eternum Day), with costs
-  varying by biome and troop type.
-
-### Military
-
-* **Army Composition**: Armies consist of a single troop type and tier.
-* **Troop Tiers**: T1, T2, and T3 troops with increasing stamina and combat strength.
-* **Combat Factors**: Battles are resolved based on army damage, stamina modifiers, and biome effects.
-* **Army Types**:
-  * **Field Armies**: Deploy onto the world map for exploration and conquest.
-  * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
-* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
-  specific biomes.
-* **Reinforcements**: Lords can transport troops by donkey to any Realm, Hyperstructure, Camp or Essence Rift that they own.
-
-### Scoring System
-
-Leaderboard placing is determined by total accumulated Victory Points, a measure of a Lord's ability to explore the map
-and control World Structures. Victory Points are awarded for:
-
-* Exploring tiles
-* Claiming World Structures
-* Opening Relic Crates
-* Claiming Hyperstructures
-* Holding Hyperstructures throughout the game
-
-### Victory
-
-Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the 90 minutes
-share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the game.
-
-## Blitz Variants
-
-Blitz games come in many forms, and can be configured and deployed by anyone. But the majority of Blitz games are
-deployed by the core team in the following forms:
-
-### Recruit Bracket
-
-* **No Stakes**: Free-to-enter bracket for introduction, playtesting and practice.
-* **No Entry Cost**: No $LORDS required to participate.
-* **Frequency**: Games run multiple times per day on a rotating schedule.
-
-### Gladiator Bracket
-
-* **$LORDS Stakes**: Competitive games with $LORDS stakes.
-* **Entry Cost**: Players pay a $LORDS entry fee, contributing to the prize pool.
-* **Prize Distribution**: Top-ranking Lords share the prize pool.
-* **Frequency**: Games run on a rotating schedule.
-
-### Warrior Bracket
-
-* **Series Games**: These games form part of a competitive Blitz Series.
-* **$LORDS Stakes**: Competitive games requiring a $LORDS entry fee, contributing to a prize pool.
-* **Prize Distribution**: Top-ranking Lords share the prize pool.
-* **Additional Rewards**: Blitz Rewards Chests containing cosmetic items.
-* **Special Invites**: Highest placing players win tradable NFT invites to the Elite bracket.
-* **Frequency**: Games run daily during prime time for key timezones (USA, Europe, Asia-Pacific).
-
-### Elite Bracket
-
-* **Series Games**: These games represent the highest level of play in a competitive Blitz Series.
-* **Ticket Entry Cost**: Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost).
-* **Prize Pool**: Large, DAO-funded prize pool.
-* **Rewards**: Elite Blitz Rewards Chests containing cosmetic items.
-* **Frequency**: A limited number of games run in the final week of a Blitz series.
-
-### Blitz Series
-
-While Recruit and Gladiator games can be deployed and played as frequently as the player base demands, games with stakes
-(Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
-gameplay and provide continuous competitive opportunities.
-
-## Matchmaking Rating (MMR)
-
-Blitz features an onchain Matchmaking Rating system that tracks player skill across rated games. After each rated match,
-the system evaluates your final rank relative to the lobby's average skill level and adjusts your rating accordingly.
-MMR is persistent across games and is tracked via a non-transferable onchain token, providing a transparent and
-verifiable measure of long-term performance. For full details, see the [MMR](/blitz/mmr) page.
-
-## Rewards
-
-Successful Blitz players can earn various rewards including:
-
-* **$LORDS Token**: Prize pool distributions for top players.
-* **Loot Chests**: Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic items.
-* **Elite Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
-
-
-
----
-
-file: docs/pages/blitz/mmr.mdx
-meta: {
-  "title": "Blitz MMR",
-  "description": "How Blitz Matchmaking Rating works and how updates are claimed"
-}
-
-# 📈 Blitz MMR
-
-Blitz MMR (Matchmaking Rating) is an onchain skill rating that tracks player performance across rated Blitz games. It is
-enabled on a per-world basis; if a world has MMR disabled, no ratings are tracked.
-
-## What MMR Measures
-
-MMR is a **persistent rating** intended to reflect long-term performance rather than a single match outcome. After a
-game ends, the system updates each eligible player’s MMR based on:
-
-* Your **final rank** in the match
-* Your **expected performance** relative to the lobby’s median MMR
-* Lobby size scaling (larger lobbies produce more stable deltas)
-
-## Eligibility (Who Gets Rated)
-
-Only players who are:
-
-* **Registered** in the match, and
-* Have **non-zero recorded points**
-
-are included in the rated update.
-
-## How the Update Is Calculated (High Level)
-
-Blitz uses a percentile-based update that compares:
-
-* **Expected percentile** (from a logistic curve around the lobby median), vs.
-* **Actual percentile** (from your finishing rank)
-
-The resulting delta is capped (diminishing returns) and includes a small mean-regression term toward the configured
-distribution mean.
-
-> Implementation note: the onchain calculator follows an 8-step formula including median MMR, expected/actual
-> percentile, capped delta, split-lobby adjustment, and mean regression.
-
-## Claim / Update Flow (Commit + Claim)
-
-MMR updates are applied after the match completes via a single action in the client:
-
-1. **Finalize ranking** for the match (MMR cannot update until final ranking exists).
-2. Open **Social → MMR**.
-3. Click **Update MMR**.
-
-When you click Update MMR, the client:
-
-* Fetches current MMR values for eligible players from the MMR token contract
-* Sorts players by current MMR (lowest → highest) as required by the commit call
-* Submits a single onchain transaction to commit the game’s MMR update and apply new ratings
-
-Once committed, the update cannot be run again for that match.
-
-
-
----
-
-file: docs/pages/blitz/prize-pool.mdx
-meta: {
-  "title": "Prize Pool & Distribution",
-  "description": "How $LORDS prizes are calculated and distributed in Blitz"
-}
-
-# Prize Pool & Distribution
-
-Blitz distributes **$LORDS** to players at the end of every game based on their final rank. The system adapts to lobby
-size, the ratio of entry fees to sponsored prizes, and how many players actually score — so payouts stay fair whether
-there are 2 or 24 players in a match.
-
-## Prize Pool Composition
-
-The total prize pool comes from two sources:
-
-| Source              | Description                                                       |
-| ------------------- | ----------------------------------------------------------------- |
-| **Entry fees (F)**  | Each player pays a $LORDS entry fee when registering for the game |
-| **Sponsorship (S)** | Additional $LORDS added by the game host or external sponsors     |
-
-**Total Prize Pool = F + S**
-
-### Fee Split
-
-Before the prize pool is formed, the collected entry fees are split:
-
-* **70%** → prize pool (distributed to winning players)
-* **15%** → [Lordship Protocol](https://realms.world) (veLORDS ecosystem support)
-* **15%** → development fund (core team operations)
-
-Any sponsored amount is added **on top** of the 70% player share, so sponsorship always increases the prize pool without
-reducing the ecosystem or development allocations.
-
-> **Example:** 106 players × 250 $LORDS entry = 26,500 $LORDS collected. After the 70/15/15 split, 18,550 $LORDS goes to
-> the prize pool. Add 15,000 $LORDS in sponsorship → **33,550 $LORDS total prize pool**.
-
-## Who Wins?
-
-Not every player receives a prize. The number of **winners** is calculated dynamically based on several factors:
-
-1. **Registered player count (N)** — total players who entered
-2. **Scoring players (C)** — players who finished with points > 0
-3. **Entry-fee-to-pool ratio** — how much of the pool is sponsored vs. player-funded
-4. **A small-lobby adjustment** — prevents tiny games from paying out to nearly everyone
-
-### Winner Count Formula
-
-The system computes a **base winner ratio** `rb` that sets a floor for how many players can win:
-
-```
-rb(N) = 1 − (1.03 × min(1, N/1000)^0.13)
-```
-
-This ratio is clamped between **2%** and **60%** of the lobby. Larger lobbies push `rb` lower (fewer proportional
-winners), while small lobbies keep it higher.
-
-A **sponsorship factor** `A` then expands the winner pool when sponsors contribute:
-
-```
-A = 1 − (F / P)^0.5
-```
-
-Where `F` is total entry fees (after the 70/15/15 split) and `P` is the full prize pool. More sponsorship → higher `A` →
-more winners.
-
-A **small-game weight** `gw` further adjusts for lobby size:
-
-```
-gw = 0.05 + 0.95 × (20 / (N + 20))²
-```
-
-These combine into a final winner ratio `r`:
-
-```
-r = clamp(rb + 3.3 × A × gw × (rcap − rb), 0.02, rcap)
-```
-
-Where `rcap = 0.5 + 0.5 × A`. The winner count `W` is then:
-
-```
-W = min(ceil(N × r), C)
-```
-
-The winner count can never exceed the number of players who actually scored.
-
-## Prize Calculation
-
-Once the winner count is known, prizes are distributed using a **geometric decay** model. Higher-ranked players receive
-proportionally more, with the curve controlled by a single parameter `s`.
-
-### The Decay Parameter (s)
-
-```
-s(N) = 0.3 + 0.64 × (1 − N^(−0.7))
-```
-
-* Small lobbies → lower `s` → steeper curve (1st place gets a larger share)
-* Large lobbies → higher `s` → flatter curve (prizes spread more evenly)
-
-`s` approaches but never exceeds \~0.94 even at very large player counts.
-
-### Rank Weights
-
-Each winning position `i` (starting from 1) receives a weight:
-
-```
-weight(i) = s^(i − 1)
-
-  1st → 1,  2nd → s,  3rd → s²,  4th → s³,  …  Wth → s^(W−1)
-```
-
-The total weight sum is the geometric series:
-
-```
-Σ = (s^W − 1) / (s − 1)
-```
-
-### Individual Prize
-
-Each winner's prize is their normalized weight times the prize pool:
-
-```
-prize(i) = (weight(i) / Σ) × P
-```
-
-Players ranked beyond position `W` receive **0 $LORDS**. If multiple players share the same rank (tied scores), their
-combined prize for that rank range is split equally among them.
-
-## NFT Rewards
-
-In addition to $LORDS, players may receive NFT rewards:
-
-### Loot Chests
-
-* **Game Reward Chests** — any player who finishes with **≥ 500 Victory Points** automatically receives a Loot Chest NFT
-  upon claiming their prize, regardless of whether they are in the winner pool.
-* **Series Chests** — additional Loot Chests are allocated across a game series and distributed proportionally based on
-  each player's registered points relative to the total. The number of series chests grows as more games are played in
-  the series.
-
-See [Loot Chests](/overview/chests/loot-chests) for details on chest contents.
-
-## Claiming Prizes
-
-Prize distribution is **permissionless** — anyone can submit the ranked player list to trigger payouts. The process:
-
-1. The game ends and points registration closes
-2. A caller submits the ordered player list (highest score first) along with a trial ID
-3. The contract verifies ordering, calculates prizes, and finalizes rankings
-4. Players (or anyone on their behalf) call the claim function to transfer $LORDS and mint any earned NFTs
-
-If only **one player** registered for a game, they receive a full refund of their entry fee with no fee split applied.
-
-
-
----
-
-file: docs/pages/blitz/victory.mdx
-meta: {}
-
-import { table } from "@/components/styles";
-
-# 👑 Victory
-
-<img src="/images/covers/07.png" alt="Blitz Victory" className="w-full rounded-lg my-6" />
-
-## Scoring System
-
-Leaderboard placing is determined by total accumulated Victory Points (VP), a measure of a Lord's ability to explore the
-map and control World Structures. Victory Points are awarded for:
-
-* Exploring tiles
-* Claiming World Structures (Essence Rifts and Camps)
-* Opening Relic Crates
-* Claiming Hyperstructures
-* Holding Hyperstructures throughout the game
-
-*Note: VP for claiming World Structures and Hyperstructures are only rewarded the first time a structure is captured
-(from bandit forces).*
-
-## Hyperstructure Victory Points
-
-Hyperstructures provide ongoing Victory Points based on the number of surrounding player Realms. The VP/second earned
-from holding a hyperstructure is determined by the number of Realms within 8 tiles.
-
-<img src="/images/gifs/hyperstructure_ring_progression.gif" alt="Hyperstructure Ring Progression" className="w-full rounded-lg my-6" />
-
-This system rewards players who can capture hyperstructures in high-traffic areas where many players spawn, while
-hyperstructures in remote locations with no nearby players provide no ongoing VP benefits. Capturing a hyperstructure
-from resident bandits will always yield the VP for the feat of claiming it, even if it offers no ongoing control VP.
-
-The number of VP awarded for each feat described above is as follows:
-
-<div style={table.container}>
-  <div style={table.wrapper}>
-    <table style={table.table}>
-      <thead style={table.tableHead}>
-        <tr>
-          <th style={table.headerCell}>Action</th>
-          <th style={table.headerCell}>VP Awarded</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Explore a tile</td>
-          <td style={table.cell}>10 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Claim a World Structure from bandits</td>
-          <td style={table.cell}>500 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Open a Relic Crate</td>
-          <td style={table.cell}>1,000 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
-          <td style={table.cell}>3,000 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Control a Hyperstructure</td>
-          <td style={table.cell}>1-6 VP/second (based on no. of nearby Realms)</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-
-
----
-
-file: docs/pages/blitz/world-physics.mdx
-meta: {}
-
-import { Biomes } from "@/components/Biomes";
-
-# ⚛️ World Physics
-
-<img src="/images/covers/blitz-world-physics.png" alt="Blitz World Physics - Armies traversing the realm" className="w-full rounded-lg my-6" />
-
-In Blitz, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
-fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
-boundaries set by these protocols.
-
-## Game Duration
-
-Each Blitz game runs for exactly **90 minutes**.
-
-## Time
-
-Time within a Blitz game is measured in Eternum Days, and each is precisely six minutes in length. Each Eternum Day is
-divided into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting
-one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 15 Eternum Days.
-
-## Materials
-
-In Blitz, materials such as food, resources, troops, and donkeys are isolated within each round. There is no bridging of
-materials in and out of the game (other than Relics, which can be bridged in prior to the start of the game - *WIP
-feature*). All materials have an associated weight, which determines the number of Donkeys required to move the goods
-from place to place.
-
-*Note: This guide will use 'materials' to refer to all tangible assets - i.e. food, resources, essence, labor, troops,
-and donkeys. This is not to be confused with 'resources', which specifically refers to the 9 resources in Blitz.*
-
-## Cost of Production
-
-With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
-input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
-production to ensure they can maximize their Score within the 90-minute game window.
-
-## Travel
-
-Transporting materials takes time and donkeys. Every transfer of materials between locations relies exclusively on these
-speedy and dependable creatures. Donkeys are single-use, consumed upon completing their journey, making continuous
-acquisition vital for maintaining supply chains.
-
-Troops can also be moved between player-owned structures using donkeys, but to dominate your enemies and ensure security
-of your lands, troops must be deployed to an army on the world map. Once troops are deployed, they cannot be taken back
-into the inventory. Their mobility is then governed by stamina, limiting the distance they can travel and the number of
-actions they can perform. Traveling between hexes or initiating an attack expends valuable stamina points, which are
-partially replenished each Eternum Day.
-
-## Hexes
-
-Blitz unfolds across a procedurally generated, hexagonal-tile world map. This represents the physical space of the world
-and defines spawn locations, biome distribution, and distances between Realms and other World Structures. This is the
-layer in which armies explore, fight, and capture, and is explorable in the 'World' view.
-
-Zooming in, each Realm hex is broken up into smaller hexes which define the local area and building placement. Here in
-the 'Local' view, Lords can plan out their building placement and closely manage their population, supply chain, and
-production.
-
-## Biomes
-
-Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
-terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
-Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
-
-<Biomes />
-
-## The Blitz Arena
-
-The map on which Blitz takes place is designed to position Lords as equally as possible while also providing a dynamic
-battlefield that scales appropriately. Each player starts the game with three Realms, evenly spaced apart in a triangle
-and positioned between three complete and revealed Hyperstructures. Player Realms and Hyperstructures are placed in a
-specific pattern to ensure that all Lords have a comparable number of neighbors and equal access to Hyperstructures.
-More details on the Realm and Hyperstructure placement systems are available in the [Realms](/blitz/realms/realm) and
-[World Map](/blitz/worldmap-movement/worldmap) sections.
-
-The primary objective of Blitz is to capture and hold as many Hyperstructures and World Structures as possible to
-accumulate Victory Points and secure a position at the top of the leaderboard.
-
-<img src="/images/covers/blitz-arena.png" alt="The Blitz Arena - Competitive battleground" className="w-full rounded-lg my-6" />
-
-
-
----
-
-file: docs/pages/blitz/world-structures.mdx
-meta: {}
-
-import ResourceIcon from "@/components/ResourceIcon";
-import { table } from "@/components/styles";
-
-# 🏗️ World Structures
-
-All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
-claimed. Bandit garrisons range from **800 to 1,600 troops**.
-
-## Hyperstructures
-
-In Blitz, Hyperstructures are **fully constructed** and positioned around the map at the start of the game, ready to be
-claimed by eliminating the resident bandit forces. There is no construction process - Hyperstructures are immediately
-functional once claimed and will begin accumulating Victory Points for the owning player.
-
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
-
-The number of Hyperstructures in the game, and their positioning on the world map, is explained in the
-[World Map](/blitz/worldmap-movement/worldmap) section.
-
-## Essence Rifts
-
-<img src="/images/covers/essence-rift.png" alt="Blitz Essence Rift" className="w-full rounded-lg my-6" />
-
-Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
-locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
-continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 10 units per second from the
-moment they're discovered. Lords have a 1/50
-chance of finding one of these structures when exploring a hex.
-
-## Camps
-
-Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
-that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
-Lords have a 1/30 chance of finding one of these structures when exploring a hex.
-
-### Starting Materials
-
-When a camp is claimed, it spawns with an initial stockpile of materials.
-
-<div style={table.container}>
-  <div style={table.wrapper}>
-    <table style={table.table}>
-      <thead style={table.tableHead}>
-        <tr>
-          <th style={table.headerCell}>Resource</th>
-          <th style={table.headerCell}>Amount</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={35} name="Wheat" size="md" />
-
-              Wheat
-            </div>
-          </td>
-
-          <td style={table.cell}>500</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={23} name="Labor" size="md" />
-
-              Labor
-            </div>
-          </td>
-
-          <td style={table.cell}>2,500</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={25} name="Donkey" size="md" />
-
-              Donkeys
-            </div>
-          </td>
-
-          <td style={table.cell}>200</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-
-
----
-
 file: docs/pages/changelog/14-november-2025.mdx
 meta: {
   "layout": "docs"
@@ -813,6 +81,70 @@ meta: {
 
 *This changelog reflects all documentation updates made since the previous release. For detailed information about
 specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/18-february-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 18th February 2026
+
+### Blitz Prize Pool Rewrite
+
+* [Blitz/Prize Pool](/blitz/prize-pool): Complete rewrite of the prize pool and distribution documentation. Updated
+  prize pool composition, tier breakdowns, and distribution mechanics to reflect current game state.
+
+### Component Architecture
+
+* Separated Blitz and Eternum component variants into dedicated directories (`blitz-components/`, `eternum-components/`)
+  for clearer maintainability. Affected components: DefendingArmies, HyperstructureRings, TroopMovementTable,
+  WeightTable, ResourceProduction, RewardsChestTable, and others.
+* Introduced shared `styles.ts` design system with consistent color palette, spacing, and reusable table/section/stats
+  styles across all components.
+
+### Visual Overhaul
+
+* Applied a Realms-themed design language across all documentation pages: dark card backgrounds, brass/gold accent
+  colors, consistent typography (Exo 2 headings), and hover states on table rows.
+* Rebuilt sidebar navigation with collapsible sections, chevron toggles, and improved hierarchy.
+* Fixed table dead space issues on Deployment Caps and Prize Pool Composition tables.
+* Centre-aligned numeric columns across multiple tables: Deployment Caps, Guard Slots, Damage Comparison, Max Stamina,
+  Buildable Hexes, Armies by Realm Level, and Starting Materials (Realms and Camps).
+* Reduced loot chest table cell margins to allow more width for description columns.
+* Unbolded numeric figures in Troop Tier Stats tables for cleaner readability.
+* Restructured Troop Movement stats as a flat list layout.
+* Added global mobile overflow protection for all tables.
+* Changed Hyperstructure ring formula notation from √(P/6) to (P/6)^(1/2).
+* Converted damage refund calculation rules to code blocks for consistency.
+
+### Content Updates
+
+* [Overview/Introduction](/overview/introduction): Linked 'Eternum' and 'Blitz' in Game Modes section to their
+  respective key concept pages.
+* [Blitz/Loot Chests](/overview/chests/contents): Updated Blitz and Eternum rewards chest tables with revised item
+  descriptions and column layout.
+* [Blitz/Armies](/blitz/military/armies): Converted Deployment Caps to inline HTML table with fixed layout.
+* [Blitz/Game Entry](/blitz/game-entry): Minor content adjustments.
+* [Blitz/MMR](/blitz/mmr): Removed redundant content.
+* [Development/Getting Started](/development/getting-started): Added setup notes.
+* Multiple Eternum section pages: Minor cross-reference and link fixes.
+
+### Sidebar & Navigation
+
+* Restructured `vocs.config.ts` sidebar: reordered sections, added new pages, improved collapsed/expanded defaults.
+* Added 18 February 2026 changelog to navigation.
+
+### Changelog Formatting
+
+* Standardised section heading levels across 8th December and 31st January changelog entries.
+
+***
+
+*This changelog covers all documentation changes in PR #4204.*
 
 
 
@@ -879,10 +211,15 @@ meta: {
 
 # 31st January 2026
 
+### New Features
+
+* [Blitz/MMR](/blitz/mmr): Documented Blitz MMR, eligibility, and the commit + claim update flow in the client.
+* [Blitz/Key Concepts](/blitz/key-concepts): Added an MMR overview and link to the dedicated page.
+
+### Content Updates
+
 * [Blitz/Materials/Automation](/blitz/materials/automation): Updated automation docs to match the current dashboard and
   behavior (Realms/Villages tabs, Smart/Custom/Idle presets, staged edits requiring Save Changes).
-* [Blitz/Key Concepts](/blitz/key-concepts): Added an MMR overview and link to the dedicated page.
-* [Blitz/MMR](/blitz/mmr): Documented Blitz MMR, eligibility, and the commit + claim update flow in the client.
 * [Blitz/Military/Stamina & Biomes](/blitz/military/stamina-and-biomes): Noted Paladin max stamina increase to **120**.
 * [Blitz/Military/Armies](/blitz/military/armies): Documented updated mercenary troop bounds (**800–1600**).
 * [Eternum/Prize Pool](/eternum/prize-pool): Added note that quests are temporarily disabled.
@@ -979,20 +316,20 @@ meta: {
 
 # 8th December 2025
 
-## Balance Updates
+### Balance Updates
 
 * [Blitz/Production](/blitz/materials/production): Updated resource recipes, troop upgrade inputs, and donkey production
   output rate.
 * [Blitz/Buildings](/blitz/realms/buildings): Adjusted T2/T3 resource and military building costs for both labor and
   resource modes.
 
-## Starting Resources
+### Starting Resources
 
 * [Blitz/Realms](/blitz/realms/realm): Increased starting labor per Realm to 1,200.
 * [Blitz/World Structures](/blitz/world-structures): Documented revised camp spawn stockpiles (500 Wheat, 2,500 Labor,
   200 Donkeys).
 
-## Victory Points
+### Victory Points
 
 * [Blitz/Victory](/blitz/victory): Exploration VP reduced to 10 per tile.
 
@@ -1437,12 +774,14 @@ pnpm run build:packages
 
 Eternum supports multiple deployment environments:
 
-| Environment | Description                 |
-| ----------- | --------------------------- |
-| Local       | For development and testing |
-| Slot        | Staging environment         |
-| Sepolia     | Public testnet              |
-| Mainnet     | Production environment      |
+<div className="table-stretch-last">
+  | Environment | Description                 |
+  | ----------- | --------------------------- |
+  | Local       | For development and testing |
+  | Slot        | Staging environment         |
+  | Sepolia     | Public testnet              |
+  | Mainnet     | Production environment      |
+</div>
 
 ### Deploying to Local
 
@@ -1581,6 +920,12 @@ meta: {
 # Development
 
 * [Getting Started](/development/getting-started)
+* [Axis Overview](/development/axis/overview)
+* [Axis Install and Run](/development/axis/install-and-run)
+* [Axis Worlds and Auth](/development/axis/worlds-and-auth)
+* [Axis Headless and API](/development/axis/headless-and-api)
+* [Axis Configuration and Operations](/development/axis/configuration-and-operations)
+* [Axis CLI Reference](/development/axis/cli-reference)
 * [Client](/development/client)
 * [Contracts](/development/contracts)
 * [SDK](/development/sdk)
@@ -1624,6 +969,1212 @@ the constants/types of the world that needed to be transcribed to Typescript.
 
 Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
 this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
+
+
+
+---
+
+file: docs/pages/overview/controller.mdx
+meta: {
+  "title": "Cartridge Controller",
+  "description": "Using the Cartridge Controller to play Realms games"
+}
+
+import { importantNote } from "@/components/styles";
+
+# Cartridge Controller
+
+The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
+via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
+documentation [here](https://docs.cartridge.gg/controller/overview).
+
+<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
+
+## Using the Controller
+
+If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
+controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
+Starknet using your Ready (formerly ArgentX) or Braavos wallet.
+
+To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
+simply input a username and sign up.
+
+<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
+
+There are multiple ways to securely sign up:
+
+* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
+  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
+  or 1Password.
+* **Metamask**: Connect using your MetaMask wallet.
+* **Rabby**: Connect using your Rabby wallet.
+* **Discord**: Connect using your Discord account.
+* **Wallet Connect**: Connect using a wide range of wallets.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
+    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
+    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
+  </p>
+</div>
+
+Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
+session.
+
+### Transfer Season Pass to Controller
+
+Transfer an Eternum season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect
+your controller by selecting the controller icon located at the top of the page and select the passes to transfer.
+
+<div className="flex justify-center">
+  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
+</div>
+
+## Controller Key Features
+
+### Simple and Secure
+
+* Passwordless authentication using Passkeys for one-click onboarding
+* Self-custodial embedded wallets that put players in control
+* Built-in security features to protect player assets
+
+### Designed for Seamless Gameplay:
+
+* Session keys eliminate transaction popups during gameplay
+* Secure transaction delegation lets games submit actions on behalf of players
+* Free transactions through the Cartridge Paymaster so players focus on playing
+
+### Supported Platforms and Passkey Backup
+
+Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
+with a mobile device using the QR flow. For those without device authenticators, several password managers like
+Bitwarden (free), 1Password, and Dashlane support Passkeys.
+
+#### Backing Up Your Passkey
+
+* Apple devices: Passkeys are backed up along with your keychain in iCloud.
+
+* Android devices: Passkeys are backed up with your Google account.
+
+* Windows devices: Passkeys are created and managed as part of your Windows account.
+
+#### Using Controller Across Devices
+
+Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
+synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
+might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
+Multi-credential support is coming soon to enhance device compatibility.
+
+Should you have any issues with the controller or require support, you can join the Cartridge Discord
+[here](https://discord.gg/cartridge).
+
+
+
+---
+
+file: docs/pages/overview/disclaimer.mdx
+meta: {}
+
+# Disclaimer and Risk Acknowledgment
+
+<div
+  style={{
+  backgroundColor: "#dc2626",
+  color: "white",
+  padding: "1rem",
+  borderRadius: "0.5rem",
+  marginBottom: "1.5rem",
+  border: "1px solid #b91c1c",
+}}
+>
+  <h3 style={{ margin: "0 0 0.5rem 0", color: "white" }}>⚠️ Important Disclaimer – Please Read Carefully</h3>
+
+  <p style={{ margin: 0 }}>
+    By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
+  </p>
+</div>
+
+## Immutable Contracts
+
+Each game is governed entirely by **immutable** smart contracts. Once deployed, the game's rules and mechanics **cannot
+be altered, updated, or reversed** by the developers, the DAO, or any other party. These smart contracts have **not**
+been audited. Players should fully understand the implications of interacting with the system and assess the risks
+involved.
+
+## Risk of Loss
+
+All transactions and gameplay actions in these games are **final**. There are no mechanisms for refunds, reversals, or
+compensation. You acknowledge the **risk of loss of funds** and accept that you bear sole responsibility for any
+financial impact incurred.
+
+## Eternum
+
+A season of Eternum concludes when a single player achieves the required **Victory Points** and clicks the "End Season"
+button. At this point:
+
+### ⚠️ SEASON END CRITICAL INFORMATION
+
+When the season ends, **ALL in-game actions are DISABLED** except:
+
+* transfer materials
+* deposit resource arrivals
+* retrieve LP positions
+* cancel market orders
+* bridge materials out of the game
+
+1. **7-Days Withdrawal Window (starts immediately when "End Season" is clicked)**
+   * Starting from the exact moment the season ends, you have **7 days** to bridge out **ALL $LORDS** tokens and
+     bridgeable materials from your Realms' balance
+
+2. **After 7 Days**
+   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
+   * These assets **CANNOT** be recovered under any circumstances
+
+3. **Score Registration**
+   * Players have **4 days** to register their scores
+   * Registration is **MANDATORY** to be eligible for prizes
+   * While registration has a deadline, prize claiming does not
+
+Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
+
+## Blitz
+
+Blitz game instances operate on a fixed schedule with immediate $LORDS prize distribution upon completion. Unlike
+Eternum seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes
+within the session timeframe.
+
+Distribution of Loot Chest NFT rewards is handled through an automated, decentralized distribution system that mints
+rewards directly to eligible players upon game completion.
+
+## No Recourse
+
+By participating in these games, you waive all rights to claims or recourse against the developers, the DAO, or any
+other associated entities for any losses or disputes arising from your participation in the game.
+
+## Acknowledgment of Terms
+
+Participation in Realms games constitutes your agreement to these terms, as well as all other terms and conditions
+outlined in the game's documentation.
+
+
+
+---
+
+file: docs/pages/overview/introduction.mdx
+meta: {
+  "title": "Introduction to the Realms",
+  "description": "An introduction to the Realms gaming ecosystem"
+}
+
+# Welcome to the Realms
+
+<img src="/images/covers/01.png" alt="Eternum Landscape" className="w-full rounded-lg my-6" />
+
+## The Lords Have Arrived
+
+Across treacherous open seas and endless horizons, the legendary Galleon has finally arrived in a new land, bearing the
+brave and ambitious souls known as Lords. Having journeyed for years, driven by dreams of power, glory, and untold
+riches, these Lords have finally set foot upon their destination—a mysterious landscape ripe with ancient secrets and
+unclaimed territories. Now, as the mists clear, each Lord must forge their own path in this land of promise and peril.
+
+## Establish Your Foothold
+
+Your task begins by settling a seat of power from which your destiny unfolds. Find your place upon the vast, unexplored,
+procedurally generated world map and secure vital materials to fuel your expansion. Grow your influence through shrewd
+economic choices, military strategy, and diplomatic maneuvering, nurturing your humble settlement into a mighty empire.
+
+Yet, strength alone is insufficient, for Eternum is fraught with dangers. Bandits roam unchecked and rival Lords covet
+your lands. Armies must be raised, resources guarded, and alliances carefully chosen. Only through wise leadership and
+vigilant defense can your holdings flourish and endure.
+
+## Find Your Glory
+
+These new lands are dominated by colossal relics from an ancient civilization, known as Hyperstructures. The mysterious
+towers act as conduits of power, providing their masters with the ability to assert dominance over the continent and
+their subjects. They are the focus of ultimate victory.
+
+However, this new and expansive world offers glory beyond mere conquest; whether through trade mastery, military
+prowess, diplomatic excellence, or simply the joy of exploration, every Lord has the freedom to find their own path to
+greatness.
+
+## Core Pillars
+
+* **Fully Onchain Gameplay** - Every action, decision, and outcome is transparently executed and verifiable onchain.
+  Secured by Ethereum and seamlessly scaled by Starknet, the integrity and immutability of gameplay are guaranteed.
+* **Agent-Native Environment** - Realms games offer a rich environment and complex economy developed with agentic
+  players in mind. Humans and AI agents play together under the same chain-enforced ruleset, competing and cooperating
+  as Lords in an open, permissionless arena.
+* **Player-Driven Economy** – Every resource produced, trade executed, and asset exchanged originates solely from player
+  decisions. Collectively, these choices dictate supply, demand, and market prices, forming a dynamic and ever-evolving
+  economy across the entire ecosystem.
+* **Strategic Depth** – Long-term success requires efficient production management, tactical territorial expansion, and
+  precisely timed military engagements. Lords who exhibit foresight, adaptability, and strategic mastery will rise to
+  dominate, while others fall into obscurity.
+
+## Game Modes
+
+<img src="/images/covers/02.png" alt="Eternum Game Features" className="w-full rounded-lg my-6" />
+
+Lords can test their skills and strategies in two distinct game modes, each offering unique experiences and challenges:
+
+**[Eternum](/eternum/key-concepts)** - The flagship seasonal game mode, Eternum invites players into a rich, evolving
+world of strategic depth. Unfolding over several weeks, Lords shape the world through expansive empire-building,
+intricate economic management, diplomatic maneuvering, and focused military campaigns. The complexity of Eternum is
+balanced by accessible gameplay layers, allowing casual players to participate in lower-stakes activities such as
+resource trading, exploration, and minigames. Whether aspiring to dominate the continent or simply carving out a
+peaceful corner of the world, Eternum offers rewarding experiences suited to every play style.
+
+**[Blitz](/blitz/key-concepts)** - Blitz provides an exciting contrast through rapid, high-intensity, free-for-all
+competition lasting exactly 90 minutes. This mode distills strategic gameplay into streamlined mechanics, accelerated
+resource production, and immediate military engagements, rewarding quick thinking and decisive action. Blitz is
+structured around a competitive bracket system—Recruit, Gladiator, Warrior, and Elite—allowing Lords to engage at their
+preferred intensity level, from casual challenges to elite competitions with significant stakes and rewards. Whether
+testing new strategies or vying for glory, Blitz delivers exhilarating, accessible, and fiercely competitive battles.
+
+## Rewards
+
+Lords who prove their skill and strategic prowess across both Eternum and Blitz are rewarded generously for their
+efforts. Success in competitive events can award portions of [$LORDS token](/overview/lords) prize pools, as well as
+[Loot Chests](/overview/chests/loot-chests) containing consumables and exclusive cosmetic items.
+
+
+
+---
+
+file: docs/pages/overview/links.mdx
+meta: {
+  "title": "Quick Links",
+  "description": "Essential links for Realms games"
+}
+
+# Quick Links
+
+## Play & Learn
+
+* [Empire Home](https://empire.realms.world/) - The home of Realms games
+* [Eternum](https://eternum.realms.world/) - Season 1 has concluded; Season 2 is in development
+* [Marketplace](https://empire.realms.world/trade) - Trade Realms and other ecosystem assets
+* [Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
+* [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
+* [Documentation](https://docs.realms.world/) - You are here
+
+## Community
+
+* [Realms World](https://realms.world/) - The DAO behind Eternum
+* [Discord](https://discord.gg/realmsworld) - Join our Discord
+* [X (Community)](https://x.com/LootRealms) - Follow the community
+* [X (Realms Games)](https://x.com/realms_gg) - Follow for Realms games updates
+
+
+
+---
+
+file: docs/pages/overview/lords.mdx
+meta: {}
+
+# $LORDS Token
+
+<div style={{ textAlign: "center" }}>
+  <img src="/images/resources/37.png" alt="LORDS Token" style={{ width: "120px", height: "auto", display: "inline-block" }} />
+</div>
+
+$LORDS is the native token of the Realms. It serves as the primary currency within the ecosystem, enabling economic
+activity and participation in various games.
+
+## Token Details
+
+* **Name**: LORDS
+* **Network**: Ethereum Mainnet, Starknet
+* **Contract Address**:
+  [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
+* **Total Supply**: 300,000,000
+
+## $LORDS in Gameplay
+
+* **Trading Currency**: $LORDS serves as the primary currency for trading within Eternum's Automated Market Maker (AMM)
+  and the peer-to-peer Orderbook, allowing Lords to facilitate trades and manage their economic interactions.
+
+* **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
+  effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
+
+* **Blitz Entry Fees**: In Blitz, all entry fees in Gladiator and Warrior bracket games are converted to $LORDS before
+  being added to the prize pool, which is distributed to top performers at the end of a game.
+
+## How to get $LORDS
+
+### In Game
+
+Within Eternum, Lords can obtain $LORDS through various methods:
+
+* Selling surplus materials through the in-game AMM or Orderbook
+* Defeating or negotiating with AI agents
+* Discovering and playing minigames scattered throughout the Eternum world
+* Earning fees on AMM trades by controlling a Bank
+* Playing the game and receiving allocations from various prize pools
+
+Players can also earn $LORDS by winning Blitz tournaments and earning prize pool distributions.
+
+### On Starknet
+
+Outside of gameplay, $LORDS can be acquired on the Starknet network through decentralized exchanges (DEXs).
+
+#### Recommended Exchanges
+
+$LORDS can be purchased on decentralized exchanges on Starknet.
+[Ekubo](https://app.ekubo.org/?outputCurrency=LORDS\&amount=1\&inputCurrency=ETH) and
+[AVNU](https://app.avnu.fi/en/eth-lords) both support the Cartridge Controller, allowing Lords to swap directly with
+their game wallet.
+
+#### Step-by-Step Guide
+
+For new users, follow this [comprehensive guide](https://x.com/lordcumberlord/status/1920650310621495350) that covers:
+
+1. Setting up a Braavos wallet
+2. Bridging ETH to Starknet via Orbiter
+3. Swapping ETH for STRK and $LORDS
+4. Creating a Cartridge Controller (if needed)
+5. Transferring $LORDS to your game wallet
+
+
+
+---
+
+file: docs/pages/overview/resource-addresses.mdx
+meta: {}
+
+import { ResourceAddresses } from "@/components/ResourceAddresses";
+
+# Resource Addresses
+
+<ResourceAddresses />
+
+
+
+---
+
+file: docs/pages/blitz/achievements.mdx
+meta: {}
+
+# 🏆 Achievements
+
+*Work in Progress*
+
+
+
+---
+
+file: docs/pages/blitz/game-entry.mdx
+meta: {
+  "title": "Game Entry",
+  "description": "How to enter and compete in Blitz"
+}
+
+# Game Entry
+
+While an Eternum season is a single game instance that unfolds over several weeks, Blitz games are frequently hosted to
+allow players to jump into the action at a time that suits them. Competitive Blitz tournaments, composed of Warrior and
+Elite bracket games are organized into 'series' that are hosted in the development period between Eternum seasons.
+Recruit and Gladiator bracket games are hosted continuously on a rotating timetable.
+
+Unlike Eternum, Blitz does not require ownership of Realms NFTs or Season Passes for entry. Entry requirements and
+stakes are determined by the bracket that players choose to compete in. Both human and AI agent players are welcome to
+participate, competing under the same onchain rules.
+
+## Bracket System
+
+Blitz gameplay is structured around multiple brackets with varying stakes and entry requirements, catering to different
+playstyles and competitiveness levels.
+
+🍻 **Recruit Bracket - No Stakes**
+
+Free-to-enter bracket for introduction, playtesting and practice, allowing players to experience Blitz gameplay with no
+stakes. Recruit games run multiple times per day on a rotating schedule to encourage participation from players in all
+time zones.
+
+💰 **Gladiator Bracket - $LORDS Stakes**
+
+Competitive games with $LORDS stakes. Players pay a $LORDS entry fee, contributing to a shared prize pool which is split
+between top-ranking Lords by score at the end of the game. All players have a chance to earn additional Loot Chest
+rewards. Games run daily on a rotating schedule.
+
+🏅 **Warrior Bracket - Series Games**
+
+These games form the bulk of a competitive Blitz Series. Players pay a $LORDS entry fee, contributing to a shared prize
+pool which is split between top-ranking Lords by score at the end of the game. All players have a chance at earning
+additional rewards in the form of Blitz Rewards Chests. The highest placing players can also win tradable NFT invites to
+the Elite bracket. Games run according to the series schedule, but primarily during prime time for key timezones (USA,
+Europe, Asia-Pacific).
+
+🏆 **Elite Bracket - Series Finals**
+
+Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz Series.
+Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost). These games offer large, DAO-funded prize
+pools along with coveted Elite Blitz Rewards Chests. A limited number of Elite games are run at the end of a Blitz
+series.
+
+## Realm Control Mechanics
+
+Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
+other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
+forces, territorial positioning, and resource management to survive and thrive within the intense 90-minute game
+duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
+world state.
+
+
+
+---
+
+file: docs/pages/blitz/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Blitz"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
+
+Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 90-minute match,
+players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
+Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
+high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset,
+making Blitz a true test of strategic mastery regardless of who—or what—controls the armies. The no-stakes Recruit
+bracket allows new players to learn the game, while experienced Lords can sharpen their skills in preparation for
+higher-stakes games. Lords can compete for $LORDS token stakes in Gladiator bracket, while Warrior bracket games form
+the core of a Blitz 'series'—where success brings additional Loot Chest rewards and invitations to the coveted Elite
+bracket, which offers even greater prizes!
+
+## Rule Summary
+
+### Game Duration
+
+Each Blitz game runs for exactly **90 minutes**. Time is measured in Eternum Days, which are six minutes long and
+divided into six 'phases'.
+
+### Realms
+
+* **Three Starting Realms**: Each player starts with three Realms, evenly spaced apart in a triangle formation.
+* **Equal Capability**: At the start of the game, all Realms in Blitz are functionally identical.
+* **Unrestricted Building**: Players can construct any resource building they wish, restricted only by build space and
+  population.
+* **No Wonders or Villages**: Wonders and the Village system are not present in Blitz.
+* **Conquest Mechanics**: All Realms are vulnerable to capture by other players; deployed armies of a captured Realm
+  become the property of the conquering Lord, while any troops stored in the structure or in transit to it are destroyed
+  (this destruction rule applies to all player-owned structures).
+
+### Materials
+
+* **Simplified Resources**: Only 9 resources are available - Wood, Coal, Copper, Ironwood, Cold Iron, Gold, Adamantine,
+  Mithril, and Dragonhide.
+* **Simplified Food**: Only 1 food type - Wheat.
+* **Essence**: New material found by exploring the map and interacting with World Structures, required for some
+  production, buildings and upgrades.
+* **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'labor mode' production.
+* **Donkeys**: Required for moving materials around the world, essential for logistics.
+* **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
+* **Restricted Bridging**: Players may only bridge Relics into the game (not out). Other materials can't be bridged.
+  *Note: This feature is a work in progress, the tokenized Relics and Relic Chest system is not active yet.*
+* **Donkey Cost**: Donkeys only cost food to produce (no $LORDS cost).
+* **No P2P Transfers**: No direct transfers or trade between players.
+
+### Buildings
+
+* **Construction**: 'Resource mode' and 'labor mode' building systems.
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed at game start.
+  * **Resource Buildings**: Specific buildings for each of the 9 resources.
+  * **Economic Buildings**: Includes Farms, Worker Huts, and Markets.
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  are upgraded.
+
+### Production
+
+* **Production Types**:
+  * **Food**: Wheat can be produced without inputs.
+  * **Resources**: Require combinations of other resources (resource mode) or labor (labor mode).
+  * **Labor**: Produced by the Keep at a steady rate.
+  * **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
+    as inputs.
+  * **Donkeys**: One-time-use transport, consumed after a single journey.
+* **Altered Rates**: All production rates are increased relative to production requirements for the fast-paced game
+  format.
+
+### World Map
+
+* **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
+  neighbors.
+* **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
+  and labor. Resources cannot be discovered through exploration.
+* **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
+* **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase, +120 per Eternum Day), with costs
+  varying by biome and troop type.
+
+### Military
+
+* **Army Composition**: Armies consist of a single troop type and tier.
+* **Troop Tiers**: T1, T2, and T3 troops with increasing stamina and combat strength.
+* **Combat Factors**: Battles are resolved based on army damage, stamina modifiers, and biome effects.
+* **Army Types**:
+  * **Field Armies**: Deploy onto the world map for exploration and conquest.
+  * **Guard Armies**: Deployed to defense slots to protect structures.
+* **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
+* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
+  specific biomes.
+* **Reinforcements**: Lords can transport troops by donkey to any Realm, Hyperstructure, Camp or Essence Rift that they
+  own.
+
+### Scoring System
+
+Leaderboard placing is determined by total accumulated Victory Points, a measure of a Lord's ability to explore the map
+and control World Structures. Victory Points are awarded for:
+
+* Exploring tiles
+* Claiming World Structures
+* Opening Relic Crates
+* Claiming Hyperstructures
+* Holding Hyperstructures throughout the game
+
+### Victory
+
+Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the 90
+minutes share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the
+game.
+
+## Blitz Variants
+
+Blitz games come in many forms, and can be configured and deployed by anyone. But the majority of Blitz games are
+deployed by the core team in the following forms:
+
+### Recruit Bracket
+
+* **No Stakes**: Free-to-enter bracket for introduction, playtesting and practice.
+* **No Entry Cost**: No $LORDS required to participate.
+* **Frequency**: Games run multiple times per day on a rotating schedule.
+
+### Gladiator Bracket
+
+* **$LORDS Stakes**: Competitive games with $LORDS stakes.
+* **Entry Cost**: Players pay a $LORDS entry fee, contributing to the prize pool.
+* **Prize Distribution**: Top-ranking Lords share the prize pool.
+* **Frequency**: Games run on a rotating schedule.
+
+### Warrior Bracket
+
+* **Series Games**: These games form part of a competitive Blitz Series.
+* **$LORDS Stakes**: Competitive games requiring a $LORDS entry fee, contributing to a prize pool.
+* **Prize Distribution**: Top-ranking Lords share the prize pool.
+* **Additional Rewards**: Blitz Rewards Chests containing cosmetic items.
+* **Special Invites**: Highest placing players win tradable NFT invites to the Elite bracket.
+* **Frequency**: Games run daily during prime time for key timezones (USA, Europe, Asia-Pacific).
+
+### Elite Bracket
+
+* **Series Games**: These games represent the highest level of play in a competitive Blitz Series.
+* **Ticket Entry Cost**: Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost).
+* **Prize Pool**: Large, DAO-funded prize pool.
+* **Rewards**: Elite Blitz Rewards Chests containing cosmetic items.
+* **Frequency**: A limited number of games run in the final week of a Blitz series.
+
+### Blitz Series
+
+While Recruit and Gladiator games can be deployed and played as frequently as the player base demands, games with stakes
+(Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
+gameplay and provide continuous competitive opportunities.
+
+## Matchmaking Rating (MMR)
+
+Blitz features an onchain Matchmaking Rating system that tracks player skill across rated games. After each rated match,
+the system evaluates your final rank relative to the lobby's average skill level and adjusts your rating accordingly.
+MMR is persistent across games and is tracked via a non-transferable onchain token, providing a transparent and
+verifiable measure of long-term performance. For full details, see the [MMR](/blitz/mmr) page.
+
+## Rewards
+
+Successful Blitz players can earn various rewards including:
+
+* **$LORDS Token**: Prize pool distributions for top players.
+* **Loot Chests**: Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic items.
+* **Elite Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
+
+
+
+---
+
+file: docs/pages/blitz/mmr.mdx
+meta: {
+  "title": "Blitz MMR",
+  "description": "How Blitz Matchmaking Rating works and how updates are claimed"
+}
+
+# 📈 Blitz MMR
+
+Blitz MMR (Matchmaking Rating) is an onchain skill rating that tracks player performance across rated Blitz games. It is
+enabled on a per-world basis; if a world has MMR disabled, no ratings are tracked.
+
+## What MMR Measures
+
+MMR is a **persistent rating** intended to reflect long-term performance rather than a single match outcome. After a
+game ends, the system updates each eligible player’s MMR based on:
+
+* Your **final rank** in the match
+* Your **expected performance** relative to the lobby’s median MMR
+* Lobby size scaling (larger lobbies produce more stable deltas)
+
+## Eligibility (Who Gets Rated)
+
+Only players who are:
+
+* **Registered** in the match, and
+* Have **non-zero recorded points**
+
+are included in the rated update.
+
+## How the Update Is Calculated (High Level)
+
+Blitz uses a percentile-based update that compares:
+
+* **Expected percentile** (from a logistic curve around the lobby median), vs.
+* **Actual percentile** (from your finishing rank)
+
+The resulting delta is capped (diminishing returns) and includes a small mean-regression term toward the configured
+distribution mean.
+
+> Implementation note: the onchain calculator follows an 8-step formula including median MMR, expected/actual
+> percentile, capped delta, split-lobby adjustment, and mean regression.
+
+## Claim / Update Flow (Commit + Claim)
+
+MMR updates are applied after the match completes via a single action in the client:
+
+1. **Finalize ranking** for the match (MMR cannot update until final ranking exists).
+2. Open **Social → MMR**.
+3. Click **Update MMR**.
+
+When you click Update MMR, the client:
+
+* Fetches current MMR values for eligible players from the MMR token contract
+* Sorts players by current MMR (lowest → highest) as required by the commit call
+* Submits a single onchain transaction to commit the game’s MMR update and apply new ratings
+
+Once committed, the update cannot be run again for that match.
+
+
+
+---
+
+file: docs/pages/blitz/prize-pool.mdx
+meta: {
+  "title": "Prize Pool & Distribution",
+  "description": "How $LORDS prizes are calculated and distributed in Blitz"
+}
+
+import "@/styles.css";
+
+# Prize Pool & Distribution
+
+Blitz distributes **$LORDS** to players at the end of every game based on their final rank. The system adapts to lobby
+size, the ratio of entry fees to sponsored prizes, and how many players actually score — so payouts stay fair whether
+there are 2 or 24 players in a match.
+
+## Prize Pool Composition
+
+The total prize pool comes from two sources:
+
+<div style={{ width: "100%", maxWidth: "100%" }}>
+  <table
+    style={{
+    width: "100%",
+    tableLayout: "fixed",
+    borderCollapse: "collapse",
+    backgroundColor: "#332f28",
+    border: "1px solid #564e3e",
+    borderRadius: "10px",
+    overflow: "hidden",
+    fontSize: "0.85rem",
+  }}
+  >
+    <thead style={{ backgroundColor: "#383a4a" }}>
+      <tr>
+        <th
+          style={{
+          width: "25%",
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          fontWeight: 700,
+          color: "#c9b06a",
+          borderBottom: "1px solid #6b6250",
+          whiteSpace: "nowrap",
+          fontSize: "0.85rem",
+        }}
+        >
+          Source
+        </th>
+
+        <th
+          style={{
+          width: "75%",
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          fontWeight: 700,
+          color: "#c9b06a",
+          borderBottom: "1px solid #6b6250",
+          fontSize: "0.85rem",
+        }}
+        >
+          Description
+        </th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          whiteSpace: "nowrap",
+          fontSize: "0.85rem",
+        }}
+        >
+          <strong>Entry fees (F)</strong>
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          Each player pays a $LORDS entry fee when registering for the game
+        </td>
+      </tr>
+
+      <tr>
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          color: "#e8e4dc",
+          whiteSpace: "nowrap",
+          fontSize: "0.85rem",
+        }}
+        >
+          <strong>Sponsorship (S)</strong>
+        </td>
+
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>
+          Additional $LORDS added by the game host or external sponsors
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+**Total Prize Pool = F + S**
+
+### Fee Split
+
+Before the prize pool is formed, the collected entry fees are split:
+
+* **70%** → prize pool (distributed to winning players)
+* **15%** → [Lordship Protocol](https://realms.world) (veLORDS ecosystem support)
+* **15%** → development fund (core team operations)
+
+Any sponsored amount is added **on top** of the 70% player share, so sponsorship always increases the prize pool without
+reducing the ecosystem or development allocations.
+
+> **Example:** 106 players × 250 $LORDS entry = 26,500 $LORDS collected. After the 70/15/15 split, 18,550 $LORDS goes to
+> the prize pool. Add 15,000 $LORDS in sponsorship → **33,550 $LORDS total prize pool**.
+
+## Who Wins?
+
+Not every player receives a prize. The number of **winners** is calculated dynamically based on several factors:
+
+1. **Registered player count (N)** — total players who entered
+2. **Scoring players (C)** — players who finished with points > 0
+3. **Entry-fee-to-pool ratio** — how much of the pool is sponsored vs. player-funded
+4. **A small-lobby adjustment** — prevents tiny games from paying out to nearly everyone
+
+### Winner Count Formula
+
+The system computes a **base winner ratio** `rb` that sets a floor for how many players can win:
+
+```
+rb(N) = 1 − (1.03 × min(1, N/1000)^0.13)
+```
+
+This ratio is clamped between **2%** and **60%** of the lobby. Larger lobbies push `rb` lower (fewer proportional
+winners), while small lobbies keep it higher.
+
+A **sponsorship factor** `A` then expands the winner pool when sponsors contribute:
+
+```
+A = 1 − (F / P)^0.5
+```
+
+Where `F` is total entry fees (after the 70/15/15 split) and `P` is the full prize pool. More sponsorship → higher `A` →
+more winners.
+
+A **small-game weight** `gw` further adjusts for lobby size:
+
+```
+gw = 0.05 + 0.95 × (20 / (N + 20))²
+```
+
+These combine into a final winner ratio `r`:
+
+```
+r = clamp(rb + 3.3 × A × gw × (rcap − rb), 0.02, rcap)
+```
+
+Where `rcap = 0.5 + 0.5 × A`. The winner count `W` is then:
+
+```
+W = min(ceil(N × r), C)
+```
+
+The winner count can never exceed the number of players who actually scored.
+
+## Prize Calculation
+
+Once the winner count is known, prizes are distributed using a **geometric decay** model. Higher-ranked players receive
+proportionally more, with the curve controlled by a single parameter `s`.
+
+### The Decay Parameter (s)
+
+```
+s(N) = 0.3 + 0.64 × (1 − N^(−0.7))
+```
+
+* Small lobbies → lower `s` → steeper curve (1st place gets a larger share)
+* Large lobbies → higher `s` → flatter curve (prizes spread more evenly)
+
+`s` approaches but never exceeds \~0.94 even at very large player counts.
+
+### Rank Weights
+
+Each winning position `i` (starting from 1) receives a weight:
+
+```
+weight(i) = s^(i − 1)
+
+  1st → 1,  2nd → s,  3rd → s²,  4th → s³,  …  Wth → s^(W−1)
+```
+
+The total weight sum is the geometric series:
+
+```
+Σ = (s^W − 1) / (s − 1)
+```
+
+### Individual Prize
+
+Each winner's prize is their normalized weight times the prize pool:
+
+```
+prize(i) = (weight(i) / Σ) × P
+```
+
+Players ranked beyond position `W` receive **0 $LORDS**. If multiple players share the same rank (tied scores), their
+combined prize for that rank range is split equally among them.
+
+## NFT Rewards
+
+In addition to $LORDS, players may receive NFT rewards:
+
+### Loot Chests
+
+* **Game Reward Chests** — any player who finishes with **≥ 500 Victory Points** automatically receives a Loot Chest NFT
+  upon claiming their prize, regardless of whether they are in the winner pool.
+* **Series Chests** — additional Loot Chests are allocated across a game series and distributed proportionally based on
+  each player's registered points relative to the total. The number of series chests grows as more games are played in
+  the series.
+
+See [Loot Chests](/overview/chests/loot-chests) for details on chest contents.
+
+## Claiming Prizes
+
+Prize distribution is **permissionless** — anyone can submit the ranked player list to trigger payouts. The process:
+
+1. The game ends and points registration closes
+2. A caller submits the ordered player list (highest score first) along with a trial ID
+3. The contract verifies ordering, calculates prizes, and finalizes rankings
+4. Players (or anyone on their behalf) call the claim function to transfer $LORDS and mint any earned NFTs
+
+If only **one player** registered for a game, they receive a full refund of their entry fee with no fee split applied.
+
+
+
+---
+
+file: docs/pages/blitz/victory.mdx
+meta: {}
+
+import { table } from "@/components/styles";
+
+# 👑 Victory
+
+<img src="/images/covers/07.png" alt="Blitz Victory" className="w-full rounded-lg my-6" />
+
+## Scoring System
+
+Leaderboard placing is determined by total accumulated Victory Points (VP), a measure of a Lord's ability to explore the
+map and control World Structures. Victory Points are awarded for:
+
+* Exploring tiles
+* Claiming World Structures (Essence Rifts and Camps)
+* Opening Relic Crates
+* Claiming Hyperstructures
+* Holding Hyperstructures throughout the game
+
+*Note: VP for claiming World Structures and Hyperstructures are only rewarded the first time a structure is captured
+(from bandit forces).*
+
+## Hyperstructure Victory Points
+
+Hyperstructures provide ongoing Victory Points based on the number of surrounding player Realms. The VP/second earned
+from holding a hyperstructure is determined by the number of Realms within 8 tiles.
+
+<img src="/images/gifs/hyperstructure_ring_progression.gif" alt="Hyperstructure Ring Progression" className="w-full rounded-lg my-6" />
+
+This system rewards players who can capture hyperstructures in high-traffic areas where many players spawn, while
+hyperstructures in remote locations with no nearby players provide no ongoing VP benefits. Capturing a hyperstructure
+from resident bandits will always yield the VP for the feat of claiming it, even if it offers no ongoing control VP.
+
+The number of VP awarded for each feat described above is as follows:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Action</th>
+          <th style={table.headerCell}>VP Awarded</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Explore a tile</td>
+          <td style={table.cell}>10 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a World Structure from bandits</td>
+          <td style={table.cell}>500 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Open a Relic Crate</td>
+          <td style={table.cell}>1,000 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
+          <td style={table.cell}>3,000 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Control a Hyperstructure</td>
+          <td style={table.cell}>1-6 VP/second (based on no. of nearby Realms)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+---
+
+file: docs/pages/blitz/world-physics.mdx
+meta: {}
+
+import { Biomes } from "@/components/Biomes";
+
+# ⚛️ World Physics
+
+<img src="/images/covers/blitz-world-physics.png" alt="Blitz World Physics - Armies traversing the realm" className="w-full rounded-lg my-6" />
+
+In Blitz, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
+fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
+boundaries set by these protocols.
+
+## Game Duration
+
+Each Blitz game runs for exactly **90 minutes**.
+
+## Time
+
+Time within a Blitz game is measured in Eternum Days, and each is precisely six minutes in length. Each Eternum Day is
+divided into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting
+one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 15 Eternum Days.
+
+## Materials
+
+In Blitz, materials such as food, resources, troops, and donkeys are isolated within each round. There is no bridging of
+materials in and out of the game (other than Relics, which can be bridged in prior to the start of the game - *WIP
+feature*). All materials have an associated weight, which determines the number of Donkeys required to move the goods
+from place to place.
+
+*Note: This guide will use 'materials' to refer to all tangible assets - i.e. food, resources, essence, labor, troops,
+and donkeys. This is not to be confused with 'resources', which specifically refers to the 9 resources in Blitz.*
+
+## Cost of Production
+
+With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
+input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
+production to ensure they can maximize their Score within the 90-minute game window.
+
+## Travel
+
+Transporting materials takes time and donkeys. Every transfer of materials between locations relies exclusively on these
+speedy and dependable creatures. Donkeys are single-use, consumed upon completing their journey, making continuous
+acquisition vital for maintaining supply chains.
+
+Troops can also be moved between player-owned structures using donkeys, but to dominate your enemies and ensure security
+of your lands, troops must be deployed to an army on the world map. Once troops are deployed, they cannot be taken back
+into the inventory. Their mobility is then governed by stamina, limiting the distance they can travel and the number of
+actions they can perform. Traveling between hexes or initiating an attack expends valuable stamina points, which are
+partially replenished each Eternum Day.
+
+## Hexes
+
+Blitz unfolds across a procedurally generated, hexagonal-tile world map. This represents the physical space of the world
+and defines spawn locations, biome distribution, and distances between Realms and other World Structures. This is the
+layer in which armies explore, fight, and capture, and is explorable in the 'World' view.
+
+Zooming in, each Realm hex is broken up into smaller hexes which define the local area and building placement. Here in
+the 'Local' view, Lords can plan out their building placement and closely manage their population, supply chain, and
+production.
+
+## Biomes
+
+Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
+terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
+Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
+
+<Biomes />
+
+## The Blitz Arena
+
+The map on which Blitz takes place is designed to position Lords as equally as possible while also providing a dynamic
+battlefield that scales appropriately. Each player starts the game with three Realms, evenly spaced apart in a triangle
+and positioned between three complete and revealed Hyperstructures. Player Realms and Hyperstructures are placed in a
+specific pattern to ensure that all Lords have a comparable number of neighbors and equal access to Hyperstructures.
+More details on the Realm and Hyperstructure placement systems are available in the [Realms](/blitz/realms/realm) and
+[World Map](/blitz/worldmap-movement/worldmap) sections.
+
+The primary objective of Blitz is to capture and hold as many Hyperstructures and World Structures as possible to
+accumulate Victory Points and secure a position at the top of the leaderboard.
+
+<img src="/images/covers/blitz-arena.png" alt="The Blitz Arena - Competitive battleground" className="w-full rounded-lg my-6" />
+
+
+
+---
+
+file: docs/pages/blitz/world-structures.mdx
+meta: {}
+
+import ResourceIcon from "@/components/ResourceIcon";
+import { table } from "@/components/styles";
+
+# 🏗️ World Structures
+
+All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
+claimed. Bandit garrisons range from **800 to 1,600 troops**.
+
+## Hyperstructures
+
+In Blitz, Hyperstructures are **fully constructed** and positioned around the map at the start of the game, ready to be
+claimed by eliminating the resident bandit forces. There is no construction process - Hyperstructures are immediately
+functional once claimed and will begin accumulating Victory Points for the owning player.
+
+<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+
+The number of Hyperstructures in the game, and their positioning on the world map, is explained in the
+[World Map](/blitz/worldmap-movement/worldmap) section.
+
+## Essence Rifts
+
+<img src="/images/covers/essence-rift.png" alt="Blitz Essence Rift" className="w-full rounded-lg my-6" />
+
+Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
+locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
+continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 10 units per second from the
+moment they're discovered. Lords have a 1/50 chance of finding one of these structures when exploring a hex.
+
+## Camps
+
+Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
+that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
+Lords have a 1/30 chance of finding one of these structures when exploring a hex.
+
+### Starting Materials
+
+When a camp is claimed, it spawns with an initial stockpile of materials.
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Resource</th>
+          <th style={{ ...table.headerCell, textAlign: "center" }}>Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+
+              Wheat
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={23} name="Labor" size="md" />
+
+              Labor
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>2,500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={25} name="Donkey" size="md" />
+
+              Donkeys
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>200</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 
 
@@ -2236,379 +2787,664 @@ only have one defense slot to support a guard army.
 
 ---
 
-file: docs/pages/overview/controller.mdx
+file: docs/pages/development/axis/cli-reference.mdx
 meta: {
-  "title": "Cartridge Controller",
-  "description": "Using the Cartridge Controller to play Realms games"
+  "layout": "docs",
+  "title": "Axis CLI Reference"
 }
 
-import { importantNote } from "@/components/styles";
+# Axis CLI Reference
 
-# Cartridge Controller
+## Commands
 
-The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
-via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
-documentation [here](https://docs.cartridge.gg/controller/overview).
+| Command                              | Description                              |
+| ------------------------------------ | ---------------------------------------- |
+| `axis` / `axis run`                  | Run in TUI mode                          |
+| `axis run --headless --world=<name>` | Run in headless mode                     |
+| `axis worlds`                        | List discovered worlds                   |
+| `axis auth <world>`                  | Start auth for a world                   |
+| `axis auth --all`                    | Start auth for all discovered worlds     |
+| `axis auth-complete <world>`         | Complete auth from redirect/session data |
+| `axis auth-status <world>`           | Check status for one world               |
+| `axis auth-status --all`             | Check status for all worlds              |
+| `axis auth-url <world>`              | Print stored auth URL                    |
+| `axis doctor`                        | Validate configuration                   |
+| `axis init`                          | Seed runtime data and local `.env`       |
+| `axis --version`                     | Print version                            |
+| `axis --help`                        | Print usage                              |
 
-<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
+## Run Flags
 
-## Using the Controller
+| Flag                                         | Description                          |
+| -------------------------------------------- | ------------------------------------ |
+| `--headless`                                 | Run without TUI                      |
+| `--world=<name>`                             | Target world (required for headless) |
+| `--auth=session\|privatekey`                 | Auth strategy                        |
+| `--api-port=<port>`                          | Enable HTTP API                      |
+| `--api-host=<host>`                          | API bind host                        |
+| `--stdin`                                    | Enable stdin command stream          |
+| `--verbosity=quiet\|actions\|decisions\|all` | Output filter                        |
+| `--json`                                     | JSON output for command responses    |
 
-If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
-controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
-Starknet using your Ready (formerly ArgentX) or Braavos wallet.
+## Auth Flags
 
-To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
-simply input a username and sign up.
+| Flag                      | Applies To            | Description                        |
+| ------------------------- | --------------------- | ---------------------------------- |
+| `--all`                   | `auth`, `auth-status` | Target all worlds                  |
+| `--approve`               | `auth`                | Attempt automated browser approval |
+| `--method=<type>`         | `auth`                | Auth method for auto-approve       |
+| `--username=<user>`       | `auth`                | Username for auto-approve          |
+| `--password=<pass>`       | `auth`                | Password for auto-approve          |
+| `--callback-url=<url>`    | `auth`                | Public callback endpoint           |
+| `--timeout=<ms>`          | `auth`                | Approval wait timeout              |
+| `--redirect-url=<url>`    | `auth-complete`       | Complete from redirect URL         |
+| `--session-data=<base64>` | `auth-complete`       | Complete from raw callback payload |
 
-<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
 
-There are multiple ways to securely sign up:
 
-* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
-  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
-  or 1Password.
-* **Metamask**: Connect using your MetaMask wallet.
-* **Rabby**: Connect using your Rabby wallet.
-* **Discord**: Connect using your Discord account.
-* **Wallet Connect**: Connect using a wide range of wallets.
+---
+
+file: docs/pages/development/axis/configuration-and-operations.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Configuration and Operations"
+}
+
+# Axis Configuration and Operations
+
+## Core Environment Variables
+
+| Variable             | Default                          | Purpose                                                      |
+| -------------------- | -------------------------------- | ------------------------------------------------------------ |
+| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (`anthropic`, `openai`, `openrouter`, `google`) |
+| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | Model ID                                                     |
+| `ANTHROPIC_API_KEY`  | none                             | Required for Anthropic provider                              |
+| `OPENAI_API_KEY`     | none                             | Required for OpenAI provider                                 |
+| `CHAIN`              | `slot`                           | Chain selection                                              |
+| `SLOT_NAME`          | none                             | Auto-select discovered world                                 |
+| `GAME_NAME`          | `eternum`                        | Session/game namespace                                       |
+| `TICK_INTERVAL_MS`   | `60000`                          | Tick interval in ms                                          |
+| `LOOP_ENABLED`       | `true`                           | Auto-start loop on launch                                    |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Runtime root                                                 |
+| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Agent data root                                              |
+| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Session/artifact root                                        |
+
+## Optional / Advanced Variables
+
+| Variable                                | Purpose                                                   |
+| --------------------------------------- | --------------------------------------------------------- |
+| `RPC_URL`, `TORII_URL`, `WORLD_ADDRESS` | Manual world overrides (skip discovery)                   |
+| `MANIFEST_PATH`                         | Explicit manifest path                                    |
+| `CHAIN_ID`                              | Override inferred chain id                                |
+| `PRIVATE_KEY`, `ACCOUNT_ADDRESS`        | Private-key auth mode                                     |
+| `MASTER_ADDRESS`, `MASTER_PRIVATE_KEY`  | Optional auto top-up for non-mainnet fee token shortfalls |
+| `CARTRIDGE_API_BASE`                    | Factory/discovery API base override                       |
+
+## Runtime Directory
+
+```text
+~/.eternum-agent/
+├── data/
+│   └── <world>/
+│       ├── soul.md
+│       ├── HEARTBEAT.md
+│       └── tasks/
+│           ├── game.md
+│           ├── economy.md
+│           ├── exploration.md
+│           ├── combat.md
+│           ├── priorities.md
+│           └── learnings.md
+└── .cartridge/
+    └── <world>/
+        ├── profile.json
+        ├── manifest.json
+        ├── policy.json
+        ├── session.json
+        └── auth.json
+```
+
+## Runtime Config Updates (Headless)
+
+Use `POST /config` with `changes` to update settings live.
+
+Typical paths:
+
+* `tickIntervalMs`
+* `loopEnabled`
+* `modelProvider`
+* `modelId`
+* `dataDir`
+
+Some backend fields (like world connection details) require restart in headless mode.
+
+## Diagnostics
+
+Run doctor:
+
+```bash
+axis doctor
+```
+
+Common issues:
+
+* `No worlds discovered`: check network reachability and `CARTRIDGE_API_BASE`
+* `--world is required for headless mode`: pre-auth and set `--world`
+* Auth remains pending: complete approval or run `auth-complete`
+* Auto-approve fails: ensure `agent-browser` exists and credentials are valid
+* Session expired: re-run `axis auth <world>`
+
+
+
+---
+
+file: docs/pages/development/axis/headless-and-api.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Headless and API"
+}
+
+# Axis Headless and API
+
+Headless mode is designed for orchestrators, remote servers, and multi-agent fleets.
+
+## Start Headless
+
+Pre-authenticate first (`axis auth <world>`), then run:
+
+```bash
+axis run --headless --world=my-world --api-port=3000 --stdin
+```
+
+`--world` is required in headless mode.
+
+## NDJSON Event Stream
+
+Headless mode emits newline-delimited JSON to stdout.
+
+Common event types:
+
+* `startup`
+* `session`
+* `decision`
+* `action`
+* `prompt`
+* `heartbeat`
+* `error`
+* `shutdown`
+
+Verbosity filters:
+
+* `quiet`: `error`, `session`, `shutdown`
+* `actions`: `quiet` + `action`
+* `decisions`: `actions` + `decision`, `heartbeat`, `prompt`, `startup`
+* `all`: `decisions` + `tick`
+
+## HTTP API
+
+Enable with `--api-port`.
+
+| Method     | Path             | Purpose                     |
+| ---------- | ---------------- | --------------------------- |
+| `POST`     | `/prompt`        | Queue a prompt              |
+| `GET`      | `/status`        | Agent status                |
+| `GET`      | `/state`         | World state snapshot        |
+| `GET`      | `/events`        | SSE stream                  |
+| `POST`     | `/config`        | Runtime config updates      |
+| `POST`     | `/shutdown`      | Graceful shutdown           |
+| `GET/POST` | `/auth/callback` | Cartridge callback endpoint |
+
+Prompt example:
+
+```bash
+curl -X POST http://127.0.0.1:3000/prompt \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"Build a farm at your main realm"}'
+```
+
+Runtime config example:
+
+```bash
+curl -X POST http://127.0.0.1:3000/config \
+  -H 'Content-Type: application/json' \
+  -d '{"changes":[{"path":"tickIntervalMs","value":30000}]}'
+```
+
+## Stdin Control
+
+If `--stdin` is set (or stdin is non-TTY), send one JSON object per line:
+
+```jsonl
+{"type":"prompt","content":"Scout north"}
+{"type":"config","changes":[{"path":"tickIntervalMs","value":45000}]}
+{"type":"shutdown"}
+```
+
+## Fleet Pattern
+
+```bash
+axis auth --all --json > /tmp/auth.json
+
+for world in $(jq -r '.[].world' /tmp/auth.json); do
+  axis run --headless --world="$world" --api-port=$((3000 + RANDOM % 1000)) &
+done
+```
+
+
+
+---
+
+file: docs/pages/development/axis/install-and-run.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Install and Run"
+}
+
+# Axis Install and Run
+
+## Prerequisites
+
+* Node.js 22+ (source usage)
+* pnpm (workspace build and scripts)
+* Bun (standalone compile/release packaging)
+* One model provider API key (for example `ANTHROPIC_API_KEY`)
+
+## Install (Public Binary)
+
+Install latest release:
+
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
+```
+
+Install a pinned version:
+
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | VERSION=v0.1.0 bash
+```
+
+Verify:
+
+```bash
+axis --version
+```
+
+## Run from Source
+
+```bash
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum
+pnpm install
+
+# Build required workspace dependencies
+pnpm --dir packages/types build
+pnpm --dir packages/torii build
+pnpm --dir packages/provider build
+pnpm --dir packages/client build
+pnpm --dir packages/game-agent build
+
+# Run Axis
+cd client/apps/onchain-agent
+cp .env.example .env
+pnpm dev
+```
+
+## First-Time Setup
+
+Initialize runtime directories and local `.env` (if missing):
+
+```bash
+axis init
+```
+
+Set at least one provider key, for example:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Start Axis in TUI mode:
+
+```bash
+axis run
+```
+
+On first run, Axis will:
+
+1. Discover active worlds
+2. Let you select a world (unless `SLOT_NAME` is set)
+3. Open browser-based Cartridge session approval
+4. Start the agent loop
+
+## Standalone Binary from Source
+
+```bash
+cd client/apps/onchain-agent
+bun run build.ts --compile
+cp axis ~/.local/bin/
+axis --version
+```
+
+## Install Lifecycle
+
+* Roll back: reinstall with `VERSION=vX.Y.Z`
+* Uninstall: remove `~/.local/bin/axis`, `~/.local/share/eternum-agent`, and optionally `~/.eternum-agent`
+
+
+
+---
+
+file: docs/pages/development/axis/overview.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Overview"
+}
+
+# Axis Overview
+
+Axis is the official Eternum onchain agent CLI.
+
+It discovers active worlds, authenticates with Cartridge Controller sessions, observes world state, and executes onchain
+actions through an LLM-driven tick loop.
+
+## What Axis Does
+
+* Discovers live worlds across `slot`, `sepolia`, and `mainnet`
+* Authenticates with Cartridge sessions (no private key required by default)
+* Runs in interactive TUI mode or headless server mode
+* Executes game actions generated from ABI at runtime
+* Persists memory and strategy files per world
+* Exposes HTTP + stdin control surfaces in headless mode
+
+## Runtime Flow
+
+1. Resolve config from env
+2. Discover or resolve target world
+3. Build world profile and manifest
+4. Authenticate session
+5. Start the tick loop and heartbeat jobs
+6. Observe, reason, and execute actions
+
+## TUI vs Headless
+
+* Use TUI when running manually and selecting worlds interactively
+* Use headless for VPS/CI/fleet orchestration and external control via API/stdin
+
+## Read Next
+
+* [Install and Run](/development/axis/install-and-run)
+* [World Discovery and Auth](/development/axis/worlds-and-auth)
+* [Headless Mode and API](/development/axis/headless-and-api)
+* [Configuration and Operations](/development/axis/configuration-and-operations)
+* [CLI Reference](/development/axis/cli-reference)
+
+
+
+---
+
+file: docs/pages/development/axis/worlds-and-auth.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Worlds and Auth"
+}
+
+# Axis Worlds and Auth
+
+## World Discovery
+
+By default, Axis discovers active worlds using Cartridge factory SQL and only surfaces worlds that are `upcoming` or
+`ongoing`.
+
+List discovered worlds:
+
+```bash
+axis worlds
+```
+
+Auto-select a world and skip TUI picker:
+
+```bash
+SLOT_NAME=my-world axis run
+```
+
+## Session Auth (Default)
+
+Axis uses Cartridge Controller session auth by default.
+
+Interactive auth for one world:
+
+```bash
+axis auth my-world
+```
+
+Auth all worlds:
+
+```bash
+axis auth --all
+```
+
+Check status:
+
+```bash
+axis auth-status my-world
+axis auth-status --all
+```
+
+Print stored auth URL:
+
+```bash
+axis auth-url my-world
+```
+
+## Headless/Remote Auth Patterns
+
+### Callback URL (VPS or remote host)
+
+```bash
+axis auth my-world --callback-url=http://my-host:3000
+```
+
+### Offline completion
+
+```bash
+axis auth-complete my-world --redirect-url="https://.../auth/callback?startapp=..."
+# or
+axis auth-complete my-world --session-data="<base64>"
+```
+
+### Auto-approve
+
+```bash
+axis auth my-world --approve --method=password --username=me --password=secret
+```
+
+Auto-approve requires `agent-browser` on `PATH`, and currently supports `password` method only.
+
+## Private Key Fallback
+
+```bash
+PRIVATE_KEY=0x... ACCOUNT_ADDRESS=0x... axis run --headless --world=my-world --auth=privatekey
+```
+
+## Session and Artifact Layout
+
+Axis stores world-scoped artifacts under `~/.eternum-agent/.cartridge/<world>/`:
+
+* `profile.json`: resolved world profile
+* `manifest.json`: manifest patched with live contracts
+* `policy.json`: generated session policy
+* `session.json`: stored session data
+* `auth.json`: auth URL/status metadata
+
+
+
+---
+
+file: docs/pages/overview/chests/contents.mdx
+meta: {
+  "title": "Chest Contents",
+  "description": "Details on the contents of Loot Chests"
+}
+
+import EternumRewardsChestTable from "@/components/eternum-components/EternumRewardsChestTable";
+import BlitzRewardsChestTable from "@/components/blitz-components/BlitzRewardsChestTable";
+
+# 📜 Chest Contents
+
+Each Loot Chest contains a varying number of items. For each item slot in a chest, an independent roll is performed
+against the item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is
+independent, Lords may receive multiple copies of the same item in a single Loot Chest.
+
+Loot Chest item lists are defined by both the Loot Chest type and the epoch from which they originated. As new epochs
+begin, new chests of the same type will contain different items. For example, items that can be drawn from an Eternum
+Rewards Chest from Epoch 2 will differ from those available in the Epoch 1 version of that chest.
+
+*Note: Relics can currently be found in [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates) in Blitz.*
+
+## Loot Chest Item Lists
+
+The following item lists contain information on the cosmetic items that can potentially be drawn from the various types
+of Loot Chest in the Realms ecosystem. Each cosmetic item is defined by:
+
+* **Item Name**
+* **Epoch Item Number** - the ID of unique items within an Epoch, the numbering starts again from 1 for each new epoch
+  (consider each epoch of items as a separate collection).
+* **Description** - a basic description, including the item set it is part of (if any).
+* **Rarity** - the relative rarity of the item, according to the collection design.
+* **Type** - the type of item (i.e. the 'slot' that the cosmetic occupies when outfitting a Realm).
+* **Troop Type** - whether the cosmetic item is relevant to a particular type of troop (Knight, Crossbowman, or
+  Paladin).
+* **Draw Chance** - the percentage chance of rolling this item on any of the three possible draws per Loot Chest.
+
+### Eternum Rewards Chest
+
+The Eternum Rewards Chest can contain three items from the following list:
+
+<EternumRewardsChestTable />
+
+### Blitz Rewards Chest (S0)
+
+The Blitz Rewards Chest (S0) can contain three items from the following list:
+
+<BlitzRewardsChestTable />
+
+### Elite Blitz Rewards Chest
+
+*Work in progress...*
+
+
+
+---
+
+file: docs/pages/overview/chests/cosmetics.mdx
+meta: {
+  "title": "Cosmetic Items",
+  "description": "Using your Realms Cosmetics"
+}
+
+import { importantNote } from "../../../components/styles";
+
+# 🎨 Cosmetic Items
+
+## Equipping Cosmetic Items
+
+The ability to equip cosmetic items in Blitz and Eternum is still in development. However, owners (and aspiring owners)
+of cosmetic items should note the following design intentions, as they are relevant to understanding cosmetic NFT
+collection design and secondary-market valuation.
+
+* **14 slots** - Each Realm has 14 available 'slots' that cosmetic items can be equipped to. These include:
+  * 1 x Realm Title
+  * 1 x Realm Aura
+  * 1 x Realm Skin
+  * 1 x Troop Aura
+  * 3 x Troop Primary (One for each troop type)
+  * 3 x Troop Secondary (One for each troop type)
+  * 3 x Troop Armor (One for each troop type)
+  * 1 x Troop Base
+
+* **Items with multiple models** - Equipped Realm Skins and Troop Armors can display evolving models in-game:
+  * Realm Skins - one for each Realm level (Settlement, City, Kingdom, Empire)
+  * Troop Armor - one for each troop tier (T1, T2, T3)
+
+* **Troop skins on all armies** - Troop cosmetics equipped to a Realm will apply to all armies deployed from that Realm
+  (items with a troop type only apply to that troop type).
+
+* **No stakes** - While a Realm with cosmetics equipped may be captured by other players in-game, the cosmetic NFT will
+  remain the property of the original owner.
+
+* **One item per slot** - A cosmetic NFT can only be equipped to a slot on a single Realm. If Lords wish to have
+  multiple Realms with the same cosmetic item, they will require multiple copies of that NFT.
 
 <div style={importantNote.container}>
   <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
 
   <p style={importantNote.content}>
-    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
-    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
-    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
+    In-game application of cosmetic NFTs is still in development. Keep an eye out for announcements on when this feature
+    will be available.
   </p>
 </div>
 
-Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
-session.
-
-### Transfer Season Pass to Controller
-
-Transfer an Eternum season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect
-your controller by selecting the controller icon located at the top of the page and select the passes to transfer.
-
-<div className="flex justify-center">
-  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
-</div>
-
-## Controller Key Features
-
-### Simple and Secure
-
-* Passwordless authentication using Passkeys for one-click onboarding
-* Self-custodial embedded wallets that put players in control
-* Built-in security features to protect player assets
-
-### Designed for Seamless Gameplay:
-
-* Session keys eliminate transaction popups during gameplay
-* Secure transaction delegation lets games submit actions on behalf of players
-* Free transactions through the Cartridge Paymaster so players focus on playing
-
-### Supported Platforms and Passkey Backup
-
-Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
-with a mobile device using the QR flow. For those without device authenticators, several password managers like
-Bitwarden (free), 1Password, and Dashlane support Passkeys.
-
-#### Backing Up Your Passkey
-
-* Apple devices: Passkeys are backed up along with your keychain in iCloud.
-
-* Android devices: Passkeys are backed up with your Google account.
-
-* Windows devices: Passkeys are created and managed as part of your Windows account.
-
-#### Using Controller Across Devices
-
-Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
-synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
-might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
-Multi-credential support is coming soon to enhance device compatibility.
-
-Should you have any issues with the controller or require support, you can join the Cartridge Discord
-[here](https://discord.gg/cartridge).
-
 
 
 ---
 
-file: docs/pages/overview/disclaimer.mdx
-meta: {}
-
-# Disclaimer and Risk Acknowledgment
-
-<div
-  style={{
-  backgroundColor: "#dc2626",
-  color: "white",
-  padding: "1rem",
-  borderRadius: "0.5rem",
-  marginBottom: "1.5rem",
-  border: "1px solid #b91c1c",
-}}
->
-  <h3 style={{ margin: "0 0 0.5rem 0", color: "white" }}>⚠️ Important Disclaimer – Please Read Carefully</h3>
-
-  <p style={{ margin: 0 }}>
-    By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
-  </p>
-</div>
-
-## Immutable Contracts
-
-Each game is governed entirely by **immutable** smart contracts. Once deployed, the game's rules and mechanics **cannot
-be altered, updated, or reversed** by the developers, the DAO, or any other party. These smart contracts have **not**
-been audited. Players should fully understand the implications of interacting with the system and assess the risks
-involved.
-
-## Risk of Loss
-
-All transactions and gameplay actions in these games are **final**. There are no mechanisms for refunds, reversals, or
-compensation. You acknowledge the **risk of loss of funds** and accept that you bear sole responsibility for any
-financial impact incurred.
-
-## Eternum
-
-A season of Eternum concludes when a single player achieves the required **Victory Points** and clicks the "End Season"
-button. At this point:
-
-### ⚠️ SEASON END CRITICAL INFORMATION
-
-When the season ends, **ALL in-game actions are DISABLED** except:
-
-* transfer materials
-* deposit resource arrivals
-* retrieve LP positions
-* cancel market orders
-* bridge materials out of the game
-
-1. **7-Days Withdrawal Window (starts immediately when "End Season" is clicked)**
-   * Starting from the exact moment the season ends, you have **7 days** to bridge out **ALL $LORDS** tokens and
-     bridgeable materials from your Realms' balance
-
-2. **After 7 Days**
-   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
-   * These assets **CANNOT** be recovered under any circumstances
-
-3. **Score Registration**
-   * Players have **4 days** to register their scores
-   * Registration is **MANDATORY** to be eligible for prizes
-   * While registration has a deadline, prize claiming does not
-
-Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
-
-## Blitz
-
-Blitz game instances operate on a fixed schedule with immediate $LORDS prize distribution upon completion. Unlike
-Eternum seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes
-within the session timeframe.
-
-Distribution of Loot Chest NFT rewards is handled through an automated, decentralized distribution system that mints
-rewards directly to eligible players upon game completion.
-
-## No Recourse
-
-By participating in these games, you waive all rights to claims or recourse against the developers, the DAO, or any
-other associated entities for any losses or disputes arising from your participation in the game.
-
-## Acknowledgment of Terms
-
-Participation in Realms games constitutes your agreement to these terms, as well as all other terms and conditions
-outlined in the game's documentation.
-
-
-
----
-
-file: docs/pages/overview/introduction.mdx
+file: docs/pages/overview/chests/loot-chests.mdx
 meta: {
-  "title": "Introduction to the Realms",
-  "description": "An introduction to the Realms gaming ecosystem"
+  "title": "Loot Chests",
+  "description": "Understanding Loot Chest rewards from Realms games"
 }
 
-# Welcome to the Realms
+import { importantNote } from "../../../components/styles";
 
-<img src="/images/covers/01.png" alt="Eternum Landscape" className="w-full rounded-lg my-6" />
+# 🎁 Loot Chests
 
-## The Lords Have Arrived
+Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
+primarily rewarded for achievements and high-scoring gameplay and contain advantageous consumables or flashy cosmetic
+items. In their sealed (unopened) form, they can be traded on the
+[Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests).
 
-Across treacherous open seas and endless horizons, the legendary Galleon has finally arrived in a new land, bearing the
-brave and ambitious souls known as Lords. Having journeyed for years, driven by dreams of power, glory, and untold
-riches, these Lords have finally set foot upon their destination—a mysterious landscape ripe with ancient secrets and
-unclaimed territories. Now, as the mists clear, each Lord must forge their own path in this land of promise and peril.
+The secrets of the Loot Chests are now revealed and their opening mechanisms have been unlocked. Lords can find more
+detail on the contents of each Loot Chest type in the [Chest Contents](/overview/chests/contents) section, and open Loot
+Chests on the [Loot Chest Collection Page](https://empire.realms.world/loot-chests).
 
-## Establish Your Foothold
+## Epochs
 
-Your task begins by settling a seat of power from which your destiny unfolds. Find your place upon the vast, unexplored,
-procedurally generated world map and secure vital materials to fuel your expansion. Grow your influence through shrewd
-economic choices, military strategy, and diplomatic maneuvering, nurturing your humble settlement into a mighty empire.
+Epochs mark the distinct eras of gameplay and development. An epoch begins with the start of each new Eternum season and
+ends with the start of the next. Each Loot Chest carries the mark of its epoch, defining not only when it was earned but
+also the specific rewards contained within. Chests from different epochs therefore maintain their unique character over
+time, and can be opened or left sealed at the owner's discretion (as some Lords may wish to speculate on long-term
+sealed chest value).
 
-Yet, strength alone is insufficient, for Eternum is fraught with dangers. Bandits roam unchecked and rival Lords covet
-your lands. Armies must be raised, resources guarded, and alliances carefully chosen. Only through wise leadership and
-vigilant defense can your holdings flourish and endure.
+## Chest Types in Epoch 1
 
-## Find Your Glory
+The current epoch introduces four distinct chest types with varying contents, each obtained through different gameplay
+experiences within the ecosystem.
 
-These new lands are dominated by colossal relics from an ancient civilization, known as Hyperstructures. The mysterious
-towers act as conduits of power, providing their masters with the ability to assert dominance over the continent and
-their subjects. They are the focus of ultimate victory.
-
-However, this new and expansive world offers glory beyond mere conquest; whether through trade mastery, military
-prowess, diplomatic excellence, or simply the joy of exploration, every Lord has the freedom to find their own path to
-greatness.
-
-## Core Pillars
-
-* **Fully Onchain Gameplay** - Every action, decision, and outcome is transparently executed and verifiable onchain.
-  Secured by Ethereum and seamlessly scaled by Starknet, the integrity and immutability of gameplay are guaranteed.
-* **Agent-Native Environment** - Realms games offer a rich environment and complex economy developed with agentic
-  players in mind. Humans and AI agents play together under the same chain-enforced ruleset, competing and cooperating
-  as Lords in an open, permissionless arena.
-* **Player-Driven Economy** – Every resource produced, trade executed, and asset exchanged originates solely from player
-  decisions. Collectively, these choices dictate supply, demand, and market prices, forming a dynamic and ever-evolving
-  economy across the entire ecosystem.
-* **Strategic Depth** – Long-term success requires efficient production management, tactical territorial expansion, and
-  precisely timed military engagements. Lords who exhibit foresight, adaptability, and strategic mastery will rise to
-  dominate, while others fall into obscurity.
-
-## Game Modes
-
-<img src="/images/covers/02.png" alt="Eternum Game Features" className="w-full rounded-lg my-6" />
-
-Lords can test their skills and strategies in two distinct game modes, each offering unique experiences and challenges:
-
-**Eternum** - The flagship seasonal game mode, Eternum invites players into a rich, evolving world of strategic depth.
-Unfolding over several weeks, Lords shape the world through expansive empire-building, intricate economic management,
-diplomatic maneuvering, and focused military campaigns. The complexity of Eternum is balanced by accessible gameplay
-layers, allowing casual players to participate in lower-stakes activities such as resource trading, exploration, and
-minigames. Whether aspiring to dominate the continent or simply carving out a peaceful corner of the world, Eternum
-offers rewarding experiences suited to every play style.
-
-**Blitz** - Blitz provides an exciting contrast through rapid, high-intensity, free-for-all competition lasting exactly
-two hours. This mode distills strategic gameplay into streamlined mechanics, accelerated resource production, and
-immediate military engagements, rewarding quick thinking and decisive action. Blitz is structured around a competitive
-bracket system—Recruit, Gladiator, Warrior, and Elite—allowing Lords to engage at their preferred intensity level, from
-casual challenges to elite competitions with significant stakes and rewards. Whether testing new strategies or vying for
-glory, Blitz delivers exhilarating, accessible, and fiercely competitive battles.
-
-## Rewards
-
-Lords who prove their skill and strategic prowess across both Eternum and Blitz are rewarded generously for their
-efforts. Success in competitive events can award portions of [$LORDS token](/overview/lords) prize pools, as well as
-[Loot Chests](/overview/chests/loot-chests) containing consumables and exclusive cosmetic items.
-
-
-
----
-
-file: docs/pages/overview/links.mdx
-meta: {
-  "title": "Quick Links",
-  "description": "Essential links for Realms games"
-}
-
-# Quick Links
-
-## Play & Learn
-
-* [Empire Home](https://empire.realms.world/) - The home of Realms games
-* [Eternum](https://eternum.realms.world/) - Season 1 has concluded; Season 2 is in development
-* [Marketplace](https://empire.realms.world/trade) - Trade Realms and other ecosystem assets
-* [Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
-* [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
-* [Documentation](https://docs.realms.world/) - You are here
-
-## Community
-
-* [Realms World](https://realms.world/) - The DAO behind Eternum
-* [Discord](https://discord.gg/realmsworld) - Join our Discord
-* [X (Community)](https://x.com/LootRealms) - Follow the community
-* [X (Realms Games)](https://x.com/realms_gg) - Follow for Realms games updates
-
-
-
----
-
-file: docs/pages/overview/lords.mdx
-meta: {}
-
-# $LORDS Token
+**Eternum Rewards Chest** - These premium chests were earned through participation and success in the flagship seasonal
+game mode. 2,244 Eternum Rewards Chests were distributed to players of Eternum Season 1 on the basis of their
+achievement score. There will be no further issuance of these chests in Epoch 1.
 
 <div style={{ textAlign: "center" }}>
-  <img src="/images/resources/37.png" alt="LORDS Token" style={{ width: "120px", height: "auto", display: "inline-block" }} />
+  <img src="/images/loot-chests/eternum-chest.png" alt="Eternum Rewards Chest" style={{ width: "25%", height: "auto", display: "block", margin: "0 auto" }} />
 </div>
 
-$LORDS is the native token of the Realms. It serves as the primary currency within the ecosystem, enabling economic
-activity and participation in various games.
+**Blitz Rewards Chest (S0)** - Success in Series 0 Blitz games will yield these chests.
 
-## Token Details
+<div style={{ textAlign: "center" }}>
+  <img src="/images/loot-chests/Chest- Blitz - v4.png" alt="Blitz Rewards Chest (Series 0)" style={{ width: "25%", height: "auto", display: "block", margin: "0 auto" }} />
+</div>
 
-* **Name**: LORDS
-* **Network**: Ethereum Mainnet, Starknet
-* **Contract Address**:
-  [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
-* **Total Supply**: 300,000,000
+**Elite Blitz Rewards Chest** - The highest tier of Blitz competition produces these exclusive chests, reserved for
+Lords who prove themselves in Elite bracket games.
 
-## $LORDS in Gameplay
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
 
-* **Trading Currency**: $LORDS serves as the primary currency for trading within Eternum's Automated Market Maker (AMM)
-  and the peer-to-peer Orderbook, allowing Lords to facilitate trades and manage their economic interactions.
-
-* **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
-  effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
-
-* **Blitz Entry Fees**: In Blitz, all entry fees in Gladiator and Warrior bracket games are converted to $LORDS before
-  being added to the prize pool, which is distributed to top performers at the end of a game.
-
-## How to get $LORDS
-
-### In Game
-
-Within Eternum, Lords can obtain $LORDS through various methods:
-
-* Selling surplus materials through the in-game AMM or Orderbook
-* Defeating or negotiating with AI agents
-* Discovering and playing minigames scattered throughout the Eternum world
-* Earning fees on AMM trades by controlling a Bank
-* Playing the game and receiving allocations from various prize pools
-
-Players can also earn $LORDS by winning Blitz tournaments and earning prize pool distributions.
-
-### On Starknet
-
-Outside of gameplay, $LORDS can be acquired on the Starknet network through decentralized exchanges (DEXs).
-
-#### Recommended Exchanges
-
-$LORDS can be purchased on decentralized exchanges on Starknet. [Ekubo](https://app.ekubo.org/?outputCurrency=LORDS\&amount=1\&inputCurrency=ETH) and [AVNU](https://app.avnu.fi/en/eth-lords) both support the Cartridge Controller, allowing Lords to swap directly with their game wallet.
-
-#### Step-by-Step Guide
-
-For new users, follow this [comprehensive guide](https://x.com/lordcumberlord/status/1920650310621495350) that covers:
-
-1. Setting up a Braavos wallet
-2. Bridging ETH to Starknet via Orbiter
-3. Swapping ETH for STRK and $LORDS
-4. Creating a Cartridge Controller (if needed)
-5. Transferring $LORDS to your game wallet
-
-
-
----
-
-file: docs/pages/overview/resource-addresses.mdx
-meta: {}
-
-import { ResourceAddresses } from "@/components/ResourceAddresses";
-
-# Resource Addresses
-
-<ResourceAddresses />
+  <p style={importantNote.content}>
+    Loot Chests are a feature in development. Keep an eye out for announcements in the Realms Discord relating to Loot
+    Chest rewards. This section will be updated as more information is made available to the community.
+  </p>
+</div>
 
 
 
@@ -3046,9 +3882,8 @@ structure owner.
 file: docs/pages/blitz/military/armies.mdx
 meta: {}
 
-import {
-  BlitzWorldStructureDefenseSlotsTable,
-} from "@/components/blitz-components/DefendingArmies";
+import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
+import "@/styles.css";
 
 # ⚔️ Armies
 
@@ -3074,15 +3909,242 @@ Where Tier Strength values are:
 
 ### Deployment Caps & Army Slots
 
-Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed, as well as a
-set number of field and guard army slots.
+Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed, as well as a set
+number of field and guard army slots.
 
-| Realm Level | Deployment Cap | Field Army Slots | Guard Army Slots |
-| ----------- | -------------- | ---------------- | ---------------- |
-| Settlement  | 3,000          | 1                | 1                |
-| City        | 15,000         | 3                | 2                |
-| Kingdom     | 45,000         | 5                | 3                |
-| Empire      | 90,000         | 8                | 4                |
+<div style={{ width: "100%", maxWidth: "100%" }}>
+  <table
+    style={{
+    width: "100%",
+    tableLayout: "fixed",
+    borderCollapse: "collapse",
+    backgroundColor: "#332f28",
+    border: "1px solid #564e3e",
+    borderRadius: "10px",
+    overflow: "hidden",
+    fontSize: "0.85rem",
+  }}
+  >
+    <thead style={{ backgroundColor: "#383a4a" }}>
+      <tr>
+        <th
+          style={{
+          width: "25%",
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          fontWeight: 700,
+          color: "#c9b06a",
+          borderBottom: "1px solid #6b6250",
+          fontSize: "0.85rem",
+        }}
+        >
+          Realm Level
+        </th>
+
+        <th
+          style={{
+          width: "25%",
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          fontWeight: 700,
+          color: "#c9b06a",
+          borderBottom: "1px solid #6b6250",
+          fontSize: "0.85rem",
+        }}
+        >
+          Deployment Cap
+        </th>
+
+        <th
+          style={{
+          width: "25%",
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          fontWeight: 700,
+          color: "#c9b06a",
+          borderBottom: "1px solid #6b6250",
+          fontSize: "0.85rem",
+        }}
+        >
+          Field Army Slots
+        </th>
+
+        <th
+          style={{
+          width: "25%",
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          fontWeight: 700,
+          color: "#c9b06a",
+          borderBottom: "1px solid #6b6250",
+          fontSize: "0.85rem",
+        }}
+        >
+          Guard Army Slots
+        </th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          Settlement
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          3,000
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          1
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          1
+        </td>
+      </tr>
+
+      <tr>
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          City
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          15,000
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          3
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          2
+        </td>
+      </tr>
+
+      <tr>
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "left",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          Kingdom
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          45,000
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          5
+        </td>
+
+        <td
+          style={{
+          padding: "0.6rem 1rem",
+          textAlign: "center",
+          color: "#e8e4dc",
+          borderBottom: "1px solid #564e3e",
+          fontSize: "0.85rem",
+        }}
+        >
+          3
+        </td>
+      </tr>
+
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>Empire</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>90,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>8</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>4</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 ### Maximum Army Size
 
@@ -3215,21 +4277,22 @@ larger forces. When combat is significantly imbalanced, the dominant army receiv
 The system calculates a **Refund Factor** based on the damage ratio between armies **x** and **y**:
 
 * **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
-
 * **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
 
-* **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
-
-* **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
-
-* **If 2.5 \< R<sub>x</sub> \< 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+```
+If Rx ≥ 10:       f(Rx) = 1              (maximum refund)
+If Rx ≤ 2.5:      f(Rx) = 0              (no refund)
+If 2.5 < Rx < 10: f(Rx) = (Rx - 2.5) / (10 - 2.5)
+```
 
 For army **x**:
 
-* **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
-* **Battle Timer Length**: (base timer) × \[1 - f(R<sub>x</sub>)]
+```
+Refunded Stamina   = (combat cost) × f(Rx), rounded up
+Battle Timer Length = (base timer) × [1 - f(Rx)]
+```
 
-The same calculations are applied for army **y**
+The same calculations are applied for army **y**.
 
 
 
@@ -3289,10 +4352,10 @@ and make the most of their ranged capabilities. However, they will be disadvanta
 or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
 modifiers of the three troop types.
 
-🐴 **Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open water
-where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop type.
-In combination with the biome effects on stamina use, Paladins are less versatile than Knights or Crossbowmen, but are
-devastatingly effective in the right situations.
+🐴 **Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
+water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
+type. In combination with the biome effects on stamina use, Paladins are less versatile than Knights or Crossbowmen, but
+are devastatingly effective in the right situations.
 
 <BiomeCombat />
 
@@ -3365,9 +4428,11 @@ accessibility and simplifies gameplay overall, but is much less efficient in bot
 
 ### Placement
 
-Construct buildings by selecting one in the buildings menu and clicking on an empty buildable hex in the local view, or by clicking the 'Build' button when accessing the buildings menu from the world view (this will place the building on the next available hex). Buildings can be constructed on any buildable hex of a Realm,
-provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the upgrade level
-(Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+Construct buildings by selecting one in the buildings menu and clicking on an empty buildable hex in the local view, or
+by clicking the 'Build' button when accessing the buildings menu from the world view (this will place the building on
+the next available hex). Buildings can be constructed on any buildable hex of a Realm, provided the owner has the
+requisite materials and population capacity. Buildable hexes are defined by the upgrade level (Settlement, City,
+Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
 
 ![Building Placement](/gifs/construction.gif)
 
@@ -3848,7 +4913,7 @@ sequence for an example of 24 players is visualized below:
       <thead style={table.tableHead}>
         <tr>
           <th style={{ ...table.headerCell, width: "70%" }}>Starting Resources per Realm</th>
-          <th style={{ ...table.headerCell, width: "30%" }}>Quantity</th>
+          <th style={{ ...table.headerCell, width: "30%", textAlign: "center" }}>Quantity</th>
         </tr>
       </thead>
 
@@ -3862,7 +4927,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>1,000</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>1,000</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3874,7 +4939,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>1,200</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>1,200</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3886,7 +4951,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>180</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>180</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3898,7 +4963,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>120</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>120</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3910,7 +4975,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>60</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>60</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3922,7 +4987,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>200</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>200</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -3934,7 +4999,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>3,000</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>3,000</td>
         </tr>
       </tbody>
     </table>
@@ -4126,7 +5191,10 @@ Lord, so be sure to secure them before your enemies do!
 file: docs/pages/eternum/military/armies.mdx
 meta: {}
 
-import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
+import {
+  RealmDefenseSlotsTable,
+  WorldStructureDefenseSlotsTable,
+} from "@/components/eternum-components/DefendingArmies";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
@@ -5974,171 +7042,3 @@ potential to enhance or impede army maneuvers, as the various biomes impact the 
 differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/eternum/worldmap-movement/movement) section below.
 
-
-
----
-
-file: docs/pages/overview/chests/contents.mdx
-meta: {
-  "title": "Chest Contents",
-  "description": "Details on the contents of Loot Chests"
-}
-
-import EternumRewardsChestTable from "@/components/eternum-components/EternumRewardsChestTable";
-import BlitzRewardsChestTable from "@/components/blitz-components/BlitzRewardsChestTable";
-
-# 📜 Chest Contents
-
-Each Loot Chest contains a varying number of items. For each item slot in a chest, an independent roll is performed
-against the item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is
-independent, Lords may receive multiple copies of the same item in a single Loot Chest.
-
-Loot Chest item lists are defined by both the Loot Chest type and the epoch from which they originated. As new epochs
-begin, new chests of the same type will contain different items. For example, items that can be drawn from an Eternum
-Rewards Chest from Epoch 2 will differ from those available in the Epoch 1 version of that chest.
-
-*Note: Relics can currently be found in [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates) in Blitz.*
-
-## Loot Chest Item Lists
-
-The following item lists contain information on the cosmetic items that can potentially be drawn from the various types
-of Loot Chest in the Realms ecosystem. Each cosmetic item is defined by:
-
-* **Item Name**
-* **Epoch Item Number** - the ID of unique items within an Epoch, the numbering starts again from 1 for each new epoch
-  (consider each epoch of items as a separate collection).
-* **Description** - a basic description, including the item set it is part of (if any).
-* **Rarity** - the relative rarity of the item, according to the collection design.
-* **Type** - the type of item (i.e. the 'slot' that the cosmetic occupies when outfitting a Realm).
-* **Troop Type** - whether the cosmetic item is relevant to a particular type of troop (Knight, Crossbowman, or
-  Paladin).
-* **Draw Chance** - the percentage chance of rolling this item on any of the three possible draws per Loot Chest.
-
-### Eternum Rewards Chest
-
-The Eternum Rewards Chest can contain three items from the following list:
-
-<EternumRewardsChestTable />
-
-### Blitz Rewards Chest (S0)
-
-The Blitz Rewards Chest (S0) can contain three items from the following list:
-
-<BlitzRewardsChestTable />
-
-### Elite Blitz Rewards Chest
-
-*Work in progress...*
-
-
-
----
-
-file: docs/pages/overview/chests/cosmetics.mdx
-meta: {
-  "title": "Cosmetic Items",
-  "description": "Using your Realms Cosmetics"
-}
-
-import { importantNote } from "../../../components/styles";
-
-# 🎨 Cosmetic Items
-
-## Equipping Cosmetic Items
-
-The ability to equip cosmetic items in Blitz and Eternum is still in development. However, owners (and aspiring owners)
-of cosmetic items should note the following design intentions, as they are relevant to understanding cosmetic NFT
-collection design and secondary-market valuation.
-
-* **14 slots** - Each Realm has 14 available 'slots' that cosmetic items can be equipped to. These include:
-  * 1 x Realm Title
-  * 1 x Realm Aura
-  * 1 x Realm Skin
-  * 1 x Troop Aura
-  * 3 x Troop Primary (One for each troop type)
-  * 3 x Troop Secondary (One for each troop type)
-  * 3 x Troop Armor (One for each troop type)
-  * 1 x Troop Base
-
-* **Items with multiple models** - Equipped Realm Skins and Troop Armors can display evolving models in-game:
-  * Realm Skins - one for each Realm level (Settlement, City, Kingdom, Empire)
-  * Troop Armor - one for each troop tier (T1, T2, T3)
-
-* **Troop skins on all armies** - Troop cosmetics equipped to a Realm will apply to all armies deployed from that Realm
-  (items with a troop type only apply to that troop type).
-
-* **No stakes** - While a Realm with cosmetics equipped may be captured by other players in-game, the cosmetic NFT will
-  remain the property of the original owner.
-
-* **One item per slot** - A cosmetic NFT can only be equipped to a slot on a single Realm. If Lords wish to have
-  multiple Realms with the same cosmetic item, they will require multiple copies of that NFT.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    In-game application of cosmetic NFTs is still in development. Keep an eye out for announcements on when this feature will be available.
-  </p>
-</div>
-
-
-
----
-
-file: docs/pages/overview/chests/loot-chests.mdx
-meta: {
-  "title": "Loot Chests",
-  "description": "Understanding Loot Chest rewards from Realms games"
-}
-
-import { importantNote } from "../../../components/styles";
-
-# 🎁 Loot Chests
-
-Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
-primarily rewarded for achievements and high-scoring gameplay and contain advantageous consumables or flashy cosmetic
-items. In their sealed (unopened) form, they can be traded on the
-[Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests).
-
-The secrets of the Loot Chests are now revealed and their opening mechanisms have been unlocked. Lords can find more
-detail on the contents of each Loot Chest type in the [Chest Contents](/overview/chests/contents) section, and open Loot
-Chests on the [Loot Chest Collection Page](https://empire.realms.world/loot-chests).
-
-## Epochs
-
-Epochs mark the distinct eras of gameplay and development. An epoch begins with the start of each new Eternum season and
-ends with the start of the next. Each Loot Chest carries the mark of its epoch, defining not only when it was earned but
-also the specific rewards contained within. Chests from different epochs therefore maintain their unique character over
-time, and can be opened or left sealed at the owner's discretion (as some Lords may wish to speculate on long-term
-sealed chest value).
-
-## Chest Types in Epoch 1
-
-The current epoch introduces four distinct chest types with varying contents, each obtained through different gameplay
-experiences within the ecosystem.
-
-**Eternum Rewards Chest** - These premium chests were earned through participation and success in the flagship seasonal
-game mode. 2,244 Eternum Rewards Chests were distributed to players of Eternum Season 1 on the basis of their
-achievement score. There will be no further issuance of these chests in Epoch 1.
-
-<div style={{ textAlign: "center" }}>
-  <img src="/images/loot-chests/eternum-chest.png" alt="Eternum Rewards Chest" style={{ width: "25%", height: "auto", display: "block", margin: "0 auto" }} />
-</div>
-
-**Blitz Rewards Chest (S0)** - Success in Series 0 Blitz games will yield these chests.
-
-<div style={{ textAlign: "center" }}>
-  <img src="/images/loot-chests/Chest- Blitz - v4.png" alt="Blitz Rewards Chest (Series 0)" style={{ width: "25%", height: "auto", display: "block", margin: "0 auto" }} />
-</div>
-
-**Elite Blitz Rewards Chest** - The highest tier of Blitz competition produces these exclusive chests, reserved for
-Lords who prove themselves in Elite bracket games.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    Loot Chests are a feature in development. Keep an eye out for announcements in the Realms Discord relating to Loot
-    Chest rewards. This section will be updated as more information is made available to the community.
-  </p>
-</div>

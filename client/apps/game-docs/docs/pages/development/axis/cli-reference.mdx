@@ -1,0 +1,51 @@
+---
+layout: docs
+title: Axis CLI Reference
+---
+
+# Axis CLI Reference
+
+## Commands
+
+| Command                              | Description                              |
+| ------------------------------------ | ---------------------------------------- |
+| `axis` / `axis run`                  | Run in TUI mode                          |
+| `axis run --headless --world=<name>` | Run in headless mode                     |
+| `axis worlds`                        | List discovered worlds                   |
+| `axis auth <world>`                  | Start auth for a world                   |
+| `axis auth --all`                    | Start auth for all discovered worlds     |
+| `axis auth-complete <world>`         | Complete auth from redirect/session data |
+| `axis auth-status <world>`           | Check status for one world               |
+| `axis auth-status --all`             | Check status for all worlds              |
+| `axis auth-url <world>`              | Print stored auth URL                    |
+| `axis doctor`                        | Validate configuration                   |
+| `axis init`                          | Seed runtime data and local `.env`       |
+| `axis --version`                     | Print version                            |
+| `axis --help`                        | Print usage                              |
+
+## Run Flags
+
+| Flag                                         | Description                          |
+| -------------------------------------------- | ------------------------------------ |
+| `--headless`                                 | Run without TUI                      |
+| `--world=<name>`                             | Target world (required for headless) |
+| `--auth=session\|privatekey`                 | Auth strategy                        |
+| `--api-port=<port>`                          | Enable HTTP API                      |
+| `--api-host=<host>`                          | API bind host                        |
+| `--stdin`                                    | Enable stdin command stream          |
+| `--verbosity=quiet\|actions\|decisions\|all` | Output filter                        |
+| `--json`                                     | JSON output for command responses    |
+
+## Auth Flags
+
+| Flag                      | Applies To            | Description                        |
+| ------------------------- | --------------------- | ---------------------------------- |
+| `--all`                   | `auth`, `auth-status` | Target all worlds                  |
+| `--approve`               | `auth`                | Attempt automated browser approval |
+| `--method=<type>`         | `auth`                | Auth method for auto-approve       |
+| `--username=<user>`       | `auth`                | Username for auto-approve          |
+| `--password=<pass>`       | `auth`                | Password for auto-approve          |
+| `--callback-url=<url>`    | `auth`                | Public callback endpoint           |
+| `--timeout=<ms>`          | `auth`                | Approval wait timeout              |
+| `--redirect-url=<url>`    | `auth-complete`       | Complete from redirect URL         |
+| `--session-data=<base64>` | `auth-complete`       | Complete from raw callback payload |
