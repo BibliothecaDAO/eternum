@@ -12,6 +12,7 @@ vi.mock("@bibliothecadao/types", () => ({
 vi.mock("../utils", () => {
   return {
     divideByPrecision: vi.fn((value: number) => value),
+    getEffectiveHyperstructureRealmCount: vi.fn((value: number) => value),
     getHyperstructureRealmCheckRadius: vi.fn(() => 1),
     getIsBlitz: vi.fn(() => false),
     getStructureTypeName: vi.fn(() => "Structure"),
@@ -20,6 +21,7 @@ vi.mock("../utils", () => {
 });
 
 const { MapDataStore } = await import("./map-data-store");
+const { getEffectiveHyperstructureRealmCount } = await import("../utils");
 
 describe("MapDataStore refresh semantics", () => {
   beforeEach(() => {
@@ -133,5 +135,24 @@ describe("MapDataStore refresh semantics", () => {
     expect(store.getRealmCountPerHyperstructure()).toBe(cachedMap);
     expect(cachedMap.get(501 as any)).toBeUndefined();
     expect(cachedMap.get(502 as any)).toBe(2);
+  });
+
+  it("forces realm count to 2 for all hyperstructures in two-player mode", async () => {
+    vi.mocked(getEffectiveHyperstructureRealmCount).mockImplementation(() => 2);
+
+    const sqlApi = {
+      fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
+      fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
+      fetchHyperstructuresWithRealmCount: vi.fn().mockResolvedValue([
+        { hyperstructure_entity_id: 601, realm_count_within_radius: 0 },
+        { hyperstructure_entity_id: 602, realm_count_within_radius: 5 },
+      ]),
+    };
+
+    const store = MapDataStore.getInstance(60_000, sqlApi as any);
+    await store.refresh();
+
+    expect(store.getHyperstructureRealmCount(601 as any)).toBe(2);
+    expect(store.getHyperstructureRealmCount(602 as any)).toBe(2);
   });
 });

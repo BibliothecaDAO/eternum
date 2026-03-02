@@ -29,6 +29,7 @@ interface FactoryWorldConfigOverrides {
   registrationPeriodSeconds?: string;
   factoryAddress?: string;
   singleRealmMode?: boolean;
+  twoPlayerMode?: boolean;
   seasonBridgeCloseAfterEndSeconds?: string;
   seasonPointRegistrationCloseAfterEndSeconds?: string;
   settlementCenter?: string;
@@ -73,6 +74,7 @@ interface FactoryConfigLike {
     base_distance?: number;
     subsequent_distance?: number;
     single_realm_mode?: boolean;
+    two_player_mode?: boolean;
   };
   trade?: {
     maxCount?: number;
@@ -194,6 +196,12 @@ export const buildWorldConfigForFactory = ({
     ? parseNonNegativeNumber(overrides.settlementSubsequentDistance!, "Settlement subsequent distance")
     : baseConfig.settlement?.subsequent_distance;
 
+  const settlementSingleRealmMode = overrides.singleRealmMode ?? baseConfig.settlement?.single_realm_mode ?? false;
+  const settlementTwoPlayerMode = overrides.twoPlayerMode ?? baseConfig.settlement?.two_player_mode ?? false;
+  if (settlementSingleRealmMode && settlementTwoPlayerMode) {
+    throw new Error("single_realm_mode and two_player_mode cannot both be enabled");
+  }
+
   const tradeMaxCount = hasValue(overrides.tradeMaxCount)
     ? parseNonNegativeNumber(overrides.tradeMaxCount!, "Trade max count")
     : baseConfig.trade?.maxCount;
@@ -258,7 +266,8 @@ export const buildWorldConfigForFactory = ({
       center: settlementCenter,
       base_distance: settlementBaseDistance,
       subsequent_distance: settlementSubsequentDistance,
-      single_realm_mode: overrides.singleRealmMode ?? baseConfig.settlement?.single_realm_mode,
+      single_realm_mode: settlementSingleRealmMode,
+      two_player_mode: settlementTwoPlayerMode,
     },
     trade: {
       ...(baseConfig.trade || {}),
