@@ -9,7 +9,7 @@ import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
-import { BlitzRewardsRecapCardWithSelector } from "@/ui/shared/components/blitz-rewards-recap-card";
+import { BlitzRewardsRecapCardWithSelector, type BlitzCardTheme } from "@/ui/shared/components/blitz-rewards-recap-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -57,6 +57,14 @@ const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
 const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
 const CLAIM_RECONCILIATION_POLL_MS = 5_000;
 const CLAIM_RECONCILIATION_MAX_ATTEMPTS = 12;
+const REWARDS_THEME_OPTIONS: Array<{ label: string; value: BlitzCardTheme | null }> = [
+  { label: "Auto", value: null },
+  { label: "Gold", value: "gold" },
+  { label: "Silver", value: "silver" },
+  { label: "Bronze", value: "bronze" },
+  { label: "Neutral", value: "neutral" },
+  { label: "Emerald", value: "emerald" },
+];
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
 
@@ -522,6 +530,7 @@ const ClaimRewardsStep = ({
     : null;
   const hasChestReason = chestsClaimedReason.trim().length > 0;
   const hasEliteTicketReason = eliteTicketReason.trim().length > 0;
+  const [themeOverride, setThemeOverride] = useState<BlitzCardTheme | null>(null);
 
   return (
     <div className="space-y-4">
@@ -531,6 +540,25 @@ const ClaimRewardsStep = ({
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] uppercase tracking-wider text-gold/60">Card color</span>
+        {REWARDS_THEME_OPTIONS.map((option) => {
+          const isActive = option.value === themeOverride;
+          return (
+            <Button
+              key={option.label}
+              variant={isActive ? "gold" : "outline"}
+              size="xs"
+              forceUppercase={false}
+              className="!px-2.5 !py-1"
+              onClick={() => setThemeOverride(option.value)}
+            >
+              {option.label}
+            </Button>
+          );
+        })}
+      </div>
+
       <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
         <BlitzRewardsRecapCardWithSelector
           worldName={data.worldName}
@@ -538,6 +566,7 @@ const ClaimRewardsStep = ({
           chestsWon={chestsWon}
           eliteTicketsWon={eliteTicketEarned}
           rank={finalRank}
+          themeOverride={themeOverride ?? undefined}
           player={cardPlayer}
         />
       </div>
