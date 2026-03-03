@@ -5,6 +5,7 @@ import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
+  AnimationClip,
   AnimationAction,
   AnimationMixer,
   Box3,
@@ -13,6 +14,7 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
+  LoopOnce,
   Matrix4,
   Mesh,
   Object3D,
@@ -25,6 +27,8 @@ import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
+  ANIMATION_STATE_ATTACKING,
+  ANIMATION_STATE_DEATH,
   MAX_INSTANCES,
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
@@ -64,6 +68,8 @@ export class ArmyModel {
   private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
+  private readonly attackTimeouts: Map<number, ReturnType<typeof setTimeout>> = new Map();
+  private readonly deathTimeouts: Map<number, ReturnType<typeof setTimeout>> = new Map();
 
   // Cosmetic model management
   private readonly cosmeticModels: Map<string, ModelData> = new Map();
@@ -90,6 +96,8 @@ export class ArmyModel {
   private lastBucketStride = 1;
   private idleWeightsBuffer: Float32Array | null = null;
   private movingWeightsBuffer: Float32Array | null = null;
+  private attackWeightsBuffer: Float32Array | null = null;
+  private deathWeightsBuffer: Float32Array | null = null;
   private bucketToIndices: Map<number, Uint16Array> = new Map();
   private bucketIndicesBuilt = false;
   private bucketIndicesMaxCount = 0;
@@ -100,7 +108,7 @@ export class ArmyModel {
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
   private readonly MOVEMENT_SPEED = 1.25;
-  private readonly FLOAT_HEIGHT = 0.5;
+  private readonly FLOAT_HEIGHT = 0;
   private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
@@ -160,6 +168,18 @@ export class ArmyModel {
       this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
       this.animationStates[i] = ANIMATION_STATE_IDLE;
     }
+  }
+
+  /**
+   * Finds an animation clip by name patterns (case-insensitive).
+   * Returns undefined if no match found.
+   */
+  private findAnimationByName(
+    animations: AnimationClip[],
+    patterns: string[],
+  ): AnimationClip | undefined {
+    const lowerPatterns = patterns.map((p) => p.toLowerCase());
+    return animations.find((clip) => lowerPatterns.some((pattern) => clip.name.toLowerCase().includes(pattern)));
   }
 
   private async ensureModel(modelType: ModelType): Promise<ModelData> {
@@ -324,6 +344,16 @@ export class ArmyModel {
 
     const mixer = new AnimationMixer(gltf.scene);
 
+    // Name-based animation lookup with fallbacks
+    const idleClip =
+      this.findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
+    const runClip =
+      this.findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ??
+      gltf.animations[1] ??
+      idleClip?.clone();
+    const attackClip = this.findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
+    const deathClip = this.findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
+
     return {
       group,
       instancedMeshes,
@@ -332,8 +362,10 @@ export class ArmyModel {
       baseMeshes,
       mixer,
       animations: {
-        idle: gltf.animations[0],
-        moving: gltf.animations[1] || gltf.animations[0]?.clone(),
+        idle: idleClip,
+        moving: runClip,
+        attack: attackClip,
+        death: deathClip,
       },
       animationActions: new Map(),
       activeInstances: new Set(),
@@ -764,6 +796,7 @@ export class ArmyModel {
     this.activeBaseModelByEntity.delete(entityId);
     this.activeCosmeticByEntity.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
+    this.clearAnimationTimeouts(entityId);
     this.removeLabel(entityId);
   }
 
@@ -926,16 +959,20 @@ export class ArmyModel {
       // Determine which animation states are actually needed by scanning instances
       let needsIdleWeights = false;
       let needsMovingWeights = false;
+      let needsAttackWeights = false;
+      let needsDeathWeights = false;
       for (let i = 0; i < instanceCount; i++) {
         const state = this.animationStates[i];
         if (this.shouldSkipAnimation(state)) continue;
         if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
         else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
-        if (needsIdleWeights && needsMovingWeights) break;
+        else if (state === ANIMATION_STATE_ATTACKING) needsAttackWeights = true;
+        else if (state === ANIMATION_STATE_DEATH) needsDeathWeights = true;
+        if (needsIdleWeights && needsMovingWeights && needsAttackWeights && needsDeathWeights) break;
       }
 
       // Early exit if no animations needed
-      if (!needsIdleWeights && !needsMovingWeights) return;
+      if (!needsIdleWeights && !needsMovingWeights && !needsAttackWeights && !needsDeathWeights) return;
 
       const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
 
@@ -980,6 +1017,38 @@ export class ArmyModel {
         }
       }
 
+      if (needsAttackWeights) {
+        if (!this.attackWeightsBuffer || this.attackWeightsBuffer.length < requiredSize) {
+          this.attackWeightsBuffer = new Float32Array(requiredSize);
+        }
+
+        this.updateAnimationState(actions, ANIMATION_STATE_ATTACKING);
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.attackWeightsBuffer[offset + m] = morphInfluences[m];
+          }
+        }
+      }
+
+      if (needsDeathWeights) {
+        if (!this.deathWeightsBuffer || this.deathWeightsBuffer.length < requiredSize) {
+          this.deathWeightsBuffer = new Float32Array(requiredSize);
+        }
+
+        this.updateAnimationState(actions, ANIMATION_STATE_DEATH);
+        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          modelData.mixer.setTime(t);
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.deathWeightsBuffer[offset + m] = morphInfluences[m];
+          }
+        }
+      }
+
       const morphTexture = mesh.morphTexture;
       if (morphTexture && morphTexture.image && morphTexture.image.data) {
         const textureData = morphTexture.image.data as unknown as Float32Array;
@@ -991,6 +1060,8 @@ export class ArmyModel {
 
           const idleOffset = bucket * morphCount;
           const movingOffset = bucket * morphCount;
+          const attackOffset = bucket * morphCount;
+          const deathOffset = bucket * morphCount;
           const idleWeights =
             needsIdleWeights && this.idleWeightsBuffer
               ? this.idleWeightsBuffer.subarray(idleOffset, idleOffset + morphCount)
@@ -998,6 +1069,14 @@ export class ArmyModel {
           const movingWeights =
             needsMovingWeights && this.movingWeightsBuffer
               ? this.movingWeightsBuffer.subarray(movingOffset, movingOffset + morphCount)
+              : null;
+          const attackWeights =
+            needsAttackWeights && this.attackWeightsBuffer
+              ? this.attackWeightsBuffer.subarray(attackOffset, attackOffset + morphCount)
+              : null;
+          const deathWeights =
+            needsDeathWeights && this.deathWeightsBuffer
+              ? this.deathWeightsBuffer.subarray(deathOffset, deathOffset + morphCount)
               : null;
 
           for (let idx = 0; idx < indices.length; idx++) {
@@ -1014,6 +1093,30 @@ export class ArmyModel {
               } else {
                 for (let m = 0; m < morphCount; m++) {
                   textureData[dstOffset + m] = this.movingWeightsBuffer![movingOffset + m];
+                }
+              }
+            } else if (state === ANIMATION_STATE_ATTACKING) {
+              const weights = attackWeights ?? idleWeights;
+              if (!weights) continue;
+              if (morphCount <= 8) {
+                textureData.set(weights, dstOffset);
+              } else {
+                const buffer = attackWeights ? this.attackWeightsBuffer! : this.idleWeightsBuffer!;
+                const offset = attackWeights ? attackOffset : idleOffset;
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = buffer[offset + m];
+                }
+              }
+            } else if (state === ANIMATION_STATE_DEATH) {
+              const weights = deathWeights ?? idleWeights;
+              if (!weights) continue;
+              if (morphCount <= 8) {
+                textureData.set(weights, dstOffset);
+              } else {
+                const buffer = deathWeights ? this.deathWeightsBuffer! : this.idleWeightsBuffer!;
+                const offset = deathWeights ? deathOffset : idleOffset;
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = buffer[offset + m];
                 }
               }
             } else {
@@ -1121,21 +1224,67 @@ export class ArmyModel {
     if (!modelData.animationActions.has(instanceIndex)) {
       const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
       const movingAction = modelData.mixer.clipAction(modelData.animations.moving);
-      modelData.animationActions.set(instanceIndex, { idle: idleAction, moving: movingAction });
+      const attackAction = modelData.animations.attack
+        ? modelData.mixer.clipAction(modelData.animations.attack)
+        : undefined;
+      const deathAction = modelData.animations.death
+        ? modelData.mixer.clipAction(modelData.animations.death)
+        : undefined;
+
+      // Configure death animation to play once and hold final frame
+      if (deathAction) {
+        deathAction.setLoop(LoopOnce, 1);
+        deathAction.clampWhenFinished = true;
+      }
+
+      modelData.animationActions.set(instanceIndex, {
+        idle: idleAction,
+        moving: movingAction,
+        attack: attackAction,
+        death: deathAction,
+      });
     }
     return modelData.animationActions.get(instanceIndex)!;
   }
 
-  private updateAnimationState(actions: { idle: AnimationAction; moving: AnimationAction }, state: number): void {
-    if (state === ANIMATION_STATE_IDLE) {
-      actions.idle.setEffectiveTimeScale(1);
-      actions.moving.setEffectiveTimeScale(0);
-    } else if (state === ANIMATION_STATE_MOVING) {
-      actions.idle.setEffectiveTimeScale(0);
-      actions.moving.setEffectiveTimeScale(1);
+  private updateAnimationState(
+    actions: { idle: AnimationAction; moving: AnimationAction; attack?: AnimationAction; death?: AnimationAction },
+    state: number,
+  ): void {
+    // Stop all animations
+    actions.idle.setEffectiveTimeScale(0);
+    actions.moving.setEffectiveTimeScale(0);
+    actions.attack?.setEffectiveTimeScale(0);
+    actions.death?.setEffectiveTimeScale(0);
+
+    // Activate the current state
+    switch (state) {
+      case ANIMATION_STATE_IDLE:
+        actions.idle.setEffectiveTimeScale(1);
+        break;
+      case ANIMATION_STATE_MOVING:
+        actions.moving.setEffectiveTimeScale(1);
+        break;
+      case ANIMATION_STATE_ATTACKING:
+        if (actions.attack) {
+          actions.attack.setEffectiveTimeScale(1);
+        } else {
+          actions.idle.setEffectiveTimeScale(1);
+        }
+        break;
+      case ANIMATION_STATE_DEATH:
+        if (actions.death) {
+          actions.death.setEffectiveTimeScale(1);
+        } else {
+          actions.idle.setEffectiveTimeScale(1);
+        }
+        break;
     }
+
     actions.idle.play();
     actions.moving.play();
+    actions.attack?.play();
+    actions.death?.play();
   }
 
   // Movement Methods
@@ -1854,6 +2003,106 @@ export class ArmyModel {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
   }
 
+  /**
+   * Sets an entity's animation to attacking state.
+   * @param entityId - The entity to animate
+   * @param isAttacking - Whether to start or stop attacking
+   */
+  public setAttacking(entityId: number, isAttacking: boolean): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData?.matrixIndex === undefined) return;
+
+    const matrixIndex = instanceData.matrixIndex;
+
+    if (isAttacking) {
+      this.animationStates[matrixIndex] = ANIMATION_STATE_ATTACKING;
+    } else {
+      // Return to appropriate state based on movement
+      const isMoving = this.movingInstances.has(entityId);
+      this.animationStates[matrixIndex] = isMoving ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
+    }
+  }
+
+  /**
+   * Triggers a one-shot attack animation that auto-resets.
+   * @param entityId - The entity to animate
+   * @param durationMs - How long the attack animation plays (default 800ms)
+   */
+  public playAttackAnimation(entityId: number, durationMs: number = 800): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData?.matrixIndex === undefined) return;
+
+    this.setAttacking(entityId, true);
+
+    const existingTimeout = this.attackTimeouts.get(entityId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    const modelData = this.getModelForEntity(entityId);
+    if (modelData?.animations.attack) {
+      const attackAction = modelData.mixer.clipAction(modelData.animations.attack);
+      attackAction.reset();
+    }
+
+    const timeoutId = setTimeout(() => {
+      this.attackTimeouts.delete(entityId);
+      this.setAttacking(entityId, false);
+    }, durationMs);
+    this.attackTimeouts.set(entityId, timeoutId);
+  }
+
+  /**
+   * Triggers death animation for an entity.
+   * Death animation plays once and holds on final frame.
+   * @param entityId - The entity to animate
+   * @param onComplete - Optional callback when animation finishes
+   */
+  public playDeathAnimation(entityId: number, onComplete?: () => void): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData?.matrixIndex === undefined) return;
+
+    this.animationStates[instanceData.matrixIndex] = ANIMATION_STATE_DEATH;
+
+    const existingTimeout = this.deathTimeouts.get(entityId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      this.deathTimeouts.delete(entityId);
+    }
+
+    const modelData = this.getModelForEntity(entityId);
+    if (modelData?.animations.death) {
+      const deathAction = modelData.mixer.clipAction(modelData.animations.death);
+      deathAction.setLoop(LoopOnce, 1);
+      deathAction.clampWhenFinished = true;
+      deathAction.reset();
+    }
+
+    if (onComplete) {
+      const durationSeconds = modelData?.animations.death?.duration;
+      const durationMs = durationSeconds && durationSeconds > 0 ? durationSeconds * 1000 : 1000;
+      const timeoutId = setTimeout(() => {
+        this.deathTimeouts.delete(entityId);
+        onComplete();
+      }, durationMs);
+      this.deathTimeouts.set(entityId, timeoutId);
+    }
+  }
+
+  private clearAnimationTimeouts(entityId: number): void {
+    const attackTimeout = this.attackTimeouts.get(entityId);
+    if (attackTimeout) {
+      clearTimeout(attackTimeout);
+      this.attackTimeouts.delete(entityId);
+    }
+
+    const deathTimeout = this.deathTimeouts.get(entityId);
+    if (deathTimeout) {
+      clearTimeout(deathTimeout);
+      this.deathTimeouts.delete(entityId);
+    }
+  }
+
   public computeBoundingSphere(): void {
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -1897,6 +2146,11 @@ export class ArmyModel {
    * Dispose of all resources including shared materials
    */
   public dispose(): void {
+    this.attackTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    this.attackTimeouts.clear();
+    this.deathTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    this.deathTimeouts.clear();
+
     // Dispose geometries and release materials from pool
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -1942,6 +2196,8 @@ export class ArmyModel {
     this.movementCompleteCallbacks.clear();
     this.idleWeightsBuffer = null;
     this.movingWeightsBuffer = null;
+    this.attackWeightsBuffer = null;
+    this.deathWeightsBuffer = null;
     this.bucketToIndices.clear();
     this.bucketIndicesBuilt = false;
     this.bucketIndicesMaxCount = 0;

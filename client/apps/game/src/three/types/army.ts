@@ -66,12 +66,16 @@ export interface ModelData {
   animations: {
     idle: AnimationClip;
     moving: AnimationClip;
+    attack?: AnimationClip;
+    death?: AnimationClip;
   };
   animationActions: Map<
     number,
     {
       idle: AnimationAction;
       moving: AnimationAction;
+      attack?: AnimationAction;
+      death?: AnimationAction;
     }
   >;
   activeInstances: Set<number>;

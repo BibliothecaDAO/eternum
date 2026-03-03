@@ -2661,6 +2661,11 @@ ${
       const normalizedHex = army.hexCoords.getNormalized();
       const worldPos = getWorldPositionForHex({ col: normalizedHex.x, row: normalizedHex.y });
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
+
+      // Play death animation when army is destroyed (count goes to 0)
+      if (newCount === 0 && previousCount > 0) {
+        this.playDeathAnimation(this.toNumericId(update.entityId));
+      }
     }
 
     // Update cached army data
@@ -2759,6 +2764,24 @@ ${
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
+  }
+
+  /**
+   * Plays attack animation for an army entity.
+   * @param entityId - The army entity ID
+   * @param durationMs - Animation duration in ms (default 800)
+   */
+  public playAttackAnimation(entityId: number, durationMs?: number): void {
+    this.armyModel.playAttackAnimation(entityId, durationMs);
+  }
+
+  /**
+   * Plays death animation for an army entity.
+   * @param entityId - The army entity ID
+   * @param onComplete - Optional callback when animation finishes
+   */
+  public playDeathAnimation(entityId: number, onComplete?: () => void): void {
+    this.armyModel.playDeathAnimation(entityId, onComplete);
   }
 
   public destroy() {
