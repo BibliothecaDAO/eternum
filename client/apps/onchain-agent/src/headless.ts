@@ -9,8 +9,10 @@ import { type AgentConfig, loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
-import { readArtifacts } from "./session/artifacts";
+import { readArtifacts, writeArtifacts } from "./session/artifacts";
+import { buildSessionPoliciesFromManifest } from "./session/controller-session";
 import { createPrivateKeyAccount } from "./session/privatekey-auth";
+import { findWorldByName, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
 import { deriveChainIdFromRpcUrl } from "./world/normalize";
 import { createInspectTools } from "./tools/inspect-tools";
 import { createCombatTools } from "./tools/combat-tools";
@@ -139,9 +141,46 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     write: (line) => process.stdout.write(line + "\n"),
   });
 
-  // Read artifacts from session directory
+  // Read or bootstrap artifacts from session directory
   const worldDir = path.join(config.sessionBasePath, options.world!);
-  const artifacts = readArtifacts(worldDir);
+  let artifacts: ReturnType<typeof readArtifacts>;
+
+  try {
+    artifacts = readArtifacts(worldDir);
+    emitter.emit({ type: "startup", message: `Loaded artifacts for ${options.world}` });
+  } catch {
+    // Artifacts don't exist — bootstrap them via world discovery
+    emitter.emit({ type: "startup", message: `No artifacts for ${options.world}, bootstrapping via discovery...` });
+
+    const world = await findWorldByName(options.world!);
+    if (!world) {
+      emitter.emit({ type: "error", message: `World "${options.world}" not found on any chain` });
+      throw new Error(`World "${options.world}" not found`);
+    }
+
+    const profile = await buildWorldProfile(world.chain, world.name);
+    const manifest = await buildResolvedManifest(world.chain, profile);
+    const policies = buildSessionPoliciesFromManifest(manifest as any, {
+      gameName: config.gameName,
+      worldProfile: profile,
+    });
+
+    writeArtifacts(worldDir, {
+      profile,
+      manifest,
+      policy: policies as unknown as Record<string, unknown>,
+      auth: {
+        url: "",
+        status: "pending",
+        worldName: world.name,
+        chain: world.chain,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    artifacts = readArtifacts(worldDir);
+    emitter.emit({ type: "startup", message: `Bootstrapped artifacts for ${options.world} (${world.chain})` });
+  }
 
   // Override config from artifacts
   config.rpcUrl = artifacts.profile.rpcUrl ?? config.rpcUrl;
@@ -177,8 +216,17 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       if (probed) {
         account = probed;
       } else {
-        // No cached session — need full connect (browser auth)
-        account = await session.connect();
+        // No cached session — can't do browser auth in headless mode
+        const authUrl = artifacts.auth?.url || "(run `axis auth " + options.world + "` to generate)";
+        emitter.emit({
+          type: "error",
+          message:
+            `No active session for ${options.world}. Auth required.\n` +
+            `  1. Open this URL in a browser: ${authUrl}\n` +
+            `  2. Approve the session\n` +
+            `  3. Run: axis auth-complete ${options.world} --redirect-url="<redirect URL from browser>"`,
+        });
+        throw new Error(`No active session for ${options.world}. Run axis auth first.`);
       }
     } catch (probeError) {
       // SessionAccount WASM crashed — fall back to raw account from session.json

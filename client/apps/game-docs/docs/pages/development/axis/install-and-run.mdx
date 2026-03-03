@@ -54,19 +54,20 @@ pnpm dev
 
 ## First-Time Setup
 
-Initialize runtime directories and local `.env` (if missing):
+Initialize runtime directories and config:
 
 ```bash
 axis init
 ```
 
-Set at least one provider key, for example:
+This creates `~/.eternum-agent/.env` with a config template. Edit it to set your API key:
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-...
+# Open the config file and set ANTHROPIC_API_KEY (or OPENAI_API_KEY)
+nano ~/.eternum-agent/.env
 ```
 
-Start Axis in TUI mode:
+Start Axis:
 
 ```bash
 axis run
@@ -74,10 +75,11 @@ axis run
 
 On first run, Axis will:
 
-1. Discover active worlds
-2. Let you select a world (unless `SLOT_NAME` is set)
-3. Open browser-based Cartridge session approval
-4. Start the agent loop
+1. Load config from `~/.eternum-agent/.env`
+2. Discover active worlds
+3. Let you select a world (unless `SLOT_NAME` is set)
+4. Open browser-based Cartridge session approval
+5. Start the agent loop
 
 ## Standalone Binary from Source
 

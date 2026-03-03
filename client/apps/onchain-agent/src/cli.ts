@@ -1,11 +1,13 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { access, constants } from "node:fs/promises";
 import { dirname } from "node:path";
+import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config";
 import { parseCliArgs } from "./cli-args";
 import { embeddedData, embeddedEnvExample } from "./embedded-data";
+import { loadEnvFiles } from "./env-loader";
 
 declare const BUILD_VERSION: string;
 import { runWorlds } from "./commands/worlds";
@@ -145,12 +147,14 @@ export function seedDataDir(dataDir: string) {
   }
 }
 
-function seedEnvFile() {
-  const cwdEnvPath = path.resolve(process.cwd(), ".env");
-  if (existsSync(cwdEnvPath)) {
-    return;
+function seedEnvFile(): string {
+  const globalEnvPath = path.join(homedir(), ".eternum-agent", ".env");
+  if (existsSync(globalEnvPath)) {
+    return globalEnvPath;
   }
-  writeFileSync(cwdEnvPath, embeddedEnvExample, "utf8");
+  mkdirSync(dirname(globalEnvPath), { recursive: true });
+  writeFileSync(globalEnvPath, embeddedEnvExample, "utf8");
+  return globalEnvPath;
 }
 
 function runInit(world?: string): number {
@@ -168,15 +172,19 @@ function runInit(world?: string): number {
   }
 
   mkdirSync(config.sessionBasePath, { recursive: true });
-  seedEnvFile();
+  const envPath = seedEnvFile();
 
   console.log(`Initialized data directory: ${config.dataDir}`);
   console.log(`Initialized session directory: ${config.sessionBasePath}`);
-  console.log(`Initialized env file (if missing): ${path.resolve(process.cwd(), ".env")}`);
+  console.log(`Initialized config file: ${envPath}`);
+  console.log(`\nNext: edit ${envPath} and set your ANTHROPIC_API_KEY (or OPENAI_API_KEY)`);
   return 0;
 }
 
 export async function runCli(args: string[] = process.argv.slice(2)): Promise<number> {
+  // Load .env files before anything reads process.env
+  loadEnvFiles();
+
   const opts = parseCliArgs(args);
   const write = (s: string) => console.log(s);
 

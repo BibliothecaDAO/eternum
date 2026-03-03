@@ -161,6 +161,35 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
     if (authUrl) {
       updateAuthStatus(worldDir, { url: authUrl });
 
+      // Non-blocking mode: no callback server, no auto-approve, and no TTY.
+      // Print the URL and exit — user completes with `axis auth-complete`.
+      const canWait = options.callbackUrl || options.approve || process.stdin.isTTY;
+      if (!canWait) {
+        if (options.json) {
+          options.write(
+            JSON.stringify({
+              world: world.name,
+              chain: world.chain,
+              status: "awaiting_approval",
+              url: authUrl,
+              artifactDir: worldDir,
+              completeWith: `axis auth-complete ${world.name} --redirect-url="<redirect URL from browser>"`,
+            }),
+          );
+        } else {
+          options.write(`  Approve at: ${authUrl}\n`);
+          options.write(`\n  Then complete with:\n`);
+          options.write(`  axis auth-complete ${world.name} --redirect-url="<redirect URL from browser>"\n`);
+        }
+        return {
+          world: world.name,
+          chain: world.chain,
+          status: "awaiting_approval",
+          url: authUrl,
+          artifactDir: worldDir,
+        };
+      }
+
       if (options.json) {
         options.write(
           JSON.stringify({

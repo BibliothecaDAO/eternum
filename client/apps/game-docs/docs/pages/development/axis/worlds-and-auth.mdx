@@ -51,23 +51,45 @@ Print stored auth URL:
 axis auth-url my-world
 ```
 
-## Headless/Remote Auth Patterns
+## Headless VPS Auth (No Browser)
 
-### Callback URL (VPS or remote host)
+The most common headless pattern — for locked-down VPS with no open ports:
+
+```bash
+# 1. On VPS: generate auth URL (exits immediately, no blocking)
+axis auth my-world
+# Prints: Approve at: https://x.cartridge.gg/session?...
+# Prints: axis auth-complete my-world --redirect-url="<redirect URL from browser>"
+
+# 2. On your laptop: open the URL, approve the session in browser
+#    After approval, the browser redirects to a URL like:
+#    http://localhost:8000/auth/callback?startapp=BASE64DATA...
+#    Copy that full URL from your browser address bar.
+
+# 3. Back on VPS: complete auth with the redirect URL
+axis auth-complete my-world --redirect-url="http://localhost:8000/auth/callback?startapp=BASE64DATA..."
+
+# 4. Run the agent
+axis run --headless --world=my-world
+```
+
+This works without opening any ports on the VPS. The agent on VPS can also parse the JSON output programmatically:
+
+```bash
+url=$(axis auth my-world --json | jq -r '.url')
+# Send $url to human, receive redirect URL back
+axis auth-complete my-world --redirect-url="$REDIRECT_URL"
+```
+
+### Callback URL (VPS with public endpoint)
+
+If your VPS can receive HTTP callbacks:
 
 ```bash
 axis auth my-world --callback-url=http://my-host:3000
 ```
 
-### Offline completion
-
-```bash
-axis auth-complete my-world --redirect-url="https://.../auth/callback?startapp=..."
-# or
-axis auth-complete my-world --session-data="<base64>"
-```
-
-### Auto-approve
+### Auto-approve (CI/CD)
 
 ```bash
 axis auth my-world --approve --method=password --username=me --password=secret

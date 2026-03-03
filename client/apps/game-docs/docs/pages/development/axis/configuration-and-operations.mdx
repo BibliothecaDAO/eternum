@@ -5,6 +5,16 @@ title: Axis Configuration and Operations
 
 # Axis Configuration and Operations
 
+## Config File Loading
+
+Axis auto-loads `.env` files on every command. Precedence (lowest to highest):
+
+1. **`~/.eternum-agent/.env`** — global config (API keys, preferences). Created by `axis init`.
+2. **`./.env`** (current directory) — local overrides for development or per-project settings.
+3. **Shell environment** — `export ANTHROPIC_API_KEY=...` always wins over file values.
+
+Values from higher-priority sources override lower ones. Shell env vars are never overwritten by file values.
+
 ## Core Environment Variables
 
 | Variable             | Default                          | Purpose                                                      |
