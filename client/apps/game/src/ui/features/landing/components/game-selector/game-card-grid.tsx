@@ -81,6 +81,19 @@ const getStageLabel = (stage: RegistrationStage): string => {
   }
 };
 
+const formatCountdown = (seconds: number): string => {
+  if (seconds <= 0) return "0s";
+
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3_600);
+  const minutes = Math.floor((total % 3_600) / 60);
+  const secs = total % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+};
+
 /**
  * Game type badge - Ranked (MMR enabled) or Sandbox
  */
@@ -227,6 +240,8 @@ const GameCard = ({
     canRegister,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
+    isWaitingForRegistrationStart,
+    secondsUntilRegistrationStart,
   } = useWorldRegistration({
     worldName: game.name,
     chain: game.chain,
@@ -349,12 +364,22 @@ const GameCard = ({
 
         {/* Countdown - compact */}
         <div className="py-1.5 px-2 bg-black/20 rounded text-xs">
-          <WorldCountdownDetailed
-            startMainAt={game.startMainAt}
-            endAt={game.endAt}
-            status={game.status}
-            className="text-xs text-white/70"
-          />
+          <div className="flex items-center gap-1.5">
+            <WorldCountdownDetailed
+              startMainAt={game.startMainAt}
+              endAt={game.endAt}
+              status={game.status}
+              className="text-xs text-white/70"
+            />
+            {isWaitingForRegistrationStart && (
+              <>
+                <span className="text-white/40">•</span>
+                <span className="text-xs text-amber-300/80">
+                  Register in {formatCountdown(secondsUntilRegistrationStart)}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {canClaimRewards && claimSummary && (
@@ -404,6 +429,14 @@ const GameCard = ({
                     "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                     "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
                   )}
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Register
+                </button>
+              ) : isWaitingForRegistrationStart ? (
+                <button
+                  disabled
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold bg-brilliance/10 text-brilliance/50 border border-brilliance/20 cursor-not-allowed"
                 >
                   <UserPlus className="w-3 h-3" />
                   Register
