@@ -24,7 +24,7 @@ interface PasswordCredential {
   address: string;
 }
 
-export async function fetchEncryptedKey(
+async function fetchEncryptedKey(
   username: string,
   apiUrl: string = DEFAULT_CARTRIDGE_API_URL,
 ): Promise<PasswordCredential> {
@@ -88,7 +88,7 @@ export async function fetchEncryptedKey(
 // Decrypt owner private key (PBKDF2 + AES-GCM, same as Cartridge SDK)
 // ---------------------------------------------------------------------------
 
-export async function decryptOwnerKey(encryptedB64: string, password: string): Promise<string> {
+async function decryptOwnerKey(encryptedB64: string, password: string): Promise<string> {
   const encrypted = Buffer.from(encryptedB64, "base64");
 
   // Layout: salt (16 bytes) | iv (12 bytes) | ciphertext+tag
@@ -116,7 +116,7 @@ export async function decryptOwnerKey(encryptedB64: string, password: string): P
 // RPC: fetch controller class hash from chain
 // ---------------------------------------------------------------------------
 
-export async function getClassHash(rpcUrl: string, address: string): Promise<string> {
+async function getClassHash(rpcUrl: string, address: string): Promise<string> {
   const res = await fetch(rpcUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -161,7 +161,7 @@ function policiesToWasm(policies: SessionPolicies): { target: string; method: st
 // Full password login orchestration
 // ---------------------------------------------------------------------------
 
-export interface PasswordLoginOptions {
+interface PasswordLoginOptions {
   username: string;
   password: string;
   rpcUrl: string;

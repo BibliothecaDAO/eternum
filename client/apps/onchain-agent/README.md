@@ -1,7 +1,7 @@
 # Axis
 
-Autonomous AI agent that plays Eternum on StarkNet. Discovers active game worlds, authenticates via Cartridge Controller,
-and runs an LLM-driven tick loop that executes on-chain actions.
+Autonomous AI agent that plays Eternum on StarkNet. Discovers active game worlds, authenticates via Cartridge
+Controller, and runs an LLM-driven tick loop that executes on-chain actions.
 
 ## Install
 
