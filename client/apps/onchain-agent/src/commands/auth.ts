@@ -1,6 +1,8 @@
 import { createServer, type Server } from "node:http";
 import { existsSync, readdirSync } from "node:fs";
+import { deflateRawSync } from "node:zlib";
 import path from "node:path";
+import QRCode from "qrcode";
 import { loadConfig } from "../config";
 import { discoverAllWorlds, findWorldByName, buildWorldProfile, buildResolvedManifest } from "../world/discovery";
 import { ControllerSession, buildSessionPoliciesFromRoutes } from "../session/controller-session";
@@ -10,6 +12,46 @@ import { storeSessionFromCallback } from "../session";
 import { writeArtifacts, updateAuthStatus, readAuthStatus, readArtifacts } from "../session/artifacts";
 import { deriveChainIdFromRpcUrl } from "../world/normalize";
 import type { DiscoveredWorld } from "../world/discovery";
+
+const AUTH_REDIRECT_BASE = process.env.AXIS_AUTH_REDIRECT_URL || "https://auth.axis.gg";
+
+/**
+ * Generate a QR code PNG for the auth URL using compressed policies.
+ * The QR encodes a redirect URL with compressed payload that the
+ * redirect page decompresses and redirects to the full Cartridge URL.
+ */
+async function generateAuthQR(authUrl: string, outputPath: string): Promise<boolean> {
+  try {
+    const urlObj = new URL(authUrl);
+    const policies = urlObj.searchParams.get("policies");
+    const rpcUrl = urlObj.searchParams.get("rpc_url") ?? "";
+    if (!policies) return false;
+
+    // Strip policies and rpc_url from base URL
+    urlObj.searchParams.delete("policies");
+    urlObj.searchParams.delete("rpc_url");
+    const baseUrl = urlObj.toString();
+
+    // Compress policies to minimal form: { addr: [entrypoint, ...] }
+    const parsed = JSON.parse(policies);
+    const minimal: Record<string, string[]> = {};
+    for (const [addr, contract] of Object.entries(parsed.contracts ?? {})) {
+      minimal[addr] = ((contract as any).methods ?? []).map((m: any) => m.entrypoint);
+    }
+    const compressedPolicies = deflateRawSync(Buffer.from(JSON.stringify(minimal)), { level: 9 }).toString("base64url");
+
+    // Build compact payload: { b: baseUrl, p: compressedPolicies, r: rpcUrl }
+    const payload = JSON.stringify({ b: baseUrl, p: compressedPolicies, r: rpcUrl });
+    const compressedPayload = deflateRawSync(Buffer.from(payload), { level: 9 }).toString("base64url");
+
+    const qrTarget = `${AUTH_REDIRECT_BASE}/#${compressedPayload}`;
+
+    await QRCode.toFile(outputPath, qrTarget, { width: 512, errorCorrectionLevel: "L" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface AuthOptions {
   world?: string;
@@ -392,6 +434,10 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
     if (authUrl) {
       updateAuthStatus(worldDir, { url: authUrl });
 
+      // Generate QR code with compressed auth URL
+      const qrPath = path.join(worldDir, "auth-qr.png");
+      const qrOk = await generateAuthQR(authUrl, qrPath);
+
       // Non-blocking mode: no callback server, no auto-approve, and no TTY.
       // Print instructions and exit — user completes with `axis auth --redirect-url`.
       if (!canWait) {
@@ -402,13 +448,16 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
               chain: world.chain,
               status: "awaiting_approval",
               artifactDir: worldDir,
-              authFile: path.join(worldDir, "auth.json"),
+              ...(qrOk ? { qrFile: qrPath } : {}),
               completeWith: `axis auth ${world.name} --redirect-url="<redirect URL from browser>"`,
             }),
           );
         } else {
+          if (qrOk) {
+            options.write(`  Auth QR code: ${qrPath}\n`);
+          }
           options.write(`  Auth URL saved to: ${path.join(worldDir, "auth.json")}\n`);
-          options.write(`  Open the URL in a browser to approve the session.\n`);
+          options.write(`  Open the URL (or scan the QR code) in a browser to approve.\n`);
           options.write(`\n  Complete with:\n`);
           options.write(`  axis auth ${world.name} --redirect-url="<redirect URL from browser>"\n`);
         }
