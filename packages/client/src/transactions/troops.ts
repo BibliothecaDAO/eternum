@@ -91,6 +91,7 @@ export class TroopTransactions {
       explorerId: number;
       directions: number[];
       explore: boolean;
+      vrfSourceSalt?: string | number | bigint;
     },
   ) {
     return this.provider.explorer_move({
@@ -98,6 +99,7 @@ export class TroopTransactions {
       explorer_id: props.explorerId,
       directions: props.directions,
       explore: props.explore,
+      ...(props.vrfSourceSalt !== undefined ? { vrf_source_salt: props.vrfSourceSalt } : {}),
     });
   }
 
@@ -120,12 +122,14 @@ export class TroopTransactions {
     props: {
       explorerId: number;
       directions: number[];
+      vrfSourceSalt?: string | number | bigint;
     },
   ) {
     return this.provider.explorer_explore({
       signer,
       explorer_id: props.explorerId,
       directions: props.directions,
+      ...(props.vrfSourceSalt !== undefined ? { vrf_source_salt: props.vrfSourceSalt } : {}),
     });
   }
 
