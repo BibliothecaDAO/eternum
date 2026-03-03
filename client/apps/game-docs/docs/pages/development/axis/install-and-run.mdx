@@ -7,20 +7,16 @@ title: Axis Install and Run
 
 ## Prerequisites
 
-- Node.js 22+ (source usage)
-- pnpm (workspace build and scripts)
-- Bun (standalone compile/release packaging)
 - One model provider API key (for example `ANTHROPIC_API_KEY`)
+- For source builds: Node.js 22+, pnpm, Bun
 
 ## Install (Public Binary)
-
-Install latest release:
 
 ```bash
 curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
 ```
 
-Install a pinned version:
+Pinned version:
 
 ```bash
 curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | VERSION=v0.1.0 bash
@@ -31,6 +27,41 @@ Verify:
 ```bash
 axis --version
 ```
+
+## Quick Start (Interactive / Laptop)
+
+```bash
+# 1. Set your API key (Axis auto-creates ~/.eternum-agent/.env on first run)
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+
+# 2. Run — discovers worlds, opens browser for auth, starts agent
+axis
+```
+
+That's it. Axis auto-initializes all runtime directories and config files on first run.
+
+## Quick Start (Headless / VPS)
+
+```bash
+# 1. Set your API key
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+
+# 2. Auth — prints URL and exits (no browser needed on VPS)
+axis auth my-world
+#   Prints: Approve at: https://x.cartridge.gg/session?...
+#   Prints: axis auth-complete my-world --redirect-url="..."
+
+# 3. Open the URL on your laptop/phone, approve the session
+#    Copy the redirect URL from your browser after approval
+
+# 4. Complete auth on VPS
+axis auth-complete my-world --redirect-url="<paste redirect URL>"
+
+# 5. Run headless
+axis run --headless --world=my-world
+```
+
+See [Headless VPS Auth](/development/axis/worlds-and-auth#headless-vps-auth-no-browser) for details.
 
 ## Run from Source
 
@@ -51,35 +82,6 @@ cd client/apps/onchain-agent
 cp .env.example .env
 pnpm dev
 ```
-
-## First-Time Setup
-
-Initialize runtime directories and config:
-
-```bash
-axis init
-```
-
-This creates `~/.eternum-agent/.env` with a config template. Edit it to set your API key:
-
-```bash
-# Open the config file and set ANTHROPIC_API_KEY (or OPENAI_API_KEY)
-nano ~/.eternum-agent/.env
-```
-
-Start Axis:
-
-```bash
-axis run
-```
-
-On first run, Axis will:
-
-1. Load config from `~/.eternum-agent/.env`
-2. Discover active worlds
-3. Let you select a world (unless `SLOT_NAME` is set)
-4. Open browser-based Cartridge session approval
-5. Start the agent loop
 
 ## Standalone Binary from Source
 

@@ -19,19 +19,25 @@ actions through an LLM-driven tick loop.
 - Persists memory and strategy files per world
 - Exposes HTTP + stdin control surfaces in headless mode
 
-## Runtime Flow
+## Get Started
 
-1. Resolve config from env
-2. Discover or resolve target world
-3. Build world profile and manifest
-4. Authenticate session
-5. Start the tick loop and heartbeat jobs
-6. Observe, reason, and execute actions
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis
+```
+
+Everything auto-initializes on first run — config, directories, world discovery, and browser-based auth.
 
 ## TUI vs Headless
 
-- Use TUI when running manually and selecting worlds interactively
-- Use headless for VPS/CI/fleet orchestration and external control via API/stdin
+|                     | TUI (`axis`)                 | Headless (`axis run --headless`)                 |
+| ------------------- | ---------------------------- | ------------------------------------------------ |
+| **Use when**        | Running manually on a laptop | VPS, CI, fleet orchestration                     |
+| **World selection** | Interactive picker           | `--world=<name>` (required)                      |
+| **Auth**            | Opens browser automatically  | Pre-auth with `axis auth` + `axis auth-complete` |
+| **Output**          | Terminal UI with chat log    | NDJSON to stdout                                 |
+| **Control**         | Keyboard input               | HTTP API, stdin, SSE                             |
 
 ## Read Next
 
