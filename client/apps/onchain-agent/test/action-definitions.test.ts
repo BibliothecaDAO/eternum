@@ -49,34 +49,50 @@ describe("action definitions", () => {
 
     // Spot check key actions from each category
     expect(types.has("send_resources")).toBe(true);
-    expect(types.has("create_explorer")).toBe(true);
-    expect(types.has("move_explorer")).toBe(true);
-    expect(types.has("attack_explorer")).toBe(true);
+    expect(types.has("explorer_create")).toBe(true);
+    expect(types.has("attack_explorer_vs_explorer")).toBe(true);
     expect(types.has("create_order")).toBe(true);
     expect(types.has("create_building")).toBe(true);
     expect(types.has("buy_resources")).toBe(true);
     expect(types.has("create_guild")).toBe(true);
-    expect(types.has("upgrade_realm")).toBe(true);
+    expect(types.has("level_up")).toBe(true);
     expect(types.has("contribute_hyperstructure")).toBe(true);
   });
 
-  it("aliases share definitions (create_order and create_trade)", () => {
+  it("create_order is a registered action", () => {
     const actions = getAvailableActions();
     expect(actions).toContain("create_order");
-    expect(actions).toContain("create_trade");
-  });
-
-  it("getActionDefinitions deduplicates aliases", () => {
-    const defs = getActionDefinitions();
-    const types = defs.map((d) => d.type);
-    // create_order and create_trade are aliases — only one should appear in defs
-    // (whichever was registered first)
-    const orderTypes = types.filter((t) => t === "create_order" || t === "create_trade");
-    expect(orderTypes.length).toBe(1);
   });
 
   it("returns at least 25 unique action definitions", () => {
     const defs = getActionDefinitions();
     expect(defs.length).toBeGreaterThanOrEqual(25);
+  });
+
+  it("every visible action has a rich description (not raw ABI signature)", () => {
+    const defs = getActionDefinitions();
+    const raw: string[] = [];
+
+    for (const d of defs) {
+      // Raw ABI signatures contain "::" (e.g., "update_construction_access(hyperstructure_id: u32, access: u8)")
+      // or are just the function signature with no human context
+      if (d.description.includes("::")) {
+        raw.push(d.type);
+      }
+    }
+
+    if (raw.length > 0) {
+      console.warn(`Actions with raw ABI descriptions (need overlay):\n  ${raw.join("\n  ")}`);
+    }
+    expect(raw, `${raw.length} actions have raw ABI descriptions instead of rich overlays`).toHaveLength(0);
+  });
+
+  it("action inventory snapshot", () => {
+    const defs = getActionDefinitions();
+    const sorted = [...defs].sort((a, b) => a.type.localeCompare(b.type));
+    const inventory = sorted.map((d) => `${d.type}  [${d.params.map((p) => p.name).join(", ")}]`);
+
+    // Snapshot: if actions are added or removed, this test fails and the snapshot updates
+    expect(inventory).toMatchSnapshot();
   });
 });

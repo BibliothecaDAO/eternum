@@ -124,10 +124,10 @@ export async function moveExplorer(
   for (let i = 0; i < pathResult.actionBatches.length; i++) {
     const batch = pathResult.actionBatches[i];
 
-    // Use the unified move_explorer action (maps to ABI explorer_move entrypoint).
+    // Use the explorer_move ABI entrypoint directly.
     // The explore flag distinguishes travel (explore=false) from exploration (explore=true).
     const result = await executeAction(client, signer, {
-      type: "move_explorer",
+      type: "explorer_move",
       params: {
         explorer_id: request.explorerId,
         directions: batch.directions,

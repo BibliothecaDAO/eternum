@@ -1,21 +1,70 @@
 import { createServer, type Server } from "node:http";
+import { existsSync, readdirSync } from "node:fs";
+import { deflateRawSync } from "node:zlib";
 import path from "node:path";
+import QRCode from "qrcode";
 import { loadConfig } from "../config";
 import { discoverAllWorlds, findWorldByName, buildWorldProfile, buildResolvedManifest } from "../world/discovery";
-import { ControllerSession, buildSessionPoliciesFromManifest } from "../session/controller-session";
-import { writeArtifacts, updateAuthStatus } from "../session/artifacts";
+import { ControllerSession, buildSessionPoliciesFromRoutes } from "../session/controller-session";
+import { generateActions } from "../abi/action-gen";
+import { ETERNUM_OVERLAYS, createHiddenOverlays } from "../abi/domain-overlay";
+import { storeSessionFromCallback } from "../session";
+import { writeArtifacts, updateAuthStatus, readAuthStatus, readArtifacts } from "../session/artifacts";
+import { passwordLogin } from "../session/password-auth";
 import { deriveChainIdFromRpcUrl } from "../world/normalize";
 import type { DiscoveredWorld } from "../world/discovery";
 
+const AUTH_REDIRECT_BASE = process.env.AXIS_AUTH_REDIRECT_URL || "https://auth.axis.gg";
+
+/**
+ * Generate a QR code PNG for the auth URL using compressed policies.
+ * The QR encodes a redirect URL with compressed payload that the
+ * redirect page decompresses and redirects to the full Cartridge URL.
+ */
+async function generateAuthQR(authUrl: string, outputPath: string): Promise<boolean> {
+  try {
+    const urlObj = new URL(authUrl);
+    const policies = urlObj.searchParams.get("policies");
+    const rpcUrl = urlObj.searchParams.get("rpc_url") ?? "";
+    if (!policies) return false;
+
+    // Strip policies and rpc_url from base URL
+    urlObj.searchParams.delete("policies");
+    urlObj.searchParams.delete("rpc_url");
+    const baseUrl = urlObj.toString();
+
+    // Compress policies to minimal form: { addr: [entrypoint, ...] }
+    const parsed = JSON.parse(policies);
+    const minimal: Record<string, string[]> = {};
+    for (const [addr, contract] of Object.entries(parsed.contracts ?? {})) {
+      minimal[addr] = ((contract as any).methods ?? []).map((m: any) => m.entrypoint);
+    }
+    const compressedPolicies = deflateRawSync(Buffer.from(JSON.stringify(minimal)), { level: 9 }).toString("base64url");
+
+    // Build compact payload: { b: baseUrl, p: compressedPolicies, r: rpcUrl }
+    const payload = JSON.stringify({ b: baseUrl, p: compressedPolicies, r: rpcUrl });
+    const compressedPayload = deflateRawSync(Buffer.from(payload), { level: 9 }).toString("base64url");
+
+    const qrTarget = `${AUTH_REDIRECT_BASE}/#${compressedPayload}`;
+
+    await QRCode.toFile(outputPath, qrTarget, { width: 512, errorCorrectionLevel: "L" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 interface AuthOptions {
   world?: string;
+  status: boolean;
   all: boolean;
-  approve: boolean;
   method?: string;
   username?: string;
   password?: string;
   callbackUrl?: string;
   timeout?: number;
+  redirectUrl?: string;
+  sessionData?: string;
   json: boolean;
   write: (s: string) => void;
 }
@@ -29,6 +78,220 @@ interface AuthResult {
   artifactDir: string;
   error?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Mode 1: --status (absorbed from auth-status.ts)
+// ---------------------------------------------------------------------------
+
+interface StatusResult {
+  world: string;
+  status: "active" | "expired" | "pending" | "none";
+  address?: string;
+  chain?: string;
+  expiresAt?: string;
+}
+
+async function checkSingleWorld(worldName: string): Promise<StatusResult> {
+  const config = loadConfig();
+  const worldDir = path.join(config.sessionBasePath, worldName);
+
+  if (!existsSync(worldDir)) {
+    return { world: worldName, status: "none" };
+  }
+
+  const authMeta = readAuthStatus(worldDir);
+  if (authMeta.status === "none") {
+    return { world: worldName, status: "none" };
+  }
+
+  // Try to probe the actual session
+  try {
+    const artifacts = readArtifacts(worldDir);
+    const chainId = deriveChainIdFromRpcUrl(artifacts.profile.rpcUrl ?? "") ?? config.chainId;
+    const sessionBasePath = path.join(config.sessionBasePath, worldName);
+
+    const { routes: probeRoutes } = generateActions(artifacts.manifest, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(artifacts.manifest) },
+      gameName: config.gameName,
+    });
+    const probePolicies = buildSessionPoliciesFromRoutes(probeRoutes, {
+      worldProfile: artifacts.profile,
+    });
+
+    const session = new ControllerSession({
+      rpcUrl: artifacts.profile.rpcUrl ?? config.rpcUrl,
+      chainId,
+      gameName: config.gameName,
+      basePath: sessionBasePath,
+      manifest: artifacts.manifest,
+      worldProfile: artifacts.profile,
+      policies: probePolicies,
+    });
+
+    const account = await session.probe();
+    if (account) {
+      return {
+        world: worldName,
+        status: "active",
+        address: account.address,
+        chain: authMeta.chain,
+        expiresAt: authMeta.expiresAt,
+      };
+    }
+  } catch {
+    // Probe failed — session is expired or invalid
+  }
+
+  // Session not active — check if it was previously active (now expired) or still pending
+  const status = authMeta.status === "active" ? "expired" : authMeta.status;
+  return {
+    world: worldName,
+    status: status as StatusResult["status"],
+    chain: authMeta.chain,
+    address: authMeta.address,
+  };
+}
+
+async function handleStatus(options: AuthOptions): Promise<number> {
+  const config = loadConfig();
+
+  let worldNames: string[];
+  if (options.all) {
+    try {
+      worldNames = readdirSync(config.sessionBasePath).filter((entry) => {
+        return existsSync(path.join(config.sessionBasePath, entry, "auth.json"));
+      });
+    } catch {
+      worldNames = [];
+    }
+  } else if (options.world) {
+    worldNames = [options.world];
+  } else {
+    const msg = "Specify a world name or use --all";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  if (worldNames.length === 0) {
+    if (options.json) {
+      options.write(JSON.stringify([]));
+    } else {
+      options.write("No authenticated worlds found.\n");
+    }
+    return 0;
+  }
+
+  const results: StatusResult[] = [];
+  for (const name of worldNames) {
+    results.push(await checkSingleWorld(name));
+  }
+
+  if (options.json) {
+    options.write(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));
+  } else {
+    for (const r of results) {
+      const addr = r.address ? ` (${r.address})` : "";
+      options.write(`  ${r.world}: ${r.status}${addr}\n`);
+    }
+  }
+
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Mode 2: --redirect-url or --session-data (absorbed from auth-complete.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the startapp session data from either:
+ * - Raw base64 session data string
+ * - A full redirect URL containing ?startapp=<data>
+ */
+function extractSessionData(options: AuthOptions): string | null {
+  if (options.sessionData) {
+    return options.sessionData;
+  }
+  if (options.redirectUrl) {
+    try {
+      const url = new URL(options.redirectUrl);
+      return url.searchParams.get("startapp");
+    } catch {
+      // Maybe it's just the query string portion
+      const match = options.redirectUrl.match(/[?&]startapp=([^&]+)/);
+      return match ? match[1] : null;
+    }
+  }
+  return null;
+}
+
+async function handleComplete(options: AuthOptions): Promise<number> {
+  if (!options.world) {
+    const msg = "Usage: axis auth <world> --session-data=<base64> OR --redirect-url=<url>";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  const sessionData = extractSessionData(options);
+  if (!sessionData) {
+    const msg = "Provide --session-data=<base64> or --redirect-url=<full callback URL>";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  const config = loadConfig();
+  const worldDir = path.join(config.sessionBasePath, options.world);
+
+  // Verify artifacts exist
+  try {
+    readArtifacts(worldDir);
+  } catch {
+    const msg = `No artifacts found for world "${options.world}". Run "axis auth ${options.world}" first.`;
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  try {
+    const { address } = storeSessionFromCallback(worldDir, sessionData);
+
+    updateAuthStatus(worldDir, { status: "active", address });
+
+    const result = { world: options.world, status: "active", address };
+    if (options.json) {
+      options.write(JSON.stringify(result, null, 2));
+    } else {
+      options.write(`  Session activated for ${options.world} (${address})\n`);
+    }
+    return 0;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mode 3: default — generate auth URL (existing flow + QR code)
+// ---------------------------------------------------------------------------
 
 /**
  * Lightweight HTTP server that only handles the /auth/callback endpoint.
@@ -95,14 +358,21 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
     // 1. Build world profile and resolve manifest
     const profile = await buildWorldProfile(world.chain, world.name);
     const manifest = await buildResolvedManifest(world.chain, profile);
-    const policies = buildSessionPoliciesFromManifest(manifest, {
+    // Build minimal policies from action routes (only entrypoints the agent uses)
+    const { routes } = generateActions(manifest, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest) },
       gameName: config.gameName,
+    });
+    const policies = buildSessionPoliciesFromRoutes(routes, {
       worldProfile: profile,
     });
 
     // 2. Set up session
     const chainId = deriveChainIdFromRpcUrl(profile.rpcUrl ?? "") ?? config.chainId;
     const sessionBasePath = path.join(config.sessionBasePath, world.name);
+
+    // Determine if we can wait for browser callback
+    const canWait = options.callbackUrl || process.stdin.isTTY;
 
     const session = new ControllerSession({
       rpcUrl: profile.rpcUrl ?? config.rpcUrl,
@@ -111,7 +381,10 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
       basePath: sessionBasePath,
       manifest,
       worldProfile: profile,
+      policies,
       callbackUrl: options.callbackUrl,
+      // Suppress auto-browser-open when we can't wait for callback
+      onAuthUrl: canWait ? undefined : () => {},
     });
 
     // 3. Write artifacts
@@ -161,6 +434,42 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
     if (authUrl) {
       updateAuthStatus(worldDir, { url: authUrl });
 
+      // Generate QR code with compressed auth URL
+      const qrPath = path.join(worldDir, "auth-qr.png");
+      const qrOk = await generateAuthQR(authUrl, qrPath);
+
+      // Non-blocking mode: no callback server and no TTY.
+      // Print instructions and exit — user completes with `axis auth --redirect-url`.
+      if (!canWait) {
+        if (options.json) {
+          options.write(
+            JSON.stringify({
+              world: world.name,
+              chain: world.chain,
+              status: "awaiting_approval",
+              artifactDir: worldDir,
+              ...(qrOk ? { qrFile: qrPath } : {}),
+              completeWith: `axis auth ${world.name} --redirect-url="<redirect URL from browser>"`,
+            }),
+          );
+        } else {
+          if (qrOk) {
+            options.write(`  Auth QR code: ${qrPath}\n`);
+          }
+          options.write(`  Auth URL saved to: ${path.join(worldDir, "auth.json")}\n`);
+          options.write(`  Open the URL (or scan the QR code) in a browser to approve.\n`);
+          options.write(`\n  Complete with:\n`);
+          options.write(`  axis auth ${world.name} --redirect-url="<redirect URL from browser>"\n`);
+        }
+        return {
+          world: world.name,
+          chain: world.chain,
+          status: "awaiting_approval",
+          url: authUrl,
+          artifactDir: worldDir,
+        };
+      }
+
       if (options.json) {
         options.write(
           JSON.stringify({
@@ -182,32 +491,7 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
       }
     }
 
-    // 7. If --approve, run auth-approve
-    if (options.approve && authUrl) {
-      try {
-        const { runAuthApprove } = await import("../session/auth-approve");
-        await runAuthApprove({
-          authUrl,
-          method: options.method ?? "password",
-          username: options.username,
-          password: options.password,
-        });
-      } catch (approveErr) {
-        const errorMsg = approveErr instanceof Error ? approveErr.message : String(approveErr);
-        if (serverClose) await serverClose();
-        updateAuthStatus(worldDir, { status: "pending" });
-        return {
-          world: world.name,
-          chain: world.chain,
-          status: "pending",
-          url: authUrl,
-          artifactDir: worldDir,
-          error: `Auto-approve failed: ${errorMsg}`,
-        };
-      }
-    }
-
-    // 8. Wait for session approval
+    // 7. Wait for session approval
     try {
       const account = await connectPromise;
       if (serverClose) await serverClose();
@@ -246,7 +530,7 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
   }
 }
 
-export async function runAuth(options: AuthOptions): Promise<number> {
+async function handleGenerateAuth(options: AuthOptions): Promise<number> {
   let targets: DiscoveredWorld[];
 
   if (options.all) {
@@ -309,6 +593,164 @@ export async function runAuth(options: AuthOptions): Promise<number> {
     }
   }
 
-  const allActive = results.every((r) => r.status === "active");
-  return allActive ? 0 : 1;
+  const allOk = results.every((r) => r.status === "active" || r.status === "awaiting_approval");
+  return allOk ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
+// Mode 4: --method=password (direct password auth, no browser)
+// ---------------------------------------------------------------------------
+
+async function handlePasswordAuth(options: AuthOptions): Promise<number> {
+  if (!options.username || !options.password) {
+    const msg = "--username and --password are required for --method=password";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  let targets: DiscoveredWorld[];
+
+  if (options.all) {
+    targets = await discoverAllWorlds();
+  } else if (options.world) {
+    const direct = await findWorldByName(options.world);
+    if (direct) {
+      targets = [direct];
+    } else {
+      const worlds = await discoverAllWorlds();
+      targets = worlds.filter((w) => w.name === options.world);
+      if (targets.length === 0) {
+        const msg = `World "${options.world}" not found. Available: ${worlds.map((w) => w.name).join(", ")}`;
+        if (options.json) {
+          options.write(JSON.stringify({ error: msg }));
+        } else {
+          options.write(`${msg}\n`);
+        }
+        return 1;
+      }
+    }
+  } else {
+    const msg = "Specify a world name or use --all with --method=password";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  const results: AuthResult[] = [];
+
+  for (const world of targets) {
+    if (!options.json) {
+      options.write(`Authenticating [${world.chain}] ${world.name} via password...\n`);
+    }
+
+    const config = loadConfig();
+    const worldDir = path.join(config.sessionBasePath, world.name);
+
+    try {
+      // Build world profile and resolve manifest
+      const profile = await buildWorldProfile(world.chain, world.name);
+      const manifest = await buildResolvedManifest(world.chain, profile);
+
+      // Build policies from action routes
+      const { routes } = generateActions(manifest, {
+        overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest) },
+        gameName: config.gameName,
+      });
+      const policies = buildSessionPoliciesFromRoutes(routes, {
+        worldProfile: profile,
+      });
+
+      // Write artifacts
+      writeArtifacts(worldDir, {
+        profile,
+        manifest,
+        policy: policies as Record<string, unknown>,
+        auth: {
+          url: "",
+          status: "pending",
+          worldName: world.name,
+          chain: world.chain,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      // Run password login
+      const sessionBasePath = path.join(config.sessionBasePath, world.name);
+      const { address } = await passwordLogin({
+        username: options.username,
+        password: options.password,
+        rpcUrl: profile.rpcUrl ?? config.rpcUrl,
+        basePath: sessionBasePath,
+        policies: policies as { contracts: Record<string, { methods: { entrypoint: string }[] }> },
+      });
+
+      updateAuthStatus(worldDir, {
+        status: "active",
+        address,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+
+      results.push({
+        world: world.name,
+        chain: world.chain,
+        status: "active",
+        address,
+        artifactDir: worldDir,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      results.push({
+        world: world.name,
+        chain: world.chain,
+        status: "error",
+        artifactDir: worldDir,
+        error: errorMsg,
+      });
+    }
+  }
+
+  if (options.json) {
+    options.write(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));
+  } else {
+    for (const r of results) {
+      if (r.status === "active") {
+        options.write(`  [${r.chain}] ${r.world}: active (${r.address})\n`);
+      } else if (r.error) {
+        options.write(`  [${r.chain}] ${r.world}: ${r.error}\n`);
+      }
+    }
+  }
+
+  return results.every((r) => r.status === "active") ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
+// Unified entry point — routes to the appropriate mode
+// ---------------------------------------------------------------------------
+
+export async function runAuth(options: AuthOptions): Promise<number> {
+  // Mode 1: --status
+  if (options.status) {
+    return handleStatus(options);
+  }
+
+  // Mode 2: --redirect-url or --session-data (complete auth)
+  if (options.redirectUrl || options.sessionData) {
+    return handleComplete(options);
+  }
+
+  // Mode 4: --method=password (direct password auth)
+  if (options.method === "password") {
+    return handlePasswordAuth(options);
+  }
+
+  // Mode 3: default — generate auth URL
+  return handleGenerateAuth(options);
 }

@@ -2,18 +2,20 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   claimGameReviewRewards,
   finalizeGameRankingAndMMR,
+  type GameReviewClaimSummary,
   type GameReviewData,
 } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
+import { BlitzRewardsRecapCardWithSelector } from "@/ui/shared/components/blitz-rewards-recap-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
 import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, Shield, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "sonner";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
@@ -34,6 +36,7 @@ interface GameReviewModalProps {
   isOpen: boolean;
   world: WorldSelection | null;
   nextGame: GameData | null;
+  initialStep?: ReviewStepId;
   showUpcomingGamesStep?: boolean;
   onClose: () => void;
   onRegistrationComplete: () => void;
@@ -52,8 +55,56 @@ const MAP_FINGERPRINT_ZOOM_LEVELS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.25, 1.5] as c
 const MAP_FINGERPRINT_DEFAULT_ZOOM = MAP_FINGERPRINT_ZOOM_LEVELS[3];
 const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
 const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
+const CLAIM_RECONCILIATION_POLL_MS = 5_000;
+const CLAIM_RECONCILIATION_MAX_ATTEMPTS = 12;
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
+
+const formatLordsWonDisplay = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "0";
+
+  const [whole, fractional] = trimmed.split(".");
+  if (!fractional) return whole;
+
+  const limitedFractional = fractional.slice(0, 2).replace(/0+$/, "");
+  return limitedFractional ? `${whole}.${limitedFractional}` : whole;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return fallback;
+};
+
+const claimedRewardsOptimisticKeys = new Set<string>();
+
+const buildClaimRewardsOptimisticKey = ({
+  worldName,
+  chain,
+  playerAddress,
+}: {
+  worldName?: string;
+  chain?: string;
+  playerAddress?: string;
+}): string | null => {
+  if (!worldName || !chain || !playerAddress || playerAddress === "anonymous") {
+    return null;
+  }
+
+  return `${chain}:${worldName}:${playerAddress.toLowerCase()}`;
+};
 
 const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
@@ -193,6 +244,28 @@ const buildStepShareMessage = ({
     ].join("\n");
   }
 
+  if (step === "claim-rewards" && data.rewards) {
+    const finalRank =
+      typeof data.personalScore?.rank === "number" &&
+      Number.isFinite(data.personalScore.rank) &&
+      data.personalScore.rank > 0
+        ? `#${Math.trunc(data.personalScore.rank)}`
+        : "Unranked";
+    const eliteTicketsWon = data.rewards.eliteTicketEarned ? 1 : 0;
+    const lordsWon = formatLordsWonDisplay(data.rewards.lordsWonFormatted);
+
+    return [
+      `${worldLabel} rewards recap on @realms_gg Blitz:`,
+      `Final rank: ${finalRank}`,
+      `$LORDS won: +${lordsWon}`,
+      `Chests won: +${formatValue(data.rewards.chestsClaimedEstimate)}`,
+      `Elite tickets won: +${eliteTicketsWon}`,
+      "",
+      "blitz.realms.world",
+      "#Realms #Eternum #Starknet",
+    ].join("\n");
+  }
+
   if (step === "next-game" && nextGame) {
     return [`Next game: ${nextGame.name}`, "Registration is open on Realms Blitz.", "#Realms #Eternum"].join("\n");
   }
@@ -296,6 +369,7 @@ const SubmitScoreStep = ({
   nowTs,
   hasSigner,
   isSubmitting,
+  submitError,
   onSubmit,
   onRequireSignIn,
 }: {
@@ -303,6 +377,7 @@ const SubmitScoreStep = ({
   nowTs: number;
   hasSigner: boolean;
   isSubmitting: boolean;
+  submitError: string | null;
   onSubmit: () => void;
   onRequireSignIn: () => void;
 }) => {
@@ -365,6 +440,14 @@ const SubmitScoreStep = ({
           Scores are already finalized. Retry MMR update independently if the previous MMR submission failed.
         </div>
       )}
+      {isSubmitting && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Transaction pending. Confirm in your wallet and wait for onchain confirmation.
+        </div>
+      )}
+      {submitError && !isSubmitting && (
+        <div className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-lightest">{submitError}</div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
@@ -400,27 +483,45 @@ const ClaimRewardsStep = ({
   data,
   hasSigner,
   isClaiming,
+  claimError,
   onClaim,
   onRequireSignIn,
+  captureRef,
 }: {
   data: GameReviewData;
   hasSigner: boolean;
   isClaiming: boolean;
+  claimError: string | null;
   onClaim: () => void;
   onRequireSignIn: () => void;
+  captureRef: MutableRefObject<HTMLDivElement | null>;
 }) => {
   const rewards = data.rewards;
   const scoreSubmitted = rewards?.scoreSubmitted ?? data.finalization.rankingFinalized;
   const alreadyClaimed = rewards?.alreadyClaimed ?? false;
   const canClaimNow = rewards?.canClaimNow ?? false;
   const claimBlockedReason = rewards?.claimBlockedReason;
-  const lordsWon = rewards?.lordsWonFormatted ?? "0";
-  const chestsClaimedEstimate = rewards?.chestsClaimedEstimate ?? 0;
+  const lordsWon = formatLordsWonDisplay(rewards?.lordsWonFormatted ?? "0");
+  const chestsWon = rewards?.chestsClaimedEstimate ?? 0;
   const chestsClaimedReason = rewards?.chestsClaimedReason ?? "No chest estimate available.";
   const eliteTicketEarned = rewards?.eliteTicketEarned ? 1 : 0;
   const eliteTicketReason =
     rewards?.eliteTicketReason ??
     "Elite ticket eligibility is available once score is submitted and final ranking is available.";
+  const finalRank =
+    typeof data.personalScore?.rank === "number" &&
+    Number.isFinite(data.personalScore.rank) &&
+    data.personalScore.rank > 0
+      ? Math.trunc(data.personalScore.rank)
+      : null;
+  const cardPlayer = data.personalScore
+    ? {
+        name: data.personalScore.displayName?.trim() || displayAddress(data.personalScore.address),
+        address: displayAddress(data.personalScore.address),
+      }
+    : null;
+  const hasChestReason = chestsClaimedReason.trim().length > 0;
+  const hasEliteTicketReason = eliteTicketReason.trim().length > 0;
 
   return (
     <div className="space-y-4">
@@ -430,22 +531,27 @@ const ClaimRewardsStep = ({
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">$LORDS won</p>
-          <p className="mt-1 text-sm text-white">{lordsWon}</p>
-        </div>
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests claimed</p>
-          <p className="mt-1 text-sm text-white">{formatValue(chestsClaimedEstimate)}</p>
-          <p className="mt-1 text-xs text-gold/70">{chestsClaimedReason}</p>
-        </div>
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Elite ticket earned</p>
-          <p className="mt-1 text-sm text-white">{eliteTicketEarned}</p>
-          <p className="mt-1 text-xs text-gold/70">{eliteTicketReason}</p>
-        </div>
+      <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+        <BlitzRewardsRecapCardWithSelector
+          worldName={data.worldName}
+          lordsWon={lordsWon}
+          chestsWon={chestsWon}
+          eliteTicketsWon={eliteTicketEarned}
+          rank={finalRank}
+          player={cardPlayer}
+        />
       </div>
+
+      {(hasChestReason || hasEliteTicketReason) && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {hasChestReason && (
+            <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests won details</p>
+              <p className="mt-1 text-sm text-gold/75">{chestsClaimedReason}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {!scoreSubmitted && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
@@ -468,6 +574,14 @@ const ClaimRewardsStep = ({
           Connect a wallet to claim rewards.
         </div>
       )}
+      {isClaiming && (
+        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
+          Claim transaction pending. Confirm in your wallet and wait for onchain confirmation.
+        </div>
+      )}
+      {claimError && !isClaiming && (
+        <div className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-lightest">{claimError}</div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
@@ -476,7 +590,7 @@ const ClaimRewardsStep = ({
           className="w-full justify-center !px-4 !py-2.5"
           forceUppercase={false}
           isLoading={isClaiming}
-          disabled={isClaiming || !canClaimNow || !hasSigner}
+          disabled={isClaiming || alreadyClaimed || !canClaimNow || !hasSigner}
         >
           {isClaiming ? "Claiming..." : alreadyClaimed ? "Rewards claimed" : "Claim rewards"}
         </Button>
@@ -520,6 +634,7 @@ export const GameReviewModal = ({
   isOpen,
   world,
   nextGame,
+  initialStep,
   showUpcomingGamesStep = true,
   onClose,
   onRegistrationComplete,
@@ -529,6 +644,12 @@ export const GameReviewModal = ({
   const worldChain = world?.chain;
 
   const account = useAccountStore((state) => state.account);
+  const reviewPlayerAddress = account?.address && account.address !== "0x0" ? account.address : "anonymous";
+  const claimOptimisticKey = buildClaimRewardsOptimisticKey({
+    worldName,
+    chain: worldChain,
+    playerAddress: reviewPlayerAddress,
+  });
 
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
@@ -547,6 +668,11 @@ export const GameReviewModal = ({
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   const [mapFingerprintZoom, setMapFingerprintZoom] = useState<number>(MAP_FINGERPRINT_DEFAULT_ZOOM);
   const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
+  const [submitTxError, setSubmitTxError] = useState<string | null>(null);
+  const [claimTxError, setClaimTxError] = useState<string | null>(null);
+  const [claimedRewardsLocally, setClaimedRewardsLocally] = useState(() =>
+    claimOptimisticKey ? claimedRewardsOptimisticKeys.has(claimOptimisticKey) : false,
+  );
   const currentMapZoomIndex = useMemo(() => {
     const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
       (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
@@ -602,9 +728,21 @@ export const GameReviewModal = ({
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "finished";
   const currentStepLabel = STEP_LABELS[currentStep];
+  const reviewQueryKey = useMemo(
+    () => ["gameReview", worldChain ?? "unknown", worldName ?? "", reviewPlayerAddress] as const,
+    [reviewPlayerAddress, worldChain, worldName],
+  );
+  const reviewClaimSummaryQueryKey = useMemo(
+    () => ["gameReviewClaimSummary", worldChain ?? "unknown", worldName ?? "", reviewPlayerAddress] as const,
+    [reviewPlayerAddress, worldChain, worldName],
+  );
   const isStepShareable = useMemo(() => {
     if (isAwardsStep(currentStep) || currentStep === "leaderboard") {
       return true;
+    }
+
+    if (currentStep === "claim-rewards") {
+      return Boolean(data?.rewards);
     }
 
     if (currentStep === "map-fingerprint") {
@@ -616,18 +754,33 @@ export const GameReviewModal = ({
     }
 
     return false;
-  }, [currentStep, data?.mapSnapshot.available, data?.personalScore]);
+  }, [currentStep, data?.mapSnapshot.available, data?.personalScore, data?.rewards]);
 
   const reviewData = useMemo<GameReviewData | null>(() => {
     if (!data) return null;
-    if (!frozenSnapshot) return data;
+    const withFrozenSnapshot = frozenSnapshot
+      ? {
+          ...data,
+          stats: frozenSnapshot.stats,
+          topPlayers: frozenSnapshot.topPlayers,
+          mapSnapshot: frozenSnapshot.mapSnapshot,
+        }
+      : data;
+
+    if (!claimedRewardsLocally || !withFrozenSnapshot.rewards) {
+      return withFrozenSnapshot;
+    }
+
     return {
-      ...data,
-      stats: frozenSnapshot.stats,
-      topPlayers: frozenSnapshot.topPlayers,
-      mapSnapshot: frozenSnapshot.mapSnapshot,
+      ...withFrozenSnapshot,
+      rewards: {
+        ...withFrozenSnapshot.rewards,
+        canClaimNow: false,
+        alreadyClaimed: true,
+        claimBlockedReason: "Rewards already claimed.",
+      },
     };
-  }, [data, frozenSnapshot]);
+  }, [claimedRewardsLocally, data, frozenSnapshot]);
 
   const canProceedToNextStep = useMemo(() => {
     if (!reviewData) return true;
@@ -659,11 +812,57 @@ export const GameReviewModal = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    setStepIndex(0);
+    const initialStepIndex = initialStep ? steps.indexOf(initialStep) : -1;
+    setStepIndex(initialStepIndex >= 0 ? initialStepIndex : 0);
     setFrozenSnapshot(null);
     setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
     setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
-  }, [isOpen, worldName, worldChain]);
+    setSubmitTxError(null);
+    setClaimTxError(null);
+  }, [initialStep, isOpen, steps, worldName, worldChain]);
+
+  useEffect(() => {
+    if (!claimOptimisticKey) {
+      setClaimedRewardsLocally(false);
+      return;
+    }
+
+    setClaimedRewardsLocally(claimedRewardsOptimisticKeys.has(claimOptimisticKey));
+    setClaimTxError(null);
+  }, [claimOptimisticKey]);
+
+  useEffect(() => {
+    if (!claimOptimisticKey || !data?.rewards?.alreadyClaimed) return;
+
+    claimedRewardsOptimisticKeys.delete(claimOptimisticKey);
+    setClaimedRewardsLocally(false);
+  }, [claimOptimisticKey, data?.rewards?.alreadyClaimed]);
+
+  useEffect(() => {
+    if (!isOpen || !claimOptimisticKey || !claimedRewardsLocally || data?.rewards?.alreadyClaimed) {
+      return;
+    }
+
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      void queryClient.invalidateQueries({ queryKey: reviewQueryKey });
+      void queryClient.invalidateQueries({ queryKey: reviewClaimSummaryQueryKey });
+      if (attempts >= CLAIM_RECONCILIATION_MAX_ATTEMPTS) {
+        clearInterval(interval);
+      }
+    }, CLAIM_RECONCILIATION_POLL_MS);
+
+    return () => clearInterval(interval);
+  }, [
+    claimOptimisticKey,
+    claimedRewardsLocally,
+    data?.rewards?.alreadyClaimed,
+    isOpen,
+    queryClient,
+    reviewClaimSummaryQueryKey,
+    reviewQueryKey,
+  ]);
 
   useEffect(() => {
     if (!isOpen || !data) return;
@@ -696,7 +895,11 @@ export const GameReviewModal = ({
         signer: account,
       });
     },
+    onMutate: () => {
+      setSubmitTxError(null);
+    },
     onSuccess: async (result) => {
+      setSubmitTxError(null);
       if (result.mmrError) {
         toast("Score submission completed with MMR pending.", {
           description: `${result.totalPlayers} players processed. Retry MMR independently from this step.`,
@@ -708,27 +911,30 @@ export const GameReviewModal = ({
             : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
         });
       }
-      await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKey });
       if (!result.mmrError) {
         setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
       }
     },
     onError: (caughtError) => {
       console.error("Failed to submit score/MMR", caughtError);
-      const errorMessage = caughtError instanceof Error ? caughtError.message : String(caughtError);
+      const errorMessage = getErrorMessage(caughtError, "Unknown error while submitting score/MMR.");
       const isGracePeriodError = errorMessage.toLowerCase().includes("registration grace period is not over");
 
       if (isGracePeriodError && reviewData) {
         const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
+        const description =
+          secondsUntilOpen != null && secondsUntilOpen > 0
+            ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
+            : "Submission opens once the game and registration grace period end.";
+        setSubmitTxError(`Score submission is not open yet. ${description}`);
         toast.error("Score submission is not open yet.", {
-          description:
-            secondsUntilOpen != null && secondsUntilOpen > 0
-              ? `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`
-              : "Submission opens once the game and registration grace period end.",
+          description,
         });
         return;
       }
 
+      setSubmitTxError(errorMessage);
       toast.error("Failed to submit score or MMR.", { description: errorMessage });
     },
   });
@@ -746,13 +952,36 @@ export const GameReviewModal = ({
         playerAddress: account.address,
       });
     },
+    onMutate: () => {
+      setClaimTxError(null);
+    },
     onSuccess: async () => {
+      setClaimTxError(null);
+      if (claimOptimisticKey) {
+        claimedRewardsOptimisticKeys.add(claimOptimisticKey);
+      }
+      setClaimedRewardsLocally(true);
+      queryClient.setQueryData<GameReviewClaimSummary | undefined>(reviewClaimSummaryQueryKey, (previous) => {
+        if (!previous) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          canClaimNow: false,
+          alreadyClaimed: true,
+          claimBlockedReason: "Rewards already claimed.",
+        };
+      });
       toast.success("Rewards claimed.");
-      await queryClient.invalidateQueries({ queryKey: ["gameReview", worldChain ?? "", worldName ?? ""] });
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKey });
+      await queryClient.invalidateQueries({ queryKey: reviewClaimSummaryQueryKey });
     },
     onError: (caughtError) => {
       console.error("Failed to claim rewards", caughtError);
-      toast.error("Failed to claim rewards.");
+      const errorMessage = getErrorMessage(caughtError, "Unknown error while claiming rewards.");
+      setClaimTxError(errorMessage);
+      toast.error("Failed to claim rewards.", { description: errorMessage });
     },
   });
 
@@ -1096,6 +1325,7 @@ export const GameReviewModal = ({
                   nowTs={nowTs}
                   hasSigner={Boolean(account)}
                   isSubmitting={finalizeMutation.isPending}
+                  submitError={submitTxError}
                   onSubmit={handleSubmitScore}
                   onRequireSignIn={onRequireSignIn}
                 />
@@ -1106,8 +1336,10 @@ export const GameReviewModal = ({
                   data={reviewData}
                   hasSigner={Boolean(account)}
                   isClaiming={claimRewardsMutation.isPending}
+                  claimError={claimTxError}
                   onClaim={handleClaimRewards}
                   onRequireSignIn={onRequireSignIn}
+                  captureRef={captureRef}
                 />
               )}
 

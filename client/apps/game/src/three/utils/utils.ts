@@ -67,6 +67,10 @@ const _matrixDecomposePos = new Vector3();
 const _matrixDecomposeQuat = new Quaternion();
 const _matrixDecomposeScale = new Vector3();
 
+const getRowOffset = (row: number, horizDist: number): number => {
+  return ((row % 2) * Math.sign(row) * horizDist) / 2;
+};
+
 const getHexagonCoordinates = (
   instancedMesh: InstancedMesh,
   instanceId: number,
@@ -96,7 +100,7 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
 
   const col = hexCoords.col;
   const row = hexCoords.row;
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const rowOffset = getRowOffset(row, horizDist);
   const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
@@ -115,7 +119,7 @@ export const getWorldPositionForHexCoordsInto = (
   const vertDist = hexHeight * 0.75;
   const horizDist = hexWidth;
 
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const rowOffset = getRowOffset(row, horizDist);
   const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
@@ -130,16 +134,47 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   const hexWidth = Math.sqrt(3) * hexRadius;
   const vertDist = hexHeight * 0.75;
   const horizDist = hexWidth;
+  const epsilon = 1e-12;
 
-  const row = Math.round(worldPosition.z / vertDist);
-  // hexception offsets hack
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
+  // Start from the coarse rounded row/col estimate and evaluate nearby centers.
+  const estimatedRow = Math.round(worldPosition.z / vertDist);
+  const estimatedOffset = getRowOffset(estimatedRow, horizDist);
+  const estimatedCol = Math.round((worldPosition.x + estimatedOffset) / horizDist);
+  const originX = estimatedCol * horizDist - estimatedOffset;
+  const originZ = estimatedRow * vertDist;
+  const localWorldX = worldPosition.x - originX;
+  const localWorldZ = worldPosition.z - originZ;
 
-  return {
-    col,
-    row,
-  };
+  let bestRow = estimatedRow;
+  let bestCol = estimatedCol;
+  let bestDistanceSquared = Number.POSITIVE_INFINITY;
+
+  for (let row = estimatedRow - 1; row <= estimatedRow + 1; row += 1) {
+    const rowOffset = getRowOffset(row, horizDist);
+    const nearestColForRow = Math.round((worldPosition.x + rowOffset) / horizDist);
+    const localCenterZ = (row - estimatedRow) * vertDist;
+
+    for (let col = nearestColForRow - 1; col <= nearestColForRow + 1; col += 1) {
+      // Compare in a local coordinate frame near the estimated cell to avoid
+      // precision loss at very large world coordinates.
+      const localCenterX = (col - estimatedCol) * horizDist - (rowOffset - estimatedOffset);
+      const dx = localWorldX - localCenterX;
+      const dz = localWorldZ - localCenterZ;
+      const distanceSquared = dx * dx + dz * dz;
+
+      if (
+        distanceSquared < bestDistanceSquared - epsilon ||
+        (Math.abs(distanceSquared - bestDistanceSquared) <= epsilon &&
+          (row < bestRow || (row === bestRow && col < bestCol)))
+      ) {
+        bestDistanceSquared = distanceSquared;
+        bestRow = row;
+        bestCol = col;
+      }
+    }
+  }
+
+  return { col: bestCol, row: bestRow };
 };
 
 export const calculateDistanceInHexes = (

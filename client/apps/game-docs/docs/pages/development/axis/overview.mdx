@@ -1,0 +1,44 @@
+---
+layout: docs
+title: Axis Overview
+---
+
+# Axis Overview
+
+Axis is the Eternum onchain agent CLI. It discovers active worlds, authenticates with Cartridge Controller, and runs an
+LLM-driven tick loop that observes game state and executes on-chain actions.
+
+## What Axis Does
+
+- Discovers live worlds across `slot`, `sepolia`, and `mainnet`
+- Authenticates via password (headless) or browser (interactive)
+- Runs in TUI mode or headless server mode
+- Generates game actions from contract ABIs at runtime
+- Persists agent memory and strategy per world
+- Exposes HTTP + stdin control in headless mode
+
+## Get Started
+
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis
+```
+
+## TUI vs Headless
+
+|                     | TUI (`axis`)                 | Headless (`axis run --headless`)     |
+| ------------------- | ---------------------------- | ------------------------------------ |
+| **Use when**        | Running manually on a laptop | VPS, CI, fleet orchestration         |
+| **World selection** | Interactive picker           | `--world=<name>` (required)          |
+| **Auth**            | Opens browser automatically  | `--method=password` or QR + redirect |
+| **Output**          | Terminal UI with chat log    | NDJSON to stdout                     |
+| **Control**         | Keyboard input               | HTTP API, stdin, SSE                 |
+
+## Read Next
+
+- [Install and Run](/development/axis/install-and-run)
+- [World Discovery and Auth](/development/axis/worlds-and-auth)
+- [Headless Mode and API](/development/axis/headless-and-api)
+- [Configuration and Operations](/development/axis/configuration-and-operations)
+- [CLI Reference](/development/axis/cli-reference)

@@ -75,7 +75,8 @@ export function createWorldPicker(worlds: DiscoveredWorld[]): Promise<Discovered
       // Ctrl+C
       if (str === "\x03") {
         cleanup();
-        process.exit(0);
+        resolve(null);
+        return;
       }
       selectList.handleInput(str);
       render();

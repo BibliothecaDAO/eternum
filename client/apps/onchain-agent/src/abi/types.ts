@@ -66,6 +66,8 @@ export interface Manifest {
 export interface ParamOverride {
   /** Override the parameter description for the LLM */
   description?: string;
+  /** Override the parameter type in the action schema (e.g., "number[]" instead of "object[]") */
+  type?: "number" | "string" | "boolean" | "number[]" | "object[]" | "object" | "bigint";
   /** Transform the param value before passing to Contract.populate() */
   transform?: (v: unknown) => unknown;
 }
@@ -81,8 +83,10 @@ export interface DomainOverlay {
   preflight?: (params: Record<string, unknown>, cachedState?: unknown) => string | null;
   /** Additional action type aliases */
   aliases?: string[];
-  /** Hide this entrypoint from the LLM */
+  /** Hide this entrypoint from the LLM (no route, no definition) */
   hidden?: boolean;
+  /** Internal-only: route is registered (for programmatic use) but not shown to the LLM */
+  internal?: boolean;
 }
 
 /** Keyed by "{contractSuffix}::{entrypoint}" */

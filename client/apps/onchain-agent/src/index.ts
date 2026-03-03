@@ -16,10 +16,16 @@ import { normalizeRpcUrl, deriveChainIdFromRpcUrl } from "./world/normalize";
 import type { WorldProfile } from "./world/types";
 import { createWorldPicker } from "./tui/world-picker";
 import { createInspectTools } from "./tools/inspect-tools";
+import { createCombatTools } from "./tools/combat-tools";
+import { createMcpTools, type McpConnection } from "./tools/mcp-tools";
 import { getActionDefinitions } from "./adapter/action-registry";
-import { formatEternumTickPrompt, type EternumWorldState } from "./adapter/world-state";
+import { formatEternumTickPrompt, formatEternumTickDiff, type EternumWorldState } from "./adapter/world-state";
 import { createRuntimeConfigManager } from "./runtime-config";
 import { seedDataDir } from "./cli";
+import { writeArtifacts } from "./session/artifacts";
+import { buildSessionPoliciesFromRoutes } from "./session/controller-session";
+import { generateActions } from "./abi/action-gen";
+import { ETERNUM_OVERLAYS, createHiddenOverlays } from "./abi/domain-overlay";
 
 /**
  * Load all reference handbooks (autoload: false task files) from the data
@@ -91,6 +97,13 @@ async function createRuntimeServices(
   // invalidate the on-chain session registration (policies Merkle root).
   const sessionBasePath = worldProfile ? path.join(config.sessionBasePath, worldProfile.name) : config.sessionBasePath;
 
+  const { routes: sessionRoutes } = generateActions(manifest as any, {
+    overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest as any) },
+    gameName: config.gameName,
+  });
+  const sessionPolicies = buildSessionPoliciesFromRoutes(sessionRoutes, {
+    worldProfile,
+  });
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
     chainId,
@@ -98,6 +111,7 @@ async function createRuntimeServices(
     basePath: sessionBasePath,
     manifest,
     worldProfile,
+    policies: sessionPolicies,
   });
 
   const account = await session.connect();
@@ -107,6 +121,7 @@ async function createRuntimeServices(
     toriiUrl: config.toriiUrl,
     worldAddress: config.worldAddress,
     manifest: manifest as any,
+    vrfProviderAddress: "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f",
   });
   client.connect(account as any);
   const tokenConfig = worldProfile
@@ -196,7 +211,32 @@ export async function main() {
 
     // Ensure world-scoped data dir is seeded (soul.md, HEARTBEAT.md, tasks/)
     seedDataDir(runtimeConfig.dataDir);
+
+    // Write artifacts so headless mode can read them without running `axis auth`
+    const worldDir = path.join(runtimeConfig.sessionBasePath, selected.name);
+    const { routes: policyRoutes } = generateActions(resolvedManifest! as any, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(resolvedManifest! as any) },
+      gameName: runtimeConfig.gameName,
+    });
+    const policies = buildSessionPoliciesFromRoutes(policyRoutes, {
+      worldProfile: profile,
+    });
+    writeArtifacts(worldDir, {
+      profile,
+      manifest: resolvedManifest!,
+      policy: policies as unknown as Record<string, unknown>,
+      auth: {
+        url: "",
+        status: "active",
+        worldName: selected.name,
+        chain: selected.chain,
+        createdAt: new Date().toISOString(),
+      },
+    });
   }
+
+  // Always propagate dataDir so debug log helpers pick it up
+  process.env.AGENT_DATA_DIR = runtimeConfig.dataDir;
 
   console.log("  Connecting controller session...");
   // Listen for Escape/Ctrl+C during init (connect, sync, etc.)
@@ -215,6 +255,15 @@ export async function main() {
 
   let services = await createRuntimeServices(runtimeConfig, resolvedManifest, currentWorldProfile);
   const adapter = new MutableGameAdapter(services.adapter);
+
+  // Sync tick interval with on-chain game tick
+  {
+    const { fetchWorldConfig, getWorldConfig } = await import("./adapter/world-config");
+    const sqlUrl = runtimeConfig.toriiUrl.replace(/\/sql\/?$/, "") + "/sql";
+    await fetchWorldConfig(sqlUrl);
+    const gameTickMs = getWorldConfig().armiesTickInSeconds * 1000;
+    if (gameTickMs > 0) runtimeConfig.tickIntervalMs = gameTickMs;
+  }
 
   // Lazy reference for TUI messages — set once TUI is created, avoids console.log to raw stdout
   let systemMessage: ((msg: string) => void) | null = null;
@@ -240,8 +289,8 @@ export async function main() {
   //    with full game knowledge before taking any actions.
   const model = (getModel as Function)(runtimeConfig.modelProvider, runtimeConfig.modelId);
   let isFirstTick = true;
-  const formatTickPromptWithHandbooks = (state: EternumWorldState): string => {
-    const base = formatEternumTickPrompt(state);
+  const formatTickPromptWithHandbooks = (state: EternumWorldState, prevState: EternumWorldState | null): string => {
+    const base = formatEternumTickDiff(state, prevState);
     if (isFirstTick) {
       isFirstTick = false;
       const handbooks = loadReferenceHandbooks(runtimeConfig.dataDir);
@@ -251,13 +300,18 @@ export async function main() {
     }
     return base;
   };
+  const mcp = await createMcpTools(runtimeConfig.toriiUrl);
   const game = createGameAgent({
     adapter,
     dataDir: runtimeConfig.dataDir,
     model,
     tickIntervalMs: runtimeConfig.tickIntervalMs,
     runtimeConfigManager,
-    extraTools: createInspectTools(services.client),
+    extraTools: [
+      ...createInspectTools(services.client, services.account.address),
+      ...createCombatTools(services.client),
+      ...mcp.tools,
+    ],
     actionDefs: getActionDefinitions(),
     formatTickPrompt: formatTickPromptWithHandbooks,
     onTickError: (err) => {
@@ -322,6 +376,7 @@ export async function main() {
     await disposeAgent();
     disposeTui();
     services.client.disconnect();
+    await mcp.close();
     gate.shutdown();
   };
 

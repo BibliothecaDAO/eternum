@@ -9,14 +9,19 @@ export interface TickLoop {
   readonly tickCount: number;
 }
 
+/**
+ * Fixed-cadence tick loop. Fires onTick every intervalMs regardless of
+ * whether the previous tick has finished. The consumer decides what to
+ * do when a tick fires while work is still in progress (e.g. steer the
+ * agent with fresh state instead of queuing).
+ */
 export function createTickLoop(options: {
   intervalMs: number;
-  onTick: () => Promise<void>;
+  onTick: () => void | Promise<void>;
   onError?: (error: Error) => void;
 }): TickLoop {
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  let timer: ReturnType<typeof setInterval> | null = null;
   let running = false;
-  let ticking = false;
   let count = 0;
   let currentIntervalMs = validateInterval(options.intervalMs);
 
@@ -29,33 +34,23 @@ export function createTickLoop(options: {
 
   function clearTimer() {
     if (timer) {
-      clearTimeout(timer);
+      clearInterval(timer);
       timer = null;
     }
   }
 
-  function scheduleNextTick() {
-    if (!running) {
-      return;
-    }
-    clearTimer();
-    timer = setTimeout(() => {
-      timer = null;
-      void tick();
-    }, currentIntervalMs);
-  }
-
-  async function tick() {
-    if (ticking) return;
-    ticking = true;
+  function tick() {
+    count++;
     try {
-      await options.onTick();
-      count++;
+      const result = options.onTick();
+      // If onTick returns a promise, catch errors from it
+      if (result && typeof (result as Promise<void>).catch === "function") {
+        (result as Promise<void>).catch((err) => {
+          options.onError?.(err instanceof Error ? err : new Error(String(err)));
+        });
+      }
     } catch (err) {
       options.onError?.(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      ticking = false;
-      scheduleNextTick();
     }
   }
 
@@ -63,7 +58,9 @@ export function createTickLoop(options: {
     start() {
       if (running) return;
       running = true;
-      void tick();
+      // Fire immediately, then on fixed interval
+      tick();
+      timer = setInterval(tick, currentIntervalMs);
     },
     stop() {
       clearTimer();
@@ -72,7 +69,9 @@ export function createTickLoop(options: {
     setIntervalMs(intervalMs: number) {
       currentIntervalMs = validateInterval(intervalMs);
       if (running) {
-        scheduleNextTick();
+        // Restart interval with new cadence
+        clearTimer();
+        timer = setInterval(tick, currentIntervalMs);
       }
     },
     get intervalMs() {

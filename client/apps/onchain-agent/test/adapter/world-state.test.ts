@@ -225,9 +225,9 @@ describe("buildWorldState", () => {
     expect(realm!.buildingSlots!.total).toBe(36);
     // packed_counts_1 has WorkersHut x2 + Wood x3, packed_counts_3 has Wheat x1 = 6 used
     expect(realm!.buildingSlots!.used).toBe(6);
-    expect(realm!.buildingSlots!.buildings).toContain("WorkersHut x2");
+    expect(realm!.buildingSlots!.buildings).toContain("Workers Hut x2");
     expect(realm!.buildingSlots!.buildings).toContain("Wood x3");
-    expect(realm!.buildingSlots!.buildings).toContain("Wheat x1");
+    expect(realm!.buildingSlots!.buildings).toContain("Farm x1");
 
     // Non-owned entities have no buildingSlots
     const mine = state.entities.find((e) => e.entityId === 3);
@@ -286,7 +286,7 @@ describe("buildWorldState", () => {
     expect(realm!.guardSlots).toBeDefined();
     expect(realm!.guardSlots).toHaveLength(4);
     // Alpha has troops, rest are empty
-    expect(realm!.guardSlots![0].slot).toBe("Alpha");
+    expect(realm!.guardSlots![0].slot).toBe("Watchtower");
     expect(realm!.guardSlots![0].troops).toContain("Knight");
     expect(realm!.guardSlots![1].troops).toBe("empty");
     expect(realm!.guardSlots![2].troops).toBe("empty");
@@ -315,7 +315,7 @@ describe("buildWorldState", () => {
     expect(realm!.structureType).toBe("Realm"); // structure_type: 1
 
     const mine = state.entities.find((e) => e.entityId === 3);
-    expect(mine!.structureType).toBe("Mine"); // structure_type: 4
+    expect(mine!.structureType).toBe("Fragment Mine"); // structure_type: 4
   });
 
   it("computes freeSlots from occupied building positions", async () => {
