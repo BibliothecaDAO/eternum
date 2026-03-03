@@ -14,7 +14,6 @@ export interface CliOptions {
   stdin: boolean;
   status: boolean;
   all: boolean;
-  approve: boolean;
   method?: string;
   username?: string;
   password?: string;
@@ -82,7 +81,6 @@ export function parseCliArgs(args: string[]): CliOptions {
     stdin: hasFlag(args, "stdin"),
     status: hasFlag(args, "status"),
     all: hasFlag(args, "all"),
-    approve: hasFlag(args, "approve"),
     method: extractFlag(args, "method"),
     username: extractFlag(args, "username"),
     password: extractFlag(args, "password"),

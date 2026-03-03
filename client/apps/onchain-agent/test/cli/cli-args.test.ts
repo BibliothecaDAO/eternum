@@ -38,18 +38,16 @@ describe("parseCliArgs", () => {
     expect(opts.json).toBe(true);
   });
 
-  it("parses auth <world> --approve --method=password", () => {
+  it("parses auth <world> --method=password", () => {
     const opts = parseCliArgs([
       "auth",
       "my-world",
-      "--approve",
       "--method=password",
       "--username=bot",
       "--password=pass123",
     ]);
     expect(opts.command).toBe("auth");
     expect(opts.world).toBe("my-world");
-    expect(opts.approve).toBe(true);
     expect(opts.method).toBe("password");
     expect(opts.username).toBe("bot");
     expect(opts.password).toBe("pass123");

@@ -7,7 +7,7 @@ actions.
 ## Features
 
 - Zero-config world discovery via Cartridge Factory SQL across slot, sepolia, and mainnet chains
-- Browser-based Cartridge Controller authentication (Passkeys/WebAuthn) -- no private keys required
+- Cartridge Controller authentication via browser (Passkeys/WebAuthn) or headless password auth -- no private keys required
 - Headless mode with NDJSON output, HTTP API, and stdin steering for AI orchestration and server fleets
 - LLM-driven tick loop with configurable interval, verbosity, and provider (Anthropic, OpenAI, OpenRouter, Google)
 - Cron-style heartbeat jobs for automated periodic observation and analysis
@@ -169,7 +169,7 @@ Authenticate all worlds at once, then launch agents in parallel:
 
 ```bash
 # Authenticate all discovered worlds
-axis auth --all --approve --method=password --json > /tmp/auth.json
+axis auth --all --method=password --username=me --password=secret --json > /tmp/auth.json
 
 # Launch one headless agent per world
 for world in $(jq -r '.[].world' /tmp/auth.json); do
@@ -263,8 +263,8 @@ axis auth my-world --session-data="<base64>"
 # Check session status
 axis auth my-world --status
 
-# Automated: uses agent-browser for headless approval
-axis auth my-world --approve --method=password --username=me --password=secret
+# Direct password auth (no browser needed, works on headless VPS)
+axis auth my-world --method=password --username=me --password=secret
 
 # Remote VPS: starts a callback server for the redirect
 axis auth my-world --callback-url=http://my-vps:3000
@@ -288,10 +288,9 @@ All flags apply to the unified `axis auth` command:
 | `--status`                | Check session status instead of generating auth URL     |
 | `--redirect-url=<url>`    | Complete auth with the redirect URL from browser        |
 | `--session-data=<base64>` | Complete auth with raw base64 session data              |
-| `--approve`               | Auto-approve via agent-browser (no manual browser step) |
-| `--method=<type>`         | Auth method for `--approve` (e.g., `password`)          |
-| `--username=<user>`       | Username for `--approve`                                |
-| `--password=<pass>`       | Password for `--approve`                                |
+| `--method=password`       | Direct password auth (no browser needed)                |
+| `--username=<user>`       | Username for password auth                              |
+| `--password=<pass>`       | Password for password auth                              |
 | `--callback-url=<url>`    | Public URL for auth callback (remote VPS)               |
 | `--timeout=<ms>`          | Approval wait timeout in milliseconds                   |
 | `--json`                  | JSON output                                             |

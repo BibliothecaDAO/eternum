@@ -46,22 +46,15 @@ That's it. Axis auto-initializes all runtime directories and config files on fir
 # 1. Set your API key
 echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
 
-# 2. Auth — generates auth URL and exits (no browser needed on VPS)
-axis auth my-world
-#   Prints: Approve at: https://x.cartridge.gg/session?...
-#   Prints: axis auth my-world --redirect-url="..."
+# 2. Auth with password (no browser needed)
+axis auth my-world --method=password --username=me --password=secret
 
-# 3. Open the URL on your laptop/phone, approve the session
-#    Copy the redirect URL from your browser after approval
-
-# 4. Complete auth on VPS
-axis auth my-world --redirect-url="<paste redirect URL>"
-
-# 5. Run headless
+# 3. Run headless
 axis run --headless --world=my-world
 ```
 
-See [Headless VPS Auth](/development/axis/worlds-and-auth#headless-vps-auth-no-browser) for details.
+Password auth registers a Cartridge Controller session with paymaster support — no browser, no QR code, no ports to
+open. See [Worlds and Auth](/development/axis/worlds-and-auth) for alternative auth methods (QR code, redirect URL).
 
 ## Run from Source
 

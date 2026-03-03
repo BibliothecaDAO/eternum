@@ -49,37 +49,68 @@ axis auth --all --status
 
 ## Headless VPS Auth (No Browser)
 
-The most common headless pattern — for locked-down VPS with no open ports:
+For VPS or remote servers with no browser — Axis generates a scannable QR code that you approve from your phone or
+laptop.
+
+### How it works
+
+1. `axis auth` generates a Cartridge session URL containing the contracts and methods the agent needs permission to call
+2. Because this URL is very large (~11KB of policy data), Axis compresses it and encodes it into a QR code image
+3. The QR code points to a lightweight redirect page that decompresses the payload in your browser and redirects to the
+   full Cartridge auth URL
+4. You approve the session on Cartridge, then paste the redirect URL back to complete auth
+
+### Step by step
 
 ```bash
-# 1. On VPS: generate auth URL (non-blocking if no TTY)
+# 1. On VPS: generate auth URL + QR code (exits immediately, no browser needed)
 axis auth my-world
-# Prints: Approve at: https://x.cartridge.gg/session?...
-# Prints: axis auth my-world --redirect-url="<redirect URL from browser>"
+#   Auth QR code: ~/.eternum-agent/.cartridge/my-world/auth-qr.png
+#   Auth URL saved to: ~/.eternum-agent/.cartridge/my-world/auth.json
+#   Complete with: axis auth my-world --redirect-url="..."
 
-# 2. On your laptop: open the URL, approve the session in browser
+# 2. Send the QR image to yourself (or open auth.json and copy the URL)
+#    Scan the QR on your phone, or open the URL on your laptop
+#    Approve the session on Cartridge
 #    After approval, the browser redirects to a URL like:
-#    http://localhost:8000/auth/callback?startapp=BASE64DATA...
-#    Copy that full URL from your browser address bar.
+#    http://localhost:PORT/callback?startapp=BASE64DATA...
+#    Copy that full URL from your browser address bar
 
 # 3. Back on VPS: complete auth with the redirect URL
-axis auth my-world --redirect-url="http://localhost:8000/auth/callback?startapp=BASE64DATA..."
+axis auth my-world --redirect-url="http://localhost:PORT/callback?startapp=BASE64DATA..."
 
 # 4. Run the agent
 axis run --headless --world=my-world
 ```
 
-This works without opening any ports on the VPS. You can also complete auth with raw base64 session data:
+No ports need to be opened on the VPS. The QR code is a standard PNG image that any agent or tool can send over Slack,
+Discord, email, or any other channel.
+
+### QR redirect page
+
+The QR code points to a redirect page (defaults to `https://auth.axis.gg`). You can host your own by setting the
+`AXIS_AUTH_REDIRECT_URL` environment variable. The page is a single HTML file that:
+
+1. Reads a compressed payload from the URL fragment (`#...`)
+2. Decompresses it using the browser's `DecompressionStream` API
+3. Reconstructs the full Cartridge session URL with all policies
+4. Redirects to Cartridge for approval
+
+### Alternative: raw URL or session data
+
+You can also complete auth without QR by reading the URL from `auth.json` directly, or passing raw base64 session data:
 
 ```bash
 axis auth my-world --session-data="<base64>"
 ```
 
-The agent on VPS can parse the JSON output programmatically:
+### Programmatic usage
 
 ```bash
-url=$(axis auth my-world --json | jq -r '.url')
-# Send $url to human, receive redirect URL back
+# JSON output for scripting
+result=$(axis auth my-world --json)
+qr_file=$(echo "$result" | jq -r '.qrFile')
+# Send $qr_file to human, receive redirect URL back
 axis auth my-world --redirect-url="$REDIRECT_URL"
 ```
 
@@ -91,13 +122,22 @@ If your VPS can receive HTTP callbacks:
 axis auth my-world --callback-url=http://my-host:3000
 ```
 
-### Auto-approve (CI/CD)
+### Password Auth (CI/CD / Headless)
+
+For fully automated auth with no browser interaction at all — use password auth. This decrypts your Cartridge account
+credentials directly, registers a session with the paymaster, and writes session data to disk:
 
 ```bash
-axis auth my-world --approve --method=password --username=me --password=secret
+axis auth my-world --method=password --username=me --password=secret
 ```
 
-Auto-approve requires `agent-browser` on `PATH`, and currently supports `password` method only.
+Auth all worlds at once:
+
+```bash
+axis auth --all --method=password --username=me --password=secret --json
+```
+
+This is the recommended approach for VPS fleets and CI/CD pipelines. No browser, no QR code, no ports to open.
 
 ## Private Key Fallback
 
@@ -114,3 +154,4 @@ Axis stores world-scoped artifacts under `~/.eternum-agent/.cartridge/<world>/`:
 - `policy.json`: generated session policy
 - `session.json`: stored session data
 - `auth.json`: auth URL/status metadata
+- `auth-qr.png`: scannable QR code for auth approval (compressed auth URL)

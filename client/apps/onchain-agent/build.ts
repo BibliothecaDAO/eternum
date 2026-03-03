@@ -6,7 +6,7 @@
  *   bun run build.ts --compile    # bundle + compile standalone binary (./axis)
  */
 
-import { wasmPlugin, createPiConfigPlugin } from "./src/build-plugins";
+import { wasmPlugin, wasmGluePlugin, createPiConfigPlugin } from "./src/build-plugins";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -18,7 +18,7 @@ const result = await Bun.build({
   outdir: "./dist-bun",
   target: "bun",
   define: { BUILD_VERSION: JSON.stringify(pkg.version) },
-  plugins: [wasmPlugin, createPiConfigPlugin(packageJsonPath)],
+  plugins: [wasmPlugin, wasmGluePlugin, createPiConfigPlugin(packageJsonPath)],
 });
 
 if (!result.success) {

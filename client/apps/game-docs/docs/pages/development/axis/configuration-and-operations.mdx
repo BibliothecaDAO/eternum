@@ -66,7 +66,8 @@ runtime directories (`~/.eternum-agent/data/`, `~/.eternum-agent/.cartridge/`) a
         ├── manifest.json
         ├── policy.json
         ├── session.json
-        └── auth.json
+        ├── auth.json
+        └── auth-qr.png
 ```
 
 ## Runtime Config Updates (Headless)
@@ -96,5 +97,5 @@ Common issues:
 - `No worlds discovered`: check network reachability and `CARTRIDGE_API_BASE`
 - `--world is required for headless mode`: pre-auth and set `--world`
 - Auth remains pending: complete approval or run `axis auth <world> --redirect-url="..."`
-- Auto-approve fails: ensure `agent-browser` exists and credentials are valid
+- Password auth fails: verify username/password and that the account has a password credential on Cartridge
 - Session expired: re-run `axis auth <world>`

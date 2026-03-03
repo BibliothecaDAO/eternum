@@ -16,6 +16,7 @@ title: Axis CLI Reference
 | `axis auth <world> --redirect-url`   | Complete auth with redirect URL                                                                        |
 | `axis auth <world> --session-data`   | Complete auth with raw base64 session data                                                             |
 | `axis auth <world> --status`         | Check session status for one world                                                                     |
+| `axis auth <world> --method=password`| Direct password auth (no browser needed)                                                               |
 | `axis auth --all`                    | Auth all discovered worlds                                                                             |
 | `axis auth --all --status`           | Check status for all worlds                                                                            |
 | `axis doctor`                        | Validate configuration                                                                                 |
@@ -44,9 +45,8 @@ title: Axis CLI Reference
 | `--status`                | Check session status instead of generating auth URL |
 | `--redirect-url=<url>`    | Complete auth with the redirect URL from browser    |
 | `--session-data=<base64>` | Complete auth with raw base64 session data          |
-| `--approve`               | Attempt automated browser approval                  |
-| `--method=<type>`         | Auth method for auto-approve (e.g., `password`)     |
-| `--username=<user>`       | Username for auto-approve                           |
-| `--password=<pass>`       | Password for auto-approve                           |
+| `--method=password`       | Direct password auth (no browser needed)            |
+| `--username=<user>`       | Username for password auth                          |
+| `--password=<pass>`       | Password for password auth                          |
 | `--callback-url=<url>`    | Public callback endpoint                            |
 | `--timeout=<ms>`          | Approval wait timeout                               |

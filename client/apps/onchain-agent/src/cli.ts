@@ -41,6 +41,7 @@ Commands:
   auth <world> --status     Check session validity
   auth <world> --redirect-url=<url>  Complete auth with redirect URL
   auth <world> --session-data=<b64>  Complete auth with session data
+  auth <world> --method=password      Direct password auth (no browser)
   doctor                    Check configuration
   init                      Initialize data directories
 
@@ -49,10 +50,9 @@ Auth options:
   --callback-url=<url>      Public URL for auth callback (remote VPS)
   --redirect-url=<url>      Paste redirect URL to complete auth offline
   --session-data=<base64>   Raw session data to complete auth
-  --approve                 Auto-approve via agent-browser
-  --method=<type>           Auth method for --approve (password)
-  --username=<user>         Username for --approve
-  --password=<pass>         Password for --approve
+  --method=password         Password auth (no browser needed)
+  --username=<user>         Username for password auth
+  --password=<pass>         Password for password auth
   --all                     Apply to all discovered worlds
 
 Run options:
@@ -210,7 +210,6 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<nu
         world: opts.world,
         status: opts.status,
         all: opts.all,
-        approve: opts.approve,
         method: opts.method,
         username: opts.username,
         password: opts.password,

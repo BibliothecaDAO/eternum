@@ -1,3 +1,4 @@
+import "./browser-shims";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { execFile } from "node:child_process";
 import path from "node:path";

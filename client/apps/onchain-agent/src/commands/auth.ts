@@ -10,6 +10,7 @@ import { generateActions } from "../abi/action-gen";
 import { ETERNUM_OVERLAYS, createHiddenOverlays } from "../abi/domain-overlay";
 import { storeSessionFromCallback } from "../session";
 import { writeArtifacts, updateAuthStatus, readAuthStatus, readArtifacts } from "../session/artifacts";
+import { passwordLogin } from "../session/password-auth";
 import { deriveChainIdFromRpcUrl } from "../world/normalize";
 import type { DiscoveredWorld } from "../world/discovery";
 
@@ -57,7 +58,6 @@ interface AuthOptions {
   world?: string;
   status: boolean;
   all: boolean;
-  approve: boolean;
   method?: string;
   username?: string;
   password?: string;
@@ -372,7 +372,7 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
     const sessionBasePath = path.join(config.sessionBasePath, world.name);
 
     // Determine if we can wait for browser callback
-    const canWait = options.callbackUrl || options.approve || process.stdin.isTTY;
+    const canWait = options.callbackUrl || process.stdin.isTTY;
 
     const session = new ControllerSession({
       rpcUrl: profile.rpcUrl ?? config.rpcUrl,
@@ -438,7 +438,7 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
       const qrPath = path.join(worldDir, "auth-qr.png");
       const qrOk = await generateAuthQR(authUrl, qrPath);
 
-      // Non-blocking mode: no callback server, no auto-approve, and no TTY.
+      // Non-blocking mode: no callback server and no TTY.
       // Print instructions and exit — user completes with `axis auth --redirect-url`.
       if (!canWait) {
         if (options.json) {
@@ -491,32 +491,7 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
       }
     }
 
-    // 7. If --approve, run auth-approve
-    if (options.approve && authUrl) {
-      try {
-        const { runAuthApprove } = await import("../session/auth-approve");
-        await runAuthApprove({
-          authUrl,
-          method: options.method ?? "password",
-          username: options.username,
-          password: options.password,
-        });
-      } catch (approveErr) {
-        const errorMsg = approveErr instanceof Error ? approveErr.message : String(approveErr);
-        if (serverClose) await serverClose();
-        updateAuthStatus(worldDir, { status: "pending" });
-        return {
-          world: world.name,
-          chain: world.chain,
-          status: "pending",
-          url: authUrl,
-          artifactDir: worldDir,
-          error: `Auto-approve failed: ${errorMsg}`,
-        };
-      }
-    }
-
-    // 8. Wait for session approval
+    // 7. Wait for session approval
     try {
       const account = await connectPromise;
       if (serverClose) await serverClose();
@@ -623,6 +598,140 @@ async function handleGenerateAuth(options: AuthOptions): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
+// Mode 4: --method=password (direct password auth, no browser)
+// ---------------------------------------------------------------------------
+
+async function handlePasswordAuth(options: AuthOptions): Promise<number> {
+  if (!options.username || !options.password) {
+    const msg = "--username and --password are required for --method=password";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  let targets: DiscoveredWorld[];
+
+  if (options.all) {
+    targets = await discoverAllWorlds();
+  } else if (options.world) {
+    const direct = await findWorldByName(options.world);
+    if (direct) {
+      targets = [direct];
+    } else {
+      const worlds = await discoverAllWorlds();
+      targets = worlds.filter((w) => w.name === options.world);
+      if (targets.length === 0) {
+        const msg = `World "${options.world}" not found. Available: ${worlds.map((w) => w.name).join(", ")}`;
+        if (options.json) {
+          options.write(JSON.stringify({ error: msg }));
+        } else {
+          options.write(`${msg}\n`);
+        }
+        return 1;
+      }
+    }
+  } else {
+    const msg = "Specify a world name or use --all with --method=password";
+    if (options.json) {
+      options.write(JSON.stringify({ error: msg }));
+    } else {
+      options.write(`${msg}\n`);
+    }
+    return 1;
+  }
+
+  const results: AuthResult[] = [];
+
+  for (const world of targets) {
+    if (!options.json) {
+      options.write(`Authenticating [${world.chain}] ${world.name} via password...\n`);
+    }
+
+    const config = loadConfig();
+    const worldDir = path.join(config.sessionBasePath, world.name);
+
+    try {
+      // Build world profile and resolve manifest
+      const profile = await buildWorldProfile(world.chain, world.name);
+      const manifest = await buildResolvedManifest(world.chain, profile);
+
+      // Build policies from action routes
+      const { routes } = generateActions(manifest, {
+        overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest) },
+        gameName: config.gameName,
+      });
+      const policies = buildSessionPoliciesFromRoutes(routes, {
+        worldProfile: profile,
+      });
+
+      // Write artifacts
+      writeArtifacts(worldDir, {
+        profile,
+        manifest,
+        policy: policies as Record<string, unknown>,
+        auth: {
+          url: "",
+          status: "pending",
+          worldName: world.name,
+          chain: world.chain,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      // Run password login
+      const sessionBasePath = path.join(config.sessionBasePath, world.name);
+      const { address } = await passwordLogin({
+        username: options.username,
+        password: options.password,
+        rpcUrl: profile.rpcUrl ?? config.rpcUrl,
+        basePath: sessionBasePath,
+        policies: policies as { contracts: Record<string, { methods: { entrypoint: string }[] }> },
+      });
+
+      updateAuthStatus(worldDir, {
+        status: "active",
+        address,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+
+      results.push({
+        world: world.name,
+        chain: world.chain,
+        status: "active",
+        address,
+        artifactDir: worldDir,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      results.push({
+        world: world.name,
+        chain: world.chain,
+        status: "error",
+        artifactDir: worldDir,
+        error: errorMsg,
+      });
+    }
+  }
+
+  if (options.json) {
+    options.write(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));
+  } else {
+    for (const r of results) {
+      if (r.status === "active") {
+        options.write(`  [${r.chain}] ${r.world}: active (${r.address})\n`);
+      } else if (r.error) {
+        options.write(`  [${r.chain}] ${r.world}: ${r.error}\n`);
+      }
+    }
+  }
+
+  return results.every((r) => r.status === "active") ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
 // Unified entry point — routes to the appropriate mode
 // ---------------------------------------------------------------------------
 
@@ -635,6 +744,11 @@ export async function runAuth(options: AuthOptions): Promise<number> {
   // Mode 2: --redirect-url or --session-data (complete auth)
   if (options.redirectUrl || options.sessionData) {
     return handleComplete(options);
+  }
+
+  // Mode 4: --method=password (direct password auth)
+  if (options.method === "password") {
+    return handlePasswordAuth(options);
   }
 
   // Mode 3: default — generate auth URL
