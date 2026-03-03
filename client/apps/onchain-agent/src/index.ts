@@ -252,7 +252,6 @@ export async function main() {
     if (gameTickMs > 0) runtimeConfig.tickIntervalMs = gameTickMs;
   }
 
-
   // Lazy reference for TUI messages — set once TUI is created, avoids console.log to raw stdout
   let systemMessage: ((msg: string) => void) | null = null;
   let runtimeAgent: ReturnType<typeof createGameAgent> | null = null;
@@ -295,7 +294,11 @@ export async function main() {
     model,
     tickIntervalMs: runtimeConfig.tickIntervalMs,
     runtimeConfigManager,
-    extraTools: [...createInspectTools(services.client, services.account.address), ...createCombatTools(services.client), ...mcp.tools],
+    extraTools: [
+      ...createInspectTools(services.client, services.account.address),
+      ...createCombatTools(services.client),
+      ...mcp.tools,
+    ],
     actionDefs: getActionDefinitions(),
     formatTickPrompt: formatTickPromptWithHandbooks,
     onTickError: (err) => {

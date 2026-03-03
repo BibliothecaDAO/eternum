@@ -167,7 +167,6 @@ vi.mock("../src/adapter/world-state", () => ({
   formatEternumTickDiff: () => "",
 }));
 
-
 describe("index bootstrap", () => {
   beforeEach(() => {
     vi.resetModules();

@@ -407,11 +407,10 @@ function sameAddress(a: string | null | undefined, b: string | null | undefined)
 // Building slot parsing — unpack packed_counts from structure data
 // ---------------------------------------------------------------------------
 
-// Re-export BuildingTypeToString as BUILDING_NAMES for backward compat with inspect-tools
-export const BUILDING_NAMES: Record<number, string> = BuildingTypeToString as Record<number, string>;
+const BUILDING_NAMES: Record<number, string> = BuildingTypeToString as Record<number, string>;
 
 /** Unpack 3 packed u128 hex strings into an array of 48 8-bit building counts. */
-export function unpackBuildingCountsFromHex(
+function unpackBuildingCountsFromHex(
   hex1: string | null | undefined,
   hex2: string | null | undefined,
   hex3: string | null | undefined,
@@ -584,8 +583,6 @@ function occupierName(id: number): string {
     .trim();
 }
 
-
-
 /** BFS to collect all hex positions within `radius` steps of (cx, cy). */
 function hexTilesInRadius(cx: number, cy: number, radius: number): Set<string> {
   const visited = new Set<string>();
@@ -634,11 +631,7 @@ function cardinalDirection(dx: number, dy: number): string {
  * For adjacent tiles (distance 1), includes the exact hex direction number
  * so the agent can use it directly in move_explorer without guessing.
  */
-function computeRelativeLabel(
-  targetX: number,
-  targetY: number,
-  ownedEntities: EternumEntity[],
-): string {
+function computeRelativeLabel(targetX: number, targetY: number, ownedEntities: EternumEntity[]): string {
   if (ownedEntities.length === 0) return "";
 
   let nearest = ownedEntities[0];
@@ -657,7 +650,7 @@ function computeRelativeLabel(
   const dx = targetX - nearest.position.x;
   const dy = targetY - nearest.position.y;
   const dir = cardinalDirection(dx, dy);
-  const label = nearest.type === "structure" ? nearest.structureType ?? "structure" : "army";
+  const label = nearest.type === "structure" ? (nearest.structureType ?? "structure") : "army";
 
   // For adjacent tiles, compute the exact hex direction number
   if (bestDist === 1) {
@@ -770,12 +763,26 @@ function parseLastDefense(raw: any): EternumEntity["lastDefense"] {
  * Validated at runtime: any name not in the registry is silently dropped.
  */
 const STRUCTURE_ACTION_HINTS = [
-  "create_building", "destroy_building", "pause_building_production", "resume_building_production",
-  "explorer_create", "explorer_delete", "level_up",
-  "guard_add", "guard_delete", "explorer_guard_swap", "guard_explorer_swap",
-  "send_resources", "pickup_resources", "claim_arrivals",
-  "create_order", "accept_order", "cancel_order",
-  "buy_resources", "sell_resources", "contribute_hyperstructure",
+  "create_building",
+  "destroy_building",
+  "pause_building_production",
+  "resume_building_production",
+  "explorer_create",
+  "explorer_delete",
+  "level_up",
+  "guard_add",
+  "guard_delete",
+  "explorer_guard_swap",
+  "guard_explorer_swap",
+  "send_resources",
+  "pickup_resources",
+  "claim_arrivals",
+  "create_order",
+  "accept_order",
+  "cancel_order",
+  "buy_resources",
+  "sell_resources",
+  "contribute_hyperstructure",
 ];
 
 /**
@@ -785,10 +792,15 @@ const STRUCTURE_ACTION_HINTS = [
  */
 const ARMY_ACTION_HINTS = [
   "move_to",
-  "attack_explorer_vs_explorer", "attack_explorer_vs_guard", "attack_guard_vs_explorer",
+  "attack_explorer_vs_explorer",
+  "attack_explorer_vs_guard",
+  "attack_guard_vs_explorer",
   "raid_explorer_vs_guard",
-  "explorer_add", "explorer_delete",
-  "explorer_explorer_swap", "explorer_guard_swap", "guard_explorer_swap",
+  "explorer_add",
+  "explorer_delete",
+  "explorer_explorer_swap",
+  "explorer_guard_swap",
+  "guard_explorer_swap",
   "pickup_resources",
 ];
 
@@ -1379,16 +1391,15 @@ function diffTileMap(
  * Format a state diff for tick steering. Shows only what changed since prevState.
  * If prevState is null (first tick), delegates to the full formatter.
  */
-export function formatEternumTickDiff(
-  state: EternumWorldState,
-  prevState: EternumWorldState | null,
-): string {
+export function formatEternumTickDiff(state: EternumWorldState, prevState: EternumWorldState | null): string {
   if (!prevState) return formatEternumTickPrompt(state);
 
   const sections: string[] = [];
 
   // Header
-  sections.push(`## Tick ${state.tick} - State Update (since tick ${prevState.tick})\nCoordinates are display-space. Use them directly in actions.`);
+  sections.push(
+    `## Tick ${state.tick} - State Update (since tick ${prevState.tick})\nCoordinates are display-space. Use them directly in actions.`,
+  );
 
   // Player summary with deltas
   const p = state.player;
@@ -1398,7 +1409,9 @@ export function formatEternumTickDiff(
   const rankDelta = pp.rank - p.rank; // positive = improved
   const ptsStr = ptsDelta !== 0 ? ` ${ptsDelta >= 0 ? "+" : ""}${ptsDelta}` : "";
   const rankStr = rankDelta !== 0 ? ` (${rankDelta > 0 ? "+" : ""}${rankDelta} rank)` : "";
-  sections.push(`### You: ${playerName} (rank ${p.rank}${rankStr}, ${p.points} pts${ptsStr})\nStructures: ${p.structures} | Armies: ${p.armies}`);
+  sections.push(
+    `### You: ${playerName} (rank ${p.rank}${rankStr}, ${p.points} pts${ptsStr})\nStructures: ${p.structures} | Armies: ${p.armies}`,
+  );
 
   // Full resources (total across all structures) with delta annotations
   if (state.resources && state.resources.size > 0) {
@@ -1629,7 +1642,9 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
   const sections: string[] = [];
 
   // Header
-  sections.push(`## Tick ${state.tick} - World State\nCoordinates are display-space (relative to map center). Use them directly in move_to and other actions.`);
+  sections.push(
+    `## Tick ${state.tick} - World State\nCoordinates are display-space (relative to map center). Use them directly in move_to and other actions.`,
+  );
 
   // Player summary
   const p = state.player;

@@ -8,11 +8,7 @@ import { createHash } from "node:crypto";
 
 const APP_NAME = "axis";
 
-const REQUIRED_STAGED_FILES = [
-  APP_NAME,
-  "README.md",
-  "LICENSE",
-];
+const REQUIRED_STAGED_FILES = [APP_NAME, "README.md", "LICENSE"];
 
 interface ReleasePackagingOptions {
   packageDir: string;

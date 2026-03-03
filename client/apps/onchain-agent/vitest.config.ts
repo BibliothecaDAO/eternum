@@ -43,9 +43,7 @@ export default defineConfig({
     },
   ],
   define: {
-    BUILD_VERSION: JSON.stringify(
-      JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf8")).version,
-    ),
+    BUILD_VERSION: JSON.stringify(JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf8")).version),
   },
   test: {
     globals: true,

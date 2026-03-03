@@ -95,9 +95,7 @@ const TROOP_CATEGORY = "0=Knight, 1=Paladin, 2=Crossbowman";
 const TROOP_TIER = "0=T1, 1=T2, 2=T3";
 
 // Generate resource name lookup from resources array
-const RESOURCE_TYPE_NAMES: Record<number, string> = Object.fromEntries(
-  resourceDefs.map((r) => [r.id, r.trait]),
-);
+const RESOURCE_TYPE_NAMES: Record<number, string> = Object.fromEntries(resourceDefs.map((r) => [r.id, r.trait]));
 
 // ── Param transform helpers ──────────────────────────────────────────────────
 
@@ -145,7 +143,7 @@ function extractResourceId(r: Record<string, unknown>, index: number): number {
   if (id === undefined || id === null) {
     throw new Error(
       `Resource entry at index ${index} has no resourceType or resourceId. ` +
-      `Pass [{resourceType: <id>, amount: <n>}, ...]. ${RESOURCE_IDS}`,
+        `Pass [{resourceType: <id>, amount: <n>}, ...]. ${RESOURCE_IDS}`,
     );
   }
   return num(id);
@@ -313,7 +311,9 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
       from_structure_id: { description: "Structure entity ID to claim at" },
       day: { description: "Day index of the arrival (from inspect_realm incomingArrivals)" },
       slot: { description: "Slot index of the arrival (from inspect_realm incomingArrivals)" },
-      resource_count: { description: "Number of distinct resource types in this arrival (from inspect_realm incomingArrivals)" },
+      resource_count: {
+        description: "Number of distinct resource types in this arrival (from inspect_realm incomingArrivals)",
+      },
     },
   },
 
@@ -502,7 +502,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
       "With explore=true: single-hex exploration of an unrevealed tile (30 stamina, min 10 troops, awards VP).",
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID" },
-      directions: { description: `Array of hex direction numbers: ${DIR}. Example: [0] for East, [1,0] for NE then East.`, type: "number[]" },
+      directions: {
+        description: `Array of hex direction numbers: ${DIR}. Example: [0] for East, [1,0] for NE then East.`,
+        type: "number[]",
+      },
       explore: {
         description:
           "false = travel through already-explored tiles (cheap). true = explore new tile (expensive, awards VP)",
@@ -809,7 +812,8 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "hyperstructure_systems::update_construction_access": {
-    description: "Update who can contribute to a hyperstructure's construction (0 = open, 1 = guild-only, 2 = owner-only)",
+    description:
+      "Update who can contribute to a hyperstructure's construction (0 = open, 1 = guild-only, 2 = owner-only)",
     paramOverrides: {
       hyperstructure_id: { description: "Hyperstructure entity ID" },
       access: { description: "Access level: 0 = open to all, 1 = guild members only, 2 = owner only" },
@@ -897,7 +901,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     paramOverrides: {
       from_structure_id: { description: "Structure entity ID" },
       produced_resource_types: { description: `Array of resource type IDs to produce. ${RESOURCE_IDS}` },
-      production_cycles: { description: "Array of production cycle counts (one per resource type — more cycles = more output but more Labor consumed)" },
+      production_cycles: {
+        description:
+          "Array of production cycle counts (one per resource type — more cycles = more output but more Labor consumed)",
+      },
     },
   },
 
@@ -908,7 +915,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     paramOverrides: {
       from_structure_id: { description: "Structure entity ID" },
       produced_resource_types: { description: `Array of resource type IDs to produce. ${RESOURCE_IDS}` },
-      production_cycles: { description: "Array of production cycle counts (one per resource type — more cycles = more output but more input consumed)" },
+      production_cycles: {
+        description:
+          "Array of production cycle counts (one per resource type — more cycles = more output but more input consumed)",
+      },
     },
   },
 

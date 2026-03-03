@@ -173,4 +173,3 @@ describe("generatePoliciesFromManifest", () => {
     expect(coverage.get("resource_systems")).toContain("approve");
   });
 });
-

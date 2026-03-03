@@ -8,7 +8,7 @@ type ToolExecutionEndEvent = {
   };
 };
 
-export interface ToolExecutionSummary {
+interface ToolExecutionSummary {
   status: "ok" | "fail";
   success?: boolean;
   txHash?: string;

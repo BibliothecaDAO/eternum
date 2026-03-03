@@ -72,7 +72,9 @@ function formatEntityDetail(e: EternumEntity, ownedEntities: EternumEntity[]): s
 
   if (e.type === "structure") {
     const owner = e.isOwned ? "MINE" : e.ownerName || e.owner.slice(0, 10) + "...";
-    lines.push(`[${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)} ${rel}`);
+    lines.push(
+      `[${e.structureType ?? "?"}] id=${e.entityId} lvl=${e.level ?? 0} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)} ${rel}`,
+    );
 
     if (e.resources && e.resources.size > 0) {
       const resParts = Array.from(e.resources.entries())
@@ -82,7 +84,9 @@ function formatEntityDetail(e: EternumEntity, ownedEntities: EternumEntity[]): s
     }
     if (e.buildingSlots) {
       const { used, total, buildings } = e.buildingSlots;
-      lines.push(`  Slots: ${used}/${total} (${total - used} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`);
+      lines.push(
+        `  Slots: ${used}/${total} (${total - used} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`,
+      );
     }
     if (e.freeSlots && e.freeSlots.length > 0 && e.buildingSlots && e.buildingSlots.total - e.buildingSlots.used > 0) {
       lines.push(`  Free paths: ${e.freeSlots.join(",")}`);
@@ -113,7 +117,9 @@ function formatEntityDetail(e: EternumEntity, ownedEntities: EternumEntity[]): s
     // Army
     const owner = e.isOwned ? "MINE" : e.ownerName || e.owner.slice(0, 10) + "...";
     const battle = e.isInBattle ? " IN BATTLE" : "";
-    lines.push(`[Army] id=${e.entityId} ${e.troopSummary ?? "no troops"} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)}${battle} ${rel}`);
+    lines.push(
+      `[Army] id=${e.entityId} ${e.troopSummary ?? "no troops"} str=${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} owner=${owner} pos=${fmtPos(e.position.x, e.position.y)}${battle} ${rel}`,
+    );
     if (e.lastAttack) {
       const pos = e.lastAttack.pos ? ` from ${fmtPos(e.lastAttack.pos.x, e.lastAttack.pos.y)}` : "";
       lines.push(`  Last attacked by #${e.lastAttack.attackerId}${pos} ${formatTimeAgo(e.lastAttack.timestamp)}`);
@@ -135,7 +141,10 @@ function computeRelLabel(x: number, y: number, owned: EternumEntity[]): string {
     const dx = e.position.x - x;
     const dy = e.position.y - y;
     const d = Math.max(Math.abs(dx), Math.abs(dy)); // Chebyshev approx
-    if (d < bestDist) { bestDist = d; nearest = e; }
+    if (d < bestDist) {
+      bestDist = d;
+      nearest = e;
+    }
   }
   if (bestDist === 0) return "";
 
@@ -151,7 +160,7 @@ function computeRelLabel(x: number, y: number, owned: EternumEntity[]): string {
   else if (dx > 0) dir = "E";
   else dir = "W";
 
-  const label = nearest.type === "structure" ? nearest.structureType ?? "structure" : "army";
+  const label = nearest.type === "structure" ? (nearest.structureType ?? "structure") : "army";
 
   if (bestDist === 1) {
     const hexDir = getDirectionBetweenAdjacentHexes(
@@ -175,7 +184,6 @@ const inspectSchema = {
 };
 
 export function createInspectTools(client: EternumClient, accountAddress: string): AgentTool<any>[] {
-
   const inspectTool: AgentTool<any> = {
     name: "inspect",
     label: "Inspect",
@@ -230,9 +238,7 @@ export function createInspectTools(client: EternumClient, accountAddress: string
         }
 
         // Entities at this position
-        const entitiesHere = state.entities.filter(
-          (e) => e.position.x === targetX && e.position.y === targetY,
-        );
+        const entitiesHere = state.entities.filter((e) => e.position.x === targetX && e.position.y === targetY);
         if (entitiesHere.length > 0) {
           lines.push("");
           lines.push(`### Entities at this position (${entitiesHere.length})`);
@@ -249,9 +255,7 @@ export function createInspectTools(client: EternumClient, accountAddress: string
         for (const n of neighbors) {
           const nKey = `${n.col},${n.row}`;
           const nTile = state.tileMap.get(nKey);
-          const nEnts = state.entities.filter(
-            (e) => e.position.x === n.col && e.position.y === n.row,
-          );
+          const nEnts = state.entities.filter((e) => e.position.x === n.col && e.position.y === n.row);
           const biome = nTile ? biomeName(nTile.biome) : "Unexplored";
           if (nEnts.length > 0 || biome !== "Unexplored") {
             neighborEntities.push({
@@ -267,12 +271,16 @@ export function createInspectTools(client: EternumClient, accountAddress: string
           lines.push("");
           lines.push(`### Adjacent hexes`);
           for (const n of neighborEntities) {
-            const entStr = n.entities.length > 0
-              ? n.entities.map((e) => {
-                  if (e.type === "structure") return `${e.structureType} #${e.entityId} (${e.isOwned ? "MINE" : e.ownerName || "enemy"})`;
-                  return `Army #${e.entityId} ${e.troopSummary ?? ""} str=${fmtNum(e.strength ?? 0)} (${e.isOwned ? "MINE" : e.ownerName || "enemy"})`;
-                }).join("; ")
-              : "empty";
+            const entStr =
+              n.entities.length > 0
+                ? n.entities
+                    .map((e) => {
+                      if (e.type === "structure")
+                        return `${e.structureType} #${e.entityId} (${e.isOwned ? "MINE" : e.ownerName || "enemy"})`;
+                      return `Army #${e.entityId} ${e.troopSummary ?? ""} str=${fmtNum(e.strength ?? 0)} (${e.isOwned ? "MINE" : e.ownerName || "enemy"})`;
+                    })
+                    .join("; ")
+                : "empty";
             lines.push(`  dir=${n.dir} (${n.dirName}): ${n.biome} — ${entStr}`);
           }
         }
@@ -288,7 +296,9 @@ export function createInspectTools(client: EternumClient, accountAddress: string
           for (const b of battles) {
             const ago = formatTimeAgo(b.timestamp);
             if (b.type === "raid") {
-              lines.push(`  Raid: #${b.attackerId} → #${b.defenderId} — ${b.raidSuccess ? "SUCCESS" : "FAILED"} ${ago}`);
+              lines.push(
+                `  Raid: #${b.attackerId} → #${b.defenderId} — ${b.raidSuccess ? "SUCCESS" : "FAILED"} ${ago}`,
+              );
             } else {
               const winner = b.winnerId ? `winner=#${b.winnerId}` : "no winner";
               lines.push(`  Battle: #${b.attackerId} vs #${b.defenderId} — ${winner} ${ago}`);

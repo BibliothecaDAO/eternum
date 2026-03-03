@@ -66,9 +66,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
 
   const buildTools = () => {
     // observe_game always gets full state (null prevState), not a diff
-    const fullStateFormatter = customFormatTickPrompt
-      ? (state: any) => customFormatTickPrompt(state, null)
-      : undefined;
+    const fullStateFormatter = customFormatTickPrompt ? (state: any) => customFormatTickPrompt(state, null) : undefined;
     const gameTools = createGameTools(adapter, actionDefs, fullStateFormatter);
     const fileTools = includeDataTools ? [createReadTool(currentDataDir), createWriteTool(currentDataDir)] : [];
     const configTools = runtimeConfigManager ? createAgentConfigTools(runtimeConfigManager) : [];
@@ -209,9 +207,7 @@ export function createGameAgent<TState extends WorldState = WorldState>(
     onTick: async () => {
       // Fetch fresh world state
       const state = await adapter.getWorldState();
-      const prompt = customFormatTickPrompt
-        ? customFormatTickPrompt(state, previousState)
-        : formatTickPrompt(state);
+      const prompt = customFormatTickPrompt ? customFormatTickPrompt(state, previousState) : formatTickPrompt(state);
       previousState = state;
 
       if (agentBusy) {

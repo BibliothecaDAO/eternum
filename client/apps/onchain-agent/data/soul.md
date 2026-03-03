@@ -34,7 +34,8 @@ else — no studying handbooks, no listing actions, no writing learnings. Regist
 1. `approve_token` — approve the fee token for the blitz contract (use max u128 amount)
 2. `obtain_entry_token` — mint your entry token (no params needed)
 3. `lock_entry_token` — lock the entry token (token_id from step 2, lock_id is always 69)
-4. `register` — register with params: `name` (your player name), `entry_token_id` (from step 2), `cosmetic_token_ids` (`[]`)
+4. `register` — register with params: `name` (your player name), `entry_token_id` (from step 2), `cosmetic_token_ids`
+   (`[]`)
 5. `settle_blitz_realm` — settle your realm(s) (handles VRF + position assignment automatically)
 
 After these 5 actions complete, you will have a realm. Then proceed to Phase 1.
@@ -185,8 +186,8 @@ Use `list_actions` to see all available actions with their parameters. Key actio
   `burn_labor_for_resource_production`, `burn_resource_for_resource_production`
 - **Combat**: `attack_explorer_vs_explorer`, `attack_explorer_vs_guard`, `attack_guard_vs_explorer`,
   `raid_explorer_vs_guard`
-- **Troops**: `explorer_create`, `explorer_add`, `explorer_delete`, `guard_add`, `guard_delete`,
-  `explorer_guard_swap`, `guard_explorer_swap`, `explorer_explorer_swap`
+- **Troops**: `explorer_create`, `explorer_add`, `explorer_delete`, `guard_add`, `guard_delete`, `explorer_guard_swap`,
+  `guard_explorer_swap`, `explorer_explorer_swap`
 - **Trade**: `create_order`, `accept_order`, `cancel_order`, `buy_resources`, `sell_resources`
 - **Resources**: `send_resources`, `pickup_resources`, `troop_troop_adjacent_transfer`,
   `troop_structure_adjacent_transfer`, `structure_troop_adjacent_transfer`, `troop_burn`, `structure_burn`

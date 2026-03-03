@@ -139,8 +139,18 @@ export function initializeActions(
           "batches travel/explore actions, and executes them sequentially. Stops on first failure.",
         params: [
           { name: "explorerId", type: "number", description: "Explorer entity ID to move", required: true },
-          { name: "targetCol", type: "number", description: "Target column (x) — use the display coordinates shown in world state", required: true },
-          { name: "targetRow", type: "number", description: "Target row (y) — use the display coordinates shown in world state", required: true },
+          {
+            name: "targetCol",
+            type: "number",
+            description: "Target column (x) — use the display coordinates shown in world state",
+            required: true,
+          },
+          {
+            name: "targetRow",
+            type: "number",
+            description: "Target row (y) — use the display coordinates shown in world state",
+            required: true,
+          },
         ],
       },
     },
@@ -447,9 +457,7 @@ async function handleAddToExplorer(
     return { success: false, error: "World state not available. Wait for next tick." };
   }
 
-  const explorer = _cachedWorldState.entities.find(
-    (e) => e.entityId === explorerId && e.type === "army" && e.isOwned,
-  );
+  const explorer = _cachedWorldState.entities.find((e) => e.entityId === explorerId && e.type === "army" && e.isOwned);
   if (!explorer) {
     return { success: false, error: `Explorer #${explorerId} not found in your armies.` };
   }
@@ -462,7 +470,7 @@ async function handleAddToExplorer(
 
   // Try to find an adjacent structure
   let homeDirection: number | null = null;
-  let homeStructure: typeof ownedStructures[0] | undefined;
+  let homeStructure: (typeof ownedStructures)[0] | undefined;
 
   for (const s of ownedStructures) {
     const dir = getDirectionBetweenAdjacentHexes(
@@ -478,9 +486,7 @@ async function handleAddToExplorer(
 
   if (homeDirection === null || !homeStructure) {
     const explorerPos = `(${explorer.position.x},${explorer.position.y})`;
-    const structPositions = ownedStructures
-      .map((s) => `#${s.entityId} @(${s.position.x},${s.position.y})`)
-      .join(", ");
+    const structPositions = ownedStructures.map((s) => `#${s.entityId} @(${s.position.x},${s.position.y})`).join(", ");
     return {
       success: false,
       error: `Explorer #${explorerId} at ${explorerPos} is not adjacent to any owned structure. Structures: ${structPositions}. Move the explorer adjacent first.`,

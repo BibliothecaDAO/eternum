@@ -31,12 +31,12 @@ autoload: false
 
 ## Combat Actions
 
-| Action                         | What It Does                                      | Stamina Cost             |
-| ------------------------------ | ------------------------------------------------- | ------------------------ |
-| `attack_explorer_vs_explorer`  | Army vs army — strength-based, steal on victory   | 50 attacker, 40 defender |
-| `attack_explorer_vs_guard`     | Army vs structure guard — capture on victory       | 30                       |
-| `attack_guard_vs_explorer`     | Guard attacks nearby army — defensive action       | 30                       |
-| `raid_explorer_vs_guard`       | Steal resources without destroying guard           | 30                       |
+| Action                        | What It Does                                    | Stamina Cost             |
+| ----------------------------- | ----------------------------------------------- | ------------------------ |
+| `attack_explorer_vs_explorer` | Army vs army — strength-based, steal on victory | 50 attacker, 40 defender |
+| `attack_explorer_vs_guard`    | Army vs structure guard — capture on victory    | 30                       |
+| `attack_guard_vs_explorer`    | Guard attacks nearby army — defensive action    | 30                       |
+| `raid_explorer_vs_guard`      | Steal resources without destroying guard        | 30                       |
 
 - Combat resolution is instant (onchain)
 - Higher total strength wins — use `simulate_battle` or `simulate_raid` to predict outcomes
@@ -49,12 +49,12 @@ autoload: false
 
 Guard slot names depend on structure level:
 
-| Slot | Settlement  | City       | Kingdom     | Empire     |
-| ---- | ----------- | ---------- | ----------- | ---------- |
-| 0    | Watchtower  | Outer Wall | Castle Wall | Inner Wall |
-| 1    | —           | Outer Wall | Castle Wall | Inner Wall |
-| 2    | —           | —          | Castle Wall | Inner Wall |
-| 3    | —           | —          | —           | Inner Wall |
+| Slot | Settlement | City       | Kingdom     | Empire     |
+| ---- | ---------- | ---------- | ----------- | ---------- |
+| 0    | Watchtower | Outer Wall | Castle Wall | Inner Wall |
+| 1    | —          | Outer Wall | Castle Wall | Inner Wall |
+| 2    | —          | —          | Castle Wall | Inner Wall |
+| 3    | —          | —          | —           | Inner Wall |
 
 - Each slot holds one troop type/tier at any count
 - Total guard strength = sum across all slots

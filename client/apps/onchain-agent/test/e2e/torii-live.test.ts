@@ -62,10 +62,7 @@ async function probeWorld(baseUrl: string): Promise<{ reachable: boolean; popula
 
 beforeAll(async () => {
   const worlds = await discoverAllWorlds();
-  const candidates = [
-    ...worlds.filter((w) => w.status === "ongoing"),
-    ...worlds.filter((w) => w.status !== "ongoing"),
-  ];
+  const candidates = [...worlds.filter((w) => w.status === "ongoing"), ...worlds.filter((w) => w.status !== "ongoing")];
 
   let bestUrl = "";
   let bestPopulated = new Set<TableName>();

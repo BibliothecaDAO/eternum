@@ -102,10 +102,14 @@ function simulateBattleMath(
 
   if (totalTroops === 0) {
     return {
-      attackerDamage: 0, defenderDamage: 0,
-      attackerCasualties: 0, defenderCasualties: 0,
-      attackerSurviving: 0, defenderSurviving: 0,
-      winner: "none", biomeAdvantage: "none",
+      attackerDamage: 0,
+      defenderDamage: 0,
+      attackerCasualties: 0,
+      defenderCasualties: 0,
+      attackerSurviving: 0,
+      defenderSurviving: 0,
+      winner: "none",
+      biomeAdvantage: "none",
     };
   }
 
@@ -241,7 +245,6 @@ const simulateRaidSchema = {
 // ---------------------------------------------------------------------------
 
 export function createCombatTools(_client: EternumClient): AgentTool<any>[] {
-
   const simulateBattleTool: AgentTool<any> = {
     name: "simulate_battle",
     label: "Simulate Battle",
