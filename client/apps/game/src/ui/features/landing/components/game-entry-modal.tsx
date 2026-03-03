@@ -54,6 +54,32 @@ const getErrorMessage = (error: unknown) => {
   return String(error ?? "");
 };
 
+const getTransactionHash = (result: unknown): string | null => {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  const hash = (result as { transaction_hash?: unknown }).transaction_hash;
+  return typeof hash === "string" && hash.length > 0 ? hash : null;
+};
+
+const getReceiptRevertReason = (receipt: unknown): string | null => {
+  if (!receipt || typeof receipt !== "object") {
+    return null;
+  }
+
+  const typedReceipt = receipt as { revert_reason?: unknown; revertReason?: unknown };
+  if (typeof typedReceipt.revert_reason === "string" && typedReceipt.revert_reason.length > 0) {
+    return typedReceipt.revert_reason;
+  }
+
+  if (typeof typedReceipt.revertReason === "string" && typedReceipt.revertReason.length > 0) {
+    return typedReceipt.revertReason;
+  }
+
+  return null;
+};
+
 const isRetryableForgeQueueError = (error: unknown) => {
   const message = getErrorMessage(error).toLowerCase();
 
@@ -64,6 +90,9 @@ const isRetryableForgeQueueError = (error: unknown) => {
     message.includes("not ready") ||
     message.includes("nonce") ||
     message.includes("busy") ||
+    message.includes("temporarily unavailable") ||
+    message.includes("timed out") ||
+    message.includes("timeout") ||
     message.includes("rate limit") ||
     message.includes("429")
   );
@@ -1334,7 +1363,18 @@ export const GameEntryModal = ({
       });
 
       debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
-      await signer.execute(calls);
+      const executionResult = await signer.execute(calls);
+      const transactionHash = getTransactionHash(executionResult);
+
+      if (transactionHash && "waitForTransaction" in signer && typeof signer.waitForTransaction === "function") {
+        const receipt = await signer.waitForTransaction(transactionHash);
+        if (typeof receipt?.isReverted === "function" && receipt.isReverted()) {
+          const revertReason = getReceiptRevertReason(receipt);
+          throw new Error(
+            `Forge transaction reverted${revertReason ? `: ${revertReason}` : ""}`,
+          );
+        }
+      }
 
       // Invalidate the world availability cache so the count updates on the landing page
       const worldKey = getWorldKey({ name: worldName, chain });
