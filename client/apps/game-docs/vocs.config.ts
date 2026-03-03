@@ -224,6 +224,19 @@ export default defineConfig({
       link: "/development/getting-started",
       items: [
         { text: "Getting Started", link: "/development/getting-started" },
+        {
+          text: "Axis",
+          collapsed: true,
+          link: "/development/axis/overview",
+          items: [
+            { text: "Overview", link: "/development/axis/overview" },
+            { text: "Install and Run", link: "/development/axis/install-and-run" },
+            { text: "Worlds and Auth", link: "/development/axis/worlds-and-auth" },
+            { text: "Headless and API", link: "/development/axis/headless-and-api" },
+            { text: "Config and Ops", link: "/development/axis/configuration-and-operations" },
+            { text: "CLI Reference", link: "/development/axis/cli-reference" },
+          ],
+        },
         { text: "Client", link: "/development/client" },
         { text: "Contracts", link: "/development/contracts" },
         { text: "SDK", link: "/development/sdk" },

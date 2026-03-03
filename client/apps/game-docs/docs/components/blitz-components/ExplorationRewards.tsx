@@ -1,6 +1,7 @@
 import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "../ResourceIcon";
 import { section, table } from "../styles";
+import { formatNumberWithCommas } from "@/utils/formatting";
 
 export const ExplorationRewards = () => {
   const rewards = [
@@ -37,7 +38,7 @@ export const ExplorationRewards = () => {
                     {reward.material}
                   </span>
                 </td>
-                <td style={table.cell}>{reward.quantity.toLocaleString()}</td>
+                <td style={table.cell}>{formatNumberWithCommas(reward.quantity)}</td>
                 <td style={table.cell}>{reward.chance}%</td>
               </tr>
             ))}

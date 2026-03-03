@@ -8,6 +8,7 @@ import {
 } from "@/hooks/use-world-availability";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
 import type { WorldSelectionInput } from "@/runtime/world";
+import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -20,7 +21,7 @@ import {
 } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +43,20 @@ const formatLordsAmount = (amount: bigint): string => {
   // Show the exact onchain value in LORDS units (18 decimals), trimming only trailing zeros.
   const fraction = remainder.toString().padStart(18, "0").replace(/0+$/, "");
   return `${wholeFormatted}.${fraction}`;
+};
+
+const getErrorMessage = (error: unknown): string | null => {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return null;
 };
 
 /**
@@ -141,6 +156,8 @@ interface GameCardProps {
   onPlay: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
+  onClaimRewards?: () => void;
+  claimSummary?: GameReviewClaimSummary | null;
   onForgeHyperstructures?: () => Promise<void> | void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
@@ -155,6 +172,8 @@ const GameCard = ({
   onPlay,
   onSpectate,
   onSeeScore,
+  onClaimRewards,
+  claimSummary,
   onForgeHyperstructures,
   onRegistrationComplete,
   playerAddress,
@@ -277,6 +296,7 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
+  const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
 
   return (
     <div
@@ -336,6 +356,13 @@ const GameCard = ({
             className="text-xs text-white/70"
           />
         </div>
+
+        {canClaimRewards && claimSummary && (
+          <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
+            Claimable: {claimSummary.lordsWonFormatted} LORDS + {claimSummary.chestsClaimedEstimate.toLocaleString()}{" "}
+            chests
+          </div>
+        )}
 
         {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
         <div className="flex gap-1.5">
@@ -407,6 +434,19 @@ const GameCard = ({
             >
               <Trophy className="w-3 h-3" />
               Review
+            </button>
+          )}
+
+          {canClaimRewards && onClaimRewards && (
+            <button
+              onClick={() => runWithNetworkGuard(onClaimRewards)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
+              )}
+            >
+              <Trophy className="w-3 h-3" />
+              Claim Rewards
             </button>
           )}
 
@@ -520,6 +560,7 @@ interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
+  onClaimRewards?: (selection: WorldSelection) => void;
   /** Callback for forging hyperstructures - receives world selection and numHyperstructuresLeft */
   onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
@@ -549,6 +590,7 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onClaimRewards,
   onForgeHyperstructures,
   onRegistrationComplete,
   className,
@@ -685,6 +727,53 @@ export const UnifiedGameGrid = ({
     sortRegisteredFirst,
   ]);
 
+  const endedRegisteredGames = useMemo(
+    () => games.filter((game) => game.gameStatus === "ended" && game.isRegistered === true),
+    [games],
+  );
+
+  const claimSummaryQueries = useQueries({
+    queries:
+      !playerAddress || endedRegisteredGames.length === 0
+        ? []
+        : endedRegisteredGames.map((game) => ({
+            queryKey: ["gameReviewClaimSummary", game.chain, game.name, playerAddress],
+            queryFn: () =>
+              fetchGameReviewClaimSummary({
+                worldName: game.name,
+                chain: game.chain,
+                playerAddress,
+              }),
+            staleTime: 60_000,
+            gcTime: 10 * 60_000,
+            retry: 1,
+          })),
+  });
+
+  const claimSummaryByWorldKey = useMemo(() => {
+    const summaryByWorldKey = new Map<
+      string,
+      {
+        data: GameReviewClaimSummary | null;
+        isLoading: boolean;
+        error: string | null;
+      }
+    >();
+
+    endedRegisteredGames.forEach((game, index) => {
+      const queryState = claimSummaryQueries[index];
+      if (!queryState) return;
+
+      summaryByWorldKey.set(game.worldKey, {
+        data: queryState.data ?? null,
+        isLoading: queryState.isLoading,
+        error: getErrorMessage(queryState.error),
+      });
+    });
+
+    return summaryByWorldKey;
+  }, [claimSummaryQueries, endedRegisteredGames]);
+
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
@@ -810,42 +899,13 @@ export const UnifiedGameGrid = ({
           </div>
         ) : layout === "vertical" ? (
           <div className="flex flex-col gap-3">
-            {games.map((game) => (
-              <GameCard
-                key={game.worldKey}
-                game={game}
-                onPlay={() =>
-                  onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                }
-                onSpectate={() =>
-                  onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                }
-                onSeeScore={
-                  onSeeScore
-                    ? () =>
-                        onSeeScore({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                    : undefined
-                }
-                onForgeHyperstructures={
-                  onForgeHyperstructures
-                    ? () =>
-                        onForgeHyperstructures(
-                          { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
-                          game.config?.numHyperstructuresLeft ?? 0,
-                        )
-                    : undefined
-                }
-                onRegistrationComplete={handleRegistrationComplete}
-                playerAddress={playerAddress}
-                showChainBadge={true}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex gap-3 p-1">
-            {games.map((game) => (
-              <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
+            {games.map((game) => {
+              const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
+              const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
+
+              return (
                 <GameCard
+                  key={game.worldKey}
                   game={game}
                   onPlay={() =>
                     onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
@@ -863,6 +923,17 @@ export const UnifiedGameGrid = ({
                           })
                       : undefined
                   }
+                  onClaimRewards={
+                    canClaimFromCard
+                      ? () =>
+                          onClaimRewards?.({
+                            name: game.name,
+                            chain: game.chain,
+                            worldAddress: game.worldAddress ?? undefined,
+                          })
+                      : undefined
+                  }
+                  claimSummary={claimSummaryState?.data ?? null}
                   onForgeHyperstructures={
                     onForgeHyperstructures
                       ? () =>
@@ -876,8 +947,62 @@ export const UnifiedGameGrid = ({
                   playerAddress={playerAddress}
                   showChainBadge={true}
                 />
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex gap-3 p-1">
+            {games.map((game) => {
+              const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
+              const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
+
+              return (
+                <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
+                  <GameCard
+                    game={game}
+                    onPlay={() =>
+                      onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    }
+                    onSpectate={() =>
+                      onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    }
+                    onSeeScore={
+                      onSeeScore
+                        ? () =>
+                            onSeeScore({
+                              name: game.name,
+                              chain: game.chain,
+                              worldAddress: game.worldAddress ?? undefined,
+                            })
+                        : undefined
+                    }
+                    onClaimRewards={
+                      canClaimFromCard
+                        ? () =>
+                            onClaimRewards?.({
+                              name: game.name,
+                              chain: game.chain,
+                              worldAddress: game.worldAddress ?? undefined,
+                            })
+                        : undefined
+                    }
+                    claimSummary={claimSummaryState?.data ?? null}
+                    onForgeHyperstructures={
+                      onForgeHyperstructures
+                        ? () =>
+                            onForgeHyperstructures(
+                              { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
+                              game.config?.numHyperstructuresLeft ?? 0,
+                            )
+                        : undefined
+                    }
+                    onRegistrationComplete={handleRegistrationComplete}
+                    playerAddress={playerAddress}
+                    showChainBadge={true}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

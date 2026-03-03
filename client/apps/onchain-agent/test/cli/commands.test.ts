@@ -22,16 +22,6 @@ vi.mock("../../src/commands/auth", () => ({
   runAuth: runAuthMock,
 }));
 
-const runAuthStatusMock = vi.hoisted(() => vi.fn().mockResolvedValue(0));
-vi.mock("../../src/commands/auth-status", () => ({
-  runAuthStatus: runAuthStatusMock,
-}));
-
-const runAuthUrlMock = vi.hoisted(() => vi.fn().mockResolvedValue(0));
-vi.mock("../../src/commands/auth-url", () => ({
-  runAuthUrl: runAuthUrlMock,
-}));
-
 describe("cli commands", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -26,26 +26,29 @@ const observeSchema = Type.Object({
 
 /**
  * Creates a tool that observes the current game world state.
- * The tool calls adapter.getWorldState() and returns the state as JSON.
- * Map values (like resources) are serialized to plain objects.
- *
- * Note: The tick prompt already provides formatted world state each tick,
- * but this tool is available for on-demand queries between ticks.
+ * When a formatState callback is provided, returns the same formatted view
+ * as the tick prompt (with direction labels, biome data, etc.) so the agent
+ * always sees fresh, structured state — not stale data from tick start.
  */
-export function createObserveGameTool(adapter: GameAdapter<any>): AgentTool<typeof observeSchema> {
+export function createObserveGameTool(
+  adapter: GameAdapter<any>,
+  formatState?: (state: any) => string,
+): AgentTool<typeof observeSchema> {
   return {
     name: "observe_game",
     label: "Observe Game",
     description:
-      "Get the current game world state including entities, resources, and tick information. Use this to refresh your view of the world between ticks.",
+      "Get a fresh snapshot of the current game world state. Call this to refresh your view after executing actions — the world may have changed since the tick started.",
     parameters: observeSchema,
     async execute(_toolCallId, _params) {
       const state = await adapter.getWorldState();
-      const serializable = {
-        ...state,
-        resources: state.resources ? Object.fromEntries(state.resources) : undefined,
-      };
-      const response = JSON.stringify(serializable, null, 2);
+      const response = formatState
+        ? formatState(state)
+        : JSON.stringify(
+            { ...state, resources: state.resources ? Object.fromEntries(state.resources) : undefined },
+            null,
+            2,
+          );
       logToolResponse("observe_game", _params, response);
       return {
         content: [{ type: "text", text: response }],
@@ -191,9 +194,13 @@ export function createSimulateActionTool(adapter: GameAdapter<any>, actionDefs?:
  * When actionDefs are provided, execute_action and simulate_action get constrained
  * actionType enums, and a list_actions lookup tool is included.
  */
-export function createGameTools(adapter: GameAdapter<any>, actionDefs?: ActionDefinition[]): AgentTool<any>[] {
+export function createGameTools(
+  adapter: GameAdapter<any>,
+  actionDefs?: ActionDefinition[],
+  formatState?: (state: any) => string,
+): AgentTool<any>[] {
   const tools: AgentTool<any>[] = [
-    createObserveGameTool(adapter),
+    createObserveGameTool(adapter, formatState),
     createExecuteActionTool(adapter, actionDefs),
     createSimulateActionTool(adapter, actionDefs),
   ];

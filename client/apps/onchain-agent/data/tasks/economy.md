@@ -77,7 +77,7 @@ Basic (Wood, Coal, Copper)
 | Level | Name       | Building Slots |
 | ----- | ---------- | -------------- |
 | L0    | Settlement | 6              |
-| L1    | Village    | 18             |
+| L1    | City       | 18             |
 | L2    | Kingdom    | 36             |
 | L3    | Empire     | 60 (max)       |
 
@@ -94,10 +94,10 @@ Use `inspect_realm` to get available free building paths. Occupied slots return 
 
 ## Building Actions
 
-- `create_building` — params: `entityId`, `directions[]` (path from center), `buildingCategory`, `useSimple`
-- `destroy_building` — params: `entityId`, `buildingCoord {x, y}`
-- `pause_production` — stop a building's output (saves consumed resources)
-- `resume_production` — restart a paused building
+- `create_building` — params: `structure_id`, `directions[]` (path from center), `building_category`, `use_simple`
+- `destroy_building` — params: `structure_id`, `building_coord {x, y}`
+- `pause_building_production` — stop a building's output (saves consumed resources)
+- `resume_building_production` — restart a paused building
 
 ## Common Errors
 

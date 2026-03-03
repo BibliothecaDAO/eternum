@@ -16,8 +16,7 @@ describe("action-registry (ABI executor)", () => {
   it("lists current action types including aliases and composites", () => {
     const actions = getAvailableActions();
     expect(actions).toContain("send_resources");
-    expect(actions).toContain("move_explorer");
-    expect(actions).toContain("create_trade");
+    expect(actions).toContain("move_to");
     expect(actions).toContain("approve_token");
     expect(actions).toContain("lock_entry_token");
     expect(actions).toContain("settle_blitz_realm");
@@ -56,39 +55,21 @@ describe("action-registry (ABI executor)", () => {
     expect(call.entrypoint).toBe("send");
   });
 
-  it("executes move_explorer with current snake_case schema", async () => {
+  it("executes explorer_move via executeAction (internal route still callable)", async () => {
+    // explorer_move is internal: true — no definition visible to the LLM,
+    // but it still has a route and can be called programmatically
     const result = await executeAction(client as any, mockSigner, {
-      type: "move_explorer",
+      type: "explorer_move",
       params: {
         explorer_id: 42,
         directions: [1, 2, 3],
-        explore: true,
+        explore: false,
       },
     });
 
     expect(result.success).toBe(true);
     const call = vi.mocked(mockSigner.execute).mock.calls[0][0] as any;
     expect(call.entrypoint).toBe("explorer_move");
-  });
-
-  it("executes create_trade alias through create_order route", async () => {
-    const result = await executeAction(client as any, mockSigner, {
-      type: "create_trade",
-      params: {
-        maker_id: 1,
-        taker_id: 0,
-        maker_gives_resource_type: 1,
-        taker_pays_resource_type: 2,
-        maker_gives_min_resource_amount: 100,
-        maker_gives_max_count: 5,
-        taker_pays_min_resource_amount: 200,
-        expires_at: 9999999,
-      },
-    });
-
-    expect(result.success).toBe(true);
-    const call = vi.mocked(mockSigner.execute).mock.calls[0][0] as any;
-    expect(call.entrypoint).toBe("create_order");
   });
 
   it("executes leave_guild without params", async () => {
