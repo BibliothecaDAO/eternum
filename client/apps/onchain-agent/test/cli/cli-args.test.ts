@@ -62,17 +62,18 @@ describe("parseCliArgs", () => {
     expect(opts.json).toBe(true);
   });
 
-  it("parses auth-status <world> --json", () => {
-    const opts = parseCliArgs(["auth-status", "my-world", "--json"]);
-    expect(opts.command).toBe("auth-status");
+  it("parses auth <world> --status", () => {
+    const opts = parseCliArgs(["auth", "my-world", "--status"]);
+    expect(opts.command).toBe("auth");
     expect(opts.world).toBe("my-world");
-    expect(opts.json).toBe(true);
+    expect(opts.status).toBe(true);
   });
 
-  it("parses auth-url <world>", () => {
-    const opts = parseCliArgs(["auth-url", "my-world"]);
-    expect(opts.command).toBe("auth-url");
+  it("parses auth <world> --redirect-url=<url>", () => {
+    const opts = parseCliArgs(["auth", "my-world", "--redirect-url=https://example.com?startapp=abc"]);
+    expect(opts.command).toBe("auth");
     expect(opts.world).toBe("my-world");
+    expect(opts.redirectUrl).toBe("https://example.com?startapp=abc");
   });
 
   it("parses --api-host", () => {

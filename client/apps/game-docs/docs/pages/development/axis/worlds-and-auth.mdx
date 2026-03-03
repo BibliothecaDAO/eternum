@@ -24,13 +24,15 @@ SLOT_NAME=my-world axis run
 
 ## Session Auth (Default)
 
-Axis uses Cartridge Controller session auth by default.
+Axis uses Cartridge Controller session auth by default. All auth operations use the unified `axis auth` command.
 
-Interactive auth for one world:
+Generate an auth URL for one world:
 
 ```bash
 axis auth my-world
 ```
+
+This generates a URL that can be opened on any device to approve the session.
 
 Auth all worlds:
 
@@ -41,14 +43,8 @@ axis auth --all
 Check status:
 
 ```bash
-axis auth-status my-world
-axis auth-status --all
-```
-
-Print stored auth URL:
-
-```bash
-axis auth-url my-world
+axis auth my-world --status
+axis auth --all --status
 ```
 
 ## Headless VPS Auth (No Browser)
@@ -56,10 +52,10 @@ axis auth-url my-world
 The most common headless pattern — for locked-down VPS with no open ports:
 
 ```bash
-# 1. On VPS: generate auth URL (exits immediately, no blocking)
+# 1. On VPS: generate auth URL (non-blocking if no TTY)
 axis auth my-world
 # Prints: Approve at: https://x.cartridge.gg/session?...
-# Prints: axis auth-complete my-world --redirect-url="<redirect URL from browser>"
+# Prints: axis auth my-world --redirect-url="<redirect URL from browser>"
 
 # 2. On your laptop: open the URL, approve the session in browser
 #    After approval, the browser redirects to a URL like:
@@ -67,18 +63,24 @@ axis auth my-world
 #    Copy that full URL from your browser address bar.
 
 # 3. Back on VPS: complete auth with the redirect URL
-axis auth-complete my-world --redirect-url="http://localhost:8000/auth/callback?startapp=BASE64DATA..."
+axis auth my-world --redirect-url="http://localhost:8000/auth/callback?startapp=BASE64DATA..."
 
 # 4. Run the agent
 axis run --headless --world=my-world
 ```
 
-This works without opening any ports on the VPS. The agent on VPS can also parse the JSON output programmatically:
+This works without opening any ports on the VPS. You can also complete auth with raw base64 session data:
+
+```bash
+axis auth my-world --session-data="<base64>"
+```
+
+The agent on VPS can parse the JSON output programmatically:
 
 ```bash
 url=$(axis auth my-world --json | jq -r '.url')
 # Send $url to human, receive redirect URL back
-axis auth-complete my-world --redirect-url="$REDIRECT_URL"
+axis auth my-world --redirect-url="$REDIRECT_URL"
 ```
 
 ### Callback URL (VPS with public endpoint)

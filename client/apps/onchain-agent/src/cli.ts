@@ -12,9 +12,6 @@ import { loadEnvFiles } from "./env-loader";
 declare const BUILD_VERSION: string;
 import { runWorlds } from "./commands/worlds";
 import { runAuth } from "./commands/auth";
-import { runAuthStatus } from "./commands/auth-status";
-import { runAuthUrl } from "./commands/auth-url";
-import { runAuthComplete } from "./commands/auth-complete";
 
 const CLI_COMMAND = "axis";
 const PAD = "  ";
@@ -41,13 +38,14 @@ Commands:
   run --headless            Run agent headlessly with JSON output
   worlds                    List discovered worlds
   auth <world|--all>        Generate auth URL and persist artifacts
-  auth-complete <world>     Complete auth with redirect URL or session data
-  auth-status <world>       Check session validity
-  auth-url <world>          Print auth URL
+  auth <world> --status     Check session validity
+  auth <world> --redirect-url=<url>  Complete auth with redirect URL
+  auth <world> --session-data=<b64>  Complete auth with session data
   doctor                    Check configuration
   init                      Initialize data directories
 
 Auth options:
+  --status                  Check session validity
   --callback-url=<url>      Public URL for auth callback (remote VPS)
   --redirect-url=<url>      Paste redirect URL to complete auth offline
   --session-data=<base64>   Raw session data to complete auth
@@ -210,6 +208,7 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<nu
     case "auth":
       return runAuth({
         world: opts.world,
+        status: opts.status,
         all: opts.all,
         approve: opts.approve,
         method: opts.method,
@@ -217,29 +216,11 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<nu
         password: opts.password,
         callbackUrl: opts.callbackUrl,
         timeout: opts.timeout,
-        json: opts.json,
-        write,
-      });
-
-    case "auth-complete":
-      return runAuthComplete({
-        world: opts.world,
-        sessionData: opts.sessionData,
         redirectUrl: opts.redirectUrl,
+        sessionData: opts.sessionData,
         json: opts.json,
         write,
       });
-
-    case "auth-status":
-      return runAuthStatus({
-        world: opts.world,
-        all: opts.all,
-        json: opts.json,
-        write,
-      });
-
-    case "auth-url":
-      return runAuthUrl({ world: opts.world, write });
 
     case "run":
       if (opts.headless) {

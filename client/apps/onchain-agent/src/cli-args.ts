@@ -1,15 +1,4 @@
-export type Command =
-  | "run"
-  | "worlds"
-  | "auth"
-  | "auth-complete"
-  | "auth-status"
-  | "auth-url"
-  | "doctor"
-  | "init"
-  | "version"
-  | "help"
-  | "unknown";
+export type Command = "run" | "worlds" | "auth" | "doctor" | "init" | "version" | "help" | "unknown";
 export type AuthMode = "session" | "privatekey";
 export type Verbosity = "quiet" | "actions" | "decisions" | "all";
 
@@ -23,6 +12,7 @@ export interface CliOptions {
   apiPort?: number;
   apiHost?: string;
   stdin: boolean;
+  status: boolean;
   all: boolean;
   approve: boolean;
   method?: string;
@@ -35,16 +25,7 @@ export interface CliOptions {
   rawArgs: string[];
 }
 
-const COMMANDS = new Set<Command>([
-  "run",
-  "worlds",
-  "auth",
-  "auth-complete",
-  "auth-status",
-  "auth-url",
-  "doctor",
-  "init",
-]);
+const COMMANDS = new Set<Command>(["run", "worlds", "auth", "doctor", "init"]);
 
 const VALID_VERBOSITIES = new Set<Verbosity>(["quiet", "actions", "decisions", "all"]);
 
@@ -74,7 +55,7 @@ export function parseCliArgs(args: string[]): CliOptions {
     command = "help";
   } else if (COMMANDS.has(firstArg as Command)) {
     command = firstArg as Command;
-    if (["auth", "auth-complete", "auth-status", "auth-url"].includes(command)) {
+    if (["auth"].includes(command)) {
       const secondArg = args[1];
       if (secondArg && !secondArg.startsWith("--")) {
         positionalWorld = secondArg;
@@ -99,6 +80,7 @@ export function parseCliArgs(args: string[]): CliOptions {
     apiPort: apiPortStr ? parseInt(apiPortStr, 10) : undefined,
     apiHost: extractFlag(args, "api-host"),
     stdin: hasFlag(args, "stdin"),
+    status: hasFlag(args, "status"),
     all: hasFlag(args, "all"),
     approve: hasFlag(args, "approve"),
     method: extractFlag(args, "method"),

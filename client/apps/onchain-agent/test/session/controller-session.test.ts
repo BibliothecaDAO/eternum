@@ -26,7 +26,13 @@ vi.mock("@cartridge/controller/session/node", () => ({
   },
 }));
 
-import { ControllerSession, buildSessionPoliciesFromManifest } from "../../src/session/controller-session";
+import {
+  ControllerSession,
+  buildSessionPoliciesFromManifest,
+  buildSessionPoliciesFromRoutes,
+} from "../../src/session/controller-session";
+import { generateActions } from "../../src/abi/action-gen";
+import { ETERNUM_OVERLAYS, createHiddenOverlays } from "../../src/abi/domain-overlay";
 
 const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
@@ -215,8 +221,14 @@ describe("special policies", () => {
 });
 
 describe("ControllerSession constructor", () => {
-  it("passes generated policies to SessionProvider", () => {
+  it("passes pre-built policies to SessionProvider", () => {
     mocks.ctorCalls.length = 0;
+
+    const { routes } = generateActions(manifest, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest) },
+      gameName: "eternum",
+    });
+    const policies = buildSessionPoliciesFromRoutes(routes, {});
 
     new ControllerSession({
       rpcUrl: "http://localhost:5050",
@@ -224,12 +236,13 @@ describe("ControllerSession constructor", () => {
       basePath: ".cartridge",
       gameName: "eternum",
       manifest,
+      policies,
     });
 
     expect(mocks.ctorCalls).toHaveLength(1);
     const opts = mocks.ctorCalls[0];
     expect(opts.basePath).toBe(".cartridge");
-    // Should have contracts from manifest ABIs
+    // Should have contracts from route-based policies (fewer than full manifest)
     expect(Object.keys(opts.policies?.contracts ?? {}).length).toBeGreaterThan(10);
   });
 });

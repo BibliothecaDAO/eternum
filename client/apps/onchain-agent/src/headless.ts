@@ -10,7 +10,9 @@ import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
 import { readArtifacts, writeArtifacts } from "./session/artifacts";
-import { buildSessionPoliciesFromManifest } from "./session/controller-session";
+import { buildSessionPoliciesFromRoutes } from "./session/controller-session";
+import { generateActions } from "./abi/action-gen";
+import { ETERNUM_OVERLAYS, createHiddenOverlays } from "./abi/domain-overlay";
 import { createPrivateKeyAccount } from "./session/privatekey-auth";
 import { findWorldByName, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
 import { deriveChainIdFromRpcUrl } from "./world/normalize";
@@ -161,8 +163,11 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
 
     const profile = await buildWorldProfile(world.chain, world.name);
     const manifest = await buildResolvedManifest(world.chain, profile);
-    const policies = buildSessionPoliciesFromManifest(manifest as any, {
+    const { routes } = generateActions(manifest as any, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest as any) },
       gameName: config.gameName,
+    });
+    const policies = buildSessionPoliciesFromRoutes(routes, {
       worldProfile: profile,
     });
 
@@ -200,6 +205,13 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     account = createPrivateKeyAccount(config.rpcUrl, privateKey, accountAddress);
   } else {
     const sessionBasePath = path.join(config.sessionBasePath, options.world!);
+    const { routes: sessionRoutes } = generateActions(artifacts.manifest, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(artifacts.manifest as any) },
+      gameName: config.gameName,
+    });
+    const sessionPolicies = buildSessionPoliciesFromRoutes(sessionRoutes, {
+      worldProfile: artifacts.profile,
+    });
     session = new ControllerSession({
       rpcUrl: config.rpcUrl,
       chainId: config.chainId,
@@ -207,6 +219,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       basePath: sessionBasePath,
       manifest: artifacts.manifest,
       worldProfile: artifacts.profile,
+      policies: sessionPolicies,
     });
 
     // Try probe() first (uses SessionAccount WASM). If it crashes (starknet v8
@@ -225,7 +238,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
             `No active session for ${options.world}. Auth required.\n` +
             `  1. Open this URL in a browser: ${authUrl}\n` +
             `  2. Approve the session\n` +
-            `  3. Run: axis auth-complete ${options.world} --redirect-url="<redirect URL from browser>"`,
+            `  3. Run: axis auth ${options.world} --redirect-url="<redirect URL from browser>"`,
         });
         throw new Error(`No active session for ${options.world}. Run axis auth first.`);
       }

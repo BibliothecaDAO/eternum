@@ -27,7 +27,7 @@ CLI (cli.ts) → index.ts orchestrates:
 - `src/index.ts` — TUI mode orchestration, live reconfiguration
 - `src/headless.ts` — headless mode orchestration (NDJSON output, HTTP API, stdin)
 - `src/config.ts` — env-driven config with defaults
-- `src/commands/` — standalone CLI subcommands (worlds, auth, auth-status, auth-url)
+- `src/commands/` — standalone CLI subcommands (worlds, auth)
 - `src/world/` — world discovery, factory SQL resolution, manifest patching
 - `src/session/` — Cartridge Controller session auth, artifact persistence, auth-approve, privatekey auth
 - `src/adapter/` — EternumGameAdapter, action registry (60+ actions), world state builder, simulation
@@ -127,11 +127,14 @@ Axis supports fully headless operation for AI orchestrators and remote server fl
 ### CLI Commands
 
 ```bash
-axis worlds [--json]                              # List discovered worlds
-axis auth <world|--all> [--approve] [--json]      # Generate auth + persist artifacts
-axis auth-status <world|--all> [--json]           # Check session validity
-axis auth-url <world>                              # Print raw auth URL
-axis run --headless --world=<name> [options]       # Run headlessly
+axis worlds [--json]                                          # List discovered worlds
+axis auth <world> [--json]                                    # Generate auth URL
+axis auth <world> --redirect-url="..." [--json]               # Complete auth with redirect URL
+axis auth <world> --session-data="..." [--json]               # Complete auth with raw base64
+axis auth <world> --status [--json]                           # Check session validity
+axis auth --all [--json]                                      # Auth all discovered worlds
+axis auth --all --status [--json]                             # Status for all worlds
+axis run --headless --world=<name> [options]                   # Run headlessly
 ```
 
 ### Headless Run Options

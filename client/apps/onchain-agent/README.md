@@ -68,19 +68,21 @@ Set `SLOT_NAME=<world>` to skip the picker and auto-select a world.
 
 ## CLI Commands
 
-| Command                      | Description                                                     |
-| ---------------------------- | --------------------------------------------------------------- |
-| `axis` / `axis run`          | Start the agent in TUI mode (default)                           |
-| `axis run --headless`        | Start the agent headlessly with NDJSON output                   |
-| `axis worlds`                | List discovered worlds across all chains                        |
-| `axis auth <world>`          | Generate auth URL, persist artifacts, and wait for approval     |
-| `axis auth-complete <world>` | Complete auth with a redirect URL or raw session data           |
-| `axis auth-status <world>`   | Check whether a session is active, expired, or pending          |
-| `axis auth-url <world>`      | Print the stored auth URL for a world                           |
-| `axis doctor`                | Validate configuration and report issues                        |
-| `axis init`                  | Scaffold `~/.eternum-agent/` with default data files and `.env` |
-| `axis --version` / `axis -v` | Print version                                                   |
-| `axis --help` / `axis -h`    | Print usage help                                                |
+| Command                                  | Description                                                     |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| `axis` / `axis run`                      | Start the agent in TUI mode (default)                           |
+| `axis run --headless`                    | Start the agent headlessly with NDJSON output                   |
+| `axis worlds`                            | List discovered worlds across all chains                        |
+| `axis auth <world>`                      | Generate auth URL (non-blocking if no TTY)                      |
+| `axis auth <world> --redirect-url="..."` | Complete auth with the redirect URL from browser                |
+| `axis auth <world> --session-data="..."` | Complete auth with raw base64 session data                      |
+| `axis auth <world> --status`             | Check whether a session is active, expired, or pending          |
+| `axis auth --all`                        | Auth all discovered worlds                                      |
+| `axis auth --all --status`               | Check status for all worlds                                     |
+| `axis doctor`                            | Validate configuration and report issues                        |
+| `axis init`                              | Scaffold `~/.eternum-agent/` with default data files and `.env` |
+| `axis --version` / `axis -v`             | Print version                                                   |
+| `axis --help` / `axis -h`                | Print usage help                                                |
 
 ## Run Options
 
@@ -249,18 +251,23 @@ force re-auth.
 For headless operation, pre-authenticate with `axis auth` before running:
 
 ```bash
-# Interactive: opens browser for approval
+# Generate auth URL (non-blocking if no TTY)
 axis auth my-world
+
+# Complete auth with the redirect URL from browser
+axis auth my-world --redirect-url="https://...?startapp=<data>"
+
+# Complete auth with raw base64 session data
+axis auth my-world --session-data="<base64>"
+
+# Check session status
+axis auth my-world --status
 
 # Automated: uses agent-browser for headless approval
 axis auth my-world --approve --method=password --username=me --password=secret
 
 # Remote VPS: starts a callback server for the redirect
 axis auth my-world --callback-url=http://my-vps:3000
-
-# Offline: complete auth by pasting the redirect URL or raw session data
-axis auth-complete my-world --redirect-url="https://...?startapp=<data>"
-axis auth-complete my-world --session-data="<base64>"
 ```
 
 ### Private Key Fallback
@@ -271,20 +278,23 @@ Skip Cartridge Controller entirely with a raw StarkNet keypair:
 PRIVATE_KEY=0x... ACCOUNT_ADDRESS=0x... axis run --headless --world=my-world --auth=privatekey
 ```
 
-## Auth Commands
+## Auth Flags
 
-| Flag                      | Applies To                                       | Description                                             |
-| ------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
-| `--all`                   | `auth`, `auth-status`                            | Apply to all discovered worlds                          |
-| `--approve`               | `auth`                                           | Auto-approve via agent-browser (no manual browser step) |
-| `--method=<type>`         | `auth`                                           | Auth method for `--approve` (e.g., `password`)          |
-| `--username=<user>`       | `auth`                                           | Username for `--approve`                                |
-| `--password=<pass>`       | `auth`                                           | Password for `--approve`                                |
-| `--callback-url=<url>`    | `auth`                                           | Public URL for auth callback (remote VPS)               |
-| `--timeout=<ms>`          | `auth`                                           | Approval wait timeout in milliseconds                   |
-| `--redirect-url=<url>`    | `auth-complete`                                  | Paste redirect URL to complete auth offline             |
-| `--session-data=<base64>` | `auth-complete`                                  | Raw session data to complete auth offline               |
-| `--json`                  | `auth`, `auth-complete`, `auth-status`, `worlds` | JSON output                                             |
+All flags apply to the unified `axis auth` command:
+
+| Flag                      | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| `--all`                   | Apply to all discovered worlds                          |
+| `--status`                | Check session status instead of generating auth URL     |
+| `--redirect-url=<url>`    | Complete auth with the redirect URL from browser        |
+| `--session-data=<base64>` | Complete auth with raw base64 session data              |
+| `--approve`               | Auto-approve via agent-browser (no manual browser step) |
+| `--method=<type>`         | Auth method for `--approve` (e.g., `password`)          |
+| `--username=<user>`       | Username for `--approve`                                |
+| `--password=<pass>`       | Password for `--approve`                                |
+| `--callback-url=<url>`    | Public URL for auth callback (remote VPS)               |
+| `--timeout=<ms>`          | Approval wait timeout in milliseconds                   |
+| `--json`                  | JSON output                                             |
 
 ## Testing
 

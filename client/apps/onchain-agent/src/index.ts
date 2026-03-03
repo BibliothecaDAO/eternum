@@ -23,7 +23,9 @@ import { formatEternumTickPrompt, formatEternumTickDiff, type EternumWorldState 
 import { createRuntimeConfigManager } from "./runtime-config";
 import { seedDataDir } from "./cli";
 import { writeArtifacts } from "./session/artifacts";
-import { generatePoliciesFromManifest } from "./session/abi-policy-gen";
+import { buildSessionPoliciesFromRoutes } from "./session/controller-session";
+import { generateActions } from "./abi/action-gen";
+import { ETERNUM_OVERLAYS, createHiddenOverlays } from "./abi/domain-overlay";
 
 /**
  * Load all reference handbooks (autoload: false task files) from the data
@@ -95,6 +97,13 @@ async function createRuntimeServices(
   // invalidate the on-chain session registration (policies Merkle root).
   const sessionBasePath = worldProfile ? path.join(config.sessionBasePath, worldProfile.name) : config.sessionBasePath;
 
+  const { routes: sessionRoutes } = generateActions(manifest as any, {
+    overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest as any) },
+    gameName: config.gameName,
+  });
+  const sessionPolicies = buildSessionPoliciesFromRoutes(sessionRoutes, {
+    worldProfile,
+  });
   const session = new ControllerSession({
     rpcUrl: config.rpcUrl,
     chainId,
@@ -102,6 +111,7 @@ async function createRuntimeServices(
     basePath: sessionBasePath,
     manifest,
     worldProfile,
+    policies: sessionPolicies,
   });
 
   const account = await session.connect();
@@ -204,9 +214,12 @@ export async function main() {
 
     // Write artifacts so headless mode can read them without running `axis auth`
     const worldDir = path.join(runtimeConfig.sessionBasePath, selected.name);
-    const policies = generatePoliciesFromManifest(resolvedManifest! as any, {
-      externalOnly: true,
+    const { routes: policyRoutes } = generateActions(resolvedManifest! as any, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(resolvedManifest! as any) },
       gameName: runtimeConfig.gameName,
+    });
+    const policies = buildSessionPoliciesFromRoutes(policyRoutes, {
+      worldProfile: profile,
     });
     writeArtifacts(worldDir, {
       profile,
