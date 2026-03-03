@@ -5,19 +5,17 @@ title: Axis Overview
 
 # Axis Overview
 
-Axis is the official Eternum onchain agent CLI.
-
-It discovers active worlds, authenticates with Cartridge Controller sessions, observes world state, and executes onchain
-actions through an LLM-driven tick loop.
+Axis is the Eternum onchain agent CLI. It discovers active worlds, authenticates with Cartridge Controller, and runs an
+LLM-driven tick loop that observes game state and executes on-chain actions.
 
 ## What Axis Does
 
 - Discovers live worlds across `slot`, `sepolia`, and `mainnet`
-- Authenticates with Cartridge sessions (no private key required by default)
-- Runs in interactive TUI mode or headless server mode
-- Executes game actions generated from ABI at runtime
-- Persists memory and strategy files per world
-- Exposes HTTP + stdin control surfaces in headless mode
+- Authenticates via password (headless) or browser (interactive)
+- Runs in TUI mode or headless server mode
+- Generates game actions from contract ABIs at runtime
+- Persists agent memory and strategy per world
+- Exposes HTTP + stdin control in headless mode
 
 ## Get Started
 
@@ -27,17 +25,15 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
 axis
 ```
 
-Everything auto-initializes on first run — config, directories, world discovery, and browser-based auth.
-
 ## TUI vs Headless
 
-|                     | TUI (`axis`)                 | Headless (`axis run --headless`)             |
-| ------------------- | ---------------------------- | -------------------------------------------- |
-| **Use when**        | Running manually on a laptop | VPS, CI, fleet orchestration                 |
-| **World selection** | Interactive picker           | `--world=<name>` (required)                  |
-| **Auth**            | Opens browser automatically  | Pre-auth with `axis auth` + `--redirect-url` |
-| **Output**          | Terminal UI with chat log    | NDJSON to stdout                             |
-| **Control**         | Keyboard input               | HTTP API, stdin, SSE                         |
+|                     | TUI (`axis`)                 | Headless (`axis run --headless`)       |
+| ------------------- | ---------------------------- | -------------------------------------- |
+| **Use when**        | Running manually on a laptop | VPS, CI, fleet orchestration           |
+| **World selection** | Interactive picker           | `--world=<name>` (required)            |
+| **Auth**            | Opens browser automatically  | `--method=password` or QR + redirect   |
+| **Output**          | Terminal UI with chat log    | NDJSON to stdout                       |
+| **Control**         | Keyboard input               | HTTP API, stdin, SSE                   |
 
 ## Read Next
 
