@@ -26,7 +26,7 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
 
@@ -89,7 +89,7 @@ const controllerSupportedRpcUrls = Array.from(
   new Set(
     [
       rpcUrl,
-      `${cartridgeApiBase}/x/eternum-blitz-slot-3/katana/rpc/v0_9`,
+      `${cartridgeApiBase}/x/eternum-blitz-slot-4/katana/rpc/v0_9`,
       `${cartridgeApiBase}/x/starknet/sepolia/rpc/v0_9`,
       `${cartridgeApiBase}/x/starknet/mainnet/rpc/v0_9`,
     ].map((value) => normalizeRpcUrl(value)),

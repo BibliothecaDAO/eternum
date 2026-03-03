@@ -19,13 +19,13 @@ const envSchema = z.object({
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-3/torii"),
+  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-4/torii"),
   VITE_PUBLIC_GLOBAL_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/blitz-slot-global-1/torii"),
   VITE_PUBLIC_NODE_URL: z
     .string()
     .url()
     .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9"),
+    .default("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9"),
   VITE_PUBLIC_TORII_RELAY: z
     .string()
     .optional()

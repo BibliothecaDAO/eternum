@@ -1,11 +1,11 @@
 import type { Chain } from "@contracts";
 import { mainnet, sepolia } from "@starknet-react/chains";
-import { constants, shortString } from "starknet";
 import { toast } from "sonner";
+import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
 const SLOT_TEST_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
 const SLOT_CHAIN_PREFIX = "0x57505f"; // "WP_" in ASCII hex
 
