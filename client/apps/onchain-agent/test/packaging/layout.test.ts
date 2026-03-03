@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -29,26 +29,17 @@ describe("release layout", () => {
     const result = validateStagedReleaseLayout(dir);
 
     expect(result.ok).toBe(false);
-    expect(result.missing).toContain("package.json");
     expect(result.missing).toContain("README.md");
-    expect(result.missing).toContain("data/soul.md");
-    expect(result.missing).toContain("data/HEARTBEAT.md");
+    expect(result.missing).toContain("LICENSE");
   });
 
   it("passes validation with required staged files", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "onchain-layout-valid-"));
     tempDirs.push(dir);
 
-    mkdirSync(path.join(dir, "data", "tasks"), { recursive: true });
-
     writeFileSync(path.join(dir, "axis"), "#!/bin/sh\necho ok\n");
-    writeFileSync(path.join(dir, "package.json"), "{}\n");
     writeFileSync(path.join(dir, "README.md"), "# readme\n");
     writeFileSync(path.join(dir, "LICENSE"), "MIT\n");
-    writeFileSync(path.join(dir, ".env.example"), "RPC_URL=http://localhost:5050\n");
-    writeFileSync(path.join(dir, "data", "soul.md"), "# Soul\n");
-    writeFileSync(path.join(dir, "data", "HEARTBEAT.md"), "version: 1\njobs: []\n");
-    writeFileSync(path.join(dir, "data", "tasks", "priorities.md"), "# Priorities\n");
 
     const result = validateStagedReleaseLayout(dir);
     expect(result.ok).toBe(true);

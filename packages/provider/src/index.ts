@@ -22,7 +22,6 @@ import {
   UniversalDetails,
   uint256,
 } from "starknet";
-import { ProviderBatchFeatureFlags, ProviderBatchMetrics, getProviderBatchFeatureFlags } from "./batch-metrics";
 import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
 import { BatchedTransactionDetail, TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
@@ -60,6 +59,11 @@ type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
   transactionHash?: string;
+};
+
+type VrfExecutionLock = {
+  completed: Promise<void>;
+  resolve: () => void;
 };
 
 /**
@@ -122,39 +126,14 @@ const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
  * Queue item for transaction batching
  */
 interface QueueItem {
-  request: ProviderQueueCall;
+  providerCall: () => Promise<any>;
   resolve: (value: any) => void;
   reject: (reason?: any) => void;
   transactionType?: TransactionType;
-  enqueuedAt: number;
-  callCount: number;
-  calldataWordCount: number;
 }
 
-interface ProviderQueueCall {
-  signer: Account | AccountInterface;
-  transactionDetails: AllowArray<Call>;
-  execute: () => Promise<any>;
-}
-
-const toCallArray = (details: AllowArray<Call>): Call[] => {
-  return Array.isArray(details) ? details : [details];
-};
-
-const getCalldataWordCount = (calls: Call[]): number => {
-  return calls.reduce((sum, call) => {
-    if (Array.isArray(call.calldata)) {
-      return sum + call.calldata.length;
-    }
-    if (call.calldata === undefined || call.calldata === null) {
-      return sum;
-    }
-    return sum + 1;
-  }, 0);
-};
-
-const getErrorMessage = (error: unknown): string => {
-  return error instanceof Error ? error.message : String(error);
+type ExecutionOptions = {
+  waitForConfirmation?: boolean;
 };
 
 /**
@@ -165,34 +144,18 @@ class PromiseQueue {
   private queue: QueueItem[] = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
+  private readonly BATCH_DELAY = 1000; // ms to wait for batching
 
-  constructor(
-    private provider: EternumProvider,
-    private options: {
-      batchDelayMs: number;
-      metrics: ProviderBatchMetrics;
-    },
-  ) {}
+  constructor(private provider: EternumProvider) {}
 
   /**
    * Enqueue a transaction for batched execution.
    * @param providerCall - The function that executes the transaction
    * @param transactionType - Optional transaction type for category-based batching
    */
-  async enqueue<T>(request: ProviderQueueCall, transactionType?: TransactionType): Promise<T> {
+  async enqueue<T>(providerCall: () => Promise<T>, transactionType?: TransactionType): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      const calls = toCallArray(request.transactionDetails);
-      const callCount = calls.length;
-      const calldataWordCount = getCalldataWordCount(calls);
-      const enqueuedAt = Date.now();
-
-      this.queue.push({ request, resolve, reject, transactionType, enqueuedAt, callCount, calldataWordCount });
-      this.options.metrics.log("queue.enqueued", {
-        queueDepth: this.queue.length,
-        transactionType: transactionType ?? null,
-        callCount,
-        calldataWordCount,
-      });
+      this.queue.push({ providerCall, resolve, reject, transactionType });
       this.scheduleProcessing();
     });
   }
@@ -201,7 +164,7 @@ class PromiseQueue {
     if (this.processing) return;
 
     // If no delay configured, process immediately
-    if (this.options.batchDelayMs <= 0) {
+    if (this.BATCH_DELAY <= 0) {
       void this.processQueue();
       return;
     }
@@ -212,7 +175,7 @@ class PromiseQueue {
       this.batchTimeout = setTimeout(() => {
         this.batchTimeout = null;
         void this.processQueue();
-      }, this.options.batchDelayMs);
+      }, this.BATCH_DELAY);
     }
   }
 
@@ -263,43 +226,37 @@ class PromiseQueue {
     if (batch.length === 0) return;
 
     if (batch.length === 1) {
-      // Single transaction - execute directly
-      const { request, resolve, reject, enqueuedAt, callCount, calldataWordCount, transactionType } = batch[0];
-      const startedAt = Date.now();
+      // Single queued transaction should submit fast and confirm in background.
+      const { providerCall, resolve, reject, transactionType } = batch[0];
       try {
-        const result = await request.execute();
-        this.options.metrics.log("batch.single.success", {
-          transactionType: transactionType ?? null,
-          queueWaitMs: startedAt - enqueuedAt,
-          executionMs: Date.now() - startedAt,
-          callCount,
-          calldataWordCount,
+        const signer = (providerCall as any)._signer;
+        const transactionDetails = (providerCall as any)._transactionDetails;
+        const result = await this.provider.executeAndCheckTransaction(signer, transactionDetails, undefined, {
+          waitForConfirmation: false,
+          transactionType,
         });
         resolve(result);
       } catch (error) {
-        this.options.metrics.log("batch.single.failed", {
-          transactionType: transactionType ?? null,
-          queueWaitMs: startedAt - enqueuedAt,
-          executionMs: Date.now() - startedAt,
-          callCount,
-          calldataWordCount,
-          error: getErrorMessage(error),
-        });
         reject(error);
       }
     } else {
       // Multiple transactions - batch them together
-      const startedAt = Date.now();
-      const totalCallCount = batch.reduce((sum, item) => sum + item.callCount, 0);
-      const totalCalldataWordCount = batch.reduce((sum, item) => sum + item.calldataWordCount, 0);
-      const maxQueueWaitMs = Math.max(...batch.map((item) => startedAt - item.enqueuedAt));
-      const minQueueWaitMs = Math.min(...batch.map((item) => startedAt - item.enqueuedAt));
       try {
-        // Flatten all calls into a single array
-        const flattenedCalls = batch.flatMap((item) => toCallArray(item.request.transactionDetails));
+        // Extract the actual calls from the providerCalls
+        const allCalls = await Promise.all(
+          batch.map(async ({ providerCall }) => {
+            const fn = providerCall as any;
+            const calls = fn._transactionDetails;
+            // Handle both single calls and arrays of calls
+            return Array.isArray(calls) ? calls : [calls];
+          }),
+        );
 
-        // Get signer from first queued request (matches previous queue semantics)
-        const signer = batch[0].request.signer;
+        // Flatten all calls into a single array
+        const flattenedCalls = allCalls.flat();
+
+        // Get signer from first call
+        const signer = (batch[0].providerCall as any)._signer;
 
         // Collect batch details - count by transaction type
         const typeCounts = new Map<TransactionType, number>();
@@ -314,39 +271,16 @@ class PromiseQueue {
           count,
         }));
 
-        this.options.metrics.log("batch.multicall.submit", {
-          batchSize: batch.length,
-          callCount: totalCallCount,
-          calldataWordCount: totalCalldataWordCount,
-          maxQueueWaitMs,
-          minQueueWaitMs,
-        });
-
         // Execute the batched transaction with batch details
-        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls, batchDetails);
+        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls, batchDetails, {
+          waitForConfirmation: false,
+        });
 
         // Resolve all promises with the result
         batch.forEach((item) => item.resolve(result));
-        this.options.metrics.log("batch.multicall.success", {
-          batchSize: batch.length,
-          callCount: totalCallCount,
-          calldataWordCount: totalCalldataWordCount,
-          maxQueueWaitMs,
-          minQueueWaitMs,
-          executionMs: Date.now() - startedAt,
-        });
       } catch (error) {
         // Reject all promises in the batch
         batch.forEach((item) => item.reject(error));
-        this.options.metrics.log("batch.multicall.failed", {
-          batchSize: batch.length,
-          callCount: totalCallCount,
-          calldataWordCount: totalCalldataWordCount,
-          maxQueueWaitMs,
-          minQueueWaitMs,
-          executionMs: Date.now() - startedAt,
-          error: getErrorMessage(error),
-        });
       }
     }
   }
@@ -381,7 +315,6 @@ export const buildVrfCalls = async ({
 
 export class EternumProvider extends EnhancedDojoProvider {
   promiseQueue: PromiseQueue;
-  private batchMetrics?: ProviderBatchMetrics;
   // Batching state (optional, used by admin/config UIs)
   private _batchCalls?: Call[];
   private _batchImmediate?: Set<string>;
@@ -392,6 +325,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   ) => Promise<GetTransactionReceiptResponse>;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private pendingTransactionSpans = new Map<string, Span>();
+  private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   /**
    * Create a new EternumProvider instance
    *
@@ -410,22 +344,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       const worldAddress = this.manifest.world.address;
       return worldAddress;
     };
-    const batchFeatureFlags: ProviderBatchFeatureFlags = getProviderBatchFeatureFlags();
-    this.batchMetrics = new ProviderBatchMetrics(batchFeatureFlags);
-    this.promiseQueue = new PromiseQueue(this, {
-      batchDelayMs: batchFeatureFlags.batchDelayMs,
-      metrics: this.batchMetrics,
-    });
-  }
-
-  private getBatchMetrics(): ProviderBatchMetrics {
-    if (!this.batchMetrics) {
-      this.batchMetrics = new ProviderBatchMetrics({
-        metricsEnabled: false,
-        batchDelayMs: 1000,
-      });
-    }
-    return this.batchMetrics;
+    this.promiseQueue = new PromiseQueue(this);
   }
 
   private normalizeAddress(address: BigNumberish | undefined): string | undefined {
@@ -448,6 +367,68 @@ export class EternumProvider extends EnhancedDojoProvider {
     const providerAddress = this.normalizeAddress(this.VRF_PROVIDER_ADDRESS);
     const callAddress = this.normalizeAddress(call.contractAddress);
     return providerAddress !== undefined && providerAddress === callAddress;
+  }
+
+  private getVrfSourceAddress(call: Call): string | undefined {
+    if (!Array.isArray(call.calldata) || call.calldata.length < 3) {
+      return undefined;
+    }
+
+    return this.normalizeAddress(call.calldata[2] as BigNumberish | undefined);
+  }
+
+  private getVrfSerializationKey(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    const vrfRequestCall = details.find((detail) => this.isVrfRequestRandomCall(detail));
+    if (!vrfRequestCall) {
+      return undefined;
+    }
+
+    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
+    if (!signerAddress) {
+      return undefined;
+    }
+
+    const sourceAddress = this.getVrfSourceAddress(vrfRequestCall) ?? signerAddress;
+    return `${signerAddress}:${sourceAddress}`;
+  }
+
+  private createVrfExecutionLock(): VrfExecutionLock {
+    let resolve!: () => void;
+    const completed = new Promise<void>((innerResolve) => {
+      resolve = innerResolve;
+    });
+
+    return { completed, resolve };
+  }
+
+  private async acquireVrfExecutionLock(key: string): Promise<() => void> {
+    while (true) {
+      const existingLock = this.pendingVrfExecutionLocks.get(key);
+      if (!existingLock) {
+        const lock = this.createVrfExecutionLock();
+        this.pendingVrfExecutionLocks.set(key, lock);
+
+        let released = false;
+        return () => {
+          if (released) {
+            return;
+          }
+          released = true;
+
+          const currentLock = this.pendingVrfExecutionLocks.get(key);
+          if (currentLock === lock) {
+            this.pendingVrfExecutionLocks.delete(key);
+          }
+          lock.resolve();
+        };
+      }
+
+      await existingLock.completed;
+    }
   }
 
   private dedupeVrfRequestCalls(transactionDetails: AllowArray<Call>): AllowArray<Call> {
@@ -652,8 +633,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
     batchDetails?: BatchedTransactionDetail[],
+    options?: ExecutionOptions & { transactionType?: TransactionType },
   ) {
-    const startedAt = Date.now();
     const sanitizedTransactionDetails = this.dedupeVrfRequestCalls(transactionDetails);
     if (Array.isArray(transactionDetails) && Array.isArray(sanitizedTransactionDetails)) {
       const removedVrfCalls = transactionDetails.length - sanitizedTransactionDetails.length;
@@ -666,7 +647,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       console.log({ signer, transactionDetails: sanitizedTransactionDetails });
     }
     const isMultipleTransactions = Array.isArray(sanitizedTransactionDetails);
-    const transactionCount = isMultipleTransactions ? sanitizedTransactionDetails.length : 1;
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -683,6 +663,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     } else {
       txType = TransactionType[sanitizedTransactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
+    txType = options?.transactionType ?? txType;
 
     const transactionMeta = {
       type: txType,
@@ -693,29 +674,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
 
     const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
+    const vrfSerializationKey = this.getVrfSerializationKey(signer, sanitizedTransactionDetails);
+    let releaseVrfExecutionLock: (() => void) | undefined;
+    if (vrfSerializationKey) {
+      releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
+    }
 
     let tx;
     try {
       tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
     } catch (error) {
-      const message = getErrorMessage(error);
-      this.getBatchMetrics().log("transaction.submit_failed", {
-        transactionType: txType ?? null,
-        transactionCount,
-        error: message,
-        elapsedMs: Date.now() - startedAt,
-      });
+      releaseVrfExecutionLock?.();
+      releaseVrfExecutionLock = undefined;
+      const message = error instanceof Error ? error.message : String(error);
       this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
       this.failTransactionSpan(span, undefined, error);
       throw error;
     }
-
-    this.getBatchMetrics().log("transaction.submitted", {
-      transactionType: txType ?? null,
-      transactionCount,
-      transactionHash: tx.transaction_hash,
-      elapsedMs: Date.now() - startedAt,
-    });
 
     span.setAttribute("transaction.hash", tx.transaction_hash);
     span.addEvent("transaction.submitted", { "transaction.hash": tx.transaction_hash });
@@ -726,32 +701,19 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...transactionMeta,
     });
 
-    const waitPromise = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
+    const waitForConfirmation = options?.waitForConfirmation ?? true;
+    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
     });
-    let waitResult: { status: "confirmed"; receipt: GetTransactionReceiptResponse } | { status: "pending" };
-    try {
-      waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
-    } catch (error) {
-      this.getBatchMetrics().log("transaction.wait_failed", {
-        transactionType: txType ?? null,
-        transactionCount,
-        transactionHash: tx.transaction_hash,
-        error: getErrorMessage(error),
-        elapsedMs: Date.now() - startedAt,
-      });
-      this.failTransactionSpan(span, tx.transaction_hash, error);
-      throw error;
-    }
+    const waitPromise = releaseVrfExecutionLock
+      ? waitPromiseWithoutLockRelease.finally(() => {
+          releaseVrfExecutionLock?.();
+          releaseVrfExecutionLock = undefined;
+        })
+      : waitPromiseWithoutLockRelease;
 
-    if (waitResult.status === "pending") {
-      this.getBatchMetrics().log("transaction.pending", {
-        transactionType: txType ?? null,
-        transactionCount,
-        transactionHash: tx.transaction_hash,
-        elapsedMs: Date.now() - startedAt,
-      });
+    if (!waitForConfirmation) {
       this.emit("transactionPending", {
         transactionHash: tx.transaction_hash,
         ...transactionMeta,
@@ -761,12 +723,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       this.pendingTransactionSpans.set(tx.transaction_hash, span);
       void waitPromise
         .then((receipt) => {
-          this.getBatchMetrics().log("transaction.confirmed", {
-            transactionType: txType ?? null,
-            transactionCount,
-            transactionHash: tx.transaction_hash,
-            elapsedMs: Date.now() - startedAt,
-          });
           this.emit("transactionComplete", {
             details: receipt,
             ...transactionMeta,
@@ -775,13 +731,44 @@ export class EternumProvider extends EnhancedDojoProvider {
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
-          this.getBatchMetrics().log("transaction.wait_failed", {
-            transactionType: txType ?? null,
-            transactionCount,
-            transactionHash: tx.transaction_hash,
-            error: getErrorMessage(error),
-            elapsedMs: Date.now() - startedAt,
+          this.failTransactionSpan(span, tx.transaction_hash, error);
+        })
+        .finally(() => {
+          this.pendingTransactionSpans.delete(tx.transaction_hash);
+        });
+
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: tx.transaction_hash,
+      } as any;
+    }
+
+    let waitResult: { status: "confirmed"; receipt: GetTransactionReceiptResponse } | { status: "pending" };
+    try {
+      waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
+    } catch (error) {
+      this.failTransactionSpan(span, tx.transaction_hash, error);
+      throw error;
+    }
+
+    if (waitResult.status === "pending") {
+      this.emit("transactionPending", {
+        transactionHash: tx.transaction_hash,
+        ...transactionMeta,
+      });
+      span.setAttribute("transaction.status", "pending");
+      span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
+      this.pendingTransactionSpans.set(tx.transaction_hash, span);
+      void waitPromise
+        .then((receipt) => {
+          this.emit("transactionComplete", {
+            details: receipt,
+            ...transactionMeta,
           });
+          this.completeTransactionSpan(span, tx.transaction_hash, receipt);
+        })
+        .catch((error) => {
+          console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
         .finally(() => {
@@ -799,12 +786,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...transactionMeta,
     });
 
-    this.getBatchMetrics().log("transaction.confirmed", {
-      transactionType: txType ?? null,
-      transactionCount,
-      transactionHash: tx.transaction_hash,
-      elapsedMs: Date.now() - startedAt,
-    });
     this.completeTransactionSpan(span, tx.transaction_hash, waitResult.receipt);
     return waitResult.receipt;
   }
@@ -1097,12 +1078,6 @@ export class EternumProvider extends EnhancedDojoProvider {
           : typeof receiptAny?.revertReason === "string"
             ? receiptAny.revertReason
             : "Unknown revert reason";
-      this.getBatchMetrics().log("transaction.reverted", {
-        transactionHash,
-        transactionType: transactionMeta?.type ?? null,
-        transactionCount: transactionMeta?.transactionCount ?? null,
-        revertReason,
-      });
       const message = `Transaction failed with reason: ${revertReason}`;
       this.emit("transactionFailed", message, {
         ...transactionMeta,
@@ -1724,17 +1699,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call, TransactionType.SET_ENTITY_NAME);
   }
 
-  private createProviderCall(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): ProviderQueueCall {
-    return {
-      signer,
-      transactionDetails,
-      execute: async () => {
-        return await this.executeAndCheckTransaction(signer, transactionDetails);
-      },
+  private createProviderCall(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+    const call = async () => {
+      return await this.executeAndCheckTransaction(signer, transactionDetails);
     };
+    // Explicitly store the details
+    Object.defineProperties(call, {
+      _signer: { value: signer },
+      _transactionDetails: { value: transactionDetails },
+    });
+    return call;
   }
 
   /**

@@ -578,7 +578,14 @@ export class ArmyManager {
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition);
+      await this.moveArmy(entityId, newPosition);
+      this.syncTrackedArmyOwnerState({
+        entityId: update.entityId,
+        ownerAddress,
+        ownerName,
+        guildName,
+        ownerStructureId: update.ownerStructureId,
+      });
     } else {
       this.addArmy({
         entityId,
@@ -607,6 +614,91 @@ export class ArmyManager {
       });
     }
     return false;
+  }
+
+  private resolveOwnerName(address: bigint, preferredName?: string, fallbackName?: string): string {
+    if (preferredName && preferredName.length > 0) {
+      return preferredName;
+    }
+    if (fallbackName && fallbackName.length > 0) {
+      return fallbackName;
+    }
+    return `0x${address.toString(16)}`;
+  }
+
+  private syncTrackedArmyOwnerState(params: {
+    entityId: ID;
+    ownerAddress: bigint;
+    ownerName?: string;
+    guildName?: string;
+    ownerStructureId?: ID | null;
+  }): boolean {
+    const army = this.armies.get(params.entityId);
+    if (!army) {
+      return false;
+    }
+
+    const mergedOwner = resolveArmyOwnerState({
+      existingOwner: army.owner,
+      incomingOwner: {
+        address: params.ownerAddress,
+        ownerName: this.resolveOwnerName(params.ownerAddress, params.ownerName, army.owner.ownerName),
+        guildName: params.guildName ?? army.owner.guildName,
+      },
+    });
+
+    const nextOwningStructureId =
+      params.ownerStructureId !== undefined ? params.ownerStructureId : army.owningStructureId;
+    const nextIsMine = isAddressEqualToAccount(mergedOwner.address);
+    const nextColor = this.getArmyColor({
+      isMine: nextIsMine,
+      isDaydreamsAgent: army.isDaydreamsAgent,
+      owner: { address: mergedOwner.address },
+    });
+
+    const ownerChanged =
+      army.owner.address !== mergedOwner.address ||
+      army.owner.ownerName !== mergedOwner.ownerName ||
+      army.owner.guildName !== mergedOwner.guildName;
+    const ownershipVisualChanged = army.isMine !== nextIsMine || army.color !== nextColor;
+    const structureChanged = army.owningStructureId !== nextOwningStructureId;
+
+    if (!ownerChanged && !ownershipVisualChanged && !structureChanged) {
+      return false;
+    }
+
+    army.owner.address = mergedOwner.address;
+    army.owner.ownerName = mergedOwner.ownerName;
+    army.owner.guildName = mergedOwner.guildName;
+    army.owningStructureId = nextOwningStructureId;
+    army.isMine = nextIsMine;
+    army.color = nextColor;
+    this.armies.set(params.entityId, army);
+
+    const label = this.entityIdLabels.get(params.entityId);
+    if (label) {
+      this.updateArmyLabelData(params.entityId, army, label);
+    }
+
+    if (ownerChanged || ownershipVisualChanged) {
+      this.removeArmyPointIcon(params.entityId);
+      const position = this.getArmyWorldPosition(params.entityId, army.hexCoords);
+      this.updateArmyPointIcon(army, position);
+    }
+
+    const slot = this.visibleArmyIndices.get(params.entityId);
+    if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
+      const numericId = this.toNumericId(params.entityId);
+      const { x, y } = army.hexCoords.getContract();
+      const biome = Biome.getBiome(x, y);
+      const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+      this.refreshArmyInstance(army, slot, modelType);
+      this.armyModel.updateAllInstances();
+      this.syncVisibleSlots();
+      this.frustumVisibilityDirty = true;
+    }
+
+    return true;
   }
 
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
@@ -1726,6 +1818,36 @@ export class ArmyManager {
     return Array.from(this.armies.values());
   }
 
+  public getArmy(entityId: ID): ArmyData | undefined {
+    return this.armies.get(entityId);
+  }
+
+  public syncAttachedArmiesOwnerForStructure(params: {
+    structureId: ID;
+    ownerAddress: bigint;
+    ownerName?: string;
+    guildName?: string;
+  }): ID[] {
+    const updatedArmyIds: ID[] = [];
+
+    this.armies.forEach((army, entityId) => {
+      if (army.owningStructureId !== params.structureId) {
+        return;
+      }
+
+      this.syncTrackedArmyOwnerState({
+        entityId,
+        ownerAddress: params.ownerAddress,
+        ownerName: params.ownerName,
+        guildName: params.guildName ?? army.owner.guildName,
+        ownerStructureId: params.structureId,
+      });
+      updatedArmyIds.push(entityId);
+    });
+
+    return updatedArmyIds;
+  }
+
   public getVisibleCount(): number {
     return this.visibleArmyOrder.length;
   }
@@ -2619,49 +2741,24 @@ ${
       }
     }
 
-    const mergedOwner = resolveArmyOwnerState({
-      existingOwner: army.owner,
-      incomingOwner: {
-        address: resolvedOwnerAddress,
-        ownerName: resolvedOwnerName,
-        guildName: army.owner.guildName,
-      },
+    const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
+    this.syncTrackedArmyOwnerState({
+      entityId: update.entityId,
+      ownerAddress: resolvedOwnerAddress,
+      ownerName: resolvedOwnerName,
+      guildName: army.owner.guildName,
+      ownerStructureId,
     });
 
-    resolvedOwnerAddress = mergedOwner.address;
-    resolvedOwnerName = mergedOwner.ownerName;
-
-    army.owner.address = resolvedOwnerAddress;
-    army.owner.ownerName = resolvedOwnerName;
-    army.owner.guildName = mergedOwner.guildName;
-    army.owningStructureId = update.ownerStructureId;
-    // Update ownership status - this ensures armies are correctly marked as owned when the user's account
-    // becomes available after initial load, since tile updates may occur before account authentication
-    army.isMine = isAddressEqualToAccount(resolvedOwnerAddress);
-    // Update color to reflect new ownership
-    army.color = this.getArmyColor({
-      isMine: army.isMine,
-      isDaydreamsAgent: army.isDaydreamsAgent,
-      owner: { address: resolvedOwnerAddress },
-    });
     army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
-    const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
-    if (ownerStructureId) {
-      army.owningStructureId = ownerStructureId;
-    }
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
-
-    // Update point icon to reflect ownership change (e.g., player vs enemy)
-    this.removeArmyPointIcon(update.entityId);
-    const position = this.getArmyWorldPosition(update.entityId, army.hexCoords);
-    this.updateArmyPointIcon(army, position);
   }
 
   public destroy() {
