@@ -31,12 +31,13 @@ determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full 
 If you have 0 structures and 0 armies, you are NOT registered in the game yet. You MUST register before doing anything
 else — no studying handbooks, no listing actions, no writing learnings. Register immediately:
 
-1. Call `execute_action` with action `obtain_entry_token` (no params needed)
-2. Call `execute_action` with action `register` with params: `name` (your player name as a felt252 string),
-   `entry_token_id` (the token ID returned from step 1), `cosmetic_token_ids` (empty array `[]`)
-3. Call `execute_action` with action `settle_realm` (no params needed) — this settles your realm
+1. `approve_token` — approve the fee token for the blitz contract (use max u128 amount)
+2. `obtain_entry_token` — mint your entry token (no params needed)
+3. `lock_entry_token` — lock the entry token (token_id from step 2, lock_id is always 69)
+4. `register` — register with params: `name` (your player name), `entry_token_id` (from step 2), `cosmetic_token_ids` (`[]`)
+5. `settle_blitz_realm` — settle your realm(s) (handles VRF + position assignment automatically)
 
-After these 3 actions complete, you will have a realm. Then proceed to Phase 1.
+After these 5 actions complete, you will have a realm. Then proceed to Phase 1.
 
 ### First Tick — Study Handbooks
 
@@ -152,10 +153,9 @@ This means:
 
 - **`list_actions` always reflects the live contract ABI** — if the contracts are upgraded, new actions appear
   automatically
-- Some actions have **aliases** (e.g., `travel_explorer` and `explore` both map to the underlying `move_explorer`)
 - **Admin/config entrypoints are hidden** — `config_systems`, `dev_resource_systems`, `season_systems`, and
   `realm_internal_systems` are not exposed
-- The composite `move_to` action uses A\* pathfinding to auto-batch travel/explore steps
+- The composite `move_to` action uses A\* pathfinding to auto-batch travel/explore steps — use this for all movement
 
 ## Decision Loop
 
@@ -179,19 +179,20 @@ fires.
 
 Use `list_actions` to see all available actions with their parameters. Key action groups:
 
-- **Economy**: `create_building`, `destroy_building`, `pause_production`, `resume_production`, `send_resources`,
-  `pickup_resources`, `claim_arrivals`, `burn_resource_for_labor_production`, `burn_labor_for_resource_production`
-- **Movement**: `move_explorer` (unified: `explore=false` for multi-hex travel, `explore=true` for single-hex
-  exploration), `move_to` (A\* pathfinding composite — computes optimal path and batches travel/explore automatically)
-- **Combat**: `attack_explorer`, `attack_guard`, `guard_attack_explorer`, `raid`
-- **Troops**: `create_explorer`, `add_to_explorer`, `delete_explorer`, `add_guard`, `delete_guard`,
-  `swap_explorer_to_guard`, `swap_guard_to_explorer`, `swap_explorer_to_explorer`
+- **Movement**: `move_to` (A\* pathfinding — give target coords, it handles travel + explore automatically)
+- **Economy**: `create_building`, `destroy_building`, `pause_building_production`, `resume_building_production`,
+  `send_resources`, `pickup_resources`, `claim_arrivals`, `burn_resource_for_labor_production`,
+  `burn_labor_for_resource_production`, `burn_resource_for_resource_production`
+- **Combat**: `attack_explorer_vs_explorer`, `attack_explorer_vs_guard`, `attack_guard_vs_explorer`,
+  `raid_explorer_vs_guard`
+- **Troops**: `explorer_create`, `explorer_add`, `explorer_delete`, `guard_add`, `guard_delete`,
+  `explorer_guard_swap`, `guard_explorer_swap`, `explorer_explorer_swap`
 - **Trade**: `create_order`, `accept_order`, `cancel_order`, `buy_resources`, `sell_resources`
 - **Resources**: `send_resources`, `pickup_resources`, `troop_troop_adjacent_transfer`,
   `troop_structure_adjacent_transfer`, `structure_troop_adjacent_transfer`, `troop_burn`, `structure_burn`
-- **Structure**: `upgrade_realm`, `create_village`, `transfer_structure_ownership`
+- **Structure**: `level_up`, `create_village`, `transfer_structure_ownership`
 - **Guild**: `create_guild`, `join_guild`, `leave_guild`, `update_whitelist`, `remove_member`
 - **Hyperstructure**: `contribute_hyperstructure`, `initialize`, `allocate_shares`, `claim_share_points`
 - **Bank**: `buy_resources`, `sell_resources`, `add_liquidity`, `remove_liquidity`
-- **Blitz**: `obtain_entry_token`, `register`, `settle_realm` (settle realm)
+- **Blitz**: `approve_token`, `obtain_entry_token`, `lock_entry_token`, `register`, `settle_blitz_realm`
 - **Relic**: `open_chest`, `apply_relic`

@@ -16,10 +16,10 @@ function requireParam(params: Record<string, unknown>, name: string): number {
 export function simulateAction(action: GameAction): SimulationResult {
   try {
     switch (action.type) {
-      case "attack_explorer":
-      case "attack_guard":
-      case "guard_attack_explorer":
-      case "raid": {
+      case "attack_explorer_vs_explorer":
+      case "attack_explorer_vs_guard":
+      case "attack_guard_vs_explorer":
+      case "raid_explorer_vs_guard": {
         return {
           success: true,
           outcome: {
@@ -30,8 +30,8 @@ export function simulateAction(action: GameAction): SimulationResult {
         };
       }
 
-      case "create_explorer":
-      case "add_guard": {
+      case "explorer_create":
+      case "guard_add": {
         const troops = requireParam(action.params, "amount");
         const tier = requireParam(action.params, "tier");
         const strength = computeStrength(troops, tier);

@@ -126,7 +126,7 @@ export function initializeActions(
   let lockDesc =
     "Lock an entry token NFT before registering for a Blitz game. " +
     "Call AFTER obtain_entry_token and BEFORE register. " +
-    "You must know the token_id (minted by obtain_entry_token) and the lock_id (from blitz config).";
+    "The token_id comes from obtain_entry_token. The lock_id is always 69 (hardcoded).";
   if (_tokenConfig.entryToken) lockDesc += ` Entry token contract: ${_tokenConfig.entryToken}.`;
 
   // Add composite actions that orchestrate multiple base actions
@@ -420,7 +420,7 @@ async function handleMoveExplorer(
   if (!_executor) {
     return { success: false, error: "Action registry not initialized." };
   }
-  return _executor.execute({ type: "move_explorer", params });
+  return _executor.execute({ type: "explorer_move", params });
 }
 
 // ---------------------------------------------------------------------------
@@ -492,7 +492,7 @@ async function handleAddToExplorer(
     return { success: false, error: "Action registry not initialized." };
   }
   return _executor.execute({
-    type: "add_to_explorer",
+    type: "explorer_add",
     params: {
       to_explorer_id: explorerId,
       amount,
@@ -544,15 +544,15 @@ export async function executeAction(client: EternumClient, signer: Account, acti
     return result;
   }
 
-  // move_explorer with explore=true needs VRF multicall via provider
-  if (action.type === "move_explorer" && bool(action.params.explore)) {
+  // explorer_move with explore=true needs VRF multicall via provider
+  if (action.type === "explorer_move" && bool(action.params.explore)) {
     const result = await handleMoveExplorer(client, signer, action.params);
     logAction(action.type, result);
     return result;
   }
 
-  // add_to_explorer — auto-compute home_direction from world state
-  if (action.type === "add_to_explorer") {
+  // explorer_add — auto-compute home_direction from world state
+  if (action.type === "explorer_add") {
     const result = await handleAddToExplorer(client, signer, action.params);
     logAction(action.type, result);
     return result;

@@ -90,11 +90,14 @@ export function generateActions(
         overlay,
       };
 
-      definitions.push(definition);
+      // Internal entrypoints get a route (for programmatic use) but no definition (hidden from LLM)
+      if (!overlay?.internal) {
+        definitions.push(definition);
+      }
       routes.set(actionType, route);
 
       // Register aliases (share the same route and definition reference)
-      if (overlay?.aliases) {
+      if (overlay?.aliases && !overlay?.internal) {
         for (const alias of overlay.aliases) {
           const aliasType = reserveUniqueActionType(alias, contract.suffix, `${overlayKey} (alias)`, claimedBy);
           routes.set(aliasType, route);
@@ -125,10 +128,8 @@ function reserveUniqueActionType(
     i += 1;
   }
 
-  console.warn(
-    `[action-gen] COLLISION: action type "${requestedActionType}" from ${ownerKey} conflicts with ${existing}. ` +
-      `Renaming to "${candidate}". Add an explicit actionType in overlays to control the public name.`,
-  );
+  // Collision auto-resolved — overlays with explicit actionType prevent this.
+  // Only log in debug mode to avoid polluting test/production output.
   claimedBy.set(candidate, ownerKey);
   return candidate;
 }

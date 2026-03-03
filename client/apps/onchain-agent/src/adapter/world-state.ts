@@ -1,5 +1,6 @@
 import type { WorldState } from "@bibliothecadao/game-agent";
 import type { EternumClient } from "@bibliothecadao/client";
+import { getAvailableActions } from "./action-registry";
 import { computeStrength, computeBalance, computeStamina } from "@bibliothecadao/client";
 import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS, hexToBigInt } from "@bibliothecadao/torii";
 import {
@@ -763,49 +764,44 @@ function parseLastDefense(raw: any): EternumEntity["lastDefense"] {
   return { defenderId: id, timestamp: ts, pos: x != null && y != null ? { x, y } : undefined };
 }
 
-/** Actions available on structures — displayed once per section, not per entity. */
+/**
+ * Action types relevant to structures — curated for the tick prompt.
+ * Names must match the actionType from ETERNUM_OVERLAYS / composite actions.
+ * Validated at runtime: any name not in the registry is silently dropped.
+ */
+const STRUCTURE_ACTION_HINTS = [
+  "create_building", "destroy_building", "pause_building_production", "resume_building_production",
+  "explorer_create", "explorer_delete", "level_up",
+  "guard_add", "guard_delete", "explorer_guard_swap", "guard_explorer_swap",
+  "send_resources", "pickup_resources", "claim_arrivals",
+  "create_order", "accept_order", "cancel_order",
+  "buy_resources", "sell_resources", "contribute_hyperstructure",
+];
+
+/**
+ * Action types relevant to armies — curated for the tick prompt.
+ * Names must match the real action types from the ABI / composite actions.
+ * Validated at runtime: any name not in the registry is silently dropped.
+ */
+const ARMY_ACTION_HINTS = [
+  "move_to",
+  "attack_explorer_vs_explorer", "attack_explorer_vs_guard", "attack_guard_vs_explorer",
+  "raid_explorer_vs_guard",
+  "explorer_add", "explorer_delete",
+  "explorer_explorer_swap", "explorer_guard_swap", "guard_explorer_swap",
+  "pickup_resources",
+];
+
 function getStructureActions(): string[] {
-  return [
-    "create_building",
-    "destroy_building",
-    "pause_production",
-    "resume_production",
-    "create_explorer",
-    "delete_explorer",
-    "upgrade_realm",
-    "add_guard",
-    "delete_guard",
-    "swap_explorer_to_guard",
-    "swap_guard_to_explorer",
-    "send_resources",
-    "pickup_resources",
-    "claim_arrivals",
-    "create_order",
-    "accept_order",
-    "cancel_order",
-    "buy_resources",
-    "sell_resources",
-    "contribute_hyperstructure",
-  ];
+  const registered = getAvailableActions();
+  const available = new Set(registered);
+  return STRUCTURE_ACTION_HINTS.filter((a) => available.has(a));
 }
 
-/** Actions available on armies — displayed once per section, not per entity. */
 function getArmyActions(): string[] {
-  return [
-    "travel_explorer",
-    "explore",
-    "move_explorer",
-    "attack_explorer",
-    "attack_guard",
-    "guard_attack_explorer",
-    "raid",
-    "add_to_explorer",
-    "delete_explorer",
-    "swap_explorer_to_explorer",
-    "swap_explorer_to_guard",
-    "swap_guard_to_explorer",
-    "pickup_resources",
-  ];
+  const registered = getAvailableActions();
+  const available = new Set(registered);
+  return ARMY_ACTION_HINTS.filter((a) => available.has(a));
 }
 
 // ---------------------------------------------------------------------------
@@ -1404,56 +1400,132 @@ export function formatEternumTickDiff(
   const rankStr = rankDelta !== 0 ? ` (${rankDelta > 0 ? "+" : ""}${rankDelta} rank)` : "";
   sections.push(`### You: ${playerName} (rank ${p.rank}${rankStr}, ${p.points} pts${ptsStr})\nStructures: ${p.structures} | Armies: ${p.armies}`);
 
-  // Resources diff
-  const resDiff = diffResources(state.resources, prevState.resources);
-  if (resDiff.changed.length > 0) {
-    const lines = resDiff.changed.map((r) => {
-      const sign = r.delta >= 0 ? "+" : "";
-      return `  ${r.name}: ${fmtNum(r.value)} (${sign}${fmtNum(r.delta)})`;
-    });
-    sections.push(`### Resources [${resDiff.changed.length} changed]\n${lines.join("\n")}`);
+  // Full resources (total across all structures) with delta annotations
+  if (state.resources && state.resources.size > 0) {
+    const resDiff = diffResources(state.resources, prevState.resources);
+    const resList = Array.from(state.resources.entries())
+      .map(([k, v]) => {
+        const changed = resDiff.changed.find((r) => r.name === k);
+        const delta = changed ? ` (${changed.delta >= 0 ? "+" : ""}${fmtNum(changed.delta)})` : "";
+        return `  ${k}: ${fmtNum(v)}${delta}`;
+      })
+      .join("\n");
+    sections.push(`### Resources (total)\n${resList}`);
+  } else {
+    sections.push("### Resources (total)\n  None");
   }
 
-  // Entity section — always include compact inventory so the agent never forgets what it owns
+  // Full entity detail — same as the initial tick prompt so the agent retains full context
   const myStructures = state.entities.filter((e) => e.isOwned && e.type === "structure");
   const myArmies = state.entities.filter((e) => e.isOwned && e.type === "army");
+  const enemyStructures = state.entities.filter((e) => !e.isOwned && e.type === "structure");
+  const enemyArmies = state.entities.filter((e) => !e.isOwned && e.type === "army");
   const prevMyStructures = prevState.entities.filter((e) => e.isOwned && e.type === "structure");
   const prevMyArmies = prevState.entities.filter((e) => e.isOwned && e.type === "army");
 
-  const entityLines: string[] = ["### My Entities"];
-
-  // Always: compact inventory of all owned entities
-  if (myStructures.length > 0) {
-    entityLines.push(
-      `Structures: ${myStructures.map((e) => `${e.structureType}#${e.entityId} ${fmtPos(e.position.x, e.position.y)}`).join(" | ")}`,
-    );
-  }
-  if (myArmies.length > 0) {
-    entityLines.push(
-      `Armies: ${myArmies.map((e) => `#${e.entityId} ${e.troopSummary ?? "?"} ${fmtNum(e.strength ?? 0)} stam=${fmtNum(e.stamina ?? 0)} ${fmtPos(e.position.x, e.position.y)}${e.isInBattle ? " BATTLE" : ""}`).join(" | ")}`,
-    );
-  }
-
-  // Then: changes only
+  // Compute diffs for change annotations
   const sDiff = diffEntities(myStructures, prevMyStructures);
   const aDiff = diffEntities(myArmies, prevMyArmies);
-  const hasEntityChanges =
-    sDiff.added.length > 0 || sDiff.removed.length > 0 || sDiff.changed.length > 0 ||
-    aDiff.added.length > 0 || aDiff.removed.length > 0 || aDiff.changed.length > 0;
+  const structureChangeMap = new Map<number, string[]>();
+  for (const c of sDiff.changed) structureChangeMap.set(c.entity.entityId, c.changes);
+  const armyChangeMap = new Map<number, string[]>();
+  for (const c of aDiff.changed) armyChangeMap.set(c.entity.entityId, c.changes);
+  const addedStructureIds = new Set(sDiff.added.map((e) => e.entityId));
+  const addedArmyIds = new Set(aDiff.added.map((e) => e.entityId));
 
-  if (hasEntityChanges) {
-    entityLines.push("Changes:");
-    for (const a of sDiff.added) entityLines.push(`  + ${formatEntityLine(a)} (NEW)`);
-    for (const r of sDiff.removed) entityLines.push(`  - [${r.structureType ?? "?"}] id=${r.entityId} (removed)`);
-    for (const c of sDiff.changed) entityLines.push(`  [${c.entity.structureType ?? "?"}] id=${c.entity.entityId} — ${c.changes.join(" | ")}`);
-    for (const a of aDiff.added) entityLines.push(`  + ${formatEntityLine(a, myStructures)} (NEW)`);
-    for (const r of aDiff.removed) entityLines.push(`  - [Army] id=${r.entityId} ${r.troopSummary ?? ""} (destroyed/left)`);
-    for (const c of aDiff.changed) entityLines.push(`  [Army] id=${c.entity.entityId} ${c.entity.troopSummary ?? ""} — ${c.changes.join(" | ")}`);
+  if (myStructures.length > 0 || myArmies.length > 0) {
+    const lines = ["### My Entities"];
+
+    // Removed entities
+    for (const r of sDiff.removed) lines.push(`  - [${r.structureType ?? "?"}] id=${r.entityId} (removed)`);
+    for (const r of aDiff.removed) lines.push(`  - [Army] id=${r.entityId} ${r.troopSummary ?? ""} (destroyed/left)`);
+
+    if (myStructures.length > 0) {
+      lines.push(`Structures (actions: ${getStructureActions().join(", ")})`);
+      for (const e of myStructures) {
+        const changes = structureChangeMap.get(e.entityId);
+        const tag = addedStructureIds.has(e.entityId) ? " ← NEW" : changes ? ` ← ${changes.join(" | ")}` : "";
+        lines.push(`${formatEntityLine(e)}${tag}`);
+        if (e.resources && e.resources.size > 0) {
+          const resParts = Array.from(e.resources.entries())
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => `${k}: ${fmtNum(v)}`);
+          if (resParts.length > 0) {
+            lines.push(`    Resources: ${resParts.join(", ")}`);
+          }
+        }
+        if (e.buildingSlots) {
+          const { used, total, buildings } = e.buildingSlots;
+          const free = total - used;
+          lines.push(
+            `    Slots: ${used}/${total} (${free} free)${buildings.length > 0 ? ` — ${buildings.join(", ")}` : ""}`,
+          );
+        }
+        if (
+          e.freeSlots &&
+          e.freeSlots.length > 0 &&
+          e.buildingSlots &&
+          e.buildingSlots.total - e.buildingSlots.used > 0
+        ) {
+          lines.push(`    Free paths: ${e.freeSlots.join(",")}`);
+        }
+        if (e.population) {
+          const { current, capacity } = e.population;
+          if (current >= capacity) {
+            lines.push(`    Pop: ${current}/${capacity} FULL — build WorkersHut for +6`);
+          } else if (current >= capacity * 0.8) {
+            lines.push(`    Pop: ${current}/${capacity}`);
+          }
+        }
+        if (e.nextUpgrade) {
+          lines.push(`    Upgrade → ${e.nextUpgrade.name}: ${e.nextUpgrade.cost}`);
+        }
+        if (e.armies && e.armies.current > 0) {
+          lines.push(`    Armies: ${e.armies.current}`);
+        }
+        if (e.guardSlots) {
+          const occupied = e.guardSlots.filter((s) => s.troops !== "empty");
+          if (occupied.length > 0) {
+            lines.push(`    Guards: ${occupied.map((s) => `${s.slot}: ${s.troops}`).join(" | ")}`);
+          }
+        }
+        if (e.troopsInReserve && e.troopsInReserve.length > 0) {
+          lines.push(`    Reserves: ${e.troopsInReserve.join(", ")}`);
+        }
+        if (e.lastAttack) {
+          const ago = formatTimeAgo(e.lastAttack.timestamp);
+          lines.push(`    ⚔ Attacked by #${e.lastAttack.attackerId} ${ago}`);
+        }
+      }
+    }
+    if (myArmies.length > 0) {
+      lines.push(`Armies (actions: ${getArmyActions().join(", ")})`);
+      for (const e of myArmies) {
+        const changes = armyChangeMap.get(e.entityId);
+        const tag = addedArmyIds.has(e.entityId) ? " ← NEW" : changes ? ` ← ${changes.join(" | ")}` : "";
+        lines.push(`${formatEntityLine(e, myStructures)}${tag}`);
+        if (e.lastAttack) {
+          const ago = formatTimeAgo(e.lastAttack.timestamp);
+          const pos = e.lastAttack.pos ? ` from ${fmtPos(e.lastAttack.pos.x, e.lastAttack.pos.y)}` : "";
+          lines.push(`    ⚔ Last attacked by #${e.lastAttack.attackerId}${pos} ${ago}`);
+        }
+      }
+    }
+    sections.push(lines.join("\n"));
+  } else {
+    sections.push(
+      "### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm",
+    );
   }
 
-  sections.push(entityLines.join("\n"));
+  // Operating area — unified minimap around all owned entities
+  const ownedEntities = state.entities.filter((e) => e.isOwned);
+  const operatingArea = buildOperatingArea(ownedEntities, state.tileMap);
+  if (operatingArea) {
+    sections.push(operatingArea);
+  }
 
-  // Tile map diff
+  // Tile map diff — highlight new exploration
   const tileDiff = diffTileMap(state.tileMap, prevState.tileMap);
   if (tileDiff.newlyExplored.length > 0 || tileDiff.occupierChanged.length > 0) {
     const lines: string[] = [`### Map Changes`];
@@ -1466,23 +1538,41 @@ export function formatEternumTickDiff(
     sections.push(lines.join("\n"));
   }
 
-  // Nearby entities diff
-  const enemyEntities = state.entities.filter((e) => !e.isOwned);
+  // Full nearby entities — with change annotations
   const prevEnemyEntities = prevState.entities.filter((e) => !e.isOwned);
-  const ownedEntities = state.entities.filter((e) => e.isOwned);
-  const eDiff = diffEntities(enemyEntities, prevEnemyEntities);
-  if (eDiff.added.length > 0 || eDiff.removed.length > 0 || eDiff.changed.length > 0) {
-    const lines: string[] = ["### Nearby Changes"];
-    for (const a of eDiff.added) lines.push(`  + ${formatEntityLine(a, ownedEntities)} (entered radius)`);
-    for (const r of eDiff.removed) lines.push(`  - ${r.type === "structure" ? r.structureType : "Army"} #${r.entityId} (left radius)`);
-    for (const c of eDiff.changed) {
-      if (c.changes.length > 0) lines.push(`  ${c.entity.type === "structure" ? c.entity.structureType : "Army"} #${c.entity.entityId} — ${c.changes.join(" | ")}`);
+  const eDiff = diffEntities(enemyStructures.concat(enemyArmies), prevEnemyEntities);
+  const nearbyChangeMap = new Map<number, string[]>();
+  for (const c of eDiff.changed) nearbyChangeMap.set(c.entity.entityId, c.changes);
+  const addedNearbyIds = new Set(eDiff.added.map((e) => e.entityId));
+  const removedNearbyIds = new Set(eDiff.removed.map((e) => e.entityId));
+
+  if (enemyStructures.length > 0 || enemyArmies.length > 0 || eDiff.removed.length > 0) {
+    const lines = ["### Nearby (other players)"];
+    for (const r of eDiff.removed) {
+      lines.push(`  - ${r.type === "structure" ? r.structureType : "Army"} #${r.entityId} (left radius)`);
+    }
+    if (enemyStructures.length > 0) {
+      lines.push("Structures:");
+      for (const e of enemyStructures) {
+        const changes = nearbyChangeMap.get(e.entityId);
+        const tag = addedNearbyIds.has(e.entityId) ? " ← NEW" : changes ? ` ← ${changes.join(" | ")}` : "";
+        lines.push(`${formatEntityLine(e, ownedEntities)}${tag}`);
+      }
+    }
+    if (enemyArmies.length > 0) {
+      lines.push("Armies:");
+      for (const e of enemyArmies) {
+        const changes = nearbyChangeMap.get(e.entityId);
+        const tag = addedNearbyIds.has(e.entityId) ? " ← NEW" : changes ? ` ← ${changes.join(" | ")}` : "";
+        lines.push(`${formatEntityLine(e, ownedEntities)}${tag}`);
+      }
     }
     sections.push(lines.join("\n"));
   }
 
   // New battles only
-  const newBattles = state.recentBattles.filter((b) => b.timestamp > prevState.timestamp);
+  const prevTimestampSec = Math.floor(prevState.timestamp / 1000);
+  const newBattles = state.recentBattles.filter((b) => b.timestamp > prevTimestampSec);
   if (newBattles.length > 0) {
     const lines = ["### New Battles"];
     for (const b of newBattles) {
@@ -1506,6 +1596,13 @@ export function formatEternumTickDiff(
       .map((p, i) => `  ${i + 1}. ${decodeFelt252(p.name) || p.name}: ${p.points} pts`)
       .join("\n");
     sections.push(`### Leaderboard\n${lb}`);
+  }
+
+  // Market
+  if (state.market.recentSwapCount > 0 || state.market.openOrderCount > 0) {
+    sections.push(
+      `### Market\n  Recent swaps: ${state.market.recentSwapCount} | Open orders: ${state.market.openOrderCount}`,
+    );
   }
 
   const result = sections.join("\n\n");

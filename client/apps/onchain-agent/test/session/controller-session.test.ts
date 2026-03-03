@@ -28,8 +28,7 @@ vi.mock("@cartridge/controller/session/node", () => ({
 
 import { ControllerSession, buildSessionPoliciesFromManifest } from "../../src/session/controller-session";
 
-// Load repo-local manifest fixture
-const manifestPath = resolve(__dirname, "../manifest.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 const profile = {

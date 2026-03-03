@@ -11,13 +11,17 @@ const { simulateAction } = await import("../../src/adapter/simulation");
 describe("simulateAction", () => {
   it("simulates combat action strength", () => {
     const result = simulateAction({
-      type: "attack_guard",
+      type: "attack_explorer_vs_guard",
       params: { amount: 12, tier: 3 },
     });
 
     expect(result.success).toBe(true);
-    expect(result.outcome).toEqual({ estimatedStrength: 360 });
-    expect(result.cost).toEqual({ troops: 12 });
+    expect(result.outcome).toEqual({
+      message:
+        "Use the simulate_battle or simulate_raid tool instead — " +
+        "they provide full damage predictions with biome bonuses and tier multipliers.",
+    });
+    expect(result.cost).toBeUndefined();
   });
 
   it("simulates market output", () => {
@@ -55,20 +59,17 @@ describe("simulateAction", () => {
       params: { buildingCategory: 3 },
     });
 
-    expect(result.success).toBe(true);
-    expect(result.outcome).toEqual({
-      buildingCategory: 3,
-      message: "No baseCosts provided; cannot estimate resource cost.",
-    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("baseCosts array is required for building cost simulation.");
   });
 
   it("returns default message for unknown action types", () => {
     const result = simulateAction({ type: "unknown", params: {} });
 
-    expect(result.success).toBe(true);
-    expect(result.outcome).toEqual({
-      message: "No simulation model for action type: unknown",
-    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "No simulation model for action type: unknown. Use simulate_battle for combat predictions.",
+    );
   });
 
   it("returns failure when a compute function throws", async () => {
@@ -78,7 +79,7 @@ describe("simulateAction", () => {
     });
 
     const result = simulateAction({
-      type: "create_explorer",
+      type: "explorer_create",
       params: { amount: 1, tier: 1 },
     });
 

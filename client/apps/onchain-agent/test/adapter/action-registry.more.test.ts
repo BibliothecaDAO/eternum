@@ -13,9 +13,9 @@ describe("action-registry additional routes", () => {
     vi.mocked(mockSigner.execute).mockResolvedValue({ transaction_hash: "0xabc123" });
   });
 
-  it("routes attack_guard to the ABI entrypoint", async () => {
+  it("routes attack_explorer_vs_guard to the ABI entrypoint", async () => {
     const result = await executeAction(client as any, mockSigner, {
-      type: "attack_guard",
+      type: "attack_explorer_vs_guard",
       params: { explorer_id: 1, structure_id: 2, structure_direction: 3 },
     });
 
@@ -24,9 +24,9 @@ describe("action-registry additional routes", () => {
     expect(call.entrypoint).toBe("attack_explorer_vs_guard");
   });
 
-  it("routes cancel_trade alias to cancel_order", async () => {
+  it("routes cancel_order to the ABI entrypoint", async () => {
     const result = await executeAction(client as any, mockSigner, {
-      type: "cancel_trade",
+      type: "cancel_order",
       params: { trade_id: 11 },
     });
 
@@ -35,9 +35,9 @@ describe("action-registry additional routes", () => {
     expect(call.entrypoint).toBe("cancel_order");
   });
 
-  it("executes pause_production with struct params", async () => {
+  it("executes pause_building_production with struct params", async () => {
     const result = await executeAction(client as any, mockSigner, {
-      type: "pause_production",
+      type: "pause_building_production",
       params: { structure_id: 1, building_coord: { x: 2, y: 3 } },
     });
 

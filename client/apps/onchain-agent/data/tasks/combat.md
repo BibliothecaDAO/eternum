@@ -21,42 +21,54 @@ autoload: false
 
 ## Army (Explorer) Management
 
-- **Create**: `create_explorer` — spawns army from structure's troop reserves
-  - Params: `forStructureId`, `category` (0=Knight, 1=Paladin, 2=Crossbow), `tier` (0=T1, 1=T2, 2=T3), `amount`,
-    `spawnDirection`
-- **Reinforce**: `add_to_explorer` — add troops to existing army (must be adjacent to home structure)
-- **Disband**: `delete_explorer` — return troops to structure instantly
+- **Create**: `explorer_create` — spawns army from structure's troop reserves
+  - Params: `for_structure_id`, `category` (0=Knight, 1=Paladin, 2=Crossbow), `tier` (0=T1, 1=T2, 2=T3), `amount`,
+    `spawn_direction`
+- **Reinforce**: `explorer_add` — add troops to existing army (must be adjacent to home structure)
+- **Disband**: `explorer_delete` — return troops to structure instantly
+- **Swap troops**: `explorer_explorer_swap` — transfer troops between two adjacent explorers
 - **Army limit**: Each structure has a max army count (check "Armies: X/Y" in inspect output)
 
 ## Combat Actions
 
-| Action                  | What It Does                              | Stamina Cost             |
-| ----------------------- | ----------------------------------------- | ------------------------ |
-| `attack_explorer`       | Army vs army (field battle)               | 50 attacker, 40 defender |
-| `attack_guard`          | Army vs structure's guards (capture)      | Varies                   |
-| `guard_attack_explorer` | Structure guards attack nearby army       | Varies                   |
-| `raid`                  | Steal resources without destroying guards | Varies                   |
+| Action                         | What It Does                                      | Stamina Cost             |
+| ------------------------------ | ------------------------------------------------- | ------------------------ |
+| `attack_explorer_vs_explorer`  | Army vs army — strength-based, steal on victory   | 50 attacker, 40 defender |
+| `attack_explorer_vs_guard`     | Army vs structure guard — capture on victory       | 30                       |
+| `attack_guard_vs_explorer`     | Guard attacks nearby army — defensive action       | 30                       |
+| `raid_explorer_vs_guard`       | Steal resources without destroying guard           | 30                       |
 
 - Combat resolution is instant (onchain)
-- Higher total strength wins
-- Winner can steal specified resources from loser
+- Higher total strength wins — use `simulate_battle` or `simulate_raid` to predict outcomes
+- `attack_explorer_vs_explorer`: winner can steal specified resources from the defeated explorer
+- `attack_explorer_vs_guard`: victory destroys the guard and captures the structure
+- `raid_explorer_vs_guard`: guard survives, you only steal resources — useful when guard is too strong to defeat
 - `"IN BATTLE"` flag appears during combat, clears after
 
 ## Guard Slots
 
-- 4 slots per structure: Alpha (0), Bravo (1), Charlie (2), Delta (3)
+Guard slot names depend on structure level:
+
+| Slot | Settlement  | City       | Kingdom     | Empire     |
+| ---- | ----------- | ---------- | ----------- | ---------- |
+| 0    | Watchtower  | Outer Wall | Castle Wall | Inner Wall |
+| 1    | —           | Outer Wall | Castle Wall | Inner Wall |
+| 2    | —           | —          | Castle Wall | Inner Wall |
+| 3    | —           | —          | —           | Inner Wall |
+
 - Each slot holds one troop type/tier at any count
 - Total guard strength = sum across all slots
-- `add_guard` — assign troops from reserves to a guard slot
-- `delete_guard` — recall guard troops back to reserves
-- `swap_explorer_to_guard` / `swap_guard_to_explorer` — transfer between armies and guard slots (must be adjacent)
+- `guard_add` — assign troops from reserves to a guard slot
+- `guard_delete` — recall guard troops back to reserves
+- `explorer_guard_swap` / `guard_explorer_swap` — transfer between armies and guard slots (must be adjacent)
 
 ## Stamina
 
-- Armies have 0-120 stamina, regenerates +2 per phase (10 minutes)
+- Armies have 0-120 stamina, regenerates +20 per phase (every ~1 minute in Blitz)
 - Travel (explored tiles): ~10 stamina/hex
 - Explore (new tiles): 30 stamina/hex (minimum 10 troops required)
-- Attacks consume 50 stamina (attacker), 40 (defender)
+- `attack_explorer_vs_explorer`: 50 attacker, 40 defender
+- `attack_explorer_vs_guard` / `attack_guard_vs_explorer` / `raid_explorer_vs_guard`: 30 stamina
 
 ## Common Errors
 

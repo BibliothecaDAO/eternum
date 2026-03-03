@@ -14,6 +14,12 @@ vi.mock("@bibliothecadao/client", () => ({
     existingCount: number,
     costPercentIncrease: number,
   ) => baseCosts.map((c) => ({ ...c, amount: c.amount + existingCount + costPercentIncrease })),
+  computeBalance: (params: any) => ({
+    balance: Math.floor(params.rawBalance / (params.precision ?? 1_000_000_000)),
+    atMaxCapacity: false,
+    amountProduced: 0,
+  }),
+  computeStamina: (params: any) => ({ current: params.currentAmount }),
 }));
 
 // Import after mock
@@ -78,7 +84,7 @@ describe("EternumGameAdapter", () => {
       const { adapter } = createAdapter();
 
       const result = await adapter.simulateAction({
-        type: "create_explorer",
+        type: "explorer_create",
         params: { amount: 10, tier: 2 },
       });
 
@@ -104,7 +110,7 @@ describe("EternumGameAdapter", () => {
       expect((result.cost as any)?.resources).toEqual([{ resourceId: 1, name: "Wood", amount: 113 }]);
     });
 
-    it("returns success for unknown action types with info message", async () => {
+    it("returns error for unknown action types with info message", async () => {
       const { adapter } = createAdapter();
 
       const result = await adapter.simulateAction({
@@ -112,8 +118,8 @@ describe("EternumGameAdapter", () => {
         params: {},
       });
 
-      expect(result.success).toBe(true);
-      expect((result.outcome as any)?.message).toContain("No simulation model");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("No simulation model");
     });
   });
 });

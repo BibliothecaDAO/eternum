@@ -110,8 +110,9 @@ Capacities by Level
 
 ⚔️ Military & Armies
 
-Army Composition Max Size:** 30,000 units. Type:** Single troop type and tier per army. Limit:\*\* Max 10 Field Armies
-per structure (gained via Military Buildings).
+Army Composition Deployment Cap:** Varies by structure level (Settlement=6K, City=30K, Kingdom=90K, Empire=180K).
+Actual troop count depends on tier — higher tiers are stronger but fewer units fit in the cap.
+Type:** Single troop type and tier per army. Limit:\*\* Max 10 Field Armies per structure (gained via Military Buildings).
 
 Field Armies Used for exploration, claiming Hyperstructures, and attacking. Deployed on the 6 hexes surrounding the
 Realm. Can only merge with armies from the same structure.

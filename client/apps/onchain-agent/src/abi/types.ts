@@ -83,8 +83,10 @@ export interface DomainOverlay {
   preflight?: (params: Record<string, unknown>, cachedState?: unknown) => string | null;
   /** Additional action type aliases */
   aliases?: string[];
-  /** Hide this entrypoint from the LLM */
+  /** Hide this entrypoint from the LLM (no route, no definition) */
   hidden?: boolean;
+  /** Internal-only: route is registered (for programmatic use) but not shown to the LLM */
+  internal?: boolean;
 }
 
 /** Keyed by "{contractSuffix}::{entrypoint}" */

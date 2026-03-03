@@ -7,14 +7,17 @@
  */
 
 import { wasmPlugin, createPiConfigPlugin } from "./src/build-plugins";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const packageJsonPath = path.join(import.meta.dir, "package.json");
+const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version: string };
 
 const result = await Bun.build({
   entrypoints: ["./src/cli.ts"],
   outdir: "./dist-bun",
   target: "bun",
+  define: { BUILD_VERSION: JSON.stringify(pkg.version) },
   plugins: [wasmPlugin, createPiConfigPlugin(packageJsonPath)],
 });
 

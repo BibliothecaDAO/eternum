@@ -1,4 +1,6 @@
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// NOTE: data/, package.json, .env.example are now embedded in the binary via
+// src/embedded-data.ts and no longer need to be staged alongside it.
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -8,13 +10,8 @@ const APP_NAME = "axis";
 
 const REQUIRED_STAGED_FILES = [
   APP_NAME,
-  "package.json",
   "README.md",
   "LICENSE",
-  ".env.example",
-  "data/soul.md",
-  "data/HEARTBEAT.md",
-  "data/tasks/priorities.md",
 ];
 
 interface ReleasePackagingOptions {
@@ -78,17 +75,11 @@ function resolveBinaryForTarget(options: ReleasePackagingOptions, target: string
 }
 
 function stageCommonFiles(stageDir: string, options: ReleasePackagingOptions): void {
-  const packageJsonPath = path.join(options.packageDir, "package.json");
   const readmePath = path.join(options.packageDir, "README.md");
-  const envExamplePath = path.join(options.packageDir, ".env.example");
-  const dataDirPath = path.join(options.packageDir, "data");
   const resolvedLicensePath = options.licensePath ?? path.resolve(options.packageDir, "../../../LICENSE");
 
-  cpSync(packageJsonPath, path.join(stageDir, "package.json"));
   cpSync(readmePath, path.join(stageDir, "README.md"));
-  cpSync(envExamplePath, path.join(stageDir, ".env.example"));
   cpSync(resolvedLicensePath, path.join(stageDir, "LICENSE"));
-  cpSync(dataDirPath, path.join(stageDir, "data"), { recursive: true });
 }
 
 function createArchive(archivePath: string, sourceRoot: string): void {

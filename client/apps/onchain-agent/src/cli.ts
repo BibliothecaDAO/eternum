@@ -1,11 +1,13 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { access, constants } from "node:fs/promises";
 import { dirname } from "node:path";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config";
-import { resolveBundledPath } from "./runtime-paths";
 import { parseCliArgs } from "./cli-args";
+import { embeddedData, embeddedEnvExample } from "./embedded-data";
+
+declare const BUILD_VERSION: string;
 import { runWorlds } from "./commands/worlds";
 import { runAuth } from "./commands/auth";
 import { runAuthStatus } from "./commands/auth-status";
@@ -26,14 +28,7 @@ const AXIS_ASCII_BANNER = [
 ].join("\n");
 
 function readVersion(): string {
-  try {
-    const packageJsonPath = resolveBundledPath("package.json");
-    const raw = readFileSync(packageJsonPath, "utf8");
-    const parsed = JSON.parse(raw) as { version?: string };
-    return parsed.version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
+  return BUILD_VERSION;
 }
 
 function printUsage() {
@@ -134,41 +129,19 @@ async function runDoctor(): Promise<number> {
   return 1;
 }
 
-function copyIfMissing(sourcePath: string, destinationPath: string) {
+function writeIfMissing(destinationPath: string, content: string) {
   if (existsSync(destinationPath)) {
     return;
   }
   mkdirSync(dirname(destinationPath), { recursive: true });
-  copyFileSync(sourcePath, destinationPath);
+  writeFileSync(destinationPath, content, "utf8");
 }
 
 export function seedDataDir(dataDir: string) {
   mkdirSync(dataDir, { recursive: true });
 
-  const bundledDataDir = resolveBundledPath("data");
-  if (!existsSync(bundledDataDir)) {
-    const fallbackSoul = path.join(dataDir, "soul.md");
-    if (!existsSync(fallbackSoul)) {
-      writeFileSync(fallbackSoul, "# Soul\n\nYou are Axis, an Eternum onchain agent.\n", "utf8");
-    }
-    const fallbackTasksDir = path.join(dataDir, "tasks");
-    mkdirSync(fallbackTasksDir, { recursive: true });
-    const fallbackHeartbeat = path.join(dataDir, "HEARTBEAT.md");
-    if (!existsSync(fallbackHeartbeat)) {
-      writeFileSync(fallbackHeartbeat, "version: 1\njobs: []\n", "utf8");
-    }
-    return;
-  }
-
-  copyIfMissing(path.join(bundledDataDir, "soul.md"), path.join(dataDir, "soul.md"));
-  copyIfMissing(path.join(bundledDataDir, "HEARTBEAT.md"), path.join(dataDir, "HEARTBEAT.md"));
-
-  const bundledTasksDir = path.join(bundledDataDir, "tasks");
-  if (existsSync(bundledTasksDir)) {
-    const taskFiles = readdirSync(bundledTasksDir).filter((entry) => entry.endsWith(".md"));
-    for (const fileName of taskFiles) {
-      copyIfMissing(path.join(bundledTasksDir, fileName), path.join(dataDir, "tasks", fileName));
-    }
+  for (const [relativePath, content] of Object.entries(embeddedData)) {
+    writeIfMissing(path.join(dataDir, relativePath), content);
   }
 }
 
@@ -177,25 +150,7 @@ function seedEnvFile() {
   if (existsSync(cwdEnvPath)) {
     return;
   }
-
-  const bundledExamplePath = resolveBundledPath(".env.example");
-  if (existsSync(bundledExamplePath)) {
-    copyIfMissing(bundledExamplePath, cwdEnvPath);
-    return;
-  }
-
-  writeFileSync(
-    cwdEnvPath,
-    [
-      "RPC_URL=http://localhost:5050",
-      "TORII_URL=http://localhost:8080",
-      "WORLD_ADDRESS=0x0",
-      "CHAIN_ID=0x534e5f5345504f4c4941",
-      "MODEL_PROVIDER=anthropic",
-      "MODEL_ID=claude-sonnet-4-5-20250929",
-    ].join("\n") + "\n",
-    "utf8",
-  );
+  writeFileSync(cwdEnvPath, embeddedEnvExample, "utf8");
 }
 
 function runInit(world?: string): number {
