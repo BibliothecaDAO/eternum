@@ -1,7 +1,7 @@
 import { EternumClient } from "@bibliothecadao/client";
 import { createHeartbeatLoop, createGameAgent, type HeartbeatJob } from "@bibliothecadao/game-agent";
 import { getModel } from "@mariozechner/pi-ai";
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { Account, RpcProvider, uint256, CallData, type AccountInterface } from "starknet";
 import { createShutdownGate } from "./shutdown-gate";
@@ -133,8 +133,9 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
   // Propagate world-scoped dataDir so debug log helpers pick it up
   process.env.AGENT_DATA_DIR = config.dataDir;
 
-  // Ensure data dir is seeded (soul.md, HEARTBEAT.md, tasks/) even if `init` was never run
+  // Ensure all runtime directories exist even if `init` was never run
   seedDataDir(config.dataDir);
+  mkdirSync(config.sessionBasePath, { recursive: true });
 
   const emitter = new JsonEmitter({
     verbosity: options.verbosity,

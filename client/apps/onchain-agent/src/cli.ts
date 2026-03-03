@@ -182,7 +182,8 @@ function runInit(world?: string): number {
 }
 
 export async function runCli(args: string[] = process.argv.slice(2)): Promise<number> {
-  // Load .env files before anything reads process.env
+  // Ensure ~/.eternum-agent/.env exists (no-op if already there), then load it
+  seedEnvFile();
   loadEnvFiles();
 
   const opts = parseCliArgs(args);
