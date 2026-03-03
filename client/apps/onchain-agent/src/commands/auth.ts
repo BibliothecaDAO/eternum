@@ -104,6 +104,9 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
     const chainId = deriveChainIdFromRpcUrl(profile.rpcUrl ?? "") ?? config.chainId;
     const sessionBasePath = path.join(config.sessionBasePath, world.name);
 
+    // Determine if we can wait for browser callback
+    const canWait = options.callbackUrl || options.approve || process.stdin.isTTY;
+
     const session = new ControllerSession({
       rpcUrl: profile.rpcUrl ?? config.rpcUrl,
       chainId,
@@ -112,6 +115,8 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
       manifest,
       worldProfile: profile,
       callbackUrl: options.callbackUrl,
+      // Suppress auto-browser-open when we can't wait for callback
+      onAuthUrl: canWait ? undefined : () => {},
     });
 
     // 3. Write artifacts
@@ -163,7 +168,6 @@ async function authSingleWorld(world: DiscoveredWorld, options: AuthOptions): Pr
 
       // Non-blocking mode: no callback server, no auto-approve, and no TTY.
       // Print the URL and exit — user completes with `axis auth-complete`.
-      const canWait = options.callbackUrl || options.approve || process.stdin.isTTY;
       if (!canWait) {
         if (options.json) {
           options.write(
@@ -338,6 +342,6 @@ export async function runAuth(options: AuthOptions): Promise<number> {
     }
   }
 
-  const allActive = results.every((r) => r.status === "active");
-  return allActive ? 0 : 1;
+  const allOk = results.every((r) => r.status === "active" || r.status === "awaiting_approval");
+  return allOk ? 0 : 1;
 }
