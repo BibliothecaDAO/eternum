@@ -5,6 +5,18 @@ title: Axis Configuration and Operations
 
 # Axis Configuration and Operations
 
+## Config File Loading
+
+Axis auto-loads `.env` files on every command. Precedence (lowest to highest):
+
+1. **`~/.eternum-agent/.env`** — global config (API keys, preferences). Auto-created on first run.
+2. **`./.env`** (current directory) — local overrides for development or per-project settings.
+3. **Shell environment** — `export ANTHROPIC_API_KEY=...` always wins over file values.
+
+Values from higher-priority sources override lower ones. Shell env vars are never overwritten by file values. All
+runtime directories (`~/.eternum-agent/data/`, `~/.eternum-agent/.cartridge/`) are auto-created on first run — no manual
+`axis init` required.
+
 ## Core Environment Variables
 
 | Variable             | Default                          | Purpose                                                      |
@@ -54,7 +66,8 @@ title: Axis Configuration and Operations
         ├── manifest.json
         ├── policy.json
         ├── session.json
-        └── auth.json
+        ├── auth.json
+        └── auth-qr.png
 ```
 
 ## Runtime Config Updates (Headless)
@@ -83,6 +96,6 @@ Common issues:
 
 - `No worlds discovered`: check network reachability and `CARTRIDGE_API_BASE`
 - `--world is required for headless mode`: pre-auth and set `--world`
-- Auth remains pending: complete approval or run `auth-complete`
-- Auto-approve fails: ensure `agent-browser` exists and credentials are valid
+- Auth remains pending: complete approval or run `axis auth <world> --redirect-url="..."`
+- Password auth fails: verify username/password and that the account has a password credential on Cartridge
 - Session expired: re-run `axis auth <world>`

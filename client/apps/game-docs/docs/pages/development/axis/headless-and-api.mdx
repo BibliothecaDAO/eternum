@@ -9,13 +9,18 @@ Headless mode is designed for orchestrators, remote servers, and multi-agent fle
 
 ## Start Headless
 
-Pre-authenticate first (`axis auth <world>`), then run:
-
 ```bash
 axis run --headless --world=my-world --api-port=3000 --stdin
 ```
 
 `--world` is required in headless mode.
+
+If no artifacts exist for the world, Axis auto-discovers and bootstraps them (profile, manifest, policies). If no
+session exists, it prints the auth URL and instructions to complete authentication via
+`axis auth <world> --redirect-url="..."`.
+
+For first-time setup on a new VPS, see
+[Headless VPS Auth](/development/axis/worlds-and-auth#headless-vps-auth-no-browser).
 
 ## NDJSON Event Stream
 
@@ -29,6 +34,7 @@ Common event types:
 - `action`
 - `prompt`
 - `heartbeat`
+- `config`
 - `error`
 - `shutdown`
 
@@ -36,7 +42,7 @@ Verbosity filters:
 
 - `quiet`: `error`, `session`, `shutdown`
 - `actions`: `quiet` + `action`
-- `decisions`: `actions` + `decision`, `heartbeat`, `prompt`, `startup`
+- `decisions`: `actions` + `decision`, `heartbeat`, `prompt`, `startup`, `config`
 - `all`: `decisions` + `tick`
 
 ## HTTP API

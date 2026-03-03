@@ -11,28 +11,36 @@
  */
 import type { DomainOverlayMap, Manifest } from "./types";
 import { extractAllFromManifest, getGameEntrypoints } from "./parser";
+import { toContract, getMapCenter } from "../adapter/world-state";
+import {
+  ResourcesIds,
+  RESOURCE_PRECISION as TYPES_RESOURCE_PRECISION,
+  BuildingType,
+  BuildingTypeToString,
+  Direction,
+  DirectionName,
+  resources as resourceDefs,
+} from "@bibliothecadao/types";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Constants (generated from @bibliothecadao/types) ──────────────────────
 
 /** On-chain amounts (troops, resources) must be multiplied by this factor. */
-export const RESOURCE_PRECISION = 1_000_000_000;
+export const RESOURCE_PRECISION = TYPES_RESOURCE_PRECISION;
 
+// Generate "Resource IDs: 1=Stone, 2=Coal, ..." from the resources array
 const RESOURCE_IDS =
-  "Resource IDs: 1=Stone, 2=Coal, 3=Wood, 4=Copper, 5=Ironwood, 6=Obsidian, 7=Gold, 8=Silver, " +
-  "9=Mithral, 10=AlchemicalSilver, 11=ColdIron, 12=DeepCrystal, 13=Ruby, 14=Diamonds, " +
-  "15=Hartwood, 16=Ignium, 17=TwilightQuartz, 18=TrueIce, 19=Adamantine, 20=Sapphire, " +
-  "21=EtherealSilica, 22=Dragonhide, 23=Labor, 24=AncientFragment, 25=Donkey, " +
-  "26=Knight, 27=KnightT2, 28=KnightT3, 29=Crossbowman, 30=CrossbowmanT2, 31=CrossbowmanT3, " +
-  "32=Paladin, 33=PaladinT2, 34=PaladinT3, 35=Wheat, 36=Fish, 37=Lords, 38=Essence";
+  "Resource IDs: " +
+  resourceDefs
+    .filter((r) => r.id <= 38) // Core resources only (not relics)
+    .map((r) => `${r.id}=${r.trait}`)
+    .join(", ");
 
+// Generate "Building IDs: 0=None, 1=WorkersHut, ..." from BuildingTypeToString
 const BUILDING_TYPES =
-  "Building IDs: 0=None, 1=WorkersHut, 2=Storehouse, 3=Stone, 4=Coal, 5=Wood, 6=Copper, " +
-  "7=Ironwood, 8=Obsidian, 9=Gold, 10=Silver, 11=Mithral, 12=AlchemicalSilver, 13=ColdIron, " +
-  "14=DeepCrystal, 15=Ruby, 16=Diamonds, 17=Hartwood, 18=Ignium, 19=TwilightQuartz, " +
-  "20=TrueIce, 21=Adamantine, 22=Sapphire, 23=EtherealSilica, 24=Dragonhide, 25=Labor, " +
-  "26=AncientFragment, 27=Donkey, 28=KnightT1, 29=KnightT2, 30=KnightT3, " +
-  "31=CrossbowmanT1, 32=CrossbowmanT2, 33=CrossbowmanT3, 34=PaladinT1, 35=PaladinT2, " +
-  "36=PaladinT3, 37=Wheat, 38=Fish, 39=Essence";
+  "Building IDs: " +
+  Object.entries(BuildingTypeToString)
+    .map(([id, name]) => `${id}=${name}`)
+    .join(", ");
 
 const BUILDING_GUIDE =
   "BUILDING GUIDE — build cost (simple=Labor only | complex=Labor+resources), per-tick production consumption:\n" +
@@ -70,50 +78,24 @@ const BUILDING_GUIDE =
   "Slots: Level 0=6, Level 1=18, Level 2=36. Formula: 3*(level+1)*(level+2). Use directions to path from center hex.\n" +
   "Priority: Wheat farms first (all production needs Wheat), then Labor, then resource buildings, then military.";
 
-const DIR = "0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE";
+// Direction IDs for the LLM: "0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE"
+const DIR_ABBREV: Record<number, string> = {
+  [Direction.EAST]: "East",
+  [Direction.NORTH_EAST]: "NE",
+  [Direction.NORTH_WEST]: "NW",
+  [Direction.WEST]: "West",
+  [Direction.SOUTH_WEST]: "SW",
+  [Direction.SOUTH_EAST]: "SE",
+};
+const DIR = Object.entries(DIR_ABBREV)
+  .map(([id, name]) => `${id}=${name}`)
+  .join(", ");
+
 const TROOP_CATEGORY = "0=Knight, 1=Paladin, 2=Crossbowman";
 const TROOP_TIER = "0=T1, 1=T2, 2=T3";
 
-const RESOURCE_TYPE_NAMES: Record<number, string> = {
-  1: "Stone",
-  2: "Coal",
-  3: "Wood",
-  4: "Copper",
-  5: "Ironwood",
-  6: "Obsidian",
-  7: "Gold",
-  8: "Silver",
-  9: "Mithral",
-  10: "Alchemical Silver",
-  11: "Cold Iron",
-  12: "Deep Crystal",
-  13: "Ruby",
-  14: "Diamonds",
-  15: "Hartwood",
-  16: "Ignium",
-  17: "Twilight Quartz",
-  18: "True Ice",
-  19: "Adamantine",
-  20: "Sapphire",
-  21: "Ethereal Silica",
-  22: "Dragonhide",
-  23: "Labor",
-  24: "Ancient Fragment",
-  25: "Donkey",
-  26: "Knight",
-  27: "Knight T2",
-  28: "Knight T3",
-  29: "Crossbowman",
-  30: "Crossbowman T2",
-  31: "Crossbowman T3",
-  32: "Paladin",
-  33: "Paladin T2",
-  34: "Paladin T3",
-  35: "Wheat",
-  36: "Fish",
-  37: "Lords",
-  38: "Essence",
-};
+// Generate resource name lookup from resources array
+const RESOURCE_TYPE_NAMES: Record<number, string> = Object.fromEntries(resourceDefs.map((r) => [r.id, r.trait]));
 
 // ── Param transform helpers ──────────────────────────────────────────────────
 
@@ -145,16 +127,43 @@ export function numArray(v: unknown): number[] {
   return [];
 }
 
+/** Transform a {x, y} coord from display space to contract space. */
+function displayCoordsToContract(v: unknown): unknown {
+  if (typeof v !== "object" || v === null) return v;
+  const obj = v as Record<string, unknown>;
+  return {
+    x: toContract(num(obj.x)),
+    y: toContract(num(obj.y)),
+  };
+}
+
+/** Extract resource ID from an object, trying known key names. Throws if none found. */
+function extractResourceId(r: Record<string, unknown>, index: number): number {
+  const id = r.resourceType ?? r.resource_type ?? r.resourceId ?? r.resource_id;
+  if (id === undefined || id === null) {
+    throw new Error(
+      `Resource entry at index ${index} has no resourceType or resourceId. ` +
+        `Pass [{resourceType: <id>, amount: <n>}, ...]. ${RESOURCE_IDS}`,
+    );
+  }
+  return num(id);
+}
+
+/** Extract amount from an object. Throws if missing. */
+function extractAmount(r: Record<string, unknown>, index: number): number {
+  if (r.amount === undefined || r.amount === null) {
+    throw new Error(`Resource entry at index ${index} has no amount.`);
+  }
+  return precisionAmount(r.amount);
+}
+
 /**
  * Transform LLM resource array [{resourceType, amount}, ...] into
  * ABI-compatible Span<(u8, u128)> tuples: [[type, precisionAmount], ...]
  */
 export function resourceTuples(v: unknown): [number, number][] {
   if (!Array.isArray(v)) return [];
-  return v.map((r: any) => [
-    num(r.resourceType ?? r.resource_type ?? r.resourceId ?? r.resource_id ?? 0),
-    precisionAmount(r.amount ?? 0),
-  ]);
+  return v.map((r: any, i: number) => [extractResourceId(r, i), extractAmount(r, i)]);
 }
 
 /**
@@ -163,10 +172,7 @@ export function resourceTuples(v: unknown): [number, number][] {
  */
 export function stealResourceTuples(v: unknown): [number, number][] {
   if (!Array.isArray(v)) return [];
-  return v.map((r: any) => [
-    num(r.resourceId ?? r.resource_id ?? r.resourceType ?? r.resource_type ?? 0),
-    precisionAmount(r.amount ?? 0),
-  ]);
+  return v.map((r: any, i: number) => [extractResourceId(r, i), extractAmount(r, i)]);
 }
 
 /**
@@ -212,14 +218,14 @@ export function createHiddenOverlays(manifest: Manifest, suffixes: string[] = HI
 
 /**
  * Pre-flight: check sender has sufficient resource balance.
- * Fail-open: returns null (passes) if cached state is unavailable.
+ * When no cached state is available, pass through (can't validate locally).
  */
 function preflightSendResources(params: Record<string, unknown>, cachedState?: unknown): string | null {
   const state = cachedState as any;
   if (!state?.entities) return null;
   const senderId = num(params.sender_structure_id);
   const sender = state.entities.find((e: any) => e.entityId === senderId && e.type === "structure");
-  if (!sender?.resources) return null;
+  if (!sender?.resources) return `Structure #${senderId} not found or has no resources.`;
   const resources = resourceTuples(params.resources);
   for (const [resourceType, rawAmount] of resources) {
     const name = RESOURCE_TYPE_NAMES[resourceType] ?? `Resource#${resourceType}`;
@@ -298,12 +304,16 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   "resource_systems::arrivals_offload": {
     actionType: "claim_arrivals",
     description:
-      "Claim incoming resource arrivals at a structure. Use inspect_realm to see incomingArrivals — each arrival has a day, slot, and resource list.",
+      "Claim incoming resource arrivals at a structure. Resources sent between structures arrive after a travel delay. " +
+      "Use inspect_realm to see incomingArrivals — each arrival has a day, slot, resource list, and resource_count. " +
+      "Pass all four values exactly as shown in the arrival entry.",
     paramOverrides: {
       from_structure_id: { description: "Structure entity ID to claim at" },
       day: { description: "Day index of the arrival (from inspect_realm incomingArrivals)" },
       slot: { description: "Slot index of the arrival (from inspect_realm incomingArrivals)" },
-      resource_count: { description: "Number of distinct resource types in the arrival" },
+      resource_count: {
+        description: "Number of distinct resource types in this arrival (from inspect_realm incomingArrivals)",
+      },
     },
   },
 
@@ -384,7 +394,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Troop Management ───────────────────────────────────────────────────────
 
   "troop_management_systems::explorer_create": {
-    actionType: "create_explorer",
     description: "Create a new explorer troop from a structure",
     paramOverrides: {
       for_structure_id: { description: "Structure entity ID to spawn from" },
@@ -400,22 +409,19 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_management_systems::explorer_add": {
-    actionType: "add_to_explorer",
-    description: "Add more troops to an existing explorer (explorer must be adjacent to its home structure)",
+    description:
+      "Add more troops to an existing explorer. Explorer must be adjacent to its home structure. " +
+      "home_direction is auto-computed — do not pass it.",
     paramOverrides: {
       to_explorer_id: { description: "Explorer entity ID to reinforce" },
       amount: {
         description: "Number of troops to add",
         transform: precisionAmount,
       },
-      home_direction: {
-        description: `Direction FROM the explorer TO its home structure (${DIR}). Check explorer's neighbor tiles to find which direction the structure is in.`,
-      },
     },
   },
 
   "troop_management_systems::explorer_delete": {
-    actionType: "delete_explorer",
     description: "Delete an explorer and return troops to structure",
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID to delete" },
@@ -423,7 +429,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_management_systems::guard_add": {
-    actionType: "add_guard",
     description: "Add a guard troop to a structure's defense slot",
     paramOverrides: {
       for_structure_id: { description: "Structure entity ID to guard" },
@@ -438,7 +443,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_management_systems::guard_delete": {
-    actionType: "delete_guard",
     description: "Remove a guard from a structure's defense slot",
     paramOverrides: {
       for_structure_id: { description: "Structure entity ID" },
@@ -447,7 +451,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_management_systems::explorer_explorer_swap": {
-    actionType: "swap_explorer_to_explorer",
     description: "Transfer troops between two explorers (must be on adjacent hexes)",
     paramOverrides: {
       from_explorer_id: { description: "Source explorer entity ID" },
@@ -461,7 +464,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_management_systems::explorer_guard_swap": {
-    actionType: "swap_explorer_to_guard",
     description:
       "Transfer troops from an explorer to a structure guard slot (explorer must be adjacent to the structure)",
     paramOverrides: {
@@ -477,7 +479,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_management_systems::guard_explorer_swap": {
-    actionType: "swap_guard_to_explorer",
     description:
       "Transfer troops from a structure guard slot to an explorer (explorer must be adjacent to the structure)",
     paramOverrides: {
@@ -495,14 +496,16 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Troop Movement ─────────────────────────────────────────────────────────
 
   "troop_movement_systems::explorer_move": {
-    actionType: "move_explorer",
+    internal: true, // Used internally by move_to composite — not exposed to the LLM
     description:
       "Move an explorer along hex directions. With explore=false: multi-hex travel through explored tiles (~10 stamina/hex). " +
       "With explore=true: single-hex exploration of an unrevealed tile (30 stamina, min 10 troops, awards VP).",
-    aliases: ["travel_explorer", "explore"],
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID" },
-      directions: { description: `Array of hex directions (${DIR})` },
+      directions: {
+        description: `Array of hex direction numbers: ${DIR}. Example: [0] for East, [1,0] for NE then East.`,
+        type: "number[]",
+      },
       explore: {
         description:
           "false = travel through already-explored tiles (cheap). true = explore new tile (expensive, awards VP)",
@@ -514,8 +517,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Combat ─────────────────────────────────────────────────────────────────
 
   "troop_battle_systems::attack_explorer_vs_explorer": {
-    actionType: "attack_explorer",
-    description: "Attack another explorer with your explorer (costs 50 stamina attacker, 40 defender)",
+    description:
+      "Attack another player's explorer with your explorer. Costs 50 stamina (attacker) and 40 stamina (defender). " +
+      "Outcome is strength-based — stronger army wins. On victory you can steal resources from the defeated explorer. " +
+      "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       aggressor_id: { description: "Your explorer entity ID" },
       defender_id: { description: "Target explorer entity ID" },
@@ -528,8 +533,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_battle_systems::attack_explorer_vs_guard": {
-    actionType: "attack_guard",
-    description: "Attack a structure's guard with your explorer",
+    description:
+      "Attack a structure's guard with your explorer to capture the structure. Costs 30 stamina. " +
+      "If your explorer wins, the guard is destroyed and you take control of the structure. " +
+      "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       explorer_id: { description: "Your explorer entity ID" },
       structure_id: { description: "Target structure entity ID" },
@@ -538,8 +545,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "troop_battle_systems::attack_guard_vs_explorer": {
-    actionType: "guard_attack_explorer",
-    description: "Use a structure's guard to attack a nearby explorer",
+    description:
+      "Use your structure's guard to attack a nearby explorer. Costs 30 stamina. " +
+      "Useful for defending your structure against approaching enemies. " +
+      "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       structure_id: { description: "Your structure entity ID" },
       structure_guard_slot: { description: "Guard slot index (0-3)" },
@@ -551,8 +560,11 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Raid ────────────────────────────────────────────────────────────────────
 
   "troop_raid_systems::raid_explorer_vs_guard": {
-    actionType: "raid",
-    description: "Raid a structure to steal resources (without destroying guard)",
+    description:
+      "Raid a structure to steal resources without destroying its guard. Costs 30 stamina. " +
+      "Unlike attack_explorer_vs_guard, the guard survives — you only take resources. " +
+      "Useful when the guard is too strong to defeat but you want to loot. " +
+      "Use simulate_raid first to predict the outcome.",
     paramOverrides: {
       explorer_id: { description: "Your explorer entity ID" },
       structure_id: { description: "Target structure entity ID" },
@@ -568,7 +580,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "trade_systems::create_order": {
     description: "Create a trade order on the market",
-    aliases: ["create_trade"],
     paramOverrides: {
       maker_id: { description: "Your structure entity ID offering resources" },
       taker_id: { description: "Target structure entity ID (0 for open market)" },
@@ -589,7 +600,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "trade_systems::accept_order": {
     description: "Accept an existing trade order",
-    aliases: ["accept_trade"],
     paramOverrides: {
       taker_id: { description: "Your structure entity ID accepting the trade" },
       trade_id: { description: "Trade order ID to accept" },
@@ -599,7 +609,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "trade_systems::cancel_order": {
     description: "Cancel your trade order",
-    aliases: ["cancel_trade"],
     paramOverrides: {
       trade_id: { description: "Trade order ID to cancel" },
     },
@@ -620,6 +629,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
       structure_id: { description: "Structure entity ID to build at" },
       directions: {
         description: `Path from center hex to building slot — MUST have at least 1 direction. Direction IDs: ${DIR}. Use paths listed above per ring.`,
+        type: "number[]",
       },
       building_category: { description: `Building category ID. ${BUILDING_TYPES}` },
       use_simple: {
@@ -638,7 +648,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "production_systems::pause_building_production": {
-    actionType: "pause_production",
     description: "Pause production at a building",
     paramOverrides: {
       structure_id: { description: "Structure entity ID" },
@@ -647,7 +656,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "production_systems::resume_building_production": {
-    actionType: "resume_production",
     description: "Resume production at a paused building",
     paramOverrides: {
       structure_id: { description: "Structure entity ID" },
@@ -755,7 +763,6 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Structure / Realm ──────────────────────────────────────────────────────
 
   "structure_systems::level_up": {
-    actionType: "upgrade_realm",
     description:
       "Upgrade your realm to the next level. Each level unlocks more building slots: L0=6, L1=18, L2=36. " +
       "Cost shown in world state under 'Next upgrade'. Requires Labor, Wheat, Essence, and higher-tier resources at higher levels.",
@@ -804,6 +811,15 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     },
   },
 
+  "hyperstructure_systems::update_construction_access": {
+    description:
+      "Update who can contribute to a hyperstructure's construction (0 = open, 1 = guild-only, 2 = owner-only)",
+    paramOverrides: {
+      hyperstructure_id: { description: "Hyperstructure entity ID" },
+      access: { description: "Access level: 0 = open to all, 1 = guild members only, 2 = owner only" },
+    },
+  },
+
   // ── Blitz Game Setup ───────────────────────────────────────────────────────
 
   "blitz_realm_systems::obtain_entry_token": {
@@ -827,6 +843,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   },
 
   "blitz_realm_systems::create": {
+    actionType: "blitz_realm_create",
     hidden: true, // Dojo framework entrypoint — use settle_blitz_realm composite instead
     description: "Dojo create entrypoint (deprecated — use settle_blitz_realm instead)",
   },
@@ -846,7 +863,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     description: "Open a relic chest at a coordinate with an explorer",
     paramOverrides: {
       explorer_id: { description: "Explorer entity ID" },
-      chest_coord: { description: "Chest coordinate — pass as {x: number, y: number}" },
+      chest_coord: {
+        description: "Chest coordinate — pass as {x: number, y: number} using display coordinates from world state",
+        transform: displayCoordsToContract,
+      },
     },
   },
 
@@ -862,31 +882,43 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Production extras ──────────────────────────────────────────────────────
 
   "production_systems::burn_resource_for_labor_production": {
-    description: "Burn resources to produce Labor at a structure",
+    description:
+      "Convert raw resources into Labor. Labor is the universal input needed by most buildings. " +
+      "Specify which resource types to burn and how much of each. The output is Labor added to the structure.",
     paramOverrides: {
       structure_id: { description: "Structure entity ID" },
-      resource_types: { description: `Array of resource type IDs to burn. ${RESOURCE_IDS}` },
+      resource_types: { description: `Array of resource type IDs to burn as input. ${RESOURCE_IDS}` },
       resource_amounts: {
-        description: "Array of amounts to burn (matching resource_types order)",
+        description: "Array of amounts to burn (must match resource_types order and length)",
       },
     },
   },
 
   "production_systems::burn_labor_for_resource_production": {
-    description: "Burn Labor to produce resources at a structure",
+    description:
+      "Convert Labor into other resources. Each production_cycle consumes Labor and produces the corresponding resource. " +
+      "Use this when you have excess Labor and need specific resources.",
     paramOverrides: {
       from_structure_id: { description: "Structure entity ID" },
-      production_cycles: { description: "Array of production cycle counts" },
       produced_resource_types: { description: `Array of resource type IDs to produce. ${RESOURCE_IDS}` },
+      production_cycles: {
+        description:
+          "Array of production cycle counts (one per resource type — more cycles = more output but more Labor consumed)",
+      },
     },
   },
 
   "production_systems::burn_resource_for_resource_production": {
-    description: "Burn one resource to produce another resource at a structure",
+    description:
+      "Directly convert one resource into another, bypassing Labor. " +
+      "More expensive than the Labor route but faster when you have surplus of one resource and need another.",
     paramOverrides: {
       from_structure_id: { description: "Structure entity ID" },
       produced_resource_types: { description: `Array of resource type IDs to produce. ${RESOURCE_IDS}` },
-      production_cycles: { description: "Array of production cycle counts" },
+      production_cycles: {
+        description:
+          "Array of production cycle counts (one per resource type — more cycles = more output but more input consumed)",
+      },
     },
   },
 
@@ -935,6 +967,7 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Realm ──────────────────────────────────────────────────────────────────
 
   "realm_systems::create": {
+    actionType: "create_realm",
     hidden: true,
   },
 

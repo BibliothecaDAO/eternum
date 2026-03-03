@@ -5,8 +5,7 @@ import { generateActions, getAllActionTypes, mergeCompositeActions } from "../..
 import { extractAllFromManifest, getGameEntrypoints } from "../../src/abi/parser";
 import type { DomainOverlayMap } from "../../src/abi/types";
 
-// Load real manifest from repo root
-const manifestPath = resolve(__dirname, "../manifest.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 describe("generateActions", () => {
@@ -193,28 +192,25 @@ describe("comparison with hardcoded action registry", () => {
     "send_resources",
     "pickup_resources",
     "claim_arrivals",
-    "create_explorer",
-    "add_to_explorer",
-    "delete_explorer",
-    "add_guard",
-    "delete_guard",
-    "move_explorer",
-    "travel_explorer",
-    "explore",
-    "swap_explorer_to_explorer",
-    "swap_explorer_to_guard",
-    "swap_guard_to_explorer",
-    "attack_explorer",
-    "attack_guard",
-    "guard_attack_explorer",
-    "raid",
+    "explorer_create",
+    "explorer_add",
+    "explorer_delete",
+    "guard_add",
+    "guard_delete",
+    "explorer_explorer_swap",
+    "explorer_guard_swap",
+    "guard_explorer_swap",
+    "attack_explorer_vs_explorer",
+    "attack_explorer_vs_guard",
+    "attack_guard_vs_explorer",
+    "raid_explorer_vs_guard",
     "create_order",
     "accept_order",
     "cancel_order",
     "create_building",
     "destroy_building",
-    "pause_production",
-    "resume_production",
+    "pause_building_production",
+    "resume_building_production",
     "buy_resources",
     "sell_resources",
     "add_liquidity",
@@ -223,7 +219,7 @@ describe("comparison with hardcoded action registry", () => {
     "join_guild",
     "leave_guild",
     "update_whitelist",
-    "upgrade_realm",
+    "level_up",
     "contribute_hyperstructure",
     "move_to",
   ];
@@ -269,10 +265,6 @@ describe("comparison with hardcoded action registry", () => {
       if (abiActionTypes.has(ep)) found++;
     }
 
-    const coverage = (found / rawEntrypoints.length) * 100;
-    console.log(
-      `\nABI coverage of hardcoded registry entrypoints: ${found}/${rawEntrypoints.length} (${coverage.toFixed(1)}%)`,
-    );
     expect(found / rawEntrypoints.length).toBeGreaterThan(0.8);
   });
 });

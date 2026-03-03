@@ -102,7 +102,7 @@ async function checkWorldAvailability(worldName: string): Promise<{ available: b
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
 
   const available = await isToriiAvailable(toriiBaseUrl);
-  if (!available) return { available: true, status: "unknown" };
+  if (!available) return { available: false, status: "unknown" };
 
   try {
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
