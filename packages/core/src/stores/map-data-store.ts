@@ -28,6 +28,7 @@ import { shortString } from "starknet";
 import { getRealmNameById } from "../data/realm-names";
 import {
   divideByPrecision,
+  getEffectiveHyperstructureRealmCount,
   getHyperstructureRealmCheckRadius,
   getIsBlitz,
   getStructureTypeName,
@@ -513,10 +514,8 @@ export class MapDataStore {
 
     // Stage hyperstructure realm counts
     hyperstructuresWithRealmCount.forEach((hyperstructure) => {
-      nextHyperstructureRealmCountMap.set(
-        hyperstructure.hyperstructure_entity_id,
-        hyperstructure.realm_count_within_radius,
-      );
+      const realmCount = getEffectiveHyperstructureRealmCount(hyperstructure.realm_count_within_radius);
+      nextHyperstructureRealmCountMap.set(hyperstructure.hyperstructure_entity_id, realmCount);
     });
 
     this.structuresMap = nextStructuresMap;

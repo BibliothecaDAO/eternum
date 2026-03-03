@@ -3561,11 +3561,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
-    const { center, base_distance, subsequent_distance, signer, single_realm_mode } = props;
+    const { center, base_distance, subsequent_distance, signer, single_realm_mode, two_player_mode } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
-      calldata: [center, base_distance, subsequent_distance, single_realm_mode],
+      calldata: [center, base_distance, subsequent_distance, single_realm_mode, two_player_mode],
     });
   }
 

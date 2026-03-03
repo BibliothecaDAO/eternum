@@ -444,7 +444,10 @@ pub mod hyperstructure_systems {
                         world, selector!("blitz_settlement_config"),
                     );
                     let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
-                        ref world, structure_coord, blitz_settlement_config.single_realm_mode,
+                        ref world,
+                        structure_coord,
+                        blitz_settlement_config.single_realm_mode,
+                        blitz_settlement_config.two_player_mode,
                     );
                     hyperstructure.points_multiplier = surrounding_realms_count;
                     world.write_model(@hyperstructure);

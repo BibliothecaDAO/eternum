@@ -3,6 +3,26 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { configManager } from "../managers";
 import { divideByPrecision, getEntityIdFromKeys } from "./utils";
 
+const HYPERSTRUCTURE_REALM_CHECK_RADIUS_THREE_REALM = 8;
+const HYPERSTRUCTURE_REALM_CHECK_RADIUS_SINGLE_REALM = 10;
+const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
+
+export const getHyperstructureRealmCheckRadius = () => {
+  const blitzConfig = configManager.getBlitzConfig();
+  const isSingleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
+
+  if (isSingleRealmMode) {
+    return HYPERSTRUCTURE_REALM_CHECK_RADIUS_SINGLE_REALM;
+  }
+
+  return HYPERSTRUCTURE_REALM_CHECK_RADIUS_THREE_REALM;
+};
+
+export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
+  const isTwoPlayerMode = configManager.getBlitzConfig()?.blitz_settlement_config?.two_player_mode ?? false;
+  return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
+};
+
 export const getHyperstructureProgress = (hyperstructureId: number, components: ClientComponents) => {
   const hyperstructure = getComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureId)]));
 
