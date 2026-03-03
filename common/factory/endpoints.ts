@@ -17,7 +17,7 @@ export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): s
     case "slot":
     case "slottest":
     case "local":
-      return `${base}/x/eternum-factory-slot-c/torii/sql`;
+      return `${base}/x/eternum-factory-slot-d/torii/sql`;
     default:
       return "";
   }

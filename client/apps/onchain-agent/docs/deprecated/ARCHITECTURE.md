@@ -189,7 +189,7 @@ RPC/Torii/WorldAddress configuration.
 
 - Factory SQL: `https://api.cartridge.gg/x/eternum-factory-{chain}/torii/sql` (slot-a for slot/slottest/local)
 - Torii: `https://api.cartridge.gg/x/{worldName}/torii`
-- RPC fallback: `https://api.cartridge.gg/x/eternum-blitz-slot-3/katana` (slot),
+- RPC fallback: `https://api.cartridge.gg/x/eternum-blitz-slot-4/katana` (slot),
   `https://api.cartridge.gg/x/starknet/{sepolia|mainnet}` (L1)
 
 ### factory-resolver.ts

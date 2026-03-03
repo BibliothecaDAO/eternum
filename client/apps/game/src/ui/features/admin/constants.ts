@@ -96,7 +96,7 @@ export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
     case "sepolia":
       return `${CARTRIDGE_API_BASE}/x/starknet/sepolia`;
     case "slot":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-3/katana`;
+      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-4/katana`;
     case "slottest":
       return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-test/katana`;
     default:

@@ -31,7 +31,7 @@ class MutableRpcController {
 describe("resolveConnectedTxNetworkFromRuntime", () => {
   it("tracks controller RPC changes even when chainId remains slot", async () => {
     const { resolveConnectedTxNetworkFromRuntime } = await import("./networks");
-    const slotChainId = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
+    const slotChainId = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
     const controller = new MutableRpcController("https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9");
 
     expect(resolveConnectedTxNetworkFromRuntime({ chainId: slotChainId, controller })).toBe("mainnet");

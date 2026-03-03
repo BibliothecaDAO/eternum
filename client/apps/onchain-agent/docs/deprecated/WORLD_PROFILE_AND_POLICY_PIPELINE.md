@@ -388,7 +388,7 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
 
 | Chain           | Priority 1       | Priority 2                             | Priority 3                                       |
 | --------------- | ---------------- | -------------------------------------- | ------------------------------------------------ |
-| slot/slottest   | Factory `rpcUrl` | `VITE_PUBLIC_NODE_URL` (if compatible) | `api.cartridge.gg/x/eternum-blitz-slot-3/katana` |
+| slot/slottest   | Factory `rpcUrl` | `VITE_PUBLIC_NODE_URL` (if compatible) | `api.cartridge.gg/x/eternum-blitz-slot-4/katana` |
 | mainnet/sepolia | Factory `rpcUrl` | `VITE_PUBLIC_NODE_URL` (if compatible) | `api.cartridge.gg/x/starknet/{chain}`            |
 | local           | Factory `rpcUrl` | `VITE_PUBLIC_NODE_URL`                 | `VITE_PUBLIC_NODE_URL`                           |
 

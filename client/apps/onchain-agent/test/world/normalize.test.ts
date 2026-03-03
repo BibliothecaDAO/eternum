@@ -3,7 +3,7 @@ import { deriveChainIdFromRpcUrl, normalizeRpcUrl } from "../../src/world/normal
 
 describe("deriveChainIdFromRpcUrl", () => {
   it("derives per-world chain ID from slot katana URL", () => {
-    const result = deriveChainIdFromRpcUrl("https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9");
+    const result = deriveChainIdFromRpcUrl("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
     expect(result).toBeDefined();
     // WP_ETERNUM_BLITZ_SLOT_3 encoded as short string
     expect(typeof result).toBe("string");

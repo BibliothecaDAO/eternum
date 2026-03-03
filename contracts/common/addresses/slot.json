@@ -1,8 +1,9 @@
 {
+  "Collectibles: Realms: Blitz Elite Pass": "0x2b8b84edaa39beecb1d8216961534cb75c028c40aff07327aa4b9649631e269",
   "Collectibles: Realms: Elite Invite": "0x545303d61b37e241d169e37f40ee08e0676665d123e65eac5756f4e0aaa6791",
-  "Collectibles: Realms: Loot Chest": "0x17213ff2db9cf2990a3f7b318d60e9380a44a7ca9b8b6f526f4a239db8be20d",
-  "Collectibles: Realms: Cosmetic Items": "0x594e0cd523a0765b9a5f609ff4d6d44f6b73f89261d798e1dad80c82935e048",
-  "Collectibles: Timelock Maker": "0x31af9461a53e801b0397e35b3b0d412a5e9188faa71dc636121a6e3d6c47e5f",
+  "Collectibles: Realms: Loot Chest": "0x30af57166fd563df026e27fe51759f514cad8a60293753d494c99eca7535b14",
+  "Collectibles: Realms: Cosmetic Items": "0x13b4e7d8dec474c0fcbb375e8d8c1e956f74ddb4dd028acc5958712549ec3d",
+  "Collectibles: Timelock Maker": "0x20d73f1959aaa8fa86056f9f052b0c4ffeca88db5c3a5775ae3452388afb89c",
   "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
   "seasonPass": "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
   "realms": "0x56502f7cf5847c0a4d4d0d0a37fa02e104d637f278564ce2e85fcd9edd7d27a",
@@ -13,7 +14,7 @@
   "marketplace": "",
   "cosmetics": "",
   "cosmeticsClaim": "",
-  "mmrToken": "0x65804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef",
+  "mmrToken": "0x662e47382b44f48f3a872d84f14c894b4cd2db32a9aa678da0f8f5114066857",
   "resources": {
     "STONE": [1, "0x1d0e42592e69ce773e4af49ebc806e8e4b18d68349675a720b310f524bc1047"],
     "COAL": [2, "0x116e5c167e15ce74d6ceabab3ee1d654ba7d715cc3e313f0a7644460d930647"],

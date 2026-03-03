@@ -269,7 +269,7 @@ these values (e.g., for token_lock or approve policies) would need environment v
 The onchain-agent's `DEFAULT_RPC_URL` at `discovery.ts:35`:
 
 ```typescript
-const DEFAULT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9";
+const DEFAULT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9";
 ```
 
 This is only suitable for `slot` chain. If a `mainnet` or `sepolia` world doesn't have a factory `rpcUrl`, the agent
@@ -354,7 +354,7 @@ depth. The canonical client imports the manifest at build time. The onchain-agen
    addresses will lack them.
 
 3. **Hardcoded RPC URL fallback is chain-unaware.** `DEFAULT_RPC_URL` at `discovery.ts:35` is
-   `https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9`, a slot-chain katana endpoint. For `mainnet` or
+   `https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9`, a slot-chain katana endpoint. For `mainnet` or
    `sepolia` worlds without a factory `rpcUrl`, this would provide an incorrect RPC endpoint. The canonical client
    resolves per-chain defaults (e.g., `/x/starknet/mainnet` for mainnet).
 
@@ -1084,7 +1084,7 @@ against `@cartridge/controller/session/node` API documentation.
 - `/x/{slug}/katana` -> `shortString.encodeShortString("WP_{SLUG}")` (per-world unique chain ID)
 
 Falls back to a `fallbackChain` based on `VITE_PUBLIC_CHAIN` env var, which supports slot-specific chain IDs
-(`0x57505f455445524e554d5f424c49545a5f534c4f545f33` for slot, etc.).
+(`0x57505f455445524e554d5f424c49545a5f534c4f545f34` for slot, etc.).
 
 **Onchain-agent** (`config.ts:6-12`): Uses a static `CHAIN_ID_MAP`:
 
@@ -1109,7 +1109,7 @@ chains. If the Cartridge session system scopes sessions by chain ID, this could 
 2. **Session rejection**: If the Cartridge backend expects the per-world chain ID (e.g., `WP_ETERNUM_BLITZ_SLOT_3`), a
    session created with `KATANA` might be rejected.
 
-The canonical fallback chain IDs (`SLOT_CHAIN_ID = 0x57505f455445524e554d5f424c49545a5f534c4f545f33`) at
+The canonical fallback chain IDs (`SLOT_CHAIN_ID = 0x57505f455445524e554d5f424c49545a5f534c4f545f34`) at
 `starknet-provider.tsx:30-32` also differ from the agent's `0x4b4154414e41`. The canonical slot chain ID decodes to
 `WP_ETERNUM_BLITZ_SLOT_3`, while the agent's decodes to `KATANA`.
 

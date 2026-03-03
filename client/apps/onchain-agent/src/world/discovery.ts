@@ -1,14 +1,14 @@
-import { fetchFactoryRows, decodePaddedFeltAscii, extractNameFelt } from "./factory-sql";
-import { resolveWorldContracts, resolveWorldDeploymentFromFactory, isToriiAvailable } from "./factory-resolver";
+import { isToriiAvailable, resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
+import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "./factory-sql";
 import { patchManifestWithFactory } from "./manifest-patcher";
 import { normalizeRpcUrl } from "./normalize";
 import type { WorldProfile } from "./types";
 
+import manifestLocal from "../../../../../contracts/game/manifest_local.json";
+import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
+import manifestSepolia from "../../../../../contracts/game/manifest_sepolia.json";
 import manifestSlot from "../../../../../contracts/game/manifest_slot.json";
 import manifestSlottest from "../../../../../contracts/game/manifest_slottest.json";
-import manifestLocal from "../../../../../contracts/game/manifest_local.json";
-import manifestSepolia from "../../../../../contracts/game/manifest_sepolia.json";
-import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
 
 export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
 
@@ -69,7 +69,7 @@ function getDefaultRpcUrl(chain: Chain): string {
     case "slot":
     case "slottest":
     case "local":
-      return `${base}/x/eternum-blitz-slot-3/katana`;
+      return `${base}/x/eternum-blitz-slot-4/katana`;
   }
 }
 
