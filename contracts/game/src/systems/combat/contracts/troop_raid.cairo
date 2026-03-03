@@ -40,8 +40,8 @@ pub mod troop_raid_systems {
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
-    use crate::utils::cartridge::vrf::Source;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::map::biomes::Biome;
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;

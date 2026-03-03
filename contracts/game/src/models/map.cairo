@@ -65,7 +65,11 @@ pub impl TileImpl of TileTrait {
     fn to_seed(self: Tile) -> felt252 {
         // Pack [alt:1 bit | col:32 bits | row:32 bits] into a single felt.
         // This is collision-free for Tile coordinates because col/row are u32.
-        let alt: felt252 = if self.alt { 1 } else { 0 };
+        let alt: felt252 = if self.alt {
+            1
+        } else {
+            0
+        };
         let col: felt252 = self.col.into();
         let row: felt252 = self.row.into();
         return ((alt * 0x10000000000000000) + (col * 0x100000000) + row);

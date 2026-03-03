@@ -47,9 +47,9 @@ mod rng_library {
     use starknet::ContractAddress;
     use crate::models::config::WorldConfigUtilImpl;
     use crate::models::rng::{RNG, RNGImpl};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::random;
     use crate::utils::random::VRFImpl;
-    use crate::utils::cartridge::vrf::Source;
 
     /// RNG helpers centralizing VRF seeding and weighted choices.
     ///
