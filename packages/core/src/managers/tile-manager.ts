@@ -28,6 +28,7 @@ import {
 import { configManager } from "./config-manager";
 import {
   __resetOptimisticBuildRegistryForTests,
+  getPendingOptimisticBuildCountForStructureAndType,
   isOptimisticBuildPendingAtHex,
   markOptimisticBuildOperationFailed,
   reconcileOptimisticBuildOperations,
@@ -434,6 +435,10 @@ export class TileManager {
     activeProductions: Array<{ buildingType: BuildingType; buildingCount: number }>,
   ): number {
     return reconcileOptimisticBuildOperations({ structureEntityId, activeProductions });
+  }
+
+  static getPendingOptimisticBuildCountForStructureAndType(structureEntityId: ID, buildingType: BuildingType): number {
+    return getPendingOptimisticBuildCountForStructureAndType(structureEntityId, buildingType);
   }
 
   static __resetPendingOptimisticBuildsForTests(): void {

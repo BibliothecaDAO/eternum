@@ -53,6 +53,7 @@ import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { isBuildPendingForStructureType } from "./select-preview-building.pending-policy";
 
 const ARMY_TYPES = ["Archery", "Stable", "Barracks"] as const;
 type ArmyTypeLabel = (typeof ARMY_TYPES)[number];
@@ -648,6 +649,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     [entityId, dojo.setup.components],
   );
 
+  const isBuildPending = useCallback(
+    (buildingType: BuildingType) =>
+      isBuildPendingForStructureType({
+        entityId,
+        buildingType,
+        localPendingByTypeKey: pendingBuilds,
+        getPendingCountForStructureAndType: (structureEntityId, type) =>
+          TileManager.getPendingOptimisticBuildCountForStructureAndType(structureEntityId, type),
+      }),
+    [entityId, pendingBuilds],
+  );
+
   const activeArmyType = selectedArmyType ?? recommendedArmyType ?? armyGroups[0]?.armyType ?? null;
 
   const tabs = useMemo(
@@ -686,7 +699,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   : undefined;
               const disabled = isLaborLockedResource || isRealmFull;
               const buildKey = building.toString();
-              const isPending = Boolean(pendingBuilds[buildKey]);
+              const isPending = isBuildPending(building);
               const count = getBuildingCountFor(building);
               const destroyPending = Boolean(pendingDestroys[buildKey]);
               const destroyDisabled = count <= 0 || destroyPending;
@@ -789,7 +802,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const disabledReason = isRealmFull ? "Realm full" : undefined;
                 const disabled = Boolean(disabledReason);
                 const buildKey = building.toString();
-                const isPending = Boolean(pendingBuilds[buildKey]);
+                const isPending = isBuildPending(building);
                 const count = getBuildingCountFor(building);
                 const destroyPending = Boolean(pendingDestroys[buildKey]);
                 const destroyDisabled = count <= 0 || destroyPending;
@@ -958,7 +971,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
                                 : undefined;
                             const buildKey = building.toString();
-                            const isPending = Boolean(pendingBuilds[buildKey]);
+                            const isPending = isBuildPending(building);
                             const count = getBuildingCountFor(building);
                             const destroyPending = Boolean(pendingDestroys[buildKey]);
                             const destroyDisabled = count <= 0 || destroyPending;
@@ -1035,10 +1048,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       useSimpleCost,
       armyGroups,
       activeArmyType,
-      pendingBuilds,
       pendingDestroys,
       pendingPauseResume,
       pausedByCategory,
+      isBuildPending,
       handleAutoBuild,
       handleDestroyBuilding,
       handlePauseResumeAll,

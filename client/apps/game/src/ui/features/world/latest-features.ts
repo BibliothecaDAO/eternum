@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-04",
+    title: "Realm Switch Build Continuity",
+    description:
+      "Fixed construction button behavior when switching realms so pending builds continue to reconcile correctly and build actions stay reliable after changing views.",
+    type: "fix",
+  },
+  {
     date: "2026-02-18",
     title: "Smoother Worldmap Chunking",
     description:

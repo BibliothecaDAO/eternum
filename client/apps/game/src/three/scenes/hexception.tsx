@@ -85,6 +85,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
+import { ensureStructureBuildReconciliationSubscription } from "./structure-build-reconciliation-policy";
 
 const loader = gltfLoader;
 
@@ -157,6 +158,7 @@ export default class HexceptionScene extends HexagonScene {
   private playerStructures: Structure[] = [];
   private mode: GameModeConfig;
   private structureUpdateSubscription: any | null = null;
+  private readonly structureBuildReconciliationSubscriptionState = { hasSubscribed: false };
   private isInitialized = false;
   private lastRealmKey?: string;
   // Store Zustand unsubscribe functions to clean up on destroy
@@ -402,6 +404,15 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    ensureStructureBuildReconciliationSubscription({
+      state: this.structureBuildReconciliationSubscriptionState,
+      subscribe: (callback) => {
+        this.worldUpdateListener.Structure.onStructureBuildingsUpdate(callback);
+      },
+      reconcile: (structureEntityId, activeProductions) =>
+        TileManager.reconcilePendingBuildsForStructure(structureEntityId, activeProductions),
+    });
+
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
     const contractPosition = new Position({ x: col, y: row }).getContract();

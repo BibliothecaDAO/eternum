@@ -129,4 +129,19 @@ describe("TileManager optimistic build persistence", () => {
     expect(removeOverride).toHaveBeenCalledTimes(1);
     expect(secondManager.isHexOccupied({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] })).toBe(false);
   });
+
+  it("exposes structure-scoped pending build counts for UI continuity", async () => {
+    const { tileManager } = createTestTileManager(async () => ({ transaction_hash: "0x999" }));
+
+    await tileManager.placeBuilding(
+      {} as any,
+      1234,
+      BuildingType.ResourceWheat,
+      { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
+      false,
+    );
+
+    expect(TileManager.getPendingOptimisticBuildCountForStructureAndType(1234, BuildingType.ResourceWheat)).toBe(1);
+    expect(TileManager.getPendingOptimisticBuildCountForStructureAndType(9999, BuildingType.ResourceWheat)).toBe(0);
+  });
 });

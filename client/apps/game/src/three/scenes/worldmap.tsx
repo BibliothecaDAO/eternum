@@ -140,6 +140,7 @@ import {
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
+import { ensureStructureBuildReconciliationSubscription } from "./structure-build-reconciliation-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
   finalizePendingChunkFetchOwnership,
@@ -534,6 +535,7 @@ export default class WorldmapScene extends HexagonScene {
   private hoverLabelManager: HoverLabelManager;
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
+  private readonly structureBuildReconciliationSubscriptionState = { hasSubscribed: false };
   private visibilityChangeHandler?: () => void;
   private toriiStreamManager?: ToriiStreamManager;
   private toriiBoundsAreaKey: string | null = null;
@@ -694,6 +696,15 @@ export default class WorldmapScene extends HexagonScene {
       this.hoverLabelManager.updateCameraView(view);
     });
 
+    ensureStructureBuildReconciliationSubscription({
+      state: this.structureBuildReconciliationSubscriptionState,
+      subscribe: (callback) => {
+        this.worldUpdateListener.Structure.onStructureBuildingsUpdate(callback);
+      },
+      reconcile: (structureEntityId, activeProductions) =>
+        TileManager.reconcilePendingBuildsForStructure(structureEntityId, activeProductions),
+    });
+
     // Store the unsubscribe function for Army updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
@@ -836,7 +847,6 @@ export default class WorldmapScene extends HexagonScene {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
         this.incrementToriiBoundsCounter("structureBuildings");
-        TileManager.reconcilePendingBuildsForStructure(update.entityId, update.activeProductions);
         this.structureManager.updateStructureLabelFromBuildingUpdate(update);
       }),
     );
