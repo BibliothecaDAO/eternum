@@ -45,6 +45,26 @@ const formatLordsAmount = (amount: bigint): string => {
   return `${wholeFormatted}.${fraction}`;
 };
 
+const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "0";
+
+  const normalized = trimmed.replace(/,/g, "");
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+    return trimmed;
+  }
+
+  const sign = normalized.startsWith("-") ? "-" : "";
+  const unsigned = sign ? normalized.slice(1) : normalized;
+
+  const [wholePart, decimalPart = ""] = unsigned.split(".");
+  const wholeFormatted = `${sign}${wholePart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  if (decimalPart.length === 0) return wholeFormatted;
+
+  const limitedDecimals = decimalPart.slice(0, 2).replace(/0+$/, "");
+  return limitedDecimals.length > 0 ? `${wholeFormatted}.${limitedDecimals}` : wholeFormatted;
+};
+
 const getErrorMessage = (error: unknown): string | null => {
   if (error instanceof Error && error.message) return error.message;
   if (
@@ -359,8 +379,8 @@ const GameCard = ({
 
         {canClaimRewards && claimSummary && (
           <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
-            Claimable: {claimSummary.lordsWonFormatted} LORDS + {claimSummary.chestsClaimedEstimate.toLocaleString()}{" "}
-            chests
+            Claimable: {formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted)} LORDS +{" "}
+            {claimSummary.chestsClaimedEstimate.toLocaleString()} chests
           </div>
         )}
 
