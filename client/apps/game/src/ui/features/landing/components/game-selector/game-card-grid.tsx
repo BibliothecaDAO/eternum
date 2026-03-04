@@ -832,13 +832,7 @@ export const UnifiedGameGrid = ({
 
       return 0;
     });
-  }, [
-    claimSummaryByWorldKey,
-    games,
-    sortClaimableRewardsFirst,
-    sortEndedNewestFirst,
-    sortRegisteredFirst,
-  ]);
+  }, [claimSummaryByWorldKey, games, sortClaimableRewardsFirst, sortEndedNewestFirst, sortRegisteredFirst]);
 
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
