@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { mainnet, sepolia } from "@starknet-react/chains";
-import { useAccount, useNetwork } from "@starknet-react/core";
+import { mainnet, sepolia } from "@starknet-start/chains";
+import { useAccount, useNetwork } from "@starknet-start/react";
 import { env } from "env";
 import { Chain } from "starknet"
 
 const useIsWrongNetwork = () => {
   const { chain } = useNetwork();
-  const { account, chainId } = useAccount();
+  const { address, chainId } = useAccount();
   const [isWrongNetwork, setIsWrongNetwork] = useState<boolean>(false);
 
   function bigintToStringHex(element: bigint | undefined): string {
@@ -17,7 +17,7 @@ const useIsWrongNetwork = () => {
   }
 
   useEffect(() => {
-    if (!account) {
+    if (!address) {
       setIsWrongNetwork(false);
       return;
     }
@@ -26,7 +26,7 @@ const useIsWrongNetwork = () => {
         ? bigintToStringHex(chainId) === bigintToStringHex(mainnet.id)
         : bigintToStringHex(chainId) === bigintToStringHex(sepolia.id),
     );
-  }, [account, chainId]);
+  }, [address, chainId]);
 
   return {
     isWrongNetwork,

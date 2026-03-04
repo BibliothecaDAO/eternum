@@ -4,16 +4,15 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 import type {
-  AccountInterface,
   Call,
   Invocations,
   SimulateTransactionDetails,
   SimulateTransactionResponse,
 } from "starknet";
 import { useMemo } from "react";
-import { useAccount, useInvalidateOnBlock } from "@starknet-react/core";
+import { useAccount, useInvalidateOnBlock, useProvider } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
-import { TransactionType } from "starknet";
+import { TransactionType, WalletAccountV5 } from "starknet";
 
 export interface SimulateTransactionsArgs {
   /** List of smart contract calls to simulate. */
@@ -62,14 +61,28 @@ export function useSimulateTransactions({
   enabled: enabled_ = true,
   ...props
 }: UseSimulateTransactionsProps): UseSimulateTransactionsResult {
-  const { account } = useAccount();
+  const { address, connector } = useAccount();
+  const { provider, paymasterProvider } = useProvider();
+
+  const account = useMemo(() => {
+    if (!address || !connector) return undefined;
+    return new WalletAccountV5({
+      address,
+      provider,
+      walletProvider: connector,
+      paymaster: paymasterProvider,
+    });
+  }, [address, connector, provider, paymasterProvider]);
 
   const queryKey_ = useMemo(
     () => queryKey({ calls, options }),
     [calls, options],
   );
 
-  const enabled = useMemo(() => Boolean(enabled_ && calls), [enabled_, calls]);
+  const enabled = useMemo(
+    () => Boolean(enabled_ && calls && account),
+    [enabled_, calls, account],
+  );
 
   useInvalidateOnBlock({
     enabled: Boolean(enabled && watch),
@@ -102,14 +115,19 @@ function queryFn({
   account,
   calls,
   options,
-}: { account?: AccountInterface } & SimulateTransactionsArgs) {
+}: { account?: WalletAccountV5 } & SimulateTransactionsArgs) {
   return async () => {
     if (!account) throw new Error("account is required");
     if (!calls || calls.length === 0) throw new Error("calls are required");
-    const callMap = calls.map((call) => ({
-      type: TransactionType.INVOKE,
-      ...call,
-    }));
-    return account.simulateTransaction(callMap as Invocations, options);
+    const invocations: Invocations = [
+      {
+      type: TransactionType.INVOKE as const,
+        payload: calls,
+      },
+    ];
+    return account.simulateTransaction(invocations, {
+      ...options,
+      skipValidate: true,
+    });
   };
 }

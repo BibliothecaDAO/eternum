@@ -20,15 +20,15 @@ import {
 import { auth } from "@/utils/auth";
 import { authClient } from "@/utils/auth-client";
 import { formatNumber, shortenAddress } from "@/utils/utils";
-import { useAccount } from "@starknet-react/core";
+import { useAccount } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getWebRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 import { Users, Vote } from "lucide-react";
 
 const getUser = createServerFn({ method: "GET" }).handler(async () => {
-  const { headers } = getWebRequest();
+  const { headers } = getRequest();
   const session = await auth.api.getSession({ headers });
 
   return session?.session.id ?? null;

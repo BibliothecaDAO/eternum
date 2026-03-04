@@ -4,7 +4,7 @@ import { ERC721 } from "@/abi/L2/ERC721";
 import {
   useContract,
   useSendTransaction as useL2ContractWrite,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 import { useAccount as useL1Account } from "wagmi";
 
 export const useERC721Approval = ({

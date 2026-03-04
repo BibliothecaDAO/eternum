@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useDelegateRealms } from "@/hooks/governance/use-delegate-realms";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
-import { useAccount } from "@starknet-react/core";
+import { useAccount } from "@starknet-start/react";
 import { Shuffle, TrendingDown } from "lucide-react";
 import { num } from "starknet";
 

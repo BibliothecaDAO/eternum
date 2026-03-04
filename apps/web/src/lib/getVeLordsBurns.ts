@@ -18,7 +18,7 @@ const GetVelordsBurnsInput = z.object({
 });
 
 export const getVelordsBurns = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetVelordsBurnsInput.parse(input))
+  .inputValidator((input: unknown) => GetVelordsBurnsInput.parse(input))
   .handler(async (ctx) => {
     const { sender, startTimestamp, endTimestamp } = ctx.data;
     const whereFilter: SQL[] = [];

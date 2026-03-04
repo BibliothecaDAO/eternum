@@ -1,4 +1,4 @@
-import type { Address } from "@starknet-react/core";
+import type { Address } from "@starknet-start/react";
 import { Suspense } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
 import BridgeIcon from "@/components/icons/bridge.svg?react";
@@ -33,7 +33,7 @@ import {
   useBalance,
   useReadContract,
   useSendTransaction,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";

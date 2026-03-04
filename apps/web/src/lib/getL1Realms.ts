@@ -79,7 +79,7 @@ interface TokenResponse {
 }
 
 export const getL1Realms = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetL1RealmsInput.parse(input))
+  .inputValidator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
     if (!ctx.data.address) {
       return { tokens: [], continuation: null } as TokenResponse;
@@ -155,7 +155,7 @@ interface CollectionResponse {
 }
 
 export const getL1UsersRealms = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetL1RealmsInput.parse(input))
+  .inputValidator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
     if (!ctx.data.address) {
       return { collections: [] };

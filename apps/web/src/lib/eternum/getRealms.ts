@@ -19,7 +19,7 @@ const GetRealmsInput = z.object({
 });
 
 export const getRealms = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetRealmsInput.parse(input))
+  .inputValidator((input: unknown) => GetRealmsInput.parse(input))
   .handler(async (ctx) => {
     const {
       address,

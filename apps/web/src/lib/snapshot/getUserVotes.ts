@@ -70,7 +70,7 @@ const LoadUserVotesInput = z.object({
  * to execute GraphQL POST calls instead of Apollo.
  */
 export const getUserVotes = createServerFn({ method: "POST" })
-  .validator((input: unknown) => LoadUserVotesInput.parse(input))
+  .inputValidator((input: unknown) => LoadUserVotesInput.parse(input))
   .handler(async (ctx) => {
     const { spaceIds, limit, skip, voter } = ctx.data;
     // Define variables for the UserVotes query.

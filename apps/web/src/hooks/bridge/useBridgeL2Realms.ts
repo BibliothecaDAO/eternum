@@ -6,7 +6,7 @@ import {
   useAccount,
   useReadContract,
   useSendTransaction,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 
 import {
   CollectionAddresses,

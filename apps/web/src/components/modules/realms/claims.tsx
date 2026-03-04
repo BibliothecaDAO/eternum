@@ -7,7 +7,7 @@ import {
   formatNumber,
   shortenAddress,
 } from "@/utils/utils";
-import { useAccount, useExplorer } from "@starknet-react/core";
+import { useAccount, useExplorer } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { formatEther } from "viem";

@@ -10,7 +10,7 @@ import { useWriteFinalizeWithdrawRealms } from "@/hooks/bridge/useWriteFinalizeW
 import { useToast } from "@/hooks/use-toast";
 import { getBridgeTransactionsQueryOptions } from "@/lib/getBridgeTransactions";
 import { cn, shortenAddress } from "@/utils/utils";
-import { useAccount, useExplorer } from "@starknet-react/core";
+import { useAccount, useExplorer } from "@starknet-start/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";

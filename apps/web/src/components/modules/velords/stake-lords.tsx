@@ -1,5 +1,5 @@
 import type { ChartConfig } from "@/components/ui/chart";
-import type { Address } from "@starknet-react/core";
+import type { Address } from "@starknet-start/react";
 import type { BlockNumber } from "starknet";
 import { useMemo } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
@@ -28,7 +28,7 @@ import {
   useContract,
   useReadContract,
   useSendTransaction,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 import { BlockTag } from "starknet";
 import { formatEther } from "viem";

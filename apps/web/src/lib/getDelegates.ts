@@ -27,7 +27,7 @@ const GetDelegatesInput = z.object({
 });
 
 export const getDelegates = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetDelegatesInput.parse(input))
+  .inputValidator((input: unknown) => GetDelegatesInput.parse(input))
   .handler(async (ctx) => {
     const { limit, orderBy, search } = ctx.data;
     const actualLimit = limit ?? 100;
@@ -82,7 +82,7 @@ const GetDelegateByIDInput = z.object({
 });
 
 export const getDelegateByID = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetDelegateByIDInput.parse(input))
+  .inputValidator((input: unknown) => GetDelegateByIDInput.parse(input))
   .handler(async (ctx) => {
     if (ctx.data.address) {
       const res = await db.query.delegates.findFirst({
@@ -114,7 +114,7 @@ export const getDelegateByIDQueryOptions = (
 /* -------------------------------------------------------------------------- */
 
 export const createDelegateProfile = createServerFn({ method: "POST" })
-  .validator((input: unknown) => CreateDelegateProfileSchema.parse(input))
+  .inputValidator((input: unknown) => CreateDelegateProfileSchema.parse(input))
   .handler(async (ctx) => {
     const session = await auth.api.getSession({
       headers: getHeaders(),

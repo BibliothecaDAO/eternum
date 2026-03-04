@@ -1,6 +1,6 @@
 import { RealmsABI } from "@/abi/L2/Realms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useAccount, useReadContract } from "@starknet-react/core";
+import { useAccount, useReadContract } from "@starknet-start/react";
 
 import { CollectionAddresses } from "@realms-world/constants";
 

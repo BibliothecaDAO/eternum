@@ -146,7 +146,7 @@ const LoadProposalsInput = z.object({
  * to execute GraphQL POST calls instead of Apollo.
  */
 export const getProposals = createServerFn({ method: "POST" })
-  .validator((input: unknown) => LoadProposalsInput.parse(input))
+  .inputValidator((input: unknown) => LoadProposalsInput.parse(input))
   .handler(async (ctx) => {
     const { spaceIds, limit, skip, /* current, filters,*/ searchQuery } =
       ctx.data;
@@ -245,7 +245,7 @@ const LoadProposalInput = z.object({
  * This function fetches a single proposal by ID
  */
 export const getProposal = createServerFn({ method: "POST" })
-  .validator((input: unknown) => LoadProposalInput.parse(input))
+  .inputValidator((input: unknown) => LoadProposalInput.parse(input))
   .handler(async (ctx) => {
     const { id } = ctx.data;
     const proposalReference = formatSnapshotProposalReference(

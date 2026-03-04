@@ -5,15 +5,27 @@ import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/utils/auth-client";
 import { formatAddress } from "@/utils/utils";
-import { useAccount, useSignTypedData } from "@starknet-react/core";
+import { useAccount, useSignTypedData } from "@starknet-start/react";
 import { env } from "env";
 import { LogOut } from "lucide-react";
 
 import { SiwsTypedData } from "@realms-world/siws";
 
+function getAuthHost() {
+  const baseUrl = (import.meta.env.VITE_BASE_URL as string | undefined) ?? "";
+  if (baseUrl) {
+    try {
+      return new URL(baseUrl).host;
+    } catch {
+      // Fall through to window location.
+    }
+  }
+  return window.location.host;
+}
+
 async function createSiwsData(statement: string, address: string) {
   const nonce = await authClient.siws.nonce({ address });
-  const domain = window.location.host;
+  const domain = getAuthHost();
   const origin = window.location.origin;
   const siwsDomain: ISiwsDomain = {
     version: "0.0.1",

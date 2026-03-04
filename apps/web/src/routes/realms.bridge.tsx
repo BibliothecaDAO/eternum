@@ -11,7 +11,7 @@ import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useAccount } from "@starknet-react/core";
+import { useAccount } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
