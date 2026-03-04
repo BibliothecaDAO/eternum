@@ -8,6 +8,7 @@ import {
   type HexEntityInfo,
   type HexPosition,
   type ID,
+  packTileSeed,
   ResourcesIds,
   type SystemCalls,
   type TroopType,
@@ -300,11 +301,18 @@ export class ArmyActionManager {
     if (direction === undefined || direction === null) {
       return Promise.reject(new Error("Invalid direction"));
     }
+    const destinationHex = path[path.length - 1]?.hex;
+    if (!destinationHex) {
+      return Promise.reject(new Error("Missing destination tile for explore"));
+    }
+
+    const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
 
     try {
       return await this.systemCalls.explorer_explore({
         explorer_id: this.entityId,
         directions: [direction],
+        vrf_source_salt: vrfSourceSalt,
         signer,
       });
     } catch (e) {

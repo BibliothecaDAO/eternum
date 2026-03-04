@@ -43,6 +43,7 @@ pub mod troop_movement_systems {
     use crate::systems::utils::mine::iMineDiscoveryImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
@@ -154,7 +155,7 @@ pub mod troop_movement_systems {
                     // perform lottery to discover mine
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
                     let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-                    let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+                    let vrf_seed: u256 = rng_library_dispatcher.get_random_number(Source::Salt(tile.to_seed()), world);
                     let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
                     let troop_movement_util_systems = ITroopMovementUtilSystemsDispatcher {
                         contract_address: troop_movement_util_systems_address,
@@ -360,9 +361,8 @@ pub mod troop_movement_systems {
 
             // ensure to consume vrf seed even if tile.reward_extracted is true
             // to prevent client errors
-            let caller = starknet::get_caller_address();
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(Source::Salt(tile.to_seed()), world);
 
             if tile.reward_extracted {
                 return;
@@ -918,4 +918,3 @@ pub mod relic_chest_discovery_systems {
         }
     }
 }
-
