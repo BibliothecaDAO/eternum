@@ -31,7 +31,7 @@ function resolvePeriod(
 }
 
 export const getVelordsOverview = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetVelordsAnalyticsInput.parse(input))
+  .inputValidator((input: unknown) => GetVelordsAnalyticsInput.parse(input))
   .handler(async (ctx) => {
     const period = resolvePeriod(ctx.data.period);
     const { start, end } = getPeriodRange(period, new Date());
@@ -61,7 +61,7 @@ export const getVelordsOverview = createServerFn({ method: "GET" })
   });
 
 export const getVelordsRewardsSeries = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetVelordsAnalyticsInput.parse(input))
+  .inputValidator((input: unknown) => GetVelordsAnalyticsInput.parse(input))
   .handler(async (ctx) => {
     const period = resolvePeriod(ctx.data.period);
     const { start, end } = getPeriodRange(period, new Date());
@@ -99,7 +99,7 @@ export const getVelordsRewardsSeries = createServerFn({ method: "GET" })
   });
 
 export const getVelordsLockActivity = createServerFn({ method: "GET" })
-  .validator((input: unknown) =>
+  .inputValidator((input: unknown) =>
     z
       .object({
         period: VelordsPeriodSchema.optional(),

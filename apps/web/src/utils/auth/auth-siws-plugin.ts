@@ -1,7 +1,6 @@
 import type { BetterAuthPlugin } from "better-auth";
 //import { createConfig, getEnsAvatar, getEnsName, http } from "@wagmi/core";
 //import { mainnet, sepolia } from "@wagmi/core/chains";
-import { generateId } from "better-auth";
 import { APIError, createAuthEndpoint } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 // Zod
@@ -11,6 +10,7 @@ import { eq, user as userTable } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 // SIWE deps
 import { SiwsTypedData } from "@realms-world/siws";
+import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 const size = 256;
 let index = size;
@@ -33,6 +33,43 @@ export interface SIWSPluginOptions {
   chainId?: 1 | 11155111 | undefined;
   version?: string;
   resources?: string[];
+}
+
+function normalizeDomain(value?: string | null) {
+  if (!value) return undefined;
+  try {
+    return new URL(value).host;
+  } catch {
+    return value.replace(/^https?:\/\//, "").split("/")[0];
+  }
+}
+
+function getHostname(value?: string | null) {
+  const normalized = normalizeDomain(value);
+  if (!normalized) return undefined;
+
+  // Handle IPv6 host:port form like [::1]:3000.
+  if (normalized.startsWith("[") && normalized.includes("]")) {
+    const end = normalized.indexOf("]");
+    return normalized.slice(1, end);
+  }
+
+  const [host] = normalized.split(":");
+  return host;
+}
+
+function isEquivalentHost(a?: string, b?: string) {
+  if (!a || !b) return false;
+  const loopbacks = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (a === b) return true;
+  return loopbacks.has(a) && loopbacks.has(b);
+}
+
+function getRpcNodeUrl(chainId: "SN_MAIN" | "SN_SEPOLIA") {
+  if (chainId === "SN_MAIN") {
+    return "https://api.cartridge.gg/x/starknet/mainnet";
+  }
+  return "https://api.cartridge.gg/x/starknet/sepolia";
 }
 
 export const siws = (options: SIWSPluginOptions) =>
@@ -97,30 +134,62 @@ export const siws = (options: SIWSPluginOptions) =>
                 message: "Unauthorized: Invalid or expired nonce",
               });
             }
-            function rpc(chain) {
-              return {
-                nodeUrl: `https://https://starknet-${chain}.public.blastapi.io`,
-              };
+
+            if (verification.value !== siwsMessage.message.nonce) {
+              throw new APIError("UNAUTHORIZED", {
+                message: "Unauthorized: Nonce mismatch",
+              });
             }
 
-            // Verify SIWS message
-            const verified = await siwsMessage.verify(
-              {
-                signature,
-                nonce: verification.value,
-                domain:
-                  ctx.request?.headers.get("host") ?? "http://localhost:3000", //nextAuthUrl.host,
-                network: siwsMessage.domain.chainId,
-              },
-              {
-                provider: rpc(
-                  siwsMessage.domain.chainId === "SN_MAIN"
-                    ? "mainnet"
-                    : "sepolia",
-                ),
-              },
+            if (
+              siwsMessage.message.address.toLowerCase() !== address.toLowerCase()
+            ) {
+              throw new APIError("UNAUTHORIZED", {
+                message: "Unauthorized: Address mismatch",
+              });
+            }
+
+            const requestHost = getHostname(ctx.request?.headers.get("host")) ?? "localhost";
+            const configuredHost = getHostname(options.domain);
+            const signedHost = getHostname(siwsMessage.domain.name);
+            const matchesRequestHost = isEquivalentHost(signedHost, requestHost);
+            const matchesConfiguredHost = isEquivalentHost(
+              signedHost,
+              configuredHost,
             );
-            if (!verified.success) {
+
+            const domainMismatch =
+              !signedHost || (!matchesRequestHost && !matchesConfiguredHost);
+            const isProduction = process.env.NODE_ENV === "production";
+            if (domainMismatch && isProduction) {
+              throw new APIError("UNAUTHORIZED", {
+                message: `Unauthorized: Domain mismatch (signed=${signedHost ?? "n/a"}, request=${requestHost}, configured=${configuredHost ?? "n/a"})`,
+              });
+            }
+
+            if (
+              siwsMessage.domain.chainId !== "SN_MAIN" &&
+              siwsMessage.domain.chainId !== "SN_SEPOLIA"
+            ) {
+              throw new APIError("UNAUTHORIZED", {
+                message: "Unauthorized: Unsupported network",
+              });
+            }
+
+            // The SIWS package in use targets an older starknet Contract API.
+            // Verify against the account contract using starknet v9 directly.
+            const provider = new RpcProvider({
+              nodeUrl: getRpcNodeUrl(siwsMessage.domain.chainId),
+            });
+
+            const isValid = await verifyMessageInStarknet(
+              provider,
+              siwsMessage as unknown as Parameters<typeof verifyMessageInStarknet>[1],
+              signature,
+              address,
+            );
+
+            if (!isValid) {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Invalid SIWE signature",
               });
@@ -174,11 +243,13 @@ export const siws = (options: SIWSPluginOptions) =>
             await setSessionCookie(ctx, { session, user });
 
             return ctx.json({ token: session.token });
-          } catch (error: any) {
+          } catch (error: unknown) {
             if (error instanceof APIError) throw error;
+            const message =
+              error instanceof Error ? error.message : "Unknown error";
             throw new APIError("UNAUTHORIZED", {
               message: "Something went wrong. Please try again later.",
-              error: error.message,
+              error: message,
             });
           }
         },

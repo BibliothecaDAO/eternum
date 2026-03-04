@@ -9,7 +9,7 @@ import {
   toBigInt,
 } from "@/lib/velords-utils";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useAccount, useNetwork, useReadContract } from "@starknet-react/core";
+import { useAccount, useNetwork, useReadContract } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 
 import { LORDS, StakingAddresses } from "@realms-world/constants";

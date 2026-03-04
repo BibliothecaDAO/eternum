@@ -5,7 +5,7 @@ import { Homepage } from "@/components/modules/homepage/homepage";
 import { HomepageSkeleton } from "@/components/modules/homepage/homepage-skeleteon";
 import { getProposalsQueryOptions } from "@/lib/snapshot/getProposals";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useAccount } from "@starknet-react/core";
+import { useAccount } from "@starknet-start/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { SnapshotSpaceAddresses } from "@realms-world/constants";

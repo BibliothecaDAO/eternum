@@ -22,7 +22,7 @@ const GetBridgeTransactionsInput = z.object({
 });
 
 export const getBridgeTransactions = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetBridgeTransactionsInput.parse(input))
+  .inputValidator((input: unknown) => GetBridgeTransactionsInput.parse(input))
   .handler(async (ctx) => {
     const { l1Account, l2Account } = ctx.data;
     const whereFilter: SQL[] = [];

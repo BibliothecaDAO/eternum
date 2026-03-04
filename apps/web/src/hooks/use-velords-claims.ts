@@ -1,4 +1,4 @@
-import type { Address } from "@starknet-react/core";
+import type { Address } from "@starknet-start/react";
 import type { Call } from "starknet";
 import { useMemo, useState } from "react";
 import { RewardPool } from "@/abi/L2/RewardPool";
@@ -7,7 +7,7 @@ import {
   useAccount,
   useContract,
   useSendTransaction,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 import { validateAndParseAddress } from "starknet";
 
 import { StakingAddresses } from "@realms-world/constants";

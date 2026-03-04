@@ -1,6 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -14,10 +15,8 @@ export default defineConfig({
     tsconfigPaths({
       projects: ["./tsconfig.json"],
     }),
-    tanstackStart({
-      target: "vercel",
-      customViteReactPlugin: true,
-    }),
+    tanstackStart({}),
+    nitro(),
     viteReact(),
     svgr({
       include: "**/*.svg?react",
@@ -30,7 +29,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("react-markdown") || id.includes("remark-gfm") || id.includes("rehype-raw") || id.includes("rehype-sanitize")) {
+          if (
+            id.includes("react-markdown") ||
+            id.includes("remark-gfm") ||
+            id.includes("rehype-raw") ||
+            id.includes("rehype-sanitize")
+          ) {
             return "markdown-vendors";
           }
 
@@ -44,28 +48,10 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: [
-      "@realms-world/db",
-      "@reown/appkit",
-      "@reown/appkit-adapter-wagmi",
-      "viem",
-      "wagmi",
-      "starknet",
-      "@starknet-react/core",
-      "zod",
-    ],
+    include: ["@realms-world/db", "starknet", "@starknet-start/react", "zod"],
   },
   ssr: {
-    noExternal: [
-      "@realms-world/db",
-      "@realms-world/constants",
-      "zod",
-      /^@reown\//,
-      /^@walletconnect\//,
-    ],
-    external: [
-      "wagmi",
-      "@starknet-io/starknet-types-08",
-    ],
+    noExternal: ["@realms-world/db", "@realms-world/constants", "zod"],
+    external: ["@walletconnect/time"],
   },
 });

@@ -5,19 +5,41 @@ import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/utils/auth-client";
 import { formatAddress } from "@/utils/utils";
-import { useAccount, useSignTypedData } from "@starknet-react/core";
+import { useAccount, useSignTypedData } from "@starknet-start/react";
 import { env } from "env";
 import { LogOut } from "lucide-react";
 
 import { SiwsTypedData } from "@realms-world/siws";
 
-async function createSiwsData(statement: string, address: string) {
+function getAuthHost() {
+  const baseUrl = (import.meta.env.VITE_BASE_URL as string | undefined) ?? "";
+  if (baseUrl) {
+    try {
+      return new URL(baseUrl).host;
+    } catch {
+      // Fall through to window location.
+    }
+  }
+  return window.location.host;
+}
+
+function resolveSiwsChainId(chainId?: bigint) {
+  if (chainId === BigInt("0x534e5f5345504f4c4941")) return "SN_SEPOLIA";
+  if (chainId === BigInt("0x534e5f4d41494e")) return "SN_MAIN";
+  return env.VITE_PUBLIC_CHAIN == "sepolia" ? "SN_SEPOLIA" : "SN_MAIN";
+}
+
+async function createSiwsData(
+  statement: string,
+  address: string,
+  chainId?: bigint,
+) {
   const nonce = await authClient.siws.nonce({ address });
-  const domain = window.location.host;
+  const domain = getAuthHost();
   const origin = window.location.origin;
   const siwsDomain: ISiwsDomain = {
     version: "0.0.1",
-    chainId: env.VITE_PUBLIC_CHAIN == "sepolia" ? `SN_SEPOLIA` : `SN_MAIN`,
+    chainId: resolveSiwsChainId(chainId),
     name: domain,
     revision: "1",
   };
@@ -35,7 +57,7 @@ async function createSiwsData(statement: string, address: string) {
 }
 
 export function Login() {
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   const { data: session, refetch } = authClient.useSession();
   const [isDataPending, setIsDataPending] = useState(false);
 
@@ -46,6 +68,7 @@ export function Login() {
       const siwsData = await createSiwsData(
         loginString,
         formatAddress(address),
+        chainId,
       );
       setIsDataPending(false);
       return siwsData;

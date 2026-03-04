@@ -46,7 +46,7 @@ export function LoginCard() {
 
         {/* Connect wallet button */}
         <div className="w-full pt-4">
-          <StarknetWalletButton className="w-full" />
+          <StarknetWalletButton className="w-full" variant="reference" />
         </div>
       </CardContent>
     </Card>

@@ -1,33 +1,44 @@
-import type { Connector, StarknetkitConnector } from "starknetkit";
+import type { WalletWithStarknetFeatures } from "@starknet-io/get-starknet-core";
 import { useEffect, useState } from "react";
 import { getLastConnector } from "@/utils/connectWallet";
-import { useAccount, useConnect } from "@starknet-react/core";
-import { useStarknetkitConnectModal } from "starknetkit";
+import { useAccount, useConnect } from "@starknet-start/react";
 
 export function useStarknetWallet() {
   const { isConnected } = useAccount();
   const { connectAsync, connectors } = useConnect();
-  const [lastConnector, setLastConnector] = useState<Connector | null>(null);
-
-  const { starknetkitConnectModal } = useStarknetkitConnectModal({
-    connectors: connectors as StarknetkitConnector[],
-    modalMode: "alwaysAsk",
-  });
+  const [lastConnector, setLastConnector] = useState<WalletWithStarknetFeatures | null>(null);
 
   useEffect(() => {
     setLastConnector(getLastConnector(connectors));
   }, [isConnected, connectors]);
 
-  async function openStarknetKitModal() {
-    const { connector } = await starknetkitConnectModal();
-    if (!connector) return;
-    await connectAsync({ connector });
+  function getPreferredConnector() {
+    if (lastConnector) {
+      return lastConnector;
+    }
+    return connectors.at(0);
   }
 
-  async function connectWallet(connector: Connector) {
-    await connectAsync({ connector });
-    localStorage.setItem("connectedWallet", connector.id);
+  async function openWalletModal() {
+    const connector = getPreferredConnector();
+    if (connector === undefined) {
+      throw new Error("No Starknet wallet connector is available");
+    }
+    await connectWallet(connector);
   }
 
-  return { lastConnector, openStarknetKitModal, connectWallet };
+  async function connectWallet(connector: WalletWithStarknetFeatures) {
+    await connectAsync({ connector });
+    localStorage.setItem("starknetLastConnectedWallet", connector.name);
+  }
+
+  const openStarknetKitModal = openWalletModal;
+
+  return {
+    lastConnector,
+    openWalletModal,
+    openStarknetKitModal,
+    connectWallet,
+    connectors,
+  };
 }

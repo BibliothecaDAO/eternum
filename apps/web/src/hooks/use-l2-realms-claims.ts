@@ -7,7 +7,7 @@ import {
   useContract,
   useReadContract,
   useSendTransaction,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 import { BlockTag } from "starknet";
 import { formatEther } from "viem";
 

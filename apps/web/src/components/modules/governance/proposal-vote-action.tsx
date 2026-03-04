@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useVoteProposal } from "@/hooks/governance/use-vote-proposal";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { Choice } from "@/types/snapshot";
-import { useAccount } from "@starknet-react/core";
+import { useAccount } from "@starknet-start/react";
 import { Check, Minus, X } from "lucide-react";
 
 export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {

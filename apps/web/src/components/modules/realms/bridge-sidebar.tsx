@@ -22,7 +22,7 @@ import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useToast } from "@/hooks/use-toast";
-import { useAccount } from "@starknet-react/core";
+import { useAccount } from "@starknet-start/react";
 import { ChevronRight } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
@@ -126,7 +126,10 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           {!l1Address ? (
             <EthereumConnect label="Connect Ethereum To Bridge" />
           ) : !l2Address ? (
-            <StarknetWalletButton label="Connect Starknet To Bridge" />
+            <StarknetWalletButton
+              label="Connect Starknet To Bridge"
+              variant="reference"
+            />
           ) : selectedAsset === "Ethereum" && !isApprovedForAll ? (
             <Button
               disabled={approveForAllLoading || isApproveForAllPending}

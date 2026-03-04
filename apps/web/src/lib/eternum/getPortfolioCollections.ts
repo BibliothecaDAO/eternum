@@ -36,7 +36,7 @@ const GetAccountTokensInput = z.object({
 });
 
 export const getAccountTokens = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetAccountTokensInput.parse(input))
+  .inputValidator((input: unknown) => GetAccountTokensInput.parse(input))
   .handler(async (ctx) => {
     const { address, collectionAddress } = ctx.data;
     const collectionId =

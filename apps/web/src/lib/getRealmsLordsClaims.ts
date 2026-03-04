@@ -14,7 +14,7 @@ const GetRealmsLordsClaimsInput = z.object({
 });
 
 export const getRealmsLordsClaims = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetRealmsLordsClaimsInput.parse(input))
+  .inputValidator((input: unknown) => GetRealmsLordsClaimsInput.parse(input))
   .handler(async (ctx) => {
     const { address } = ctx.data;
 

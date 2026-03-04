@@ -1,7 +1,7 @@
 import type { Call } from "starknet";
 import { useMemo } from "react";
 import { RealmsBridge } from "@/abi/L2/RealmsBridge";
-import { useContract, useSendTransaction } from "@starknet-react/core";
+import { useContract, useSendTransaction } from "@starknet-start/react";
 import { useAccount as useL1Account } from "wagmi";
 
 import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";

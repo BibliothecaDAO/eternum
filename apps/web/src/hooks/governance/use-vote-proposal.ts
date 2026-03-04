@@ -6,7 +6,7 @@ import {
   useAccount,
   useContract,
   useSendTransaction,
-} from "@starknet-react/core";
+} from "@starknet-start/react";
 import { CairoCustomEnum, shortString } from "starknet";
 
 import { useIPFSPin } from "../use-ipfs-pin";
