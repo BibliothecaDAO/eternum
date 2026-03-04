@@ -22,6 +22,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
+import type { MMRTier } from "@/ui/utils/mmr-tiers";
 import {
   getMMRTierFromRaw,
   getNextTier,
@@ -29,11 +30,10 @@ import {
   MMR_TOKEN_DECIMALS,
   toMmrIntegerFromRaw,
 } from "@/ui/utils/mmr-tiers";
-import type { MMRTier } from "@/ui/utils/mmr-tiers";
 import { displayAddress } from "@/ui/utils/utils";
 import { toHexString } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import Copy from "lucide-react/dist/esm/icons/copy";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
@@ -54,7 +54,7 @@ const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain-mainnet-priority";
 
 const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
-  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9",
+  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
 };
 
 // Map tier color classes to actual hex values for gradients/glows

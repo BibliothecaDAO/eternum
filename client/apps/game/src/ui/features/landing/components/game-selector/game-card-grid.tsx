@@ -45,6 +45,26 @@ const formatLordsAmount = (amount: bigint): string => {
   return `${wholeFormatted}.${fraction}`;
 };
 
+const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "0";
+
+  const normalized = trimmed.replace(/,/g, "");
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+    return trimmed;
+  }
+
+  const sign = normalized.startsWith("-") ? "-" : "";
+  const unsigned = sign ? normalized.slice(1) : normalized;
+
+  const [wholePart, decimalPart = ""] = unsigned.split(".");
+  const wholeFormatted = `${sign}${wholePart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  if (decimalPart.length === 0) return wholeFormatted;
+
+  const limitedDecimals = decimalPart.slice(0, 2).replace(/0+$/, "");
+  return limitedDecimals.length > 0 ? `${wholeFormatted}.${limitedDecimals}` : wholeFormatted;
+};
+
 const getErrorMessage = (error: unknown): string | null => {
   if (error instanceof Error && error.message) return error.message;
   if (
@@ -359,8 +379,8 @@ const GameCard = ({
 
         {canClaimRewards && claimSummary && (
           <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
-            Claimable: {claimSummary.lordsWonFormatted} LORDS + {claimSummary.chestsClaimedEstimate.toLocaleString()}{" "}
-            chests
+            Claimable: {formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted)} LORDS +{" "}
+            {claimSummary.chestsClaimedEstimate.toLocaleString()} chests
           </div>
         )}
 
@@ -579,6 +599,10 @@ interface UnifiedGameGridProps {
   layout?: "horizontal" | "vertical";
   /** Sort games where user is registered first */
   sortRegisteredFirst?: boolean;
+  /** Sort ended games with claimable rewards first */
+  sortClaimableRewardsFirst?: boolean;
+  /** Sort ended games by most recently ended first */
+  sortEndedNewestFirst?: boolean;
   /** Optional callback to expose the resolved list (for reuse without extra queries) */
   onGamesResolved?: (games: GameData[]) => void;
 }
@@ -601,6 +625,8 @@ export const UnifiedGameGrid = ({
   hideLegend = false,
   layout = "horizontal",
   sortRegisteredFirst = false,
+  sortClaimableRewardsFirst = false,
+  sortEndedNewestFirst = false,
   onGamesResolved,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
@@ -774,6 +800,40 @@ export const UnifiedGameGrid = ({
     return summaryByWorldKey;
   }, [claimSummaryQueries, endedRegisteredGames]);
 
+  const resolvedGames = useMemo(() => {
+    if (!sortClaimableRewardsFirst && !sortEndedNewestFirst) return games;
+
+    return games.toSorted((a, b) => {
+      const aIsEnded = a.gameStatus === "ended";
+      const bIsEnded = b.gameStatus === "ended";
+      if (!aIsEnded || !bIsEnded) return 0;
+
+      if (sortClaimableRewardsFirst) {
+        const aCanClaimNow = claimSummaryByWorldKey.get(a.worldKey)?.data?.canClaimNow === true;
+        const bCanClaimNow = claimSummaryByWorldKey.get(b.worldKey)?.data?.canClaimNow === true;
+        if (aCanClaimNow !== bCanClaimNow) return aCanClaimNow ? -1 : 1;
+      }
+
+      if (sortRegisteredFirst) {
+        const aRegistered = a.isRegistered ? 1 : 0;
+        const bRegistered = b.isRegistered ? 1 : 0;
+        if (aRegistered !== bRegistered) return bRegistered - aRegistered;
+      }
+
+      if (sortEndedNewestFirst) {
+        const aEndAt = a.endAt ?? 0;
+        const bEndAt = b.endAt ?? 0;
+        if (aEndAt !== bEndAt) return bEndAt - aEndAt;
+
+        const aStartAt = a.startMainAt ?? 0;
+        const bStartAt = b.startMainAt ?? 0;
+        if (aStartAt !== bStartAt) return bStartAt - aStartAt;
+      }
+
+      return 0;
+    });
+  }, [claimSummaryByWorldKey, games, sortClaimableRewardsFirst, sortEndedNewestFirst, sortRegisteredFirst]);
+
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
@@ -808,8 +868,8 @@ export const UnifiedGameGrid = ({
   }, [games]);
 
   const resolvedGamesSignature = useMemo(
-    () => games.map((game) => buildGameResolutionSignature(game)).join("|"),
-    [games],
+    () => resolvedGames.map((game) => buildGameResolutionSignature(game)).join("|"),
+    [resolvedGames],
   );
   const lastResolvedGamesSignatureRef = useRef<string | null>(null);
 
@@ -818,8 +878,8 @@ export const UnifiedGameGrid = ({
     if (lastResolvedGamesSignatureRef.current === resolvedGamesSignature) return;
 
     lastResolvedGamesSignatureRef.current = resolvedGamesSignature;
-    onGamesResolved(games);
-  }, [games, onGamesResolved, resolvedGamesSignature]);
+    onGamesResolved(resolvedGames);
+  }, [onGamesResolved, resolvedGames, resolvedGamesSignature]);
 
   return (
     <div className={cn("relative", className)}>
@@ -899,7 +959,7 @@ export const UnifiedGameGrid = ({
           </div>
         ) : layout === "vertical" ? (
           <div className="flex flex-col gap-3">
-            {games.map((game) => {
+            {resolvedGames.map((game) => {
               const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
               const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
 
@@ -952,7 +1012,7 @@ export const UnifiedGameGrid = ({
           </div>
         ) : (
           <div className="flex gap-3 p-1">
-            {games.map((game) => {
+            {resolvedGames.map((game) => {
               const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
               const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
 

@@ -1,4 +1,5 @@
 import { env } from "@/../env";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -7,7 +8,6 @@ import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-butto
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getRelicBonusSummary } from "@/ui/utils/relic-utils";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   Biome,
@@ -42,6 +42,8 @@ import { getComponentValue } from "@dojoengine/recs";
 import Users from "lucide-react/dist/esm/icons/users";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
+import { GuardStaminaBar } from "../components/guard-stamina-bar";
+import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 import { AttackTarget, TargetType } from "./types";
@@ -105,6 +107,7 @@ export const CombatContainer = ({
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
+  const { currentArmiesTick } = useBlockTimestamp();
 
   const accountName = useAccountStore((state) => state.accountName);
 
@@ -156,8 +159,6 @@ export const CombatContainer = ({
   const defenderRelicBonuses = useMemo(() => getRelicBonusSummary(targetRelicResourceIds), [targetRelicResourceIds]);
 
   const attackerStamina = useMemo(() => {
-    const { currentArmiesTick } = getBlockTimestamp();
-
     if (attackerType === AttackerType.Structure) {
       if (selectedGuardSlot === null && structureGuards.length > 0) {
         // Auto-select the first guard if none is selected
@@ -167,17 +168,19 @@ export const CombatContainer = ({
         const guard = structureGuards[0];
         if (!guard.troops.stamina) return 0n;
 
-        return StaminaManager.getStamina(guard.troops, currentArmiesTick).amount;
+        const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
+        return BigInt(Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina.amount ?? 0n)));
       } else if (selectedGuardSlot !== null) {
         const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
         if (selectedGuard && selectedGuard.troops.stamina) {
-          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick).amount;
+          const staminaSnapshot = getGuardStaminaSnapshot(selectedGuard.troops, currentArmiesTick);
+          return BigInt(Math.floor(staminaSnapshot?.current ?? Number(selectedGuard.troops.stamina.amount ?? 0n)));
         }
       }
       return 0n;
     }
     return new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
-  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
+  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards, currentArmiesTick]);
 
   // Get the current army states for display
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
@@ -534,38 +537,40 @@ export const CombatContainer = ({
         <div className="flex flex-wrap gap-2 sm:gap-3" role="group" aria-label="Select troop to attack with">
           {structureGuards
             .toSorted((a, b) => b.slot - a.slot)
-            .map((guard) => (
-              <button
-                key={guard.slot}
-                onClick={() => setSelectedGuardSlot(guard.slot)}
-                className={`flex items-center bg-brown-900/90 border ${
-                  selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
-                } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
-                aria-pressed={selectedGuardSlot === guard.slot}
-                aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`}
-              >
-                <ResourceIcon
-                  withTooltip={false}
-                  resource={
-                    resources.find(
-                      (r) =>
-                        r.id === getTroopResourceId(guard.troops.category as TroopType, guard.troops.tier as TroopTier),
-                    )?.trait || ""
-                  }
-                  size="sm"
-                  className="w-4 h-4 mr-2"
-                />
-                <div className="flex flex-col text-left min-w-0 flex-1">
-                  <span className="text-xs sm:text-sm text-gold/90 font-medium truncate">
-                    {TroopType[guard.troops.category as TroopType]} {guard.troops.tier as TroopTier} (Slot{" "}
-                    {DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]})
-                  </span>
-                  <span className="text-sm sm:text-base text-gold font-bold">
-                    {currencyFormat(Number(guard.troops.count || 0), 0)}
-                  </span>
-                </div>
-              </button>
-            ))}
+            .map((guard) => {
+              const guardCategory = guard.troops.category as TroopType;
+              const guardTier = guard.troops.tier as TroopTier;
+              const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
+
+              return (
+                <button
+                  key={guard.slot}
+                  onClick={() => setSelectedGuardSlot(guard.slot)}
+                  className={`flex items-center bg-brown-900/90 border ${
+                    selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
+                  } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
+                  aria-pressed={selectedGuardSlot === guard.slot}
+                  aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`}
+                >
+                  <ResourceIcon
+                    withTooltip={false}
+                    resource={resources.find((r) => r.id === getTroopResourceId(guardCategory, guardTier))?.trait || ""}
+                    size="sm"
+                    className="w-4 h-4 mr-2"
+                  />
+                  <div className="flex flex-col text-left min-w-0 flex-1">
+                    <span className="text-xs sm:text-sm text-gold/90 font-medium truncate">
+                      {TroopType[guardCategory]} {guardTier as TroopTier} (Slot{" "}
+                      {DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]})
+                    </span>
+                    <span className="text-sm sm:text-base text-gold font-bold">
+                      {currencyFormat(Number(guard.troops.count || 0), 0)}
+                    </span>
+                    <GuardStaminaBar current={staminaSnapshot?.current} max={staminaSnapshot?.max} className="mt-1" />
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </div>
     );

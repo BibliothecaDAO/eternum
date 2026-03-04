@@ -1,12 +1,12 @@
-import type { Chain } from "@contracts";
 import { SqlApi } from "@bibliothecadao/torii";
+import type { Chain } from "@contracts";
 
+import { env, hasPublicNodeUrl } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
 import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "./normalize";
 import { saveWorldProfile } from "./store";
 import type { WorldProfile } from "./types";
-import { env, hasPublicNodeUrl } from "../../../env";
 
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
@@ -65,7 +65,7 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
     // ignore fetch errors; entry/fee token will fallback to env vars
   }
 
-  const slotDefaultRpcUrl = `${cartridgeApiBase}/x/eternum-blitz-slot-3/katana`;
+  const slotDefaultRpcUrl = `${cartridgeApiBase}/x/eternum-blitz-slot-4/katana`;
   const chainDefaultRpcUrl =
     chain === "slot" || chain === "slottest"
       ? slotDefaultRpcUrl

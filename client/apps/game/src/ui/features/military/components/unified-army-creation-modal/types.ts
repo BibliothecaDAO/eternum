@@ -23,5 +23,7 @@ export interface GuardSummary {
     category?: TroopType;
     tier?: TroopTier;
     count?: number;
+    staminaCurrent?: number;
+    staminaMax?: number;
   } | null;
 }
