@@ -26,13 +26,17 @@ import {
   setBuildingCount,
 } from "..";
 import { configManager } from "./config-manager";
+import {
+  __resetOptimisticBuildRegistryForTests,
+  isOptimisticBuildPendingAtHex,
+  markOptimisticBuildOperationFailed,
+  reconcileOptimisticBuildOperations,
+  registerOptimisticBuildOperation,
+} from "./optimistic-build-registry";
 
 // Global const to flick optimistic building on or off
 export const OPTIMISTIC_BUILDING_ENABLED = true;
-
-// Module-level Set to track pending builds across TileManager instances
-// This prevents race conditions between optimistic updates and Torii sync
-const pendingBuilds = new Set<string>();
+const STALE_OPTIMISTIC_BUILD_TIMEOUT_MS = 90_000;
 
 export class TileManager {
   private col: number;
@@ -105,9 +109,14 @@ export class TileManager {
   isHexOccupied = (hexCoords: HexPosition) => {
     const { col, row } = hexCoords;
 
-    // Check pending builds first to prevent race conditions
-    const buildKey = `${this.col},${this.row},${col},${row}`;
-    if (pendingBuilds.has(buildKey)) {
+    if (
+      isOptimisticBuildPendingAtHex({
+        outerCol: this.col,
+        outerRow: this.row,
+        innerCol: col,
+        innerRow: row,
+      })
+    ) {
       return true;
     }
 
@@ -370,10 +379,14 @@ export class TileManager {
     useSimpleCost: boolean,
   ) => {
     const { col, row } = hexCoords;
-
-    // Track this build as pending to prevent race conditions
-    const buildKey = `${this.col},${this.row},${col},${row}`;
-    pendingBuilds.add(buildKey);
+    const structureEntity = getEntityIdFromKeys([BigInt(structureEntityId)]);
+    const structureBuildings = getComponentValue(this.components.StructureBuildings, structureEntity);
+    const currentBuildingCount = getBuildingCount(buildingType, [
+      structureBuildings?.packed_counts_1 || 0n,
+      structureBuildings?.packed_counts_2 || 0n,
+      structureBuildings?.packed_counts_3 || 0n,
+    ]);
+    const operationId = uuid();
 
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
@@ -385,6 +398,20 @@ export class TileManager {
       removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
     }
 
+    registerOptimisticBuildOperation({
+      operationId,
+      structureEntityId,
+      outerCol: this.col,
+      outerRow: this.row,
+      innerCol: col,
+      innerRow: row,
+      buildingType,
+      expectedBuildingCount: currentBuildingCount + 1,
+      startedAtMs: Date.now(),
+      staleAfterMs: STALE_OPTIMISTIC_BUILD_TIMEOUT_MS,
+      removeOverride: removeBuildingOverride,
+    });
+
     try {
       const result = await this.systemCalls.create_building({
         signer,
@@ -394,22 +421,24 @@ export class TileManager {
         use_simple: useSimpleCost,
       });
 
-      // On success, delay override removal to allow Torii sync
-      // The pendingBuilds Set ensures isHexOccupied returns true during this window
-      setTimeout(() => {
-        removeBuildingOverride();
-        pendingBuilds.delete(buildKey);
-      }, 500);
-
       return result;
     } catch (error) {
-      // On error, remove immediately
-      removeBuildingOverride();
-      pendingBuilds.delete(buildKey);
+      markOptimisticBuildOperationFailed(operationId);
       console.error(error);
       throw error;
     }
   };
+
+  static reconcilePendingBuildsForStructure(
+    structureEntityId: ID,
+    activeProductions: Array<{ buildingType: BuildingType; buildingCount: number }>,
+  ): number {
+    return reconcileOptimisticBuildOperations({ structureEntityId, activeProductions });
+  }
+
+  static __resetPendingOptimisticBuildsForTests(): void {
+    __resetOptimisticBuildRegistryForTests();
+  }
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
     // add optimistic rendering if enabled

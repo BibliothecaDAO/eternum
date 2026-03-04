@@ -40,6 +40,7 @@ import {
   getBlockTimestamp,
   SelectableArmy,
   StructureActionManager,
+  TileManager,
   TileSystemUpdate,
 } from "@bibliothecadao/eternum";
 import {
@@ -97,6 +98,7 @@ import {
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
+import { resolveMovementIndicatorCleanupPlan } from "./worldmap-movement-indicator-policy";
 import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
@@ -834,6 +836,7 @@ export default class WorldmapScene extends HexagonScene {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
         this.incrementToriiBoundsCounter("structureBuildings");
+        TileManager.reconcilePendingBuildsForStructure(update.entityId, update.activeProductions);
         this.structureManager.updateStructureLabelFromBuildingUpdate(update);
       }),
     );
@@ -1706,12 +1709,30 @@ export default class WorldmapScene extends HexagonScene {
       // Store the cleanup function with the hex coordinates as key
       this.travelEffects.set(key, cleanup);
 
-      if (isExplored) {
-        unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
-      }
+      unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, () => {
+        const cleanupPlan = resolveMovementIndicatorCleanupPlan({
+          transactionResolved: true,
+          transactionFailed: false,
+          authoritativeMovementObserved: true,
+          staleFallbackReached: false,
+        });
+        if (cleanupPlan.shouldCleanupNow) {
+          cleanup();
+        }
+      });
 
       this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
-      maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
+      maxLifetimeTimeout = setTimeout(() => {
+        const cleanupPlan = resolveMovementIndicatorCleanupPlan({
+          transactionResolved: true,
+          transactionFailed: false,
+          authoritativeMovementObserved: false,
+          staleFallbackReached: true,
+        });
+        if (cleanupPlan.shouldCleanupNow) {
+          cleanup();
+        }
+      }, MAX_TRAVEL_EFFECT_LIFETIME_MS);
 
       // Mark army as having pending movement transaction
       this.markPendingArmyMovement(selectedEntityId);
@@ -1722,17 +1743,30 @@ export default class WorldmapScene extends HexagonScene {
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
-          // Transaction submitted successfully, cleanup visual effects
-          if (!isExplored) {
+          const cleanupPlan = resolveMovementIndicatorCleanupPlan({
+            transactionResolved: true,
+            transactionFailed: false,
+            authoritativeMovementObserved: false,
+            staleFallbackReached: false,
+          });
+          if (cleanupPlan.shouldCleanupNow) {
             cleanup();
           }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
         .catch((e) => {
+          const cleanupPlan = resolveMovementIndicatorCleanupPlan({
+            transactionResolved: false,
+            transactionFailed: true,
+            authoritativeMovementObserved: false,
+            staleFallbackReached: false,
+          });
+          if (cleanupPlan.shouldCleanupNow) {
+            cleanup();
+          }
           // Transaction failed, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
-          cleanup();
           console.error("Army movement failed:", e);
         });
 
