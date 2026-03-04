@@ -676,7 +676,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
 
     const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
-    const vrfSerializationKey = this.getVrfSerializationKey(signer, sanitizedTransactionDetails);
+    const vrfSerializationKey =
+      txType === TransactionType.EXPLORE ? undefined : this.getVrfSerializationKey(signer, sanitizedTransactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
