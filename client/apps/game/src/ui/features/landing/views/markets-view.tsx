@@ -1,11 +1,19 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { MarketClass } from "@/pm/class";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
+import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { MarketImage } from "@/ui/features/market/landing-markets/market-image";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
+import {
+  getChainLabel,
+  resolveConnectedTxChainFromRuntime,
+  switchWalletToChain,
+  type WalletChainControllerLike,
+} from "@/ui/utils/network-switch";
+import { useAccount } from "@starknet-react/core";
 import {
   marketChainLabels,
   useMultiChainMarketCounts,
@@ -91,10 +99,12 @@ const shortMarketId = (id: string) => {
 const MarketTerminalCard = ({
   item,
   onOpen,
+  onSwitchNetwork,
   canTrade,
 }: {
   item: EnrichedMarket;
   onOpen: (market: MarketClass, chain: MarketDataChain) => void;
+  onSwitchNetwork: (chain: MarketDataChain) => void;
   canTrade: boolean;
 }) => {
   const outcomes = useMemo(() => {
@@ -180,16 +190,21 @@ const MarketTerminalCard = ({
 
       <button
         type="button"
-        onClick={() => onOpen(item.market, item.chain)}
-        disabled={!canTrade}
+        onClick={() => {
+          if (canTrade) {
+            onOpen(item.market, item.chain);
+            return;
+          }
+          onSwitchNetwork(item.chain);
+        }}
         className={cn(
           "mt-3 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
           canTrade
             ? "border-orange/50 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25"
-            : "cursor-not-allowed border-white/10 bg-white/5 text-white/35",
+            : "border-blue-400/40 bg-blue-500/10 text-blue-300 hover:border-blue-300/60 hover:bg-blue-500/20",
         )}
       >
-        {canTrade ? "Open Market" : `View Only (${chainLabel})`}
+        {canTrade ? "Open Market" : `Switch To ${chainLabel}`}
       </button>
     </article>
   );
@@ -201,7 +216,13 @@ const MarketTerminalCard = ({
 const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const { chainId, connector } = useAccount();
   const runtimeChain = getPredictionMarketChain();
+  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
+  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
+  const activeTradingChain: MarketDataChain =
+    connectedTxChain === "mainnet" || connectedTxChain === "slot" ? connectedTxChain : runtimeChain;
+  const [switchTargetChain, setSwitchTargetChain] = useState<MarketDataChain | null>(null);
 
   const selectedStatus = getStatusFromParam(searchParams.get("status"));
   const selectedChain = getChainFromParam(searchParams.get("chain"));
@@ -222,11 +243,26 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
 
   const handleCardClick = useCallback(
     (market: MarketClass, chain: MarketDataChain) => {
-      if (chain !== runtimeChain) return;
+      if (chain !== activeTradingChain) return;
       toggleModal(<MarketDetailsModal market={market} onClose={() => toggleModal(null)} />);
     },
-    [runtimeChain, toggleModal],
+    [activeTradingChain, toggleModal],
   );
+
+  const handleOpenSwitchNetworkPrompt = useCallback((chain: MarketDataChain) => {
+    setSwitchTargetChain(chain);
+  }, []);
+
+  const handleSwitchNetwork = useCallback(async () => {
+    if (!switchTargetChain) return;
+    const switched = await switchWalletToChain({
+      controller,
+      targetChain: switchTargetChain,
+    });
+    if (switched) {
+      setSwitchTargetChain(null);
+    }
+  }, [controller, switchTargetChain]);
 
   const handleStatusChange = useCallback(
     (nextStatus: MarketStatusKey) => {
@@ -399,7 +435,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 key={item.key}
                 item={item}
                 onOpen={handleCardClick}
-                canTrade={item.chain === runtimeChain}
+                onSwitchNetwork={handleOpenSwitchNetworkPrompt}
+                canTrade={item.chain === activeTradingChain}
               />
             ))}
           </div>
@@ -441,6 +478,18 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
           </button>
         </div>
       ) : null}
+      <SwitchNetworkPrompt
+        open={switchTargetChain !== null}
+        description="This market is on a different chain than your current trading session."
+        hint={
+          switchTargetChain
+            ? `Switch your wallet to ${getChainLabel(switchTargetChain)} to continue.`
+            : "Switch network to continue."
+        }
+        switchLabel={switchTargetChain ? `Switch To ${getChainLabel(switchTargetChain)}` : "Switch Network"}
+        onClose={() => setSwitchTargetChain(null)}
+        onSwitch={handleSwitchNetwork}
+      />
     </div>
   );
 };

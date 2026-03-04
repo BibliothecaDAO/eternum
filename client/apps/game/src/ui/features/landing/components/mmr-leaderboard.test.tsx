@@ -32,6 +32,9 @@ const waitForAsyncWork = async () => {
   await Promise.resolve();
 };
 
+const EVENT_CONTRACT_EXPR =
+  "lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1))";
+
 const createJsonResponse = (payload: unknown): Response =>
   ({
     ok: true,
@@ -120,7 +123,7 @@ describe("MMRLeaderboard", () => {
     expect(fetchMock.mock.calls.length).toBe(initialCallCount);
   });
 
-  it("defaults to slot and allows switching to mainnet", async () => {
+  it("defaults to mainnet and allows switching to slot", async () => {
     await act(async () => {
       root.render(<MMRLeaderboard />);
       await waitForAsyncWork();
@@ -138,42 +141,42 @@ describe("MMRLeaderboard", () => {
     const fetchMock = vi.mocked(fetch);
     const fetchedUrls = fetchMock.mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
 
-    expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(true);
-    expect(fetchedUrls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(false);
+    expect(fetchedUrls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(true);
+    expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(false);
 
-    const slotUrl = fetchedUrls.find((url) => url.includes("blitz-slot-global-1"));
-    expect(slotUrl).toBeDefined();
-
-    const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";
-    const slotToken = (MMR_TOKEN_BY_CHAIN.slot ?? "").toLowerCase();
-
-    expect(slotToken.length).toBeGreaterThan(0);
-    expect(slotQuery.toLowerCase()).toContain(
-      "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0xselector', '0x')",
-    );
-    expect(slotQuery.toLowerCase()).toContain(`lower(id) like '%:${slotToken}:%'`);
-
-    await act(async () => {
-      (mainnetButton as HTMLButtonElement).click();
-      await waitForAsyncWork();
-    });
-
-    await vi.waitFor(() => {
-      const urls = vi.mocked(fetch).mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
-      expect(urls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(true);
-    });
-
-    const fetchedUrlsAfterSwitch = vi
-      .mocked(fetch)
-      .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
-    const mainnetUrl = fetchedUrlsAfterSwitch.find((url) => url.includes("blitz-mainnet-global-1"));
+    const mainnetUrl = fetchedUrls.find((url) => url.includes("blitz-mainnet-global-1"));
     expect(mainnetUrl).toBeDefined();
 
     const mainnetQuery = new URL(mainnetUrl ?? "").searchParams.get("query") ?? "";
     const mainnetToken = (MMR_TOKEN_BY_CHAIN.mainnet ?? "").toLowerCase();
 
     expect(mainnetToken.length).toBeGreaterThan(0);
-    expect(mainnetQuery.toLowerCase()).toContain(`lower(id) like '%:${mainnetToken}:%'`);
+    expect(mainnetQuery.toLowerCase()).toContain(
+      "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0xselector', '0x')",
+    );
+    expect(mainnetQuery.toLowerCase()).toContain(`${EVENT_CONTRACT_EXPR} = '${mainnetToken}'`);
+
+    await act(async () => {
+      (slotButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      const urls = vi.mocked(fetch).mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
+      expect(urls.some((url) => url.includes("blitz-slot-global-1"))).toBe(true);
+    });
+
+    const fetchedUrlsAfterSwitch = vi
+      .mocked(fetch)
+      .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
+    const slotUrl = fetchedUrlsAfterSwitch.find((url) => url.includes("blitz-slot-global-1"));
+    expect(slotUrl).toBeDefined();
+
+    const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";
+    const slotToken = (MMR_TOKEN_BY_CHAIN.slot ?? "").toLowerCase();
+
+    expect(slotToken.length).toBeGreaterThan(0);
+    expect(slotQuery.toLowerCase()).toContain(`${EVENT_CONTRACT_EXPR} = '${slotToken}'`);
   });
 
   it("shows the MMR tier column on landing entries", async () => {
@@ -199,7 +202,7 @@ describe("MMRLeaderboard", () => {
     });
 
     const avatarImage = container.querySelector("tbody img") as HTMLImageElement;
-    expect(avatarImage.getAttribute("src")).toContain("/avatar/0x456");
+    expect(avatarImage.getAttribute("src")).toContain("/avatar/0x123");
     expect(avatarImage.getAttribute("alt")).toContain("avatar");
   });
 });

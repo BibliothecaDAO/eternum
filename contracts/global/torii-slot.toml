@@ -6,25 +6,57 @@ http_cors_origins = ["*"]
 
 [indexing]
 controllers = true
-index_pending = true
-polling_interval = 1000
-max_concurrent_tasks = 2
+index_pending = false
+polling_interval = 500
+max_concurrent_tasks = 8
 events_chunk_size = 128
 contracts = [
-    "ERC1155:0x07dee043ba95592f121b885e8a3e4728d5003bc1512757793d9e858d8989ea76", # ctf
-    "ERC1155:0x029d220775540033dc56462fcc7d24527d2121eefde783ec84166fb0bc34f57b", # vault fees
-    "ERC1155:0x0494d3df4d14119d5516929c9457a74f35abc04de697974c5e064cd8415e11d8", # vault positions
-    "ERC20:0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5",   # mock lords
     "ERC20:0x00065804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef",    # mmr token
 ]
+namespaces = ["pm"]
+
+# Start from world deployment block to avoid expensive full-chain scan from block 0.
+world_block = 127563
 
 [sql]
 historical = [
+    "pm-MarketBuy",
+    "pm-PayoutRedemption",
     "pm-VaultNumerator",
     "pm-VaultDenominator",
     "pm-VaultNumeratorEvent",
     "pm-VaultDenominatorEvent",
 ]
+all_model_indices = false
+
+hooks = [
+    { event = { ModelRegistered = { model_tag = "pm-Market" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_events_mmr_player_latest] ON events (lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1)), executed_at DESC, id DESC) WHERE ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0x16f4294f4d138f6ce05f6157837f2607fdb74f7f25e8d8f4be4e933309f4d37', '0x') AND lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1)) = '0x00065804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef'" },
+    { event = { ModelRegistered = { model_tag = "pm-Market" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_events_mmr_latest_time] ON events (executed_at DESC, id DESC) WHERE ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0x16f4294f4d138f6ce05f6157837f2607fdb74f7f25e8d8f4be4e933309f4d37', '0x') AND lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1)) = '0x00065804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef'" },
+]
+
+[[sql.model_indices]]
+model_tag = "pm-Market"
+fields = ["start_at", "resolve_at", "resolved_at", "oracle"]
+
+[[sql.model_indices]]
+model_tag = "pm-MarketCreated"
+fields = ["market_id"]
+
+[[sql.model_indices]]
+model_tag = "pm-VaultDenominator"
+fields = ["market_id"]
+
+[[sql.model_indices]]
+model_tag = "pm-VaultNumerator"
+fields = ["market_id", "index"]
+
+[[sql.model_indices]]
+model_tag = "pm-MarketBuy"
+fields = ["market_id"]
+
+[[sql.model_indices]]
+model_tag = "pm-PayoutRedemption"
+fields = ["condition_id"]
 
 [events]
 raw = true

@@ -30,6 +30,11 @@ const LORDS_TOKEN_DECIMALS = 18;
 const VICTORY_POINTS_MULTIPLIER = 1_000_000n;
 const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * VICTORY_POINTS_MULTIPLIER;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
+const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
+const EVENT_PLAYER_EXPR =
+  "lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1))";
+const EVENT_CONTRACT_EXPR =
+  "lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1))";
 const FNV_OFFSET_BASIS = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
 
@@ -403,11 +408,12 @@ WITH mmr_events AS (
     id,
     executed_at,
     data,
-    lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1)) AS player_address
+    ${EVENT_PLAYER_EXPR} AS player_address
   FROM events
   WHERE instr(lower(keys), '/') > 0
-    AND ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
-    AND lower(id) LIKE '%:${normalizedToken}:%'
+    AND ${EVENT_KEY0_EXPR} = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
+    AND ${EVENT_CONTRACT_EXPR} = '${normalizedToken}'
+    AND ltrim(${EVENT_PLAYER_EXPR}, '0x') IN (${normalizedAddressList})
 ),
 latest_events AS (
   SELECT
@@ -419,7 +425,6 @@ latest_events AS (
       ORDER BY executed_at DESC, id DESC
     ) AS rn
   FROM mmr_events
-  WHERE ltrim(player_address, '0x') IN (${normalizedAddressList})
 ),
 tokenized_1 AS (
   SELECT

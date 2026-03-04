@@ -48,9 +48,9 @@ import { env } from "../../../../../env";
 
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
-const CHAIN_OPTIONS: Chain[] = ["slot", "mainnet"];
-const DEFAULT_CHAIN: Chain = "slot";
-const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain";
+const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
+const DEFAULT_CHAIN: Chain = "mainnet";
+const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain-mainnet-priority";
 
 const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
