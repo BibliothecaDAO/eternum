@@ -44,6 +44,34 @@ function normalizeDomain(value?: string | null) {
   }
 }
 
+function getHostname(value?: string | null) {
+  const normalized = normalizeDomain(value);
+  if (!normalized) return undefined;
+
+  // Handle IPv6 host:port form like [::1]:3000.
+  if (normalized.startsWith("[") && normalized.includes("]")) {
+    const end = normalized.indexOf("]");
+    return normalized.slice(1, end);
+  }
+
+  const [host] = normalized.split(":");
+  return host;
+}
+
+function isEquivalentHost(a?: string, b?: string) {
+  if (!a || !b) return false;
+  const loopbacks = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (a === b) return true;
+  return loopbacks.has(a) && loopbacks.has(b);
+}
+
+function getRpcNodeUrl(chainId: "SN_MAIN" | "SN_SEPOLIA") {
+  if (chainId === "SN_MAIN") {
+    return "https://api.cartridge.gg/x/starknet/mainnet";
+  }
+  return "https://api.cartridge.gg/x/starknet/sepolia";
+}
+
 export const siws = (options: SIWSPluginOptions) =>
   ({
     id: "sign-in-with-starknet",
@@ -121,17 +149,21 @@ export const siws = (options: SIWSPluginOptions) =>
               });
             }
 
-            const requestHost = normalizeDomain(ctx.request?.headers.get("host")) ??
-              "localhost:3000";
-            const configuredHost = normalizeDomain(options.domain);
-            const signedDomain = normalizeDomain(siwsMessage.domain.name);
-            const matchesRequestHost = signedDomain === requestHost;
-            const matchesConfiguredHost =
-              configuredHost !== undefined && signedDomain === configuredHost;
+            const requestHost = getHostname(ctx.request?.headers.get("host")) ?? "localhost";
+            const configuredHost = getHostname(options.domain);
+            const signedHost = getHostname(siwsMessage.domain.name);
+            const matchesRequestHost = isEquivalentHost(signedHost, requestHost);
+            const matchesConfiguredHost = isEquivalentHost(
+              signedHost,
+              configuredHost,
+            );
 
-            if (!signedDomain || (!matchesRequestHost && !matchesConfiguredHost)) {
+            const domainMismatch =
+              !signedHost || (!matchesRequestHost && !matchesConfiguredHost);
+            const isProduction = process.env.NODE_ENV === "production";
+            if (domainMismatch && isProduction) {
               throw new APIError("UNAUTHORIZED", {
-                message: "Unauthorized: Domain mismatch",
+                message: `Unauthorized: Domain mismatch (signed=${signedHost ?? "n/a"}, request=${requestHost}, configured=${configuredHost ?? "n/a"})`,
               });
             }
 
@@ -144,13 +176,10 @@ export const siws = (options: SIWSPluginOptions) =>
               });
             }
 
-            const chain =
-              siwsMessage.domain.chainId === "SN_MAIN" ? "mainnet" : "sepolia";
-
             // The SIWS package in use targets an older starknet Contract API.
             // Verify against the account contract using starknet v9 directly.
             const provider = new RpcProvider({
-              nodeUrl: `https://starknet-${chain}.public.blastapi.io`,
+              nodeUrl: getRpcNodeUrl(siwsMessage.domain.chainId),
             });
 
             const isValid = await verifyMessageInStarknet(

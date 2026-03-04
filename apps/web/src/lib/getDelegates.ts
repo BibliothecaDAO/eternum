@@ -3,7 +3,7 @@ import { auth } from "@/utils/auth";
 import { formatAddress } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getHeaders } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import {
@@ -116,8 +116,9 @@ export const getDelegateByIDQueryOptions = (
 export const createDelegateProfile = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => CreateDelegateProfileSchema.parse(input))
   .handler(async (ctx) => {
+    const { headers } = getRequest();
     const session = await auth.api.getSession({
-      headers: getHeaders(),
+      headers,
       query: {
         // ensure session is fresh
         // https://www.better-auth.com/docs/concepts/session-management#session-caching
@@ -125,16 +126,17 @@ export const createDelegateProfile = createServerFn({ method: "POST" })
       },
     });
     if (!session) {
-      return;
+      return { success: false as const };
     }
     const delegateId = formatAddress(session.user.name);
-    return db
+    await db
       .insert(delegateProfiles)
       .values({ ...ctx.data, delegateId })
       .onConflictDoUpdate({
         target: delegateProfiles.delegateId,
         set: { ...ctx.data },
       });
+    return { success: true as const };
   });
 
 export const createDelegateProfileMutationOptions = (

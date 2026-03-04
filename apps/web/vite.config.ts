@@ -50,6 +50,6 @@ export default defineConfig({
   },
   ssr: {
     noExternal: ["@realms-world/db", "@realms-world/constants", "zod"],
-    external: ["@starknet-io/starknet-types-08", "@walletconnect/time"],
+    external: ["@walletconnect/time"],
   },
 });

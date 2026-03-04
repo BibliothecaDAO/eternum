@@ -37,7 +37,11 @@ export const StarknetWalletButton = ({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const primaryConnector = lastConnector ?? connectors.at(0);
   const hasConnectorPicker = connectors.length > 1;
+  const isReferenceVariant = variant === "reference";
   const resolvedPickerMode = pickerMode ?? (variant === "reference" ? "sheet" : "dropdown");
+  const pickerTriggerClassName = isReferenceVariant
+    ? "inline-flex h-9 w-9 items-center justify-center rounded-lg bg-background/40 text-foreground transition hover:bg-accent"
+    : "inline-flex h-7 w-7 items-center justify-center rounded-md text-primary-foreground/80 transition hover:bg-primary-foreground/10";
 
   const connectPrimary = () => {
     if (primaryConnector) {
@@ -56,7 +60,7 @@ export const StarknetWalletButton = ({
       <SheetTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-background/40 text-foreground transition hover:bg-accent"
+          className={pickerTriggerClassName}
           onClick={(e) => e.stopPropagation()}
         >
           <ChevronDownIcon className="h-4 w-4" />

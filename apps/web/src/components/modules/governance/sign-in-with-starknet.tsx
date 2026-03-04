@@ -23,13 +23,23 @@ function getAuthHost() {
   return window.location.host;
 }
 
-async function createSiwsData(statement: string, address: string) {
+function resolveSiwsChainId(chainId?: bigint) {
+  if (chainId === BigInt("0x534e5f5345504f4c4941")) return "SN_SEPOLIA";
+  if (chainId === BigInt("0x534e5f4d41494e")) return "SN_MAIN";
+  return env.VITE_PUBLIC_CHAIN == "sepolia" ? "SN_SEPOLIA" : "SN_MAIN";
+}
+
+async function createSiwsData(
+  statement: string,
+  address: string,
+  chainId?: bigint,
+) {
   const nonce = await authClient.siws.nonce({ address });
   const domain = getAuthHost();
   const origin = window.location.origin;
   const siwsDomain: ISiwsDomain = {
     version: "0.0.1",
-    chainId: env.VITE_PUBLIC_CHAIN == "sepolia" ? `SN_SEPOLIA` : `SN_MAIN`,
+    chainId: resolveSiwsChainId(chainId),
     name: domain,
     revision: "1",
   };
@@ -47,7 +57,7 @@ async function createSiwsData(statement: string, address: string) {
 }
 
 export function Login() {
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   const { data: session, refetch } = authClient.useSession();
   const [isDataPending, setIsDataPending] = useState(false);
 
@@ -58,6 +68,7 @@ export function Login() {
       const siwsData = await createSiwsData(
         loginString,
         formatAddress(address),
+        chainId,
       );
       setIsDataPending(false);
       return siwsData;
