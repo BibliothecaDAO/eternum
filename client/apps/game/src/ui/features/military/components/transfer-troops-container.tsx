@@ -31,6 +31,7 @@ import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
+import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { TransferDirection } from "./help-container";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
@@ -81,7 +82,7 @@ export const TransferTroopsContainer = ({
       },
     },
   } = useDojo();
-  const { currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
+  const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = useBlockTimestamp();
 
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
@@ -117,7 +118,7 @@ export const TransferTroopsContainer = ({
         getExplorerFromToriiClient(toriiClient, targetEntityId),
       ]);
 
-      let explorerOwner = explorerData?.explorer?.owner ?? 0;
+      const explorerOwner = explorerData?.explorer?.owner ?? 0;
       return {
         structure: structureData.structure,
         explorer: explorerData.explorer,
@@ -237,16 +238,6 @@ export const TransferTroopsContainer = ({
   const lastGuardSlot = orderedGuardSlots[0];
   const frontlineSlot = orderedGuardSlots[orderedGuardSlots.length - 1];
 
-  // starts from highest slot to lowest slot
-  const advanceLabel =
-    orderedGuardSlots.length > 0
-      ? availableGuards
-          .toSorted((a, b) => a - b)
-          .map((slotId) => `Slot ${DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`)
-          .join(" → ")
-      : null;
-  const displayAdvanceLabel = advanceLabel;
-
   const guardSelectionRequired = useMemo(() => {
     return (
       transferDirection === TransferDirection.StructureToExplorer ||
@@ -260,19 +251,24 @@ export const TransferTroopsContainer = ({
     const guards = getGuardsByStructure(targetStructure).filter((guard) => targetGuardSlotSet.has(Number(guard.slot)));
     return guards.map((guard) => {
       const cooldownEnd = guard.cooldownEnd !== undefined && guard.cooldownEnd !== null ? Number(guard.cooldownEnd) : 0;
+      const troopCategory = guard.troops.category as TroopType;
+      const troopTier = guard.troops.tier as TroopTier;
+      const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
 
       return {
         ...guard,
         cooldownEnd,
         troops: {
           ...guard.troops,
-          tier: guard.troops.tier as TroopTier,
-          category: guard.troops.category as TroopType,
+          tier: troopTier,
+          category: troopCategory,
           count: divideByPrecision(Number(guard.troops.count)),
+          staminaCurrent: staminaSnapshot?.current,
+          staminaMax: staminaSnapshot?.max,
         },
       };
     });
-  }, [targetStructure, targetGuardSlotSet]);
+  }, [targetStructure, targetGuardSlotSet, currentArmiesTick]);
 
   // list of guards
   const selectedGuards = useMemo(() => {
@@ -282,19 +278,24 @@ export const TransferTroopsContainer = ({
     );
     return guards.map((guard) => {
       const cooldownEnd = guard.cooldownEnd !== undefined && guard.cooldownEnd !== null ? Number(guard.cooldownEnd) : 0;
+      const troopCategory = guard.troops.category as TroopType;
+      const troopTier = guard.troops.tier as TroopTier;
+      const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
 
       return {
         ...guard,
         cooldownEnd,
         troops: {
           ...guard.troops,
-          tier: guard.troops.tier as TroopTier,
-          category: guard.troops.category as TroopType,
+          tier: troopTier,
+          category: troopCategory,
           count: divideByPrecision(Number(guard.troops.count)),
+          staminaCurrent: staminaSnapshot?.current,
+          staminaMax: staminaSnapshot?.max,
         },
       };
     });
-  }, [selectedStructure, selectedGuardSlotSet]);
+  }, [selectedStructure, selectedGuardSlotSet, currentArmiesTick]);
 
   const selectedTroop = useMemo(() => {
     if (transferDirection === TransferDirection.StructureToExplorer) {
