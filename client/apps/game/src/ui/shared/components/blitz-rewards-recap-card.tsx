@@ -3,11 +3,7 @@ import { createPortal } from "react-dom";
 
 import {
   BLITZ_CARD_BASE_STYLES,
-  BLITZ_CARD_BRONZE_THEME,
-  BLITZ_CARD_EMERALD_THEME,
   BLITZ_CARD_FONT_IMPORT,
-  BLITZ_CARD_GOLD_THEME,
-  BLITZ_CARD_NEUTRAL_THEME,
   BLITZ_CARD_SILVER_THEME,
   formatBlitzValue as formatValue,
 } from "../lib/blitz-card-shared";
@@ -16,11 +12,7 @@ import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 const REWARDS_RECAP_CARD_STYLES = `
   ${BLITZ_CARD_FONT_IMPORT}
   ${BLITZ_CARD_BASE_STYLES}
-  ${BLITZ_CARD_GOLD_THEME}
   ${BLITZ_CARD_SILVER_THEME}
-  ${BLITZ_CARD_BRONZE_THEME}
-  ${BLITZ_CARD_EMERALD_THEME}
-  ${BLITZ_CARD_NEUTRAL_THEME}
 
   .blitz-card-root .bg-mark {
     left: auto;
@@ -89,7 +81,7 @@ const REWARDS_RECAP_CARD_STYLES = `
     top: 304px;
     width: 640px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     z-index: 4;
   }
@@ -126,51 +118,21 @@ const REWARDS_RECAP_CARD_STYLES = `
   }
 `;
 
-type BlitzCardTheme = "gold" | "silver" | "bronze" | "neutral" | "emerald";
-
 interface BlitzRewardsRecapCardProps {
   worldName: string;
   lordsWon: string;
   chestsWon: number;
-  eliteTicketsWon: number;
-  rank: number | null;
   player?: { name: string; address: string } | null;
 }
 
-const resolveCardTheme = (rank: number | null): BlitzCardTheme => {
-  if (!rank || rank < 1) {
-    return "gold";
-  }
-
-  if (rank === 1) {
-    return "gold";
-  }
-
-  if (rank === 2) {
-    return "silver";
-  }
-
-  if (rank === 3) {
-    return "bronze";
-  }
-
-  if (rank >= 4 && rank <= 10) {
-    return "neutral";
-  }
-
-  return "emerald";
-};
-
 const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
-  ({ worldName, lordsWon, chestsWon, eliteTicketsWon, rank, player }, ref) => {
+  ({ worldName, lordsWon, chestsWon, player }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
-    const theme = resolveCardTheme(rank);
-    const safeEliteTickets = eliteTicketsWon > 0 ? 1 : 0;
 
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
         <div
-          className={`blitz-card-root card-${theme} ${player ? "" : "no-player"}`}
+          className={`blitz-card-root card-silver ${player ? "" : "no-player"}`}
           aria-label={`${worldName} rewards recap card`}
         >
           <style dangerouslySetInnerHTML={{ __html: REWARDS_RECAP_CARD_STYLES }} />
@@ -202,10 +164,6 @@ const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardPro
             <div className="reward-card">
               <div className="reward-label">Chests won</div>
               <div className="reward-value">+{formatValue(chestsWon)}</div>
-            </div>
-            <div className="reward-card">
-              <div className="reward-label">Elite tickets won</div>
-              <div className="reward-value">+{safeEliteTickets}</div>
             </div>
           </div>
 

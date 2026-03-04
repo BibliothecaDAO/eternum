@@ -251,7 +251,6 @@ const buildStepShareMessage = ({
       data.personalScore.rank > 0
         ? `#${Math.trunc(data.personalScore.rank)}`
         : "Unranked";
-    const eliteTicketsWon = data.rewards.eliteTicketEarned ? 1 : 0;
     const lordsWon = formatLordsWonDisplay(data.rewards.lordsWonFormatted);
 
     return [
@@ -259,7 +258,6 @@ const buildStepShareMessage = ({
       `Final rank: ${finalRank}`,
       `$LORDS won: +${lordsWon}`,
       `Chests won: +${formatValue(data.rewards.chestsClaimedEstimate)}`,
-      `Elite tickets won: +${eliteTicketsWon}`,
       "",
       "blitz.realms.world",
       "#Realms #Eternum #Starknet",
@@ -504,16 +502,6 @@ const ClaimRewardsStep = ({
   const lordsWon = formatLordsWonDisplay(rewards?.lordsWonFormatted ?? "0");
   const chestsWon = rewards?.chestsClaimedEstimate ?? 0;
   const chestsClaimedReason = rewards?.chestsClaimedReason ?? "No chest estimate available.";
-  const eliteTicketEarned = rewards?.eliteTicketEarned ? 1 : 0;
-  const eliteTicketReason =
-    rewards?.eliteTicketReason ??
-    "Elite ticket eligibility is available once score is submitted and final ranking is available.";
-  const finalRank =
-    typeof data.personalScore?.rank === "number" &&
-    Number.isFinite(data.personalScore.rank) &&
-    data.personalScore.rank > 0
-      ? Math.trunc(data.personalScore.rank)
-      : null;
   const cardPlayer = data.personalScore
     ? {
         name: data.personalScore.displayName?.trim() || displayAddress(data.personalScore.address),
@@ -521,7 +509,6 @@ const ClaimRewardsStep = ({
       }
     : null;
   const hasChestReason = chestsClaimedReason.trim().length > 0;
-  const hasEliteTicketReason = eliteTicketReason.trim().length > 0;
 
   return (
     <div className="space-y-4">
@@ -536,14 +523,12 @@ const ClaimRewardsStep = ({
           worldName={data.worldName}
           lordsWon={lordsWon}
           chestsWon={chestsWon}
-          eliteTicketsWon={eliteTicketEarned}
-          rank={finalRank}
           player={cardPlayer}
         />
       </div>
 
-      {(hasChestReason || hasEliteTicketReason) && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {hasChestReason && (
+        <div className="grid grid-cols-1 gap-3">
           {hasChestReason && (
             <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
               <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests won details</p>
