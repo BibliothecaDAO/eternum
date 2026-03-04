@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { sqlApi } from "@/services/api";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -40,6 +41,7 @@ import {
   getUnlockedGuardSlots,
   MAX_GUARD_SLOT_COUNT,
 } from "../../utils/defense-slot-utils";
+import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
@@ -114,6 +116,7 @@ export const UnifiedArmyCreationModal = ({
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
+  const { currentArmiesTick } = useBlockTimestamp();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
 
@@ -264,20 +267,27 @@ export const UnifiedArmyCreationModal = ({
       }
       const troops = guard.troops;
       const count = troops && troops.count !== undefined ? divideByPrecision(Number(troops.count)) : undefined;
+      const category = troops?.category as TroopType | undefined;
+      const tier = troops?.tier as TroopTier | undefined;
+      const staminaSnapshot = getGuardStaminaSnapshot(troops, currentArmiesTick);
+      const staminaCurrent = staminaSnapshot?.current;
+      const staminaMax = staminaSnapshot?.max;
 
       map.set(numericSlot, {
         slot: guard.slot,
         troops: troops
           ? {
-              category: troops.category as TroopType | undefined,
-              tier: troops.tier as TroopTier | undefined,
+              category,
+              tier,
               count,
+              staminaCurrent,
+              staminaMax,
             }
           : null,
       });
     });
     return map;
-  }, [guardsData, availableGuardSlotSet]);
+  }, [guardsData, availableGuardSlotSet, currentArmiesTick]);
 
   const selectedGuard = guardsBySlot.get(guardSlot);
   const selectedGuardCountValue = Number(selectedGuard?.troops?.count ?? 0);

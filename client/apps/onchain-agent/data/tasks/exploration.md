@@ -14,56 +14,51 @@ the full scoring breakdown.
 ## Hex Grid
 
 - 6 directions: 0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE
-- All movement uses direction arrays, e.g. `[4, 4, 4]` = 3 hexes southwest
+- Coordinates are display-space — use them directly in actions
 
-## Movement Types
+## Movement — `move_to`
 
-### `travel_explorer` — Fast Movement (Explored Tiles Only)
+Use `move_to` for all movement. It takes a target coordinate and handles everything automatically:
 
-- **Multi-hex**: Can move 5+ hexes in one action — e.g. `directions: [4,4,4,4,4]`
-- **Stamina**: ~10 per hex
-- **Requirement**: All tiles in path must be explored AND unoccupied
-- **Errors**:
-  - `"one of the tiles in path is not explored"` — use `move_explorer` with `explore:true` first
-  - `"one of the tiles in path is occupied"` — another army is blocking, reroute
+- **A\* pathfinding** computes the optimal route from the explorer's current position to the target
+- **Travel** through explored tiles: ~10 stamina/hex, batched into multi-hex steps
+- **Exploration** of unexplored tiles: 30 stamina/hex, 1 hex at a time, minimum 10 troops required
+- Mixed paths (travel + explore) are handled seamlessly — the pathfinder batches travel segments and explore segments
+  separately
+- Stops on first failure (insufficient stamina, blocked tile, etc.)
 
-### `move_explorer` — Combined Wrapper
+Parameters:
 
-- With `explore: false`: same as `travel_explorer` (multi-hex through explored tiles)
-- With `explore: true`: same as `explore` (single hex, reveals new tile)
-- Prefer using `travel_explorer` or `explore` directly
+- `explorerId` — Explorer entity ID to move
+- `targetCol` — Target x coordinate (from world state display coordinates)
+- `targetRow` — Target y coordinate (from world state display coordinates)
 
-### `explore` — Dedicated Scouting
+### Stamina Costs
 
-- Pure exploration action
-- **Stamina**: 30 per hex
-- **Minimum**: 10 troops required in the army
-- Reveals fog of war
-- **Error**: `"tile is already explored"` — use `travel_explorer` instead
+| Action                 | Cost    | Notes                                     |
+| ---------------------- | ------- | ----------------------------------------- |
+| Travel (explored tile) | ~10/hex | Can batch many hexes                      |
+| Explore (new tile)     | 30/hex  | 1 hex at a time, min 10 troops, awards VP |
 
-## Multi-Hex Travel
+### What Exploration Yields
 
-Moving 5+ hexes in a single action is possible:
-
-- All tiles in the path must already be explored
-- All tiles must be unoccupied (no other armies blocking)
-- Stamina cost scales linearly (~10/hex for travel)
-- Exploring tiles first (1 hex at a time, 30 stamina each) reveals them permanently, enabling fast multi-hex travel
-  through those tiles afterward
+- Reveals the tile permanently for all players
+- Awards Victory Points (10 VP per tile)
+- May discover Relic Crates, Essence Rifts, Camps, or Hyperstructures
 
 ## Nearby Entities
 
-The `observe_game` tick prompt and `inspect_explorer` tool show neighbor tiles around each army:
+The tick prompt and `inspect_explorer` tool show neighbor tiles around each army:
 
 - Direction, explored status, occupied status, biome, occupant info
-- Use this to decide which direction to explore or travel
+- Use this to decide where to send your explorers
 
 ## Common Errors
 
-- `"one of the tiles in path is not explored"` — can't travel through unexplored tiles
-- `"one of the tiles in path is occupied"` — another army blocking the path
-- `"explorer can only move one direction when exploring"` — exploring is 1 hex at a time
-- `"tile is already explored"` — use `travel_explorer` instead of explore action
+- `"one of the tiles in path is not explored"` — the pathfinder handles this automatically with `move_to`
+- `"one of the tiles in path is occupied"` — another army blocking the path, reroute
+- `"explorer can only move one direction when exploring"` — `move_to` handles this (1 explore hex at a time)
+- Insufficient stamina — wait for regeneration (+20 per phase) or use a different explorer
 
 ## Active Exploration Tasks
 

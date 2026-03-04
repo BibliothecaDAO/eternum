@@ -846,14 +846,17 @@ export class ClientConfigManager {
         const blitzSettlementConfig = config.blitz_settlement_config;
         const blitzRegistrationConfig = config.blitz_registration_config;
         const blitzHypersSettlementConfig = config.blitz_hypers_settlement_config;
+        const twoPlayerMode = Boolean(blitzSettlementConfig.two_player_mode);
         const blitzHyperStructureCount =
           getComponentValue(this.components.HyperstructureGlobals, getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]))
             ?.created_count || 0;
 
         // get number of hyperstructures left to create
-        let numHyperStructuresLeft = 1;
-        for (let i = 1; i <= blitzHypersSettlementConfig.max_ring_count; i++) {
-          numHyperStructuresLeft += 6 * i;
+        let numHyperStructuresLeft = twoPlayerMode ? Number(blitzHypersSettlementConfig.max_ring_count) + 1 : 1;
+        if (!twoPlayerMode) {
+          for (let i = 1; i <= blitzHypersSettlementConfig.max_ring_count; i++) {
+            numHyperStructuresLeft += 6 * i;
+          }
         }
         numHyperStructuresLeft -= blitzHyperStructureCount;
 
@@ -865,6 +868,7 @@ export class ClientConfigManager {
             step: Number(blitzSettlementConfig.step),
             point: Number(blitzSettlementConfig.point),
             single_realm_mode: Boolean(blitzSettlementConfig.single_realm_mode),
+            two_player_mode: twoPlayerMode,
           },
           blitz_registration_config: {
             fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
@@ -895,6 +899,7 @@ export class ClientConfigManager {
           step: 0,
           point: 0,
           single_realm_mode: false,
+          two_player_mode: false,
         },
         blitz_registration_config: {
           fee_amount: BigInt(0),

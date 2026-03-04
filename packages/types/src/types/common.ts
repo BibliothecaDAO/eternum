@@ -557,6 +557,7 @@ export interface Config {
     base_distance: number;
     subsequent_distance: number;
     single_realm_mode: boolean;
+    two_player_mode: boolean;
   };
   season: {
     // we expect one or the other. The

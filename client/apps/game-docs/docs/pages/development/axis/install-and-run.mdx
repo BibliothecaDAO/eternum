@@ -7,88 +7,64 @@ title: Axis Install and Run
 
 ## Prerequisites
 
-- Node.js 22+ (source usage)
-- pnpm (workspace build and scripts)
-- Bun (standalone compile/release packaging)
-- One model provider API key (for example `ANTHROPIC_API_KEY`)
+- One model provider API key (e.g. `ANTHROPIC_API_KEY`)
+- For source builds: Node.js 22+, pnpm, Bun
 
-## Install (Public Binary)
-
-Install latest release:
+## Install
 
 ```bash
 curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
 ```
 
-Install a pinned version:
+Pin a version: `VERSION=v0.1.0 bash`. Verify: `axis --version`.
+
+## Quick Start (Interactive)
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | VERSION=v0.1.0 bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis
 ```
 
-Verify:
+Discovers worlds, opens browser for auth, starts the agent.
+
+## Quick Start (Headless)
 
 ```bash
-axis --version
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis auth my-world --method=password --username=me --password=secret
+axis run --headless --world=my-world
 ```
+
+See [Worlds and Auth](/development/axis/worlds-and-auth) for alternative auth methods.
 
 ## Run from Source
 
 ```bash
 git clone https://github.com/bibliothecadao/eternum.git
-cd eternum
-pnpm install
+cd eternum && pnpm install
 
-# Build required workspace dependencies
 pnpm --dir packages/types build
 pnpm --dir packages/torii build
 pnpm --dir packages/provider build
 pnpm --dir packages/client build
 pnpm --dir packages/game-agent build
 
-# Run Axis
 cd client/apps/onchain-agent
 cp .env.example .env
 pnpm dev
 ```
 
-## First-Time Setup
-
-Initialize runtime directories and local `.env` (if missing):
-
-```bash
-axis init
-```
-
-Set at least one provider key, for example:
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Start Axis in TUI mode:
-
-```bash
-axis run
-```
-
-On first run, Axis will:
-
-1. Discover active worlds
-2. Let you select a world (unless `SLOT_NAME` is set)
-3. Open browser-based Cartridge session approval
-4. Start the agent loop
-
-## Standalone Binary from Source
+## Standalone Binary
 
 ```bash
 cd client/apps/onchain-agent
-bun run build.ts --compile
+bun run build.ts --compile    # produces ./axis
 cp axis ~/.local/bin/
-axis --version
 ```
 
-## Install Lifecycle
+Always use `build.ts` — direct `bun build` skips plugins that embed WASM and manifests.
+
+## Uninstall
 
 - Roll back: reinstall with `VERSION=vX.Y.Z`
-- Uninstall: remove `~/.local/bin/axis`, `~/.local/share/eternum-agent`, and optionally `~/.eternum-agent`
+- Remove: `~/.local/bin/axis`, `~/.local/share/eternum-agent`, and optionally `~/.eternum-agent`

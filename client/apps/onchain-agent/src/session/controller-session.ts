@@ -1,3 +1,4 @@
+import "./browser-shims";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { execFile } from "node:child_process";
 import path from "node:path";
@@ -24,6 +25,8 @@ interface ControllerSessionConfig {
   basePath?: string;
   manifest: SessionManifest;
   worldProfile?: WorldProfile;
+  /** Pre-built policies. If provided, skips buildSessionPoliciesFromManifest(). */
+  policies?: SessionPolicies;
   /** When set, the auth URL is passed to this callback instead of opening a browser. */
   onAuthUrl?: (url: string) => void;
   /** Override the redirect URI for the auth callback (e.g. public VPS URL). */
@@ -189,6 +192,54 @@ export function buildSessionPoliciesFromManifest(
 }
 
 /**
+ * Build minimal session policies from the action registry's route map.
+ * Only includes entrypoints the agent actually uses — no admin configs,
+ * no framework `upgrade` bloat. Produces a much smaller policy set than
+ * buildSessionPoliciesFromManifest(), resulting in shorter auth URLs.
+ */
+export function buildSessionPoliciesFromRoutes(
+  routes: Map<string, { contractAddress: string; entrypoint: string }>,
+  options: { worldProfile?: WorldProfile; chain?: string } = {},
+): SessionPolicies {
+  const contracts: Record<string, { methods: { name: string; entrypoint: string }[] }> = {};
+  const profile = options.worldProfile;
+
+  // Group routes by contract address
+  for (const [, route] of routes) {
+    const addr = route.contractAddress;
+    if (!addr) continue;
+    if (!contracts[addr]) contracts[addr] = { methods: [] };
+    const existing = contracts[addr].methods;
+    if (!existing.some((m) => m.entrypoint === route.entrypoint)) {
+      existing.push({ name: route.entrypoint, entrypoint: route.entrypoint });
+    }
+  }
+
+  // Add VRF provider (needed for explore actions)
+  contracts[VRF_PROVIDER_ADDRESS] = {
+    methods: [{ name: "VRF", entrypoint: "request_random" }],
+  };
+
+  // Add token policies from WorldProfile
+  if (profile?.entryTokenAddress && profile.entryTokenAddress !== "0x0") {
+    contracts[profile.entryTokenAddress] = {
+      methods: [
+        { name: "token_lock", entrypoint: "token_lock" },
+        { name: "approve", entrypoint: "approve" },
+      ],
+    };
+  }
+  if (profile?.feeTokenAddress) {
+    contracts[profile.feeTokenAddress] = {
+      methods: [{ name: "approve", entrypoint: "approve" }],
+    };
+  }
+
+  const chain = profile?.chain ?? options.chain ?? "slot";
+  return { contracts, messages: buildMessageSigningPolicy(chain) } as SessionPolicies;
+}
+
+/**
  * Decode, normalize, and store session data received from a Cartridge callback.
  *
  * Mirrors SessionProvider.connect() normalization:
@@ -240,10 +291,10 @@ export class ControllerSession {
   private _resolveAuthUrl!: (url: string) => void;
 
   constructor(config: ControllerSessionConfig) {
-    const policies = buildSessionPoliciesFromManifest(config.manifest, {
-      gameName: config.gameName,
-      worldProfile: config.worldProfile,
-    });
+    if (!config.policies) {
+      throw new Error("ControllerSession requires pre-built policies. Use buildSessionPoliciesFromRoutes().");
+    }
+    const policies = config.policies;
     this.provider = new SessionProvider({
       rpc: config.rpcUrl,
       chainId: config.chainId,

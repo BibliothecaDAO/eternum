@@ -5,6 +5,12 @@ import { testManifest } from "../utils/init-action-registry";
 
 vi.mock("@bibliothecadao/client", () => ({
   computeStrength: (count: number, tier: number) => count * tier * 10,
+  computeBalance: (params: { rawBalance: number; precision?: number }) => {
+    const precision = params.precision ?? 1_000_000_000;
+    const balance = Math.floor(params.rawBalance / precision);
+    return { balance, atMaxCapacity: false, amountProduced: 0 };
+  },
+  computeStamina: (params: { currentAmount: number }) => ({ current: params.currentAmount }),
   computeOutputAmount: () => 0,
   computeBuildingCost: () => [],
 }));
@@ -58,12 +64,8 @@ describe("pi package integration", () => {
     const executed = JSON.parse(
       getText(
         await executeTool!.execute("execute-1", {
-          actionType: "move_explorer",
-          params: {
-            explorer_id: 42,
-            directions: [1, 2],
-            explore: true,
-          },
+          actionType: "leave_guild",
+          params: {},
         }),
       ),
     );
@@ -80,7 +82,7 @@ describe("pi package integration", () => {
       ),
     );
 
-    expect(simulated.success).toBe(true);
-    expect(simulated.outcome.message).toContain("No simulation model");
+    expect(simulated.success).toBe(false);
+    expect(simulated.error).toContain("No simulation model");
   });
 });

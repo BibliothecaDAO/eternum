@@ -1,9 +1,6 @@
 {
   "ignoreDependencies": ["@videos/.*"],
   "ignore": [
-    ".context/**",
-    "client/apps/game/.context/**",
-
     "**/*.js",
 
     "packages/**",

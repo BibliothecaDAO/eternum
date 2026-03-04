@@ -101,7 +101,7 @@ export function getBiomeTravelCost(biome: BiomeType, config: PathCostConfig): nu
   switch (biome) {
     case BiomeType.Ocean:
     case BiomeType.DeepOcean:
-      return baseTravelCost - biomeBonus; // -bonus for all troops
+      return Math.max(1, baseTravelCost - biomeBonus); // -bonus for all troops, min 1
     case BiomeType.Beach:
     case BiomeType.Snow:
       return baseTravelCost; // No modifier

@@ -22,20 +22,12 @@ describe("release packaging", () => {
     tempDirs.push(workspace);
 
     const packageDir = path.join(workspace, "package");
-    mkdirSync(path.join(packageDir, "data", "tasks"), { recursive: true });
+    mkdirSync(packageDir, { recursive: true });
 
     const binaryPath = path.join(workspace, "axis-bin");
     writeFileSync(binaryPath, "#!/bin/sh\necho agent\n");
 
-    writeFileSync(
-      path.join(packageDir, "package.json"),
-      JSON.stringify({ name: "@bibliothecadao/onchain-agent", version: "0.1.0" }),
-    );
     writeFileSync(path.join(packageDir, "README.md"), "# agent\n");
-    writeFileSync(path.join(packageDir, ".env.example"), "RPC_URL=http://localhost:5050\n");
-    writeFileSync(path.join(packageDir, "data", "soul.md"), "# Soul\n");
-    writeFileSync(path.join(packageDir, "data", "HEARTBEAT.md"), "version: 1\njobs: []\n");
-    writeFileSync(path.join(packageDir, "data", "tasks", "priorities.md"), "# Priorities\n");
 
     const licensePath = path.join(workspace, "LICENSE");
     writeFileSync(licensePath, "MIT\n");
@@ -62,8 +54,9 @@ describe("release packaging", () => {
     const archivePath = result.archives[0];
     const listing = execFileSync("tar", ["-tzf", archivePath], { encoding: "utf8" });
     expect(listing).toContain("axis/axis");
-    expect(listing).toContain("axis/package.json");
-    expect(listing).toContain("axis/data/soul.md");
-    expect(listing).toContain("axis/data/HEARTBEAT.md");
+    expect(listing).toContain("axis/README.md");
+    expect(listing).toContain("axis/LICENSE");
+    expect(listing).not.toContain("axis/package.json");
+    expect(listing).not.toContain("axis/data/");
   });
 });

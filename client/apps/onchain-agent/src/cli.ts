@@ -1,16 +1,17 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { access, constants } from "node:fs/promises";
 import { dirname } from "node:path";
+import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config";
-import { resolveBundledPath } from "./runtime-paths";
 import { parseCliArgs } from "./cli-args";
+import { embeddedData, embeddedEnvExample } from "./embedded-data";
+import { loadEnvFiles } from "./env-loader";
+
+declare const BUILD_VERSION: string;
 import { runWorlds } from "./commands/worlds";
 import { runAuth } from "./commands/auth";
-import { runAuthStatus } from "./commands/auth-status";
-import { runAuthUrl } from "./commands/auth-url";
-import { runAuthComplete } from "./commands/auth-complete";
 
 const CLI_COMMAND = "axis";
 const PAD = "  ";
@@ -26,14 +27,7 @@ const AXIS_ASCII_BANNER = [
 ].join("\n");
 
 function readVersion(): string {
-  try {
-    const packageJsonPath = resolveBundledPath("package.json");
-    const raw = readFileSync(packageJsonPath, "utf8");
-    const parsed = JSON.parse(raw) as { version?: string };
-    return parsed.version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
+  return BUILD_VERSION;
 }
 
 function printUsage() {
@@ -44,20 +38,21 @@ Commands:
   run --headless            Run agent headlessly with JSON output
   worlds                    List discovered worlds
   auth <world|--all>        Generate auth URL and persist artifacts
-  auth-complete <world>     Complete auth with redirect URL or session data
-  auth-status <world>       Check session validity
-  auth-url <world>          Print auth URL
+  auth <world> --status     Check session validity
+  auth <world> --redirect-url=<url>  Complete auth with redirect URL
+  auth <world> --session-data=<b64>  Complete auth with session data
+  auth <world> --method=password      Direct password auth (no browser)
   doctor                    Check configuration
   init                      Initialize data directories
 
 Auth options:
+  --status                  Check session validity
   --callback-url=<url>      Public URL for auth callback (remote VPS)
   --redirect-url=<url>      Paste redirect URL to complete auth offline
   --session-data=<base64>   Raw session data to complete auth
-  --approve                 Auto-approve via agent-browser
-  --method=<type>           Auth method for --approve (password)
-  --username=<user>         Username for --approve
-  --password=<pass>         Password for --approve
+  --method=password         Password auth (no browser needed)
+  --username=<user>         Username for password auth
+  --password=<pass>         Password for password auth
   --all                     Apply to all discovered worlds
 
 Run options:
@@ -134,68 +129,30 @@ async function runDoctor(): Promise<number> {
   return 1;
 }
 
-function copyIfMissing(sourcePath: string, destinationPath: string) {
+function writeIfMissing(destinationPath: string, content: string) {
   if (existsSync(destinationPath)) {
     return;
   }
   mkdirSync(dirname(destinationPath), { recursive: true });
-  copyFileSync(sourcePath, destinationPath);
+  writeFileSync(destinationPath, content, "utf8");
 }
 
 export function seedDataDir(dataDir: string) {
   mkdirSync(dataDir, { recursive: true });
 
-  const bundledDataDir = resolveBundledPath("data");
-  if (!existsSync(bundledDataDir)) {
-    const fallbackSoul = path.join(dataDir, "soul.md");
-    if (!existsSync(fallbackSoul)) {
-      writeFileSync(fallbackSoul, "# Soul\n\nYou are Axis, an Eternum onchain agent.\n", "utf8");
-    }
-    const fallbackTasksDir = path.join(dataDir, "tasks");
-    mkdirSync(fallbackTasksDir, { recursive: true });
-    const fallbackHeartbeat = path.join(dataDir, "HEARTBEAT.md");
-    if (!existsSync(fallbackHeartbeat)) {
-      writeFileSync(fallbackHeartbeat, "version: 1\njobs: []\n", "utf8");
-    }
-    return;
-  }
-
-  copyIfMissing(path.join(bundledDataDir, "soul.md"), path.join(dataDir, "soul.md"));
-  copyIfMissing(path.join(bundledDataDir, "HEARTBEAT.md"), path.join(dataDir, "HEARTBEAT.md"));
-
-  const bundledTasksDir = path.join(bundledDataDir, "tasks");
-  if (existsSync(bundledTasksDir)) {
-    const taskFiles = readdirSync(bundledTasksDir).filter((entry) => entry.endsWith(".md"));
-    for (const fileName of taskFiles) {
-      copyIfMissing(path.join(bundledTasksDir, fileName), path.join(dataDir, "tasks", fileName));
-    }
+  for (const [relativePath, content] of Object.entries(embeddedData)) {
+    writeIfMissing(path.join(dataDir, relativePath), content);
   }
 }
 
-function seedEnvFile() {
-  const cwdEnvPath = path.resolve(process.cwd(), ".env");
-  if (existsSync(cwdEnvPath)) {
-    return;
+function seedEnvFile(): string {
+  const globalEnvPath = path.join(homedir(), ".eternum-agent", ".env");
+  if (existsSync(globalEnvPath)) {
+    return globalEnvPath;
   }
-
-  const bundledExamplePath = resolveBundledPath(".env.example");
-  if (existsSync(bundledExamplePath)) {
-    copyIfMissing(bundledExamplePath, cwdEnvPath);
-    return;
-  }
-
-  writeFileSync(
-    cwdEnvPath,
-    [
-      "RPC_URL=http://localhost:5050",
-      "TORII_URL=http://localhost:8080",
-      "WORLD_ADDRESS=0x0",
-      "CHAIN_ID=0x534e5f5345504f4c4941",
-      "MODEL_PROVIDER=anthropic",
-      "MODEL_ID=claude-sonnet-4-5-20250929",
-    ].join("\n") + "\n",
-    "utf8",
-  );
+  mkdirSync(dirname(globalEnvPath), { recursive: true });
+  writeFileSync(globalEnvPath, embeddedEnvExample, "utf8");
+  return globalEnvPath;
 }
 
 function runInit(world?: string): number {
@@ -213,15 +170,20 @@ function runInit(world?: string): number {
   }
 
   mkdirSync(config.sessionBasePath, { recursive: true });
-  seedEnvFile();
+  const envPath = seedEnvFile();
 
   console.log(`Initialized data directory: ${config.dataDir}`);
   console.log(`Initialized session directory: ${config.sessionBasePath}`);
-  console.log(`Initialized env file (if missing): ${path.resolve(process.cwd(), ".env")}`);
+  console.log(`Initialized config file: ${envPath}`);
+  console.log(`\nNext: edit ${envPath} and set your ANTHROPIC_API_KEY (or OPENAI_API_KEY)`);
   return 0;
 }
 
 export async function runCli(args: string[] = process.argv.slice(2)): Promise<number> {
+  // Ensure ~/.eternum-agent/.env exists (no-op if already there), then load it
+  seedEnvFile();
+  loadEnvFiles();
+
   const opts = parseCliArgs(args);
   const write = (s: string) => console.log(s);
 
@@ -246,36 +208,18 @@ export async function runCli(args: string[] = process.argv.slice(2)): Promise<nu
     case "auth":
       return runAuth({
         world: opts.world,
+        status: opts.status,
         all: opts.all,
-        approve: opts.approve,
         method: opts.method,
         username: opts.username,
         password: opts.password,
         callbackUrl: opts.callbackUrl,
         timeout: opts.timeout,
-        json: opts.json,
-        write,
-      });
-
-    case "auth-complete":
-      return runAuthComplete({
-        world: opts.world,
-        sessionData: opts.sessionData,
         redirectUrl: opts.redirectUrl,
+        sessionData: opts.sessionData,
         json: opts.json,
         write,
       });
-
-    case "auth-status":
-      return runAuthStatus({
-        world: opts.world,
-        all: opts.all,
-        json: opts.json,
-        write,
-      });
-
-    case "auth-url":
-      return runAuthUrl({ world: opts.world, write });
 
     case "run":
       if (opts.headless) {

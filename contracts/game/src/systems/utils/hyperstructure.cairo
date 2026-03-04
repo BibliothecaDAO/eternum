@@ -173,7 +173,12 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
         return Self::realm_tile_distance_three_realm_mode();
     }
 
-    fn count_surrounding_realms(ref world: WorldStorage, hyperstructure_coord: Coord, single_realm_mode: bool) -> u8 {
+    fn count_surrounding_realms(
+        ref world: WorldStorage, hyperstructure_coord: Coord, single_realm_mode: bool, two_player_mode: bool,
+    ) -> u8 {
+        if two_player_mode {
+            return 2_u8;
+        }
         let mut start_coord: Coord = hyperstructure_coord;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
