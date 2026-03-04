@@ -50,10 +50,10 @@ import { env } from "../../../../../env";
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
 const CHAIN_OPTIONS: Chain[] = ["slot", "mainnet"];
 const DEFAULT_CHAIN: Chain = "slot";
-const MAINNET_COMING_SOON = true;
 const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain";
 
 const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
+  mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
   slot: "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9",
 };
 
@@ -216,10 +216,6 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
     if (typeof window === "undefined") return;
     const storedChain = window.localStorage.getItem(MMR_CHAIN_STORAGE_KEY);
     if (storedChain && CHAIN_OPTIONS.includes(storedChain as Chain)) {
-      if (storedChain === "mainnet" && MAINNET_COMING_SOON) {
-        setSelectedChain("slot");
-        return;
-      }
       setSelectedChain(storedChain as Chain);
     }
   }, []);
@@ -617,25 +613,18 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
                   </motion.h2>
                   <div className="flex items-center gap-1.5 justify-center sm:justify-start">
                     {CHAIN_OPTIONS.map((chain) => {
-                      const isComingSoon = MAINNET_COMING_SOON && chain === "mainnet";
                       const isSelected = selectedChain === chain;
 
                       return (
                         <button
                           key={chain}
                           type="button"
-                          disabled={isComingSoon}
                           onClick={() => setSelectedChain(chain)}
                           className={`rounded-md px-2 py-0.5 text-[10px] font-medium capitalize transition-all duration-150 ${
-                            isComingSoon
-                              ? "cursor-not-allowed text-white/20"
-                              : isSelected
-                                ? "bg-white/[0.08] text-white/70"
-                                : "text-white/30 hover:text-white/50"
+                            isSelected ? "bg-white/[0.08] text-white/70" : "text-white/30 hover:text-white/50"
                           }`}
                         >
                           {chain}
-                          {isComingSoon && <span className="ml-1 text-[9px] text-white/15">soon</span>}
                         </button>
                       );
                     })}

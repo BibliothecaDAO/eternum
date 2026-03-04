@@ -492,25 +492,18 @@ export const MMRLeaderboard = () => {
             <span className="text-sm text-gold/60">Chain:</span>
             <div className="flex gap-1">
               {CHAIN_OPTIONS.map((chain) => {
-                const isComingSoon = chain === "mainnet";
                 const isSelected = state.selectedChain === chain;
 
                 return (
                   <button
                     key={chain}
                     type="button"
-                    disabled={isComingSoon}
                     onClick={() => setState((prev) => ({ ...prev, selectedChain: chain }))}
                     className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
-                      isComingSoon
-                        ? "cursor-not-allowed text-gold/35"
-                        : isSelected
-                          ? "bg-gold/20 text-gold"
-                          : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                      isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                     }`}
                   >
                     <span>{chain}</span>
-                    {isComingSoon && <span className="ml-2 text-xs normal-case text-gold/45">Coming soon</span>}
                   </button>
                 );
               })}
