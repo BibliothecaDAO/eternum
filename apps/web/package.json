@@ -4,11 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm with-env vite dev",
-    "build": "pnpm with-env vite build && pnpm postbuild",
+    "build": "pnpm with-env vite build",
     "lint": "eslint",
     "start": "pnpm with-env vite start",
-    "with-env": "dotenv -e ../../.env --",
-    "postbuild": "FUNC_DIR=$(find .vercel/output/functions -maxdepth 1 -type d -name '*.func' | head -n1) && [ -n \"$FUNC_DIR\" ] && mkdir -p \"$FUNC_DIR/node_modules/@starknet-io\" && for V in 07 08 09; do TARGET=\"$FUNC_DIR/node_modules/@starknet-io/starknet-types-$V\"; mkdir -p \"$TARGET\"; cp \"../../packages/starknet-types-$V/package.json\" \"$TARGET/package.json\"; cp \"../../packages/starknet-types-$V/index.mjs\" \"$TARGET/index.mjs\"; done"
+    "with-env": "dotenv -e ../../.env --"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.7",
@@ -69,6 +68,7 @@
     "framer-motion": "^11.18.2",
     "ipfs-http-client": "^60.0.1",
     "lucide-react": "0.563.0",
+    "nitro": "npm:nitro-nightly@latest",
     "react": "^19.2.4",
     "react-confetti": "^6.4.0",
     "react-day-picker": "8.10.1",
