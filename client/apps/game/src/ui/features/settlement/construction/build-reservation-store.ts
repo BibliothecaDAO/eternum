@@ -1,7 +1,7 @@
 type Spot = { col: number; row: number };
 type SpotInput = Spot | string;
 
-export type BuildReservationState = {
+type BuildReservationState = {
   occupied: Set<string>;
   vacated: Set<string>;
 };
@@ -17,8 +17,8 @@ type ReconcileOptions = {
   staleMs?: number;
 };
 
-export const RESERVATION_RECONCILE_SETTLE_MS = 3_000;
-export const RESERVATION_STALE_MS = 90_000;
+const RESERVATION_RECONCILE_SETTLE_MS = 3_000;
+const RESERVATION_STALE_MS = 90_000;
 
 const stateByRealm = new Map<number, InternalBuildReservationState>();
 
@@ -83,11 +83,6 @@ export const reserveVacatedBuildSpot = (realmEntityId: number, spot: SpotInput, 
   state.vacated.add(key);
   state.vacatedUpdatedAt.set(key, now);
   clearOccupied(state, key);
-};
-
-export const releaseVacatedBuildSpot = (realmEntityId: number, spot: SpotInput) => {
-  const state = getOrCreateState(realmEntityId);
-  clearVacated(state, toKey(spot));
 };
 
 export const clearAllBuildReservationState = () => {
