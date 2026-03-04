@@ -413,7 +413,8 @@ const PlayTabContent = ({
               hideHeader
               hideLegend
               layout="vertical"
-              sortRegisteredFirst
+              sortClaimableRewardsFirst
+              sortEndedNewestFirst
               onGamesResolved={onEndedGamesResolved}
             />
           </div>
