@@ -19,36 +19,39 @@ import { MarketResolution } from "@/ui/features/market/landing-markets/details/m
 import { MarketResolved } from "@/ui/features/market/landing-markets/details/market-resolved";
 import { MarketTrade } from "@/ui/features/market/landing-markets/details/market-trade";
 import { MarketVaultFees } from "@/ui/features/market/landing-markets/details/market-vault-fees";
-import { UserMessages } from "@/ui/features/market/landing-markets/details/user-messages";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
 import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-watch";
 import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
 import { ChevronDown, Play, RefreshCw, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 
 interface MarketDetailsModalProps {
   market: MarketClass;
   chain: MarketDataChain;
+  initialOutcomeIndex?: number;
   onClose: () => void;
 }
 
 type MarketDataChain = "slot" | "mainnet";
 
-type MarketDetailsTabKey = "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution";
+type MarketDetailsTabKey = "terms" | "activity" | "positions" | "vault-fees" | "resolution";
 
 const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
   { key: "terms", label: "Terms" },
-  { key: "comments", label: "Comments" },
   { key: "activity", label: "Activity" },
   { key: "positions", label: "My Positions" },
   { key: "vault-fees", label: "Vault Fees" },
   { key: "resolution", label: "Resolution" },
 ];
 
+const TRADE_SYNC_MAX_ATTEMPTS = 10;
+const TRADE_SYNC_INTERVAL_MS = 2_000;
+
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const formatTimeLeft = (targetSeconds: number | null) => {
   if (targetSeconds == null || targetSeconds <= 0) return "TBD";
@@ -105,7 +108,6 @@ const renderTabContent = (
     );
   }
 
-  if (tab === "comments") return <UserMessages marketId={market.market_id} />;
   if (tab === "activity") return <MarketActivity market={market} refreshKey={refreshKey} />;
   if (tab === "positions") return <MarketPositions market={market} chain={chain} address={address} />;
   if (tab === "vault-fees") return <MarketVaultFees market={market} chain={chain} address={address} />;
@@ -131,12 +133,12 @@ const MarketDetailsTabs = ({
   return (
     <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
       <div className="hidden md:block">
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-nowrap items-center gap-1.5">
           {MARKET_DETAIL_TABS.map((tab) => (
             <button
               key={tab.key}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors",
+                "whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-[0.06em] leading-none transition-colors",
                 activeTab === tab.key
                   ? "border-orange/70 bg-orange/20 text-orange"
                   : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
@@ -189,13 +191,16 @@ const MarketDetailsTabs = ({
 const MarketDetailsModalContent = ({
   initialMarket,
   chain,
+  initialOutcomeIndex,
   onClose,
 }: {
   initialMarket: MarketClass;
   chain: MarketDataChain;
+  initialOutcomeIndex?: number;
   onClose: () => void;
 }) => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isTradeSyncing, setIsTradeSyncing] = useState(false);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
   const { address } = useAccount();
   const {
@@ -222,6 +227,9 @@ const MarketDetailsModalContent = ({
   const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
 
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
+  const initialOutcomeAppliedRef = useRef(false);
+  const marketSyncSignatureRef = useRef("");
+  const tradeSyncRunIdRef = useRef(0);
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
@@ -251,15 +259,29 @@ const MarketDetailsModalContent = ({
   }, [outcomes]);
 
   useEffect(() => {
-    if (!selectedOutcome && defaultHighestOutcome) {
-      setSelectedOutcome(defaultHighestOutcome);
-    } else if (selectedOutcome) {
+    if (selectedOutcome) {
       const updatedOutcome = outcomes.find((outcome) => outcome.index === selectedOutcome.index);
       if (updatedOutcome && updatedOutcome !== selectedOutcome) {
         setSelectedOutcome(updatedOutcome);
       }
+      return;
     }
-  }, [outcomes, defaultHighestOutcome, selectedOutcome]);
+
+    if (outcomes.length === 0) return;
+
+    if (!initialOutcomeAppliedRef.current && initialOutcomeIndex != null) {
+      const initialOutcome = outcomes.find((outcome) => outcome.index === initialOutcomeIndex);
+      initialOutcomeAppliedRef.current = true;
+      if (initialOutcome) {
+        setSelectedOutcome(initialOutcome);
+        return;
+      }
+    }
+
+    if (defaultHighestOutcome) {
+      setSelectedOutcome(defaultHighestOutcome);
+    }
+  }, [defaultHighestOutcome, initialOutcomeIndex, outcomes, selectedOutcome]);
 
   const handleRefresh = useCallback(async () => {
     await refreshMarket();
@@ -314,6 +336,61 @@ const MarketDetailsModalContent = ({
     if (holders.size > 0) return holders.size;
     return holdersFromBuysCount;
   }, [balances, holdersFromBuysCount, positionIds, vaultPositionsAddress]);
+  const marketSyncSignature = useMemo(() => {
+    const denominatorSignature = toBigInt(market.vaultDenominator?.value ?? 0n).toString();
+    const numeratorsSignature = (market.vaultNumerators ?? [])
+      .map((entry) => `${entry.index}:${toBigInt(entry.value).toString()}`)
+      .join("|");
+    return [
+      allTimeVolumeRaw.toString(),
+      holdersFromBuysCount.toString(),
+      denominatorSignature,
+      numeratorsSignature,
+    ].join("::");
+  }, [allTimeVolumeRaw, holdersFromBuysCount, market.vaultDenominator?.value, market.vaultNumerators]);
+
+  useEffect(() => {
+    marketSyncSignatureRef.current = marketSyncSignature;
+  }, [marketSyncSignature]);
+
+  useEffect(() => {
+    return () => {
+      tradeSyncRunIdRef.current += 1;
+    };
+  }, []);
+
+  const handleTradeSuccess = useCallback(() => {
+    const baselineSignature = marketSyncSignatureRef.current;
+    tradeSyncRunIdRef.current += 1;
+    const runId = tradeSyncRunIdRef.current;
+    setIsTradeSyncing(true);
+
+    void (async () => {
+      try {
+        for (let attempt = 0; attempt < TRADE_SYNC_MAX_ATTEMPTS; attempt += 1) {
+          if (tradeSyncRunIdRef.current !== runId) return;
+
+          try {
+            await handleRefresh();
+          } catch (refreshError) {
+            console.error("[market-details] Failed to refresh after trade", refreshError);
+          }
+
+          if (tradeSyncRunIdRef.current !== runId) return;
+          if (marketSyncSignatureRef.current !== baselineSignature) return;
+
+          if (attempt < TRADE_SYNC_MAX_ATTEMPTS - 1) {
+            await wait(TRADE_SYNC_INTERVAL_MS);
+          }
+        }
+      } finally {
+        if (tradeSyncRunIdRef.current === runId) {
+          setIsTradeSyncing(false);
+        }
+      }
+    })();
+  }, [handleRefresh]);
+
   const endLabel = formatTimeLeft(market.end_at ?? null);
   const resolveLabel = formatTimeLeft(market.resolve_at ?? null);
 
@@ -321,7 +398,7 @@ const MarketDetailsModalContent = ({
   const claimDisabled = isRedeeming || !address || !hasAnythingToClaim;
 
   return (
-    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-auto md:max-h-[90vh] md:rounded-2xl">
+    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
       <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -347,6 +424,11 @@ const MarketDetailsModalContent = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {isTradeSyncing ? (
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
+                Syncing...
+              </span>
+            ) : null}
             {showClaimPrimary ? (
               <button
                 type="button"
@@ -365,17 +447,17 @@ const MarketDetailsModalContent = ({
               <button
                 type="button"
                 onClick={() => void handleRefresh()}
-                disabled={isLoading}
+                disabled={isLoading || isTradeSyncing}
                 className={cx(
                   "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
-                  isLoading
+                  isLoading || isTradeSyncing
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                     : "border-orange/70 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25",
                 )}
                 title="Refresh market data"
                 aria-label="Refresh market data"
               >
-                <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
+                <RefreshCw className={cx("h-4 w-4", (isLoading || isTradeSyncing) && "animate-spin")} />
               </button>
             )}
 
@@ -383,12 +465,12 @@ const MarketDetailsModalContent = ({
               <button
                 type="button"
                 onClick={() => void handleRefresh()}
-                disabled={isLoading}
+                disabled={isLoading || isTradeSyncing}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Refresh market data"
                 aria-label="Refresh market data"
               >
-                <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
+                <RefreshCw className={cx("h-4 w-4", (isLoading || isTradeSyncing) && "animate-spin")} />
               </button>
             ) : null}
 
@@ -455,14 +537,14 @@ const MarketDetailsModalContent = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-        <div className="space-y-4">
-          <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
-            <MarketTimeline market={market} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 py-4 md:px-6 md:py-5 lg:overflow-hidden">
+        <div className="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden">
+          <div className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1">
             <div className="space-y-4">
+              <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
+                <MarketTimeline market={market} />
+              </div>
+
               <MarketHistory market={market} refreshKey={refreshKey} />
 
               <section className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
@@ -478,15 +560,17 @@ const MarketDetailsModalContent = ({
                   collapsible
                 />
               </section>
-            </div>
 
-            <div className="flex flex-col gap-4 lg:sticky lg:top-0 lg:self-start">
-              <MarketTrade market={market} selectedOutcome={selectedOutcome} />
-              <MarketFees market={market} />
+              <MarketDetailsTabs market={market} refreshKey={refreshKey} chain={chain} address={address} />
             </div>
           </div>
 
-          <MarketDetailsTabs market={market} refreshKey={refreshKey} chain={chain} address={address} />
+          <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
+            <div className="flex flex-col gap-4">
+              <MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />
+              <MarketFees market={market} />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -496,10 +580,15 @@ const MarketDetailsModalContent = ({
 /**
  * Modal wrapper that provides the necessary context providers
  */
-export const MarketDetailsModal = ({ market, chain, onClose }: MarketDetailsModalProps) => {
+export const MarketDetailsModal = ({ market, chain, initialOutcomeIndex, onClose }: MarketDetailsModalProps) => {
   return (
     <MarketsProviders chain={chain}>
-      <MarketDetailsModalContent initialMarket={market} chain={chain} onClose={onClose} />
+      <MarketDetailsModalContent
+        initialMarket={market}
+        chain={chain}
+        initialOutcomeIndex={initialOutcomeIndex}
+        onClose={onClose}
+      />
     </MarketsProviders>
   );
 };

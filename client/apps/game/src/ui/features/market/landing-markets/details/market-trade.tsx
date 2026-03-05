@@ -312,11 +312,13 @@ export function MarketTrade({
   market,
   selectedOutcome,
   setSelectedOutcome,
+  onTradeSuccess,
   compact = false,
 }: {
   market: MarketClass;
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
+  onTradeSuccess?: () => void | Promise<void>;
   compact?: boolean;
 }) {
   const {
@@ -489,6 +491,11 @@ export function MarketTrade({
       }
 
       toast.success("Trade submitted successfully!");
+      if (onTradeSuccess) {
+        void Promise.resolve(onTradeSuccess()).catch((callbackError) => {
+          console.error("[MarketTrade] post-trade sync callback failed:", callbackError);
+        });
+      }
     } catch (error) {
       console.error(error);
       toast.error(tryBetterErrorMsg(error));
