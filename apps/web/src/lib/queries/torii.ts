@@ -7,7 +7,7 @@ export async function executeTorii<TResult, TVariables>(
 ) {
   const response = await fetch(
     (env.VITE_TORII_API_URL ??
-      "https://api.cartridge.gg/x/eternum-empire-mainnet-2/torii") + "/graphql",
+      "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii") + "/graphql",
     {
       method: "POST",
       headers: {

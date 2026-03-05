@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { pin } from "@snapshot-labs/pineapple";
-import { create } from "ipfs-http-client";
 
 // Define a proper type for the payload instead of using 'any'
 export type IPFSPayload = Record<string, unknown>;
@@ -12,28 +11,30 @@ export interface PinResult {
 
 export type PinFunction = (payload: IPFSPayload) => Promise<PinResult>;
 
-function createIpfsPinner(name: string, url: string): PinFunction {
+async function pinWithIpfsClient(
+  payload: IPFSPayload,
+  name: string,
+  url: string,
+): Promise<PinResult> {
+  if (typeof window === "undefined") {
+    throw new Error("IPFS pinning is only available in the browser");
+  }
+
+  const { create } = await import("ipfs-http-client");
   const client = create({ url });
+  const res = await client.add(JSON.stringify(payload), { pin: true });
 
-  return async (payload: IPFSPayload) => {
-    const res = await client.add(JSON.stringify(payload), { pin: true });
-
-    return {
-      provider: name,
-      cid: res.cid.toV0().toString(),
-    };
+  return {
+    provider: name,
+    cid: res.cid.toV0().toString(),
   };
 }
 
-const pinGraph = createIpfsPinner(
-  "graph",
-  "https://api.thegraph.com/ipfs/api/v0",
-);
+const pinGraph: PinFunction = (payload) =>
+  pinWithIpfsClient(payload, "graph", "https://api.thegraph.com/ipfs/api/v0");
 
-const pinMantle = createIpfsPinner(
-  "mantle",
-  "https://subgraph-api.mantle.xyz/ipfs",
-);
+const pinMantle: PinFunction = (payload) =>
+  pinWithIpfsClient(payload, "mantle", "https://subgraph-api.mantle.xyz/ipfs");
 
 async function pinPineapple(payload: IPFSPayload): Promise<PinResult> {
   const pinned = await pin(payload);

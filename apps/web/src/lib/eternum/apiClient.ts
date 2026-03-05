@@ -1,6 +1,9 @@
 import { env } from "../../../env";
 
-const API_BASE_URL = env.VITE_TORII_API_URL + "/sql";
+const TORII_BASE_URL =
+  env.VITE_TORII_API_URL ??
+  "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii";
+const API_BASE_URL = `${TORII_BASE_URL}/sql`;
 
 /**
  * Generic API client for making SQL queries to the backend.
