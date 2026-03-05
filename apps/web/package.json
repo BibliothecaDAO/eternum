@@ -10,6 +10,7 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "devDependencies": {
+    "@better-auth/drizzle-adapter": "1.5.3",
     "@cartridge/connector": "^0.13.9",
     "@cartridge/controller": "^0.13.9",
     "@graphql-codegen/cli": "^5.0.7",
@@ -62,7 +63,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
-    "better-auth": "1.2.12",
+    "better-auth": "1.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
