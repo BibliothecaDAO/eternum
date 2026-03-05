@@ -22,6 +22,14 @@ interface StarknetEstimateMessageFeeResponse {
   };
 }
 
+interface StarknetGetClassHashAtResponse {
+  result?: string;
+  error?: {
+    code: number;
+    message: string;
+  };
+}
+
 function splitU256(value: bigint): [bigint, bigint] {
   return [value & U128_MASK, value >> 128n];
 }
@@ -116,17 +124,59 @@ function applyFeeBuffer(feeWei: bigint) {
   return buffered > 0n ? buffered : 1n;
 }
 
+function isUndeployedAccountError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("contract not found") ||
+    normalized.includes("contract address") ||
+    normalized.includes("not deployed")
+  );
+}
+
+export async function isStarknetAccountDeployed(address: string) {
+  if (!env.VITE_PUBLIC_NODE_URL) {
+    throw new Error("Missing Starknet RPC URL for account deployment check");
+  }
+
+  const response = await fetch(env.VITE_PUBLIC_NODE_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "starknet_getClassHashAt",
+      params: ["latest", toHex(BigInt(address))],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to check Starknet account deployment: HTTP ${response.status}`,
+    );
+  }
+
+  const data = (await response.json()) as StarknetGetClassHashAtResponse;
+  if (data.error) {
+    if (isUndeployedAccountError(data.error.message)) {
+      return false;
+    }
+    throw new Error(
+      `Failed to check Starknet account deployment: ${data.error.message}`,
+    );
+  }
+
+  return Boolean(data.result);
+}
+
 export function useWriteDepositRealms({
   onSuccess,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: unknown) => void;
 }) {
   const { address: l1Address } = useAccount();
   const publicClient = usePublicClient({ chainId: SUPPORTED_L1_CHAIN_ID });
   const { writeContractAsync, error, ...writeReturn } = useWriteContract({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutation: { onSuccess: (data: any) => onSuccess?.(data) },
+    mutation: { onSuccess: (data) => onSuccess?.(data) },
   });
 
   const writeAsync = useCallback(
@@ -140,6 +190,11 @@ export function useWriteDepositRealms({
       if (!l2Address) throw new Error("Missing L2 Address");
       if (!l1Address) throw new Error("Missing L1 Address");
       if (!publicClient) throw new Error("Missing L1 Public Client");
+      if (!(await isStarknetAccountDeployed(l2Address))) {
+        throw new Error(
+          "Your Starknet account is not deployed yet. Send a Starknet transaction first, then bridge.",
+        );
+      }
 
       const l1BridgeAddress = REALMS_BRIDGE_ADDRESS[
         SUPPORTED_L1_CHAIN_ID
