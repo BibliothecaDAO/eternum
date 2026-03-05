@@ -104,6 +104,7 @@ import {
   shouldAcceptArmyTabSelectionAttempt,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
+import { resolveExploreCompletionPendingClearPlan, type TravelEffectType } from "./worldmap-travel-effect-policy";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
@@ -481,7 +482,8 @@ export default class WorldmapScene extends HexagonScene {
   private readonly hexGridMinBatch = 120;
   private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
-  private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void }> = new Map();
+  private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
+    new Map();
   private hasInitialized = false;
   private initialSetupPromise: Promise<void> | null = null;
   private cancelHexGridComputation?: () => void;
@@ -1703,7 +1705,7 @@ export default class WorldmapScene extends HexagonScene {
       // Store the cleanup function with the hex coordinates as key
       this.travelEffects.set(key, cleanup);
 
-      this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
+      this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup, effectType });
       maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
 
       // Mark army as having pending movement transaction
@@ -2855,6 +2857,15 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if there's a compass effect for this hex and end it
     const key = `${hexCoords.col},${hexCoords.row}`;
+    const pendingExploreEntities = resolveExploreCompletionPendingClearPlan({
+      exploredHexKey: key,
+      trackedEffectsByEntity: this.travelEffectsByEntity,
+      pendingArmyMovements: this.pendingArmyMovements,
+    });
+    for (const entityId of pendingExploreEntities) {
+      this.clearPendingArmyMovement(entityId);
+    }
+
     const endCompass = this.travelEffects.get(key);
     if (endCompass && !this.hasPendingTravelEffectForHex(key)) {
       endCompass();
