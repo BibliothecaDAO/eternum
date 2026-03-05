@@ -47,7 +47,11 @@ const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
   { key: "resolution", label: "Resolution" },
 ];
 
+const TRADE_SYNC_MAX_ATTEMPTS = 10;
+const TRADE_SYNC_INTERVAL_MS = 2_000;
+
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const formatTimeLeft = (targetSeconds: number | null) => {
   if (targetSeconds == null || targetSeconds <= 0) return "TBD";
@@ -196,6 +200,7 @@ const MarketDetailsModalContent = ({
   onClose: () => void;
 }) => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isTradeSyncing, setIsTradeSyncing] = useState(false);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
   const { address } = useAccount();
   const {
@@ -223,6 +228,8 @@ const MarketDetailsModalContent = ({
 
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
   const initialOutcomeAppliedRef = useRef(false);
+  const marketSyncSignatureRef = useRef("");
+  const tradeSyncRunIdRef = useRef(0);
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
@@ -329,6 +336,61 @@ const MarketDetailsModalContent = ({
     if (holders.size > 0) return holders.size;
     return holdersFromBuysCount;
   }, [balances, holdersFromBuysCount, positionIds, vaultPositionsAddress]);
+  const marketSyncSignature = useMemo(() => {
+    const denominatorSignature = toBigInt(market.vaultDenominator?.value ?? 0n).toString();
+    const numeratorsSignature = (market.vaultNumerators ?? [])
+      .map((entry) => `${entry.index}:${toBigInt(entry.value).toString()}`)
+      .join("|");
+    return [
+      allTimeVolumeRaw.toString(),
+      holdersFromBuysCount.toString(),
+      denominatorSignature,
+      numeratorsSignature,
+    ].join("::");
+  }, [allTimeVolumeRaw, holdersFromBuysCount, market.vaultDenominator?.value, market.vaultNumerators]);
+
+  useEffect(() => {
+    marketSyncSignatureRef.current = marketSyncSignature;
+  }, [marketSyncSignature]);
+
+  useEffect(() => {
+    return () => {
+      tradeSyncRunIdRef.current += 1;
+    };
+  }, []);
+
+  const handleTradeSuccess = useCallback(() => {
+    const baselineSignature = marketSyncSignatureRef.current;
+    tradeSyncRunIdRef.current += 1;
+    const runId = tradeSyncRunIdRef.current;
+    setIsTradeSyncing(true);
+
+    void (async () => {
+      try {
+        for (let attempt = 0; attempt < TRADE_SYNC_MAX_ATTEMPTS; attempt += 1) {
+          if (tradeSyncRunIdRef.current !== runId) return;
+
+          try {
+            await handleRefresh();
+          } catch (refreshError) {
+            console.error("[market-details] Failed to refresh after trade", refreshError);
+          }
+
+          if (tradeSyncRunIdRef.current !== runId) return;
+          if (marketSyncSignatureRef.current !== baselineSignature) return;
+
+          if (attempt < TRADE_SYNC_MAX_ATTEMPTS - 1) {
+            await wait(TRADE_SYNC_INTERVAL_MS);
+          }
+        }
+      } finally {
+        if (tradeSyncRunIdRef.current === runId) {
+          setIsTradeSyncing(false);
+        }
+      }
+    })();
+  }, [handleRefresh]);
+
   const endLabel = formatTimeLeft(market.end_at ?? null);
   const resolveLabel = formatTimeLeft(market.resolve_at ?? null);
 
@@ -362,6 +424,11 @@ const MarketDetailsModalContent = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {isTradeSyncing ? (
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
+                Syncing...
+              </span>
+            ) : null}
             {showClaimPrimary ? (
               <button
                 type="button"
@@ -380,17 +447,17 @@ const MarketDetailsModalContent = ({
               <button
                 type="button"
                 onClick={() => void handleRefresh()}
-                disabled={isLoading}
+                disabled={isLoading || isTradeSyncing}
                 className={cx(
                   "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
-                  isLoading
+                  isLoading || isTradeSyncing
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                     : "border-orange/70 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25",
                 )}
                 title="Refresh market data"
                 aria-label="Refresh market data"
               >
-                <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
+                <RefreshCw className={cx("h-4 w-4", (isLoading || isTradeSyncing) && "animate-spin")} />
               </button>
             )}
 
@@ -398,12 +465,12 @@ const MarketDetailsModalContent = ({
               <button
                 type="button"
                 onClick={() => void handleRefresh()}
-                disabled={isLoading}
+                disabled={isLoading || isTradeSyncing}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Refresh market data"
                 aria-label="Refresh market data"
               >
-                <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
+                <RefreshCw className={cx("h-4 w-4", (isLoading || isTradeSyncing) && "animate-spin")} />
               </button>
             ) : null}
 
@@ -500,7 +567,7 @@ const MarketDetailsModalContent = ({
 
           <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
             <div className="flex flex-col gap-4">
-              <MarketTrade market={market} selectedOutcome={selectedOutcome} />
+              <MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />
               <MarketFees market={market} />
             </div>
           </div>

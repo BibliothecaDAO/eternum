@@ -62,4 +62,19 @@ describe("MarketDetailsModal chain-aware data sources", () => {
     expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1"');
     expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1"');
   });
+
+  it("auto-syncs market data after a successful trade", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("const TRADE_SYNC_MAX_ATTEMPTS = 10");
+    expect(source).toContain("const TRADE_SYNC_INTERVAL_MS = 2_000");
+    expect(source).toContain("const handleTradeSuccess = useCallback(() => {");
+    expect(source).toContain(
+      "<MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />",
+    );
+    expect(source).toContain("Syncing...");
+  });
 });
