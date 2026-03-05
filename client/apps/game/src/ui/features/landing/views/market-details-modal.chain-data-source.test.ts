@@ -38,4 +38,15 @@ describe("MarketDetailsModal chain-aware data sources", () => {
       '{watchLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}',
     );
   });
+
+  it("supports preselecting an outcome when opened from quick bet", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("initialOutcomeIndex?: number");
+    expect(source).toContain("outcomes.find((outcome) => outcome.index === initialOutcomeIndex)");
+    expect(source).toContain("initialOutcomeIndex={initialOutcomeIndex}");
+  });
 });

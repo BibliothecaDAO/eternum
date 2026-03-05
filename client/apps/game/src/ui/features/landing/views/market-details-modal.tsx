@@ -25,13 +25,14 @@ import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-
 import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
 import { ChevronDown, Play, RefreshCw, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 
 interface MarketDetailsModalProps {
   market: MarketClass;
   chain: MarketDataChain;
+  initialOutcomeIndex?: number;
   onClose: () => void;
 }
 
@@ -189,10 +190,12 @@ const MarketDetailsTabs = ({
 const MarketDetailsModalContent = ({
   initialMarket,
   chain,
+  initialOutcomeIndex,
   onClose,
 }: {
   initialMarket: MarketClass;
   chain: MarketDataChain;
+  initialOutcomeIndex?: number;
   onClose: () => void;
 }) => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -222,6 +225,7 @@ const MarketDetailsModalContent = ({
   const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
 
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
+  const initialOutcomeAppliedRef = useRef(false);
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
@@ -251,15 +255,29 @@ const MarketDetailsModalContent = ({
   }, [outcomes]);
 
   useEffect(() => {
-    if (!selectedOutcome && defaultHighestOutcome) {
-      setSelectedOutcome(defaultHighestOutcome);
-    } else if (selectedOutcome) {
+    if (selectedOutcome) {
       const updatedOutcome = outcomes.find((outcome) => outcome.index === selectedOutcome.index);
       if (updatedOutcome && updatedOutcome !== selectedOutcome) {
         setSelectedOutcome(updatedOutcome);
       }
+      return;
     }
-  }, [outcomes, defaultHighestOutcome, selectedOutcome]);
+
+    if (outcomes.length === 0) return;
+
+    if (!initialOutcomeAppliedRef.current && initialOutcomeIndex != null) {
+      const initialOutcome = outcomes.find((outcome) => outcome.index === initialOutcomeIndex);
+      initialOutcomeAppliedRef.current = true;
+      if (initialOutcome) {
+        setSelectedOutcome(initialOutcome);
+        return;
+      }
+    }
+
+    if (defaultHighestOutcome) {
+      setSelectedOutcome(defaultHighestOutcome);
+    }
+  }, [defaultHighestOutcome, initialOutcomeIndex, outcomes, selectedOutcome]);
 
   const handleRefresh = useCallback(async () => {
     await refreshMarket();
@@ -496,10 +514,15 @@ const MarketDetailsModalContent = ({
 /**
  * Modal wrapper that provides the necessary context providers
  */
-export const MarketDetailsModal = ({ market, chain, onClose }: MarketDetailsModalProps) => {
+export const MarketDetailsModal = ({ market, chain, initialOutcomeIndex, onClose }: MarketDetailsModalProps) => {
   return (
     <MarketsProviders chain={chain}>
-      <MarketDetailsModalContent initialMarket={market} chain={chain} onClose={onClose} />
+      <MarketDetailsModalContent
+        initialMarket={market}
+        chain={chain}
+        initialOutcomeIndex={initialOutcomeIndex}
+        onClose={onClose}
+      />
     </MarketsProviders>
   );
 };
