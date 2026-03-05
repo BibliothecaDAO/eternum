@@ -32,7 +32,8 @@ export function getCollectionByAddress(
   const normalizedAddress = address.trim().toLowerCase();
 
   for (const key in marketplaceCollections) {
-    const item = marketplaceCollections[key as keyof typeof marketplaceCollections];
+    const item =
+      marketplaceCollections[key as keyof typeof marketplaceCollections];
     if (!hasAddress(item)) continue;
     if (item.address.trim().toLowerCase() === normalizedAddress) {
       return item;

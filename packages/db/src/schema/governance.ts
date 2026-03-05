@@ -148,7 +148,7 @@ export const CreateDelegateProfileSchema = createInsertSchema(
     github: (schema) => schema.optional(),
     telegram: (schema) => schema.optional(),
     discord: (schema) => schema.optional(),
-  }
+  },
 ).omit({
   delegateId: true,
   createdAt: true,

@@ -39,12 +39,11 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-non-null-assertion": "error",
       "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
-      "@typescript-eslint/non-nullable-type-assertion-style": "off"
-
+      "@typescript-eslint/non-nullable-type-assertion-style": "off",
     },
   },
   {
     linterOptions: { reportUnusedDisableDirectives: true },
     languageOptions: { parserOptions: { projectService: true } },
-  }
+  },
 );

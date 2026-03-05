@@ -13,7 +13,7 @@ try {
   if (error instanceof z.ZodError) {
     console.error(
       "❌ Invalid environment variables:",
-      JSON.stringify(error.errors, null, 2)
+      JSON.stringify(error.errors, null, 2),
     );
   }
   throw new Error("Invalid environment variables");
