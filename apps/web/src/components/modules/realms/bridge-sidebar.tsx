@@ -18,12 +18,17 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
-import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
+import {
+  isStarknetAccountDeployed,
+  useWriteDepositRealms,
+} from "@/hooks/bridge/useWriteDepositRealms";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount } from "@starknet-start/react";
-import { ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, CircleHelp } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
 import BridgeTransactionItems from "./bridge-tx-items";
@@ -70,29 +75,58 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     selectedTokenIds: tokenIds,
   });
 
+  const {
+    data: isL2AccountDeployed,
+    isLoading: isL2AccountDeploymentLoading,
+    error: l2AccountDeploymentError,
+  } = useQuery({
+    queryKey: ["starknet-account-deployed", l2Address],
+    queryFn: async () =>
+      l2Address ? isStarknetAccountDeployed(l2Address) : false,
+    enabled: selectedAsset === "Ethereum" && !!l2Address,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const shouldBlockL1ToL2Bridge =
+    selectedAsset === "Ethereum" &&
+    (!!l2AccountDeploymentError ||
+      isL2AccountDeploymentLoading ||
+      isL2AccountDeployed === false);
+  const showDeployHelp =
+    selectedAsset === "Ethereum" && isL2AccountDeployed === false;
+
   const onBridge = async () => {
-    let hash: string | undefined;
-    if (selectedAsset === "Ethereum") {
-      if (!l2Address) throw new Error("Missing L2 Address");
-      if (!isApprovedForAll) {
-        await approveForAll();
+    try {
+      let hash: string | undefined;
+      if (selectedAsset === "Ethereum") {
+        if (!l2Address) throw new Error("Missing L2 Address");
+        if (!isApprovedForAll) {
+          await approveForAll();
+        }
+        hash = await depositRealms({
+          tokenIds: tokenIds.map((id) => BigInt(id)),
+          l2Address: l2Address,
+        });
+      } else {
+        hash = (await initiateWithdraw()).transaction_hash;
       }
-      hash = await depositRealms({
-        tokenIds: tokenIds.map((id) => BigInt(id)),
-        l2Address: l2Address,
-      });
-    } else {
-      hash = (await initiateWithdraw()).transaction_hash;
-    }
-    if (hash) {
+      if (hash) {
+        toast({
+          title: "Bridge Realms",
+          description:
+            selectedAsset === "Ethereum"
+              ? `${selectedRows.length} Realms will be appear in your L2 wallet in a few minutes`
+              : `${selectedRows.length} Realms will require a transction in ~6 hours to finalize your withdrawal`,
+        });
+        setRowSelection({});
+      }
+    } catch (error) {
       toast({
-        title: "Bridge Realms",
+        variant: "destructive",
         description:
-          selectedAsset === "Ethereum"
-            ? `${selectedRows.length} Realms will be appear in your L2 wallet in a few minutes`
-            : `${selectedRows.length} Realms will require a transction in ~6 hours to finalize your withdrawal`,
+          error instanceof Error ? error.message : "Unable to bridge Realms.",
       });
-      setRowSelection({});
     }
   };
 
@@ -132,22 +166,83 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
             />
           ) : selectedAsset === "Ethereum" && !isApprovedForAll ? (
             <Button
-              disabled={approveForAllLoading || isApproveForAllPending}
-              className="w-full"
-              onClick={onBridge}
-            >
-              {isApproveForAllPending ? "Approving" : `Approve Bridge`}
-            </Button>
-          ) : (
-            <Button
               disabled={
-                !selectedRows.length || isDepositPending || isWithdrawPending
+                approveForAllLoading ||
+                isApproveForAllPending ||
+                shouldBlockL1ToL2Bridge
               }
               className="w-full"
               onClick={onBridge}
             >
-              {!selectedRows.length ? "Select Realms" : `Bridge`}
+              {isL2AccountDeploymentLoading
+                ? "Checking Starknet account..."
+                : l2AccountDeploymentError
+                  ? "Unable to verify Starknet account"
+                  : isL2AccountDeployed === false
+                    ? "Deploy Starknet account first"
+                    : isApproveForAllPending
+                      ? "Approving"
+                      : `Approve Bridge`}
             </Button>
+          ) : (
+            <Button
+              disabled={
+                !selectedRows.length ||
+                isDepositPending ||
+                isWithdrawPending ||
+                shouldBlockL1ToL2Bridge
+              }
+              className="w-full"
+              onClick={onBridge}
+            >
+              {!selectedRows.length
+                ? "Select Realms"
+                : isL2AccountDeploymentLoading
+                  ? "Checking Starknet account..."
+                  : l2AccountDeploymentError
+                    ? "Unable to verify Starknet account"
+                    : isL2AccountDeployed === false
+                      ? "Deploy Starknet account first"
+                      : `Bridge`}
+            </Button>
+          )}
+          {showDeployHelp && (
+            <div className="text-muted-foreground mt-2 text-sm">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="h-auto p-0 text-sm">
+                    <CircleHelp className="mr-1 h-4 w-4" />
+                    How to deploy your Starknet account
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80 space-y-2">
+                  <p>
+                    Starknet wallets are smart contracts and must be deployed
+                    onchain before L1 to L2 bridging can complete.
+                  </p>
+                  <ol className="list-decimal space-y-1 pl-4">
+                    <li>Fund your wallet with ETH or STRK for gas.</li>
+                    <li>
+                      Send your first Starknet transaction to trigger account
+                      deployment.
+                    </li>
+                    <li>
+                      If you use Argent X, you can also deploy manually in
+                      Settings via Deploy account.
+                    </li>
+                  </ol>
+                  <p>Deployment can take up to around 20 minutes.</p>
+                  <a
+                    href="https://support.argent.xyz/hc/en-us/articles/8802319054237-How-to-activate-deploy-my-Argent-Starknet-wallet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Argent deployment guide
+                  </a>
+                </PopoverContent>
+              </Popover>
+            </div>
           )}
         </SidebarGroup>
       </SidebarHeader>
