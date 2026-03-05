@@ -97,7 +97,7 @@ export function Login() {
             signature: signature,
             address: address,
           });
-          refetch();
+          await refetch();
         }}
         disabled={isPending || isDataPending}
       >
