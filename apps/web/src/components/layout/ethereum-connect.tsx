@@ -1,5 +1,4 @@
-
-export const EthereumConnect = ({ label }: { label?: string }) => {
+export const EthereumConnect = () => {
   return (
     <appkit-button />
 

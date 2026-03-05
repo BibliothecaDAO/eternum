@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { mainnet, sepolia } from "@starknet-start/chains";
-import { useAccount, useNetwork } from "@starknet-start/react";
+import { useAccount } from "@starknet-start/react";
 import { env } from "env";
-import { Chain } from "starknet"
 
 const useIsWrongNetwork = () => {
-  const { chain } = useNetwork();
   const { address, chainId } = useAccount();
   const [isWrongNetwork, setIsWrongNetwork] = useState<boolean>(false);
 

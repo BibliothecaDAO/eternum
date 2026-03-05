@@ -83,7 +83,7 @@ export function DelegateProfileForm({
   function handleFormSubmit(data: EditProfileValues) {
     onSubmit({ ...data, interests: data.interests ?? [] });
   }
-  const { data: session, refetch } = authClient.useSession();
+  const { data: session } = authClient.useSession();
 
   return (
     <Form {...form}>

@@ -4,7 +4,7 @@ import BridgeIcon from "@/components/icons/bridge.svg?react";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
-import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount } from "@starknet-start/react";
 import {
   useQueryErrorResetBoundary,

@@ -17,16 +17,27 @@ export const marketplaceCollections = {
     },*/
 } as const;
 
+type MarketplaceCollection =
+  (typeof marketplaceCollections)[keyof typeof marketplaceCollections];
+
+function hasAddress(
+  collection: MarketplaceCollection,
+): collection is MarketplaceCollection & { address: string } {
+  return "address" in collection && typeof collection.address === "string";
+}
+
 export function getCollectionByAddress(
   address: string,
-): (typeof marketplaceCollections)[keyof typeof marketplaceCollections] | null {
-  const collection = Object.entries(marketplaceCollections).find(
-    ([_, data]) => {
-      return (
-        trimAddress(data.address)?.toLowerCase() ===
-        trimAddress(address)?.toLowerCase()
-      );
-    },
-  );
-  return collection ? collection[1] : null; // Default to season passes if not found
+): MarketplaceCollection | null {
+  const normalizedAddress = address.trim().toLowerCase();
+
+  for (const key in marketplaceCollections) {
+    const item = marketplaceCollections[key as keyof typeof marketplaceCollections];
+    if (!hasAddress(item)) continue;
+    if (item.address.trim().toLowerCase() === normalizedAddress) {
+      return item;
+    }
+  }
+
+  return null;
 }

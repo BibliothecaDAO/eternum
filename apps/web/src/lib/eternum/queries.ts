@@ -71,7 +71,36 @@ export const QUERIES = {
     `,
 
   TOKEN_BALANCES_WITH_METADATA: `
-    WITH active_orders AS (
+    WITH params AS (
+      SELECT
+        ltrim(lower(replace('{contractAddress}', '0x', '')), '0') AS contract_address_norm,
+        ltrim(lower(replace('{accountAddress}', '0x', '')), '0') AS account_address_norm
+    ),
+    scoped_balances AS (
+      SELECT
+        tb.token_id,
+        tb.balance,
+        tb.contract_address,
+        tb.account_address
+      FROM token_balances tb
+      CROSS JOIN params p
+      WHERE ltrim(lower(replace(tb.contract_address, '0x', '')), '0') = p.contract_address_norm
+        AND ltrim(lower(replace(tb.account_address, '0x', '')), '0') = p.account_address_norm
+        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+    ),
+    token_metadata AS (
+      SELECT
+        t.token_id,
+        t.contract_address,
+        MAX(t.name) AS name,
+        MAX(t.symbol) AS symbol,
+        MAX(t.metadata) AS metadata
+      FROM tokens t
+      CROSS JOIN params p
+      WHERE ltrim(lower(replace(t.contract_address, '0x', '')), '0') = p.contract_address_norm
+      GROUP BY t.token_id, t.contract_address
+    ),
+    active_orders AS (
       SELECT
         printf("0x%064x", mo."order.token_id") AS token_id_hex,
         mo."order.price" AS price,
@@ -79,17 +108,18 @@ export const QUERIES = {
         mo."order.owner" AS order_owner,
         mo.order_id
       FROM "marketplace-MarketOrderModel" AS mo
+      CROSS JOIN params p
       WHERE mo."order.active" = 1
-        AND mo."order.owner" = '{accountAddress}'
-        AND  mo."order.expiration" > strftime('%s','now')
-        AND  mo."order.collection_id" = {collectionId}
+        AND ltrim(lower(replace(mo."order.owner", '0x', '')), '0') = p.account_address_norm
+        AND mo."order.expiration" > strftime('%s','now')
+        AND mo."order.collection_id" = {collectionId}
       GROUP BY token_id_hex
     )
     SELECT
-      tb.token_id,
-      tb.balance,
-      tb.contract_address,
-      tb.account_address as token_owner,
+      sb.token_id,
+      sb.balance,
+      sb.contract_address,
+      sb.account_address as token_owner,
       t.name,
       t.symbol,
       t.metadata,
@@ -97,14 +127,10 @@ export const QUERIES = {
       ao.expiration,
       ao.order_owner,
       ao.order_id
-    FROM token_balances tb
-    LEFT JOIN tokens t
-      ON t.token_id = substr(tb.token_id, instr(tb.token_id, ':') + 1)
-      AND t.contract_address = '{contractAddress}'
+    FROM scoped_balances sb
+    LEFT JOIN token_metadata t
+      ON t.token_id = substr(sb.token_id, instr(sb.token_id, ':') + 1)
     LEFT JOIN active_orders ao
-      ON ao.token_id_hex = substr(tb.token_id, instr(tb.token_id, ':') + 1)
-    WHERE tb.contract_address = '{contractAddress}'
-    AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
-    AND tb.account_address = '{trimmedAccountAddress}';
+      ON ao.token_id_hex = substr(sb.token_id, instr(sb.token_id, ':') + 1);
     `,
 };
