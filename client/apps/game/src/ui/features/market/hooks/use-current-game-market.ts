@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPredictionMarketChain } from "@/pm/prediction-market-config";
-import { useConfig } from "@/pm/providers";
+
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import { getPmSqlApiForUrl, pmQueryKeys } from "@/pm/hooks/queries";
+import { getPredictionMarketChain } from "@/pm/prediction-market-config";
+import { useConfig } from "@/pm/providers";
 import { dojoConfig } from "../../../../../dojo-config";
 import { normalizeHexAddress, transformMarketRowToClass } from "./transform-market-row";
 
