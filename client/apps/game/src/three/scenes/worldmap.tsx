@@ -1706,9 +1706,7 @@ export default class WorldmapScene extends HexagonScene {
       // Store the cleanup function with the hex coordinates as key
       this.travelEffects.set(key, cleanup);
 
-      if (isExplored) {
-        unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
-      }
+      unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
 
       this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
       maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
@@ -1722,10 +1720,6 @@ export default class WorldmapScene extends HexagonScene {
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
-          // Transaction submitted successfully, cleanup visual effects
-          if (!isExplored) {
-            cleanup();
-          }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
@@ -1875,6 +1869,16 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
     this.schedulePendingArmyMovementFallback(entityId);
+  }
+
+  private hasPendingTravelEffectForHex(key: string): boolean {
+    for (const [entityId, trackedEffect] of this.travelEffectsByEntity.entries()) {
+      if (trackedEffect.key === key && this.pendingArmyMovements.has(entityId)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private schedulePendingArmyMovementFallback(entityId: ID): void {
@@ -2736,8 +2740,15 @@ export default class WorldmapScene extends HexagonScene {
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
 
-    // Remove from pending movements when position is updated from blockchain
-    if (this.pendingArmyMovements.has(entityId)) {
+    const movedToDifferentHex = !!oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
+
+    // End travel/explore FX as soon as the army starts moving (first onchain position change).
+    if (movedToDifferentHex) {
+      this.travelEffectsByEntity.get(entityId)?.cleanup();
+    }
+
+    // Remove from pending movements only after onchain position change.
+    if (movedToDifferentHex && this.pendingArmyMovements.has(entityId)) {
       this.clearPendingArmyMovement(entityId);
     }
   }
@@ -2846,7 +2857,7 @@ export default class WorldmapScene extends HexagonScene {
     // Check if there's a compass effect for this hex and end it
     const key = `${hexCoords.col},${hexCoords.row}`;
     const endCompass = this.travelEffects.get(key);
-    if (endCompass) {
+    if (endCompass && !this.hasPendingTravelEffectForHex(key)) {
       endCompass();
     }
 
