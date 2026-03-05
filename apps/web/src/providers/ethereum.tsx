@@ -47,8 +47,17 @@ export function AppKitProvider({
           networks: [...NETWORKS],
           projectId: PROJECT_ID,
           metadata: METADATA,
+          coinbasePreference: "eoaOnly",
           features: {
-            analytics: true,
+            analytics: false,
+            swaps: false,
+            onramp: false,
+            pay: false,
+            email: false,
+            socials: false,
+            history: false,
+            receive: false,
+            send: false,
           },
         });
       })
