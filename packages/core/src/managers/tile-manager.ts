@@ -34,6 +34,20 @@ export const OPTIMISTIC_BUILDING_ENABLED = true;
 // This prevents race conditions between optimistic updates and Torii sync
 const pendingBuilds = new Set<string>();
 const OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS = 180_000;
+const OCCUPIED_SPACE_REASON = "space is occupied";
+
+const extractErrorMessage = (error: unknown): string => {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+};
+
+const isOccupiedSpaceError = (error: unknown): boolean =>
+  extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
 export class TileManager {
   private col: number;
@@ -432,6 +446,11 @@ export class TileManager {
   ) => {
     const { col, row } = hexCoords;
 
+    // Re-check occupancy at call time to avoid sending a known-invalid tx.
+    if (this.isHexOccupied({ col, row })) {
+      throw new Error(OCCUPIED_SPACE_REASON);
+    }
+
     // Track this build as pending to prevent race conditions
     const buildKey = `${this.col},${this.row},${col},${row}`;
     pendingBuilds.add(buildKey);
@@ -467,6 +486,9 @@ export class TileManager {
       removeBuildingOverride();
       pendingBuilds.delete(buildKey);
       console.error(error);
+      if (isOccupiedSpaceError(error)) {
+        throw new Error(OCCUPIED_SPACE_REASON);
+      }
       throw error;
     }
   };
