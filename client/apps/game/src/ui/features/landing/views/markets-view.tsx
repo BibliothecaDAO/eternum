@@ -233,6 +233,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const offset = (currentPage - 1) * PAGE_SIZE;
 
   const { counts, isLoading: isCountsLoading, isFetching: isCountsFetching } = useMultiChainMarketCounts(selectedChain);
+  const hasLiveMarkets = counts.live > 0;
 
   const { markets, totalCount, isLoading, isFetching, isError, sourceStatus, refresh } = useMultiChainMarkets({
     status: selectedStatus,
@@ -244,7 +245,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const handleCardClick = useCallback(
     (market: MarketClass, chain: MarketDataChain) => {
       if (chain !== activeTradingChain) return;
-      toggleModal(<MarketDetailsModal market={market} onClose={() => toggleModal(null)} />);
+      toggleModal(<MarketDetailsModal market={market} chain={chain} onClose={() => toggleModal(null)} />);
     },
     [activeTradingChain, toggleModal],
   );
@@ -349,6 +350,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
         <div className="flex flex-wrap items-center gap-2">
           {STATUS_OPTIONS.map((option) => {
             const isActive = selectedStatus === option.key;
+            const isLiveOption = option.key === "live";
+            const showLiveGlow = isLiveOption && hasLiveMarkets;
             const isCountLoading = isCountsLoading || isCountsFetching;
             const countLabel = isCountLoading ? "..." : counts[option.key].toString();
 
@@ -359,9 +362,14 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 onClick={() => handleStatusChange(option.key)}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
-                  isActive
-                    ? "border-orange/80 bg-orange/20 text-orange"
-                    : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
+                  showLiveGlow &&
+                    (isActive
+                      ? "border-emerald-300 bg-emerald-500/25 text-emerald-200 shadow-[0_0_22px_rgba(16,185,129,0.45)]"
+                      : "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:border-emerald-300/80 hover:bg-emerald-500/20"),
+                  !showLiveGlow &&
+                    (isActive
+                      ? "border-orange/80 bg-orange/20 text-orange"
+                      : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"),
                 )}
               >
                 {option.label} ({countLabel})
@@ -395,7 +403,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070a10]/85 px-4 py-3 text-xs uppercase tracking-[0.12em] text-white/65">
         <span>{totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount}` : "No markets found"}</span>
         <div className="flex items-center gap-3">
-          <span>Sort: Volume (All-time)</span>
+          <span>Sort: Creation Date (Newest)</span>
           {isFetching ? <span className="text-white/40">Refreshing…</span> : null}
           <RefreshButton aria-label="Refresh markets" isLoading={isFetching || isLoading} onClick={refresh} />
         </div>

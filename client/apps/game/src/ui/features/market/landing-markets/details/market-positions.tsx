@@ -1,22 +1,32 @@
 import { getContractByName } from "@dojoengine/core";
 import type { Token, TokenBalance } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { addAddressPadding } from "starknet";
 
 import type { MarketClass } from "@/pm/class";
 import { PMErrorState, PMHoldersSkeleton } from "@/pm/components/loading";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { computeRedeemableValue } from "@/pm/hooks/markets/calc-redeemable";
+import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
+import { getPredictionMarketChain } from "@/pm/prediction-market-config";
+import { useMarketActivity } from "@/pm/hooks/social/use-market-activity";
 import { formatUnits } from "@/pm/utils";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import { TokenIcon } from "../token-icon";
 import { MaybeController } from "../maybe-controller";
+
+type MarketDataChain = "slot" | "mainnet";
 
 type HolderPosition = {
   account: string;
   positions: Array<{
+    index: number;
     label: string;
     amountFormatted: string;
+    amountRaw: bigint;
     valueFormatted: string;
     valueRaw: bigint;
   }>;
@@ -43,8 +53,18 @@ const formatBalance = (balance: TokenBalance, token: Token | undefined, decimals
   return formatUnits(BigInt(balance.balance), decimals, 4);
 };
 
-export const MarketPositions = ({ market }: { market: MarketClass }) => {
-  const { account } = useAccount();
+export const MarketPositions = ({
+  market,
+  chain,
+  address: providedAddress,
+}: {
+  market: MarketClass;
+  chain?: MarketDataChain;
+  address?: string;
+}) => {
+  const { account, address: connectedAddress } = useAccount();
+  const address = providedAddress ?? connectedAddress ?? account?.address;
+  const resolvedChain = chain ?? getPredictionMarketChain();
   const {
     config: { manifest },
   } = useDojoSdk();
@@ -53,6 +73,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
   // const vaultFeesAddress = getContractByName(manifest, "pm", "VaultFees").address;
 
   const positionTokenIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id)), [market.position_ids]);
+  const { marketBuys, isLoading: isActivityLoading, isError: isActivityError } = useMarketActivity(market.market_id);
 
   const { tokens, balances, isLoading, isError } = useTokens(
     {
@@ -71,8 +92,40 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
   );
 
   const outcomes = useMemo(() => market.getMarketOutcomes(), [market]);
+  const marketIdHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.market_id).toString(16)}`);
+    } catch {
+      return null;
+    }
+  }, [market.market_id]);
+  const paddedAddress = useMemo(() => {
+    if (!address) return null;
+    try {
+      return addAddressPadding(address.toLowerCase());
+    } catch {
+      return null;
+    }
+  }, [address]);
 
-  const holders = useMemo(() => {
+  const {
+    data: userBuyRows = [],
+    isLoading: isUserBuysLoading,
+    isError: isUserBuysError,
+  } = useQuery({
+    queryKey: ["pm", "market", "my-positions", resolvedChain, marketIdHex, paddedAddress],
+    enabled: Boolean(marketIdHex && paddedAddress),
+    queryFn: async () => {
+      if (!marketIdHex || !paddedAddress) return [];
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[resolvedChain]).fetchMarketBuyOutcomesByMarketAndAccount(
+        marketIdHex,
+        paddedAddress,
+      );
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const holdersFromBalances = useMemo(() => {
     const map = new Map<string, HolderPosition>();
 
     balances.forEach((balance) => {
@@ -107,8 +160,10 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
       });
       holder.totalRedeemable += valueRaw;
       holder.positions.push({
+        index: positionIndex,
         label: outcome?.name ?? `Outcome #${positionIndex + 1}`,
         amountFormatted,
+        amountRaw: BigInt(balance.balance),
         valueFormatted,
         valueRaw,
       });
@@ -117,27 +172,145 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
     });
 
     return Array.from(map.values()).toSorted((a, b) => (a.totalRaw < b.totalRaw ? 1 : -1));
-  }, [balances, tokens, positionTokenIds, outcomes, market.collateralToken.decimals]);
+  }, [balances, tokens, positionTokenIds, outcomes, market]);
 
-  const symbol = market.collateralToken.symbol || "";
+  const holdersFromBuys = useMemo(() => {
+    const map = new Map<string, HolderPosition>();
+
+    marketBuys.forEach((buy) => {
+      const accountAddress = buy.account_address;
+      if (!accountAddress) return;
+
+      const outcomeIndex = Number(buy.outcome_index ?? 0);
+      if (!Number.isFinite(outcomeIndex) || outcomeIndex < 0) return;
+
+      const amountRaw = BigInt(buy.amount ?? 0);
+      if (amountRaw === 0n) return;
+
+      const holder = map.get(accountAddress) ?? {
+        account: accountAddress,
+        positions: [],
+        totalRaw: 0n,
+        totalRedeemable: 0n,
+      };
+
+      holder.totalRaw += amountRaw;
+      const existingPosition = holder.positions.find((position) => position.index === outcomeIndex);
+      if (existingPosition) {
+        existingPosition.amountRaw += amountRaw;
+        existingPosition.amountFormatted = formatUnits(
+          existingPosition.amountRaw,
+          Number(market.collateralToken.decimals),
+          4,
+        );
+      } else {
+        const outcome = outcomes[outcomeIndex];
+        holder.positions.push({
+          index: outcomeIndex,
+          label: outcome?.name ?? `Outcome #${outcomeIndex + 1}`,
+          amountRaw,
+          amountFormatted: formatUnits(amountRaw, Number(market.collateralToken.decimals), 4),
+          valueFormatted: "0",
+          valueRaw: 0n,
+        });
+      }
+
+      map.set(accountAddress, holder);
+    });
+
+    return Array.from(map.values())
+      .map((holder) => ({
+        ...holder,
+        positions: holder.positions.toSorted((a, b) => (a.amountRaw < b.amountRaw ? 1 : -1)),
+      }))
+      .toSorted((a, b) => (a.totalRaw < b.totalRaw ? 1 : -1));
+  }, [marketBuys, market, outcomes]);
+
+  const holders = holdersFromBalances.length > 0 ? holdersFromBalances : holdersFromBuys;
+  const userHolderFromSql = useMemo<HolderPosition | null>(() => {
+    if (!paddedAddress || userBuyRows.length === 0) return null;
+
+    const byOutcome = new Map<number, bigint>();
+    let totalRaw = 0n;
+
+    userBuyRows.forEach((row) => {
+      const index = Number(row.outcome_index ?? 0);
+      if (!Number.isFinite(index) || index < 0) return;
+
+      let amountRaw: bigint;
+      try {
+        amountRaw = BigInt(row.amount ?? 0);
+      } catch {
+        amountRaw = 0n;
+      }
+      if (amountRaw === 0n) return;
+
+      totalRaw += amountRaw;
+      const prev = byOutcome.get(index) ?? 0n;
+      byOutcome.set(index, prev + amountRaw);
+    });
+
+    if (totalRaw === 0n) return null;
+
+    const positions = Array.from(byOutcome.entries())
+      .map(([index, amountRaw]) => {
+        const outcome = outcomes[index];
+        return {
+          index,
+          label: outcome?.name ?? `Outcome #${index + 1}`,
+          amountRaw,
+          amountFormatted: formatUnits(amountRaw, Number(market.collateralToken.decimals), 4),
+          valueFormatted: "0",
+          valueRaw: 0n,
+        };
+      })
+      .toSorted((a, b) => (a.amountRaw < b.amountRaw ? 1 : -1));
+
+    return {
+      account: paddedAddress,
+      positions,
+      totalRaw,
+      totalRedeemable: 0n,
+    };
+  }, [market.collateralToken.decimals, outcomes, paddedAddress, userBuyRows]);
+
+  const userHolder = useMemo(() => {
+    if (!address) return null;
+    const fallback = userHolderFromSql;
+    const fromHolders = holders.find((holder) => {
+      try {
+        return BigInt(holder.account) === BigInt(address);
+      } catch {
+        return false;
+      }
+    });
+    return fromHolders ?? fallback;
+  }, [address, holders, userHolderFromSql]);
+
+  const holdersToRender = address ? (userHolder ? [userHolder] : []) : holders;
+
   const tokenForIcon = market.collateralToken;
 
   // Loading state
-  if (isLoading) {
+  if (isLoading && holdersFromBalances.length === 0 && isActivityLoading && (!address || isUserBuysLoading)) {
     return <PMHoldersSkeleton count={3} />;
   }
 
   // Error state
-  if (isError) {
+  if (isError && isActivityError && (!address || isUserBuysError)) {
     return <PMErrorState message="Failed to load positions" />;
   }
 
   // Empty state
-  if (holders.length === 0) {
+  if (holdersToRender.length === 0) {
     return (
       <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">
-        <p className="text-white">Market holders</p>
-        <p className="mt-1 text-xs text-gold/60">Once players buy outcomes, their positions will appear here.</p>
+        <p className="text-white">{address ? "My positions" : "Market holders"}</p>
+        <p className="mt-1 text-xs text-gold/60">
+          {address
+            ? "No positions found for your wallet in this market yet."
+            : "Once players buy outcomes, their positions will appear here."}
+        </p>
       </div>
     );
   }
@@ -146,13 +319,23 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
-          {holders.length} {holders.length === 1 ? "holder" : "holders"}
+          {address
+            ? "Your positions"
+            : `${holdersToRender.length} ${holdersToRender.length === 1 ? "holder" : "holders"}`}
         </div>
       </div>
 
       <div className="space-y-3">
-        {holders.map((holder, holderIdx) => {
-          const isYou = account && BigInt(holder.account) === BigInt(account.address);
+        {holdersToRender.map((holder, holderIdx) => {
+          const isYou =
+            Boolean(address) &&
+            (() => {
+              try {
+                return BigInt(holder.account) === BigInt(address ?? 0);
+              } catch {
+                return false;
+              }
+            })();
           const totalFormatted = formatUnits(holder.totalRaw, Number(market.collateralToken.decimals), 4);
 
           return (
@@ -177,7 +360,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                   <div className="flex items-center gap-1 text-gold/60">
                     <span>Holdings:</span>
                     <span className="text-white font-semibold">{totalFormatted}</span>
-                    {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={16} /> : null}
+                    {tokenForIcon ? <TokenIcon token={tokenForIcon} size={16} /> : null}
                   </div>
                   {market.isResolved() ? (
                     <div className="flex items-center gap-1 text-gold/60">
@@ -185,7 +368,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                       <span className="text-white font-semibold">
                         {formatUnits(holder.totalRedeemable, Number(market.collateralToken.decimals), 4)}
                       </span>
-                      {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={16} /> : null}
+                      {tokenForIcon ? <TokenIcon token={tokenForIcon} size={16} /> : null}
                     </div>
                   ) : null}
                 </div>
@@ -207,7 +390,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
 
                         <div className="flex items-center gap-1">
                           <span className="text-white font-semibold">{pos.amountFormatted}</span>
-                          {tokenForIcon ? <TokenIcon token={tokenForIcon as any} size={14} /> : null}
+                          {tokenForIcon ? <TokenIcon token={tokenForIcon} size={14} /> : null}
                         </div>
 
                         {market.isResolved() ? (
@@ -216,9 +399,7 @@ export const MarketPositions = ({ market }: { market: MarketClass }) => {
                             <span className="text-white font-semibold">
                               {pos.valueRaw > 0n ? pos.valueFormatted : "-"}
                             </span>
-                            {pos.valueRaw > 0n && tokenForIcon ? (
-                              <TokenIcon token={tokenForIcon as any} size={14} />
-                            ) : null}
+                            {pos.valueRaw > 0n && tokenForIcon ? <TokenIcon token={tokenForIcon} size={14} /> : null}
                           </div>
                         ) : null}
                       </div>

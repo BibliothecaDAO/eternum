@@ -25,24 +25,35 @@ export interface MarketFiltersParams {
   oracle: string;
 }
 
+const ZERO_U64_HEX = "0x0000000000000000";
+
+function toPaddedU64Hex(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return ZERO_U64_HEX;
+  return `0x${Math.floor(value).toString(16).padStart(16, "0")}`;
+}
+
 /**
  * Build SQL WHERE clause for market filters
  * Returns conditions to be used in SQL queries
  */
 function buildFilterWhereClause(filters: MarketFiltersParams, now: number): string {
-  const conditions: string[] = [`CAST(m.start_at AS INTEGER) < ${now}`];
+  // Torii stores Cairo u64 timestamps as zero-padded hex strings (0x...).
+  // Numeric CAST on those values can collapse to 0, so compare normalized hex strings directly.
+  const nowHex = toPaddedU64Hex(now);
+  const conditions: string[] = [`LOWER(m.start_at) < '${nowHex}'`];
 
   // Status filter
   switch (filters.status) {
     case MarketStatusFilter.Open:
-      conditions.push(`CAST(m.resolve_at AS INTEGER) > ${now}`);
+      conditions.push(`LOWER(m.resolve_at) > '${nowHex}'`);
+      conditions.push(`LOWER(m.resolved_at) = '${ZERO_U64_HEX}'`);
       break;
     case MarketStatusFilter.Resolvable:
-      conditions.push(`CAST(m.resolve_at AS INTEGER) < ${now}`);
-      conditions.push(`CAST(m.resolved_at AS INTEGER) = 0`);
+      conditions.push(`LOWER(m.resolve_at) < '${nowHex}'`);
+      conditions.push(`LOWER(m.resolved_at) = '${ZERO_U64_HEX}'`);
       break;
     case MarketStatusFilter.Resolved:
-      conditions.push(`CAST(m.resolved_at AS INTEGER) > 0`);
+      conditions.push(`LOWER(m.resolved_at) > '${ZERO_U64_HEX}'`);
       break;
     // MarketStatusFilter.All - no extra conditions needed
   }
@@ -141,8 +152,20 @@ interface MarketBuyAmountRow {
   amount_in: string;
 }
 
+interface MarketBuyOutcomeRow {
+  outcome_index: string;
+  amount: string;
+}
+
 interface MarketCountRow {
   total: string; // SQL returns string
+}
+
+interface ProtocolFeesRow {
+  id: string;
+  token_address: string;
+  accumulated_fee: string;
+  claimed_fee: string;
 }
 
 // SQL Query definitions
@@ -187,6 +210,19 @@ const PM_SQL_QUERIES = {
     WHERE market_id IN ({marketIds})
   `,
 
+  MARKET_BUY_OUTCOMES_BY_MARKET_AND_ACCOUNT: `
+    SELECT outcome_index, amount
+    FROM "pm-MarketBuy"
+    WHERE market_id = '{marketId}'
+      AND LOWER(account_address) = LOWER('{accountAddress}')
+  `,
+
+  MARKET_BUY_UNIQUE_ACCOUNTS_COUNT_BY_MARKET: `
+    SELECT COUNT(DISTINCT account_address) as total
+    FROM "pm-MarketBuy"
+    WHERE market_id = '{marketId}'
+  `,
+
   // Find market by prize distribution address in oracle_params
   // oracle_params is a JSON array where index 1 contains the prize address
   MARKET_BY_PRIZE_ADDRESS: `
@@ -201,6 +237,13 @@ const PM_SQL_QUERIES = {
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
     WHERE m.oracle_params LIKE '%{prizeAddress}%'
     ORDER BY m.start_at DESC
+    LIMIT 1
+  `,
+
+  PROTOCOL_FEES_BY_ID: `
+    SELECT id, token_address, accumulated_fee, claimed_fee
+    FROM "pm-ProtocolFees"
+    WHERE id = '{id}'
     LIMIT 1
   `,
 } as const;
@@ -274,6 +317,39 @@ class PmSqlApi {
   }
 
   /**
+   * Fetch account-scoped buy rows for a single market.
+   * Results are aggregated client-side because amount fields are hex-encoded values.
+   */
+  async fetchMarketBuyOutcomesByMarketAndAccount(
+    marketId: string,
+    accountAddress: string,
+  ): Promise<MarketBuyOutcomeRow[]> {
+    const safeMarketId = marketId.replace(/'/g, "''").toLowerCase();
+    const safeAddress = accountAddress.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.MARKET_BUY_OUTCOMES_BY_MARKET_AND_ACCOUNT.replace("{marketId}", safeMarketId).replace(
+      "{accountAddress}",
+      safeAddress,
+    );
+
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<MarketBuyOutcomeRow>(url, "Failed to fetch market buy outcomes");
+  }
+
+  /**
+   * Fetch count of unique buyer accounts for a market.
+   */
+  async fetchMarketBuyUniqueAccountsCountByMarket(marketId: string): Promise<number> {
+    const safeMarketId = marketId.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.MARKET_BUY_UNIQUE_ACCOUNTS_COUNT_BY_MARKET.replace("{marketId}", safeMarketId);
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<MarketCountRow>(
+      url,
+      "Failed to fetch market buy unique account count",
+    );
+    return results[0] ? parseInt(results[0].total, 10) : 0;
+  }
+
+  /**
    * Fetch market by prize distribution address (found in oracle_params)
    * This is optimized for finding the game's prediction market without fetching all markets
    */
@@ -283,6 +359,18 @@ class PmSqlApi {
     const query = PM_SQL_QUERIES.MARKET_BY_PRIZE_ADDRESS.replace("{prizeAddress}", safeAddress);
     const url = buildApiUrl(this.baseUrl, query);
     const results = await fetchWithErrorHandling<MarketWithDetailsRow>(url, "Failed to fetch market by prize address");
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch protocol fee row by ID.
+   * IDs can be market IDs, account addresses, oracle addresses, or the "PROTOCOL" sentinel.
+   */
+  async fetchProtocolFeesById(id: string): Promise<ProtocolFeesRow | null> {
+    const safeId = id.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.PROTOCOL_FEES_BY_ID.replace("{id}", safeId);
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<ProtocolFeesRow>(url, "Failed to fetch protocol fees by id");
     return extractFirstOrNull(results);
   }
 }

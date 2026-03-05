@@ -1,11 +1,16 @@
 import { createDojoConfig, DojoConfig, getContractByName } from "@dojoengine/core";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
-import { loadPredictionMarketManifest, type PredictionMarketManifest } from "../../manifest-loader";
+import {
+  loadPredictionMarketManifest,
+  type PredictionMarketChain,
+  type PredictionMarketManifest,
+} from "../../manifest-loader";
 import { getPredictionMarketChain } from "../../prediction-market-config";
 
 type DojoConfigProviderProps = PropsWithChildren<{
   toriiUrl: string;
   worldAddress: string;
+  chain?: PredictionMarketChain;
 }>;
 
 type DojoConfigProviderState = {
@@ -15,17 +20,16 @@ type DojoConfigProviderState = {
 
 const DojoConfigProviderContext = createContext<DojoConfigProviderState | undefined>(undefined);
 
-export function DojoConfigProvider({ children, toriiUrl, worldAddress }: DojoConfigProviderProps) {
-  const chain = getPredictionMarketChain();
+export function DojoConfigProvider({ children, toriiUrl, worldAddress, chain }: DojoConfigProviderProps) {
+  const resolvedChain = chain ?? getPredictionMarketChain();
   const [manifest, setManifest] = useState<PredictionMarketManifest | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setManifest(null);
 
     const loadManifest = async () => {
       try {
-        const loadedManifest = await loadPredictionMarketManifest(chain);
+        const loadedManifest = await loadPredictionMarketManifest(resolvedChain);
         if (!cancelled) {
           setManifest(loadedManifest);
         }
@@ -42,7 +46,7 @@ export function DojoConfigProvider({ children, toriiUrl, worldAddress }: DojoCon
     return () => {
       cancelled = true;
     };
-  }, [chain]);
+  }, [resolvedChain]);
 
   const dojoConfig = useMemo(() => {
     if (!manifest) {

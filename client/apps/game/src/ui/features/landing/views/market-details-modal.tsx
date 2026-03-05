@@ -1,14 +1,12 @@
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
-import { getPmSqlApi } from "@/pm/hooks/queries";
-import { getPredictionMarketChain } from "@/pm/prediction-market-config";
+import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { formatUnits } from "@/pm/utils";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { TokenIcon } from "@/ui/features/market/landing-markets/token-icon";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import Button from "@/ui/design-system/atoms/button";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { MarketOdds } from "@/ui/features/market/landing-markets/market-odds";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
@@ -28,11 +26,16 @@ import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
 import { ChevronDown, Play, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { addAddressPadding } from "starknet";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 
 interface MarketDetailsModalProps {
   market: MarketClass;
+  chain: MarketDataChain;
   onClose: () => void;
 }
+
+type MarketDataChain = "slot" | "mainnet";
 
 type MarketDetailsTabKey = "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution";
 
@@ -87,7 +90,13 @@ const formatCompactAmount = (amountRaw: bigint, decimals: number) => {
   }).format(amount);
 };
 
-const renderTabContent = (tab: MarketDetailsTabKey, market: MarketClass, refreshKey: number) => {
+const renderTabContent = (
+  tab: MarketDetailsTabKey,
+  market: MarketClass,
+  refreshKey: number,
+  chain: MarketDataChain,
+  address?: string,
+) => {
   if (tab === "terms") {
     return market.terms ? (
       <div className="text-sm leading-relaxed text-white/80" dangerouslySetInnerHTML={{ __html: market.terms }} />
@@ -98,14 +107,24 @@ const renderTabContent = (tab: MarketDetailsTabKey, market: MarketClass, refresh
 
   if (tab === "comments") return <UserMessages marketId={market.market_id} />;
   if (tab === "activity") return <MarketActivity market={market} refreshKey={refreshKey} />;
-  if (tab === "positions") return <MarketPositions market={market} />;
-  if (tab === "vault-fees") return <MarketVaultFees market={market} />;
+  if (tab === "positions") return <MarketPositions market={market} chain={chain} address={address} />;
+  if (tab === "vault-fees") return <MarketVaultFees market={market} chain={chain} address={address} />;
 
   if (market.isResolved()) return <MarketResolved market={market} />;
   return <MarketResolution market={market} />;
 };
 
-const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
+const MarketDetailsTabs = ({
+  market,
+  refreshKey = 0,
+  chain,
+  address,
+}: {
+  market: MarketClass;
+  refreshKey?: number;
+  chain: MarketDataChain;
+  address?: string;
+}) => {
   const [activeTab, setActiveTab] = useState<MarketDetailsTabKey>("terms");
   const [mobileOpenTab, setMobileOpenTab] = useState<MarketDetailsTabKey>("terms");
 
@@ -131,7 +150,7 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
         </div>
 
         <div className="rounded-lg border border-white/10 bg-black/35 p-4">
-          {renderTabContent(activeTab, market, refreshKey)}
+          {renderTabContent(activeTab, market, refreshKey, chain, address)}
         </div>
       </div>
 
@@ -152,7 +171,9 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
               </button>
 
               {isOpen ? (
-                <div className="border-t border-white/10 p-3">{renderTabContent(tab.key, market, refreshKey)}</div>
+                <div className="border-t border-white/10 p-3">
+                  {renderTabContent(tab.key, market, refreshKey, chain, address)}
+                </div>
               ) : null}
             </div>
           );
@@ -165,10 +186,18 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
 /**
  * Inner modal content that uses hooks requiring MarketsProviders context
  */
-const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: MarketClass; onClose: () => void }) => {
+const MarketDetailsModalContent = ({
+  initialMarket,
+  chain,
+  onClose,
+}: {
+  initialMarket: MarketClass;
+  chain: MarketDataChain;
+  onClose: () => void;
+}) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
-  const { account } = useAccount();
+  const { address } = useAccount();
   const {
     config: { manifest },
   } = useDojoSdk();
@@ -239,31 +268,40 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
 
   const marketIdHex = useMemo(() => {
     try {
-      return `0x${BigInt(market.market_id).toString(16)}`;
+      return addAddressPadding(`0x${BigInt(market.market_id).toString(16)}`);
     } catch {
       return null;
     }
   }, [market.market_id]);
 
   const { data: allTimeVolumeRaw = 0n } = useQuery({
-    queryKey: ["pm", "market", "all-time-volume", marketIdHex],
+    queryKey: ["pm", "market", "all-time-volume", chain, marketIdHex],
     enabled: Boolean(marketIdHex),
     queryFn: async () => {
       if (!marketIdHex) return 0n;
-      const rows = await getPmSqlApi().fetchMarketBuyAmountsByMarkets([marketIdHex]);
+      const rows = await getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchMarketBuyAmountsByMarkets([marketIdHex]);
       return rows.reduce((sum, row) => sum + toBigInt(row.amount_in), 0n);
     },
     staleTime: 30 * 1000,
   });
+  const { data: holdersFromBuysCount = 0 } = useQuery({
+    queryKey: ["pm", "market", "holders-count", chain, marketIdHex],
+    enabled: Boolean(marketIdHex),
+    queryFn: async () => {
+      if (!marketIdHex) return 0;
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchMarketBuyUniqueAccountsCountByMarket(marketIdHex);
+    },
+    staleTime: 30 * 1000,
+  });
 
-  const chainLabel = getPredictionMarketChain() === "mainnet" ? "Mainnet" : "Slot";
+  const chainLabel = chain === "mainnet" ? "Mainnet" : "Slot";
   const volumeDisplay = useMemo(
     () => formatCompactAmount(allTimeVolumeRaw, Number(market.collateralToken?.decimals ?? 18)),
     [allTimeVolumeRaw, market.collateralToken?.decimals],
   );
   const liquidityDisplay = useMemo(() => market.getTvl() || "0", [market]);
   const holdersCount = useMemo(() => {
-    if (!vaultPositionsAddress || positionIds.length === 0) return null;
+    if (!vaultPositionsAddress || positionIds.length === 0) return holdersFromBuysCount;
     const holders = new Set<string>();
 
     balances.forEach((balance) => {
@@ -273,13 +311,14 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
       holders.add(balance.account_address);
     });
 
-    return holders.size;
-  }, [balances, positionIds, vaultPositionsAddress]);
+    if (holders.size > 0) return holders.size;
+    return holdersFromBuysCount;
+  }, [balances, holdersFromBuysCount, positionIds, vaultPositionsAddress]);
   const endLabel = formatTimeLeft(market.end_at ?? null);
   const resolveLabel = formatTimeLeft(market.resolve_at ?? null);
 
   const showClaimPrimary = market.isResolved();
-  const claimDisabled = isRedeeming || !account?.address || !hasAnythingToClaim;
+  const claimDisabled = isRedeeming || !address || !hasAnythingToClaim;
 
   return (
     <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-auto md:max-h-[90vh] md:rounded-2xl">
@@ -328,15 +367,15 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
                 onClick={() => void handleRefresh()}
                 disabled={isLoading}
                 className={cx(
-                  "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
+                  "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
                   isLoading
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                     : "border-orange/70 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25",
                 )}
                 title="Refresh market data"
+                aria-label="Refresh market data"
               >
                 <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
-                Refresh
               </button>
             )}
 
@@ -345,28 +384,30 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
                 type="button"
                 onClick={() => void handleRefresh()}
                 disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Refresh market data"
+                aria-label="Refresh market data"
               >
                 <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
-                <span className="hidden sm:inline">Refresh</span>
               </button>
             ) : null}
 
             {showWatchButton ? (
-              <Button
-                size="xs"
-                variant="outline"
-                forceUppercase={false}
-                className="gap-2"
+              <button
+                type="button"
                 onClick={() => void watchMarket(market)}
-                isLoading={watchLoading}
                 disabled={watchDisabled}
+                className={cx(
+                  "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
+                  watchDisabled
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-white/15 bg-white/5 text-white/75 hover:border-white/30 hover:bg-white/10",
+                )}
                 title="Watch game"
+                aria-label="Watch game"
               >
-                <Play className="h-4 w-4" />
-                <span className="hidden md:inline">Watch</span>
-              </Button>
+                {watchLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              </button>
             ) : null}
 
             <button
@@ -445,7 +486,7 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
             </div>
           </div>
 
-          <MarketDetailsTabs market={market} refreshKey={refreshKey} />
+          <MarketDetailsTabs market={market} refreshKey={refreshKey} chain={chain} address={address} />
         </div>
       </div>
     </div>
@@ -455,10 +496,10 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
 /**
  * Modal wrapper that provides the necessary context providers
  */
-export const MarketDetailsModal = ({ market, onClose }: MarketDetailsModalProps) => {
+export const MarketDetailsModal = ({ market, chain, onClose }: MarketDetailsModalProps) => {
   return (
-    <MarketsProviders>
-      <MarketDetailsModalContent initialMarket={market} onClose={onClose} />
+    <MarketsProviders chain={chain}>
+      <MarketDetailsModalContent initialMarket={market} chain={chain} onClose={onClose} />
     </MarketsProviders>
   );
 };
