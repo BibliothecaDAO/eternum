@@ -1662,7 +1662,6 @@ export default class WorldmapScene extends HexagonScene {
       );
 
       let cleaned = false;
-      let unsubscribe: (() => void) | undefined;
       const effectStartedAtMs = performance.now();
       let delayedCleanupTimeout: ReturnType<typeof setTimeout> | undefined;
       let maxLifetimeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -1679,8 +1678,6 @@ export default class WorldmapScene extends HexagonScene {
         }
         end();
         this.travelEffects.delete(key);
-        unsubscribe?.();
-        unsubscribe = undefined;
 
         const tracked = this.travelEffectsByEntity.get(selectedEntityId);
         if (tracked?.key === key) {
@@ -1705,8 +1702,6 @@ export default class WorldmapScene extends HexagonScene {
 
       // Store the cleanup function with the hex coordinates as key
       this.travelEffects.set(key, cleanup);
-
-      unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
 
       this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
       maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
@@ -1863,6 +1858,10 @@ export default class WorldmapScene extends HexagonScene {
       clearTimeout(fallbackTimeout);
       this.pendingArmyMovementFallbackTimeouts.delete(entityId);
     }
+
+    // Clear any lingering movement fx when pending state is cleared outside
+    // of normal movement-start handling (e.g., stale timeout).
+    this.travelEffectsByEntity.get(entityId)?.cleanup();
   }
 
   private markPendingArmyMovement(entityId: ID): void {
