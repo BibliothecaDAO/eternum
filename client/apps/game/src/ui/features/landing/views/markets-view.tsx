@@ -164,7 +164,7 @@ const MarketTerminalCard = ({
           {visibleOutcomes.map((outcome) => (
             <div key={`${item.key}-${outcome.index}`} className="flex items-center justify-between gap-2">
               <p className="min-w-0 truncate text-xs text-white/80">
-                <MaybeController address={outcome.name} />
+                <MaybeController address={outcome.name} showAddress={false} />
               </p>
               <p className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-xs font-semibold text-emerald-300">
                 {formatOddsPercentage(outcome.odds)}

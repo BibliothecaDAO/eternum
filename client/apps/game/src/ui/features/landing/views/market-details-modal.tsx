@@ -19,7 +19,6 @@ import { MarketResolution } from "@/ui/features/market/landing-markets/details/m
 import { MarketResolved } from "@/ui/features/market/landing-markets/details/market-resolved";
 import { MarketTrade } from "@/ui/features/market/landing-markets/details/market-trade";
 import { MarketVaultFees } from "@/ui/features/market/landing-markets/details/market-vault-fees";
-import { UserMessages } from "@/ui/features/market/landing-markets/details/user-messages";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
 import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-watch";
 import { getContractByName } from "@dojoengine/core";
@@ -38,11 +37,10 @@ interface MarketDetailsModalProps {
 
 type MarketDataChain = "slot" | "mainnet";
 
-type MarketDetailsTabKey = "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution";
+type MarketDetailsTabKey = "terms" | "activity" | "positions" | "vault-fees" | "resolution";
 
 const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
   { key: "terms", label: "Terms" },
-  { key: "comments", label: "Comments" },
   { key: "activity", label: "Activity" },
   { key: "positions", label: "My Positions" },
   { key: "vault-fees", label: "Vault Fees" },
@@ -106,7 +104,6 @@ const renderTabContent = (
     );
   }
 
-  if (tab === "comments") return <UserMessages marketId={market.market_id} />;
   if (tab === "activity") return <MarketActivity market={market} refreshKey={refreshKey} />;
   if (tab === "positions") return <MarketPositions market={market} chain={chain} address={address} />;
   if (tab === "vault-fees") return <MarketVaultFees market={market} chain={chain} address={address} />;
@@ -132,12 +129,12 @@ const MarketDetailsTabs = ({
   return (
     <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
       <div className="hidden md:block">
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-nowrap items-center gap-1.5">
           {MARKET_DETAIL_TABS.map((tab) => (
             <button
               key={tab.key}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors",
+                "whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-[0.06em] leading-none transition-colors",
                 activeTab === tab.key
                   ? "border-orange/70 bg-orange/20 text-orange"
                   : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
@@ -339,7 +336,7 @@ const MarketDetailsModalContent = ({
   const claimDisabled = isRedeeming || !address || !hasAnythingToClaim;
 
   return (
-    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-auto md:max-h-[90vh] md:rounded-2xl">
+    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
       <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -473,14 +470,14 @@ const MarketDetailsModalContent = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-        <div className="space-y-4">
-          <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
-            <MarketTimeline market={market} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 py-4 md:px-6 md:py-5 lg:overflow-hidden">
+        <div className="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden">
+          <div className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1">
             <div className="space-y-4">
+              <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
+                <MarketTimeline market={market} />
+              </div>
+
               <MarketHistory market={market} refreshKey={refreshKey} />
 
               <section className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
@@ -496,15 +493,17 @@ const MarketDetailsModalContent = ({
                   collapsible
                 />
               </section>
-            </div>
 
-            <div className="flex flex-col gap-4 lg:sticky lg:top-0 lg:self-start">
+              <MarketDetailsTabs market={market} refreshKey={refreshKey} chain={chain} address={address} />
+            </div>
+          </div>
+
+          <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
+            <div className="flex flex-col gap-4">
               <MarketTrade market={market} selectedOutcome={selectedOutcome} />
               <MarketFees market={market} />
             </div>
           </div>
-
-          <MarketDetailsTabs market={market} refreshKey={refreshKey} chain={chain} address={address} />
         </div>
       </div>
     </div>

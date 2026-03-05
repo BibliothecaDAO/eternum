@@ -49,4 +49,17 @@ describe("MarketDetailsModal chain-aware data sources", () => {
     expect(source).toContain("outcomes.find((outcome) => outcome.index === initialOutcomeIndex)");
     expect(source).toContain("initialOutcomeIndex={initialOutcomeIndex}");
   });
+
+  it("uses independent hidden-scroll columns for left and right content panes", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("flex-1 min-h-0 overflow-y-auto scrollbar-hide");
+    expect(source).toContain("lg:overflow-hidden");
+    expect(source).toContain("flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden");
+    expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1"');
+    expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1"');
+  });
 });

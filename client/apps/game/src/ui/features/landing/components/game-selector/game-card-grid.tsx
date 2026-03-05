@@ -12,7 +12,6 @@ import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { useConfig } from "@/pm/providers";
-import { shortAddress } from "@/pm/utils";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
@@ -21,6 +20,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
 import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
+import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import {
   getChainLabel,
   resolveConnectedTxChainFromRuntime,
@@ -192,18 +192,6 @@ const getTopOutcomes = (market: MarketClass): { topOutcomes: MarketOutcome[]; hi
 };
 
 const toMarketChain = (chain: Chain): MarketDataChain => (chain === "mainnet" ? "mainnet" : "slot");
-
-const formatOutcomeLabel = (value: string): string => {
-  const trimmed = value.trim();
-  if (!trimmed) return value;
-  if (!/^0x[0-9a-fA-F]+$/.test(trimmed)) return trimmed;
-
-  try {
-    return shortAddress(trimmed);
-  } catch {
-    return trimmed;
-  }
-};
 
 export interface GameData {
   name: string;
@@ -506,7 +494,9 @@ const GameCard = ({
             <div className="mt-2 space-y-1.5">
               {marketSnapshot.topOutcomes.map((outcome) => (
                 <div key={`${game.worldKey}-${outcome.index}`} className="flex items-center justify-between gap-2">
-                  <p className="min-w-0 truncate text-[11px] text-white/85">{formatOutcomeLabel(outcome.name)}</p>
+                  <p className="min-w-0 truncate text-[11px] text-white/85">
+                    <MaybeController address={outcome.name} showAddress={false} />
+                  </p>
                   <button
                     type="button"
                     onClick={() => handleOpenMarket(outcome.index)}
