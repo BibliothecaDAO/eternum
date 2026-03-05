@@ -4,10 +4,14 @@ import { CairoCustomEnum } from "starknet";
 
 import type { RegisteredToken } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
+import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { useConfig } from "@/pm/providers";
 import { replaceAndFormat } from "@/pm/utils";
-import { getPmSqlApi, pmQueryKeys, type MarketWithDetailsRow, type VaultNumeratorRow } from "@/pm/hooks/queries";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
+import { getPmSqlApiForUrl, pmQueryKeys, type MarketWithDetailsRow, type VaultNumeratorRow } from "@/pm/hooks/queries";
 import { dojoConfig } from "../../../../../dojo-config";
+
+type MarketDataChain = "slot" | "mainnet";
 
 const normalizeHex = (value: unknown): string | null => {
   if (value == null) return null;
@@ -144,6 +148,11 @@ export const useCurrentGameMarket = () => {
   const { manifest } = dojoConfig;
   const { registeredTokens, getRegisteredToken } = useConfig();
   const queryClient = useQueryClient();
+  const preferredChain = getPredictionMarketChain();
+  const chainsToCheck = useMemo<MarketDataChain[]>(
+    () => (preferredChain === "mainnet" ? ["mainnet", "slot"] : ["slot", "mainnet"]),
+    [preferredChain],
+  );
 
   // Get current game's prize distribution contract address from manifest
   const currentPrizeAddress = useMemo(() => {
@@ -156,15 +165,18 @@ export const useCurrentGameMarket = () => {
 
   // Fetch market directly by prize address (optimized - single market query)
   const marketQuery = useQuery({
-    queryKey: pmQueryKeys.marketByPrizeAddress(currentPrizeAddress ?? ""),
+    queryKey: pmQueryKeys.marketByPrizeAddress(currentPrizeAddress ?? "", preferredChain),
     queryFn: async () => {
-      if (!currentPrizeAddress) return null;
-      const api = getPmSqlApi();
-      const result = await api.fetchMarketByPrizeAddress(currentPrizeAddress);
-      if (!result) {
-        console.debug("[useCurrentGameMarket] No market found for prize address:", currentPrizeAddress);
+      if (!currentPrizeAddress) return { marketRow: null, chain: null as MarketDataChain | null };
+      for (const chain of chainsToCheck) {
+        const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]);
+        const result = await api.fetchMarketByPrizeAddress(currentPrizeAddress);
+        if (result) {
+          return { marketRow: result, chain };
+        }
       }
-      return result;
+      console.debug("[useCurrentGameMarket] No market found for prize address:", currentPrizeAddress);
+      return { marketRow: null, chain: null as MarketDataChain | null };
     },
     enabled: !!currentPrizeAddress && registeredTokens.length > 0,
     staleTime: 30 * 1000,
@@ -173,33 +185,39 @@ export const useCurrentGameMarket = () => {
 
   // Fetch numerators for the market if found
   const numeratorsQuery = useQuery({
-    queryKey: pmQueryKeys.marketNumerators(marketQuery.data ? [marketQuery.data.market_id] : []),
+    queryKey: pmQueryKeys.marketNumerators(
+      marketQuery.data?.marketRow ? [marketQuery.data.marketRow.market_id] : [],
+      (marketQuery.data?.chain ?? preferredChain) as MarketDataChain,
+    ),
     queryFn: async () => {
-      if (!marketQuery.data) return [];
-      const api = getPmSqlApi();
-      return api.fetchVaultNumeratorsByMarkets([marketQuery.data.market_id]);
+      if (!marketQuery.data?.marketRow || !marketQuery.data.chain) return [];
+      const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[marketQuery.data.chain]);
+      return api.fetchVaultNumeratorsByMarkets([marketQuery.data.marketRow.market_id]);
     },
-    enabled: !!marketQuery.data,
+    enabled: !!marketQuery.data?.marketRow && !!marketQuery.data?.chain,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 
   // Transform to MarketClass
   const gameMarket = useMemo(() => {
-    if (!marketQuery.data || !registeredTokens.length) return null;
+    if (!marketQuery.data?.marketRow || !registeredTokens.length) return null;
     const numerators = numeratorsQuery.data ?? [];
-    return transformRowToMarketClass(marketQuery.data, numerators, getRegisteredToken);
+    return transformRowToMarketClass(marketQuery.data.marketRow, numerators, getRegisteredToken);
   }, [marketQuery.data, numeratorsQuery.data, registeredTokens, getRegisteredToken]);
 
   const refresh = () => {
     if (currentPrizeAddress) {
-      queryClient.invalidateQueries({ queryKey: pmQueryKeys.marketByPrizeAddress(currentPrizeAddress) });
+      queryClient.invalidateQueries({
+        queryKey: pmQueryKeys.marketByPrizeAddress(currentPrizeAddress, preferredChain),
+      });
     }
   };
 
   return {
     gameMarket,
-    isLoading: marketQuery.isLoading || (!!marketQuery.data && numeratorsQuery.isLoading),
+    marketChain: marketQuery.data?.chain ?? null,
+    isLoading: marketQuery.isLoading || (!!marketQuery.data?.marketRow && numeratorsQuery.isLoading),
     refresh,
     currentPrizeAddress,
     hasMarket: !!gameMarket,

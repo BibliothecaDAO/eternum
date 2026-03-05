@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 
+import type { PredictionMarketChain } from "@/pm/manifest-loader";
 import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
-import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
+import { getPredictionMarketChain, getPredictionMarketConfigForChain } from "@/pm/prediction-market-config";
 import { useConfig } from "@/pm/providers";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import Panel from "@/ui/design-system/atoms/panel";
 import {
   DojoSdkProviderInitialized,
@@ -39,11 +41,16 @@ const MARKET_FILTERS_ALL: MarketFiltersParams = {
   oracle: "All",
 };
 
-export const MarketsProviders = ({ children }: { children: ReactNode }) => {
-  const config = getPredictionMarketConfig();
+export const MarketsProviders = ({ children, chain }: { children: ReactNode; chain?: PredictionMarketChain }) => {
+  const resolvedChain = chain ?? getPredictionMarketChain();
+  const config = getPredictionMarketConfigForChain(resolvedChain);
   return (
     <QueryClientProvider client={pmQueryClient}>
-      <DojoSdkProviderInitialized toriiUrl={config.toriiUrl} worldAddress={config.worldAddress}>
+      <DojoSdkProviderInitialized
+        chain={resolvedChain}
+        toriiUrl={GLOBAL_TORII_BY_CHAIN[resolvedChain] ?? config.toriiUrl}
+        worldAddress={config.worldAddress}
+      >
         <UserProvider>
           <ControllersProvider>{children}</ControllersProvider>
         </UserProvider>
@@ -76,7 +83,7 @@ const MarketsSection = ({ children, description }: { children: ReactNode; descri
   </section>
 );
 
-const LandingMarkets = () => {
+export const LandingMarkets = () => {
   const [marketFilters, setMarketFilters] = useState<MarketFiltersParams>({ ...MARKET_FILTERS_ALL });
   const [activeTab, setActiveTab] = useState<MarketTab>("markets");
 
