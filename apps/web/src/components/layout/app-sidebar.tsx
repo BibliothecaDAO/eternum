@@ -14,7 +14,6 @@ import {
   ClipboardPen,
   ExternalLink,
   HandCoins,
-  Newspaper,
   Vote,
 } from "lucide-react";
 

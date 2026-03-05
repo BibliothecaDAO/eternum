@@ -45,6 +45,7 @@
     "dotenv-cli": "catalog:",
     "drizzle-kit": "catalog:",
     "pg": "^8.18.0",
+    "prettier": "catalog:",
     "postgres-range": "^1.1.4",
     "typescript": "catalog:"
   }

@@ -1,4 +1,4 @@
-import { SUPPORTED_L2_CHAIN_ID, trimAddress } from "@/utils/utils";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -43,11 +43,10 @@ export const getAccountTokens = createServerFn({ method: "GET" })
       marketplaceCollections.realms.id[SUPPORTED_L2_CHAIN_ID];
     const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll(
       "{contractAddress}",
-      trimAddress(collectionAddress),
+      collectionAddress ?? "",
     )
       .replace("{collectionId}", collectionId.toString())
-      .replace("{accountAddress}", address ?? "")
-      .replace("{trimmedAccountAddress}", trimAddress(address ?? ""));
+      .replace("{accountAddress}", address ?? "");
 
     try {
       const result = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
@@ -56,7 +55,8 @@ export const getAccountTokens = createServerFn({ method: "GET" })
         token_id: Number.parseInt(r.token_id.split(":")[1] ?? "0", 16) || 0,
       }));
       return resultsWithParsedTokenId;
-    } catch {
+    } catch (error) {
+      console.error("Failed to fetch token balances with metadata", error);
       return [];
     }
   });

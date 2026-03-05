@@ -28,6 +28,97 @@ const chainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
+const withdrawRequestCompletedSelector = getSelector("WithdrawRequestCompleted");
+const depositRequestInitiatedSelector = getSelector("DepositRequestInitiated");
+
+interface ParsedRequestContent {
+  hash: bigint;
+  ownerL1Address: bigint;
+  ownerL2: bigint;
+  ids: bigint[];
+}
+
+interface ParsedBridgeEvent {
+  reqContent: ParsedRequestContent;
+  transactionHash: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseBigIntValue(value: unknown, fieldPath: string): bigint {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "string" || typeof value === "number") {
+    return BigInt(value);
+  }
+  throw new Error(`Invalid bigint value for ${fieldPath}`);
+}
+
+function parseBridgeEvent(decoded: unknown): ParsedBridgeEvent {
+  if (!isRecord(decoded)) {
+    throw new Error("Invalid decoded event shape");
+  }
+
+  const transactionHash = decoded.transactionHash;
+  if (typeof transactionHash !== "string") {
+    throw new Error("Invalid transactionHash in decoded event");
+  }
+
+  const args = decoded.args;
+  if (!isRecord(args)) {
+    throw new Error("Missing args in decoded event");
+  }
+
+  const reqContent = args.req_content;
+  if (!isRecord(reqContent)) {
+    throw new Error("Missing req_content in decoded event args");
+  }
+
+  const ownerL1 = reqContent.owner_l1;
+  if (!isRecord(ownerL1)) {
+    throw new Error("Missing owner_l1 in decoded event args");
+  }
+
+  const idsValue = reqContent.ids;
+  if (!Array.isArray(idsValue)) {
+    throw new Error("Invalid ids in decoded event args");
+  }
+
+  const ids = idsValue.map((value, index) =>
+    parseBigIntValue(value, `args.req_content.ids[${index}]`),
+  );
+
+  return {
+    transactionHash,
+    reqContent: {
+      hash: parseBigIntValue(reqContent.hash, "args.req_content.hash"),
+      ownerL1Address: parseBigIntValue(
+        ownerL1.address,
+        "args.req_content.owner_l1.address",
+      ),
+      ownerL2: parseBigIntValue(reqContent.owner_l2, "args.req_content.owner_l2"),
+      ids,
+    },
+  };
+}
+
+function buildRequestId(reqContent: ParsedRequestContent): string {
+  const hash = uint256.bnToUint256(reqContent.hash);
+  const idParts = [
+    BigInt(hash.low),
+    BigInt(hash.high),
+    reqContent.ownerL1Address,
+    reqContent.ownerL2,
+    reqContent.ids.length,
+    ...reqContent.ids.flatMap((tokenId) => {
+      const token = uint256.bnToUint256(tokenId);
+      return [Number(token.low), Number(token.high)];
+    }),
+  ];
+
+  return idParts.join(":");
+}
 
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
@@ -49,11 +140,11 @@ export function createIndexer<
       events: [
         {
           address: REALMS_BRIDGE_ADDRESS[l2ChainId] as `0x${string}`,
-          keys: [getSelector("WithdrawRequestCompleted")],
+          keys: [withdrawRequestCompletedSelector],
         },
         {
           address: REALMS_BRIDGE_ADDRESS[l2ChainId] as `0x${string}`,
-          keys: [getSelector("DepositRequestInitiated")],
+          keys: [depositRequestInitiatedSelector],
         },
       ],
     },
@@ -78,39 +169,26 @@ export function createIndexer<
       );
 
       for (const event of events) {
-        if (event.keys[0] === getSelector("WithdrawRequestCompleted")) {
-          const { args, transactionHash } = decodeEvent({
-            //@ts-expect-error should accept value
-            abi,
-            eventName: "bridge::interfaces::WithdrawRequestCompleted",
-            event,
-          });
-          //@ts-expect-error should accept value
-          const hash = uint256.bnToUint256(args.req_content.hash);
-          const id = [
-            BigInt(hash.low),
-            BigInt(hash.high),
-            args.req_content.owner_l1.address,
-            //@ts-expect-error should accept value
-            BigInt(args.req_content.owner_l2),
-            args.req_content.ids.length,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            ...args.req_content.ids.flatMap((id: bigint) => {
-              const token = uint256.bnToUint256(id);
-              return [Number(token.low), Number(token.high)];
+        if (event.keys[0] === withdrawRequestCompletedSelector) {
+          const decoded = parseBridgeEvent(
+            decodeEvent({
+              abi: abi as Abi,
+              eventName: "bridge::interfaces::WithdrawRequestCompleted",
+              event,
             }),
-          ];
+          );
+          const requestId = buildRequestId(decoded.reqContent);
           await db
             .insert(realmsBridgeRequests)
             .values({
               from_chain: chainId,
-              from_address: numberToHex(args.req_content.owner_l1.address),
-              to_address: args.req_content.owner_l2,
-              token_ids: args.req_content.ids,
+              from_address: numberToHex(decoded.reqContent.ownerL1Address),
+              to_address: numberToHex(decoded.reqContent.ownerL2),
+              token_ids: decoded.reqContent.ids.map((id) => Number(id)),
               timestamp: block.header.timestamp,
-              tx_hash: transactionHash,
-              _id: id,
-              req_hash: args.req_content.hash,
+              tx_hash: decoded.transactionHash,
+              _id: requestId,
+              req_hash: decoded.reqContent.hash.toString(),
             })
             .onConflictDoNothing();
 
@@ -118,50 +196,40 @@ export function createIndexer<
             .insert(realmsBridgeEvents)
             .values({
               timestamp: block.header.timestamp,
-              hash: transactionHash,
+              hash: decoded.transactionHash,
               type: "withdraw_completed_l2",
-              id,
+              _id: requestId,
             })
             .onConflictDoNothing();
-        } else if (event.keys[0] === getSelector("DepositRequestInitiated")) {
-          const { args, transactionHash } = decodeEvent({
-            abi,
-            eventName: "bridge::interfaces::DepositRequestInitiated",
-            event,
-          });
-          const hash = uint256.bnToUint256(args.req_content.hash);
-          const id = [
-            BigInt(hash.low),
-            BigInt(hash.high),
-            args.req_content.owner_l1.address,
-            BigInt(args.req_content.owner_l2),
-            args.req_content.ids.length,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            ...args.req_content.ids.flatMap((id: bigint) => {
-              const token = uint256.bnToUint256(id);
-              return [Number(token.low), Number(token.high)];
+        } else if (event.keys[0] === depositRequestInitiatedSelector) {
+          const decoded = parseBridgeEvent(
+            decodeEvent({
+              abi: abi as Abi,
+              eventName: "bridge::interfaces::DepositRequestInitiated",
+              event,
             }),
-          ];
+          );
+          const requestId = buildRequestId(decoded.reqContent);
           await db
             .insert(realmsBridgeRequests)
             .values({
               from_chain: l2ChainId,
-              from_address: args.req_content.owner_l2,
-              to_address: numberToHex(args.req_content.owner_l1.address),
-              token_ids: args.req_content.ids,
+              from_address: numberToHex(decoded.reqContent.ownerL2),
+              to_address: numberToHex(decoded.reqContent.ownerL1Address),
+              token_ids: decoded.reqContent.ids.map((id) => Number(id)),
               timestamp: block.header.timestamp,
-              tx_hash: transactionHash,
-              req_hash: args.req_content.hash,
-              _id: id,
+              tx_hash: decoded.transactionHash,
+              req_hash: decoded.reqContent.hash.toString(),
+              _id: requestId,
             })
             .onConflictDoNothing();
           await db
             .insert(realmsBridgeEvents)
             .values({
               timestamp: block.header.timestamp,
-              hash: transactionHash,
+              hash: decoded.transactionHash,
               type: "deposit_initiated_l2",
-              _id: id,
+              _id: requestId,
             })
             .onConflictDoNothing();
         }

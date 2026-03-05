@@ -17,9 +17,19 @@ const envSchema = z.object({
   VITE_ETHPLORER_APIKEY: z.string().optional()
 });
 
+const isCiBuild = import.meta.env.CI === true || import.meta.env.CI === "true";
+const envInput = isCiBuild
+  ? {
+    ...import.meta.env,
+    VITE_PUBLIC_CHAIN: import.meta.env.VITE_PUBLIC_CHAIN ?? "mainnet",
+    VITE_PUBLIC_SLOT: import.meta.env.VITE_PUBLIC_SLOT ?? "ci",
+    VITE_ALCHEMY_API_KEY: import.meta.env.VITE_ALCHEMY_API_KEY ?? "ci",
+  }
+  : import.meta.env;
+
 let env: z.infer<typeof envSchema>;
 try {
-  env = envSchema.parse(import.meta.env);
+  env = envSchema.parse(envInput);
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error(

@@ -110,7 +110,7 @@ export enum StakingContracts {
   VE_LORDS = "velords",
   REWARD_POOL = "rewardpool",
   LEGACY_REWARD = "legacyreward",
-  VELORDS_BURNER= "velordsburner"
+  VELORDS_BURNER = "velordsburner",
 }
 
 export const StakingAddresses: Readonly<
@@ -157,8 +157,7 @@ export const StakingAddresses: Readonly<
     [ChainId.SEPOLIA]: "",
     [ChainId.SN_MAIN]:
       "0x0          45c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    [ChainId.SN_SEPOLIA]:
-      "",
+    [ChainId.SN_SEPOLIA]: "",
   },
 };
 

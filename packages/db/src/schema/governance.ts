@@ -10,7 +10,6 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 import { int8range } from "../int8range";
 
@@ -149,7 +148,7 @@ export const CreateDelegateProfileSchema = createInsertSchema(
     github: (schema) => schema.optional(),
     telegram: (schema) => schema.optional(),
     discord: (schema) => schema.optional(),
-  }
+  },
 ).omit({
   delegateId: true,
   createdAt: true,

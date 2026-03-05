@@ -43,6 +43,7 @@
     "@reown/appkit": "^1.8.18",
     "@reown/appkit-adapter-wagmi": "^1.8.18",
     "@snapshot-labs/pineapple": "^1.2.1",
+    "@solana/kit": "^5.0.0",
     "@starknet-io/get-starknet-core": "^5.0.0",
     "@starknet-io/get-starknet-modal": "^5.0.0",
     "@starknet-start/chains": "1.0.0",

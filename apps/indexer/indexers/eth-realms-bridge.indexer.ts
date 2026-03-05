@@ -33,7 +33,7 @@ const chainId =
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
-export default function (runtimeConfig: ApibaraRuntimeConfig) {
+export default function (_runtimeConfig: ApibaraRuntimeConfig) {
   console.log("eth indexer started");
   console.log(env.VITE_PUBLIC_CHAIN);
   console.log("messaging ", STARKNET_MESSAGING[chainId]);
