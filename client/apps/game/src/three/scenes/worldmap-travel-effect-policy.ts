@@ -2,7 +2,7 @@ import { ID } from "@bibliothecadao/types";
 
 export type TravelEffectType = "travel" | "compass";
 
-export interface TrackedTravelEffect {
+interface TrackedTravelEffect {
   key: string;
   effectType: TravelEffectType;
 }
