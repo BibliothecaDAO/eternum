@@ -152,7 +152,7 @@ interface MarketBuyAmountRow {
   amount_in: string;
 }
 
-export interface MarketBuyOutcomeRow {
+interface MarketBuyOutcomeRow {
   outcome_index: string;
   amount: string;
 }
@@ -161,7 +161,7 @@ interface MarketCountRow {
   total: string; // SQL returns string
 }
 
-export interface ProtocolFeesRow {
+interface ProtocolFeesRow {
   id: string;
   token_address: string;
   accumulated_fee: string;

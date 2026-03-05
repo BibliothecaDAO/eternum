@@ -83,7 +83,7 @@ const MarketsSection = ({ children, description }: { children: ReactNode; descri
   </section>
 );
 
-export const LandingMarkets = () => {
+const LandingMarkets = () => {
   const [marketFilters, setMarketFilters] = useState<MarketFiltersParams>({ ...MARKET_FILTERS_ALL });
   const [activeTab, setActiveTab] = useState<MarketTab>("markets");
 
