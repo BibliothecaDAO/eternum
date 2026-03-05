@@ -50,6 +50,7 @@ pub mod blitz_realm_systems {
     use crate::systems::utils::realm::iRealmImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::collectibles::iCollectiblesImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 
@@ -296,7 +297,8 @@ pub mod blitz_realm_systems {
 
             // obtain vrf seed
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+            let vrf_seed: u256 = rng_library_dispatcher
+                .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
 
             // retrieve relevant configs
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
@@ -378,7 +380,8 @@ pub mod blitz_realm_systems {
                 world, selector!("blitz_registration_config"),
             );
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+            let vrf_seed: u256 = rng_library_dispatcher
+                .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
             let upper_bound: u128 = blitz_registration_config.registration_count.into();
             let lower_bound: u128 = blitz_registration_config.assigned_positions_count.into();
             let range: u128 = (upper_bound - lower_bound).into();

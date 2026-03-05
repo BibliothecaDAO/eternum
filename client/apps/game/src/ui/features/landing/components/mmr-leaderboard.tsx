@@ -15,6 +15,11 @@ import type { Chain } from "@contracts";
 const SEARCH_DEBOUNCE_MS = 250;
 const PAGE_SIZE = 25;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
+const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
+const EVENT_PLAYER_EXPR =
+  "lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1))";
+const EVENT_CONTRACT_EXPR =
+  "lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1))";
 
 type SortBy = "rank" | "timestamp" | "delta";
 
@@ -132,20 +137,32 @@ const getGlobalToriiBaseUrl = (chain: Chain): string => {
 const buildContractIdFilterClause = (chain: Chain): string => {
   const mmrToken = MMR_TOKEN_BY_CHAIN[chain];
   if (!mmrToken) return "";
-  return `AND lower(id) LIKE '%:${mmrToken.toLowerCase()}:%'`;
+  return `AND ${EVENT_CONTRACT_EXPR} = '${mmrToken.toLowerCase()}'`;
 };
 
-const buildCommonEventsCte = (chain: Chain) => `
+const buildPlayerSearchFilterClause = (searchTerm: string): string => {
+  if (!searchTerm) return "";
+  const safe = escapeLikeTerm(searchTerm);
+
+  if (safe.startsWith("0x")) {
+    return `AND ${EVENT_PLAYER_EXPR} LIKE '${safe}%' ESCAPE '\\\\'`;
+  }
+
+  return `AND ${EVENT_PLAYER_EXPR} LIKE '%${safe}%' ESCAPE '\\\\'`;
+};
+
+const buildCommonEventsCte = (chain: Chain, searchTerm: string) => `
 WITH mmr_events AS (
   SELECT
     id,
     executed_at,
     data,
-    lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1)) AS player_address
+    ${EVENT_PLAYER_EXPR} AS player_address
   FROM events
   WHERE instr(lower(keys), '/') > 0
-    AND ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
+    AND ${EVENT_KEY0_EXPR} = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
     ${buildContractIdFilterClause(chain)}
+    ${buildPlayerSearchFilterClause(searchTerm)}
 ),
 latest_events AS (
   SELECT
@@ -216,12 +233,6 @@ parsed_latest AS (
 )
 `;
 
-const buildSearchClause = (searchTerm: string): string => {
-  if (!searchTerm) return "";
-  const safe = escapeLikeTerm(searchTerm);
-  return `WHERE player_address LIKE '%${safe}%' ESCAPE '\\\\'`;
-};
-
 const buildPagedLeaderboardQuery = (
   chain: Chain,
   searchTerm: string,
@@ -229,7 +240,6 @@ const buildPagedLeaderboardQuery = (
   page: number,
 ): string => {
   const offset = (page - 1) * PAGE_SIZE;
-  const searchClause = buildSearchClause(searchTerm);
 
   const orderBy =
     sortBy === "timestamp"
@@ -237,7 +247,7 @@ const buildPagedLeaderboardQuery = (
       : "new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC";
 
   return `
-${buildCommonEventsCte(chain)}
+${buildCommonEventsCte(chain, searchTerm)}
 SELECT
   player_address,
   id,
@@ -250,7 +260,6 @@ SELECT
   ROW_NUMBER() OVER (ORDER BY new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC) AS mmr_rank,
   COUNT(*) OVER () AS total_rows
 FROM parsed_latest
-${searchClause}
 ORDER BY ${orderBy}
 LIMIT ${PAGE_SIZE}
 OFFSET ${offset};
@@ -258,10 +267,8 @@ OFFSET ${offset};
 };
 
 const buildAllRowsForDeltaQuery = (chain: Chain, searchTerm: string): string => {
-  const searchClause = buildSearchClause(searchTerm);
-
   return `
-${buildCommonEventsCte(chain)}
+${buildCommonEventsCte(chain, searchTerm)}
 SELECT
   player_address,
   id,
@@ -273,7 +280,6 @@ SELECT
   event_timestamp,
   ROW_NUMBER() OVER (ORDER BY new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC) AS mmr_rank
 FROM parsed_latest
-${searchClause}
 ORDER BY executed_at DESC, id DESC;
 `;
 };
@@ -332,7 +338,7 @@ export const MMRLeaderboard = () => {
     entries: [],
     isLoading: false,
     error: null,
-    selectedChain: "slot",
+    selectedChain: "mainnet",
     sortBy: "rank",
     searchInput: "",
     searchTerm: "",
@@ -492,25 +498,18 @@ export const MMRLeaderboard = () => {
             <span className="text-sm text-gold/60">Chain:</span>
             <div className="flex gap-1">
               {CHAIN_OPTIONS.map((chain) => {
-                const isComingSoon = chain === "mainnet";
                 const isSelected = state.selectedChain === chain;
 
                 return (
                   <button
                     key={chain}
                     type="button"
-                    disabled={isComingSoon}
                     onClick={() => setState((prev) => ({ ...prev, selectedChain: chain }))}
                     className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
-                      isComingSoon
-                        ? "cursor-not-allowed text-gold/35"
-                        : isSelected
-                          ? "bg-gold/20 text-gold"
-                          : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                      isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                     }`}
                   >
                     <span>{chain}</span>
-                    {isComingSoon && <span className="ml-2 text-xs normal-case text-gold/45">Coming soon</span>}
                   </button>
                 );
               })}
