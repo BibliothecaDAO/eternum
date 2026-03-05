@@ -1,1 +1,1 @@
-export { PMActivitySkeleton, PMButtonSpinner, PMChartSkeleton, PMErrorState, PMHoldersSkeleton } from "./pm-loading";
+export { PMActivitySkeleton, PMChartSkeleton, PMErrorState, PMHoldersSkeleton } from "./pm-loading";
