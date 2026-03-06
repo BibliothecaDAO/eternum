@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-06",
+    title: "Reliable Mainnet Realm Settlement",
+    description:
+      "Fixed cases where mainnet settlement could stop after the first realm. Settlement now resumes correctly from partial progress and waits for confirmed transactions so all expected realms are created.",
+    type: "fix",
+  },
+  {
     date: "2026-02-18",
     title: "Smoother Worldmap Chunking",
     description:
