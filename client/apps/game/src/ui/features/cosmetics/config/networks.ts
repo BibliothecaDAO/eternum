@@ -10,17 +10,50 @@ const DEFAULT_MARKETPLACE_URLS: Record<CosmeticsNetwork, string> = {
   sepolia: "https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii",
 };
 
+const importMetaEnv = import.meta.env as Record<string, string | undefined>;
+
+const normalizeMarketplaceUrl = (url: string | undefined): string | undefined => {
+  const trimmed = url?.trim();
+  if (!trimmed) return undefined;
+  // Guard against common typo in env values.
+  if (trimmed.endsWith("/tori")) return `${trimmed}i`;
+  return trimmed.replace(/\/+$/, "");
+};
+
+const pointsToOtherNetwork = (url: string, network: CosmeticsNetwork): boolean => {
+  const lower = url.toLowerCase();
+  if (network === "mainnet") return lower.includes("sepolia");
+  return lower.includes("mainnet");
+};
+
+const resolveMarketplaceUrl = (network: CosmeticsNetwork): string => {
+  const envKey = network === "mainnet" ? "VITE_PUBLIC_MAINNET_MARKETPLACE_URL" : "VITE_PUBLIC_SEPOLIA_MARKETPLACE_URL";
+  const explicitOverride = normalizeMarketplaceUrl(importMetaEnv[envKey]);
+  if (explicitOverride) {
+    return explicitOverride;
+  }
+
+  const genericUrl = normalizeMarketplaceUrl(env.VITE_PUBLIC_MARKETPLACE_URL);
+  if (genericUrl && env.VITE_PUBLIC_CHAIN === network && !pointsToOtherNetwork(genericUrl, network)) {
+    return genericUrl;
+  }
+
+  return DEFAULT_MARKETPLACE_URLS[network];
+};
+
 const MARKETPLACE_URLS: Record<CosmeticsNetwork, string> = {
-  mainnet:
-    (import.meta.env.VITE_PUBLIC_MAINNET_MARKETPLACE_URL as string | undefined) ??
-    (env.VITE_PUBLIC_CHAIN === "mainnet" ? env.VITE_PUBLIC_MARKETPLACE_URL : DEFAULT_MARKETPLACE_URLS.mainnet),
-  sepolia:
-    (import.meta.env.VITE_PUBLIC_SEPOLIA_MARKETPLACE_URL as string | undefined) ??
-    (env.VITE_PUBLIC_CHAIN === "sepolia" ? env.VITE_PUBLIC_MARKETPLACE_URL : DEFAULT_MARKETPLACE_URLS.sepolia),
+  mainnet: resolveMarketplaceUrl("mainnet"),
+  sepolia: resolveMarketplaceUrl("sepolia"),
 };
 
 const MAINNET_ADDRESSES = getSeasonAddresses("mainnet");
 const SEPOLIA_ADDRESSES = getSeasonAddresses("sepolia");
+
+const resolveLootChestAddress = (addresses: ReturnType<typeof getSeasonAddresses>): string =>
+  addresses.lootChests || addresses["Collectibles: Realms: Loot Chest"];
+
+const resolveCosmeticsAddress = (addresses: ReturnType<typeof getSeasonAddresses>): string =>
+  addresses.cosmetics || addresses["Collectibles: Realms: Cosmetic Items"];
 
 export const COSMETICS_NETWORK_CONFIG: Record<
   CosmeticsNetwork,
@@ -37,8 +70,8 @@ export const COSMETICS_NETWORK_CONFIG: Record<
   mainnet: {
     label: "Mainnet",
     marketplaceUrl: MARKETPLACE_URLS.mainnet,
-    cosmeticsAddress: MAINNET_ADDRESSES["Collectibles: Realms: Cosmetic Items"],
-    lootChestsAddress: MAINNET_ADDRESSES["Collectibles: Realms: Loot Chest"],
+    cosmeticsAddress: resolveCosmeticsAddress(MAINNET_ADDRESSES),
+    lootChestsAddress: resolveLootChestAddress(MAINNET_ADDRESSES),
     cosmeticsClaimAddress: MAINNET_ADDRESSES.cosmeticsClaim,
     cosmeticsCollectionId: 4,
     lootChestCollectionId: 3,
@@ -46,8 +79,8 @@ export const COSMETICS_NETWORK_CONFIG: Record<
   sepolia: {
     label: "Sepolia",
     marketplaceUrl: MARKETPLACE_URLS.sepolia,
-    cosmeticsAddress: SEPOLIA_ADDRESSES["Collectibles: Realms: Cosmetic Items"],
-    lootChestsAddress: SEPOLIA_ADDRESSES["Collectibles: Realms: Loot Chest"],
+    cosmeticsAddress: resolveCosmeticsAddress(SEPOLIA_ADDRESSES),
+    lootChestsAddress: resolveLootChestAddress(SEPOLIA_ADDRESSES),
     cosmeticsClaimAddress: SEPOLIA_ADDRESSES.cosmeticsClaim,
     cosmeticsCollectionId: 6,
     lootChestCollectionId: 5,

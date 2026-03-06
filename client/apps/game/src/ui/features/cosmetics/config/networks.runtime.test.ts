@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
+const envState = {
+  VITE_PUBLIC_CHAIN: "slot",
+  VITE_PUBLIC_MARKETPLACE_URL: "https://example.com/torii",
+};
+
 vi.mock("@contracts", () => ({
   getSeasonAddresses: (network: string) => ({
     "Collectibles: Realms: Cosmetic Items": `0x${network}-cosmetics`,
@@ -10,10 +15,7 @@ vi.mock("@contracts", () => ({
 }));
 
 vi.mock("../../../../../env", () => ({
-  env: {
-    VITE_PUBLIC_CHAIN: "slot",
-    VITE_PUBLIC_MARKETPLACE_URL: "https://example.com/torii",
-  },
+  env: envState,
 }));
 
 class MutableRpcController {
@@ -45,5 +47,18 @@ describe("resolveConnectedTxNetworkFromRuntime", () => {
     const { resolveConnectedTxNetworkFromRuntime } = await import("./networks");
     expect(resolveConnectedTxNetworkFromRuntime({ chainId: "SN_MAIN" })).toBe("mainnet");
     expect(resolveConnectedTxNetworkFromRuntime({ chainId: "SN_SEPOLIA" })).toBe("sepolia");
+  });
+});
+
+describe("marketplace URL resolution", () => {
+  it("does not reuse a sepolia generic URL for mainnet network config", async () => {
+    vi.resetModules();
+    envState.VITE_PUBLIC_CHAIN = "mainnet";
+    envState.VITE_PUBLIC_MARKETPLACE_URL = "https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii";
+
+    const { COSMETICS_NETWORK_CONFIG } = await import("./networks");
+
+    expect(COSMETICS_NETWORK_CONFIG.mainnet.marketplaceUrl).toContain("mainnet");
+    expect(COSMETICS_NETWORK_CONFIG.sepolia.marketplaceUrl).toContain("sepolia");
   });
 });
