@@ -17,6 +17,28 @@ describe("game-entry-modal settlement helpers", () => {
     ]);
   });
 
+  it("plans only the missing assignment when mainnet has no pending assigned realms", () => {
+    expect(
+      buildSettlementOperations({
+        isMainnet: true,
+        singleRealmMode: false,
+        assignedRealmCount: 2,
+        settledRealmCount: 2,
+      }),
+    ).toEqual([{ kind: "assign-and-settle", settlementCount: 1 }]);
+  });
+
+  it("uses only missing count for non-mainnet assign-and-settle", () => {
+    expect(
+      buildSettlementOperations({
+        isMainnet: false,
+        singleRealmMode: false,
+        assignedRealmCount: 1,
+        settledRealmCount: 1,
+      }),
+    ).toEqual([{ kind: "assign-and-settle", settlementCount: 2 }]);
+  });
+
   it("continues later settlement calls after an intermediate failure", async () => {
     const assignAndSettle = vi.fn().mockResolvedValue(undefined);
     const settleRealms = vi.fn().mockRejectedValueOnce(new Error("submission failed")).mockResolvedValueOnce(undefined);

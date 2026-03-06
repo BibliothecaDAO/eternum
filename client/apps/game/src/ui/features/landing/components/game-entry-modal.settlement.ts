@@ -41,11 +41,14 @@ export const buildSettlementOperations = ({
   settledRealmCount: number;
 }): SettlementOperation[] => {
   const targetRealmCount = getTargetRealmCount(singleRealmMode);
-  if (settledRealmCount >= targetRealmCount) {
+  const normalizedAssignedRealmCount = Math.min(targetRealmCount, Math.max(0, assignedRealmCount));
+  const normalizedSettledRealmCount = Math.min(normalizedAssignedRealmCount, Math.max(0, settledRealmCount));
+
+  if (normalizedSettledRealmCount >= targetRealmCount) {
     return [];
   }
 
-  const remainingAssignedRealms = Math.max(0, assignedRealmCount - settledRealmCount);
+  const remainingAssignedRealms = Math.max(0, normalizedAssignedRealmCount - normalizedSettledRealmCount);
   if (remainingAssignedRealms > 0) {
     if (isMainnet) {
       return Array.from({ length: remainingAssignedRealms }, () => ({
@@ -62,27 +65,15 @@ export const buildSettlementOperations = ({
     ];
   }
 
-  if (singleRealmMode) {
-    return [
-      {
-        kind: "assign-and-settle",
-        settlementCount: 1,
-      },
-    ];
+  const missingRealmCount = Math.max(0, targetRealmCount - normalizedAssignedRealmCount);
+  if (missingRealmCount === 0) {
+    return [];
   }
 
-  if (isMainnet) {
+  if (singleRealmMode || isMainnet) {
     return [
       {
         kind: "assign-and-settle",
-        settlementCount: 1,
-      },
-      {
-        kind: "settle",
-        settlementCount: 1,
-      },
-      {
-        kind: "settle",
         settlementCount: 1,
       },
     ];
@@ -91,7 +82,7 @@ export const buildSettlementOperations = ({
   return [
     {
       kind: "assign-and-settle",
-      settlementCount: targetRealmCount,
+      settlementCount: missingRealmCount,
     },
   ];
 };

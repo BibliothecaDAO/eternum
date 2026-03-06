@@ -38,6 +38,7 @@ import {
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
+const MAX_SETTLEMENT_OPERATION_STEPS = 6;
 
 const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
@@ -60,6 +61,12 @@ type HyperstructureInfo = {
 type SettleFinishValue = {
   coords?: unknown[];
   structure_ids?: unknown[];
+};
+
+type SettlementStatusSnapshot = {
+  assignedRealmCount: number;
+  settledRealmCount: number;
+  needsSettlement: boolean;
 };
 
 interface GameEntryModalProps {
@@ -664,6 +671,73 @@ export const GameEntryModal = ({
     worldName,
   ]);
 
+  const applySettlementStatus = useCallback((status: SettlementStatusSnapshot) => {
+    setAssignedRealmCount(status.assignedRealmCount);
+    setSettledRealmCount(status.settledRealmCount);
+    setNeedsSettlement(status.needsSettlement);
+  }, []);
+
+  const readSettlementStatus = useCallback(async (): Promise<SettlementStatusSnapshot> => {
+    debugLog(worldName, "Running settlement status check...");
+    if (!setupResult) {
+      return {
+        assignedRealmCount: 0,
+        settledRealmCount: 0,
+        needsSettlement: false,
+      };
+    }
+
+    const playerAddress = accountAddress;
+    debugLog(worldName, "Player address:", playerAddress);
+
+    if (!playerAddress) {
+      return {
+        assignedRealmCount: 0,
+        settledRealmCount: 0,
+        needsSettlement: false,
+      };
+    }
+
+    const { components } = setupResult;
+    const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
+    const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
+
+    const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
+    debugLog(worldName, "Entity ID:", entityId);
+
+    const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId);
+    debugLog(worldName, "playerRegister:", playerRegister);
+    const isRegistered = playerRegister?.registered === true;
+
+    const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
+    debugLog(worldName, "playerStructures count:", playerStructures.size);
+    const hasSettled = playerStructures.size > 0;
+
+    const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
+    debugLog(worldName, "settleFinish:", settleFinish);
+    const coordsCount = settleFinish?.coords?.length ?? 0;
+    const settledCount = settleFinish?.structure_ids?.length ?? 0;
+    const assignedCount = coordsCount + settledCount;
+
+    const canPlay = hasSettled && assignedCount > 0 && settledCount === assignedCount;
+    const needsSettlementResult = isRegistered && !canPlay;
+
+    debugLog(worldName, "Settlement check result:", {
+      isRegistered,
+      hasSettled,
+      coordsCount,
+      settledCount,
+      canPlay,
+      needsSettlement: needsSettlementResult,
+    });
+
+    return {
+      assignedRealmCount: assignedCount,
+      settledRealmCount: settledCount,
+      needsSettlement: needsSettlementResult,
+    };
+  }, [setupResult, accountAddress, worldName]);
+
   // Check settlement status after bootstrap completes
   useEffect(() => {
     debugLog(
@@ -687,61 +761,10 @@ export const GameEntryModal = ({
       return;
     }
 
-    // Query player's settlement status from Dojo components
     const checkSettlementStatus = async () => {
-      debugLog(worldName, "Running settlement status check...");
       try {
-        const { components } = setupResult;
-        const playerAddress = accountAddress;
-        debugLog(worldName, "Player address:", playerAddress);
-
-        if (!playerAddress) {
-          debugLog(worldName, "No player address, skipping settlement check");
-          setNeedsSettlement(false);
-          setSettlementCheckComplete(true);
-          return;
-        }
-
-        // Import Dojo utilities
-        const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
-        const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
-
-        const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
-        debugLog(worldName, "Entity ID:", entityId);
-
-        // Check if player is registered
-        const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId);
-        debugLog(worldName, "playerRegister:", playerRegister);
-        const isRegistered = playerRegister?.registered === true;
-
-        // Check if player has any structures (meaning they've settled)
-        const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
-        debugLog(worldName, "playerStructures count:", playerStructures.size);
-        const hasSettled = playerStructures.size > 0;
-
-        // Check settlement finish status
-        const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
-        debugLog(worldName, "settleFinish:", settleFinish);
-        const coordsCount = settleFinish?.coords?.length ?? 0;
-        const settledCount = settleFinish?.structure_ids?.length ?? 0;
-
-        setAssignedRealmCount(coordsCount + settledCount);
-        setSettledRealmCount(settledCount);
-
-        // Player needs settlement if registered but not fully settled
-        const canPlay = hasSettled && coordsCount + settledCount > 0 && settledCount === coordsCount + settledCount;
-        const needsSettlementResult = isRegistered && !canPlay;
-
-        debugLog(worldName, "Settlement check result:", {
-          isRegistered,
-          hasSettled,
-          coordsCount,
-          settledCount,
-          canPlay,
-          needsSettlement: needsSettlementResult,
-        });
-
-        setNeedsSettlement(needsSettlementResult);
+        const status = await readSettlementStatus();
+        applySettlementStatus(status);
         setSettlementCheckComplete(true);
       } catch (error) {
         debugLog(worldName, "Failed to check settlement status:", error);
@@ -753,7 +776,7 @@ export const GameEntryModal = ({
 
     // Run the check
     checkSettlementStatus();
-  }, [bootstrapStatus, setupResult, accountAddress, isSpectateMode, isForgeMode, worldName]);
+  }, [bootstrapStatus, setupResult, isSpectateMode, isForgeMode, worldName, readSettlementStatus, applySettlementStatus]);
 
   // Check hyperstructure initialization status after bootstrap completes
   useEffect(() => {
@@ -979,70 +1002,65 @@ export const GameEntryModal = ({
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
       const blitzConfig = configManager.getBlitzConfig?.();
       const singleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
+      const targetRealmCount = getTargetSettlementRealmCount(singleRealmMode);
 
       debugLog(worldName, "Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
 
-      const operations = buildSettlementOperations({
-        isMainnet,
-        singleRealmMode,
-        assignedRealmCount,
-        settledRealmCount,
-      });
-      const targetRealmCount = getTargetSettlementRealmCount(singleRealmMode);
-
-      debugLog(worldName, "Settlement operations:", operations);
-
-      if (operations.length === 0) {
-        setAssignedRealmCount(targetRealmCount);
-        setSettledRealmCount(targetRealmCount);
-        setSettleStage("done");
-        setNeedsSettlement(false);
-        setTimeout(() => {
-          handleEnterGame();
-        }, 1000);
-        return;
-      }
-
-      const result = await runSettlementOperations({
-        signer: account,
-        operations,
-        systemCalls,
-        onOperationStart: (operation) => {
-          setSettleStage(operation.kind === "assign-and-settle" ? "assigning" : "settling");
-        },
-      });
-
-      const assignedRealmsAfterSubmission = operations.some((operation, index) => {
-        return operation.kind === "assign-and-settle" && !result.failures.some((failure) => failure.index === index);
-      })
-        ? targetRealmCount
-        : assignedRealmCount;
-      const settledRealmsAfterSubmission = Math.min(
-        targetRealmCount,
-        settledRealmCount + result.successfulSettlementCount,
-      );
-
-      setAssignedRealmCount(assignedRealmsAfterSubmission);
-      setSettledRealmCount(settledRealmsAfterSubmission);
-
-      if (settledRealmsAfterSubmission >= targetRealmCount) {
+      const completeSettlement = () => {
         debugLog(worldName, "Settlement complete!");
         setSettleStage("done");
         setNeedsSettlement(false);
-
-        // Auto-enter game after successful settlement
         setTimeout(() => {
           handleEnterGame();
         }, 1000);
+      };
+
+      for (let step = 0; step < MAX_SETTLEMENT_OPERATION_STEPS; step += 1) {
+        const status = await readSettlementStatus();
+        applySettlementStatus(status);
+
+        if (!status.needsSettlement || status.settledRealmCount >= targetRealmCount) {
+          completeSettlement();
+          return;
+        }
+
+        const [nextOperation] = buildSettlementOperations({
+          isMainnet,
+          singleRealmMode,
+          assignedRealmCount: status.assignedRealmCount,
+          settledRealmCount: status.settledRealmCount,
+        });
+
+        if (!nextOperation) {
+          completeSettlement();
+          return;
+        }
+
+        debugLog(worldName, "Running settlement operation:", nextOperation, "step:", step + 1);
+
+        const result = await runSettlementOperations({
+          signer: account,
+          operations: [nextOperation],
+          systemCalls,
+          onOperationStart: (operation) => {
+            setSettleStage(operation.kind === "assign-and-settle" ? "assigning" : "settling");
+          },
+        });
+
+        if (result.failures.length > 0) {
+          throw result.failures[0]?.error ?? new Error("Settlement failed");
+        }
+      }
+
+      const finalStatus = await readSettlementStatus();
+      applySettlementStatus(finalStatus);
+
+      if (!finalStatus.needsSettlement || finalStatus.settledRealmCount >= targetRealmCount) {
+        completeSettlement();
         return;
       }
 
-      setNeedsSettlement(true);
-
-      if (result.failures.length > 0) {
-        throw result.failures[0]?.error ?? new Error("Settlement failed");
-      }
-
+      debugLog(worldName, "Settlement attempt incomplete; waiting for next user retry");
       setSettleStage("settling");
     } catch (error) {
       debugLog(worldName, "Settlement failed:", error);
@@ -1050,7 +1068,7 @@ export const GameEntryModal = ({
     } finally {
       setIsSettling(false);
     }
-  }, [setupResult, account, assignedRealmCount, settledRealmCount, handleEnterGame, worldName]);
+  }, [setupResult, account, handleEnterGame, worldName, readSettlementStatus, applySettlementStatus]);
 
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
