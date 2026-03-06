@@ -112,9 +112,7 @@ export function resolvePostProcessingEffectPlan(input: PostProcessingEffectPlanI
   };
 }
 
-export function resolveToneMappingAuthorityPlan(
-  input: ToneMappingAuthorityPlanInput,
-): ToneMappingAuthorityPlan {
+export function resolveToneMappingAuthorityPlan(input: ToneMappingAuthorityPlanInput): ToneMappingAuthorityPlan {
   return {
     shouldUseComposerToneMapping: input.postProcessingEnabled,
     shouldUseRendererToneMapping: !input.postProcessingEnabled,

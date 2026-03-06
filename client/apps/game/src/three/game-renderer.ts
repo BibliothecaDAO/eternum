@@ -855,9 +855,7 @@ export default class GameRenderer {
 
   private applyToneMappingAuthority(postProcessingEnabled: boolean) {
     const toneMappingPlan = resolveToneMappingAuthorityPlan({ postProcessingEnabled });
-    this.renderer.toneMapping = toneMappingPlan.shouldUseRendererToneMapping
-      ? ACESFilmicToneMapping
-      : NoToneMapping;
+    this.renderer.toneMapping = toneMappingPlan.shouldUseRendererToneMapping ? ACESFilmicToneMapping : NoToneMapping;
   }
 
   private createToneMappingEffect(config: PostProcessingConfig) {

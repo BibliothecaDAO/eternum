@@ -2,7 +2,8 @@
 
 ## Overview
 
-- Feature: Hardening pass for scene transitions, renderer teardown safety, worldmap timeout cleanup, and rendering consistency in `client/apps/game/src/three`.
+- Feature: Hardening pass for scene transitions, renderer teardown safety, worldmap timeout cleanup, and rendering
+  consistency in `client/apps/game/src/three`.
 - Status: Draft v0.1
 - Owner: Three / Client Runtime Team
 - Created: 2026-03-06
@@ -10,8 +11,8 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change                                                                                                             |
-| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
+| Update | Date (UTC)       | Author | Change                                                                                                          |
+| ------ | ---------------- | ------ | --------------------------------------------------------------------------------------------------------------- |
 | U1     | 2026-03-06 00:00 | Codex  | Initial PRD+TDD created from deep code review of `src/three`, focused on runtime lifecycle and render pipeline. |
 
 ## Executive Summary
@@ -89,10 +90,8 @@ Evidence:
 
 1. `focusCameraOnEvent()` schedules a timeout that mutates `useUIStore` three seconds later:
    `client/apps/game/src/three/scenes/worldmap.tsx:1194`.
-2. `onSwitchOff()` does not clear `followCameraTimeout`:
-   `client/apps/game/src/three/scenes/worldmap.tsx:2372`.
-3. `destroy()` does not clear `followCameraTimeout` either:
-   `client/apps/game/src/three/scenes/worldmap.tsx:5073`.
+2. `onSwitchOff()` does not clear `followCameraTimeout`: `client/apps/game/src/three/scenes/worldmap.tsx:2372`.
+3. `destroy()` does not clear `followCameraTimeout` either: `client/apps/game/src/three/scenes/worldmap.tsx:5073`.
 
 Risk:
 
@@ -105,8 +104,7 @@ Root cause: timeout lifecycle is not included in shared scene teardown.
 
 Evidence:
 
-1. Renderer-level ACES tone mapping is always enabled:
-   `client/apps/game/src/three/game-renderer.ts:341`.
+1. Renderer-level ACES tone mapping is always enabled: `client/apps/game/src/three/game-renderer.ts:341`.
 2. A post-processing `ToneMappingEffect` is also always created when post-processing is enabled:
    `client/apps/game/src/three/game-renderer.ts:847`.
 
@@ -170,24 +168,24 @@ Risk:
 
 ### Functional Requirements
 
-| ID   | Requirement                                                                                                                                   | Priority |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| FR-1 | `SceneManager` must not commit `currentScene` until target `setup()` succeeds.                                                                | P0       |
-| FR-2 | If target scene setup fails, the transition must not fade in as if setup succeeded.                                                           | P0       |
-| FR-3 | A failed scene transition must leave the app in a recoverable state with a deterministic fallback strategy.                                   | P0       |
-| FR-4 | Async environment loading must no-op after `GameRenderer.destroy()` and must not reattach disposed targets.                                   | P0       |
-| FR-5 | Worldmap `followCameraTimeout` must be cleared on both `onSwitchOff()` and `destroy()`.                                                       | P0       |
-| FR-6 | There must be one authoritative tone-mapping stage in MID/HIGH: either renderer-level or composer-level, but not both simultaneously.        | P1       |
-| FR-7 | Each of the four findings must be protected by deterministic tests written before production changes.                                          | P0       |
+| ID   | Requirement                                                                                                                           | Priority |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-1 | `SceneManager` must not commit `currentScene` until target `setup()` succeeds.                                                        | P0       |
+| FR-2 | If target scene setup fails, the transition must not fade in as if setup succeeded.                                                   | P0       |
+| FR-3 | A failed scene transition must leave the app in a recoverable state with a deterministic fallback strategy.                           | P0       |
+| FR-4 | Async environment loading must no-op after `GameRenderer.destroy()` and must not reattach disposed targets.                           | P0       |
+| FR-5 | Worldmap `followCameraTimeout` must be cleared on both `onSwitchOff()` and `destroy()`.                                               | P0       |
+| FR-6 | There must be one authoritative tone-mapping stage in MID/HIGH: either renderer-level or composer-level, but not both simultaneously. | P1       |
+| FR-7 | Each of the four findings must be protected by deterministic tests written before production changes.                                 | P0       |
 
 ### Non-Functional Requirements
 
-| ID    | Requirement                                                                                          | Priority |
-| ----- | ---------------------------------------------------------------------------------------------------- | -------- |
-| NFR-1 | No new lifecycle fix may rely on arbitrary wall-clock sleeps in tests.                               | P0       |
-| NFR-2 | Teardown-safe async guards must add negligible startup overhead.                                     | P0       |
-| NFR-3 | Scene transition hardening must not regress existing rapid-toggle serialization behavior.            | P0       |
-| NFR-4 | Rendering policy changes must preserve existing LOW-tier behavior.                                   | P1       |
+| ID    | Requirement                                                                                         | Priority |
+| ----- | --------------------------------------------------------------------------------------------------- | -------- |
+| NFR-1 | No new lifecycle fix may rely on arbitrary wall-clock sleeps in tests.                              | P0       |
+| NFR-2 | Teardown-safe async guards must add negligible startup overhead.                                    | P0       |
+| NFR-3 | Scene transition hardening must not regress existing rapid-toggle serialization behavior.           | P0       |
+| NFR-4 | Rendering policy changes must preserve existing LOW-tier behavior.                                  | P1       |
 | NFR-5 | New tests must be stable under jsdom/unit execution without requiring real WebGL output validation. | P0       |
 
 ## Invariants
@@ -212,7 +210,8 @@ Change:
    3. Clear `transitionInProgress`.
 3. Decide fallback behavior explicitly:
    1. Preferred: keep previous scene active until new setup succeeds.
-   2. Acceptable fallback: if previous scene was already switched off, restore authoritative scene state before returning.
+   2. Acceptable fallback: if previous scene was already switched off, restore authoritative scene state before
+      returning.
 
 Recommended implementation direction:
 
