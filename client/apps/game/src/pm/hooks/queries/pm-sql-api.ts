@@ -168,6 +168,14 @@ interface ProtocolFeesRow {
   claimed_fee: string;
 }
 
+interface ConditionResolutionRow {
+  condition_id: string;
+  oracle: string;
+  question_id: string;
+  outcome_slot_count: number;
+  payout_numerators: string; // JSON array of felt values
+}
+
 // SQL Query definitions
 const PM_SQL_QUERIES = {
   // Markets list with joined data (uses dynamic WHERE clause)
@@ -244,6 +252,15 @@ const PM_SQL_QUERIES = {
     SELECT id, token_address, accumulated_fee, claimed_fee
     FROM "pm-ProtocolFees"
     WHERE id = '{id}'
+    LIMIT 1
+  `,
+
+  CONDITION_RESOLUTION_BY_KEYS: `
+    SELECT condition_id, oracle, question_id, outcome_slot_count, payout_numerators
+    FROM "pm-ConditionResolution"
+    WHERE condition_id = '{conditionId}'
+      AND LOWER(oracle) = LOWER('{oracle}')
+      AND question_id = '{questionId}'
     LIMIT 1
   `,
 } as const;
@@ -371,6 +388,28 @@ class PmSqlApi {
     const query = PM_SQL_QUERIES.PROTOCOL_FEES_BY_ID.replace("{id}", safeId);
     const url = buildApiUrl(this.baseUrl, query);
     const results = await fetchWithErrorHandling<ProtocolFeesRow>(url, "Failed to fetch protocol fees by id");
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch condition resolution row by composite keys.
+   */
+  async fetchConditionResolutionByKeys(
+    conditionId: string,
+    oracle: string,
+    questionId: string,
+  ): Promise<ConditionResolutionRow | null> {
+    const safeConditionId = conditionId.replace(/'/g, "''").toLowerCase();
+    const safeOracle = oracle.replace(/'/g, "''").toLowerCase();
+    const safeQuestionId = questionId.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.CONDITION_RESOLUTION_BY_KEYS.replace("{conditionId}", safeConditionId)
+      .replace("{oracle}", safeOracle)
+      .replace("{questionId}", safeQuestionId);
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<ConditionResolutionRow>(
+      url,
+      "Failed to fetch condition resolution by keys",
+    );
     return extractFirstOrNull(results);
   }
 }

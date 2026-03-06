@@ -52,7 +52,7 @@ const StatCard = ({
 
 const PlayerMarketRow = ({ entry }: { entry: PlayerSummary["markets"][number] }) => {
   const market = entry.market as any;
-  const { claimableDisplay, hasRedeemablePositions, redeem, isRedeeming } = useMarketRedeem(market);
+  const { claimableDisplay, hasAnythingToClaim, redeem, isRedeeming } = useMarketRedeem(market);
 
   const href =
     market && market.market_id
@@ -66,7 +66,7 @@ const PlayerMarketRow = ({ entry }: { entry: PlayerSummary["markets"][number] })
       : "#";
   const isLinkable = href !== "#";
   const isResolved = market?.isResolved();
-  const showClaim = Boolean(isResolved && hasRedeemablePositions);
+  const showClaim = Boolean(isResolved && hasAnythingToClaim);
 
   return (
     <div className="group grid grid-cols-1 gap-3 py-4 transition-all hover:bg-white/[0.02] md:grid-cols-[1fr_auto]">

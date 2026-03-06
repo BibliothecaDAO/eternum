@@ -15,7 +15,11 @@ import { MarketActivity } from "@/ui/features/market/landing-markets/details/mar
 import { MarketFees } from "@/ui/features/market/landing-markets/details/market-fees";
 import { MarketHistory } from "@/ui/features/market/landing-markets/details/market-history";
 import { MarketPositions } from "@/ui/features/market/landing-markets/details/market-positions";
-import { MarketResolution } from "@/ui/features/market/landing-markets/details/market-resolution";
+import {
+  MarketResolutionView,
+  type MarketResolutionController,
+  useMarketResolutionController,
+} from "@/ui/features/market/landing-markets/details/market-resolution";
 import { MarketResolved } from "@/ui/features/market/landing-markets/details/market-resolved";
 import { MarketTrade } from "@/ui/features/market/landing-markets/details/market-trade";
 import { MarketVaultFees } from "@/ui/features/market/landing-markets/details/market-vault-fees";
@@ -23,7 +27,7 @@ import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market
 import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-watch";
 import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
-import { ChevronDown, Play, RefreshCw, X } from "lucide-react";
+import { ChevronDown, Loader2, Play, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
@@ -99,6 +103,7 @@ const renderTabContent = (
   refreshKey: number,
   chain: MarketDataChain,
   address?: string,
+  resolution?: MarketResolutionController,
 ) => {
   if (tab === "terms") {
     return market.terms ? (
@@ -113,7 +118,7 @@ const renderTabContent = (
   if (tab === "vault-fees") return <MarketVaultFees market={market} chain={chain} address={address} />;
 
   if (market.isResolved()) return <MarketResolved market={market} />;
-  return <MarketResolution market={market} />;
+  return resolution ? <MarketResolutionView resolution={resolution} /> : null;
 };
 
 const MarketDetailsTabs = ({
@@ -121,11 +126,13 @@ const MarketDetailsTabs = ({
   refreshKey = 0,
   chain,
   address,
+  resolution,
 }: {
   market: MarketClass;
   refreshKey?: number;
   chain: MarketDataChain;
   address?: string;
+  resolution: MarketResolutionController;
 }) => {
   const [activeTab, setActiveTab] = useState<MarketDetailsTabKey>("terms");
   const [mobileOpenTab, setMobileOpenTab] = useState<MarketDetailsTabKey>("terms");
@@ -152,7 +159,7 @@ const MarketDetailsTabs = ({
         </div>
 
         <div className="rounded-lg border border-white/10 bg-black/35 p-4">
-          {renderTabContent(activeTab, market, refreshKey, chain, address)}
+          {renderTabContent(activeTab, market, refreshKey, chain, address, resolution)}
         </div>
       </div>
 
@@ -174,7 +181,7 @@ const MarketDetailsTabs = ({
 
               {isOpen ? (
                 <div className="border-t border-white/10 p-3">
-                  {renderTabContent(tab.key, market, refreshKey, chain, address)}
+                  {renderTabContent(tab.key, market, refreshKey, chain, address, resolution)}
                 </div>
               ) : null}
             </div>
@@ -217,6 +224,7 @@ const MarketDetailsModalContent = ({
   }, [initialMarket.market_id]);
   const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(marketId);
   const market = fetchedMarket ?? initialMarket;
+  const resolutionController = useMarketResolutionController(market);
 
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
@@ -224,7 +232,7 @@ const MarketDetailsModalContent = ({
   const watchDisabled = watchState.status !== "ready";
   const watchLoading = watchState.status === "checking" || isWatching;
 
-  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
+  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market, chain);
 
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
   const initialOutcomeAppliedRef = useRef(false);
@@ -396,6 +404,28 @@ const MarketDetailsModalContent = ({
 
   const showClaimPrimary = market.isResolved();
   const claimDisabled = isRedeeming || !address || !hasAnythingToClaim;
+  const resolveOneClickDisabled =
+    !resolutionController.canResolve || resolutionController.isSubmittingTx || isTradeSyncing;
+  const resolveOneClickIdleLabel = resolutionController.hasFinalRanking ? "Resolve Market" : "Compute + Resolve";
+  const resolveOneClickLabel = resolutionController.isResolvingWithCompute
+    ? resolutionController.isComputingScores
+      ? "Computing..."
+      : resolutionController.isResolving
+        ? "Resolving..."
+        : "Submitting..."
+    : resolveOneClickIdleLabel;
+  const resolveOneClickTitle = resolveOneClickDisabled
+    ? !resolutionController.canResolve
+      ? "Resolution opens after the resolve time."
+      : resolutionController.isSubmittingTx
+        ? "Submitting transactions..."
+        : "Please wait for market sync to finish."
+    : resolutionController.hasFinalRanking
+      ? "Resolve this market"
+      : "Compute scores if needed, then resolve in one click";
+  const resolveOneClickAriaLabel = resolutionController.hasFinalRanking
+    ? "Resolve market"
+    : "Compute scores and resolve market";
 
   return (
     <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
@@ -429,13 +459,34 @@ const MarketDetailsModalContent = ({
                 Syncing...
               </span>
             ) : null}
+            {!showClaimPrimary ? (
+              <button
+                type="button"
+                onClick={() => void resolutionController.onResolveWithCompute()}
+                disabled={resolveOneClickDisabled}
+                className={cx(
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#04060b]",
+                  resolveOneClickDisabled
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-orange/80 bg-orange/20 text-orange shadow-[0_0_16px_rgba(251,146,60,0.22)] hover:border-orange hover:bg-orange/30",
+                )}
+                title={resolveOneClickTitle}
+                aria-label={resolveOneClickAriaLabel}
+                aria-busy={resolutionController.isSubmittingTx}
+              >
+                <span className="inline-flex items-center gap-2">
+                  {resolutionController.isSubmittingTx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {resolveOneClickLabel}
+                </span>
+              </button>
+            ) : null}
             {showClaimPrimary ? (
               <button
                 type="button"
                 onClick={() => void redeem()}
                 disabled={claimDisabled}
                 className={cx(
-                  "rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   claimDisabled
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                     : "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 hover:border-emerald-300 hover:bg-emerald-500/25",
@@ -561,13 +612,19 @@ const MarketDetailsModalContent = ({
                 />
               </section>
 
-              <MarketDetailsTabs market={market} refreshKey={refreshKey} chain={chain} address={address} />
+              <MarketDetailsTabs
+                market={market}
+                refreshKey={refreshKey}
+                chain={chain}
+                address={address}
+                resolution={resolutionController}
+              />
             </div>
           </div>
 
           <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
             <div className="flex flex-col gap-4">
-              <MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />
+              <MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} chain={chain} />
               <MarketFees market={market} />
             </div>
           </div>

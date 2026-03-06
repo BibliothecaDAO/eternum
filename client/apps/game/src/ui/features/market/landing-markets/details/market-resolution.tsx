@@ -88,19 +88,48 @@ const extractPrizeDistributionAddress = (market: MarketClass): string | null => 
   return normalizeHex(params[1]);
 };
 
-export const MarketResolution = ({ market }: { market: MarketClass }) => {
+type TxFeedbackOptions = {
+  suppressSuccessToast?: boolean;
+  suppressErrorToast?: boolean;
+};
+
+type ComputeScoresResult = "already-computed" | "submitted" | "failed" | "skipped";
+
+export interface MarketResolutionController {
+  canResolve: boolean;
+  canComputeScores: boolean;
+  hasFinalRanking: boolean;
+  hasRankedPlayers: boolean;
+  playersLoading: boolean;
+  serverLookupStatus: "pending" | "done";
+  isResolving: boolean;
+  isComputingScores: boolean;
+  isResolvingWithCompute: boolean;
+  isSubmittingTx: boolean;
+  computeStatus: string | null;
+  playersLabel: string;
+  playerRanks: Array<{ player: string; rank: number }>;
+  ranksLoading: boolean;
+  ranksError: string | null;
+  onResolve: () => Promise<boolean>;
+  onComputeScores: () => Promise<ComputeScoresResult>;
+  onResolveWithCompute: () => Promise<boolean>;
+}
+
+export const useMarketResolutionController = (market: MarketClass): MarketResolutionController => {
   const {
     config: { manifest },
   } = useDojoSdk();
   const { account } = useAccount();
   const [isResolving, setIsResolving] = useState(false);
   const [isComputingScores, setIsComputingScores] = useState(false);
+  const [isResolvingWithCompute, setIsResolvingWithCompute] = useState(false);
   const [computeStatus, setComputeStatus] = useState<string | null>(null);
   const [players, setPlayers] = useState<string[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersError, setPlayersError] = useState<string | null>(null);
   const [hasFinalRanking, setHasFinalRanking] = useState(false);
-  const isSubmittingTx = isResolving || isComputingScores;
+  const isSubmittingTx = isResolving || isComputingScores || isResolvingWithCompute;
   const [serverName, setServerName] = useState<string | null>(null);
   const [serverLookupStatus, setServerLookupStatus] = useState<"pending" | "done">("pending");
   const toriiBaseUrl = useMemo(() => (serverName ? buildToriiBaseUrl(serverName) : null), [serverName]);
@@ -237,126 +266,6 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
     }
   }, [loadPlayers, serverLookupStatus]);
 
-  const onResolve = async () => {
-    if (serverLookupStatus !== "done") {
-      toast.error("Resolving game name… please wait.");
-      return;
-    }
-    if (!account) {
-      toast.error("Connect a wallet to resolve the market.");
-      return;
-    }
-    const marketAddress = getContractByName(manifest, "pm", "Markets")!.address;
-
-    const resolveCall: Call = {
-      contractAddress: marketAddress,
-      entrypoint: "resolve",
-      calldata: [marketId_u256.low, marketId_u256.high],
-    };
-
-    setIsResolving(true);
-    try {
-      await account.execute([resolveCall]);
-      toast.success("Market resolved");
-    } catch (error) {
-      console.error("Failed to resolve market", error);
-      toast.error("Failed to resolve market");
-    } finally {
-      setIsResolving(false);
-    }
-  };
-
-  const onComputeScores = async () => {
-    if (hasFinalRanking) {
-      toast.success("Scores are already computed (PlayersRankFinal exists).");
-      return;
-    }
-    if (!market.isEnded()) {
-      toast.error("Scores can only be computed after the game ends.");
-      return;
-    }
-    if (!account) {
-      toast.error("Connect a wallet to compute scores.");
-      return;
-    }
-    if (!serverName) {
-      toast.error("Could not determine the game name to load players.");
-      return;
-    }
-
-    setIsComputingScores(true);
-    setComputeStatus("Loading players...");
-
-    try {
-      const playerAddresses = await loadPlayers();
-
-      if (playerAddresses.length === 0) {
-        toast.error("No registered players found for this game.");
-        setComputeStatus(null);
-        return;
-      }
-
-      setComputeStatus("Resolving prize distribution contract...");
-      const chain = env.VITE_PUBLIC_CHAIN as Chain;
-      const profile = await buildWorldProfile(chain, serverName);
-      const baseManifest = getGameManifest(chain);
-      const patchedManifest = patchManifestWithFactory(
-        baseManifest as any,
-        profile.worldAddress,
-        profile.contractsBySelector,
-      );
-      const prizeContract = getContractByName(patchedManifest as any, "s1_eternum", "prize_distribution_systems");
-      if (!prizeContract?.address) {
-        toast.error("Prize distribution contract not found for this world.");
-        setComputeStatus(null);
-        return;
-      }
-
-      if (playerAddresses.length === 1) {
-        const solePlayer = playerAddresses[0];
-        if (!solePlayer) {
-          toast.error("Could not determine the registered player address.");
-          setComputeStatus(null);
-          return;
-        }
-        setComputeStatus("Submitting single-player claim...");
-        const claimCall: Call = {
-          contractAddress: prizeContract.address,
-          entrypoint: "blitz_prize_claim_no_game",
-          calldata: [solePlayer],
-        };
-        await account.execute([claimCall]);
-        setComputeStatus("Single-player claim submitted.");
-        toast.success("Single registered player — prize claim submitted.");
-        return;
-      }
-
-      const total = playerAddresses.length;
-
-      const batches = chunk(playerAddresses, 200);
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        setComputeStatus(`Submitting batch ${i + 1}/${batches.length}...`);
-        const rankCall: Call = {
-          contractAddress: prizeContract.address,
-          entrypoint: "blitz_prize_player_rank",
-          calldata: [randomTrialId(), i === 0 ? total : 0, batch.length, ...batch],
-        };
-        await account.execute([rankCall]);
-      }
-
-      setComputeStatus("Score computation submitted.");
-      toast.success("Scores computation submitted.");
-      refetchRanks();
-    } catch (error) {
-      console.error("Failed to compute scores", error);
-      setComputeStatus("Failed to compute scores.");
-      toast.error("Failed to compute scores");
-    } finally {
-      setIsComputingScores(false);
-    }
-  };
-
   const canResolve = market.isResolvable() && !market.isResolved() && serverLookupStatus === "done";
   const hasRankedPlayers = players.length > 0;
   const {
@@ -380,8 +289,211 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
     }
   }, [finalTrialId]);
 
+  const onResolve = useCallback(
+    async (options: TxFeedbackOptions = {}): Promise<boolean> => {
+      const { suppressErrorToast = false, suppressSuccessToast = false } = options;
+      if (serverLookupStatus !== "done") {
+        if (!suppressErrorToast) {
+          toast.error("Resolving game name… please wait.");
+        }
+        return false;
+      }
+      if (!account) {
+        if (!suppressErrorToast) {
+          toast.error("Connect a wallet to resolve the market.");
+        }
+        return false;
+      }
+
+      const marketAddress = getContractByName(manifest, "pm", "Markets")?.address;
+      if (!marketAddress) {
+        if (!suppressErrorToast) {
+          toast.error("Market contract not found in manifest.");
+        }
+        return false;
+      }
+
+      const resolveCall: Call = {
+        contractAddress: marketAddress,
+        entrypoint: "resolve",
+        calldata: [marketId_u256.low, marketId_u256.high],
+      };
+
+      setIsResolving(true);
+      try {
+        await account.execute([resolveCall]);
+        if (!suppressSuccessToast) {
+          toast.success("Market resolved");
+        }
+        return true;
+      } catch (error) {
+        console.error("Failed to resolve market", error);
+        if (!suppressErrorToast) {
+          toast.error("Failed to resolve market");
+        }
+        return false;
+      } finally {
+        setIsResolving(false);
+      }
+    },
+    [account, manifest, marketId_u256.high, marketId_u256.low, serverLookupStatus],
+  );
+
+  const onComputeScores = useCallback(
+    async (options: TxFeedbackOptions = {}): Promise<ComputeScoresResult> => {
+      const { suppressErrorToast = false, suppressSuccessToast = false } = options;
+      if (hasFinalRanking) {
+        if (!suppressSuccessToast) {
+          toast.success("Scores are already computed (PlayersRankFinal exists).");
+        }
+        return "already-computed";
+      }
+      if (!market.isEnded()) {
+        if (!suppressErrorToast) {
+          toast.error("Scores can only be computed after the game ends.");
+        }
+        return "skipped";
+      }
+      if (!account) {
+        if (!suppressErrorToast) {
+          toast.error("Connect a wallet to compute scores.");
+        }
+        return "skipped";
+      }
+      if (!serverName) {
+        if (!suppressErrorToast) {
+          toast.error("Could not determine the game name to load players.");
+        }
+        return "skipped";
+      }
+
+      setIsComputingScores(true);
+      setComputeStatus("Loading players...");
+
+      try {
+        const playerAddresses = await loadPlayers();
+
+        if (playerAddresses.length === 0) {
+          setComputeStatus(null);
+          if (!suppressErrorToast) {
+            toast.error("No registered players found for this game.");
+          }
+          return "failed";
+        }
+
+        setComputeStatus("Resolving prize distribution contract...");
+        const chain = env.VITE_PUBLIC_CHAIN as Chain;
+        const profile = await buildWorldProfile(chain, serverName);
+        const baseManifest = getGameManifest(chain);
+        const patchedManifest = patchManifestWithFactory(
+          baseManifest as any,
+          profile.worldAddress,
+          profile.contractsBySelector,
+        );
+        const prizeContract = getContractByName(patchedManifest as any, "s1_eternum", "prize_distribution_systems");
+        if (!prizeContract?.address) {
+          setComputeStatus(null);
+          if (!suppressErrorToast) {
+            toast.error("Prize distribution contract not found for this world.");
+          }
+          return "failed";
+        }
+
+        if (playerAddresses.length === 1) {
+          const solePlayer = playerAddresses[0];
+          if (!solePlayer) {
+            setComputeStatus(null);
+            if (!suppressErrorToast) {
+              toast.error("Could not determine the registered player address.");
+            }
+            return "failed";
+          }
+
+          setComputeStatus("Submitting single-player claim...");
+          const claimCall: Call = {
+            contractAddress: prizeContract.address,
+            entrypoint: "blitz_prize_claim_no_game",
+            calldata: [solePlayer],
+          };
+          await account.execute([claimCall]);
+          setComputeStatus("Single-player claim submitted.");
+          if (!suppressSuccessToast) {
+            toast.success("Single registered player — prize claim submitted.");
+          }
+          return "submitted";
+        }
+
+        const total = playerAddresses.length;
+        const batches = chunk(playerAddresses, 200);
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+          setComputeStatus(`Submitting batch ${i + 1}/${batches.length}...`);
+          const rankCall: Call = {
+            contractAddress: prizeContract.address,
+            entrypoint: "blitz_prize_player_rank",
+            calldata: [randomTrialId(), i === 0 ? total : 0, batch.length, ...batch],
+          };
+          await account.execute([rankCall]);
+        }
+
+        setComputeStatus("Score computation submitted.");
+        if (!suppressSuccessToast) {
+          toast.success("Scores computation submitted.");
+        }
+        refetchRanks();
+        return "submitted";
+      } catch (error) {
+        console.error("Failed to compute scores", error);
+        setComputeStatus("Failed to compute scores.");
+        if (!suppressErrorToast) {
+          toast.error("Failed to compute scores");
+        }
+        return "failed";
+      } finally {
+        setIsComputingScores(false);
+      }
+    },
+    [account, hasFinalRanking, loadPlayers, market, refetchRanks, serverName],
+  );
+
+  const onResolveWithCompute = useCallback(async (): Promise<boolean> => {
+    if (isSubmittingTx) {
+      return false;
+    }
+
+    setIsResolvingWithCompute(true);
+    try {
+      const computeResult = hasFinalRanking
+        ? "already-computed"
+        : await onComputeScores({
+            suppressErrorToast: true,
+            suppressSuccessToast: true,
+          });
+
+      const resolved = await onResolve({
+        suppressErrorToast: true,
+        suppressSuccessToast: true,
+      });
+
+      if (resolved) {
+        toast.success("Market resolved");
+        return true;
+      }
+
+      if (computeResult === "failed") {
+        toast.error("Failed to compute scores and resolve market.");
+      } else {
+        toast.error("Failed to resolve market");
+      }
+      return false;
+    } finally {
+      setIsResolvingWithCompute(false);
+    }
+  }, [hasFinalRanking, isSubmittingTx, onComputeScores, onResolve]);
+
   const canComputeScores =
     market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done" && !hasFinalRanking;
+
   const playersLabel = useMemo(() => {
     if (hasFinalRanking) return "Scores already computed — final ranking published.";
     if (serverLookupStatus !== "done") return "Resolving game name...";
@@ -390,7 +502,49 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
     if (players.length === 0) return "No registered players loaded yet.";
     const rankedList = players.map((addr, idx) => `${idx + 1}. ${addr}`).join("\n");
     return `Players (${players.length}) \n${rankedList}`;
-  }, [players, playersError, playersLoading, serverLookupStatus]);
+  }, [hasFinalRanking, players, playersError, playersLoading, serverLookupStatus]);
+
+  return {
+    canResolve,
+    canComputeScores,
+    hasFinalRanking,
+    hasRankedPlayers,
+    playersLoading,
+    serverLookupStatus,
+    isResolving,
+    isComputingScores,
+    isResolvingWithCompute,
+    isSubmittingTx,
+    computeStatus,
+    playersLabel,
+    playerRanks,
+    ranksLoading,
+    ranksError,
+    onResolve: () => onResolve(),
+    onComputeScores: () => onComputeScores(),
+    onResolveWithCompute,
+  };
+};
+
+export const MarketResolutionView = ({ resolution }: { resolution: MarketResolutionController }) => {
+  const {
+    canResolve,
+    canComputeScores,
+    hasFinalRanking,
+    hasRankedPlayers,
+    playersLoading,
+    serverLookupStatus,
+    isResolving,
+    isComputingScores,
+    isSubmittingTx,
+    computeStatus,
+    playersLabel,
+    playerRanks,
+    ranksLoading,
+    ranksError,
+    onResolve,
+    onComputeScores,
+  } = resolution;
 
   return (
     <>
@@ -401,13 +555,17 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
 
       <VStack className="mt-4 items-start gap-3">
         <HStack className="flex-wrap gap-3">
-          <Button onClick={onResolve} disabled={!canResolve || isSubmittingTx}>
+          <Button onClick={() => void onResolve()} disabled={!canResolve || isSubmittingTx}>
             <span className="flex items-center gap-2">
               {isSubmittingTx ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {isResolving ? "Submitting..." : "Resolve Market"}
             </span>
           </Button>
-          <Button variant="outline" onClick={onComputeScores} disabled={!canComputeScores || isSubmittingTx}>
+          <Button
+            variant="outline"
+            onClick={() => void onComputeScores()}
+            disabled={!canComputeScores || isSubmittingTx}
+          >
             {hasFinalRanking ? (
               "Scores Finalized"
             ) : (
@@ -473,4 +631,10 @@ export const MarketResolution = ({ market }: { market: MarketClass }) => {
       </VStack>
     </>
   );
+};
+
+export const MarketResolution = ({ market }: { market: MarketClass }) => {
+  const resolution = useMarketResolutionController(market);
+
+  return <MarketResolutionView resolution={resolution} />;
 };
