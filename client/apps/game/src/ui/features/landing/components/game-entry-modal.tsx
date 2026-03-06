@@ -30,6 +30,11 @@ import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
+import {
+  buildSettlementOperations,
+  getTargetSettlementRealmCount,
+  runSettlementOperations,
+} from "./game-entry-modal.settlement";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -549,6 +554,7 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
+  const accountAddress = account?.address;
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -686,7 +692,7 @@ export const GameEntryModal = ({
       debugLog(worldName, "Running settlement status check...");
       try {
         const { components } = setupResult;
-        const playerAddress = account?.address;
+        const playerAddress = accountAddress;
         debugLog(worldName, "Player address:", playerAddress);
 
         if (!playerAddress) {
@@ -747,7 +753,7 @@ export const GameEntryModal = ({
 
     // Run the check
     checkSettlementStatus();
-  }, [bootstrapStatus, setupResult, account, isSpectateMode, isForgeMode, worldName]);
+  }, [bootstrapStatus, setupResult, accountAddress, isSpectateMode, isForgeMode, worldName]);
 
   // Check hyperstructure initialization status after bootstrap completes
   useEffect(() => {
@@ -976,61 +982,72 @@ export const GameEntryModal = ({
 
       debugLog(worldName, "Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
 
-      // Settlement configuration
-      const SETTLEMENT_CONFIG = {
-        MAINNET: {
-          MULTI_REALM: { INITIAL_SETTLE_COUNT: 1, EXTRA_CALLS: 2 },
-          SINGLE_REALM: { INITIAL_SETTLE_COUNT: 1, EXTRA_CALLS: 0 },
-        },
-        NON_MAINNET: {
-          MULTI_REALM: { INITIAL_SETTLE_COUNT: 3 },
-          SINGLE_REALM: { INITIAL_SETTLE_COUNT: 1 },
-        },
-      };
+      const operations = buildSettlementOperations({
+        isMainnet,
+        singleRealmMode,
+        assignedRealmCount,
+        settledRealmCount,
+      });
+      const targetRealmCount = getTargetSettlementRealmCount(singleRealmMode);
 
-      if (isMainnet) {
-        const config = singleRealmMode ? SETTLEMENT_CONFIG.MAINNET.SINGLE_REALM : SETTLEMENT_CONFIG.MAINNET.MULTI_REALM;
+      debugLog(worldName, "Settlement operations:", operations);
 
-        debugLog(worldName, "Starting settlement (mainnet):", config);
-        await systemCalls.blitz_realm_assign_and_settle_realms({
-          signer: account,
-          settlement_count: config.INITIAL_SETTLE_COUNT,
-        });
-
-        if (config.EXTRA_CALLS > 0) {
-          setSettleStage("settling");
-          for (let i = 0; i < config.EXTRA_CALLS; i++) {
-            debugLog(worldName, `Extra settle call ${i + 1}/${config.EXTRA_CALLS}`);
-            await systemCalls.blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
-          }
-        }
-      } else {
-        const config = singleRealmMode
-          ? SETTLEMENT_CONFIG.NON_MAINNET.SINGLE_REALM
-          : SETTLEMENT_CONFIG.NON_MAINNET.MULTI_REALM;
-
-        debugLog(worldName, "Starting settlement (non-mainnet):", config);
-        await systemCalls.blitz_realm_assign_and_settle_realms({
-          signer: account,
-          settlement_count: config.INITIAL_SETTLE_COUNT,
-        });
+      if (operations.length === 0) {
+        setAssignedRealmCount(targetRealmCount);
+        setSettledRealmCount(targetRealmCount);
+        setSettleStage("done");
+        setNeedsSettlement(false);
+        setTimeout(() => {
+          handleEnterGame();
+        }, 1000);
+        return;
       }
 
-      debugLog(worldName, "Settlement complete!");
-      setSettleStage("done");
-      setNeedsSettlement(false);
+      const result = await runSettlementOperations({
+        signer: account,
+        operations,
+        systemCalls,
+        onOperationStart: (operation) => {
+          setSettleStage(operation.kind === "assign-and-settle" ? "assigning" : "settling");
+        },
+      });
 
-      // Auto-enter game after successful settlement
-      setTimeout(() => {
-        handleEnterGame();
-      }, 1000);
+      const assignedRealmsAfterSubmission = operations.some((operation, index) => {
+        return operation.kind === "assign-and-settle" && !result.failures.some((failure) => failure.index === index);
+      })
+        ? targetRealmCount
+        : assignedRealmCount;
+      const settledRealmsAfterSubmission = Math.min(targetRealmCount, settledRealmCount + result.successfulSettlementCount);
+
+      setAssignedRealmCount(assignedRealmsAfterSubmission);
+      setSettledRealmCount(settledRealmsAfterSubmission);
+
+      if (settledRealmsAfterSubmission >= targetRealmCount) {
+        debugLog(worldName, "Settlement complete!");
+        setSettleStage("done");
+        setNeedsSettlement(false);
+
+        // Auto-enter game after successful settlement
+        setTimeout(() => {
+          handleEnterGame();
+        }, 1000);
+        return;
+      }
+
+      setNeedsSettlement(true);
+
+      if (result.failures.length > 0) {
+        throw result.failures[0]?.error ?? new Error("Settlement failed");
+      }
+
+      setSettleStage("settling");
     } catch (error) {
       debugLog(worldName, "Settlement failed:", error);
       setSettleStage("error");
     } finally {
       setIsSettling(false);
     }
-  }, [setupResult, account, handleEnterGame, worldName]);
+  }, [setupResult, account, assignedRealmCount, settledRealmCount, handleEnterGame, worldName]);
 
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
