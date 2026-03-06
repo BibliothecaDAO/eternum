@@ -176,6 +176,13 @@ interface ConditionResolutionRow {
   payout_numerators: string; // JSON array of felt values
 }
 
+interface PayoutRedemptionRow {
+  redeemer: string;
+  condition_id: string;
+  payout: string;
+  internal_executed_at: string;
+}
+
 // SQL Query definitions
 const PM_SQL_QUERIES = {
   // Markets list with joined data (uses dynamic WHERE clause)
@@ -261,6 +268,15 @@ const PM_SQL_QUERIES = {
     WHERE condition_id = '{conditionId}'
       AND LOWER(oracle) = LOWER('{oracle}')
       AND question_id = '{questionId}'
+    LIMIT 1
+  `,
+
+  PAYOUT_REDEMPTION_BY_REDEEMER_AND_CONDITION: `
+    SELECT redeemer, condition_id, payout, internal_executed_at
+    FROM "pm-PayoutRedemption"
+    WHERE LOWER(redeemer) = LOWER('{redeemer}')
+      AND LOWER(condition_id) = LOWER('{conditionId}')
+    ORDER BY internal_executed_at DESC
     LIMIT 1
   `,
 } as const;
@@ -409,6 +425,27 @@ class PmSqlApi {
     const results = await fetchWithErrorHandling<ConditionResolutionRow>(
       url,
       "Failed to fetch condition resolution by keys",
+    );
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch latest payout redemption for a redeemer and condition.
+   */
+  async fetchLatestPayoutRedemptionByRedeemerAndCondition(
+    redeemer: string,
+    conditionId: string,
+  ): Promise<PayoutRedemptionRow | null> {
+    const safeRedeemer = redeemer.replace(/'/g, "''").toLowerCase();
+    const safeConditionId = conditionId.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.PAYOUT_REDEMPTION_BY_REDEEMER_AND_CONDITION.replace("{redeemer}", safeRedeemer).replace(
+      "{conditionId}",
+      safeConditionId,
+    );
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<PayoutRedemptionRow>(
+      url,
+      "Failed to fetch payout redemption by redeemer and condition",
     );
     return extractFirstOrNull(results);
   }

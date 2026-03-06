@@ -2,7 +2,7 @@ import { getContractByName } from "@dojoengine/core";
 import type { Token, TokenBalance } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { addAddressPadding } from "starknet";
 
 import type { MarketClass } from "@/pm/class";
@@ -19,13 +19,6 @@ import { TokenIcon } from "../token-icon";
 import { MaybeController } from "../maybe-controller";
 
 type MarketDataChain = "slot" | "mainnet";
-const PM_DEBUG_GLOBAL_FLAG = "__PM_DEBUG_REDEEMABLE__";
-
-function isPmDebugEnabled(): boolean {
-  if (typeof window === "undefined") return false;
-  const flagValue = (window as unknown as Record<string, unknown>)[PM_DEBUG_GLOBAL_FLAG];
-  return flagValue === true;
-}
 
 type HolderPosition = {
   account: string;
@@ -386,59 +379,6 @@ export const MarketPositions = ({
   const holdersToRender = address ? (userHolder ? [userHolder] : []) : holders;
 
   const tokenForIcon = market.collateralToken;
-
-  useEffect(() => {
-    if (!isPmDebugEnabled()) return;
-
-    console.log("[PM_DEBUG][MarketPositions]", {
-      chain: resolvedChain,
-      address,
-      marketId: market.market_id?.toString?.() ?? String(market.market_id),
-      conditionIdHex,
-      oracleHex,
-      questionIdHex,
-      hasMarketConditionResolution: Boolean(market.conditionResolution?.payout_numerators?.length),
-      payoutNumerators: payoutNumerators?.map((value) => value.toString()) ?? null,
-      conditionResolutionRow: conditionResolutionRow
-        ? {
-            condition_id: conditionResolutionRow.condition_id,
-            oracle: conditionResolutionRow.oracle,
-            question_id: conditionResolutionRow.question_id,
-            payout_numerators: conditionResolutionRow.payout_numerators,
-          }
-        : null,
-      balancesCount: balances.length,
-      holdersFromBalancesCount: holdersFromBalances.length,
-      userBuyRowsCount: userBuyRows.length,
-      userHolder: userHolder
-        ? {
-            account: userHolder.account,
-            totalRaw: userHolder.totalRaw.toString(),
-            totalRedeemable: userHolder.totalRedeemable.toString(),
-            positions: userHolder.positions.map((position) => ({
-              index: position.index,
-              label: position.label,
-              amountRaw: position.amountRaw.toString(),
-              valueRaw: position.valueRaw.toString(),
-            })),
-          }
-        : null,
-    });
-  }, [
-    address,
-    balances.length,
-    conditionIdHex,
-    conditionResolutionRow,
-    holdersFromBalances.length,
-    market.conditionResolution?.payout_numerators,
-    market.market_id,
-    oracleHex,
-    payoutNumerators,
-    questionIdHex,
-    resolvedChain,
-    userBuyRows.length,
-    userHolder,
-  ]);
 
   // Loading state
   if (isLoading && holdersFromBalances.length === 0 && isActivityLoading && (!address || isUserBuysLoading)) {

@@ -208,6 +208,7 @@ const MarketDetailsModalContent = ({
 }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isTradeSyncing, setIsTradeSyncing] = useState(false);
+  const [isResolveActionPending, setIsResolveActionPending] = useState(false);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
   const { address } = useAccount();
   const {
@@ -405,7 +406,7 @@ const MarketDetailsModalContent = ({
   const showClaimPrimary = market.isResolved();
   const claimDisabled = isRedeeming || !address || !hasAnythingToClaim;
   const resolveOneClickDisabled =
-    !resolutionController.canResolve || resolutionController.isSubmittingTx || isTradeSyncing;
+    !resolutionController.canResolve || resolutionController.isSubmittingTx || isTradeSyncing || isResolveActionPending;
   const resolveOneClickIdleLabel = resolutionController.hasFinalRanking ? "Resolve Market" : "Compute + Resolve";
   const resolveOneClickLabel = resolutionController.isResolvingWithCompute
     ? resolutionController.isComputingScores
@@ -413,6 +414,8 @@ const MarketDetailsModalContent = ({
       : resolutionController.isResolving
         ? "Resolving..."
         : "Submitting..."
+    : isResolveActionPending
+      ? "Submitting..."
     : resolveOneClickIdleLabel;
   const resolveOneClickTitle = resolveOneClickDisabled
     ? !resolutionController.canResolve
@@ -426,6 +429,23 @@ const MarketDetailsModalContent = ({
   const resolveOneClickAriaLabel = resolutionController.hasFinalRanking
     ? "Resolve market"
     : "Compute scores and resolve market";
+
+  const handleResolveOneClick = useCallback(async () => {
+    setIsResolveActionPending(true);
+    try {
+      const resolved = await resolutionController.onResolveWithCompute();
+      if (resolved) {
+        await handleRefresh();
+      }
+    } finally {
+      setIsResolveActionPending(false);
+    }
+  }, [handleRefresh, resolutionController]);
+
+  const handleClaimWinnings = useCallback(async () => {
+    await redeem();
+    await handleRefresh();
+  }, [handleRefresh, redeem]);
 
   return (
     <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
@@ -462,7 +482,7 @@ const MarketDetailsModalContent = ({
             {!showClaimPrimary ? (
               <button
                 type="button"
-                onClick={() => void resolutionController.onResolveWithCompute()}
+                onClick={() => void handleResolveOneClick()}
                 disabled={resolveOneClickDisabled}
                 className={cx(
                   "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#04060b]",
@@ -472,10 +492,12 @@ const MarketDetailsModalContent = ({
                 )}
                 title={resolveOneClickTitle}
                 aria-label={resolveOneClickAriaLabel}
-                aria-busy={resolutionController.isSubmittingTx}
+                aria-busy={resolutionController.isSubmittingTx || isResolveActionPending}
               >
                 <span className="inline-flex items-center gap-2">
-                  {resolutionController.isSubmittingTx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {resolutionController.isSubmittingTx || isResolveActionPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : null}
                   {resolveOneClickLabel}
                 </span>
               </button>
@@ -483,7 +505,7 @@ const MarketDetailsModalContent = ({
             {showClaimPrimary ? (
               <button
                 type="button"
-                onClick={() => void redeem()}
+                onClick={() => void handleClaimWinnings()}
                 disabled={claimDisabled}
                 className={cx(
                   "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",

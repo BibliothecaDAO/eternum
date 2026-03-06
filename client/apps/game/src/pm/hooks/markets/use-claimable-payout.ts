@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 import { getContractByName } from "@dojoengine/core";
 import { addAddressPadding } from "starknet";
@@ -14,13 +14,6 @@ import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { formatUnits } from "@/pm/utils";
 
 type MarketDataChain = "slot" | "mainnet";
-const PM_DEBUG_GLOBAL_FLAG = "__PM_DEBUG_REDEEMABLE__";
-
-function isPmDebugEnabled(): boolean {
-  if (typeof window === "undefined") return false;
-  const flagValue = (window as unknown as Record<string, unknown>)[PM_DEBUG_GLOBAL_FLAG];
-  return flagValue === true;
-}
 
 export const useClaimablePayout = (market?: MarketClass, accountAddress?: string, chainOverride?: MarketDataChain) => {
   const {
@@ -126,6 +119,19 @@ export const useClaimablePayout = (market?: MarketClass, accountAddress?: string
     },
     staleTime: 30 * 1000,
   });
+  const { data: latestPayoutRedemption } = useQuery({
+    queryKey: ["pm", "claimable-payout", "latest-redemption", chain, paddedAccountAddress, conditionIdHex],
+    enabled: Boolean(paddedAccountAddress && conditionIdHex),
+    queryFn: async () => {
+      if (!paddedAccountAddress || !conditionIdHex) return null;
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchLatestPayoutRedemptionByRedeemerAndCondition(
+        paddedAccountAddress,
+        conditionIdHex,
+      );
+    },
+    staleTime: 30 * 1000,
+  });
+  const hasRedemptionEventForCondition = Boolean(latestPayoutRedemption);
 
   const { balances } = useTokens(
     {
@@ -165,6 +171,7 @@ export const useClaimablePayout = (market?: MarketClass, accountAddress?: string
     }, 0n);
   }, [balances, market, payoutNumerators, positionIds]);
   const claimableAmountFromBuys = useMemo(() => {
+    if (hasRedemptionEventForCondition) return 0n;
     if (!market?.isResolved()) return 0n;
     if (userBuyRows.length === 0) return 0n;
 
@@ -195,68 +202,20 @@ export const useClaimablePayout = (market?: MarketClass, accountAddress?: string
       });
       return sum + valueRaw;
     }, 0n);
-  }, [market, paddedAccountAddress, payoutNumerators, positionIds, userBuyRows, vaultPositionsAddress]);
+  }, [hasRedemptionEventForCondition, market, paddedAccountAddress, payoutNumerators, positionIds, userBuyRows, vaultPositionsAddress]);
 
   const claimableAmount = useMemo(() => {
     return claimableAmountFromBalances > 0n ? claimableAmountFromBalances : claimableAmountFromBuys;
   }, [claimableAmountFromBalances, claimableAmountFromBuys]);
   const hasRedeemablePositions = useMemo(() => {
-    return hasRedeemableFromBalances || claimableAmountFromBuys > 0n;
-  }, [hasRedeemableFromBalances, claimableAmountFromBuys]);
+    return hasRedeemableFromBalances || (!hasRedemptionEventForCondition && claimableAmountFromBuys > 0n);
+  }, [hasRedeemableFromBalances, claimableAmountFromBuys, hasRedemptionEventForCondition]);
 
   const claimableDisplay = useMemo(() => {
     const decimals = Number(market?.collateralToken?.decimals ?? 18);
     const formatted = formatUnits(claimableAmount, decimals, 4);
     return Number(formatted || 0) > 0 ? formatted : "0";
   }, [claimableAmount, market?.collateralToken?.decimals]);
-
-  useEffect(() => {
-    if (!isPmDebugEnabled()) return;
-
-    const matchedBalances = balances
-      .filter((balance) => positionIds.some((id) => BigInt(balance.token_id || 0) === id))
-      .map((balance) => ({
-        account_address: balance.account_address,
-        token_id: balance.token_id,
-        balance: balance.balance,
-      }));
-
-    console.log("[PM_DEBUG][useClaimablePayout]", {
-      chain,
-      accountAddress,
-      marketId: market?.market_id?.toString?.() ?? String(market?.market_id ?? 0),
-      conditionIdHex,
-      oracleHex,
-      questionIdHex,
-      hasMarketConditionResolution: Boolean(market?.conditionResolution?.payout_numerators?.length),
-      payoutNumerators: payoutNumerators?.map((value) => value.toString()) ?? null,
-      matchedBalances,
-      userBuyRowsCount: userBuyRows.length,
-      claimableAmountFromBalancesRaw: claimableAmountFromBalances.toString(),
-      claimableAmountFromBuysRaw: claimableAmountFromBuys.toString(),
-      claimableAmountRaw: claimableAmount.toString(),
-      claimableDisplay,
-      hasRedeemablePositions,
-    });
-  }, [
-    accountAddress,
-    chain,
-    claimableAmount,
-    claimableDisplay,
-    conditionIdHex,
-    hasRedeemablePositions,
-    market?.conditionResolution?.payout_numerators,
-    market?.market_id,
-    oracleHex,
-    paddedAccountAddress,
-    payoutNumerators,
-    positionIds,
-    questionIdHex,
-    userBuyRows.length,
-    claimableAmountFromBalances,
-    claimableAmountFromBuys,
-    balances,
-  ]);
 
   return {
     claimableAmount,

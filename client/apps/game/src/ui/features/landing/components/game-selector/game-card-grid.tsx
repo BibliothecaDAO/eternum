@@ -293,6 +293,10 @@ const GameCard = ({
     marketSnapshot?.market,
     marketSnapshot?.chain,
   );
+  const hasPositiveMarketClaimable = useMemo(() => {
+    const value = Number((marketClaimableDisplay ?? "0").replace(/,/g, ""));
+    return Number.isFinite(value) && value > 0;
+  }, [marketClaimableDisplay]);
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
   const [switchPromptContext, setSwitchPromptContext] = useState<"game" | "market">("game");
@@ -497,7 +501,7 @@ const GameCard = ({
             </div>
 
             <div className="mt-2 space-y-1.5">
-              {hasMarketWinningsToClaim ? (
+              {hasMarketWinningsToClaim && hasPositiveMarketClaimable ? (
                 <button
                   type="button"
                   onClick={() => handleOpenMarket()}
@@ -522,10 +526,10 @@ const GameCard = ({
                     type="button"
                     onClick={() => handleOpenMarket(outcome.index)}
                     className={cn(
-                      "rounded border px-1.5 py-0.5 text-[10px] font-semibold transition-colors",
+                      "inline-flex h-5 w-[50px] items-center justify-center rounded border px-1 py-0 text-[9px] font-semibold tabular-nums leading-none transition-colors",
                       marketCanTrade
-                        ? "border-emerald-300/45 bg-emerald-500/20 text-emerald-100 hover:border-emerald-200/80 hover:bg-emerald-500/35"
-                        : "border-blue-300/35 bg-blue-500/15 text-blue-100 hover:border-blue-200/60 hover:bg-blue-500/25",
+                        ? "border-emerald-300/30 bg-emerald-500/12 text-emerald-100/90 hover:border-emerald-200/55 hover:bg-emerald-500/22"
+                        : "border-blue-300/25 bg-blue-500/10 text-blue-100/85 hover:border-blue-200/45 hover:bg-blue-500/18",
                     )}
                   >
                     {formatOddsPercentage(outcome.odds)}

@@ -25,6 +25,80 @@ const chunk = <T,>(arr: T[], size: number) => {
   return out;
 };
 
+const TX_TIMEOUT_MS = 120_000;
+const TX_CONFIRM_TIMEOUT_MS = 25_000;
+
+const withTxTimeout = async <T,>(promise: Promise<T>, label: string, timeoutMs: number = TX_TIMEOUT_MS): Promise<T> => {
+  return await new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`${label} is taking too long. Please check your wallet and try again.`));
+    }, timeoutMs);
+
+    promise
+      .then((result) => {
+        clearTimeout(timeout);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+  });
+};
+
+const waitForTxConfirmationIfAvailable = async (
+  account: {
+    waitForTransaction?: (txHash: string) => Promise<unknown>;
+    provider?: {
+      waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
+      waitForTransaction?: (txHash: string) => Promise<unknown>;
+    };
+  },
+  executeResult: unknown,
+  label: string,
+): Promise<boolean> => {
+  const txHash =
+    typeof executeResult === "object" &&
+    executeResult !== null &&
+    "transaction_hash" in executeResult &&
+    typeof (executeResult as { transaction_hash?: unknown }).transaction_hash === "string"
+      ? ((executeResult as { transaction_hash: string }).transaction_hash as string)
+      : null;
+
+  if (!txHash) {
+    return false;
+  }
+
+  const providerWithCheck = account.provider;
+  const waitWithCheck =
+    providerWithCheck && typeof providerWithCheck.waitForTransactionWithCheck === "function"
+      ? providerWithCheck.waitForTransactionWithCheck.bind(providerWithCheck)
+      : null;
+  const waitFromAccount = typeof account.waitForTransaction === "function" ? account.waitForTransaction.bind(account) : null;
+  const waitFromProvider =
+    providerWithCheck && typeof providerWithCheck.waitForTransaction === "function"
+      ? providerWithCheck.waitForTransaction.bind(providerWithCheck)
+      : null;
+
+  const waitFn = waitWithCheck ?? waitFromAccount ?? waitFromProvider;
+  if (!waitFn) {
+    return false;
+  }
+  try {
+    await withTxTimeout(
+      waitFn(txHash),
+      `${label} confirmation`,
+      TX_CONFIRM_TIMEOUT_MS,
+    );
+    return true;
+  } catch (error) {
+    // Keep UX responsive when providers fail to report confirmation despite successful execution.
+    // The tx is already submitted at this point.
+    toast.message("Transaction submitted. Confirmation is delayed in wallet RPC; data may update after refresh.");
+    return false;
+  }
+};
+
 const randomTrialId = () =>
   BigInt("0x" + (globalThis.crypto?.randomUUID?.().replace(/-/g, "") || Date.now().toString(16)));
 
@@ -283,12 +357,6 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
     setHasFinalRanking(Boolean(finalTrialId));
   }, [finalTrialId]);
 
-  useEffect(() => {
-    if (finalTrialId) {
-      console.debug("[MarketResolution] Final ranking trial id", finalTrialId.toString());
-    }
-  }, [finalTrialId]);
-
   const onResolve = useCallback(
     async (options: TxFeedbackOptions = {}): Promise<boolean> => {
       const { suppressErrorToast = false, suppressSuccessToast = false } = options;
@@ -321,7 +389,18 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
 
       setIsResolving(true);
       try {
-        await account.execute([resolveCall]);
+        const executeResult = await withTxTimeout(account.execute([resolveCall]), "Resolve transaction");
+        await waitForTxConfirmationIfAvailable(
+          account as {
+            waitForTransaction?: (txHash: string) => Promise<unknown>;
+            provider?: {
+              waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
+              waitForTransaction?: (txHash: string) => Promise<unknown>;
+            };
+          },
+          executeResult,
+          "Resolve transaction",
+        );
         if (!suppressSuccessToast) {
           toast.success("Market resolved");
         }
@@ -415,7 +494,18 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             entrypoint: "blitz_prize_claim_no_game",
             calldata: [solePlayer],
           };
-          await account.execute([claimCall]);
+          const executeResult = await withTxTimeout(account.execute([claimCall]), "Compute scores transaction");
+          await waitForTxConfirmationIfAvailable(
+            account as {
+              waitForTransaction?: (txHash: string) => Promise<unknown>;
+              provider?: {
+                waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
+                waitForTransaction?: (txHash: string) => Promise<unknown>;
+              };
+            },
+            executeResult,
+            "Compute scores transaction",
+          );
           setComputeStatus("Single-player claim submitted.");
           if (!suppressSuccessToast) {
             toast.success("Single registered player — prize claim submitted.");
@@ -433,7 +523,21 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             entrypoint: "blitz_prize_player_rank",
             calldata: [randomTrialId(), i === 0 ? total : 0, batch.length, ...batch],
           };
-          await account.execute([rankCall]);
+          const executeResult = await withTxTimeout(
+            account.execute([rankCall]),
+            `Compute scores transaction (batch ${i + 1}/${batches.length})`,
+          );
+          await waitForTxConfirmationIfAvailable(
+            account as {
+              waitForTransaction?: (txHash: string) => Promise<unknown>;
+              provider?: {
+                waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
+                waitForTransaction?: (txHash: string) => Promise<unknown>;
+              };
+            },
+            executeResult,
+            `Compute scores transaction (batch ${i + 1}/${batches.length})`,
+          );
         }
 
         setComputeStatus("Score computation submitted.");
@@ -489,7 +593,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
     } finally {
       setIsResolvingWithCompute(false);
     }
-  }, [hasFinalRanking, isSubmittingTx, onComputeScores, onResolve]);
+  }, [hasFinalRanking, isSubmittingTx, market.market_id, onComputeScores, onResolve]);
 
   const canComputeScores =
     market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done" && !hasFinalRanking;
