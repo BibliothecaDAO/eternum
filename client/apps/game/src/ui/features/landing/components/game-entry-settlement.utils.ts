@@ -6,7 +6,7 @@ export type SettlementSnapshot = {
   settledCount: number;
 };
 
-export type SettlementStatus = {
+type SettlementStatus = {
   assignedCount: number;
   settledCount: number;
   remainingToSettle: number;
@@ -34,7 +34,7 @@ export const deriveSettlementStatus = (snapshot: SettlementSnapshot): Settlement
   };
 };
 
-export type SettlementExecutionPlan = {
+type SettlementExecutionPlan = {
   targetSettleCount: number;
   shouldAssignAndSettle: boolean;
   initialSettleCount: number;

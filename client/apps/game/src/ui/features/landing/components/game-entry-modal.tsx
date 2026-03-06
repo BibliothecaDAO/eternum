@@ -690,9 +690,10 @@ export const GameEntryModal = ({
     const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
 
     const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
-    const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId) as
-      | { registered?: boolean; once_registered?: boolean }
-      | null;
+    const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId) as {
+      registered?: boolean;
+      once_registered?: boolean;
+    } | null;
     const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
     const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
 
@@ -717,7 +718,10 @@ export const GameEntryModal = ({
   );
 
   const waitForSettlementTarget = useCallback(
-    async (targetSettleCount: number, timeoutMs = SETTLEMENT_PROGRESS_TIMEOUT_MS): Promise<SettlementSnapshot | null> => {
+    async (
+      targetSettleCount: number,
+      timeoutMs = SETTLEMENT_PROGRESS_TIMEOUT_MS,
+    ): Promise<SettlementSnapshot | null> => {
       const startedAt = Date.now();
       let latestSnapshot: SettlementSnapshot | null = null;
 
