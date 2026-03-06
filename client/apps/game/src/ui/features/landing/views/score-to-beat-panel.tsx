@@ -12,6 +12,7 @@ import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
 
+import { SCORE_TO_BEAT_STATIC_GAMES } from "@/services/leaderboard/landing-leaderboard-service";
 import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
 
 const MAX_GAMES = 10;
@@ -168,9 +169,10 @@ const getSelectorCountLabel = (count: number, singular: string, plural: string):
 
 export const ScoreToBeatPanel = () => {
   const [selectedChain, setSelectedChain] = useState<Chain>(() => loadStoredChain() ?? "mainnet");
-  const [selectedGames, setSelectedGames] = useState<string[]>(() =>
-    (loadStoredSelectedGames() ?? []).slice(0, MAX_GAMES),
-  );
+  const [selectedGames, setSelectedGames] = useState<string[]>(() => {
+    const storedGames = loadStoredSelectedGames();
+    return (storedGames ?? [...SCORE_TO_BEAT_STATIC_GAMES]).slice(0, MAX_GAMES);
+  });
   const [selectedSeries, setSelectedSeries] = useState<string[]>(() => loadStoredSelectedSeries() ?? []);
   const [runsToAggregate, setRunsToAggregate] = useState<number>(
     () => loadStoredRunsToAggregate() ?? DEFAULT_RUNS_TO_AGGREGATE,
@@ -200,7 +202,12 @@ export const ScoreToBeatPanel = () => {
     });
   }, [factoryWorlds, worldAvailability, selectedChain]);
 
-  const availableGameNamesSet = useMemo(() => new Set(availableGames.map((game) => game.name)), [availableGames]);
+  const availableGameNames = useMemo(
+    () => Array.from(new Set([...SCORE_TO_BEAT_STATIC_GAMES, ...availableGames.map((game) => game.name)])),
+    [availableGames],
+  );
+
+  const availableGameNamesSet = useMemo(() => new Set(availableGameNames), [availableGameNames]);
 
   const availableSeries = useMemo(() => {
     return factorySeries
@@ -333,17 +340,39 @@ export const ScoreToBeatPanel = () => {
   ].join(" + ");
 
   const isSelectorLoading = isLoadingGames || isCheckingWorlds || isLoadingSeries;
-  const selectorAvailabilityCount = selectorMode === "games" ? availableGames.length : availableSeries.length;
+  const selectorAvailabilityCount = selectorMode === "games" ? availableGameNames.length : availableSeries.length;
 
   const handleDownloadData = () => {
     if (scoreToBeatTopTen.length === 0 || typeof window === "undefined") return;
 
     const rows = [
-      ["Rank", "Display name", "Address", "Score", "Run 1 score", "Run 2 score", "Run 3 score"],
+      [
+        "Rank",
+        "Display name",
+        "Address",
+        "Score",
+        "Run 1 score",
+        "Run 2 score",
+        "Run 3 score",
+        `${SCORE_TO_BEAT_STATIC_GAMES[0]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[1]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[2]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[3]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[0]} chests`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[1]} chests`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[2]} chests`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[3]} chests`,
+      ],
       ...scoreToBeatTopTen.map((entry, index) => {
         const run1 = entry.runs[0]?.points ?? "";
         const run2 = entry.runs[1]?.points ?? "";
         const run3 = entry.runs[2]?.points ?? "";
+        const staticGamePoints = SCORE_TO_BEAT_STATIC_GAMES.map(
+          (game) => entry.staticGames.find((stat) => stat.game === game)?.points ?? 0,
+        );
+        const staticGameChests = SCORE_TO_BEAT_STATIC_GAMES.map(
+          (game) => entry.staticGames.find((stat) => stat.game === game)?.chests ?? 0,
+        );
 
         return [
           `${index + 1}`,
@@ -353,6 +382,14 @@ export const ScoreToBeatPanel = () => {
           `${run1}`,
           `${run2}`,
           `${run3}`,
+          `${staticGamePoints[0]}`,
+          `${staticGamePoints[1]}`,
+          `${staticGamePoints[2]}`,
+          `${staticGamePoints[3]}`,
+          `${staticGameChests[0]}`,
+          `${staticGameChests[1]}`,
+          `${staticGameChests[2]}`,
+          `${staticGameChests[3]}`,
         ];
       }),
     ];
@@ -507,23 +544,23 @@ export const ScoreToBeatPanel = () => {
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
               </div>
             ) : selectorMode === "games" ? (
-              availableGames.length === 0 ? (
+              availableGameNames.length === 0 ? (
                 <p className="py-4 text-center text-sm text-gold/50">
                   No games with active indexers on {selectedChain}
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                  {availableGames.map((game) => {
-                    const isSelected = selectedGames.includes(game.name);
+                  {availableGameNames.map((gameName) => {
+                    const isSelected = selectedGames.includes(gameName);
                     const isDisabled =
                       !isSelected &&
-                      resolveSelectedGameNames([...selectedGames, game.name], selectedSeries, availableSeriesByName)
+                      resolveSelectedGameNames([...selectedGames, gameName], selectedSeries, availableSeriesByName)
                         .length > MAX_GAMES;
                     return (
                       <button
-                        key={game.name}
+                        key={gameName}
                         type="button"
-                        onClick={() => handleToggleGame(game.name)}
+                        onClick={() => handleToggleGame(gameName)}
                         disabled={isDisabled}
                         className={`rounded-lg px-3 py-2 text-left text-sm transition ${
                           isSelected
@@ -533,7 +570,7 @@ export const ScoreToBeatPanel = () => {
                               : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                         }`}
                       >
-                        <span className="block truncate">{game.name}</span>
+                        <span className="block truncate">{gameName}</span>
                       </button>
                     );
                   })}
