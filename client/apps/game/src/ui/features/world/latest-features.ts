@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-06",
+    title: "Tournament Series Selection",
+    description:
+      "Score to Beat in the Tournaments tab now lets you select either individual games or full series, automatically expanding each series into its indexed games for faster multi-game leaderboard setup.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-06",
     title: "Reliable Mainnet Realm Settlement",
     description:
       "Fixed cases where mainnet settlement could stop after the first realm. Settlement now resumes correctly from partial progress and waits for confirmed transactions so all expected realms are created.",
