@@ -10,6 +10,8 @@ describe("useClaimablePayout SQL buys fallback source", () => {
 
     expect(source).toContain("fetchMarketBuyOutcomesByMarketAndAccount");
     expect(source).toContain("claimableAmountFromBuys");
-    expect(source).toContain("claimableAmountFromBalances > 0n ? claimableAmountFromBalances : claimableAmountFromBuys");
+    expect(source).toContain(
+      "claimableAmountFromBalances > 0n ? claimableAmountFromBalances : claimableAmountFromBuys",
+    );
   });
 });

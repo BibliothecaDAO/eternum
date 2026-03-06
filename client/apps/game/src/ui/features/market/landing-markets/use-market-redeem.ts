@@ -20,7 +20,7 @@ type MarketDataChain = "slot" | "mainnet";
 const CLAIM_TX_TIMEOUT_MS = 120_000;
 const CLAIM_CONFIRM_TIMEOUT_MS = 45_000;
 
-const withTimeout = async <T,>(promise: Promise<T>, label: string, timeoutMs: number): Promise<T> => {
+const withTimeout = async <T>(promise: Promise<T>, label: string, timeoutMs: number): Promise<T> => {
   return await new Promise<T>((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)}s`));

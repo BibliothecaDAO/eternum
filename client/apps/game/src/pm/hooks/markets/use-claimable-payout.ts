@@ -202,7 +202,15 @@ export const useClaimablePayout = (market?: MarketClass, accountAddress?: string
       });
       return sum + valueRaw;
     }, 0n);
-  }, [hasRedemptionEventForCondition, market, paddedAccountAddress, payoutNumerators, positionIds, userBuyRows, vaultPositionsAddress]);
+  }, [
+    hasRedemptionEventForCondition,
+    market,
+    paddedAccountAddress,
+    payoutNumerators,
+    positionIds,
+    userBuyRows,
+    vaultPositionsAddress,
+  ]);
 
   const claimableAmount = useMemo(() => {
     return claimableAmountFromBalances > 0n ? claimableAmountFromBalances : claimableAmountFromBuys;

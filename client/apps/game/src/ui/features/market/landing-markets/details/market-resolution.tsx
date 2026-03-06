@@ -74,7 +74,8 @@ const waitForTxConfirmationIfAvailable = async (
     providerWithCheck && typeof providerWithCheck.waitForTransactionWithCheck === "function"
       ? providerWithCheck.waitForTransactionWithCheck.bind(providerWithCheck)
       : null;
-  const waitFromAccount = typeof account.waitForTransaction === "function" ? account.waitForTransaction.bind(account) : null;
+  const waitFromAccount =
+    typeof account.waitForTransaction === "function" ? account.waitForTransaction.bind(account) : null;
   const waitFromProvider =
     providerWithCheck && typeof providerWithCheck.waitForTransaction === "function"
       ? providerWithCheck.waitForTransaction.bind(providerWithCheck)
@@ -85,11 +86,7 @@ const waitForTxConfirmationIfAvailable = async (
     return false;
   }
   try {
-    await withTxTimeout(
-      waitFn(txHash),
-      `${label} confirmation`,
-      TX_CONFIRM_TIMEOUT_MS,
-    );
+    await withTxTimeout(waitFn(txHash), `${label} confirmation`, TX_CONFIRM_TIMEOUT_MS);
     return true;
   } catch (error) {
     // Keep UX responsive when providers fail to report confirmation despite successful execution.

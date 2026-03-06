@@ -416,7 +416,7 @@ const MarketDetailsModalContent = ({
         : "Submitting..."
     : isResolveActionPending
       ? "Submitting..."
-    : resolveOneClickIdleLabel;
+      : resolveOneClickIdleLabel;
   const resolveOneClickTitle = resolveOneClickDisabled
     ? !resolutionController.canResolve
       ? "Resolution opens after the resolve time."
@@ -646,7 +646,12 @@ const MarketDetailsModalContent = ({
 
           <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
             <div className="flex flex-col gap-4">
-              <MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} chain={chain} />
+              <MarketTrade
+                market={market}
+                selectedOutcome={selectedOutcome}
+                onTradeSuccess={handleTradeSuccess}
+                chain={chain}
+              />
               <MarketFees market={market} />
             </div>
           </div>

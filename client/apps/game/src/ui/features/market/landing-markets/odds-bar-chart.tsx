@@ -107,7 +107,9 @@ export const OddsBarChart = ({ market, maxVisible = 5, animated = true }: OddsBa
               <span
                 className={cx(
                   "ml-2 inline-flex h-6 w-[74px] flex-shrink-0 items-center justify-center rounded border text-center font-mono font-medium tabular-nums",
-                  isWinner ? "border-brilliance/40 bg-brilliance/10 text-brilliance" : "border-gold/20 bg-gold/10 text-gold",
+                  isWinner
+                    ? "border-brilliance/40 bg-brilliance/10 text-brilliance"
+                    : "border-gold/20 bg-gold/10 text-gold",
                 )}
               >
                 {oddsPercent > 0 ? `${oddsPercent < 1 ? oddsPercent.toFixed(2) : oddsPercent.toFixed(1)}%` : "--"}

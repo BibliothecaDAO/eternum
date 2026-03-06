@@ -511,9 +511,7 @@ const GameCard = ({
                     <span>Won {formatLordsDisplayMaxTwoDecimals(marketClaimableDisplay)}</span>
                     <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="shrink-0 align-middle" />
                   </span>
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-gold">
-                    Open To Claim
-                  </span>
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-gold">Open To Claim</span>
                 </button>
               ) : null}
 

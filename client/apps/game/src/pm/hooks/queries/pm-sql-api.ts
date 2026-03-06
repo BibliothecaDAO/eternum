@@ -438,10 +438,10 @@ class PmSqlApi {
   ): Promise<PayoutRedemptionRow | null> {
     const safeRedeemer = redeemer.replace(/'/g, "''").toLowerCase();
     const safeConditionId = conditionId.replace(/'/g, "''").toLowerCase();
-    const query = PM_SQL_QUERIES.PAYOUT_REDEMPTION_BY_REDEEMER_AND_CONDITION.replace("{redeemer}", safeRedeemer).replace(
-      "{conditionId}",
-      safeConditionId,
-    );
+    const query = PM_SQL_QUERIES.PAYOUT_REDEMPTION_BY_REDEEMER_AND_CONDITION.replace(
+      "{redeemer}",
+      safeRedeemer,
+    ).replace("{conditionId}", safeConditionId);
     const url = buildApiUrl(this.baseUrl, query);
     const results = await fetchWithErrorHandling<PayoutRedemptionRow>(
       url,
