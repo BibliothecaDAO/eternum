@@ -22,13 +22,13 @@ function isPmDebugEnabled(): boolean {
   return flagValue === true;
 }
 
-export const useClaimablePayout = (market: MarketClass, accountAddress?: string, chainOverride?: MarketDataChain) => {
+export const useClaimablePayout = (market?: MarketClass, accountAddress?: string, chainOverride?: MarketDataChain) => {
   const {
     config: { manifest },
   } = useDojoSdk();
   const chain = chainOverride ?? getPredictionMarketChain();
 
-  const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
+  const positionIds = useMemo(() => (market?.position_ids || []).map((id) => BigInt(id || 0)), [market?.position_ids]);
   const accountAddressFilters = useMemo(() => {
     if (!accountAddress) return undefined;
     const variants = new Set<string>();
@@ -47,35 +47,35 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
   }, [accountAddress]);
 
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
-  const hasPayoutNumerators = Boolean(market.conditionResolution?.payout_numerators?.length);
+  const hasPayoutNumerators = Boolean(market?.conditionResolution?.payout_numerators?.length);
   const conditionIdHex = useMemo(() => {
     try {
-      return addAddressPadding(`0x${BigInt(market.condition_id || 0).toString(16)}`).toLowerCase();
+      return addAddressPadding(`0x${BigInt(market?.condition_id || 0).toString(16)}`).toLowerCase();
     } catch {
       return null;
     }
-  }, [market.condition_id]);
+  }, [market?.condition_id]);
   const oracleHex = useMemo(() => {
     try {
-      return addAddressPadding(`0x${BigInt(market.oracle || 0).toString(16)}`).toLowerCase();
+      return addAddressPadding(`0x${BigInt(market?.oracle || 0).toString(16)}`).toLowerCase();
     } catch {
       return null;
     }
-  }, [market.oracle]);
+  }, [market?.oracle]);
   const questionIdHex = useMemo(() => {
     try {
-      return addAddressPadding(`0x${BigInt(market.question_id || 0).toString(16)}`).toLowerCase();
+      return addAddressPadding(`0x${BigInt(market?.question_id || 0).toString(16)}`).toLowerCase();
     } catch {
       return null;
     }
-  }, [market.question_id]);
+  }, [market?.question_id]);
   const marketIdHex = useMemo(() => {
     try {
-      return addAddressPadding(`0x${BigInt(market.market_id || 0).toString(16)}`).toLowerCase();
+      return addAddressPadding(`0x${BigInt(market?.market_id || 0).toString(16)}`).toLowerCase();
     } catch {
       return null;
     }
-  }, [market.market_id]);
+  }, [market?.market_id]);
   const paddedAccountAddress = useMemo(() => {
     if (!accountAddress) return null;
     try {
@@ -87,7 +87,7 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
 
   const { data: conditionResolutionRow } = useQuery({
     queryKey: ["pm", "condition-resolution", chain, conditionIdHex, oracleHex, questionIdHex],
-    enabled: Boolean(market.isResolved() && !hasPayoutNumerators && conditionIdHex && oracleHex && questionIdHex),
+    enabled: Boolean(market?.isResolved() && !hasPayoutNumerators && conditionIdHex && oracleHex && questionIdHex),
     queryFn: async () => {
       if (!conditionIdHex || !oracleHex || !questionIdHex) return null;
       return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchConditionResolutionByKeys(
@@ -100,7 +100,7 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
   });
 
   const payoutNumerators = useMemo<Array<bigint> | undefined>(() => {
-    const marketPayouts = market.conditionResolution?.payout_numerators;
+    const marketPayouts = market?.conditionResolution?.payout_numerators;
     if (marketPayouts && marketPayouts.length > 0) {
       return marketPayouts.map((value) => BigInt(value));
     }
@@ -113,7 +113,7 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
     } catch {
       return undefined;
     }
-  }, [conditionResolutionRow?.payout_numerators, market.conditionResolution?.payout_numerators]);
+  }, [conditionResolutionRow?.payout_numerators, market?.conditionResolution?.payout_numerators]);
   const { data: userBuyRows = [] } = useQuery({
     queryKey: ["pm", "claimable-payout", "market-buys", chain, marketIdHex, paddedAccountAddress],
     enabled: Boolean(marketIdHex && paddedAccountAddress),
@@ -148,7 +148,7 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
   }, [accountAddress, balances, positionIds]);
 
   const claimableAmountFromBalances = useMemo(() => {
-    if (!market.isResolved()) return 0n;
+    if (!market?.isResolved()) return 0n;
 
     return balances.reduce((acc, balance) => {
       const tokenId = BigInt(balance.token_id || 0);
@@ -165,7 +165,7 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
     }, 0n);
   }, [balances, market, payoutNumerators, positionIds]);
   const claimableAmountFromBuys = useMemo(() => {
-    if (!market.isResolved()) return 0n;
+    if (!market?.isResolved()) return 0n;
     if (userBuyRows.length === 0) return 0n;
 
     return userBuyRows.reduce((sum, row) => {
@@ -205,10 +205,10 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
   }, [hasRedeemableFromBalances, claimableAmountFromBuys]);
 
   const claimableDisplay = useMemo(() => {
-    const decimals = Number(market.collateralToken?.decimals ?? 18);
+    const decimals = Number(market?.collateralToken?.decimals ?? 18);
     const formatted = formatUnits(claimableAmount, decimals, 4);
     return Number(formatted || 0) > 0 ? formatted : "0";
-  }, [claimableAmount, market.collateralToken?.decimals]);
+  }, [claimableAmount, market?.collateralToken?.decimals]);
 
   useEffect(() => {
     if (!isPmDebugEnabled()) return;
@@ -224,11 +224,11 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
     console.log("[PM_DEBUG][useClaimablePayout]", {
       chain,
       accountAddress,
-      marketId: market.market_id?.toString?.() ?? String(market.market_id),
+      marketId: market?.market_id?.toString?.() ?? String(market?.market_id ?? 0),
       conditionIdHex,
       oracleHex,
       questionIdHex,
-      hasMarketConditionResolution: Boolean(market.conditionResolution?.payout_numerators?.length),
+      hasMarketConditionResolution: Boolean(market?.conditionResolution?.payout_numerators?.length),
       payoutNumerators: payoutNumerators?.map((value) => value.toString()) ?? null,
       matchedBalances,
       userBuyRowsCount: userBuyRows.length,
@@ -245,8 +245,8 @@ export const useClaimablePayout = (market: MarketClass, accountAddress?: string,
     claimableDisplay,
     conditionIdHex,
     hasRedeemablePositions,
-    market.conditionResolution?.payout_numerators,
-    market.market_id,
+    market?.conditionResolution?.payout_numerators,
+    market?.market_id,
     oracleHex,
     paddedAccountAddress,
     payoutNumerators,

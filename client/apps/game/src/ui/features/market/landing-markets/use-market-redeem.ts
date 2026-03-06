@@ -39,11 +39,7 @@ export const useMarketRedeem = (market?: MarketClass, chainOverride?: MarketData
   const { config } = useDojoSdk();
   const [isRedeeming, setIsRedeeming] = useState(false);
 
-  const { claimableAmount, hasRedeemablePositions } = useClaimablePayout(
-    market as MarketClass,
-    accountAddress,
-    chainOverride,
-  );
+  const { claimableAmount, hasRedeemablePositions } = useClaimablePayout(market, accountAddress, chainOverride);
 
   // Vault fees calculation
   const vaultFeesAddress = useMemo(
@@ -61,7 +57,16 @@ export const useMarketRedeem = (market?: MarketClass, chainOverride?: MarketData
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allBalances, getBalances, vaultFeesAddress]);
 
-  const { fees: vaultFees } = useProtocolFees(market?.market_id || "");
+  const marketIdForProtocolFees = useMemo(() => {
+    if (market?.market_id == null) return 0n;
+    try {
+      return BigInt(market.market_id);
+    } catch {
+      return 0n;
+    }
+  }, [market?.market_id]);
+
+  const { fees: vaultFees } = useProtocolFees(marketIdForProtocolFees.toString());
 
   const { data: addressProtocolFees } = useQuery({
     queryKey: ["pm", "protocol-fees", "address", chain, accountAddress],

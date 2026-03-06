@@ -21,6 +21,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
 import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
+import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
 import {
   getChainLabel,
   resolveConnectedTxChainFromRuntime,
@@ -288,6 +289,10 @@ const GameCard = ({
   const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
   const marketChain = marketSnapshot?.chain;
   const marketCanTrade = marketChain ? canInteractOnChain(marketChain) : true;
+  const { claimableDisplay: marketClaimableDisplay, hasAnythingToClaim: hasMarketWinningsToClaim } = useMarketRedeem(
+    marketSnapshot?.market,
+    marketSnapshot?.chain,
+  );
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
   const [switchPromptContext, setSwitchPromptContext] = useState<"game" | "market">("game");
@@ -492,6 +497,22 @@ const GameCard = ({
             </div>
 
             <div className="mt-2 space-y-1.5">
+              {hasMarketWinningsToClaim ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenMarket()}
+                  className="flex w-full items-center justify-between gap-2 rounded border border-gold/40 bg-gold/10 px-2 py-1.5 text-left transition-colors hover:border-gold/70 hover:bg-gold/20"
+                >
+                  <span className="inline-flex items-center gap-1 leading-none text-[10px] font-semibold uppercase tracking-[0.12em] text-gold/75">
+                    <span>Won {formatLordsDisplayMaxTwoDecimals(marketClaimableDisplay)}</span>
+                    <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="shrink-0 align-middle" />
+                  </span>
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-gold">
+                    Open To Claim
+                  </span>
+                </button>
+              ) : null}
+
               {marketSnapshot.topOutcomes.map((outcome) => (
                 <div key={`${game.worldKey}-${outcome.index}`} className="flex items-center justify-between gap-2">
                   <p className="min-w-0 truncate text-[11px] text-white/85">
