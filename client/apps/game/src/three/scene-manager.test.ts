@@ -122,4 +122,88 @@ describe("SceneManager transition baseline", () => {
     expect(hexSetup).not.toHaveBeenCalled();
     expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
   });
+
+  it("keeps the previous scene active and restores the loading state when the target scene setup fails", async () => {
+    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
+    const transitionManager = {
+      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
+        fadeOutCallbacks.push(callback);
+      }),
+      fadeIn: vi.fn(),
+    };
+
+    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
+    const worldMapMoveCamera = vi.fn();
+
+    sceneManager.addScene(SceneName.WorldMap, {
+      setup: vi.fn(async () => {}),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: worldMapMoveCamera,
+    } as unknown as HexagonScene);
+
+    sceneManager.addScene(SceneName.Hexception, {
+      setup: vi.fn(async () => {
+        throw new Error("setup failed");
+      }),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    await fadeOutCallbacks[0]();
+
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
+    expect(transitionManager.fadeIn).toHaveBeenCalledTimes(1);
+
+    sceneManager.switchScene(SceneName.Hexception);
+    await fadeOutCallbacks[1]();
+
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
+    expect(transitionManager.fadeIn).toHaveBeenCalledTimes(2);
+    expect(worldMapMoveCamera).toHaveBeenCalledTimes(1);
+  });
+
+  it("can complete a later valid transition after a failed setup", async () => {
+    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
+    const transitionManager = {
+      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
+        fadeOutCallbacks.push(callback);
+      }),
+      fadeIn: vi.fn(),
+    };
+
+    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
+
+    sceneManager.addScene(SceneName.WorldMap, {
+      setup: vi.fn(async () => {}),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
+
+    sceneManager.addScene(SceneName.Hexception, {
+      setup: vi.fn(async () => {
+        throw new Error("setup failed");
+      }),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    await fadeOutCallbacks[0]();
+
+    sceneManager.switchScene(SceneName.Hexception);
+    await fadeOutCallbacks[1]();
+
+    sceneManager.addScene(SceneName.Hexception, {
+      setup: vi.fn(async () => {}),
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
+
+    sceneManager.switchScene(SceneName.Hexception);
+    await fadeOutCallbacks[2]();
+
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+    expect(transitionManager.fadeIn).toHaveBeenCalledTimes(3);
+  });
 });

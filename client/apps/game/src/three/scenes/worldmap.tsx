@@ -1188,6 +1188,19 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private clearFollowCameraTimeout(resetFollowState = false) {
+    if (this.followCameraTimeout) {
+      clearTimeout(this.followCameraTimeout);
+      this.followCameraTimeout = null;
+    }
+
+    if (resetFollowState) {
+      const store = useUIStore.getState();
+      store.setIsFollowingArmy(false);
+      store.setFollowingArmyMessage(null);
+    }
+  }
+
   private focusCameraOnEvent(col: number, row: number, message: string) {
     this.moveCameraToColRow(col, row, 2);
 
@@ -1195,10 +1208,7 @@ export default class WorldmapScene extends HexagonScene {
     uiStore.setFollowingArmyMessage(message);
     uiStore.setIsFollowingArmy(true);
 
-    if (this.followCameraTimeout) {
-      clearTimeout(this.followCameraTimeout);
-    }
-
+    this.clearFollowCameraTimeout();
     this.followCameraTimeout = setTimeout(() => {
       const store = useUIStore.getState();
       store.setIsFollowingArmy(false);
@@ -2371,6 +2381,7 @@ export default class WorldmapScene extends HexagonScene {
 
   onSwitchOff() {
     this.isSwitchedOff = true;
+    this.clearFollowCameraTimeout(true);
     const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
       chunkTransitionToken: this.chunkTransitionToken,
       isChunkTransitioning: this.isChunkTransitioning,

@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
@@ -8,6 +7,7 @@ import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-
 import {
   getSceneWarmupProgress,
   resolveEntryOverlayPhase,
+  resolvePlayerBootstrapHandoff,
   waitForHexceptionGridReady,
 } from "./game-loading-overlay.utils";
 import { useNavigate } from "react-router-dom";
@@ -77,19 +77,21 @@ export const GameLoadingOverlay = () => {
     hasStartedPlayerFlow.current = true;
 
     const first = playerStructures[0];
-    const normalized = new Position({ x: first.position.x, y: first.position.y }).getNormalized();
-
-    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
-    setStructureEntityId(first.entityId, {
-      spectator: false,
-      worldMapPosition: { col: normalized.x, row: normalized.y },
+    const handoff = resolvePlayerBootstrapHandoff({
+      entityId: first.entityId,
+      position: first.position,
     });
 
-    const targetCoords = { col: normalized.x, row: normalized.y };
+    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
+    setStructureEntityId(handoff.structureEntityId, {
+      spectator: false,
+      worldMapPosition: handoff.worldMapPosition,
+    });
+
+    const targetCoords = handoff.worldMapPosition;
     const ready = waitForHexceptionGridReady(targetCoords, HEXCEPTION_READY_TIMEOUT_MS);
 
-    const url = `/play/hex?col=${normalized.x}&row=${normalized.y}`;
-    navigate(url);
+    navigate(handoff.targetUrl);
     window.dispatchEvent(new Event("urlChanged"));
 
     void ready.then(() => {

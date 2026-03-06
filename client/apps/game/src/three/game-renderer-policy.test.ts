@@ -3,6 +3,7 @@ import {
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
   resolvePostProcessingEffectPlan,
+  resolveToneMappingAuthorityPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
 
@@ -158,6 +159,22 @@ describe("resolvePostProcessingEffectPlan", () => {
       shouldEnableBloom: true,
       shouldEnableVignette: true,
       shouldEnableChromaticAberration: true,
+    });
+  });
+});
+
+describe("resolveToneMappingAuthorityPlan", () => {
+  it("uses composer tone mapping and disables renderer tone mapping when post-processing is active", () => {
+    expect(resolveToneMappingAuthorityPlan({ postProcessingEnabled: true })).toEqual({
+      shouldUseComposerToneMapping: true,
+      shouldUseRendererToneMapping: false,
+    });
+  });
+
+  it("preserves renderer tone mapping when post-processing is disabled", () => {
+    expect(resolveToneMappingAuthorityPlan({ postProcessingEnabled: false })).toEqual({
+      shouldUseComposerToneMapping: false,
+      shouldUseRendererToneMapping: true,
     });
   });
 });

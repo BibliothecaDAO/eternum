@@ -28,6 +28,7 @@ import { getWorldKey } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import { resolveBootstrapGameUrl } from "@/ui/layouts/game-loading-overlay.utils";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
 
@@ -950,9 +951,9 @@ export const GameEntryModal = ({
       worldMapPosition: { col: 0, row: 0 },
     });
 
-    // Navigate with placeholder coords (0,0). The loading overlay will
+    // Navigate with placeholder coords (0,0) on the world map. The loading overlay will
     // re-navigate to the player's realm once structures are available.
-    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
+    const url = resolveBootstrapGameUrl({ isSpectating: isSpectateMode });
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
   }, [navigate, isSpectateMode]);

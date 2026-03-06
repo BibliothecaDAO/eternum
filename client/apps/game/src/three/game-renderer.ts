@@ -57,6 +57,7 @@ import {
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
   resolvePostProcessingEffectPlan,
+  resolveToneMappingAuthorityPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
 import { transitionDB } from "./utils/";
@@ -158,6 +159,7 @@ export default class GameRenderer {
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private environmentTarget?: WebGLRenderTarget;
+  private environmentLoadToken = 0;
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
   private readonly isMobileDevice = IS_MOBILE;
@@ -841,12 +843,21 @@ export default class GameRenderer {
   private setupPostProcessingEffects() {
     const effectsConfig = this.getPostProcessingConfig();
     if (!effectsConfig) {
+      this.applyToneMappingAuthority(false);
       return; // Skip post-processing for low graphics settings
     }
     this.postProcessingConfig = effectsConfig;
     this.toneMappingEffect = this.createToneMappingEffect(effectsConfig);
+    this.applyToneMappingAuthority(true);
     this.rebuildPostProcessing(qualityController.getFeatures());
     this.setupPostProcessingGUI(effectsConfig);
+  }
+
+  private applyToneMappingAuthority(postProcessingEnabled: boolean) {
+    const toneMappingPlan = resolveToneMappingAuthorityPlan({ postProcessingEnabled });
+    this.renderer.toneMapping = toneMappingPlan.shouldUseRendererToneMapping
+      ? ACESFilmicToneMapping
+      : NoToneMapping;
   }
 
   private createToneMappingEffect(config: PostProcessingConfig) {
@@ -974,6 +985,7 @@ export default class GameRenderer {
   }
 
   applyEnvironment() {
+    const environmentLoadToken = ++this.environmentLoadToken;
     const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
 
@@ -982,6 +994,12 @@ export default class GameRenderer {
 
     this.loadCachedEnvironmentMap(pmremGenerator)
       .then((target) => {
+        if (!this.shouldApplyEnvironmentTarget(environmentLoadToken)) {
+          if (target !== cachedHDRTarget) {
+            target.dispose();
+          }
+          return;
+        }
         this.setEnvironmentFromTarget(target, 0.1);
       })
       .catch((error) => {
@@ -992,7 +1010,15 @@ export default class GameRenderer {
       });
   }
 
+  private shouldApplyEnvironmentTarget(environmentLoadToken: number) {
+    return !this.isDestroyed && environmentLoadToken === this.environmentLoadToken;
+  }
+
   private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, intensity: number) {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const envMap = renderTarget.texture;
     this.hexceptionScene.setEnvironment(envMap, intensity);
     this.worldmapScene.setEnvironment(envMap, intensity);
@@ -1329,6 +1355,7 @@ export default class GameRenderer {
     }
 
     this.isDestroyed = true;
+    this.environmentLoadToken += 1;
 
     try {
       // Clean up memory monitor timeout

@@ -1,3 +1,5 @@
+import { Position } from "@bibliothecadao/eternum";
+
 export const HEXCEPTION_GRID_READY_EVENT = "hexception:grid-ready";
 
 type GridCoordinates = {
@@ -6,6 +8,30 @@ type GridCoordinates = {
 };
 
 type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "ready";
+
+export const resolveBootstrapGameUrl = ({ isSpectating }: { isSpectating: boolean }): string => {
+  if (isSpectating) {
+    return "/play/map?col=0&row=0&spectate=true";
+  }
+
+  return "/play/map?col=0&row=0";
+};
+
+export const resolvePlayerBootstrapHandoff = <TEntityId>({
+  entityId,
+  position,
+}: {
+  entityId: TEntityId;
+  position: { x: number; y: number };
+}) => {
+  const normalized = new Position({ x: position.x, y: position.y }).getNormalized();
+
+  return {
+    structureEntityId: entityId,
+    targetUrl: `/play/hex?col=${normalized.x}&row=${normalized.y}`,
+    worldMapPosition: { col: normalized.x, row: normalized.y },
+  };
+};
 
 export const getSceneWarmupProgress = (elapsedMs: number): number => {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 82;

@@ -1,5 +1,139 @@
-// @vitest-environment jsdom
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const pmremInstances: Array<{
+  compileEquirectangularShader: ReturnType<typeof vi.fn>;
+  fromScene: ReturnType<typeof vi.fn>;
+  dispose: ReturnType<typeof vi.fn>;
+}> = [];
+const pmremFallbackTargets: any[] = [];
+
+class FakeElement {
+  id = "";
+  parentElement: FakeElement | null = null;
+  parentNode: FakeElement | null = null;
+  style: Record<string, string> = {};
+  private children: FakeElement[] = [];
+  private connected = false;
+
+  constructor(public readonly tagName: string) {}
+
+  get childElementCount() {
+    return this.children.length;
+  }
+
+  get isConnected() {
+    return this.connected;
+  }
+
+  set innerHTML(_value: string) {
+    this.replaceChildren();
+  }
+
+  appendChild(child: FakeElement) {
+    child.parentElement = this;
+    child.parentNode = this;
+    child.setConnected(this.connected);
+    this.children.push(child);
+    return child;
+  }
+
+  removeChild(child: FakeElement) {
+    this.children = this.children.filter((candidate) => candidate !== child);
+    child.parentElement = null;
+    child.parentNode = null;
+    child.setConnected(false);
+    return child;
+  }
+
+  replaceChildren(...nextChildren: FakeElement[]) {
+    for (const child of this.children) {
+      child.parentElement = null;
+      child.parentNode = null;
+      child.setConnected(false);
+    }
+
+    this.children = [];
+    for (const child of nextChildren) {
+      this.appendChild(child);
+    }
+  }
+
+  remove() {
+    this.parentElement?.removeChild(this);
+  }
+
+  findById(id: string): FakeElement | null {
+    if (this.id === id) {
+      return this;
+    }
+
+    for (const child of this.children) {
+      const match = child.findById(id);
+      if (match) {
+        return match;
+      }
+    }
+
+    return null;
+  }
+
+  private setConnected(isConnected: boolean) {
+    this.connected = isConnected;
+    for (const child of this.children) {
+      child.setConnected(isConnected);
+    }
+  }
+}
+
+const documentBody = new FakeElement("body");
+const documentHead = new FakeElement("head");
+(documentBody as any).connected = true;
+(documentHead as any).connected = true;
+
+const documentStub = {
+  body: documentBody,
+  head: documentHead,
+  createElement: (tagName: string) => new FakeElement(tagName),
+  getElementById: (id: string) => documentBody.findById(id) ?? documentHead.findById(id),
+  addEventListener: () => {},
+  removeEventListener: () => {},
+};
+
+const windowStub = {
+  innerWidth: 1280,
+  innerHeight: 720,
+  devicePixelRatio: 1,
+  location: { href: "https://example.test/" },
+  addEventListener: () => {},
+  removeEventListener: () => {},
+};
+
+const localStorageStub = (() => {
+  const store = new Map<string, string>();
+  return {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => {
+      store.clear();
+    },
+  };
+})();
+
+Object.assign(globalThis, {
+  document: documentStub,
+  window: windowStub,
+  localStorage: localStorageStub,
+  navigator: {
+    userAgent: "node-test",
+  },
+  HTMLInputElement: class HTMLInputElement {},
+});
 
 vi.mock("@bibliothecadao/eternum", () => {
   const scalar = new Proxy(
@@ -59,6 +193,35 @@ vi.mock("@bibliothecadao/types", () => {
 vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} }));
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
+vi.mock("@/three/scenes/hexagon-scene", () => ({ CameraView: {} }));
+vi.mock("@/services/api", () => ({ sqlApi: {} }));
+vi.mock("@/three/utils/", () => ({
+  GUIManager: {
+    addFolder: () => ({
+      add: () => ({ name: () => ({ onChange: () => undefined }) }),
+      close: () => undefined,
+    }),
+  },
+  transitionDB: {},
+}));
+vi.mock("three", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("three")>();
+
+  class MockPMREMGenerator {
+    compileEquirectangularShader = vi.fn();
+    fromScene = vi.fn(() => pmremFallbackTargets.shift());
+    dispose = vi.fn();
+
+    constructor() {
+      pmremInstances.push(this);
+    }
+  }
+
+  return {
+    ...actual,
+    PMREMGenerator: MockPMREMGenerator,
+  };
+});
 
 Object.defineProperty(navigator, "getBattery", {
   configurable: true,
@@ -66,6 +229,17 @@ Object.defineProperty(navigator, "getBattery", {
 });
 
 const { default: GameRenderer } = await import("./game-renderer");
+
+function createDeferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+
+  return { promise, resolve, reject };
+}
 
 function createGameRendererSubject() {
   const subject = Object.create(GameRenderer.prototype) as any;
@@ -111,6 +285,7 @@ function createGameRendererSubject() {
   subject.hudScene = { destroy: hudDestroy };
   subject.controls = { dispose: controlsDispose };
   subject.environmentTarget = { dispose: envDispose };
+  subject.environmentLoadToken = 0;
   subject.memoryStatsElement = memoryStatsElement;
   subject.statsDomElement = statsDomElement;
   subject.labelRendererElement = labelRendererElement;
@@ -141,6 +316,8 @@ describe("GameRenderer destroy lifecycle", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     vi.restoreAllMocks();
+    pmremInstances.length = 0;
+    pmremFallbackTargets.length = 0;
   });
 
   afterEach(() => {
@@ -197,5 +374,65 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
+  });
+
+  it("ignores late environment application after destroy", async () => {
+    const fixture = createGameRendererSubject();
+    const fallbackTarget = { texture: { id: "fallback" }, dispose: vi.fn() } as any;
+    const loadedTarget = { texture: { id: "loaded" }, dispose: vi.fn() } as any;
+    const environmentPromise = createDeferredPromise<any>();
+
+    fixture.subject.hexceptionScene = { setEnvironment: vi.fn() };
+    fixture.subject.worldmapScene = { setEnvironment: vi.fn() };
+    fixture.subject.loadCachedEnvironmentMap = vi.fn(() => environmentPromise.promise);
+    pmremFallbackTargets.push(fallbackTarget);
+
+    fixture.subject.applyEnvironment();
+    expect(pmremInstances).toHaveLength(1);
+
+    fixture.subject.destroy();
+    environmentPromise.resolve(loadedTarget);
+    await environmentPromise.promise;
+    await Promise.resolve();
+
+    expect(fixture.subject.hexceptionScene.setEnvironment).not.toHaveBeenCalledWith(loadedTarget.texture, 0.1);
+    expect(fixture.subject.worldmapScene.setEnvironment).not.toHaveBeenCalledWith(loadedTarget.texture, 0.1);
+    expect(fixture.subject.environmentTarget).toBeUndefined();
+  });
+
+  it("ignores stale environment completions after a newer load starts", async () => {
+    const fixture = createGameRendererSubject();
+    const fallbackTargetOne = { texture: { id: "fallback-1" }, dispose: vi.fn() } as any;
+    const fallbackTargetTwo = { texture: { id: "fallback-2" }, dispose: vi.fn() } as any;
+    const staleTarget = { texture: { id: "stale" }, dispose: vi.fn() } as any;
+    const latestTarget = { texture: { id: "latest" }, dispose: vi.fn() } as any;
+    const firstDeferred = createDeferredPromise<any>();
+    const secondDeferred = createDeferredPromise<any>();
+
+    fixture.subject.hexceptionScene = { setEnvironment: vi.fn() };
+    fixture.subject.worldmapScene = { setEnvironment: vi.fn() };
+    fixture.subject.loadCachedEnvironmentMap = vi
+      .fn()
+      .mockReturnValueOnce(firstDeferred.promise)
+      .mockReturnValueOnce(secondDeferred.promise);
+    pmremFallbackTargets.push(fallbackTargetOne, fallbackTargetTwo);
+
+    fixture.subject.applyEnvironment();
+    expect(pmremInstances).toHaveLength(1);
+
+    fixture.subject.applyEnvironment();
+    expect(pmremInstances).toHaveLength(2);
+
+    secondDeferred.resolve(latestTarget);
+    await secondDeferred.promise;
+    await Promise.resolve();
+
+    firstDeferred.resolve(staleTarget);
+    await firstDeferred.promise;
+    await Promise.resolve();
+
+    expect(fixture.subject.environmentTarget).toBe(latestTarget);
+    expect(fixture.subject.hexceptionScene.setEnvironment).not.toHaveBeenCalledWith(staleTarget.texture, 0.1);
+    expect(fixture.subject.worldmapScene.setEnvironment).not.toHaveBeenCalledWith(staleTarget.texture, 0.1);
   });
 });

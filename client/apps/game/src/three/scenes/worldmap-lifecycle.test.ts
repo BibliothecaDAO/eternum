@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createWorldmapLifecycleFixture } from "./worldmap-lifecycle-fixture";
 
 describe("Worldmap lifecycle baseline", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("registers and unregisters urlChanged listener with stable identity across setup/destroy", () => {
     const fixture = createWorldmapLifecycleFixture();
 
@@ -51,5 +55,35 @@ describe("Worldmap lifecycle baseline", () => {
     fixture.requestChunkRefresh();
 
     expect(fixture.refreshRequests).toBe(0);
+  });
+
+  it("clears the follow-camera timeout on switch-off", () => {
+    vi.useFakeTimers();
+    const fixture = createWorldmapLifecycleFixture() as any;
+
+    fixture.focusCameraOnEvent("Following Army Combat");
+    fixture.switchOff();
+    vi.advanceTimersByTime(3000);
+
+    expect(fixture.followCameraTimeoutActive).toBe(false);
+    expect(fixture.followStateWrites).toEqual([
+      { isFollowingArmy: true, message: "Following Army Combat" },
+      { isFollowingArmy: false, message: null },
+    ]);
+  });
+
+  it("clears the follow-camera timeout on destroy", () => {
+    vi.useFakeTimers();
+    const fixture = createWorldmapLifecycleFixture() as any;
+
+    fixture.focusCameraOnEvent("Following Combat Alert");
+    fixture.destroy();
+    vi.advanceTimersByTime(3000);
+
+    expect(fixture.followCameraTimeoutActive).toBe(false);
+    expect(fixture.followStateWrites).toEqual([
+      { isFollowingArmy: true, message: "Following Combat Alert" },
+      { isFollowingArmy: false, message: null },
+    ]);
   });
 });

@@ -35,6 +35,15 @@ interface PostProcessingEffectPlan {
   shouldEnableChromaticAberration: boolean;
 }
 
+interface ToneMappingAuthorityPlanInput {
+  postProcessingEnabled: boolean;
+}
+
+interface ToneMappingAuthorityPlan {
+  shouldUseComposerToneMapping: boolean;
+  shouldUseRendererToneMapping: boolean;
+}
+
 export function resolveLabelRenderIntervalMs(view: LabelRenderView, isMobileDevice: boolean): number {
   const baseInterval = (() => {
     switch (view) {
@@ -100,5 +109,14 @@ export function resolvePostProcessingEffectPlan(input: PostProcessingEffectPlanI
     shouldEnableBloom: input.bloom,
     shouldEnableVignette: input.vignette,
     shouldEnableChromaticAberration: input.vignette,
+  };
+}
+
+export function resolveToneMappingAuthorityPlan(
+  input: ToneMappingAuthorityPlanInput,
+): ToneMappingAuthorityPlan {
+  return {
+    shouldUseComposerToneMapping: input.postProcessingEnabled,
+    shouldUseRendererToneMapping: !input.postProcessingEnabled,
   };
 }
