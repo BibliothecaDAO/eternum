@@ -38,4 +38,43 @@ describe("MarketDetailsModal chain-aware data sources", () => {
       '{watchLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}',
     );
   });
+
+  it("supports preselecting an outcome when opened from quick bet", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("initialOutcomeIndex?: number");
+    expect(source).toContain("outcomes.find((outcome) => outcome.index === initialOutcomeIndex)");
+    expect(source).toContain("initialOutcomeIndex={initialOutcomeIndex}");
+  });
+
+  it("uses independent hidden-scroll columns for left and right content panes", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("flex-1 min-h-0 overflow-y-auto scrollbar-hide");
+    expect(source).toContain("lg:overflow-hidden");
+    expect(source).toContain("flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden");
+    expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1"');
+    expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1"');
+  });
+
+  it("auto-syncs market data after a successful trade", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("const TRADE_SYNC_MAX_ATTEMPTS = 10");
+    expect(source).toContain("const TRADE_SYNC_INTERVAL_MS = 2_000");
+    expect(source).toContain("const handleTradeSuccess = useCallback(() => {");
+    expect(source).toContain(
+      "<MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />",
+    );
+    expect(source).toContain("Syncing...");
+  });
 });
