@@ -4,11 +4,13 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 const DOT_SUFFIXES = ["", ".", "..", "..."];
 
 type FXType = "skull" | "compass" | "troopDiff" | string;
+type FXRenderMode = "sprite" | "ground";
 
 interface FXConfig {
   textureUrl: string;
   animate: (fx: FXInstance, elapsed: number) => boolean; // return false to stop
   isInfinite?: boolean; // if true, effect will continue until manually stopped
+  renderMode?: FXRenderMode;
 }
 
 // -------------------- BatchedFXSystem --------------------
@@ -173,8 +175,9 @@ class BatchedFXSystem {
 // -------------------- FXInstance --------------------
 class FXInstance {
   public group: THREE.Group;
-  public sprite: THREE.Sprite;
-  public material: THREE.SpriteMaterial;
+  public sprite?: THREE.Sprite;
+  public groundMesh?: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  public material: THREE.SpriteMaterial | THREE.MeshBasicMaterial;
   public age: number = 0;
   public isDestroyed = false;
   public initialX: number;
@@ -187,6 +190,7 @@ class FXInstance {
   public type: FXType;
   public animateCallback: (fx: FXInstance, elapsed: number) => boolean;
   public isInfinite: boolean;
+  public renderMode: FXRenderMode;
   private isEnding: boolean = false;
   private endStartTime: number = 0;
   private endDuration: number = 0.5; // Duration of fade out in seconds
@@ -203,6 +207,7 @@ class FXInstance {
     labelText: string | undefined,
     animateCallback: (fx: FXInstance, elapsed: number) => boolean,
     isInfinite: boolean = false,
+    renderMode: FXRenderMode = "sprite",
   ) {
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
@@ -214,17 +219,34 @@ class FXInstance {
     this.type = type;
     this.animateCallback = animateCallback;
     this.isInfinite = isInfinite;
+    this.renderMode = renderMode;
 
-    this.material = new THREE.SpriteMaterial({
-      map: texture,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    });
+    if (renderMode === "ground") {
+      this.material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+      });
 
-    this.sprite = new THREE.Sprite(this.material);
-    this.sprite.scale.set(size, size, size);
-    this.group.add(this.sprite);
+      this.groundMesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), this.material);
+      this.groundMesh.rotation.x = -Math.PI / 2;
+      this.groundMesh.renderOrder = Infinity;
+      this.group.add(this.groundMesh);
+    } else {
+      this.material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      });
+
+      this.sprite = new THREE.Sprite(this.material);
+      this.sprite.scale.set(size, size, size);
+      this.group.add(this.sprite);
+    }
 
     if (labelText) {
       this.labelBaseText = labelText;
@@ -256,6 +278,18 @@ class FXInstance {
     }
   }
 
+  public setVisualScale(scale: number) {
+    if (this.sprite) {
+      this.sprite.scale.set(scale, scale, scale);
+      return;
+    }
+
+    if (this.groundMesh) {
+      const normalizedScale = this.baseSize > 0 ? scale / this.baseSize : 1;
+      this.groundMesh.scale.set(normalizedScale, normalizedScale, 1);
+    }
+  }
+
   public update(deltaTime: number): boolean {
     if (this.isDestroyed) return false;
 
@@ -278,9 +312,11 @@ class FXInstance {
         const fadeProgress = endElapsed / this.endDuration;
         this.material.opacity = 1 - fadeProgress;
 
-        // Optional: Add some upward movement during fade out
-        const moveUp = fadeProgress * 0.5;
-        this.group.position.y = this.initialY + moveUp;
+        if (this.renderMode === "sprite") {
+          // Optional: Add some upward movement during fade out
+          const moveUp = fadeProgress * 0.5;
+          this.group.position.y = this.initialY + moveUp;
+        }
 
         return true;
       } else {
@@ -320,7 +356,12 @@ class FXInstance {
     }
 
     this.material.dispose();
-    this.sprite.geometry.dispose();
+    if (this.sprite) {
+      this.sprite.geometry.dispose();
+    }
+    if (this.groundMesh) {
+      this.groundMesh.geometry.dispose();
+    }
   }
 }
 
@@ -497,12 +538,12 @@ export class FXManager {
         if (t < 0.2) {
           const f = t / 0.2;
           fx.material.opacity = f;
-          fx.sprite.scale.set(fx.baseSize * f, fx.baseSize * f, fx.baseSize * f);
+          fx.setVisualScale(fx.baseSize * f);
         } else if (t < 1.5) {
           const hover = Math.sin((t - 0.2) * Math.PI * 2) * 0.1;
           fx.group.position.y = fx.initialY + hover;
           fx.material.opacity = 1;
-          fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+          fx.setVisualScale(fx.baseSize);
         } else if (t < 2.5) {
           const f = (t - 1.5) / 1.0;
           fx.group.position.y = fx.initialY + hoverHeight * f;
@@ -526,7 +567,9 @@ export class FXManager {
         }
 
         // Ensure the sprite is facing the camera
-        fx.sprite.material.rotation = t * 2;
+        if (fx.sprite) {
+          fx.sprite.material.rotation = t * 2;
+        }
 
         return true; // Always return true to keep it running
       },
@@ -548,11 +591,41 @@ export class FXManager {
         const sway = Math.sin(cycle * Math.PI) * 0.05;
         fx.group.position.y = fx.initialY + bob;
         fx.group.position.x += sway * 0.01;
-        fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+        fx.setVisualScale(fx.baseSize);
 
         return true;
       },
       isInfinite: true,
+    });
+
+    this.registerFX("attack", {
+      textureUrl: "textures/attack.png",
+      animate: (fx, t) => {
+        const fadeIn = Math.min(t / 0.25, 1);
+        fx.material.opacity = 0.78 * fadeIn;
+
+        const pulse = 1 + Math.sin(t * 4.4) * 0.08;
+        fx.setVisualScale(fx.baseSize * pulse);
+
+        return true;
+      },
+      isInfinite: true,
+      renderMode: "ground",
+    });
+
+    this.registerFX("defense", {
+      textureUrl: "textures/defense.png",
+      animate: (fx, t) => {
+        const fadeIn = Math.min(t / 0.25, 1);
+        fx.material.opacity = 0.72 * fadeIn;
+
+        const pulse = 1 + Math.sin(t * 3.5 + Math.PI * 0.3) * 0.06;
+        fx.setVisualScale(fx.baseSize * pulse);
+
+        return true;
+      },
+      isInfinite: true,
+      renderMode: "ground",
     });
   }
 
@@ -566,6 +639,28 @@ export class FXManager {
       this.textures.set(config.textureUrl, texture);
     }
     this.fxConfigs.set(type, config);
+  }
+
+  public ensureInfiniteIconFx(type: FXType, textureUrl: string, options?: { renderMode?: FXRenderMode }): void {
+    if (this.fxConfigs.has(type)) {
+      return;
+    }
+
+    const renderMode = options?.renderMode ?? "sprite";
+    this.registerFX(type, {
+      textureUrl,
+      animate: (fx, t) => {
+        const fadeIn = Math.min(t / 0.25, 1);
+        fx.material.opacity = (renderMode === "ground" ? 0.82 : 1.0) * fadeIn;
+
+        const pulse = 1 + Math.sin(t * 3.2) * 0.04;
+        fx.setVisualScale(fx.baseSize * pulse);
+
+        return true;
+      },
+      isInfinite: true,
+      renderMode,
+    });
   }
 
   playFxAtCoords(
@@ -608,6 +703,7 @@ export class FXManager {
       labelText,
       config.animate,
       isInfinite || config.isInfinite,
+      config.renderMode ?? "sprite",
     );
 
     // Set initial position for orbital effects
