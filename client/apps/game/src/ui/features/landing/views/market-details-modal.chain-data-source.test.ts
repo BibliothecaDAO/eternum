@@ -1,0 +1,80 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+describe("MarketDetailsModal chain-aware data sources", () => {
+  it("uses per-chain providers and SQL endpoint", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("chain: MarketDataChain");
+    expect(source).toContain("<MarketsProviders chain={chain}>");
+    expect(source).toContain("getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain])");
+    expect(source).toContain("fetchMarketBuyUniqueAccountsCountByMarket");
+    expect(source).toContain("<MarketPositions market={market} chain={chain} address={address} />");
+    expect(source).toContain("<MarketVaultFees market={market} chain={chain} address={address} />");
+  });
+
+  it("normalizes market id with address padding for SQL lookups", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("addAddressPadding(`0x${BigInt(market.market_id).toString(16)}`)");
+  });
+
+  it("renders refresh and watch as same-size icon-only controls", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("inline-flex h-9 w-9 items-center justify-center rounded-lg border");
+    expect(source).toContain(
+      '{watchLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}',
+    );
+  });
+
+  it("supports preselecting an outcome when opened from quick bet", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("initialOutcomeIndex?: number");
+    expect(source).toContain("outcomes.find((outcome) => outcome.index === initialOutcomeIndex)");
+    expect(source).toContain("initialOutcomeIndex={initialOutcomeIndex}");
+  });
+
+  it("uses independent hidden-scroll columns for left and right content panes", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("flex-1 min-h-0 overflow-y-auto scrollbar-hide");
+    expect(source).toContain("lg:overflow-hidden");
+    expect(source).toContain("flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden");
+    expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1"');
+    expect(source).toContain('className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1"');
+  });
+
+  it("auto-syncs market data after a successful trade", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/views/market-details-modal.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("const TRADE_SYNC_MAX_ATTEMPTS = 10");
+    expect(source).toContain("const TRADE_SYNC_INTERVAL_MS = 2_000");
+    expect(source).toContain("const handleTradeSuccess = useCallback(() => {");
+    expect(source).toContain(
+      "<MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />",
+    );
+    expect(source).toContain("Syncing...");
+  });
+});

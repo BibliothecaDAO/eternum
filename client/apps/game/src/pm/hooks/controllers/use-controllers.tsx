@@ -67,3 +67,7 @@ export const useControllers = () => {
 
   return context;
 };
+
+export const useOptionalControllers = () => {
+  return useContext(ControllersProviderContext);
+};
