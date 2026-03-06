@@ -19,10 +19,7 @@ describe("game-entry-modal settlement helpers", () => {
 
   it("continues later settlement calls after an intermediate failure", async () => {
     const assignAndSettle = vi.fn().mockResolvedValue(undefined);
-    const settleRealms = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("submission failed"))
-      .mockResolvedValueOnce(undefined);
+    const settleRealms = vi.fn().mockRejectedValueOnce(new Error("submission failed")).mockResolvedValueOnce(undefined);
 
     const result = await runSettlementOperations({
       signer: { address: "0x123" },

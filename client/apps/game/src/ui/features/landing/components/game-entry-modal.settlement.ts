@@ -1,4 +1,4 @@
-export type SettlementOperation =
+type SettlementOperation =
   | {
       kind: "assign-and-settle";
       settlementCount: number;
@@ -17,7 +17,7 @@ type SettlementSystemCalls<TSigner> = {
   blitz_realm_settle_realms: (request: SettlementRequest & { signer: TSigner }) => Promise<unknown>;
 };
 
-export type SettlementFailure = {
+type SettlementFailure = {
   error: unknown;
   index: number;
   operation: SettlementOperation;
@@ -26,7 +26,8 @@ export type SettlementFailure = {
 const DEFAULT_MULTI_REALM_COUNT = 3;
 const SINGLE_REALM_COUNT = 1;
 
-const getTargetRealmCount = (singleRealmMode: boolean) => (singleRealmMode ? SINGLE_REALM_COUNT : DEFAULT_MULTI_REALM_COUNT);
+const getTargetRealmCount = (singleRealmMode: boolean) =>
+  singleRealmMode ? SINGLE_REALM_COUNT : DEFAULT_MULTI_REALM_COUNT;
 
 export const buildSettlementOperations = ({
   isMainnet,

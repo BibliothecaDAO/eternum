@@ -1017,7 +1017,10 @@ export const GameEntryModal = ({
       })
         ? targetRealmCount
         : assignedRealmCount;
-      const settledRealmsAfterSubmission = Math.min(targetRealmCount, settledRealmCount + result.successfulSettlementCount);
+      const settledRealmsAfterSubmission = Math.min(
+        targetRealmCount,
+        settledRealmCount + result.successfulSettlementCount,
+      );
 
       setAssignedRealmCount(assignedRealmsAfterSubmission);
       setSettledRealmCount(settledRealmsAfterSubmission);
