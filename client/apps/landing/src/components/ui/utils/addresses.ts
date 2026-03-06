@@ -1,37 +1,41 @@
 import { Chain, getSeasonAddresses } from "@contracts";
 import { env } from "../../../../env";
 
+const getSeasonNetworkAddresses = () => getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain);
+
 export const getResourceAddresses = () => {
-  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources;
+  const addresses = getSeasonNetworkAddresses().resources;
   return addresses as {
     [key: string]: [number, string];
   };
 };
 
 export const getSeasonPassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).seasonPass;
+  return getSeasonNetworkAddresses().seasonPass;
 };
 
 export const getLordsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lords;
+  return getSeasonNetworkAddresses().lords;
 };
 
 export const getRealmsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).realms;
+  return getSeasonNetworkAddresses().realms;
 };
 
 export const getMarketplaceAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).marketplace;
+  return getSeasonNetworkAddresses().marketplace;
 };
 
 export const getLootChestsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)["Collectibles: Realms: Loot Chest"];
+  const addresses = getSeasonNetworkAddresses();
+  return addresses.lootChests || addresses["Collectibles: Realms: Loot Chest"];
 };
 
 export const getCosmeticsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)["Collectibles: Realms: Cosmetic Items"];
+  const addresses = getSeasonNetworkAddresses();
+  return addresses.cosmetics || addresses["Collectibles: Realms: Cosmetic Items"];
 };
 
 export const getCosmeticsClaimAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).cosmeticsClaim;
+  return getSeasonNetworkAddresses().cosmeticsClaim;
 };

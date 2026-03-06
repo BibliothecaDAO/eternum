@@ -1819,12 +1819,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder="30"
+                                              placeholder="24"
                                               value={
                                                 registrationCountMaxOverrides[name] ??
                                                 String(
                                                   (eternumConfig as any)?.blitz?.registration?.registration_count_max ??
-                                                    30,
+                                                    24,
                                                 )
                                               }
                                               onChange={(e) =>
@@ -1835,7 +1835,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               }
                                               className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-gold/60">Default: 30.</p>
+                                            <p className="text-[10px] text-gold/60">Default: 24.</p>
                                           </div>
                                         </div>
 
