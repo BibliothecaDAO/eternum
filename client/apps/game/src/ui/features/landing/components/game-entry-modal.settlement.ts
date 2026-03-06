@@ -9,13 +9,12 @@ export type SettlementOperation =
     };
 
 type SettlementRequest = {
-  signer: unknown;
   settlement_count: number;
 };
 
-type SettlementSystemCalls = {
-  blitz_realm_assign_and_settle_realms: (request: SettlementRequest) => Promise<unknown>;
-  blitz_realm_settle_realms: (request: SettlementRequest) => Promise<unknown>;
+type SettlementSystemCalls<TSigner> = {
+  blitz_realm_assign_and_settle_realms: (request: SettlementRequest & { signer: TSigner }) => Promise<unknown>;
+  blitz_realm_settle_realms: (request: SettlementRequest & { signer: TSigner }) => Promise<unknown>;
 };
 
 export type SettlementFailure = {
@@ -96,15 +95,15 @@ export const buildSettlementOperations = ({
   ];
 };
 
-export const runSettlementOperations = async ({
+export const runSettlementOperations = async <TSigner>({
   signer,
   operations,
   systemCalls,
   onOperationStart,
 }: {
-  signer: unknown;
+  signer: TSigner;
   operations: SettlementOperation[];
-  systemCalls: SettlementSystemCalls;
+  systemCalls: SettlementSystemCalls<TSigner>;
   onOperationStart?: (operation: SettlementOperation, index: number) => void;
 }): Promise<{
   failures: SettlementFailure[];
