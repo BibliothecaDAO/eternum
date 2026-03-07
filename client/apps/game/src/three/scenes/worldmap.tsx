@@ -156,6 +156,7 @@ import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSna
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  resolveWorldmapFetchPlan,
 } from "./worldmap-chunk-bounds";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
@@ -433,7 +434,7 @@ export default class WorldmapScene extends HexagonScene {
       isChunkTransitioning: this.isChunkTransitioning,
     });
     if (prefetchPlan.shouldPrefetchNextChunk) {
-      void this.computeTileEntities(nextChunkKey);
+      void this.computeTileEntities(nextChunkKey, { priority: "background" });
     }
     const nextCameraDistance = this.getCurrentCameraDistance();
     const refreshPlan = resolveControlsChangeChunkRefreshPlan({
@@ -530,6 +531,7 @@ export default class WorldmapScene extends HexagonScene {
 
   // Render-area fetch bookkeeping (keys represent render-sized regions, not chunk stride)
   private fetchedChunks: Set<string> = new Set();
+  private fetchedCriticalChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
@@ -3303,7 +3305,7 @@ export default class WorldmapScene extends HexagonScene {
         try {
           if (item.fetchTiles) {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_executed");
-            await this.computeTileEntities(item.chunkKey);
+            await this.computeTileEntities(item.chunkKey, { priority: "background" });
           }
         } catch (error) {
           if (import.meta.env.DEV) {
@@ -3954,16 +3956,16 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateUnsubscribes = [];
   }
 
-  private beginToriiFetch() {
-    if (this.isSwitchedOff) return;
+  private beginToriiFetch(priority: "critical" | "background") {
+    if (this.isSwitchedOff || priority !== "critical") return;
     if (this.toriiLoadingCounter === 0) {
       this.state.setLoading(LoadingStateKey.Map, true);
     }
     this.toriiLoadingCounter += 1;
   }
 
-  private endToriiFetch() {
-    if (this.toriiLoadingCounter === 0) {
+  private endToriiFetch(priority: "critical" | "background") {
+    if (priority !== "critical" || this.toriiLoadingCounter === 0) {
       return;
     }
 
@@ -3973,13 +3975,29 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private async computeTileEntities(chunkKey: string): Promise<boolean> {
+  private async computeTileEntities(
+    chunkKey: string,
+    options: { priority?: "critical" | "background" } = {},
+  ): Promise<boolean> {
     if (this.isSwitchedOff) {
       return false;
     }
 
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-    if (this.fetchedChunks.has(fetchKey)) {
+    const priority = options.priority ?? "background";
+    const fetchPlan = resolveWorldmapFetchPlan({
+      chunkKey,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+      superAreaStrides: WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+      priority,
+    });
+    const { cacheKey, fetchKey, bounds } = fetchPlan;
+
+    if (priority === "critical" && this.fetchedChunks.has(this.getRenderAreaKeyForChunk(chunkKey))) {
+      return true;
+    }
+
+    if ((priority === "critical" ? this.fetchedCriticalChunks : this.fetchedChunks).has(cacheKey)) {
       return true;
     }
 
@@ -3988,20 +4006,18 @@ export default class WorldmapScene extends HexagonScene {
       return existingPromise;
     }
 
-    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBoundsForArea(fetchKey);
-
     if (import.meta.env.DEV) {
       console.log(
         "[RENDER FETCH]",
-        { chunkKey, fetchKey },
-        `cols: ${minCol}-${maxCol}`,
-        `rows: ${minRow}-${maxRow}`,
+        { chunkKey, fetchKey, priority },
+        `cols: ${bounds.minCol}-${bounds.maxCol}`,
+        `rows: ${bounds.minRow}-${bounds.maxRow}`,
         "fetched chunks",
         this.fetchedChunks,
       );
     }
 
-    const fetchPromise = this.executeTileEntitiesFetch(fetchKey, minCol, maxCol, minRow, maxRow);
+    const fetchPromise = this.executeTileEntitiesFetch(fetchPlan, chunkKey);
     const ownedFetchPromise = fetchPromise.finally(() => {
       finalizePendingChunkFetchOwnership({
         pendingChunks: this.pendingChunks,
@@ -4016,29 +4032,35 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async executeTileEntitiesFetch(
-    fetchKey: string,
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
+    fetchPlan: {
+      cacheKey: string;
+      fetchKey: string;
+      bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number };
+      priority: "critical" | "background";
+    },
+    chunkKey: string,
   ): Promise<boolean> {
-    this.beginToriiFetch();
+    const { cacheKey, fetchKey, bounds, priority } = fetchPlan;
+    this.beginToriiFetch(priority);
     try {
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
-        minCol + FELT_CENTER(),
-        maxCol + FELT_CENTER(),
-        minRow + FELT_CENTER(),
-        maxRow + FELT_CENTER(),
+        bounds.minCol + FELT_CENTER(),
+        bounds.maxCol + FELT_CENTER(),
+        bounds.minRow + FELT_CENTER(),
+        bounds.maxRow + FELT_CENTER(),
       );
-      // Only add to the fetched cache if the render area is still pinned (still relevant)
-      if (this.pinnedRenderAreas.has(fetchKey)) {
-        this.fetchedChunks.add(fetchKey);
+
+      if (priority === "critical") {
+        this.fetchedCriticalChunks.add(cacheKey);
+        this.scheduleHydratedChunkRefresh(chunkKey);
+      } else if (this.pinnedRenderAreas.has(cacheKey)) {
+        this.fetchedChunks.add(cacheKey);
         const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
         if (
           shouldScheduleHydratedChunkRefreshForFetch({
-            fetchAreaKey: fetchKey,
+            fetchAreaKey: cacheKey,
             currentAreaKey,
           })
         ) {
@@ -4053,7 +4075,7 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
-      this.endToriiFetch();
+      this.endToriiFetch(priority);
     }
   }
 
@@ -4399,7 +4421,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     try {
-      await this.computeTileEntities(targetChunkKey);
+      await this.computeTileEntities(targetChunkKey, { priority: "background" });
       const [targetStartRow, targetStartCol] = targetChunkKey.split(",").map(Number);
       if (!Number.isFinite(targetStartRow) || !Number.isFinite(targetStartCol)) {
         return;
@@ -4407,7 +4429,7 @@ export default class WorldmapScene extends HexagonScene {
 
       // Fire-and-forget surrounding prewarm to reduce edge pop-in on cross-chunk tabbing.
       this.getSurroundingChunkKeys(targetStartRow, targetStartCol).forEach((chunkKey) => {
-        void this.computeTileEntities(chunkKey);
+        void this.computeTileEntities(chunkKey, { priority: "background" });
       });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -4724,13 +4746,19 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
-      const tileFetchPromise = this.computeTileEntities(chunkKey);
+      const tileFetchPromise = this.computeTileEntities(chunkKey, { priority: "critical" });
 
       this.updatePinnedChunks(surroundingChunks);
       const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
 
       // Start loading all surrounding chunks (they will deduplicate automatically)
-      surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+      const scheduleBackgroundHydration = () => {
+        surroundingChunks.forEach((chunk) => {
+          if (chunk !== chunkKey) {
+            void this.computeTileEntities(chunk, { priority: "background" });
+          }
+        });
+      };
 
       PerformanceMonitor.begin("chunkSwitch.terrainBuild");
       try {
@@ -4770,6 +4798,7 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       void this.awaitChunkSwitchHydration(chunkKey, transitionToken, tileFetchPromise);
+      scheduleBackgroundHydration();
       void (async () => {
         PerformanceMonitor.begin("chunkSwitch.boundsAwait");
         try {
@@ -4836,11 +4865,17 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(startRow, startCol);
 
       // Start tile data fetch after force invalidation.
-      const tileFetchPromise = this.computeTileEntities(chunkKey);
+      const tileFetchPromise = this.computeTileEntities(chunkKey, { priority: "critical" });
 
       this.updatePinnedChunks(surroundingChunks);
       const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
-      surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+      const scheduleBackgroundHydration = () => {
+        surroundingChunks.forEach((chunk) => {
+          if (chunk !== chunkKey) {
+            void this.computeTileEntities(chunk, { priority: "background" });
+          }
+        });
+      };
 
       PerformanceMonitor.begin("chunkRefresh.terrainBuild");
       try {
@@ -4876,6 +4911,7 @@ export default class WorldmapScene extends HexagonScene {
         PerformanceMonitor.end("chunkRefresh.managerUpdate");
       }
       this.emitWorldmapReadySignal();
+      scheduleBackgroundHydration();
 
       if (memoryMonitor) {
         const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
@@ -5476,6 +5512,7 @@ export default class WorldmapScene extends HexagonScene {
   public clearTileEntityCache() {
     this.clearQueuedPrefetchState();
     this.fetchedChunks.clear();
+    this.fetchedCriticalChunks.clear();
     this.pendingChunks.clear();
     this.pinnedRenderAreas.clear();
     this.clearCache();

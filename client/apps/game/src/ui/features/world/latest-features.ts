@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-07",
+    title: "Faster Map Charting",
+    description:
+      "World map charting now prioritizes the current visible area before background hydration, so the map becomes usable sooner and the loading state is less likely to linger for non-critical fetches.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
     title: "Faster World Startup",
     description:
       "World loading now overlaps more of the initial sync fetches in parallel, which reduces the time spent waiting on the startup loader before the map becomes playable.",

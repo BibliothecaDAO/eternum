@@ -65,4 +65,11 @@ describe("worldmap chunk-switch performance instrumentation", () => {
 
     expect(source).toContain("resolveHexGridStripUpdatePlan({");
   });
+
+  it("uses critical fetches for the target chunk and background fetches for surrounding hydration", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain('this.computeTileEntities(chunkKey, { priority: "critical" })');
+    expect(source).toContain('this.computeTileEntities(chunk, { priority: "background" })');
+  });
 });
