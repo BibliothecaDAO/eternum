@@ -1,4 +1,4 @@
-export interface GameEntryNavigationTarget {
+interface GameEntryNavigationTarget {
   structureEntityId: number;
   worldMapPosition: { col: number; row: number };
   url: string;

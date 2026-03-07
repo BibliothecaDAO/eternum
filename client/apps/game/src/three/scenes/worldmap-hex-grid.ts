@@ -1,11 +1,11 @@
-export interface HexGridRowMetadata {
+interface HexGridRowMetadata {
   globalRow: number;
   baseZ: number;
   rowOffsetValue: number;
   baseXAtColZero: number;
 }
 
-export interface HexGridProcessingPlan {
+interface HexGridProcessingPlan {
   frameBudgetMs: number;
   minBatch: number;
   maxBatch: number;

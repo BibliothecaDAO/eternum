@@ -110,7 +110,7 @@ interface AddArmyParams {
   latestDefenderCoordY?: number;
 }
 
-export interface DebugArmySpawnOptions {
+interface DebugArmySpawnOptions {
   count: number;
   spread: number;
   troopType: "Knight" | "Crossbowman" | "Paladin";
@@ -120,7 +120,7 @@ export interface DebugArmySpawnOptions {
   isMine: boolean;
 }
 
-export interface DebugArmyStats {
+interface DebugArmyStats {
   debugArmyCount: number;
   totalArmyCount: number;
   visibleArmyCount: number;

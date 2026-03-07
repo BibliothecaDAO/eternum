@@ -1,4 +1,4 @@
-export interface NumericSampleSummary {
+interface NumericSampleSummary {
   avg: number;
   min: number;
   max: number;

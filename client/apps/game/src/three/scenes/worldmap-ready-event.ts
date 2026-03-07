@@ -1,4 +1,4 @@
-export interface WorldmapReadyDetail {
+interface WorldmapReadyDetail {
   col: number;
   row: number;
   currentChunk: string;
@@ -25,7 +25,7 @@ function isMatchingCoordinates(
   return detail?.col === expected.col && detail?.row === expected.row;
 }
 
-export function getStoredWorldmapReadyDetail(target?: Window): WorldmapReadyDetail | null {
+function getStoredWorldmapReadyDetail(target?: Window): WorldmapReadyDetail | null {
   const resolvedWindow = getTargetWindow(target) as
     | (Window & { __worldmapReadyDetail?: WorldmapReadyDetail })
     | undefined;
