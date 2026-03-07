@@ -233,6 +233,7 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
+const BACKGROUND_HYDRATION_DELAY_MS = 250;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
@@ -533,6 +534,8 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
   private fetchedCriticalChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
+  private backgroundHydrationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private backgroundHydrationToken = 0;
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<
@@ -2413,6 +2416,11 @@ export default class WorldmapScene extends HexagonScene {
     this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
+    if (this.backgroundHydrationTimeout) {
+      clearTimeout(this.backgroundHydrationTimeout);
+      this.backgroundHydrationTimeout = null;
+    }
+    this.backgroundHydrationToken += 1;
 
     // Clear map loading state so "Charting Territories" doesn't persist
     // when switching away while fetches are still in-flight
@@ -3975,6 +3983,30 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private scheduleBackgroundChunkHydration(chunkKeys: string[], targetChunkKey: string): void {
+    const filteredChunkKeys = chunkKeys.filter((chunkKey) => chunkKey !== targetChunkKey);
+    if (filteredChunkKeys.length === 0) {
+      return;
+    }
+
+    if (this.backgroundHydrationTimeout) {
+      clearTimeout(this.backgroundHydrationTimeout);
+      this.backgroundHydrationTimeout = null;
+    }
+
+    const hydrationToken = ++this.backgroundHydrationToken;
+    this.backgroundHydrationTimeout = window.setTimeout(() => {
+      if (hydrationToken !== this.backgroundHydrationToken || this.isSwitchedOff) {
+        return;
+      }
+
+      filteredChunkKeys.forEach((chunkKey) => {
+        void this.computeTileEntities(chunkKey, { priority: "background" });
+      });
+      this.backgroundHydrationTimeout = null;
+    }, BACKGROUND_HYDRATION_DELAY_MS);
+  }
+
   private async computeTileEntities(
     chunkKey: string,
     options: { priority?: "critical" | "background" } = {},
@@ -4041,7 +4073,9 @@ export default class WorldmapScene extends HexagonScene {
     chunkKey: string,
   ): Promise<boolean> {
     const { cacheKey, fetchKey, bounds, priority } = fetchPlan;
+    const fetchMetricName = priority === "critical" ? "tileFetch.critical" : "tileFetch.background";
     this.beginToriiFetch(priority);
+    PerformanceMonitor.begin(fetchMetricName);
     try {
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
@@ -4075,6 +4109,7 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
+      PerformanceMonitor.end(fetchMetricName);
       this.endToriiFetch(priority);
     }
   }
@@ -4752,14 +4787,6 @@ export default class WorldmapScene extends HexagonScene {
       const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
 
       // Start loading all surrounding chunks (they will deduplicate automatically)
-      const scheduleBackgroundHydration = () => {
-        surroundingChunks.forEach((chunk) => {
-          if (chunk !== chunkKey) {
-            void this.computeTileEntities(chunk, { priority: "background" });
-          }
-        });
-      };
-
       PerformanceMonitor.begin("chunkSwitch.terrainBuild");
       try {
         // Calculate the starting position for the new chunk - this is the main visual update
@@ -4798,7 +4825,7 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       void this.awaitChunkSwitchHydration(chunkKey, transitionToken, tileFetchPromise);
-      scheduleBackgroundHydration();
+      this.scheduleBackgroundChunkHydration(surroundingChunks, chunkKey);
       void (async () => {
         PerformanceMonitor.begin("chunkSwitch.boundsAwait");
         try {
@@ -4869,14 +4896,6 @@ export default class WorldmapScene extends HexagonScene {
 
       this.updatePinnedChunks(surroundingChunks);
       const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
-      const scheduleBackgroundHydration = () => {
-        surroundingChunks.forEach((chunk) => {
-          if (chunk !== chunkKey) {
-            void this.computeTileEntities(chunk, { priority: "background" });
-          }
-        });
-      };
-
       PerformanceMonitor.begin("chunkRefresh.terrainBuild");
       try {
         await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
@@ -4911,7 +4930,7 @@ export default class WorldmapScene extends HexagonScene {
         PerformanceMonitor.end("chunkRefresh.managerUpdate");
       }
       this.emitWorldmapReadySignal();
-      scheduleBackgroundHydration();
+      this.scheduleBackgroundChunkHydration(surroundingChunks, chunkKey);
 
       if (memoryMonitor) {
         const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
@@ -5510,6 +5529,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public clearTileEntityCache() {
+    if (this.backgroundHydrationTimeout) {
+      clearTimeout(this.backgroundHydrationTimeout);
+      this.backgroundHydrationTimeout = null;
+    }
+    this.backgroundHydrationToken += 1;
     this.clearQueuedPrefetchState();
     this.fetchedChunks.clear();
     this.fetchedCriticalChunks.clear();

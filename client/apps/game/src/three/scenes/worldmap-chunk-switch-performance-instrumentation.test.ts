@@ -70,6 +70,14 @@ describe("worldmap chunk-switch performance instrumentation", () => {
     const source = readWorldmapSource();
 
     expect(source).toContain('this.computeTileEntities(chunkKey, { priority: "critical" })');
-    expect(source).toContain('this.computeTileEntities(chunk, { priority: "background" })');
+    expect(source).toContain('priority: "background"');
+  });
+
+  it("tracks critical/background tile fetch metrics and schedules background hydration explicitly", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain('tileFetch.critical');
+    expect(source).toContain('tileFetch.background');
+    expect(source).toContain('scheduleBackgroundChunkHydration(');
   });
 });
