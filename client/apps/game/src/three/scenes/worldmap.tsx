@@ -534,7 +534,7 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
   private fetchedCriticalChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
-  private backgroundHydrationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private backgroundHydrationTimeout: number | null = null;
   private backgroundHydrationToken = 0;
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
