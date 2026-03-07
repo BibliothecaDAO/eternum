@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "bench:worldmap": "playwright test e2e/worldmap-performance.spec.ts",
+    "bench:worldmap:headed": "playwright test e2e/worldmap-performance.spec.ts --headed",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "coverage": "vitest run --coverage",
     "coverage:three": "vitest run --coverage src/three",
@@ -69,6 +71,7 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@eslint/js": "^9.39.2",
     "@sentry/vite-plugin": "^4.7.0",
     "@types/lodash": "^4.14.202",

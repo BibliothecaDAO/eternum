@@ -97,6 +97,11 @@ interface RefreshExecutionPlan {
   executionToken: number;
 }
 
+interface RefreshRequestPlan {
+  shouldIncrementToken: boolean;
+  shouldScheduleTimer: boolean;
+}
+
 interface RefreshRunningActions {
   shouldMarkRerunRequested: boolean;
   shouldRescheduleTimer: boolean;
@@ -315,6 +320,24 @@ export function shouldApplyRefreshToken(scheduledToken: number, latestToken: num
  */
 export function shouldRescheduleRefreshToken(scheduledToken: number, latestToken: number): boolean {
   return scheduledToken < latestToken;
+}
+
+/**
+ * Coalesce repeated latest-wins refresh requests while a timer is already pending.
+ * The pending timer will compute against the latest camera state when it fires.
+ */
+export function resolveRefreshRequestPlan(input: { hasPendingTimer: boolean }): RefreshRequestPlan {
+  if (input.hasPendingTimer) {
+    return {
+      shouldIncrementToken: false,
+      shouldScheduleTimer: false,
+    };
+  }
+
+  return {
+    shouldIncrementToken: true,
+    shouldScheduleTimer: true,
+  };
 }
 
 /**
@@ -546,6 +569,12 @@ export function resolveDuplicateTileUpdateMode(input: DuplicateTileRefreshDecisi
 
   if (shouldForceRefreshForDuplicateTileUpdate(input)) {
     return "invalidate_and_refresh";
+  }
+
+  const isStableVisibleChunk =
+    input.currentChunk !== "null" && !input.isChunkTransitioning && input.isVisibleInCurrentChunk;
+  if (!isStableVisibleChunk && input.hasBiomeDelta !== true) {
+    return "none";
   }
 
   return "invalidate_only";

@@ -16,6 +16,7 @@ import {
   shouldForceRefreshForDuplicateTileUpdate,
   shouldRunShortcutForceFallback,
   resolveRefreshExecutionToken,
+  resolveRefreshRequestPlan,
   resolveChunkSwitchActions,
   shouldApplyRefreshToken,
   shouldAcceptExactTransitionToken,
@@ -454,6 +455,30 @@ describe("shouldRescheduleRefreshToken", () => {
   });
 });
 
+describe("resolveRefreshRequestPlan", () => {
+  it("coalesces requests while a refresh timer is already pending", () => {
+    expect(
+      resolveRefreshRequestPlan({
+        hasPendingTimer: true,
+      }),
+    ).toEqual({
+      shouldIncrementToken: false,
+      shouldScheduleTimer: false,
+    });
+  });
+
+  it("schedules a new latest-wins refresh when no timer is pending", () => {
+    expect(
+      resolveRefreshRequestPlan({
+        hasPendingTimer: false,
+      }),
+    ).toEqual({
+      shouldIncrementToken: true,
+      shouldScheduleTimer: true,
+    });
+  });
+});
+
 describe("resolveRefreshExecutionToken", () => {
   it("uses latest token when scheduled token is stale", () => {
     expect(resolveRefreshExecutionToken(6, 9)).toBe(9);
@@ -860,7 +885,7 @@ describe("resolveDuplicateTileUpdateActions", () => {
     });
   });
 
-  it("keeps offscreen duplicate updates in cache-reconcile mode without forcing immediate refresh", () => {
+  it("ignores offscreen duplicate updates when biome data did not change", () => {
     expect(
       resolveDuplicateTileUpdateActions({
         removeExplored: false,
@@ -870,7 +895,7 @@ describe("resolveDuplicateTileUpdateActions", () => {
         isVisibleInCurrentChunk: false,
       }),
     ).toEqual({
-      shouldInvalidateCaches: true,
+      shouldInvalidateCaches: false,
       shouldRequestRefresh: false,
     });
   });
@@ -940,7 +965,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
         isChunkTransitioning: false,
         isVisibleInCurrentChunk: false,
       },
-      expected: "invalidate_only",
+      expected: "none",
     },
     {
       name: "duplicate tile arrives during chunk transition",
@@ -951,7 +976,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
         isChunkTransitioning: true,
         isVisibleInCurrentChunk: true,
       },
-      expected: "invalidate_only",
+      expected: "none",
     },
     {
       name: "duplicate tile arrives with null chunk",
@@ -962,7 +987,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
         isChunkTransitioning: false,
         isVisibleInCurrentChunk: true,
       },
-      expected: "invalidate_only",
+      expected: "none",
     },
     {
       name: "update is not a duplicate add",
