@@ -9,6 +9,20 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-07",
+    title: "Spectator Biome Visibility",
+    description:
+      "Spectator mode now renders real world-map biome terrain as soon as the visible area loads, so structures no longer appear over an empty paper map.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-07",
+    title: "Stable Spectator World Entry",
+    description:
+      "Spectator mode now waits for the world map to actually finish loading the target area before the entry overlay disappears, reducing missing hexes and making map entry feel more reliable.",
+    type: "fix",
+  },
+  {
     date: "2026-03-06",
     title: "Reliable Mainnet Realm Settlement",
     description:

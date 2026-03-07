@@ -131,11 +131,22 @@ interface ZoomRefreshDecisionInput {
   threshold: number;
   chunkChanged: boolean;
   isChunkTransitioning: boolean;
+  isProgrammaticCameraMotion: boolean;
 }
 
 interface ControlsChangeChunkRefreshPlan {
   shouldRequestRefresh: boolean;
   shouldForceRefresh: boolean;
+}
+
+interface ControlsChangePrefetchPlanInput {
+  currentChunk: string;
+  nextChunkKey: string;
+  isChunkTransitioning: boolean;
+}
+
+interface ControlsChangePrefetchPlan {
+  shouldPrefetchNextChunk: boolean;
 }
 
 interface StructureBoundsRefreshInput {
@@ -472,7 +483,16 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
     };
   }
 
-  const shouldForceRefresh = !input.chunkChanged && shouldForceChunkRefreshForZoomDistanceChange(input);
+  if (input.isProgrammaticCameraMotion) {
+    return {
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    };
+  }
+
+  const shouldForceRefresh =
+    !input.chunkChanged &&
+    shouldForceChunkRefreshForZoomDistanceChange(input);
 
   if (input.isChunkTransitioning && !shouldForceRefresh) {
     return {
@@ -484,6 +504,20 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
   return {
     shouldRequestRefresh: input.chunkChanged || shouldForceRefresh,
     shouldForceRefresh,
+  };
+}
+
+export function resolveControlsChangePrefetchPlan(
+  input: ControlsChangePrefetchPlanInput,
+): ControlsChangePrefetchPlan {
+  if (input.currentChunk === "null" || input.isChunkTransitioning) {
+    return {
+      shouldPrefetchNextChunk: false,
+    };
+  }
+
+  return {
+    shouldPrefetchNextChunk: input.nextChunkKey !== input.currentChunk,
   };
 }
 

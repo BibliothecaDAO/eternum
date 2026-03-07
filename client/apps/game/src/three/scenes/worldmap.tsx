@@ -21,7 +21,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Position } from "@bibliothecadao/eternum";
+import { DEFAULT_COORD_ALT, getTileAt, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -112,6 +112,7 @@ import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveControlsChangeChunkRefreshPlan,
+  resolveControlsChangePrefetchPlan,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRequestPlan,
@@ -142,6 +143,7 @@ import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-p
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import { buildHexGridRowMetadata, resolveHexGridProcessingPlan } from "./worldmap-hex-grid";
+import { emitWorldmapReadyEvent } from "./worldmap-ready-event";
 import {
   applyWorldmapSwitchOffRuntimeState,
   finalizePendingChunkFetchOwnership,
@@ -169,6 +171,7 @@ import {
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
+import { resolveVisibleWorldmapBiome } from "./worldmap-visible-biome";
 import {
   captureChunkDiagnosticsBaseline,
   cloneChunkDiagnosticsBaselines,
@@ -412,6 +415,14 @@ export default class WorldmapScene extends HexagonScene {
     const focusPoint = this.getCameraGroundIntersection();
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(focusPoint.x, focusPoint.z);
     const nextChunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+    const prefetchPlan = resolveControlsChangePrefetchPlan({
+      currentChunk: this.currentChunk,
+      nextChunkKey,
+      isChunkTransitioning: this.isChunkTransitioning,
+    });
+    if (prefetchPlan.shouldPrefetchNextChunk) {
+      void this.computeTileEntities(nextChunkKey);
+    }
     const nextCameraDistance = this.getCurrentCameraDistance();
     const refreshPlan = resolveControlsChangeChunkRefreshPlan({
       previousDistance: this.lastControlsCameraDistance,
@@ -419,6 +430,7 @@ export default class WorldmapScene extends HexagonScene {
       threshold: this.zoomForceRefreshDistanceThreshold,
       chunkChanged: this.currentChunk !== nextChunkKey,
       isChunkTransitioning: this.isChunkTransitioning,
+      isProgrammaticCameraMotion: this.isProgrammaticCameraMotionActive(),
     });
     this.lastControlsCameraDistance = nextCameraDistance;
 
@@ -1185,6 +1197,10 @@ export default class WorldmapScene extends HexagonScene {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
     if (col !== undefined && row !== undefined) {
+      if (this.state.isSpectating) {
+        this.moveCameraToColRowWithView(col, row, CameraView.Far, 0);
+        return;
+      }
       this.moveCameraToColRow(col, row, 0);
     }
   }
@@ -3475,6 +3491,8 @@ export default class WorldmapScene extends HexagonScene {
       const exploredTiles = this.exploredTiles;
       const structureHexCoords = this.structureManager.structureHexCoords;
       const perfSimulation = this.perfSimulation;
+      const isSpectating = this.state.isSpectating;
+      const components = this.dojo.components as Parameters<typeof getTileAt>[0];
       let processCellsTimingActive = false;
 
       const cleanupTask = () => {
@@ -3594,17 +3612,22 @@ export default class WorldmapScene extends HexagonScene {
           return;
         }
 
-        // Performance simulation: treat all hexes as explored when flag is set
-        const effectivelyExplored = exploredBiome || simulateAllExplored;
+        const tileBiomeId = isSpectating
+          ? getTileAt(components, DEFAULT_COORD_ALT, globalCol + FELT_CENTER(), rowEntry.globalRow + FELT_CENTER())
+              ?.biome
+          : undefined;
+        const visibleBiome = resolveVisibleWorldmapBiome({
+          exploredBiome,
+          isSpectating,
+          simulateAllExplored,
+          tileBiomeId,
+          simulatedBiome: perfSimulation?.getSimulatedBiome(globalCol, rowEntry.globalRow) ?? BiomeType.Grassland,
+        });
         const pooledMatrix = matrixPool.getMatrix();
         pooledMatrix.copy(baseHexMatrix);
 
-        if (effectivelyExplored) {
-          // Use actual biome if explored, or generate deterministic biome for simulation
-          const biome = exploredBiome
-            ? (exploredBiome as BiomeType)
-            : perfSimulation!.getSimulatedBiome(globalCol, rowEntry.globalRow);
-          const biomeVariant = getBiomeVariant(biome, globalCol, rowEntry.globalRow);
+        if (!visibleBiome.shouldRenderOutline && visibleBiome.biome !== null) {
+          const biomeVariant = getBiomeVariant(visibleBiome.biome, globalCol, rowEntry.globalRow);
           pooledMatrix.setPosition(baseX, 0.05, rowEntry.baseZ);
           biomeHexes[biomeVariant].push(pooledMatrix);
         } else {
@@ -4624,12 +4647,18 @@ export default class WorldmapScene extends HexagonScene {
       let tileFetchSucceeded = false;
       PerformanceMonitor.begin("chunkSwitch.tileFetchAwait");
       try {
-        // Wait for core tile data before updating managers to avoid empty renders
         tileFetchSucceeded = await tileFetchPromise;
-        await toriiBoundsSwitchPromise;
       } finally {
         PerformanceMonitor.end("chunkSwitch.tileFetchAwait");
       }
+      void (async () => {
+        PerformanceMonitor.begin("chunkSwitch.boundsAwait");
+        try {
+          await toriiBoundsSwitchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkSwitch.boundsAwait");
+        }
+      })();
       this.hydratedChunkRefreshes.delete(chunkKey);
 
       const isCurrentTransition = transitionToken === this.chunkTransitionToken;
@@ -4686,6 +4715,7 @@ export default class WorldmapScene extends HexagonScene {
         PerformanceMonitor.end("chunkSwitch.managerUpdate");
       }
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
+      this.emitWorldmapReadySignal();
 
       if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
         this.unregisterChunkOnNextFrame(oldChunk);
@@ -4740,12 +4770,18 @@ export default class WorldmapScene extends HexagonScene {
       let tileFetchSucceeded = false;
       PerformanceMonitor.begin("chunkRefresh.tileFetchAwait");
       try {
-        // Wait for tile data before updating managers
         tileFetchSucceeded = await tileFetchPromise;
-        await toriiBoundsSwitchPromise;
       } finally {
         PerformanceMonitor.end("chunkRefresh.tileFetchAwait");
       }
+      void (async () => {
+        PerformanceMonitor.begin("chunkRefresh.boundsAwait");
+        try {
+          await toriiBoundsSwitchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkRefresh.boundsAwait");
+        }
+      })();
       this.hydratedChunkRefreshes.delete(chunkKey);
       if (!tileFetchSucceeded) {
         return;
@@ -4757,6 +4793,7 @@ export default class WorldmapScene extends HexagonScene {
       } finally {
         PerformanceMonitor.end("chunkRefresh.managerUpdate");
       }
+      this.emitWorldmapReadySignal();
 
       if (memoryMonitor) {
         const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
@@ -4897,6 +4934,21 @@ export default class WorldmapScene extends HexagonScene {
   private resetChunkDiagnostics(): void {
     this.chunkDiagnostics = createWorldmapChunkDiagnostics();
     this.chunkDiagnosticsBaselines = [];
+  }
+
+  private emitWorldmapReadySignal(): void {
+    const detail = {
+      ...this.getCameraTargetHex(),
+      currentChunk: this.currentChunk,
+    };
+
+    const dispatch = () => emitWorldmapReadyEvent(detail);
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => dispatch());
+      return;
+    }
+
+    dispatch();
   }
 
   private getChunkDiagnosticsSnapshot(): WorldmapChunkDiagnosticsSnapshot {

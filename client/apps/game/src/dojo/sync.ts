@@ -3,9 +3,12 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { sqlApi } from "@/services/api";
+import { Position } from "@bibliothecadao/eternum";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
   getAddressNamesFromTorii,
@@ -14,7 +17,7 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
-import { resolveInitialStructureSelection } from "./sync-initial-selection";
+import { resolveInitialStructureSelection, toStructureWorldMapPosition } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
@@ -363,7 +366,6 @@ export const initialSync = async (
       const start = performance.now();
       state.setStructureEntityId(selectedStructure.entity_id, {
         spectator: selectAsSpectator,
-        worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
       });
       await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
         {
@@ -371,6 +373,30 @@ export const initialSync = async (
           position: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
         },
       ]);
+      const syncedStructure = getComponentValue(
+        setup.components.Structure,
+        getEntityIdFromKeys([BigInt(selectedStructure.entity_id)]),
+      ) as { base?: { coord_x?: number; coord_y?: number } } | undefined;
+      const syncedCol = Number(syncedStructure?.base?.coord_x);
+      const syncedRow = Number(syncedStructure?.base?.coord_y);
+      const worldMapPosition =
+        Number.isFinite(syncedCol) && Number.isFinite(syncedRow)
+          ? (() => {
+              const normalized = new Position({ x: syncedCol, y: syncedRow }).getNormalized();
+              return { col: normalized.x, row: normalized.y };
+            })()
+          : toStructureWorldMapPosition(selectedStructure);
+      state.setStructureEntityId(
+        selectedStructure.entity_id,
+        worldMapPosition
+          ? {
+              spectator: selectAsSpectator,
+              worldMapPosition,
+            }
+          : {
+              spectator: selectAsSpectator,
+            },
+      );
       const end = performance.now();
       console.log("[sync] initial structure query", end - start);
       updateProgress(25);

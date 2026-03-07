@@ -15,10 +15,12 @@ describe("worldmap chunk-switch performance instrumentation", () => {
     expect(source).toContain('PerformanceMonitor.begin("chunkSwitch.total")');
     expect(source).toContain('PerformanceMonitor.begin("chunkSwitch.terrainBuild")');
     expect(source).toContain('PerformanceMonitor.begin("chunkSwitch.tileFetchAwait")');
+    expect(source).toContain('PerformanceMonitor.begin("chunkSwitch.boundsAwait")');
     expect(source).toContain('PerformanceMonitor.begin("chunkSwitch.managerUpdate")');
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.total")');
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.terrainBuild")');
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.tileFetchAwait")');
+    expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.boundsAwait")');
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.managerUpdate")');
     expect(source).toContain('PerformanceMonitor.begin("chunkManager.army")');
     expect(source).toContain('PerformanceMonitor.begin("chunkManager.structure")');
@@ -27,5 +29,17 @@ describe("worldmap chunk-switch performance instrumentation", () => {
     expect(source).toContain('PerformanceMonitor.begin("hexGrid.cacheSnapshot")');
     expect(source).toContain('PerformanceMonitor.begin("hexGrid.interactiveHexes")');
     expect(source).toContain('PerformanceMonitor.begin("hexGrid.processCells")');
+  });
+
+  it("uses a single far-view move for spectator route entry", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain("this.moveCameraToColRowWithView(col, row, CameraView.Far, 0)");
+  });
+
+  it("renders spectator terrain through visible biome resolution instead of outline-only fallback", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain("resolveVisibleWorldmapBiome({");
   });
 });

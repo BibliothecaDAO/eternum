@@ -28,6 +28,7 @@ import {
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   resolveControlsChangeChunkRefreshPlan,
+  resolveControlsChangePrefetchPlan,
   resolveEntityActionPathLookup,
 } from "./worldmap-chunk-transition";
 
@@ -1258,6 +1259,7 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         threshold: 0.75,
         chunkChanged: false,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toBe(true);
   });
@@ -1270,6 +1272,7 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         threshold: 0.75,
         chunkChanged: false,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toBe(false);
   });
@@ -1282,6 +1285,7 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         threshold: 0.75,
         chunkChanged: false,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toBe(false);
   });
@@ -1296,6 +1300,7 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: false,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: false,
@@ -1311,6 +1316,7 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: true,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1326,6 +1332,7 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: false,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1341,6 +1348,7 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: true,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1356,6 +1364,7 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: true,
         isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: false,
@@ -1371,6 +1380,7 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: true,
         isChunkTransitioning: true,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: false,
@@ -1386,10 +1396,77 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         threshold: 0.75,
         chunkChanged: false,
         isChunkTransitioning: true,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
       shouldForceRefresh: true,
+    });
+  });
+
+  it("suppresses controls-change refresh while camera motion is programmatic", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: true,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+});
+
+describe("resolveControlsChangePrefetchPlan", () => {
+  it("prefetches when controls cross into a different chunk", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "0,0",
+        nextChunkKey: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: true,
+    });
+  });
+
+  it("skips prefetch when the focused chunk does not change", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "0,0",
+        nextChunkKey: "0,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: false,
+    });
+  });
+
+  it("skips prefetch while a chunk transition is already running", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "0,0",
+        nextChunkKey: "24,0",
+        isChunkTransitioning: true,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: false,
+    });
+  });
+
+  it("skips prefetch before the first committed chunk exists", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "null",
+        nextChunkKey: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: false,
     });
   });
 });

@@ -1,6 +1,8 @@
 export const HEXCEPTION_GRID_READY_EVENT = "hexception:grid-ready";
 
-type GridCoordinates = {
+export { WORLDMAP_READY_EVENT, waitForWorldmapReady } from "@/three/scenes/worldmap-ready-event";
+
+export type GridCoordinates = {
   col: number;
   row: number;
 };
