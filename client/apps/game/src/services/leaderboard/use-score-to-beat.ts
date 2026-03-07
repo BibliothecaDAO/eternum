@@ -91,7 +91,6 @@ export const useScoreToBeat = (
       const result: ScoreToBeatResult = await fetchScoreToBeatAcrossEndpoints(stableEndpoints, {
         perEndpointLimit: 50,
         runsToAggregate,
-        maxPlayers: 10,
       });
 
       setScoreToBeatState({
