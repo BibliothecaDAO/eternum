@@ -408,11 +408,16 @@ export default class WorldmapScene extends HexagonScene {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
 
+    const focusPoint = this.getCameraGroundIntersection();
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(focusPoint.x, focusPoint.z);
+    const nextChunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
     const nextCameraDistance = this.getCurrentCameraDistance();
     const refreshPlan = resolveControlsChangeChunkRefreshPlan({
       previousDistance: this.lastControlsCameraDistance,
       nextDistance: nextCameraDistance,
       threshold: this.zoomForceRefreshDistanceThreshold,
+      chunkChanged: this.currentChunk !== nextChunkKey,
+      isChunkTransitioning: this.isChunkTransitioning,
     });
     this.lastControlsCameraDistance = nextCameraDistance;
 
@@ -3444,6 +3449,8 @@ export default class WorldmapScene extends HexagonScene {
       };
 
       let currentIndex = 0;
+      let currentRowIndex = 0;
+      let currentColIndex = 0;
       let resolved = false;
 
       const matrixPool = matrixPoolInstance;
@@ -3456,7 +3463,9 @@ export default class WorldmapScene extends HexagonScene {
       const rowMetadata = buildHexGridRowMetadata({
         rows,
         halfRows,
+        halfCols,
         chunkCenterRow,
+        chunkCenterCol,
         vertDist,
         horizDist,
       });
@@ -3571,12 +3580,10 @@ export default class WorldmapScene extends HexagonScene {
         resolveOnce();
       };
 
-      const processCell = (index: number) => {
-        const rowIndex = Math.floor(index / cols);
+      const processCell = (rowIndex: number, colIndex: number) => {
         const rowEntry = rowMetadata[rowIndex]!;
-        const colOffset = (index % cols) - halfCols;
-        const globalCol = chunkCenterCol + colOffset;
-        const baseX = globalCol * horizDist - rowEntry.rowOffsetValue;
+        const globalCol = chunkCenterCol - halfCols + colIndex;
+        const baseX = rowEntry.baseXAtColZero + colIndex * horizDist;
 
         const isStructure = structureHexCoords.get(globalCol)?.has(rowEntry.globalRow) || false;
         const shouldHideTile = isStructure;
@@ -3615,9 +3622,14 @@ export default class WorldmapScene extends HexagonScene {
         let processedThisFrame = 0;
 
         while (currentIndex < totalHexes) {
-          processCell(currentIndex);
+          processCell(currentRowIndex, currentColIndex);
           currentIndex += 1;
           processedThisFrame += 1;
+          currentColIndex += 1;
+          if (currentColIndex >= cols) {
+            currentColIndex = 0;
+            currentRowIndex += 1;
+          }
 
           if (currentIndex >= totalHexes) {
             break;
@@ -5004,6 +5016,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const rowChunks = Math.trunc(options.rowChunks ?? 0);
     const colChunks = Math.trunc(options.colChunks ?? 0);
+    const refreshMode = options.refreshMode ?? "force";
 
     if (rowChunks === 0 && colChunks === 0) {
       return this.getWorldmapPerfState();
@@ -5019,7 +5032,16 @@ export default class WorldmapScene extends HexagonScene {
     this.moveCameraToColRow(targetChunkCenter.col, targetChunkCenter.row, durationSeconds);
 
     await new Promise<void>((resolve) => window.setTimeout(resolve, settleDelayMs));
-    return this.forceWorldmapChunkRefresh();
+    if (refreshMode === "force") {
+      return this.forceWorldmapChunkRefresh();
+    }
+
+    await waitForChunkTransitionToSettle(
+      () => this.globalChunkSwitchPromise,
+      (error) => console.warn("[WorldMap] Natural perf move settle failed:", error),
+    );
+
+    return this.getWorldmapPerfState();
   }
 
   private getWorldmapBenchmarkSnapshot(): WorldmapBenchmarkSnapshot {

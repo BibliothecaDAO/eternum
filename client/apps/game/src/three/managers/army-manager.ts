@@ -51,7 +51,7 @@ import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
-import { MAX_INSTANCES } from "../constants/army-constants";
+import { MAX_INSTANCES, TROOP_TO_MODEL } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
   isCommittedManagerChunk,
@@ -62,6 +62,9 @@ import {
 } from "./manager-update-convergence";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const PREWARM_ARMY_MODEL_TYPES: ModelType[] = Array.from(
+  new Set<ModelType>([ModelType.Boat, ...Object.values(TROOP_TO_MODEL).flatMap((tiers) => Object.values(tiers))]),
+);
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -214,8 +217,8 @@ export class ArmyManager {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
-    // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
-    void this.armyModel.preloadModels([ModelType.Boat]);
+    // Warm shared unit models in the background so chunk switches do not pay first-load costs.
+    void this.armyModel.preloadModels(PREWARM_ARMY_MODEL_TYPES);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.

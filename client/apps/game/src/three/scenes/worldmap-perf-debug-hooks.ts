@@ -53,6 +53,7 @@ export interface WorldmapChunkOffsetMoveOptions {
   colChunks?: number;
   durationSeconds?: number;
   settleDelayMs?: number;
+  refreshMode?: "force" | "natural";
 }
 
 export interface WorldmapBenchmarkSnapshot {

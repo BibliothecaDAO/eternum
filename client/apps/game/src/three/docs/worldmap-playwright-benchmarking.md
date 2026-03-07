@@ -71,7 +71,12 @@ Each benchmark run does:
 4. spawn debug armies and rerun the same sweep
 5. compare terrain-only vs terrain-plus-units p95 values
 
-`moveWorldmapToChunkOffset(...)` now forces a chunk refresh after camera travel settles so automated sweeps do not depend on passive controls-change debouncing.
+`moveWorldmapToChunkOffset(...)` supports two benchmark modes:
+
+1. `refreshMode: "natural"`: measure normal chunk switching without an extra forced refresh
+2. `refreshMode: "force"`: measure chunk movement followed by an explicit forced refresh
+
+The Playwright loop uses `refreshMode: "natural"` so chunk-switch numbers are not inflated by the debug refresh path.
 
 ## Current Limits
 

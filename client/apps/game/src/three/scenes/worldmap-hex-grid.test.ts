@@ -6,14 +6,18 @@ describe("buildHexGridRowMetadata", () => {
   it("matches the legacy row geometry calculation for even-sized chunks", () => {
     const rows = 4;
     const halfRows = rows / 2;
+    const halfCols = 3;
     const chunkCenterRow = 12;
+    const chunkCenterCol = 20;
     const vertDist = 1.5;
     const horizDist = 2.5;
 
     const metadata = buildHexGridRowMetadata({
       rows,
       halfRows,
+      halfCols,
       chunkCenterRow,
+      chunkCenterCol,
       vertDist,
       horizDist,
     });
@@ -23,21 +27,25 @@ describe("buildHexGridRowMetadata", () => {
         globalRow: 10,
         baseZ: 15,
         rowOffsetValue: 0,
+        baseXAtColZero: 42.5,
       },
       {
         globalRow: 11,
         baseZ: 16.5,
         rowOffsetValue: 1.25,
+        baseXAtColZero: 41.25,
       },
       {
         globalRow: 12,
         baseZ: 18,
         rowOffsetValue: 0,
+        baseXAtColZero: 42.5,
       },
       {
         globalRow: 13,
         baseZ: 19.5,
         rowOffsetValue: 1.25,
+        baseXAtColZero: 41.25,
       },
     ]);
   });
@@ -46,7 +54,9 @@ describe("buildHexGridRowMetadata", () => {
     const metadata = buildHexGridRowMetadata({
       rows: 3,
       halfRows: 1,
+      halfCols: 2,
       chunkCenterRow: -1,
+      chunkCenterCol: 5,
       vertDist: 3,
       horizDist: 4,
     });
@@ -56,16 +66,19 @@ describe("buildHexGridRowMetadata", () => {
         globalRow: -2,
         baseZ: -6,
         rowOffsetValue: 0,
+        baseXAtColZero: 12,
       },
       {
         globalRow: -1,
         baseZ: -3,
         rowOffsetValue: 2,
+        baseXAtColZero: 10,
       },
       {
         globalRow: 0,
         baseZ: 0,
         rowOffsetValue: 0,
+        baseXAtColZero: 12,
       },
     ]);
   });

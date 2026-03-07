@@ -83,6 +83,7 @@ async function performChunkSweep(page: Page, iterations: number): Promise<void> 
           rowChunks?: number;
           durationSeconds?: number;
           settleDelayMs?: number;
+          refreshMode?: "force" | "natural";
         }) => Promise<unknown>;
       };
 
@@ -90,6 +91,7 @@ async function performChunkSweep(page: Page, iterations: number): Promise<void> 
         ...moveOptions,
         durationSeconds: 0.3,
         settleDelayMs: 700,
+        refreshMode: "natural",
       });
     }, move);
   }

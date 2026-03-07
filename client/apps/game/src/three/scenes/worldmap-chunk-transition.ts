@@ -129,6 +129,8 @@ interface ZoomRefreshDecisionInput {
   previousDistance: number | null;
   nextDistance: number;
   threshold: number;
+  chunkChanged: boolean;
+  isChunkTransitioning: boolean;
 }
 
 interface ControlsChangeChunkRefreshPlan {
@@ -457,9 +459,10 @@ export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshD
 }
 
 /**
- * Controls-change events should always schedule a debounced chunk refresh when
- * distance samples are valid so pan traversal converges quickly. Large zoom
- * deltas still escalate to forced refresh.
+ * Controls-change events should only schedule a refresh when the camera crosses
+ * into another chunk or when a zoom delta is large enough to require a forced
+ * refresh. This avoids spamming refresh requests while panning inside the same
+ * chunk.
  */
 export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecisionInput): ControlsChangeChunkRefreshPlan {
   if (!Number.isFinite(input.nextDistance)) {
@@ -469,9 +472,18 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
     };
   }
 
+  const shouldForceRefresh = shouldForceChunkRefreshForZoomDistanceChange(input);
+
+  if (input.isChunkTransitioning && !shouldForceRefresh) {
+    return {
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    };
+  }
+
   return {
-    shouldRequestRefresh: true,
-    shouldForceRefresh: shouldForceChunkRefreshForZoomDistanceChange(input),
+    shouldRequestRefresh: input.chunkChanged || shouldForceRefresh,
+    shouldForceRefresh,
   };
 }
 

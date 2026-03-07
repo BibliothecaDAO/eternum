@@ -1282,12 +1282,29 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
 });
 
 describe("resolveControlsChangeChunkRefreshPlan", () => {
-  it("requests a debounced refresh on camera movement even without large zoom delta", () => {
+  it("skips refresh when the camera stays in the same chunk without a large zoom delta", () => {
     expect(
       resolveControlsChangeChunkRefreshPlan({
         previousDistance: 20,
         nextDistance: 20.2,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+
+  it("requests a debounced refresh when the camera crosses into another chunk", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 20.2,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1301,6 +1318,8 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         previousDistance: 20,
         nextDistance: 21,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1314,10 +1333,42 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         previousDistance: 20,
         nextDistance: Number.NaN,
         threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
       }),
     ).toEqual({
       shouldRequestRefresh: false,
       shouldForceRefresh: false,
+    });
+  });
+
+  it("suppresses non-forced refreshes while a chunk transition is already running", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 20.2,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: true,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+
+  it("still allows a forced zoom refresh during a chunk transition", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: true,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: true,
+      shouldForceRefresh: true,
     });
   });
 });
