@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHexGridRowMetadata } from "./worldmap-hex-grid";
+import { buildHexGridRowMetadata, resolveHexGridProcessingPlan } from "./worldmap-hex-grid";
 
 describe("buildHexGridRowMetadata", () => {
   it("matches the legacy row geometry calculation for even-sized chunks", () => {
@@ -68,5 +68,56 @@ describe("buildHexGridRowMetadata", () => {
         rowOffsetValue: 0,
       },
     ]);
+  });
+
+  it("keeps the base processing budget when not transitioning", () => {
+    expect(
+      resolveHexGridProcessingPlan({
+        totalHexes: 2304,
+        baseFrameBudgetMs: 6.5,
+        baseMinBatch: 120,
+        baseMaxBatch: 900,
+        isChunkTransitioning: false,
+        isChunkRefreshRunning: false,
+      }),
+    ).toEqual({
+      frameBudgetMs: 6.5,
+      minBatch: 120,
+      maxBatch: 900,
+    });
+  });
+
+  it("uses a more aggressive budget during chunk transitions and refreshes", () => {
+    expect(
+      resolveHexGridProcessingPlan({
+        totalHexes: 2304,
+        baseFrameBudgetMs: 6.5,
+        baseMinBatch: 120,
+        baseMaxBatch: 900,
+        isChunkTransitioning: true,
+        isChunkRefreshRunning: false,
+      }),
+    ).toEqual({
+      frameBudgetMs: 10,
+      minBatch: 240,
+      maxBatch: 1575,
+    });
+  });
+
+  it("caps the aggressive budget by the available hex count", () => {
+    expect(
+      resolveHexGridProcessingPlan({
+        totalHexes: 150,
+        baseFrameBudgetMs: 6.5,
+        baseMinBatch: 120,
+        baseMaxBatch: 900,
+        isChunkTransitioning: false,
+        isChunkRefreshRunning: true,
+      }),
+    ).toEqual({
+      frameBudgetMs: 10,
+      minBatch: 150,
+      maxBatch: 150,
+    });
   });
 });

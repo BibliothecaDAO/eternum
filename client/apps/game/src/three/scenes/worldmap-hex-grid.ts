@@ -4,6 +4,12 @@ export interface HexGridRowMetadata {
   rowOffsetValue: number;
 }
 
+export interface HexGridProcessingPlan {
+  frameBudgetMs: number;
+  minBatch: number;
+  maxBatch: number;
+}
+
 export function buildHexGridRowMetadata(options: {
   rows: number;
   halfRows: number;
@@ -25,4 +31,37 @@ export function buildHexGridRowMetadata(options: {
   }
 
   return metadata;
+}
+
+export function resolveHexGridProcessingPlan(options: {
+  totalHexes: number;
+  baseFrameBudgetMs: number;
+  baseMinBatch: number;
+  baseMaxBatch: number;
+  isChunkTransitioning: boolean;
+  isChunkRefreshRunning: boolean;
+}): HexGridProcessingPlan {
+  const {
+    totalHexes,
+    baseFrameBudgetMs,
+    baseMinBatch,
+    baseMaxBatch,
+    isChunkTransitioning,
+    isChunkRefreshRunning,
+  } = options;
+
+  const safeTotalHexes = Math.max(1, Math.floor(totalHexes));
+  const isHighPriority = isChunkTransitioning || isChunkRefreshRunning;
+  const minBatchMultiplier = isHighPriority ? 2 : 1;
+  const maxBatchMultiplier = isHighPriority ? 1.75 : 1;
+  const frameBudgetMs = isHighPriority ? baseFrameBudgetMs + 3.5 : baseFrameBudgetMs;
+
+  const minBatch = Math.min(safeTotalHexes, Math.max(1, Math.floor(baseMinBatch * minBatchMultiplier)));
+  const maxBatch = Math.max(minBatch, Math.min(safeTotalHexes, Math.floor(baseMaxBatch * maxBatchMultiplier)));
+
+  return {
+    frameBudgetMs,
+    minBatch,
+    maxBatch,
+  };
 }

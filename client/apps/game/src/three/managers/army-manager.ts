@@ -740,9 +740,10 @@ export class ArmyManager {
     return true;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number; skipVisualSettle?: boolean }) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
+    const skipVisualSettle = options?.skipVisualSettle ?? false;
     if (
       !shouldAcceptManagerChunkRequest({
         chunkKey,
@@ -807,7 +808,9 @@ export class ArmyManager {
 
     try {
       await this.chunkSwitchPromise;
-      await waitForVisualSettle();
+      if (!skipVisualSettle) {
+        await waitForVisualSettle();
+      }
     } finally {
       this.chunkSwitchPromise = null;
     }

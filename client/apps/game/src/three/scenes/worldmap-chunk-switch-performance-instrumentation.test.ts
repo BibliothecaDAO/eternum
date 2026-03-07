@@ -20,6 +20,9 @@ describe("worldmap chunk-switch performance instrumentation", () => {
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.terrainBuild")');
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.tileFetchAwait")');
     expect(source).toContain('PerformanceMonitor.begin("chunkRefresh.managerUpdate")');
+    expect(source).toContain('PerformanceMonitor.begin("chunkManager.army")');
+    expect(source).toContain('PerformanceMonitor.begin("chunkManager.structure")');
+    expect(source).toContain('PerformanceMonitor.begin("chunkManager.chest")');
     expect(source).toContain('PerformanceMonitor.begin("hexGrid.commit")');
     expect(source).toContain('PerformanceMonitor.begin("hexGrid.cacheSnapshot")');
     expect(source).toContain('PerformanceMonitor.begin("hexGrid.interactiveHexes")');

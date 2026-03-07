@@ -141,7 +141,7 @@ import {
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
-import { buildHexGridRowMetadata } from "./worldmap-hex-grid";
+import { buildHexGridRowMetadata, resolveHexGridProcessingPlan } from "./worldmap-hex-grid";
 import {
   applyWorldmapSwitchOffRuntimeState,
   finalizePendingChunkFetchOwnership,
@@ -3408,9 +3408,15 @@ export default class WorldmapScene extends HexagonScene {
 
     const halfRows = rows / 2;
     const halfCols = cols / 2;
-    const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
-    const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-    const frameBudget = this.hexGridFrameBudgetMs;
+    const processingPlan = resolveHexGridProcessingPlan({
+      totalHexes,
+      baseFrameBudgetMs: this.hexGridFrameBudgetMs,
+      baseMinBatch: this.hexGridMinBatch,
+      baseMaxBatch: this.hexGridMaxBatch,
+      isChunkTransitioning: this.isChunkTransitioning,
+      isChunkRefreshRunning: this.chunkRefreshRunning,
+    });
+    const { minBatch, maxBatch, frameBudgetMs: frameBudget } = processingPlan;
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
@@ -4768,9 +4774,39 @@ export default class WorldmapScene extends HexagonScene {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
 
     const updateTasks = [
-      { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
-      { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
-      { label: "chest", promise: this.chestManager.updateChunk(chunkKey, options) },
+      {
+        label: "army",
+        promise: (async () => {
+          PerformanceMonitor.begin("chunkManager.army");
+          try {
+            await this.armyManager.updateChunk(chunkKey, { ...options, skipVisualSettle: true });
+          } finally {
+            PerformanceMonitor.end("chunkManager.army");
+          }
+        })(),
+      },
+      {
+        label: "structure",
+        promise: (async () => {
+          PerformanceMonitor.begin("chunkManager.structure");
+          try {
+            await this.structureManager.updateChunk(chunkKey, options);
+          } finally {
+            PerformanceMonitor.end("chunkManager.structure");
+          }
+        })(),
+      },
+      {
+        label: "chest",
+        promise: (async () => {
+          PerformanceMonitor.begin("chunkManager.chest");
+          try {
+            await this.chestManager.updateChunk(chunkKey, options);
+          } finally {
+            PerformanceMonitor.end("chunkManager.chest");
+          }
+        })(),
+      },
     ];
 
     const results = await Promise.allSettled(updateTasks.map((task) => task.promise));
