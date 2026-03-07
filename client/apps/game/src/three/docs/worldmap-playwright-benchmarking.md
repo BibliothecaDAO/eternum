@@ -82,4 +82,5 @@ The Playwright loop uses `refreshMode: "natural"` so chunk-switch numbers are no
 
 1. The loop depends on DEV debug hooks and a working local WebGL browser.
 2. If the browser cannot create a WebGL context, the run is infra-blocked rather than app-failed.
-3. The unit load uses the debug army spawner, so it is deterministic enough for iteration but not a perfect replay of live Torii traffic.
+3. The unit load uses the debug army spawner, so it is deterministic enough for iteration but not a perfect replay of
+   live Torii traffic.

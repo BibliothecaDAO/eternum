@@ -197,7 +197,12 @@ test.describe("worldmap performance benchmark", () => {
     await waitForBenchmarkHooks(page);
 
     const terrainOnly = await runScenario(page, "terrain-only", 0, DEFAULT_SWEEP_ITERATIONS);
-    const terrainAndUnits = await runScenario(page, "terrain-plus-units", DEFAULT_DEBUG_ARMY_COUNT, DEFAULT_SWEEP_ITERATIONS);
+    const terrainAndUnits = await runScenario(
+      page,
+      "terrain-plus-units",
+      DEFAULT_DEBUG_ARMY_COUNT,
+      DEFAULT_SWEEP_ITERATIONS,
+    );
 
     const terrainOnlySwitchP95 = getNearestRankPercentile(
       terrainOnly.snapshot.diagnostics.diagnostics.switchDurationMsSamples,
@@ -256,9 +261,7 @@ test.describe("worldmap performance benchmark", () => {
 
     if (SWITCH_P95_REGRESSION_FRACTION !== null) {
       expect(switchRegressionFraction).not.toBeNull();
-      expect(switchRegressionFraction ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
-        SWITCH_P95_REGRESSION_FRACTION,
-      );
+      expect(switchRegressionFraction ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(SWITCH_P95_REGRESSION_FRACTION);
     }
   });
 });

@@ -47,8 +47,8 @@ export function resolveGameEntryNavigationTarget(
     input.isSpectateMode && resolvedStructurePosition
       ? resolvedStructurePosition
       : input.isSpectateMode && worldMapReturnPosition
-      ? worldMapReturnPosition
-      : DEFAULT_TARGET;
+        ? worldMapReturnPosition
+        : DEFAULT_TARGET;
 
   const structureEntityId = input.isSpectateMode ? Number(input.structureEntityId || 0) : 0;
   const url = input.isSpectateMode

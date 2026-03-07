@@ -743,7 +743,10 @@ export class ArmyManager {
     return true;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number; skipVisualSettle?: boolean }) {
+  async updateChunk(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number; skipVisualSettle?: boolean },
+  ) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
     const skipVisualSettle = options?.skipVisualSettle ?? false;

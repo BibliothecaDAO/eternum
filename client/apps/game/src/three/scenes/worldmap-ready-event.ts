@@ -26,12 +26,16 @@ function isMatchingCoordinates(
 }
 
 export function getStoredWorldmapReadyDetail(target?: Window): WorldmapReadyDetail | null {
-  const resolvedWindow = getTargetWindow(target) as (Window & { __worldmapReadyDetail?: WorldmapReadyDetail }) | undefined;
+  const resolvedWindow = getTargetWindow(target) as
+    | (Window & { __worldmapReadyDetail?: WorldmapReadyDetail })
+    | undefined;
   return resolvedWindow?.__worldmapReadyDetail ?? null;
 }
 
 export function emitWorldmapReadyEvent(detail: WorldmapReadyDetail, target?: Window): void {
-  const resolvedWindow = getTargetWindow(target) as (Window & { __worldmapReadyDetail?: WorldmapReadyDetail }) | undefined;
+  const resolvedWindow = getTargetWindow(target) as
+    | (Window & { __worldmapReadyDetail?: WorldmapReadyDetail })
+    | undefined;
   if (!resolvedWindow) {
     return;
   }

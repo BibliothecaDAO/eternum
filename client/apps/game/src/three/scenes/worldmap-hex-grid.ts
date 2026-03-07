@@ -47,14 +47,8 @@ export function resolveHexGridProcessingPlan(options: {
   isChunkTransitioning: boolean;
   isChunkRefreshRunning: boolean;
 }): HexGridProcessingPlan {
-  const {
-    totalHexes,
-    baseFrameBudgetMs,
-    baseMinBatch,
-    baseMaxBatch,
-    isChunkTransitioning,
-    isChunkRefreshRunning,
-  } = options;
+  const { totalHexes, baseFrameBudgetMs, baseMinBatch, baseMaxBatch, isChunkTransitioning, isChunkRefreshRunning } =
+    options;
 
   const safeTotalHexes = Math.max(1, Math.floor(totalHexes));
   const isHighPriority = isChunkTransitioning || isChunkRefreshRunning;

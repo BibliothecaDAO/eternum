@@ -490,9 +490,7 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
     };
   }
 
-  const shouldForceRefresh =
-    !input.chunkChanged &&
-    shouldForceChunkRefreshForZoomDistanceChange(input);
+  const shouldForceRefresh = !input.chunkChanged && shouldForceChunkRefreshForZoomDistanceChange(input);
 
   if (input.isChunkTransitioning && !shouldForceRefresh) {
     return {
@@ -507,9 +505,7 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
   };
 }
 
-export function resolveControlsChangePrefetchPlan(
-  input: ControlsChangePrefetchPlanInput,
-): ControlsChangePrefetchPlan {
+export function resolveControlsChangePrefetchPlan(input: ControlsChangePrefetchPlanInput): ControlsChangePrefetchPlan {
   if (input.currentChunk === "null" || input.isChunkTransitioning) {
     return {
       shouldPrefetchNextChunk: false,

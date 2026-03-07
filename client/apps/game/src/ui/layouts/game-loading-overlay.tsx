@@ -177,9 +177,9 @@ export const GameLoadingOverlay = () => {
   const hasNavigatedToTarget = isSpectating
     ? Boolean(
         spectatorTargetCoords &&
-          currentWorldMapCoords &&
-          currentWorldMapCoords.col === spectatorTargetCoords.col &&
-          currentWorldMapCoords.row === spectatorTargetCoords.row,
+        currentWorldMapCoords &&
+        currentWorldMapCoords.col === spectatorTargetCoords.col &&
+        currentWorldMapCoords.row === spectatorTargetCoords.row,
       )
     : playerStructures.length > 0;
   const phase = resolveEntryOverlayPhase({

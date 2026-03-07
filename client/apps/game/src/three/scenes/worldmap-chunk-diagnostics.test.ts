@@ -80,7 +80,11 @@ describe("worldmap-chunk-diagnostics", () => {
     ];
 
     events.forEach((event) =>
-      recordChunkDiagnosticsEvent(diagnostics, event, event === "refresh_requested" ? { source: "controls_change" } : {}),
+      recordChunkDiagnosticsEvent(
+        diagnostics,
+        event,
+        event === "refresh_requested" ? { source: "controls_change" } : {},
+      ),
     );
 
     expect(diagnostics.transitionStarted).toBe(1);
