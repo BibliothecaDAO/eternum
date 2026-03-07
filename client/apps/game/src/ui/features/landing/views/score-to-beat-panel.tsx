@@ -27,6 +27,8 @@ interface SeriesSelectionOption {
   gameNames: string[];
 }
 
+const MAINNET_STATIC_SERIES_NAMES = new Set(["s0-preview-cont"]);
+
 const SCORE_TO_BEAT_GAMES_STORAGE_KEY = "landing-score-to-beat-games-v2";
 const SCORE_TO_BEAT_SERIES_STORAGE_KEY = "landing-score-to-beat-series-v1";
 const SCORE_TO_BEAT_RUNS_STORAGE_KEY = "landing-score-to-beat-runs-v2";
@@ -127,10 +129,21 @@ const loadStoredRunsToAggregate = (): number | null => {
 const mapSeriesToSelectionOption = (
   series: FactorySeriesIndex,
   availableGameNames: Set<string>,
+  selectedChain: Chain,
 ): SeriesSelectionOption | null => {
-  const uniqueGameNames = Array.from(
-    new Set(series.games.map((game) => game.worldName).filter((worldName) => availableGameNames.has(worldName))),
+  const uniqueGameNamesSet = new Set(
+    series.games.map((game) => game.worldName).filter((worldName) => availableGameNames.has(worldName)),
   );
+
+  if (selectedChain === "mainnet" && MAINNET_STATIC_SERIES_NAMES.has(series.name.trim().toLowerCase())) {
+    SCORE_TO_BEAT_STATIC_GAMES.forEach((gameName) => {
+      if (availableGameNames.has(gameName)) {
+        uniqueGameNamesSet.add(gameName);
+      }
+    });
+  }
+
+  const uniqueGameNames = Array.from(uniqueGameNamesSet);
 
   if (uniqueGameNames.length === 0) return null;
 
@@ -171,7 +184,8 @@ export const ScoreToBeatPanel = () => {
   const [selectedChain, setSelectedChain] = useState<Chain>(() => loadStoredChain() ?? "mainnet");
   const [selectedGames, setSelectedGames] = useState<string[]>(() => {
     const storedGames = loadStoredSelectedGames();
-    return (storedGames ?? [...SCORE_TO_BEAT_STATIC_GAMES]).slice(0, MAX_GAMES);
+    const chainDefaultGames = selectedChain === "mainnet" ? [...SCORE_TO_BEAT_STATIC_GAMES] : [];
+    return (storedGames ?? chainDefaultGames).slice(0, MAX_GAMES);
   });
   const [selectedSeries, setSelectedSeries] = useState<string[]>(() => loadStoredSelectedSeries() ?? []);
   const [runsToAggregate, setRunsToAggregate] = useState<number>(
@@ -202,24 +216,43 @@ export const ScoreToBeatPanel = () => {
     });
   }, [factoryWorlds, worldAvailability, selectedChain]);
 
+  const staticGamesForSelectedChain = useMemo(
+    () => (selectedChain === "mainnet" ? [...SCORE_TO_BEAT_STATIC_GAMES] : []),
+    [selectedChain],
+  );
+
   const availableGameNames = useMemo(
-    () => Array.from(new Set([...SCORE_TO_BEAT_STATIC_GAMES, ...availableGames.map((game) => game.name)])),
-    [availableGames],
+    () => Array.from(new Set([...staticGamesForSelectedChain, ...availableGames.map((game) => game.name)])),
+    [availableGames, staticGamesForSelectedChain],
   );
 
   const availableGameNamesSet = useMemo(() => new Set(availableGameNames), [availableGameNames]);
 
   const availableSeries = useMemo(() => {
     return factorySeries
-      .map((series) => mapSeriesToSelectionOption(series, availableGameNamesSet))
+      .map((series) => mapSeriesToSelectionOption(series, availableGameNamesSet, selectedChain))
       .filter((series): series is SeriesSelectionOption => series !== null)
       .toSorted((a, b) => a.name.localeCompare(b.name));
-  }, [factorySeries, availableGameNamesSet]);
+  }, [factorySeries, availableGameNamesSet, selectedChain]);
 
   const availableSeriesByName = useMemo(
     () => new Map(availableSeries.map((series) => [series.name, series])),
     [availableSeries],
   );
+
+  useEffect(() => {
+    setSelectedGames((current) => {
+      const filtered = current.filter((gameName) => availableGameNamesSet.has(gameName));
+      return filtered.length === current.length ? current : filtered;
+    });
+  }, [availableGameNamesSet]);
+
+  useEffect(() => {
+    setSelectedSeries((current) => {
+      const filtered = current.filter((seriesName) => availableSeriesByName.has(seriesName));
+      return filtered.length === current.length ? current : filtered;
+    });
+  }, [availableSeriesByName]);
 
   const resolvedSelectedGameNames = useMemo(
     () => resolveSelectedGameNames(selectedGames, selectedSeries, availableSeriesByName),
@@ -318,8 +351,8 @@ export const ScoreToBeatPanel = () => {
     setSelectedSeries([]);
   }, []);
 
-  const scoreToBeatTopTen = scoreToBeatEntries.slice(0, 10);
-  const topScoreToBeat = scoreToBeatTopTen[0] ?? null;
+  const scoreToBeatRows = scoreToBeatEntries;
+  const topScoreToBeat = scoreToBeatRows[0] ?? null;
   const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
   const topScoreToBeatLabel = topScoreToBeat
     ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
@@ -343,7 +376,7 @@ export const ScoreToBeatPanel = () => {
   const selectorAvailabilityCount = selectorMode === "games" ? availableGameNames.length : availableSeries.length;
 
   const handleDownloadData = () => {
-    if (scoreToBeatTopTen.length === 0 || typeof window === "undefined") return;
+    if (scoreToBeatRows.length === 0 || typeof window === "undefined") return;
 
     const rows = [
       [
@@ -363,7 +396,7 @@ export const ScoreToBeatPanel = () => {
         `${SCORE_TO_BEAT_STATIC_GAMES[2]} chests`,
         `${SCORE_TO_BEAT_STATIC_GAMES[3]} chests`,
       ],
-      ...scoreToBeatTopTen.map((entry, index) => {
+      ...scoreToBeatRows.map((entry, index) => {
         const run1 = entry.runs[0]?.points ?? "";
         const run2 = entry.runs[1]?.points ?? "";
         const run3 = entry.runs[2]?.points ?? "";
@@ -411,7 +444,7 @@ export const ScoreToBeatPanel = () => {
   };
 
   const activeExpandedAddress =
-    expandedAddress && scoreToBeatTopTen.some((entry) => entry.address === expandedAddress) ? expandedAddress : null;
+    expandedAddress && scoreToBeatRows.some((entry) => entry.address === expandedAddress) ? expandedAddress : null;
 
   return (
     <div className="h-[85vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
@@ -440,7 +473,7 @@ export const ScoreToBeatPanel = () => {
           <button
             type="button"
             onClick={handleDownloadData}
-            disabled={scoreToBeatTopTen.length === 0}
+            disabled={scoreToBeatRows.length === 0}
             className="rounded-xl border border-gold/30 bg-gold/10 p-2 text-gold transition hover:bg-gold/20 disabled:opacity-40"
             aria-label="Download scores"
           >
@@ -669,7 +702,7 @@ export const ScoreToBeatPanel = () => {
       )}
 
       {/* Leaderboard */}
-      {scoreToBeatTopTen.length > 0 ? (
+      {scoreToBeatRows.length > 0 ? (
         <div className="flex-1 overflow-hidden rounded-xl border border-gold/10 bg-black/30">
           <div className="max-h-[50vh] overflow-y-auto">
             <table className="w-full">
@@ -681,7 +714,7 @@ export const ScoreToBeatPanel = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
-                {scoreToBeatTopTen.map((entry, index) => {
+                {scoreToBeatRows.map((entry, index) => {
                   const rank = index + 1;
                   const isExpanded = activeExpandedAddress === entry.address;
 
