@@ -59,4 +59,10 @@ describe("worldmap chunk-switch performance instrumentation", () => {
     expect(source).not.toContain("hasFiniteOldChunkCoordinates");
     expect(source).not.toContain("oldChunkCoordinates");
   });
+
+  it("consults the strip-update plan before rebuilding the visible terrain window", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain("resolveHexGridStripUpdatePlan({");
+  });
 });

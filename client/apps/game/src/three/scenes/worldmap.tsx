@@ -141,7 +141,11 @@ import {
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
-import { buildHexGridRowMetadata, resolveHexGridProcessingPlan } from "./worldmap-hex-grid";
+import {
+  buildHexGridRowMetadata,
+  resolveHexGridProcessingPlan,
+  resolveHexGridStripUpdatePlan,
+} from "./worldmap-hex-grid";
 import { emitWorldmapReadyEvent } from "./worldmap-ready-event";
 import {
   applyWorldmapSwitchOffRuntimeState,
@@ -306,6 +310,15 @@ export default class WorldmapScene extends HexagonScene {
   private readonly minCachedTerrainCoverageFraction = 0.08;
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
+  private currentTerrainCells: Map<string, string> = new Map();
+  private currentTerrainWindow:
+    | {
+        startRow: number;
+        startCol: number;
+        rows: number;
+        cols: number;
+      }
+    | null = null;
   private toriiLoadingCounter = 0;
   private isSwitchedOff = false;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
@@ -2828,6 +2841,7 @@ export default class WorldmapScene extends HexagonScene {
 
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
+    this.invalidateCurrentTerrainWindow();
 
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
@@ -2989,6 +3003,7 @@ export default class WorldmapScene extends HexagonScene {
         chunkSize: this.chunkSize,
       })
     ) {
+      this.invalidateCurrentTerrainWindow();
       this.requestChunkRefresh(true, "structure_bounds");
     }
   }
@@ -3315,6 +3330,7 @@ export default class WorldmapScene extends HexagonScene {
 
   clearCache() {
     this.unregisterTrackedVisibilityChunks();
+    this.invalidateCurrentTerrainWindow();
     for (const chunkKey of this.cachedMatrices.keys()) {
       this.disposeCachedMatrices(chunkKey);
     }
@@ -3388,6 +3404,15 @@ export default class WorldmapScene extends HexagonScene {
     this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, normalizedWidth, normalizedHeight);
   }
 
+  private getTerrainCellKey(col: number, row: number): string {
+    return `${col},${row}`;
+  }
+
+  private invalidateCurrentTerrainWindow(): void {
+    this.currentTerrainCells.clear();
+    this.currentTerrainWindow = null;
+  }
+
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
@@ -3402,6 +3427,7 @@ export default class WorldmapScene extends HexagonScene {
 
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
+      this.invalidateCurrentTerrainWindow();
       PerformanceMonitor.begin("hexGrid.interactiveHexes");
       try {
         this.computeInteractiveHexes(startRow, startCol, cols, rows);
@@ -3492,6 +3518,40 @@ export default class WorldmapScene extends HexagonScene {
       const perfSimulation = this.perfSimulation;
       const isSpectating = this.state.isSpectating;
       const components = this.dojo.components as Parameters<typeof getTileAt>[0];
+      const currentTerrainWindow = this.currentTerrainWindow;
+      const stripUpdatePlan =
+        currentTerrainWindow &&
+        currentTerrainWindow.rows === rows &&
+        currentTerrainWindow.cols === cols &&
+        (currentTerrainWindow.startRow !== startRow || currentTerrainWindow.startCol !== startCol)
+          ? resolveHexGridStripUpdatePlan({
+              previousStartRow: currentTerrainWindow.startRow,
+              previousStartCol: currentTerrainWindow.startCol,
+              nextStartRow: startRow,
+              nextStartCol: startCol,
+              renderSize: this.renderChunkSize,
+              chunkSize: this.chunkSize,
+            })
+          : null;
+      const canUseStripUpdate = stripUpdatePlan?.mode === "strip" && this.currentTerrainCells.size > 0;
+      const nextTerrainCells = new Map<string, string>();
+      const nextRenderBounds = stripUpdatePlan?.nextBounds ?? getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+      const stripProcessTargets: number[] = [];
+      const totalTargetsToProcess = (() => {
+        if (!canUseStripUpdate || !stripUpdatePlan || stripUpdatePlan.mode !== "strip") {
+          return totalHexes;
+        }
+
+        for (let row = stripUpdatePlan.incomingBounds.minRow; row <= stripUpdatePlan.incomingBounds.maxRow; row += 1) {
+          const rowIndex = row - nextRenderBounds.minRow;
+          for (let col = stripUpdatePlan.incomingBounds.minCol; col <= stripUpdatePlan.incomingBounds.maxCol; col += 1) {
+            const colIndex = col - nextRenderBounds.minCol;
+            stripProcessTargets.push(rowIndex * cols + colIndex);
+          }
+        }
+
+        return stripProcessTargets.length;
+      })();
       let processCellsTimingActive = false;
 
       const cleanupTask = () => {
@@ -3573,6 +3633,13 @@ export default class WorldmapScene extends HexagonScene {
         PerformanceMonitor.begin("hexGrid.cacheSnapshot");
         try {
           this.cacheMatricesForChunk(startRow, startCol);
+          this.currentTerrainCells = nextTerrainCells;
+          this.currentTerrainWindow = {
+            startRow,
+            startCol,
+            rows,
+            cols,
+          };
         } finally {
           PerformanceMonitor.end("hexGrid.cacheSnapshot");
         }
@@ -3598,10 +3665,35 @@ export default class WorldmapScene extends HexagonScene {
         resolveOnce();
       };
 
+      const appendTerrainCell = (rowIndex: number, colIndex: number, biomeKey: string) => {
+        const rowEntry = rowMetadata[rowIndex]!;
+        const globalCol = nextRenderBounds.minCol + colIndex;
+        const key = this.getTerrainCellKey(globalCol, rowEntry.globalRow);
+        const baseX = rowEntry.baseXAtColZero + colIndex * horizDist;
+        const pooledMatrix = matrixPool.getMatrix();
+        pooledMatrix.copy(baseHexMatrix);
+        pooledMatrix.setPosition(baseX, biomeKey === "Outline" ? 0.01 : 0.05, rowEntry.baseZ);
+        biomeHexes[biomeKey].push(pooledMatrix);
+        nextTerrainCells.set(key, biomeKey);
+      };
+
+      if (canUseStripUpdate && stripUpdatePlan && stripUpdatePlan.mode === "strip") {
+        for (let row = stripUpdatePlan.retainedBounds.minRow; row <= stripUpdatePlan.retainedBounds.maxRow; row += 1) {
+          const rowIndex = row - nextRenderBounds.minRow;
+          for (let col = stripUpdatePlan.retainedBounds.minCol; col <= stripUpdatePlan.retainedBounds.maxCol; col += 1) {
+            const biomeKey = this.currentTerrainCells.get(this.getTerrainCellKey(col, row));
+            if (!biomeKey) {
+              continue;
+            }
+            const colIndex = col - nextRenderBounds.minCol;
+            appendTerrainCell(rowIndex, colIndex, biomeKey);
+          }
+        }
+      }
+
       const processCell = (rowIndex: number, colIndex: number) => {
         const rowEntry = rowMetadata[rowIndex]!;
-        const globalCol = chunkCenterCol - halfCols + colIndex;
-        const baseX = rowEntry.baseXAtColZero + colIndex * horizDist;
+        const globalCol = nextRenderBounds.minCol + colIndex;
 
         const isStructure = structureHexCoords.get(globalCol)?.has(rowEntry.globalRow) || false;
         const shouldHideTile = isStructure;
@@ -3622,16 +3714,12 @@ export default class WorldmapScene extends HexagonScene {
           tileBiomeId,
           simulatedBiome: perfSimulation?.getSimulatedBiome(globalCol, rowEntry.globalRow) ?? BiomeType.Grassland,
         });
-        const pooledMatrix = matrixPool.getMatrix();
-        pooledMatrix.copy(baseHexMatrix);
 
         if (!visibleBiome.shouldRenderOutline && visibleBiome.biome !== null) {
           const biomeVariant = getBiomeVariant(visibleBiome.biome, globalCol, rowEntry.globalRow);
-          pooledMatrix.setPosition(baseX, 0.05, rowEntry.baseZ);
-          biomeHexes[biomeVariant].push(pooledMatrix);
+          appendTerrainCell(rowIndex, colIndex, biomeVariant);
         } else {
-          pooledMatrix.setPosition(baseX, 0.01, rowEntry.baseZ);
-          biomeHexes.Outline.push(pooledMatrix);
+          appendTerrainCell(rowIndex, colIndex, "Outline");
         }
       };
 
@@ -3644,17 +3732,27 @@ export default class WorldmapScene extends HexagonScene {
         const frameStart = performance.now();
         let processedThisFrame = 0;
 
-        while (currentIndex < totalHexes) {
-          processCell(currentRowIndex, currentColIndex);
-          currentIndex += 1;
-          processedThisFrame += 1;
-          currentColIndex += 1;
-          if (currentColIndex >= cols) {
-            currentColIndex = 0;
-            currentRowIndex += 1;
+        while (currentIndex < totalTargetsToProcess) {
+          let targetRowIndex = currentRowIndex;
+          let targetColIndex = currentColIndex;
+          if (canUseStripUpdate) {
+            const encodedTarget = stripProcessTargets[currentIndex]!;
+            targetRowIndex = Math.floor(encodedTarget / cols);
+            targetColIndex = encodedTarget % cols;
           }
 
-          if (currentIndex >= totalHexes) {
+          processCell(targetRowIndex, targetColIndex);
+          currentIndex += 1;
+          processedThisFrame += 1;
+          if (!canUseStripUpdate) {
+            currentColIndex += 1;
+            if (currentColIndex >= cols) {
+              currentColIndex = 0;
+              currentRowIndex += 1;
+            }
+          }
+
+          if (currentIndex >= totalTargetsToProcess) {
             break;
           }
 
@@ -3666,7 +3764,7 @@ export default class WorldmapScene extends HexagonScene {
           }
         }
 
-        if (currentIndex < totalHexes) {
+        if (currentIndex < totalTargetsToProcess) {
           this.hexGridFrameHandle = requestAnimationFrame(processFrame);
         } else {
           if (processCellsTimingActive) {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHexGridRowMetadata, resolveHexGridProcessingPlan } from "./worldmap-hex-grid";
+import {
+  buildHexGridRowMetadata,
+  resolveHexGridProcessingPlan,
+  resolveHexGridRetainedBounds,
+  resolveHexGridStripUpdatePlan,
+} from "./worldmap-hex-grid";
 
 describe("buildHexGridRowMetadata", () => {
   it("matches the legacy row geometry calculation for even-sized chunks", () => {
@@ -131,6 +136,116 @@ describe("buildHexGridRowMetadata", () => {
       frameBudgetMs: 10,
       minBatch: 150,
       maxBatch: 150,
+    });
+  });
+});
+
+describe("resolveHexGridRetainedBounds", () => {
+  it("returns the overlapping render window intersection", () => {
+    expect(
+      resolveHexGridRetainedBounds(
+        { minCol: -24, maxCol: 23, minRow: -24, maxRow: 23 },
+        { minCol: 0, maxCol: 47, minRow: -24, maxRow: 23 },
+      ),
+    ).toEqual({
+      minCol: 0,
+      maxCol: 23,
+      minRow: -24,
+      maxRow: 23,
+    });
+  });
+
+  it("returns null when render windows do not overlap", () => {
+    expect(
+      resolveHexGridRetainedBounds(
+        { minCol: -24, maxCol: 23, minRow: -24, maxRow: 23 },
+        { minCol: 48, maxCol: 95, minRow: -24, maxRow: 23 },
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("resolveHexGridStripUpdatePlan", () => {
+  const renderSize = { width: 48, height: 48 };
+  const chunkSize = 24;
+
+  it("uses a column strip when moving exactly one chunk east", () => {
+    expect(
+      resolveHexGridStripUpdatePlan({
+        previousStartRow: 0,
+        previousStartCol: 0,
+        nextStartRow: 0,
+        nextStartCol: 24,
+        renderSize,
+        chunkSize,
+      }),
+    ).toEqual({
+      mode: "strip",
+      axis: "col",
+      direction: 1,
+      previousBounds: { minCol: -12, maxCol: 35, minRow: -12, maxRow: 35 },
+      nextBounds: { minCol: 12, maxCol: 59, minRow: -12, maxRow: 35 },
+      retainedBounds: { minCol: 12, maxCol: 35, minRow: -12, maxRow: 35 },
+      incomingBounds: { minCol: 36, maxCol: 59, minRow: -12, maxRow: 35 },
+    });
+  });
+
+  it("uses a row strip when moving exactly one chunk north", () => {
+    expect(
+      resolveHexGridStripUpdatePlan({
+        previousStartRow: 0,
+        previousStartCol: 0,
+        nextStartRow: -24,
+        nextStartCol: 0,
+        renderSize,
+        chunkSize,
+      }),
+    ).toEqual({
+      mode: "strip",
+      axis: "row",
+      direction: -1,
+      previousBounds: { minCol: -12, maxCol: 35, minRow: -12, maxRow: 35 },
+      nextBounds: { minCol: -12, maxCol: 35, minRow: -36, maxRow: 11 },
+      retainedBounds: { minCol: -12, maxCol: 35, minRow: -12, maxRow: 11 },
+      incomingBounds: { minCol: -12, maxCol: 35, minRow: -36, maxRow: -13 },
+    });
+  });
+
+  it("falls back to full rebuild for diagonal chunk moves", () => {
+    expect(
+      resolveHexGridStripUpdatePlan({
+        previousStartRow: 0,
+        previousStartCol: 0,
+        nextStartRow: 24,
+        nextStartCol: 24,
+        renderSize,
+        chunkSize,
+      }),
+    ).toEqual({
+      mode: "full",
+      previousBounds: { minCol: -12, maxCol: 35, minRow: -12, maxRow: 35 },
+      nextBounds: { minCol: 12, maxCol: 59, minRow: 12, maxRow: 59 },
+      retainedBounds: null,
+      incomingBounds: null,
+    });
+  });
+
+  it("falls back to full rebuild for multi-chunk jumps", () => {
+    expect(
+      resolveHexGridStripUpdatePlan({
+        previousStartRow: 0,
+        previousStartCol: 0,
+        nextStartRow: 0,
+        nextStartCol: 48,
+        renderSize,
+        chunkSize,
+      }),
+    ).toEqual({
+      mode: "full",
+      previousBounds: { minCol: -12, maxCol: 35, minRow: -12, maxRow: 35 },
+      nextBounds: { minCol: 36, maxCol: 83, minRow: -12, maxRow: 35 },
+      retainedBounds: null,
+      incomingBounds: null,
     });
   });
 });

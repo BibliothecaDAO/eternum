@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-07",
+    title: "Smoother Chunk Crossings",
+    description:
+      "World map chunk crossings now reuse more of the already visible terrain before rebuilding, which reduces the amount of work during panning and makes map transitions feel smoother.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
     title: "Spectator Biome Visibility",
     description:
       "Spectator mode now renders real world-map biome terrain as soon as the visible area loads, so structures no longer appear over an empty paper map.",

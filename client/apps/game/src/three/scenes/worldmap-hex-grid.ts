@@ -1,3 +1,5 @@
+import { getRenderBounds } from "../utils/chunk-geometry";
+
 interface HexGridRowMetadata {
   globalRow: number;
   baseZ: number;
@@ -9,6 +11,131 @@ interface HexGridProcessingPlan {
   frameBudgetMs: number;
   minBatch: number;
   maxBatch: number;
+}
+
+interface HexGridBounds {
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
+}
+
+type HexGridStripUpdatePlan =
+  | {
+      mode: "full";
+      previousBounds: HexGridBounds;
+      nextBounds: HexGridBounds;
+      retainedBounds: null;
+      incomingBounds: null;
+    }
+  | {
+      mode: "strip";
+      axis: "row" | "col";
+      direction: -1 | 1;
+      previousBounds: HexGridBounds;
+      nextBounds: HexGridBounds;
+      retainedBounds: HexGridBounds;
+      incomingBounds: HexGridBounds;
+    };
+
+export function resolveHexGridRetainedBounds(previousBounds: HexGridBounds, nextBounds: HexGridBounds): HexGridBounds | null {
+  const minCol = Math.max(previousBounds.minCol, nextBounds.minCol);
+  const maxCol = Math.min(previousBounds.maxCol, nextBounds.maxCol);
+  const minRow = Math.max(previousBounds.minRow, nextBounds.minRow);
+  const maxRow = Math.min(previousBounds.maxRow, nextBounds.maxRow);
+
+  if (minCol > maxCol || minRow > maxRow) {
+    return null;
+  }
+
+  return {
+    minCol,
+    maxCol,
+    minRow,
+    maxRow,
+  };
+}
+
+export function resolveHexGridStripUpdatePlan(options: {
+  previousStartRow: number;
+  previousStartCol: number;
+  nextStartRow: number;
+  nextStartCol: number;
+  renderSize: { width: number; height: number };
+  chunkSize: number;
+}): HexGridStripUpdatePlan {
+  const previousBounds = getRenderBounds(
+    options.previousStartRow,
+    options.previousStartCol,
+    options.renderSize,
+    options.chunkSize,
+  );
+  const nextBounds = getRenderBounds(options.nextStartRow, options.nextStartCol, options.renderSize, options.chunkSize);
+  const retainedBounds = resolveHexGridRetainedBounds(previousBounds, nextBounds);
+  const deltaRow = options.nextStartRow - options.previousStartRow;
+  const deltaCol = options.nextStartCol - options.previousStartCol;
+  const movedExactlyOneChunkRow = Math.abs(deltaRow) === options.chunkSize && deltaCol === 0;
+  const movedExactlyOneChunkCol = Math.abs(deltaCol) === options.chunkSize && deltaRow === 0;
+
+  if (!retainedBounds || (!movedExactlyOneChunkRow && !movedExactlyOneChunkCol)) {
+    return {
+      mode: "full",
+      previousBounds,
+      nextBounds,
+      retainedBounds: null,
+      incomingBounds: null,
+    };
+  }
+
+  if (movedExactlyOneChunkCol) {
+    const direction = deltaCol > 0 ? 1 : -1;
+    return {
+      mode: "strip",
+      axis: "col",
+      direction,
+      previousBounds,
+      nextBounds,
+      retainedBounds,
+      incomingBounds:
+        direction > 0
+          ? {
+              minCol: nextBounds.maxCol - options.chunkSize + 1,
+              maxCol: nextBounds.maxCol,
+              minRow: nextBounds.minRow,
+              maxRow: nextBounds.maxRow,
+            }
+          : {
+              minCol: nextBounds.minCol,
+              maxCol: nextBounds.minCol + options.chunkSize - 1,
+              minRow: nextBounds.minRow,
+              maxRow: nextBounds.maxRow,
+            },
+    };
+  }
+
+  const direction = deltaRow > 0 ? 1 : -1;
+  return {
+    mode: "strip",
+    axis: "row",
+    direction,
+    previousBounds,
+    nextBounds,
+    retainedBounds,
+    incomingBounds:
+      direction > 0
+        ? {
+            minCol: nextBounds.minCol,
+            maxCol: nextBounds.maxCol,
+            minRow: nextBounds.maxRow - options.chunkSize + 1,
+            maxRow: nextBounds.maxRow,
+          }
+        : {
+            minCol: nextBounds.minCol,
+            maxCol: nextBounds.maxCol,
+            minRow: nextBounds.minRow,
+            maxRow: nextBounds.minRow + options.chunkSize - 1,
+          },
+  };
 }
 
 export function buildHexGridRowMetadata(options: {
