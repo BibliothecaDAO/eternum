@@ -5,12 +5,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
+import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { useWorldsAvailability } from "@/hooks/use-world-availability";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
 
+import { SCORE_TO_BEAT_STATIC_GAMES } from "@/services/leaderboard/landing-leaderboard-service";
 import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
 
 const MAX_GAMES = 10;
@@ -18,7 +20,15 @@ const DEFAULT_RUNS_TO_AGGREGATE = 3;
 const RUNS_TO_AGGREGATE_OPTIONS = [1, 2, 3, 4] as const;
 const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
 
+type SelectorMode = "games" | "series";
+
+interface SeriesSelectionOption {
+  name: string;
+  gameNames: string[];
+}
+
 const SCORE_TO_BEAT_GAMES_STORAGE_KEY = "landing-score-to-beat-games-v2";
+const SCORE_TO_BEAT_SERIES_STORAGE_KEY = "landing-score-to-beat-series-v1";
 const SCORE_TO_BEAT_RUNS_STORAGE_KEY = "landing-score-to-beat-runs-v2";
 const SCORE_TO_BEAT_CHAIN_STORAGE_KEY = "landing-score-to-beat-chain-v2";
 
@@ -75,6 +85,21 @@ const loadStoredSelectedGames = (): string[] | null => {
   return null;
 };
 
+const loadStoredSelectedSeries = (): string[] | null => {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_SERIES_STORAGE_KEY);
+  if (!stored) return null;
+  try {
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+  } catch {
+    // Ignore malformed data
+  }
+  return null;
+};
+
 const loadStoredChain = (): Chain | null => {
   if (typeof window === "undefined") return null;
   const stored = window.localStorage.getItem(SCORE_TO_BEAT_CHAIN_STORAGE_KEY);
@@ -99,45 +124,68 @@ const loadStoredRunsToAggregate = (): number | null => {
   return null;
 };
 
-const getRunsLabel = (count: number): string => {
-  switch (count) {
-    case 1:
-      return "single-run";
-    case 2:
-      return "two-run";
-    case 3:
-      return "three-run";
-    case 4:
-      return "four-run";
-    default:
-      return `${count}-run`;
-  }
+const mapSeriesToSelectionOption = (
+  series: FactorySeriesIndex,
+  availableGameNames: Set<string>,
+): SeriesSelectionOption | null => {
+  const uniqueGameNames = Array.from(
+    new Set(series.games.map((game) => game.worldName).filter((worldName) => availableGameNames.has(worldName))),
+  );
+
+  if (uniqueGameNames.length === 0) return null;
+
+  return {
+    name: series.name,
+    gameNames: uniqueGameNames,
+  };
 };
 
-const getBestRunsLabel = (count: number): string => {
-  switch (count) {
-    case 1:
-      return "Best run";
-    case 2:
-      return "Best two runs";
-    case 3:
-      return "Best three runs";
-    case 4:
-      return "Best four runs";
-    default:
-      return `Best ${count} runs`;
-  }
+const resolveSelectedGameNames = (
+  selectedGames: string[],
+  selectedSeries: string[],
+  seriesByName: Map<string, SeriesSelectionOption>,
+): string[] => {
+  const uniqueGames = new Set<string>();
+
+  selectedGames.forEach((game) => {
+    const trimmed = game.trim();
+    if (trimmed) uniqueGames.add(trimmed);
+  });
+
+  selectedSeries.forEach((seriesName) => {
+    const series = seriesByName.get(seriesName);
+    if (!series) return;
+    series.gameNames.forEach((gameName) => {
+      const trimmed = gameName.trim();
+      if (trimmed) uniqueGames.add(trimmed);
+    });
+  });
+
+  return Array.from(uniqueGames);
 };
+
+const getSelectorCountLabel = (count: number, singular: string, plural: string): string =>
+  `${count} ${count === 1 ? singular : plural}`;
 
 export const ScoreToBeatPanel = () => {
-  const [selectedChain, setSelectedChain] = useState<Chain>("mainnet");
-  const [selectedGames, setSelectedGames] = useState<string[]>([]);
-  const [runsToAggregate, setRunsToAggregate] = useState<number>(DEFAULT_RUNS_TO_AGGREGATE);
+  const [selectedChain, setSelectedChain] = useState<Chain>(() => loadStoredChain() ?? "mainnet");
+  const [selectedGames, setSelectedGames] = useState<string[]>(() => {
+    const storedGames = loadStoredSelectedGames();
+    return (storedGames ?? [...SCORE_TO_BEAT_STATIC_GAMES]).slice(0, MAX_GAMES);
+  });
+  const [selectedSeries, setSelectedSeries] = useState<string[]>(() => loadStoredSelectedSeries() ?? []);
+  const [runsToAggregate, setRunsToAggregate] = useState<number>(
+    () => loadStoredRunsToAggregate() ?? DEFAULT_RUNS_TO_AGGREGATE,
+  );
   const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(true);
+  const [selectorMode, setSelectorMode] = useState<SelectorMode>("games");
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
 
   // Fetch available games from factory
   const { worlds: factoryWorlds, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
+
+  // Fetch series and linked games from factory
+  const { series: factorySeries, isLoading: isLoadingSeries } = useFactorySeriesIndex([selectedChain], true);
 
   // Check which worlds have working indexers
   const worldRefs = useMemo(
@@ -154,18 +202,42 @@ export const ScoreToBeatPanel = () => {
     });
   }, [factoryWorlds, worldAvailability, selectedChain]);
 
-  // Load stored preferences
-  useEffect(() => {
-    const storedChain = loadStoredChain();
-    if (storedChain) setSelectedChain(storedChain);
-    const storedGames = loadStoredSelectedGames();
-    if (storedGames) setSelectedGames(storedGames.slice(0, MAX_GAMES));
-    const storedRuns = loadStoredRunsToAggregate();
-    if (storedRuns) setRunsToAggregate(storedRuns);
-  }, []);
+  const availableGameNames = useMemo(
+    () => Array.from(new Set([...SCORE_TO_BEAT_STATIC_GAMES, ...availableGames.map((game) => game.name)])),
+    [availableGames],
+  );
 
-  // Build endpoints from selected games
-  const resolvedEndpoints = useMemo(() => selectedGames.map((name) => buildToriiSqlUrl(name)), [selectedGames]);
+  const availableGameNamesSet = useMemo(() => new Set(availableGameNames), [availableGameNames]);
+
+  const availableSeries = useMemo(() => {
+    return factorySeries
+      .map((series) => mapSeriesToSelectionOption(series, availableGameNamesSet))
+      .filter((series): series is SeriesSelectionOption => series !== null)
+      .toSorted((a, b) => a.name.localeCompare(b.name));
+  }, [factorySeries, availableGameNamesSet]);
+
+  const availableSeriesByName = useMemo(
+    () => new Map(availableSeries.map((series) => [series.name, series])),
+    [availableSeries],
+  );
+
+  const resolvedSelectedGameNames = useMemo(
+    () => resolveSelectedGameNames(selectedGames, selectedSeries, availableSeriesByName),
+    [selectedGames, selectedSeries, availableSeriesByName],
+  );
+
+  const cappedSelectedGameNames = useMemo(
+    () => resolvedSelectedGameNames.slice(0, MAX_GAMES),
+    [resolvedSelectedGameNames],
+  );
+
+  const omittedSelectedGameCount = Math.max(0, resolvedSelectedGameNames.length - cappedSelectedGameNames.length);
+
+  // Build endpoints from selected games and selected series games
+  const resolvedEndpoints = useMemo(
+    () => cappedSelectedGameNames.map((name) => buildToriiSqlUrl(name)),
+    [cappedSelectedGameNames],
+  );
 
   // Persist preferences
   useEffect(() => {
@@ -182,6 +254,12 @@ export const ScoreToBeatPanel = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      window.localStorage.setItem(SCORE_TO_BEAT_SERIES_STORAGE_KEY, JSON.stringify(selectedSeries));
+    }
+  }, [selectedSeries]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
       window.localStorage.setItem(SCORE_TO_BEAT_RUNS_STORAGE_KEY, String(runsToAggregate));
     }
   }, [runsToAggregate]);
@@ -195,23 +273,49 @@ export const ScoreToBeatPanel = () => {
     isLoading,
     error,
     refresh,
-    hasEndpointsConfigured,
   } = useScoreToBeat(resolvedEndpoints, runsToAggregate);
 
-  const handleToggleGame = useCallback((gameName: string) => {
-    setSelectedGames((current) => {
-      if (current.includes(gameName)) {
-        return current.filter((name) => name !== gameName);
-      }
-      if (current.length >= MAX_GAMES) {
-        return current;
-      }
-      return [...current, gameName];
-    });
-  }, []);
+  const handleToggleGame = useCallback(
+    (gameName: string) => {
+      setSelectedGames((current) => {
+        if (current.includes(gameName)) {
+          return current.filter((name) => name !== gameName);
+        }
 
-  const handleClearSelectedGames = useCallback(() => {
+        const next = [...current, gameName];
+        const projected = resolveSelectedGameNames(next, selectedSeries, availableSeriesByName);
+        if (projected.length > MAX_GAMES) {
+          return current;
+        }
+
+        return next;
+      });
+    },
+    [selectedSeries, availableSeriesByName],
+  );
+
+  const handleToggleSeries = useCallback(
+    (seriesName: string) => {
+      setSelectedSeries((current) => {
+        if (current.includes(seriesName)) {
+          return current.filter((name) => name !== seriesName);
+        }
+
+        const next = [...current, seriesName];
+        const projected = resolveSelectedGameNames(selectedGames, next, availableSeriesByName);
+        if (projected.length > MAX_GAMES) {
+          return current;
+        }
+
+        return next;
+      });
+    },
+    [selectedGames, availableSeriesByName],
+  );
+
+  const handleClearSelected = useCallback(() => {
     setSelectedGames([]);
+    setSelectedSeries([]);
   }, []);
 
   const scoreToBeatTopTen = scoreToBeatEntries.slice(0, 10);
@@ -220,25 +324,55 @@ export const ScoreToBeatPanel = () => {
   const topScoreToBeatLabel = topScoreToBeat
     ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
     : null;
-  const topScoreToBeatAddressLabel = topScoreToBeat ? displayAddress(topScoreToBeat.address) : null;
 
   const updatedLabel = useMemo(() => getRelativeTimeLabel(lastUpdatedAt, "Awaiting sync"), [lastUpdatedAt]);
 
-  const totalGames = selectedGames.length;
+  const totalGames = cappedSelectedGameNames.length;
   const failedGames = failedEndpoints.length;
   const activeSyncedGames = syncedEndpoints.length || totalGames;
   const syncedGames = Math.max(0, activeSyncedGames - failedGames);
   const gameLabel = totalGames > 0 ? `${syncedGames}/${totalGames} games selected` : "No games selected";
 
-  const handleDownloadData = useCallback(() => {
+  const hasSelections = selectedGames.length > 0 || selectedSeries.length > 0;
+  const selectedSummary = [
+    getSelectorCountLabel(selectedGames.length, "game", "games"),
+    getSelectorCountLabel(selectedSeries.length, "series", "series"),
+  ].join(" + ");
+
+  const isSelectorLoading = isLoadingGames || isCheckingWorlds || isLoadingSeries;
+  const selectorAvailabilityCount = selectorMode === "games" ? availableGameNames.length : availableSeries.length;
+
+  const handleDownloadData = () => {
     if (scoreToBeatTopTen.length === 0 || typeof window === "undefined") return;
 
     const rows = [
-      ["Rank", "Display name", "Address", "Score", "Run 1 score", "Run 2 score", "Run 3 score"],
+      [
+        "Rank",
+        "Display name",
+        "Address",
+        "Score",
+        "Run 1 score",
+        "Run 2 score",
+        "Run 3 score",
+        `${SCORE_TO_BEAT_STATIC_GAMES[0]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[1]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[2]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[3]} points`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[0]} chests`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[1]} chests`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[2]} chests`,
+        `${SCORE_TO_BEAT_STATIC_GAMES[3]} chests`,
+      ],
       ...scoreToBeatTopTen.map((entry, index) => {
         const run1 = entry.runs[0]?.points ?? "";
         const run2 = entry.runs[1]?.points ?? "";
         const run3 = entry.runs[2]?.points ?? "";
+        const staticGamePoints = SCORE_TO_BEAT_STATIC_GAMES.map(
+          (game) => entry.staticGames.find((stat) => stat.game === game)?.points ?? 0,
+        );
+        const staticGameChests = SCORE_TO_BEAT_STATIC_GAMES.map(
+          (game) => entry.staticGames.find((stat) => stat.game === game)?.chests ?? 0,
+        );
 
         return [
           `${index + 1}`,
@@ -248,6 +382,14 @@ export const ScoreToBeatPanel = () => {
           `${run1}`,
           `${run2}`,
           `${run3}`,
+          `${staticGamePoints[0]}`,
+          `${staticGamePoints[1]}`,
+          `${staticGamePoints[2]}`,
+          `${staticGamePoints[3]}`,
+          `${staticGameChests[0]}`,
+          `${staticGameChests[1]}`,
+          `${staticGameChests[2]}`,
+          `${staticGameChests[3]}`,
         ];
       }),
     ];
@@ -266,14 +408,10 @@ export const ScoreToBeatPanel = () => {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
-  }, [scoreToBeatTopTen]);
+  };
 
-  // Collapse expanded entry if it's no longer in the list
-  useEffect(() => {
-    if (expandedAddress && !scoreToBeatTopTen.some((entry) => entry.address === expandedAddress)) {
-      setExpandedAddress(null);
-    }
-  }, [expandedAddress, scoreToBeatTopTen]);
+  const activeExpandedAddress =
+    expandedAddress && scoreToBeatTopTen.some((entry) => entry.address === expandedAddress) ? expandedAddress : null;
 
   return (
     <div className="h-[85vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
@@ -366,31 +504,96 @@ export const ScoreToBeatPanel = () => {
 
         {isGameSelectorOpen && (
           <div className="mt-4 space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gold/60">
-                Available games {isLoadingGames || isCheckingWorlds ? "(checking...)" : `(${availableGames.length})`}
-              </span>
-              <span className="text-gold/50">
-                {selectedGames.length}/{MAX_GAMES} selected
-              </span>
+            <div className="inline-flex rounded-lg bg-black/40 p-1">
+              <button
+                type="button"
+                onClick={() => setSelectorMode("games")}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  selectorMode === "games" ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold"
+                }`}
+              >
+                Games
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectorMode("series")}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  selectorMode === "series" ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold"
+                }`}
+              >
+                Series
+              </button>
             </div>
 
-            {isLoadingGames || isCheckingWorlds ? (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gold/60">
+                {selectorMode === "games" ? "Available games" : "Available series"}{" "}
+                {isSelectorLoading ? "(checking...)" : `(${selectorAvailabilityCount})`}
+              </span>
+              <span className="text-gold/50">{selectedSummary}</span>
+            </div>
+
+            <div className="text-xs text-gold/40">
+              {cappedSelectedGameNames.length}/{MAX_GAMES} resolved games
+              {omittedSelectedGameCount > 0 &&
+                ` (using first ${MAX_GAMES}, ${omittedSelectedGameCount} omitted from selected series/games)`}
+            </div>
+
+            {isSelectorLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
               </div>
-            ) : availableGames.length === 0 ? (
-              <p className="py-4 text-center text-sm text-gold/50">No games with active indexers on {selectedChain}</p>
+            ) : selectorMode === "games" ? (
+              availableGameNames.length === 0 ? (
+                <p className="py-4 text-center text-sm text-gold/50">
+                  No games with active indexers on {selectedChain}
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                  {availableGameNames.map((gameName) => {
+                    const isSelected = selectedGames.includes(gameName);
+                    const isDisabled =
+                      !isSelected &&
+                      resolveSelectedGameNames([...selectedGames, gameName], selectedSeries, availableSeriesByName)
+                        .length > MAX_GAMES;
+                    return (
+                      <button
+                        key={gameName}
+                        type="button"
+                        onClick={() => handleToggleGame(gameName)}
+                        disabled={isDisabled}
+                        className={`rounded-lg px-3 py-2 text-left text-sm transition ${
+                          isSelected
+                            ? "bg-gold/20 text-gold"
+                            : isDisabled
+                              ? "cursor-not-allowed text-gold/30"
+                              : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                        }`}
+                      >
+                        <span className="block truncate">{gameName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            ) : availableSeries.length === 0 ? (
+              <p className="py-4 text-center text-sm text-gold/50">
+                No series with active indexed games on {selectedChain}
+              </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                {availableGames.map((game) => {
-                  const isSelected = selectedGames.includes(game.name);
-                  const isDisabled = !isSelected && selectedGames.length >= MAX_GAMES;
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {availableSeries.map((series) => {
+                  const isSelected = selectedSeries.includes(series.name);
+                  const isDisabled =
+                    !isSelected &&
+                    resolveSelectedGameNames(selectedGames, [...selectedSeries, series.name], availableSeriesByName)
+                      .length > MAX_GAMES;
+
                   return (
                     <button
-                      key={game.name}
+                      key={series.name}
                       type="button"
-                      onClick={() => handleToggleGame(game.name)}
+                      onClick={() => handleToggleSeries(series.name)}
                       disabled={isDisabled}
                       className={`rounded-lg px-3 py-2 text-left text-sm transition ${
                         isSelected
@@ -400,33 +603,47 @@ export const ScoreToBeatPanel = () => {
                             : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                       }`}
                     >
-                      <span className="block truncate">{game.name}</span>
+                      <span className="block truncate font-medium">{series.name}</span>
+                      <span className="mt-0.5 block text-xs text-gold/50">
+                        {getSelectorCountLabel(series.gameNames.length, "indexed game", "indexed games")}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             )}
 
-            {selectedGames.length > 0 && (
+            {hasSelections && (
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleClearSelectedGames}
-                  className="text-sm text-gold/50 hover:text-gold"
-                >
+                <button type="button" onClick={handleClearSelected} className="text-sm text-gold/50 hover:text-gold">
                   Clear all
                 </button>
                 <span className="text-gold/30">|</span>
                 {selectedGames.map((name) => (
                   <span
-                    key={name}
+                    key={`game:${name}`}
                     className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-1 text-xs text-gold"
                   >
-                    {name}
+                    game: {name}
                     <button
                       type="button"
                       onClick={() => handleToggleGame(name)}
                       className="ml-1 text-gold/50 hover:text-gold"
+                    >
+                      x
+                    </button>
+                  </span>
+                ))}
+                {selectedSeries.map((name) => (
+                  <span
+                    key={`series:${name}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-2 py-1 text-xs text-cyan-200"
+                  >
+                    series: {name}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSeries(name)}
+                      className="ml-1 text-cyan-200/60 hover:text-cyan-200"
                     >
                       x
                     </button>
@@ -466,7 +683,7 @@ export const ScoreToBeatPanel = () => {
               <tbody className="divide-y divide-gold/5">
                 {scoreToBeatTopTen.map((entry, index) => {
                   const rank = index + 1;
-                  const isExpanded = expandedAddress === entry.address;
+                  const isExpanded = activeExpandedAddress === entry.address;
 
                   return (
                     <tr
@@ -510,7 +727,9 @@ export const ScoreToBeatPanel = () => {
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center py-16 text-gold/50">
-          {selectedGames.length === 0 ? "Select games above to see the leaderboard" : "No scores found yet"}
+          {cappedSelectedGameNames.length === 0
+            ? "Select games or series above to see the leaderboard"
+            : "No scores found yet"}
         </div>
       )}
     </div>
