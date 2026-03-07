@@ -319,12 +319,14 @@ export const initialSync = async (
     setInitialSyncProgress(value);
   };
 
-  const runTimedTask = async (label: string, targetProgress: number, task: () => Promise<void>) => {
+  const runTimedTask = async (label: string, targetProgress: number | null, task: () => Promise<void>) => {
     const start = performance.now();
     await task();
     const end = performance.now();
     console.log(`[sync] ${label}`, end - start);
-    updateProgress(targetProgress);
+    if (targetProgress !== null) {
+      updateProgress(targetProgress);
+    }
   };
 
   const parallelTasks: Promise<void>[] = [];
@@ -405,18 +407,31 @@ export const initialSync = async (
     updateProgress(25);
   }
 
-  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  parallelTasks.push(
+    runTimedTask("config query", 50, async () => {
+      await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  updateProgress(50);
+  parallelTasks.push(
+    runTimedTask("address names query", 65, async () => {
+      await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(75);
+  parallelTasks.push(
+    runTimedTask("guilds query", 80, async () => {
+      await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(90);
+  parallelTasks.push(
+    runTimedTask("map data refresh", 90, async () => {
+      await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+    }),
+  );
 
-  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
-
+  await Promise.all(parallelTasks);
   updateProgress(100);
 };
 

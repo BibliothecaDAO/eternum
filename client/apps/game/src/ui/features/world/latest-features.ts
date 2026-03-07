@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-07",
+    title: "Faster World Startup",
+    description:
+      "World loading now overlaps more of the initial sync fetches in parallel, which reduces the time spent waiting on the startup loader before the map becomes playable.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
     title: "Smoother Chunk Crossings",
     description:
       "World map chunk crossings now reuse more of the already visible terrain before rebuilding, which reduces the amount of work during panning and makes map transitions feel smoother.",
