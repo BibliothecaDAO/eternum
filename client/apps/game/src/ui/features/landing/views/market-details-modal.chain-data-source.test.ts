@@ -73,7 +73,7 @@ describe("MarketDetailsModal chain-aware data sources", () => {
     expect(source).toContain("const TRADE_SYNC_INTERVAL_MS = 2_000");
     expect(source).toContain("const handleTradeSuccess = useCallback(() => {");
     expect(source).toContain(
-      "<MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} />",
+      "<MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} chain={chain} />",
     );
     expect(source).toContain("Syncing...");
   });
