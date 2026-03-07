@@ -28,6 +28,18 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.boundsSwitchStaleDropped).toBe(0);
     expect(diagnostics.boundsSwitchSkippedStaleToken).toBe(0);
     expect(diagnostics.boundsSwitchFailed).toBe(0);
+    expect(diagnostics.refreshRequested).toBe(0);
+    expect(diagnostics.forcedRefreshRequested).toBe(0);
+    expect(diagnostics.refreshRequestedBySource).toEqual({
+      controls_change: 0,
+      pending_movement_fallback: 0,
+      pending_movement_selection: 0,
+      duplicate_tile: 0,
+      remove_explored: 0,
+      structure_bounds: 0,
+      perf_simulation: 0,
+      unknown: 0,
+    });
     expect(diagnostics.duplicateTileCacheInvalidated).toBe(0);
     expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
@@ -67,7 +79,13 @@ describe("worldmap-chunk-diagnostics", () => {
       "duplicate_tile_reconcile_requested",
     ];
 
-    events.forEach((event) => recordChunkDiagnosticsEvent(diagnostics, event));
+    events.forEach((event) =>
+      recordChunkDiagnosticsEvent(
+        diagnostics,
+        event,
+        event === "refresh_requested" ? { source: "controls_change" } : {},
+      ),
+    );
 
     expect(diagnostics.transitionStarted).toBe(1);
     expect(diagnostics.transitionCommitted).toBe(1);
@@ -89,6 +107,8 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.boundsSwitchSkippedStaleToken).toBe(1);
     expect(diagnostics.boundsSwitchFailed).toBe(1);
     expect(diagnostics.refreshRequested).toBe(1);
+    expect(diagnostics.forcedRefreshRequested).toBe(0);
+    expect(diagnostics.refreshRequestedBySource.controls_change).toBe(1);
     expect(diagnostics.refreshExecuted).toBe(1);
     expect(diagnostics.refreshSuperseded).toBe(1);
     expect(diagnostics.duplicateTileCacheInvalidated).toBe(1);
@@ -121,5 +141,23 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.switchDurationMsSamples).toHaveLength(512);
     expect(diagnostics.switchDurationMsSamples[0]).toBe(89);
     expect(diagnostics.switchDurationMsSamples[511]).toBe(600);
+  });
+
+  it("tracks forced refreshes by source", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    recordChunkDiagnosticsEvent(diagnostics, "refresh_requested", {
+      source: "controls_change",
+      force: false,
+    });
+    recordChunkDiagnosticsEvent(diagnostics, "refresh_requested", {
+      source: "duplicate_tile",
+      force: true,
+    });
+
+    expect(diagnostics.refreshRequested).toBe(2);
+    expect(diagnostics.forcedRefreshRequested).toBe(1);
+    expect(diagnostics.refreshRequestedBySource.controls_change).toBe(1);
+    expect(diagnostics.refreshRequestedBySource.duplicate_tile).toBe(1);
   });
 });

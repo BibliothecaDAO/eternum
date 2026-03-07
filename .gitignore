@@ -14,6 +14,8 @@ client/apps/eternum-mobile/dist
 venv/
 __pycache__/
 client/apps/game/minimap
+client/apps/game/playwright-report
+client/apps/game/test-results
 .claude/ralph-loop.local.md
 .claude/tsc-cache/
 **/.claude/tsc-cache/

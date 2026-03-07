@@ -1,16 +1,18 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import { isSafeWorldMapPosition } from "@/ui/features/landing/components/game-entry-navigation-target";
 import {
   getSceneWarmupProgress,
+  type GridCoordinates,
   resolveEntryOverlayPhase,
   waitForHexceptionGridReady,
+  waitForWorldmapReady,
 } from "./game-loading-overlay.utils";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
 const SLOW_THRESHOLD_MS = 8_000;
@@ -18,10 +20,8 @@ const TICK_INTERVAL_MS = 250;
 const HANDOFF_PROGRESS = 76;
 const POST_HEX_READY_DELAY_MS = 250;
 const HEXCEPTION_READY_TIMEOUT_MS = 6_000;
-// Time to wait after tile data loads before dismissing (spectator path).
-// Longer because the bounds subscription still needs to stream Structure
-// entities and the WorldUpdateListener needs to process them into visuals.
-const POST_MAP_LOAD_DELAY_MS = 3_000;
+const WORLDMAP_READY_TIMEOUT_MS = 8_000;
+const POST_MAP_READY_DELAY_MS = 250;
 
 /**
  * Loading overlay shown while game data syncs after <World> mounts.
@@ -37,18 +37,17 @@ const POST_MAP_LOAD_DELAY_MS = 3_000;
 export const GameLoadingOverlay = () => {
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const isSpectating = useUIStore((state) => state.isSpectating);
-  const mapLoading = useUIStore((state) => state.loadingStates[LoadingStateKey.Map]);
+  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const playerStructures = usePlayerStructures();
   const hasDismissed = useRef(false);
-  const hasSeenMapLoading = useRef(false);
   const startedAt = useRef(0);
   const hasStartedPlayerFlow = useRef(false);
   const hasStartedSpectatorFlow = useRef(false);
-  const hasQueuedSpectatorReady = useRef(false);
-  const spectatorReadyTimeoutId = useRef<number | null>(null);
+  const spectatorTargetKeyRef = useRef<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const dismiss = useCallback(
     (delayMs: number) => {
@@ -98,37 +97,70 @@ export const GameLoadingOverlay = () => {
     });
   }, [playerStructures, isSpectating, navigate, dismiss]);
 
-  // --- Spectator path: dismiss once the world map finishes its initial fetch ---
+  const currentWorldMapCoords = useMemo<GridCoordinates | null>(() => {
+    if (!location.pathname.includes("/map")) {
+      return null;
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    const col = Number(searchParams.get("col"));
+    const row = Number(searchParams.get("row"));
+    if (!Number.isFinite(col) || !Number.isFinite(row)) {
+      return null;
+    }
+
+    return { col, row };
+  }, [location.pathname, location.search]);
+
+  const spectatorTargetCoords = useMemo<GridCoordinates | null>(() => {
+    if (isSafeWorldMapPosition(worldMapReturnPosition)) {
+      return { col: worldMapReturnPosition.col, row: worldMapReturnPosition.row };
+    }
+
+    return currentWorldMapCoords;
+  }, [currentWorldMapCoords, worldMapReturnPosition]);
+
+  // --- Spectator path: navigate to the intended map position and wait for an actual ready signal ---
   useEffect(() => {
     if (hasDismissed.current || !isSpectating) return;
     if (!hasStartedSpectatorFlow.current) {
       hasStartedSpectatorFlow.current = true;
     }
 
-    if (mapLoading) {
-      hasSeenMapLoading.current = true;
+    if (!spectatorTargetCoords) {
+      return;
     }
 
-    // Map loading went true → false: initial tile fetch complete.
-    // Wait additional time for the bounds subscription to stream
-    // Structure entities and for the map to render them.
-    if (hasSeenMapLoading.current && !mapLoading && !hasQueuedSpectatorReady.current) {
-      hasQueuedSpectatorReady.current = true;
-      spectatorReadyTimeoutId.current = window.setTimeout(() => {
-        spectatorReadyTimeoutId.current = null;
+    const targetKey = `${spectatorTargetCoords.col},${spectatorTargetCoords.row}`;
+    if (spectatorTargetKeyRef.current === targetKey) {
+      return;
+    }
+
+    spectatorTargetKeyRef.current = targetKey;
+
+    if (
+      !currentWorldMapCoords ||
+      currentWorldMapCoords.col !== spectatorTargetCoords.col ||
+      currentWorldMapCoords.row !== spectatorTargetCoords.row
+    ) {
+      navigate(`/play/map?col=${spectatorTargetCoords.col}&row=${spectatorTargetCoords.row}&spectate=true`, {
+        replace: true,
+      });
+      window.dispatchEvent(new Event("urlChanged"));
+    }
+
+    void waitForWorldmapReady(spectatorTargetCoords, WORLDMAP_READY_TIMEOUT_MS).then(() => {
+      if (hasDismissed.current || spectatorTargetKeyRef.current !== targetKey) {
+        return;
+      }
+
+      spectatorTargetKeyRef.current = null;
+      window.setTimeout(() => {
         setIsReady(true);
       }, 0);
-      dismiss(POST_MAP_LOAD_DELAY_MS);
-    }
-  }, [mapLoading, isSpectating, dismiss]);
-
-  useEffect(() => {
-    return () => {
-      if (spectatorReadyTimeoutId.current !== null) {
-        window.clearTimeout(spectatorReadyTimeoutId.current);
-      }
-    };
-  }, []);
+      dismiss(POST_MAP_READY_DELAY_MS);
+    });
+  }, [currentWorldMapCoords, dismiss, isSpectating, navigate, spectatorTargetCoords]);
 
   // Safety timeout
   useEffect(() => {
@@ -142,7 +174,14 @@ export const GameLoadingOverlay = () => {
   }, [setShowBlankOverlay]);
 
   const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
-  const hasNavigatedToTarget = isSpectating ? elapsedMs >= TICK_INTERVAL_MS : playerStructures.length > 0;
+  const hasNavigatedToTarget = isSpectating
+    ? Boolean(
+        spectatorTargetCoords &&
+        currentWorldMapCoords &&
+        currentWorldMapCoords.col === spectatorTargetCoords.col &&
+        currentWorldMapCoords.row === spectatorTargetCoords.row,
+      )
+    : playerStructures.length > 0;
   const phase = resolveEntryOverlayPhase({
     isReady,
     hasNavigated: hasNavigatedToTarget,

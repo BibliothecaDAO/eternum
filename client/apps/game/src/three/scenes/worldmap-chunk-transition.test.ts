@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveDuplicateTileReconcileExecutionPlan,
   resolveEntityActionPathsTransitionTokenSync,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   shouldClearEntitySelectionForMissingActionPathOwnership,
@@ -16,6 +17,7 @@ import {
   shouldForceRefreshForDuplicateTileUpdate,
   shouldRunShortcutForceFallback,
   resolveRefreshExecutionToken,
+  resolveRefreshRequestPlan,
   resolveChunkSwitchActions,
   shouldApplyRefreshToken,
   shouldAcceptExactTransitionToken,
@@ -27,6 +29,7 @@ import {
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   resolveControlsChangeChunkRefreshPlan,
+  resolveControlsChangePrefetchPlan,
   resolveEntityActionPathLookup,
 } from "./worldmap-chunk-transition";
 
@@ -454,6 +457,30 @@ describe("shouldRescheduleRefreshToken", () => {
   });
 });
 
+describe("resolveRefreshRequestPlan", () => {
+  it("coalesces requests while a refresh timer is already pending", () => {
+    expect(
+      resolveRefreshRequestPlan({
+        hasPendingTimer: true,
+      }),
+    ).toEqual({
+      shouldIncrementToken: false,
+      shouldScheduleTimer: false,
+    });
+  });
+
+  it("schedules a new latest-wins refresh when no timer is pending", () => {
+    expect(
+      resolveRefreshRequestPlan({
+        hasPendingTimer: false,
+      }),
+    ).toEqual({
+      shouldIncrementToken: true,
+      shouldScheduleTimer: true,
+    });
+  });
+});
+
 describe("resolveRefreshExecutionToken", () => {
   it("uses latest token when scheduled token is stale", () => {
     expect(resolveRefreshExecutionToken(6, 9)).toBe(9);
@@ -860,7 +887,7 @@ describe("resolveDuplicateTileUpdateActions", () => {
     });
   });
 
-  it("keeps offscreen duplicate updates in cache-reconcile mode without forcing immediate refresh", () => {
+  it("ignores offscreen duplicate updates when biome data did not change", () => {
     expect(
       resolveDuplicateTileUpdateActions({
         removeExplored: false,
@@ -870,7 +897,7 @@ describe("resolveDuplicateTileUpdateActions", () => {
         isVisibleInCurrentChunk: false,
       }),
     ).toEqual({
-      shouldInvalidateCaches: true,
+      shouldInvalidateCaches: false,
       shouldRequestRefresh: false,
     });
   });
@@ -940,7 +967,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
         isChunkTransitioning: false,
         isVisibleInCurrentChunk: false,
       },
-      expected: "invalidate_only",
+      expected: "none",
     },
     {
       name: "duplicate tile arrives during chunk transition",
@@ -951,7 +978,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
         isChunkTransitioning: true,
         isVisibleInCurrentChunk: true,
       },
-      expected: "invalidate_only",
+      expected: "none",
     },
     {
       name: "duplicate tile arrives with null chunk",
@@ -962,7 +989,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
         isChunkTransitioning: false,
         isVisibleInCurrentChunk: true,
       },
-      expected: "invalidate_only",
+      expected: "none",
     },
     {
       name: "update is not a duplicate add",
@@ -1076,6 +1103,47 @@ describe("resolveDuplicateTileReconcilePlan", () => {
       }),
     ).toEqual({
       shouldInvalidateCaches: false,
+      refreshStrategy: "none",
+    });
+  });
+});
+
+describe("resolveDuplicateTileReconcileExecutionPlan", () => {
+  it("preserves immediate duplicate reconcile when no refresh work is already in flight", () => {
+    expect(
+      resolveDuplicateTileReconcileExecutionPlan({
+        refreshStrategy: "immediate",
+        hasPendingChunkRefresh: false,
+        isChunkRefreshRunning: false,
+        hasChunkTransitionInFlight: false,
+      }),
+    ).toEqual({
+      refreshStrategy: "immediate",
+    });
+  });
+
+  it("coalesces duplicate immediate reconcile during a chunk transition", () => {
+    expect(
+      resolveDuplicateTileReconcileExecutionPlan({
+        refreshStrategy: "immediate",
+        hasPendingChunkRefresh: false,
+        isChunkRefreshRunning: false,
+        hasChunkTransitionInFlight: true,
+      }),
+    ).toEqual({
+      refreshStrategy: "none",
+    });
+  });
+
+  it("coalesces duplicate deferred reconcile while a refresh timer is already pending", () => {
+    expect(
+      resolveDuplicateTileReconcileExecutionPlan({
+        refreshStrategy: "deferred",
+        hasPendingChunkRefresh: true,
+        isChunkRefreshRunning: false,
+        hasChunkTransitionInFlight: false,
+      }),
+    ).toEqual({
       refreshStrategy: "none",
     });
   });
@@ -1231,6 +1299,9 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         previousDistance: 20,
         nextDistance: 20.75,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toBe(true);
   });
@@ -1241,6 +1312,9 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         previousDistance: 20,
         nextDistance: 20.4,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toBe(false);
   });
@@ -1251,18 +1325,40 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         previousDistance: null,
         nextDistance: 40,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toBe(false);
   });
 });
 
 describe("resolveControlsChangeChunkRefreshPlan", () => {
-  it("requests a debounced refresh on camera movement even without large zoom delta", () => {
+  it("skips refresh when the camera stays in the same chunk without a large zoom delta", () => {
     expect(
       resolveControlsChangeChunkRefreshPlan({
         previousDistance: 20,
         nextDistance: 20.2,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+
+  it("requests a debounced refresh when the camera crosses into another chunk", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 20.2,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1276,10 +1372,29 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         previousDistance: 20,
         nextDistance: 21,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: true,
       shouldForceRefresh: true,
+    });
+  });
+
+  it("keeps chunk-crossing refreshes debounced even when zoom delta also crosses the threshold", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: true,
+      shouldForceRefresh: false,
     });
   });
 
@@ -1289,10 +1404,111 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
         previousDistance: 20,
         nextDistance: Number.NaN,
         threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: false,
       }),
     ).toEqual({
       shouldRequestRefresh: false,
       shouldForceRefresh: false,
+    });
+  });
+
+  it("suppresses non-forced refreshes while a chunk transition is already running", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 20.2,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: true,
+        isProgrammaticCameraMotion: false,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+
+  it("still allows a forced zoom refresh during a chunk transition", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: true,
+        isProgrammaticCameraMotion: false,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: true,
+      shouldForceRefresh: true,
+    });
+  });
+
+  it("suppresses controls-change refresh while camera motion is programmatic", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
+        isProgrammaticCameraMotion: true,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+});
+
+describe("resolveControlsChangePrefetchPlan", () => {
+  it("prefetches when controls cross into a different chunk", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "0,0",
+        nextChunkKey: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: true,
+    });
+  });
+
+  it("skips prefetch when the focused chunk does not change", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "0,0",
+        nextChunkKey: "0,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: false,
+    });
+  });
+
+  it("skips prefetch while a chunk transition is already running", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "0,0",
+        nextChunkKey: "24,0",
+        isChunkTransitioning: true,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: false,
+    });
+  });
+
+  it("skips prefetch before the first committed chunk exists", () => {
+    expect(
+      resolveControlsChangePrefetchPlan({
+        currentChunk: "null",
+        nextChunkKey: "24,0",
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldPrefetchNextChunk: false,
     });
   });
 });

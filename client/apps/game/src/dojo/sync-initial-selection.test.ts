@@ -9,6 +9,10 @@ vi.mock("@bibliothecadao/types", () => ({
   },
 }));
 
+vi.mock("@/ui/config", () => ({
+  FELT_CENTER: () => 1679904896,
+}));
+
 const StructureType = {
   Realm: 1,
   Village: 2,
@@ -16,7 +20,7 @@ const StructureType = {
   FragmentMine: 4,
 } as const;
 
-const { resolveInitialStructureSelection } = await import("./sync-initial-selection");
+const { resolveInitialStructureSelection, toStructureWorldMapPosition } = await import("./sync-initial-selection");
 
 interface SyncedStructureRecord {
   entity_id: number;
@@ -95,5 +99,28 @@ describe("resolveInitialStructureSelection", () => {
       selectedStructure: null,
       spectator: true,
     });
+  });
+});
+
+describe("toStructureWorldMapPosition", () => {
+  it("normalizes felt-centered spectator coordinates for map navigation", () => {
+    expect(
+      toStructureWorldMapPosition({
+        coord_x: 1679904875,
+        coord_y: 1679904892,
+      }),
+    ).toEqual({
+      col: -21,
+      row: -4,
+    });
+  });
+
+  it("rejects obviously invalid world-map positions", () => {
+    expect(
+      toStructureWorldMapPosition({
+        coord_x: 1,
+        coord_y: 1,
+      }),
+    ).toBeUndefined();
   });
 });

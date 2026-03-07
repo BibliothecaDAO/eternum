@@ -3,10 +3,14 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { sqlApi } from "@/services/api";
+import { Position } from "@bibliothecadao/eternum";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
+import { PerformanceMonitor } from "../three/utils/performance-monitor";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -14,7 +18,7 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
-import { resolveInitialStructureSelection } from "./sync-initial-selection";
+import { resolveInitialStructureSelection, toStructureWorldMapPosition } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
@@ -127,6 +131,7 @@ const createMainThreadQueueProcessor = (
     const batchRecord: Record<string, ToriiEntity> = {};
 
     const itemsToProcess = updateQueue.splice(0, batchSize);
+    PerformanceMonitor.sample("sync.mainThread.batchSize", itemsToProcess.length);
     if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
 
     itemsToProcess.forEach(({ entityId, data }) => {
@@ -165,6 +170,7 @@ const createMainThreadQueueProcessor = (
   return {
     queueUpdate: (entityId: string, data: ToriiEntity) => {
       updateQueue.push({ entityId, data });
+      PerformanceMonitor.sample("sync.mainThread.queueDepth", updateQueue.length);
       if (!isProcessing) {
         pendingTimeoutId = setTimeout(processNextInQueue, 200);
       }
@@ -228,17 +234,25 @@ export const syncEntitiesDebounced = async (
   } = setupResult;
 
   const applyBatch = ({ upserts, deletions }: BatchPayload) => {
-    if (deletions.length > 0) {
-      deletions.forEach((entityId) => {
-        world.deleteEntity(entityId as Entity);
-      });
-    }
+    PerformanceMonitor.sample("sync.batch.total", upserts.length + deletions.length);
+    PerformanceMonitor.sample("sync.batch.upserts", upserts.length);
+    PerformanceMonitor.sample("sync.batch.deletions", deletions.length);
+    PerformanceMonitor.begin("sync.applyBatch");
+    try {
+      if (deletions.length > 0) {
+        deletions.forEach((entityId) => {
+          world.deleteEntity(entityId as Entity);
+        });
+      }
 
-    if (upserts.length > 0) {
-      const modelsArray = upserts.map((value) => {
-        return { hashed_keys: value.hashed_keys, models: value.models };
-      });
-      setEntities(modelsArray, world.components, logging);
+      if (upserts.length > 0) {
+        const modelsArray = upserts.map((value) => {
+          return { hashed_keys: value.hashed_keys, models: value.models };
+        });
+        setEntities(modelsArray, world.components, logging);
+      }
+    } finally {
+      PerformanceMonitor.end("sync.applyBatch");
     }
   };
 
@@ -316,12 +330,14 @@ export const initialSync = async (
     setInitialSyncProgress(value);
   };
 
-  const runTimedTask = async (label: string, targetProgress: number, task: () => Promise<void>) => {
+  const runTimedTask = async (label: string, targetProgress: number | null, task: () => Promise<void>) => {
     const start = performance.now();
     await task();
     const end = performance.now();
     console.log(`[sync] ${label}`, end - start);
-    updateProgress(targetProgress);
+    if (targetProgress !== null) {
+      updateProgress(targetProgress);
+    }
   };
 
   const parallelTasks: Promise<void>[] = [];
@@ -363,7 +379,6 @@ export const initialSync = async (
       const start = performance.now();
       state.setStructureEntityId(selectedStructure.entity_id, {
         spectator: selectAsSpectator,
-        worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
       });
       await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
         {
@@ -371,6 +386,30 @@ export const initialSync = async (
           position: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
         },
       ]);
+      const syncedStructure = getComponentValue(
+        setup.components.Structure,
+        getEntityIdFromKeys([BigInt(selectedStructure.entity_id)]),
+      ) as { base?: { coord_x?: number; coord_y?: number } } | undefined;
+      const syncedCol = Number(syncedStructure?.base?.coord_x);
+      const syncedRow = Number(syncedStructure?.base?.coord_y);
+      const worldMapPosition =
+        Number.isFinite(syncedCol) && Number.isFinite(syncedRow)
+          ? (() => {
+              const normalized = new Position({ x: syncedCol, y: syncedRow }).getNormalized();
+              return { col: normalized.x, row: normalized.y };
+            })()
+          : toStructureWorldMapPosition(selectedStructure);
+      state.setStructureEntityId(
+        selectedStructure.entity_id,
+        worldMapPosition
+          ? {
+              spectator: selectAsSpectator,
+              worldMapPosition,
+            }
+          : {
+              spectator: selectAsSpectator,
+            },
+      );
       const end = performance.now();
       console.log("[sync] initial structure query", end - start);
       updateProgress(25);
@@ -379,18 +418,31 @@ export const initialSync = async (
     updateProgress(25);
   }
 
-  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  parallelTasks.push(
+    runTimedTask("config query", 50, async () => {
+      await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  updateProgress(50);
+  parallelTasks.push(
+    runTimedTask("address names query", 65, async () => {
+      await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(75);
+  parallelTasks.push(
+    runTimedTask("guilds query", 80, async () => {
+      await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(90);
+  parallelTasks.push(
+    runTimedTask("map data refresh", 90, async () => {
+      await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+    }),
+  );
 
-  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
-
+  await Promise.all(parallelTasks);
   updateProgress(100);
 };
 

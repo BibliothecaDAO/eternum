@@ -9,6 +9,8 @@
  * - Hex exploration simulation for testing
  */
 
+import { summarizeNumericSamples } from "./performance-samples";
+
 interface PerformanceMetric {
   name: string;
   samples: number[];
@@ -19,13 +21,23 @@ interface PerformanceMetric {
   max: number;
 }
 
-interface PerformanceReport {
-  metrics: Record<string, { avg: number; min: number; max: number; last: number }>;
+type PerformanceMetricSummary = {
+  avg: number;
+  min: number;
+  max: number;
+  last: number;
+  p50: number;
+  p95: number;
+  sampleCount: number;
+};
+
+export interface PerformanceReport {
+  metrics: Record<string, PerformanceMetricSummary>;
   memory: {
     matrixPool: { available: number; inUse: number; totalAllocated: number; memoryMB: number };
     jsHeap?: { usedMB: number; totalMB: number };
   };
-  frameTime: { avg: number; min: number; max: number };
+  frameTime: PerformanceMetricSummary;
   discoveredHexCount: number;
 }
 
@@ -110,6 +122,16 @@ class PerformanceMonitorImpl {
     this.callbacks.forEach((cb) => cb(name, duration));
 
     return duration;
+  }
+
+  /**
+   * Record an arbitrary numeric sample under a metric name.
+   * Useful for queue depth, batch sizes, and other live diagnostics.
+   */
+  public sample(name: string, value: number): void {
+    if (!this.enabled || !Number.isFinite(value)) return;
+
+    this.recordMetric(name, value);
   }
 
   /**
@@ -239,13 +261,18 @@ class PerformanceMonitorImpl {
     memoryEstimateMB: number;
   }): PerformanceReport {
     const metricsReport: PerformanceReport["metrics"] = {};
+    const roundMetric = (value: number): number => Math.round(value * 100) / 100;
 
     this.metrics.forEach((metric, name) => {
+      const summary = summarizeNumericSamples(metric.samples, metric.lastValue);
       metricsReport[name] = {
-        avg: Math.round(metric.average * 100) / 100,
-        min: Math.round(metric.min * 100) / 100,
-        max: Math.round(metric.max * 100) / 100,
-        last: Math.round(metric.lastValue * 100) / 100,
+        avg: roundMetric(summary.avg),
+        min: roundMetric(summary.min),
+        max: roundMetric(summary.max),
+        last: roundMetric(summary.last),
+        p50: roundMetric(summary.p50),
+        p95: roundMetric(summary.p95),
+        sampleCount: summary.sampleCount,
       };
     });
 
@@ -270,13 +297,19 @@ class PerformanceMonitorImpl {
       };
     }
 
+    const frameSummary = summarizeNumericSamples(this.frameMetric.samples, this.frameMetric.lastValue);
+
     return {
       metrics: metricsReport,
       memory,
       frameTime: {
-        avg: Math.round(this.frameMetric.average * 100) / 100,
-        min: Math.round(this.frameMetric.min * 100) / 100,
-        max: Math.round(this.frameMetric.max * 100) / 100,
+        avg: roundMetric(frameSummary.avg),
+        min: roundMetric(frameSummary.min),
+        max: roundMetric(frameSummary.max),
+        last: roundMetric(frameSummary.last),
+        p50: roundMetric(frameSummary.p50),
+        p95: roundMetric(frameSummary.p95),
+        sampleCount: frameSummary.sampleCount,
       },
       discoveredHexCount: this.simulatedHexCount,
     };
@@ -290,9 +323,9 @@ class PerformanceMonitorImpl {
 
     console.group("Performance Summary");
     console.log(
-      `Frame Time: avg=${report.frameTime.avg}ms, min=${report.frameTime.min}ms, max=${report.frameTime.max}ms`,
+      `Frame Time: avg=${report.frameTime.avg}ms, p95=${report.frameTime.p95}ms, min=${report.frameTime.min}ms, max=${report.frameTime.max}ms`,
     );
-    console.log(`FPS: ~${Math.round(1000 / report.frameTime.avg)}`);
+    console.log(`FPS: ~${report.frameTime.avg > 0 ? Math.round(1000 / report.frameTime.avg) : 0}`);
 
     if (report.memory.jsHeap) {
       console.log(`JS Heap: ${report.memory.jsHeap.usedMB}MB / ${report.memory.jsHeap.totalMB}MB`);
@@ -304,7 +337,7 @@ class PerformanceMonitorImpl {
 
     console.group("Metrics");
     Object.entries(report.metrics).forEach(([name, data]) => {
-      console.log(`${name}: avg=${data.avg}ms, last=${data.last}ms`);
+      console.log(`${name}: avg=${data.avg}ms, p95=${data.p95}ms, last=${data.last}ms`);
     });
     console.groupEnd();
 

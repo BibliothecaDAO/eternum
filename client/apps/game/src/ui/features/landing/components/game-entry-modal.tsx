@@ -33,8 +33,12 @@ import {
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
+import { resolveGameEntryNavigationTarget } from "./game-entry-navigation-target";
 import type { Chain } from "@contracts";
 import type { Account } from "starknet";
+import { Position } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -1039,20 +1043,42 @@ export const GameEntryModal = ({
     // Ensure the loading overlay is visible (it may have been dismissed from a previous game)
     useUIStore.getState().setShowBlankOverlay(true);
 
-    // Set initial state — structureEntityId=0 means "not yet known".
-    // GameLoadingOverlay will update this once structures are synced into RECS.
-    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
-    setStructureEntityId(0, {
-      spectator: isSpectateMode,
-      worldMapPosition: { col: 0, row: 0 },
+    const uiStore = useUIStore.getState();
+    let resolvedStructurePosition: { col: number; row: number } | null = null;
+    if (isSpectateMode && setupResult?.components?.Structure && uiStore.structureEntityId) {
+      try {
+        const structure = getComponentValue(
+          setupResult.components.Structure,
+          getEntityIdFromKeys([BigInt(uiStore.structureEntityId)]),
+        ) as { base?: { coord_x?: number; coord_y?: number } } | undefined;
+
+        const coordX = Number(structure?.base?.coord_x);
+        const coordY = Number(structure?.base?.coord_y);
+        if (Number.isFinite(coordX) && Number.isFinite(coordY)) {
+          const normalized = new Position({ x: coordX, y: coordY }).getNormalized();
+          resolvedStructurePosition = { col: normalized.x, row: normalized.y };
+        }
+      } catch (error) {
+        debugLog(worldName, "Unable to resolve spectator structure position from RECS", error);
+      }
+    }
+
+    const target = resolveGameEntryNavigationTarget({
+      isSpectateMode,
+      structureEntityId: Number(uiStore.structureEntityId ?? 0),
+      worldMapReturnPosition: uiStore.worldMapReturnPosition,
+      resolvedStructurePosition,
     });
 
-    // Navigate with placeholder coords (0,0). The loading overlay will
-    // re-navigate to the player's realm once structures are available.
-    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
-    navigate(url);
+    // Set initial state. Spectator mode prefers the resolved world-map target if sync has already found one.
+    uiStore.setStructureEntityId(target.structureEntityId, {
+      spectator: isSpectateMode,
+      worldMapPosition: target.worldMapPosition,
+    });
+
+    navigate(target.url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, isSpectateMode]);
+  }, [navigate, isSpectateMode, setupResult, worldName]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {

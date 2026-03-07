@@ -9,6 +9,55 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-08",
+    title: "Calmer Live Map Refreshes",
+    description:
+      "Repeated live map tile replays now avoid piling extra chunk refreshes on top of an update already in progress, which reduces hitching during active worlds while keeping chunk visibility stable.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-08",
+    title: "Live Map Diagnostics",
+    description:
+      "Added deeper world map performance diagnostics for live games, making it easier to pinpoint whether chunk issues come from stream updates, fetch pressure, or refresh churn.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
+    title: "Faster Map Charting",
+    description:
+      "World map charting now prioritizes the current visible area before background hydration, so the map becomes usable sooner and the loading state is less likely to linger for non-critical fetches.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
+    title: "Faster World Startup",
+    description:
+      "World loading now overlaps more of the initial sync fetches in parallel, which reduces the time spent waiting on the startup loader before the map becomes playable.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
+    title: "Smoother Chunk Crossings",
+    description:
+      "World map chunk crossings now reuse more of the already visible terrain before rebuilding, which reduces the amount of work during panning and makes map transitions feel smoother.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-07",
+    title: "Spectator Biome Visibility",
+    description:
+      "Spectator mode now renders real world-map biome terrain as soon as the visible area loads, so structures no longer appear over an empty paper map.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-07",
+    title: "Stable Spectator World Entry",
+    description:
+      "Spectator mode now waits for the world map to actually finish loading the target area before the entry overlay disappears, reducing missing hexes and making map entry feel more reliable.",
+    type: "fix",
+  },
+  {
     date: "2026-03-06",
     title: "Tournament Leaderboard Table Cleanup",
     description:

@@ -44,13 +44,14 @@ import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory"
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { PerformanceMonitor } from "../utils/performance-monitor";
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
-import { MAX_INSTANCES } from "../constants/army-constants";
+import { MAX_INSTANCES, TROOP_TO_MODEL } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
   isCommittedManagerChunk,
@@ -61,6 +62,9 @@ import {
 } from "./manager-update-convergence";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const PREWARM_ARMY_MODEL_TYPES: ModelType[] = Array.from(
+  new Set<ModelType>([ModelType.Boat, ...Object.values(TROOP_TO_MODEL).flatMap((tiers) => Object.values(tiers))]),
+);
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -104,6 +108,22 @@ interface AddArmyParams {
   latestAttackerCoordY?: number;
   latestDefenderCoordX?: number;
   latestDefenderCoordY?: number;
+}
+
+interface DebugArmySpawnOptions {
+  count: number;
+  spread: number;
+  troopType: "Knight" | "Crossbowman" | "Paladin";
+  troopTier: "T1" | "T2" | "T3";
+  mixTypes: boolean;
+  mixTiers: boolean;
+  isMine: boolean;
+}
+
+interface DebugArmyStats {
+  debugArmyCount: number;
+  totalArmyCount: number;
+  visibleArmyCount: number;
 }
 
 export class ArmyManager {
@@ -197,8 +217,8 @@ export class ArmyManager {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
-    // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
-    void this.armyModel.preloadModels([ModelType.Boat]);
+    // Warm shared unit models in the background so chunk switches do not pay first-load costs.
+    void this.armyModel.preloadModels(PREWARM_ARMY_MODEL_TYPES);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
@@ -359,6 +379,15 @@ export class ArmyManager {
   // Debug army spawner state
   private debugArmyEntityIdCounter = 900000; // Start high to avoid collisions with real armies
   private debugSpawnedArmyIds: Set<ID> = new Set();
+  private readonly defaultDebugArmySpawnOptions: DebugArmySpawnOptions = {
+    count: 20,
+    spread: 10,
+    troopType: "Paladin",
+    troopTier: "T1",
+    mixTypes: true,
+    mixTiers: false,
+    isMine: false,
+  };
 
   /**
    * Setup debug GUI for spawning multiple armies for performance testing
@@ -366,15 +395,7 @@ export class ArmyManager {
   private setupDebugArmySpawner(): void {
     const debugFolder = GUIManager.addFolder("Debug Army Spawner");
 
-    const spawnParams = {
-      count: 20,
-      spread: 10,
-      troopType: "Paladin" as "Knight" | "Crossbowman" | "Paladin",
-      troopTier: "T1" as "T1" | "T2" | "T3",
-      mixTypes: true,
-      mixTiers: false,
-      isMine: false,
-    };
+    const spawnParams: DebugArmySpawnOptions = { ...this.defaultDebugArmySpawnOptions };
 
     debugFolder.add(spawnParams, "count", 1, 100, 1).name("Army Count");
     debugFolder.add(spawnParams, "spread", 1, 30, 1).name("Spread (hexes)");
@@ -388,7 +409,7 @@ export class ArmyManager {
       .add(
         {
           spawnArmies: () => {
-            this.spawnDebugArmies(spawnParams);
+            void this.spawnDebugArmies(spawnParams);
           },
         },
         "spawnArmies",
@@ -434,18 +455,10 @@ export class ArmyManager {
   /**
    * Spawn multiple debug armies around the current view center
    */
-  private spawnDebugArmies(params: {
-    count: number;
-    spread: number;
-    troopType: "Knight" | "Crossbowman" | "Paladin";
-    troopTier: "T1" | "T2" | "T3";
-    mixTypes: boolean;
-    mixTiers: boolean;
-    isMine: boolean;
-  }): void {
+  private async spawnDebugArmies(params: DebugArmySpawnOptions): Promise<DebugArmyStats> {
     if (!isCommittedManagerChunk(this.currentChunkKey)) {
       console.warn("[Debug Spawner] No current chunk key available");
-      return;
+      return this.getDebugArmyStats();
     }
 
     // Parse current chunk to get center position
@@ -476,6 +489,7 @@ export class ArmyManager {
     );
 
     // Spawn armies in a spiral pattern for even distribution
+    const addPromises: Promise<void>[] = [];
     for (let i = 0; i < params.count; i++) {
       const entityId = this.debugArmyEntityIdCounter++;
 
@@ -493,30 +507,38 @@ export class ArmyManager {
 
       this.debugSpawnedArmyIds.add(entityId);
 
-      this.addArmy({
-        entityId,
-        hexCoords: new Position({ x: col, y: row }),
-        owner: {
-          address: params.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : BigInt(i + 1),
-          ownerName: `Debug Army ${i + 1}`,
-          guildName: "Debug Guild",
-        },
-        category,
-        tier,
-        isDaydreamsAgent: false,
-        troopCount: Math.floor(Math.random() * 100) + 10,
-        currentStamina: Math.floor(Math.random() * 100),
-        onChainStamina: {
-          amount: 100n,
-          updatedTick: getBlockTimestamp().currentArmiesTick,
-        },
-        maxStamina: 100,
-      });
+      addPromises.push(
+        this.addArmy({
+          entityId,
+          hexCoords: new Position({ x: col, y: row }),
+          owner: {
+            address: params.isMine
+              ? ContractAddress(useAccountStore.getState().account?.address || "0")
+              : BigInt(i + 1),
+            ownerName: `Debug Army ${i + 1}`,
+            guildName: "Debug Guild",
+          },
+          category,
+          tier,
+          isDaydreamsAgent: false,
+          troopCount: Math.floor(Math.random() * 100) + 10,
+          currentStamina: Math.floor(Math.random() * 100),
+          onChainStamina: {
+            amount: 100n,
+            updatedTick: getBlockTimestamp().currentArmiesTick,
+          },
+          maxStamina: 100,
+        }),
+      );
     }
+
+    await Promise.all(addPromises);
 
     console.log(
       `[Debug Spawner] Spawned ${params.count} armies. Total debug armies: ${this.debugSpawnedArmyIds.size}, Total armies: ${this.armies.size}`,
     );
+
+    return this.getDebugArmyStats();
   }
 
   /**
@@ -532,6 +554,26 @@ export class ArmyManager {
 
     this.debugSpawnedArmyIds.clear();
     console.log(`[Debug Spawner] Cleared ${count} debug armies. Total armies remaining: ${this.armies.size}`);
+  }
+
+  public getDebugArmyStats(): DebugArmyStats {
+    return {
+      debugArmyCount: this.debugSpawnedArmyIds.size,
+      totalArmyCount: this.armies.size,
+      visibleArmyCount: this.visibleArmyOrder.length,
+    };
+  }
+
+  public async spawnDebugArmiesForPerf(options: Partial<DebugArmySpawnOptions> = {}): Promise<DebugArmyStats> {
+    return this.spawnDebugArmies({
+      ...this.defaultDebugArmySpawnOptions,
+      ...options,
+    });
+  }
+
+  public clearDebugArmiesForPerf(): DebugArmyStats {
+    this.clearDebugArmies();
+    return this.getDebugArmyStats();
   }
 
   public onMouseMove(raycaster: Raycaster) {
@@ -701,9 +743,13 @@ export class ArmyManager {
     return true;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+  async updateChunk(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number; skipVisualSettle?: boolean },
+  ) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
+    const skipVisualSettle = options?.skipVisualSettle ?? false;
     if (
       !shouldAcceptManagerChunkRequest({
         chunkKey,
@@ -768,7 +814,9 @@ export class ArmyManager {
 
     try {
       await this.chunkSwitchPromise;
-      await waitForVisualSettle();
+      if (!skipVisualSettle) {
+        await waitForVisualSettle();
+      }
     } finally {
       this.chunkSwitchPromise = null;
     }
@@ -1113,110 +1161,132 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
-    if (
-      !shouldRunManagerChunkUpdate({
-        chunkKey,
-        currentChunk: this.currentChunkKey,
-        transitionToken: options?.transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-      })
-    ) {
-      return;
-    }
-
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
-
-    let visibleArmies = computeVisibleArmies();
-    let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
-
-    // Preload all required models once
-    if (requiredModelTypes.size > 0) {
-      await this.armyModel.preloadModels(requiredModelTypes);
-    }
-
-    if (
-      !shouldRunManagerChunkUpdate({
-        chunkKey,
-        currentChunk: this.currentChunkKey,
-        transitionToken: options?.transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-      })
-    ) {
-      return;
-    }
-
-    // Recompute after async work to capture any armies added during preload
-    visibleArmies = computeVisibleArmies();
-    const sortedVisibleArmies = visibleArmies.toSorted(
-      (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
-    );
-    ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-
-    let buffersDirty = false;
-
-    const desiredOrder = visibleArmies.map((army) => army.entityId);
-    const desiredIds = new Set(desiredOrder);
-    const toRemove = this.visibleArmyOrder
-      .filter((entityId) => !desiredIds.has(entityId))
-      .toSorted((a, b) => {
-        const aNum = this.toNumericId(a);
-        const bNum = this.toNumericId(b);
-        return aNum - bNum;
-      });
-
-    toRemove.forEach((entityId) => {
-      const removalResult = this.removeVisibleArmy(entityId);
-      if (removalResult !== null) {
-        buffersDirty = true;
+    PerformanceMonitor.begin("armyChunk.total");
+    try {
+      if (
+        !shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunkKey,
+          transitionToken: options?.transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        })
+      ) {
+        return;
       }
-    });
 
-    visibleArmies
-      .filter((army) => !this.visibleArmyIndices.has(army.entityId))
-      .forEach((army) => {
-        const modelType = modelTypesByEntity.get(army.entityId);
-        if (!modelType) {
-          return;
+      const [startRow, startCol] = chunkKey.split(",").map(Number);
+      const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
+
+      let visibleArmies = computeVisibleArmies();
+      let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
+
+      if (requiredModelTypes.size > 0) {
+        PerformanceMonitor.begin("armyChunk.preloadModels");
+        try {
+          await this.armyModel.preloadModels(requiredModelTypes);
+        } finally {
+          PerformanceMonitor.end("armyChunk.preloadModels");
         }
-        this.addVisibleArmy(army, modelType);
-        buffersDirty = true;
-      });
-
-    if (options?.force) {
-      visibleArmies.forEach((army) => {
-        const slot = this.visibleArmyIndices.get(army.entityId);
-        const modelType = modelTypesByEntity.get(army.entityId);
-        if (slot !== undefined && modelType) {
-          // Re-resolve cosmetics on force refresh to pick up debug override changes
-          this.refreshArmyInstance(army, slot, modelType, true);
-          buffersDirty = true;
-        }
-      });
-    }
-
-    const visibleArmySet = new Set(this.visibleArmyOrder);
-    this.entityIdLabels.forEach((_, entityId) => {
-      if (!visibleArmySet.has(entityId)) {
-        this.removeEntityIdLabel(entityId);
       }
-    });
 
-    this.visibleArmyOrder = desiredOrder.filter((id) => this.visibleArmyIndices.has(id));
-    this.visibleArmies = this.visibleArmyOrder
-      .map((entityId) => this.armies.get(entityId))
-      .filter((army): army is ArmyData => Boolean(army));
+      if (
+        !shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunkKey,
+          transitionToken: options?.transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        })
+      ) {
+        return;
+      }
 
-    this.syncVisibleArmyAttachments(this.visibleArmies);
-    this.updateArmyAttachmentTransforms();
+      visibleArmies = computeVisibleArmies();
+      const sortedVisibleArmies = visibleArmies.toSorted(
+        (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
+      );
+      ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
 
-    this.syncVisibleSlots();
+      let buffersDirty = false;
 
-    if (buffersDirty) {
-      this.armyModel.updateAllInstances();
-      this.armyModel.computeBoundingSphere();
-      this.playerIndicatorManager.computeBoundingSphere();
-      this.frustumVisibilityDirty = true;
+      PerformanceMonitor.begin("armyChunk.reconcile");
+      try {
+        const desiredOrder = visibleArmies.map((army) => army.entityId);
+        const desiredIds = new Set(desiredOrder);
+        const toRemove = this.visibleArmyOrder
+          .filter((entityId) => !desiredIds.has(entityId))
+          .toSorted((a, b) => {
+            const aNum = this.toNumericId(a);
+            const bNum = this.toNumericId(b);
+            return aNum - bNum;
+          });
+
+        toRemove.forEach((entityId) => {
+          const removalResult = this.removeVisibleArmy(entityId);
+          if (removalResult !== null) {
+            buffersDirty = true;
+          }
+        });
+
+        visibleArmies
+          .filter((army) => !this.visibleArmyIndices.has(army.entityId))
+          .forEach((army) => {
+            const modelType = modelTypesByEntity.get(army.entityId);
+            if (!modelType) {
+              return;
+            }
+            this.addVisibleArmy(army, modelType);
+            buffersDirty = true;
+          });
+
+        if (options?.force) {
+          visibleArmies.forEach((army) => {
+            const slot = this.visibleArmyIndices.get(army.entityId);
+            const modelType = modelTypesByEntity.get(army.entityId);
+            if (slot !== undefined && modelType) {
+              // Re-resolve cosmetics on force refresh to pick up debug override changes
+              this.refreshArmyInstance(army, slot, modelType, true);
+              buffersDirty = true;
+            }
+          });
+        }
+
+        const visibleArmySet = new Set(this.visibleArmyOrder);
+        this.entityIdLabels.forEach((_, entityId) => {
+          if (!visibleArmySet.has(entityId)) {
+            this.removeEntityIdLabel(entityId);
+          }
+        });
+
+        this.visibleArmyOrder = desiredOrder.filter((id) => this.visibleArmyIndices.has(id));
+        this.visibleArmies = this.visibleArmyOrder
+          .map((entityId) => this.armies.get(entityId))
+          .filter((army): army is ArmyData => Boolean(army));
+      } finally {
+        PerformanceMonitor.end("armyChunk.reconcile");
+      }
+
+      PerformanceMonitor.begin("armyChunk.attachments");
+      try {
+        this.syncVisibleArmyAttachments(this.visibleArmies);
+        this.updateArmyAttachmentTransforms();
+        this.syncVisibleSlots();
+      } finally {
+        PerformanceMonitor.end("armyChunk.attachments");
+      }
+
+      if (buffersDirty) {
+        PerformanceMonitor.begin("armyChunk.upload");
+        try {
+          this.armyModel.updateAllInstances();
+          this.armyModel.computeBoundingSphere();
+          this.playerIndicatorManager.computeBoundingSphere();
+          this.frustumVisibilityDirty = true;
+        } finally {
+          PerformanceMonitor.end("armyChunk.upload");
+        }
+      }
+    } finally {
+      PerformanceMonitor.end("armyChunk.total");
     }
   }
 
@@ -1928,40 +1998,60 @@ export class ArmyManager {
   }
 
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
-    // Update movements in ArmyModel
-    this.armyModel.updateMovements(deltaTime);
-    this.armyModel.updateAnimations(deltaTime, animationContext);
+    PerformanceMonitor.begin("armyFrame.total");
+    try {
+      PerformanceMonitor.begin("armyFrame.modelAnimation");
+      try {
+        // Update movements in ArmyModel
+        this.armyModel.updateMovements(deltaTime);
+        this.armyModel.updateAnimations(deltaTime, animationContext);
 
-    // Update FX
-    this.fxManager.update(deltaTime);
+        // Update FX
+        this.fxManager.update(deltaTime);
 
-    // Update path visualization animation
-    this.pathRenderer.update(deltaTime);
+        // Update path visualization animation
+        this.pathRenderer.update(deltaTime);
 
-    // Update path progress for selected army
-    if (this.selectedArmyForPath !== null) {
-      const numericId = this.toNumericId(this.selectedArmyForPath);
-      const progress = this.armyModel.getMovementProgress(numericId);
-      if (progress !== undefined) {
-        this.pathRenderer.updateProgress(numericId, progress);
+        // Update path progress for selected army
+        if (this.selectedArmyForPath !== null) {
+          const numericId = this.toNumericId(this.selectedArmyForPath);
+          const progress = this.armyModel.getMovementProgress(numericId);
+          if (progress !== undefined) {
+            this.pathRenderer.updateProgress(numericId, progress);
+          }
+        }
+      } finally {
+        PerformanceMonitor.end("armyFrame.modelAnimation");
       }
-    }
 
-    // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, attachment transforms, and indicators
-    this.updateVisibleArmiesBatched();
-
-    if (this.frustumVisibilityDirty) {
-      const now = performance.now();
-      if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
-        this.applyFrustumVisibilityToLabels();
-        this.frustumVisibilityDirty = false;
-        this.lastLabelVisibilityUpdate = now;
+      PerformanceMonitor.begin("armyFrame.batchedVisible");
+      try {
+        // Batch update: single pass over visible armies for all per-frame operations
+        // This consolidates point icons, attachment transforms, and indicators
+        this.updateVisibleArmiesBatched();
+      } finally {
+        PerformanceMonitor.end("armyFrame.batchedVisible");
       }
-    }
 
-    // Flush batched label pool operations to minimize layout thrashing
-    this.labelPool.flushBatch();
+      if (this.frustumVisibilityDirty) {
+        const now = performance.now();
+        if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
+          PerformanceMonitor.begin("armyFrame.labelVisibility");
+          try {
+            this.applyFrustumVisibilityToLabels();
+            this.frustumVisibilityDirty = false;
+            this.lastLabelVisibilityUpdate = now;
+          } finally {
+            PerformanceMonitor.end("armyFrame.labelVisibility");
+          }
+        }
+      }
+
+      // Flush batched label pool operations to minimize layout thrashing
+      this.labelPool.flushBatch();
+    } finally {
+      PerformanceMonitor.end("armyFrame.total");
+    }
   }
 
   /**

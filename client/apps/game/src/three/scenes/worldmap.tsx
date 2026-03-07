@@ -21,7 +21,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Position } from "@bibliothecadao/eternum";
+import { DEFAULT_COORD_ALT, getTileAt, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -89,6 +89,7 @@ import {
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { PerformanceMonitor } from "../utils/performance-monitor";
 import {
   navigateToStructure,
   toggleMapHexView,
@@ -110,11 +111,13 @@ import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveDuplicateTileReconcileExecutionPlan,
   resolveControlsChangeChunkRefreshPlan,
+  resolveControlsChangePrefetchPlan,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
+  resolveRefreshRequestPlan,
   resolveRefreshRunningActions,
-  resolveChunkSwitchActions,
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
@@ -140,6 +143,12 @@ import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-p
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import {
+  buildHexGridRowMetadata,
+  resolveHexGridProcessingPlan,
+  resolveHexGridStripUpdatePlan,
+} from "./worldmap-hex-grid";
+import { emitWorldmapReadyEvent } from "./worldmap-ready-event";
+import {
   applyWorldmapSwitchOffRuntimeState,
   finalizePendingChunkFetchOwnership,
   invalidateWorldmapSwitchOffTransitionState,
@@ -148,6 +157,7 @@ import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSna
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  resolveWorldmapFetchPlan,
 } from "./worldmap-chunk-bounds";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
@@ -162,9 +172,11 @@ import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
   createWorldmapChunkDiagnostics,
   recordChunkDiagnosticsEvent,
+  type WorldmapRefreshRequestSource,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
+import { resolveVisibleWorldmapBiome } from "./worldmap-visible-biome";
 import {
   captureChunkDiagnosticsBaseline,
   cloneChunkDiagnosticsBaselines,
@@ -179,6 +191,17 @@ import {
   evaluateTileFetchVolumeRegression,
   type TileFetchVolumeRegressionResult,
 } from "./worldmap-tile-fetch-volume-regression";
+import {
+  installWorldmapPerfDebugHooks,
+  removeWorldmapPerfDebugHooks,
+  type WorldmapBenchmarkSnapshot,
+  type WorldmapChunkDiagnosticsSnapshot,
+  type WorldmapChunkOffsetMoveOptions,
+  type WorldmapDebugArmySpawnOptions,
+  type WorldmapDebugArmyStats,
+  type WorldmapPerfControlPatch,
+  type WorldmapPerfDebugState,
+} from "./worldmap-perf-debug-hooks";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -206,32 +229,12 @@ type WorldmapTileFetchVolumeRegressionDebugResult = {
   result: TileFetchVolumeRegressionResult;
 };
 
-type WorldmapChunkDiagnosticsDebugWindow = Window & {
-  getWorldmapChunkDiagnostics?: () => {
-    diagnostics: WorldmapChunkDiagnostics;
-    baselines: WorldmapChunkDiagnosticsBaselineEntry[];
-    currentChunk: string;
-    chunkTransitionToken: number;
-    chunkRefreshRequestToken: number;
-    chunkRefreshAppliedToken: number;
-  };
-  resetWorldmapChunkDiagnostics?: () => void;
-  captureWorldmapChunkBaseline?: (label?: string) => WorldmapChunkDiagnosticsBaselineEntry;
-  evaluateWorldmapChunkSwitchP95Regression?: (
-    baselineLabel?: string,
-    allowedRegressionFraction?: number,
-  ) => WorldmapChunkSwitchP95RegressionDebugResult;
-  evaluateWorldmapTileFetchVolumeRegression?: (
-    baselineLabel?: string,
-    allowedIncreaseFraction?: number,
-  ) => WorldmapTileFetchVolumeRegressionDebugResult;
-};
-
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
+const BACKGROUND_HYDRATION_DELAY_MS = 250;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
@@ -310,6 +313,15 @@ export default class WorldmapScene extends HexagonScene {
   private readonly minCachedTerrainCoverageFraction = 0.08;
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
+  private currentTerrainCells: Map<string, string> = new Map();
+  private currentTerrainWindow:
+    | {
+        startRow: number;
+        startCol: number;
+        rows: number;
+        cols: number;
+      }
+    | null = null;
   private toriiLoadingCounter = 0;
   private isSwitchedOff = false;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
@@ -415,16 +427,30 @@ export default class WorldmapScene extends HexagonScene {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
 
+    const focusPoint = this.getCameraGroundIntersection();
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(focusPoint.x, focusPoint.z);
+    const nextChunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+    const prefetchPlan = resolveControlsChangePrefetchPlan({
+      currentChunk: this.currentChunk,
+      nextChunkKey,
+      isChunkTransitioning: this.isChunkTransitioning,
+    });
+    if (prefetchPlan.shouldPrefetchNextChunk) {
+      void this.computeTileEntities(nextChunkKey, { priority: "background" });
+    }
     const nextCameraDistance = this.getCurrentCameraDistance();
     const refreshPlan = resolveControlsChangeChunkRefreshPlan({
       previousDistance: this.lastControlsCameraDistance,
       nextDistance: nextCameraDistance,
       threshold: this.zoomForceRefreshDistanceThreshold,
+      chunkChanged: this.currentChunk !== nextChunkKey,
+      isChunkTransitioning: this.isChunkTransitioning,
+      isProgrammaticCameraMotion: this.isProgrammaticCameraMotionActive(),
     });
     this.lastControlsCameraDistance = nextCameraDistance;
 
     if (refreshPlan.shouldRequestRefresh) {
-      this.requestChunkRefresh(refreshPlan.shouldForceRefresh);
+      this.requestChunkRefresh(refreshPlan.shouldForceRefresh, "controls_change");
     }
   };
   private isUrlChangedListenerAttached = false;
@@ -507,7 +533,10 @@ export default class WorldmapScene extends HexagonScene {
 
   // Render-area fetch bookkeeping (keys represent render-sized regions, not chunk stride)
   private fetchedChunks: Set<string> = new Set();
+  private fetchedCriticalChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
+  private backgroundHydrationTimeout: number | null = null;
+  private backgroundHydrationToken = 0;
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<
@@ -585,7 +614,7 @@ export default class WorldmapScene extends HexagonScene {
         this.simulateAllExplored = value;
       },
       getRenderChunkSize: () => this.renderChunkSize,
-      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
+      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force, "perf_simulation"),
       hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
     });
     this.perfSimulation.setupPerformanceSimulationGUI();
@@ -1186,6 +1215,10 @@ export default class WorldmapScene extends HexagonScene {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
     if (col !== undefined && row !== undefined) {
+      if (this.state.isSpectating) {
+        this.moveCameraToColRowWithView(col, row, CameraView.Far, 0);
+        return;
+      }
       this.moveCameraToColRow(col, row, 0);
     }
   }
@@ -1907,7 +1940,7 @@ export default class WorldmapScene extends HexagonScene {
 
       this.clearPendingArmyMovement(entityId);
       if (fallbackPlan.shouldRequestChunkRefresh) {
-        this.requestChunkRefresh(true);
+        this.requestChunkRefresh(true, "pending_movement_fallback");
       }
 
       if (import.meta.env.DEV) {
@@ -1938,7 +1971,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (selectionPlan.shouldRequestChunkRefresh) {
-      this.requestChunkRefresh(true);
+      this.requestChunkRefresh(true, "pending_movement_selection");
     }
 
     if (selectionPlan.shouldBlockSelection) {
@@ -2384,6 +2417,11 @@ export default class WorldmapScene extends HexagonScene {
     this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
+    if (this.backgroundHydrationTimeout) {
+      clearTimeout(this.backgroundHydrationTimeout);
+      this.backgroundHydrationTimeout = null;
+    }
+    this.backgroundHydrationToken += 1;
 
     // Clear map loading state so "Charting Territories" doesn't persist
     // when switching away while fetches are still in-flight
@@ -2814,6 +2852,7 @@ export default class WorldmapScene extends HexagonScene {
 
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
+    this.invalidateCurrentTerrainWindow();
 
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
@@ -2836,19 +2875,25 @@ export default class WorldmapScene extends HexagonScene {
         this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
     };
     const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
+    const duplicateTileExecutionPlan = resolveDuplicateTileReconcileExecutionPlan({
+      refreshStrategy: duplicateTilePlan.refreshStrategy,
+      hasPendingChunkRefresh: this.chunkRefreshTimeout !== null,
+      isChunkRefreshRunning: this.chunkRefreshRunning,
+      hasChunkTransitionInFlight: this.globalChunkSwitchPromise !== null || this.isChunkTransitioning,
+    });
 
     if (duplicateTilePlan.shouldInvalidateCaches) {
       this.invalidateAllChunkCachesContainingHex(col, row);
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
 
-      if (duplicateTilePlan.refreshStrategy !== "none") {
+      if (duplicateTileExecutionPlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
-        if (duplicateTilePlan.refreshStrategy === "immediate") {
+        if (duplicateTileExecutionPlan.refreshStrategy === "immediate") {
           void this.updateVisibleChunks(true).catch((error) =>
             console.error("Failed to reconcile duplicate tile:", error),
           );
         } else {
-          this.requestChunkRefresh(true);
+          this.requestChunkRefresh(true, "duplicate_tile");
         }
       }
 
@@ -2880,7 +2925,7 @@ export default class WorldmapScene extends HexagonScene {
         this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
       }
 
-      this.requestChunkRefresh(true);
+      this.requestChunkRefresh(true, "remove_explored");
       return;
     }
 
@@ -2975,7 +3020,8 @@ export default class WorldmapScene extends HexagonScene {
         chunkSize: this.chunkSize,
       })
     ) {
-      this.requestChunkRefresh(true);
+      this.invalidateCurrentTerrainWindow();
+      this.requestChunkRefresh(true, "structure_bounds");
     }
   }
 
@@ -3274,7 +3320,7 @@ export default class WorldmapScene extends HexagonScene {
         try {
           if (item.fetchTiles) {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_executed");
-            await this.computeTileEntities(item.chunkKey);
+            await this.computeTileEntities(item.chunkKey, { priority: "background" });
           }
         } catch (error) {
           if (import.meta.env.DEV) {
@@ -3301,6 +3347,7 @@ export default class WorldmapScene extends HexagonScene {
 
   clearCache() {
     this.unregisterTrackedVisibilityChunks();
+    this.invalidateCurrentTerrainWindow();
     for (const chunkKey of this.cachedMatrices.keys()) {
       this.disposeCachedMatrices(chunkKey);
     }
@@ -3374,6 +3421,15 @@ export default class WorldmapScene extends HexagonScene {
     this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, normalizedWidth, normalizedHeight);
   }
 
+  private getTerrainCellKey(col: number, row: number): string {
+    return `${col},${row}`;
+  }
+
+  private invalidateCurrentTerrainWindow(): void {
+    this.currentTerrainCells.clear();
+    this.currentTerrainWindow = null;
+  }
+
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
@@ -3388,7 +3444,13 @@ export default class WorldmapScene extends HexagonScene {
 
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
-      this.computeInteractiveHexes(startRow, startCol, cols, rows);
+      this.invalidateCurrentTerrainWindow();
+      PerformanceMonitor.begin("hexGrid.interactiveHexes");
+      try {
+        this.computeInteractiveHexes(startRow, startCol, cols, rows);
+      } finally {
+        PerformanceMonitor.end("hexGrid.interactiveHexes");
+      }
 
       if (memoryMonitor && preUpdateStats) {
         const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
@@ -3410,9 +3472,15 @@ export default class WorldmapScene extends HexagonScene {
 
     const halfRows = rows / 2;
     const halfCols = cols / 2;
-    const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
-    const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-    const frameBudget = this.hexGridFrameBudgetMs;
+    const processingPlan = resolveHexGridProcessingPlan({
+      totalHexes,
+      baseFrameBudgetMs: this.hexGridFrameBudgetMs,
+      baseMinBatch: this.hexGridMinBatch,
+      baseMaxBatch: this.hexGridMaxBatch,
+      isChunkTransitioning: this.isChunkTransitioning,
+      isChunkRefreshRunning: this.chunkRefreshRunning,
+    });
+    const { minBatch, maxBatch, frameBudgetMs: frameBudget } = processingPlan;
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
@@ -3440,10 +3508,10 @@ export default class WorldmapScene extends HexagonScene {
       };
 
       let currentIndex = 0;
+      let currentRowIndex = 0;
+      let currentColIndex = 0;
       let resolved = false;
 
-      const tempMatrix = new Matrix4();
-      const tempPosition = new Vector3();
       const matrixPool = matrixPoolInstance;
       const hexRadius = HEX_SIZE;
       const hexHeight = hexRadius * 2;
@@ -3451,6 +3519,57 @@ export default class WorldmapScene extends HexagonScene {
       const vertDist = hexHeight * 0.75;
       const horizDist = hexWidth;
       const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
+      const rowMetadata = buildHexGridRowMetadata({
+        rows,
+        halfRows,
+        halfCols,
+        chunkCenterRow,
+        chunkCenterCol,
+        vertDist,
+        horizDist,
+      });
+      const baseHexMatrix = new Matrix4().makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+      const simulateAllExplored = this.simulateAllExplored;
+      const exploredTiles = this.exploredTiles;
+      const structureHexCoords = this.structureManager.structureHexCoords;
+      const perfSimulation = this.perfSimulation;
+      const isSpectating = this.state.isSpectating;
+      const components = this.dojo.components as Parameters<typeof getTileAt>[0];
+      const currentTerrainWindow = this.currentTerrainWindow;
+      const stripUpdatePlan =
+        currentTerrainWindow &&
+        currentTerrainWindow.rows === rows &&
+        currentTerrainWindow.cols === cols &&
+        (currentTerrainWindow.startRow !== startRow || currentTerrainWindow.startCol !== startCol)
+          ? resolveHexGridStripUpdatePlan({
+              previousStartRow: currentTerrainWindow.startRow,
+              previousStartCol: currentTerrainWindow.startCol,
+              nextStartRow: startRow,
+              nextStartCol: startCol,
+              renderSize: this.renderChunkSize,
+              chunkSize: this.chunkSize,
+            })
+          : null;
+      const canUseStripUpdate = stripUpdatePlan?.mode === "strip" && this.currentTerrainCells.size > 0;
+      const nextTerrainCells = new Map<string, string>();
+      const nextRenderBounds = stripUpdatePlan?.nextBounds ?? getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+      const stripProcessTargets: number[] = [];
+      const totalTargetsToProcess = (() => {
+        if (!canUseStripUpdate || !stripUpdatePlan || stripUpdatePlan.mode !== "strip") {
+          return totalHexes;
+        }
+
+        for (let row = stripUpdatePlan.incomingBounds.minRow; row <= stripUpdatePlan.incomingBounds.maxRow; row += 1) {
+          const rowIndex = row - nextRenderBounds.minRow;
+          for (let col = stripUpdatePlan.incomingBounds.minCol; col <= stripUpdatePlan.incomingBounds.maxCol; col += 1) {
+            const colIndex = col - nextRenderBounds.minCol;
+            stripProcessTargets.push(rowIndex * cols + colIndex);
+          }
+        }
+
+        return stripProcessTargets.length;
+      })();
+      let processCellsTimingActive = false;
 
       const cleanupTask = () => {
         if (this.hexGridFrameHandle !== null) {
@@ -3484,6 +3603,10 @@ export default class WorldmapScene extends HexagonScene {
       };
 
       const abortTask = () => {
+        if (processCellsTimingActive) {
+          processCellsTimingActive = false;
+          PerformanceMonitor.end("hexGrid.processCells");
+        }
         releaseAllMatrices();
         resolveOnce();
       };
@@ -3493,34 +3616,57 @@ export default class WorldmapScene extends HexagonScene {
       };
 
       const finalizeSuccess = () => {
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as BiomeType);
+        PerformanceMonitor.begin("hexGrid.commit");
+        try {
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            const hexMesh = this.biomeModels.get(biome as BiomeType);
 
-          if (!hexMesh) {
-            if (matrices.length > 0) {
-              console.error(`❌ Missing biome model for: ${biome}`);
-              if (import.meta.env.DEV) {
-                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+            if (!hexMesh) {
+              if (matrices.length > 0) {
+                console.error(`❌ Missing biome model for: ${biome}`);
+                if (import.meta.env.DEV) {
+                  console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+                }
               }
+              continue;
             }
-            continue;
-          }
 
-          if (matrices.length === 0) {
-            hexMesh.setCount(0);
-            hexMesh.updateMeshVisibility(); // Hide meshes with 0 instances to skip draw calls
-            continue;
-          }
+            if (matrices.length === 0) {
+              hexMesh.setCount(0);
+              hexMesh.updateMeshVisibility(); // Hide meshes with 0 instances to skip draw calls
+              continue;
+            }
 
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-          });
-          hexMesh.setCount(matrices.length);
-          hexMesh.updateMeshVisibility(); // Show meshes that have instances
+            matrices.forEach((matrix, index) => {
+              hexMesh.setMatrixAt(index, matrix);
+            });
+            hexMesh.setCount(matrices.length);
+            hexMesh.updateMeshVisibility(); // Show meshes that have instances
+          }
+        } finally {
+          PerformanceMonitor.end("hexGrid.commit");
         }
 
-        this.cacheMatricesForChunk(startRow, startCol);
-        this.computeInteractiveHexes(startRow, startCol, cols, rows);
+        PerformanceMonitor.begin("hexGrid.cacheSnapshot");
+        try {
+          this.cacheMatricesForChunk(startRow, startCol);
+          this.currentTerrainCells = nextTerrainCells;
+          this.currentTerrainWindow = {
+            startRow,
+            startCol,
+            rows,
+            cols,
+          };
+        } finally {
+          PerformanceMonitor.end("hexGrid.cacheSnapshot");
+        }
+
+        PerformanceMonitor.begin("hexGrid.interactiveHexes");
+        try {
+          this.computeInteractiveHexes(startRow, startCol, cols, rows);
+        } finally {
+          PerformanceMonitor.end("hexGrid.interactiveHexes");
+        }
 
         releaseAllMatrices();
 
@@ -3536,50 +3682,61 @@ export default class WorldmapScene extends HexagonScene {
         resolveOnce();
       };
 
-      const processCell = (index: number) => {
-        const rowOffset = Math.floor(index / cols) - halfRows;
-        const colOffset = (index % cols) - halfCols;
+      const appendTerrainCell = (rowIndex: number, colIndex: number, biomeKey: string) => {
+        const rowEntry = rowMetadata[rowIndex]!;
+        const globalCol = nextRenderBounds.minCol + colIndex;
+        const key = this.getTerrainCellKey(globalCol, rowEntry.globalRow);
+        const baseX = rowEntry.baseXAtColZero + colIndex * horizDist;
+        const pooledMatrix = matrixPool.getMatrix();
+        pooledMatrix.copy(baseHexMatrix);
+        pooledMatrix.setPosition(baseX, biomeKey === "Outline" ? 0.01 : 0.05, rowEntry.baseZ);
+        biomeHexes[biomeKey].push(pooledMatrix);
+        nextTerrainCells.set(key, biomeKey);
+      };
 
-        const globalRow = chunkCenterRow + rowOffset;
-        const globalCol = chunkCenterCol + colOffset;
+      if (canUseStripUpdate && stripUpdatePlan && stripUpdatePlan.mode === "strip") {
+        for (let row = stripUpdatePlan.retainedBounds.minRow; row <= stripUpdatePlan.retainedBounds.maxRow; row += 1) {
+          const rowIndex = row - nextRenderBounds.minRow;
+          for (let col = stripUpdatePlan.retainedBounds.minCol; col <= stripUpdatePlan.retainedBounds.maxCol; col += 1) {
+            const biomeKey = this.currentTerrainCells.get(this.getTerrainCellKey(col, row));
+            if (!biomeKey) {
+              continue;
+            }
+            const colIndex = col - nextRenderBounds.minCol;
+            appendTerrainCell(rowIndex, colIndex, biomeKey);
+          }
+        }
+      }
 
-        const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
-        const baseX = globalCol * horizDist - rowOffsetValue;
-        const baseZ = globalRow * vertDist;
-        tempPosition.set(baseX, 0, baseZ);
+      const processCell = (rowIndex: number, colIndex: number) => {
+        const rowEntry = rowMetadata[rowIndex]!;
+        const globalCol = nextRenderBounds.minCol + colIndex;
 
-        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isStructure = structureHexCoords.get(globalCol)?.has(rowEntry.globalRow) || false;
         const shouldHideTile = isStructure;
-        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+        const exploredBiome = exploredTiles.get(globalCol)?.get(rowEntry.globalRow);
 
         if (shouldHideTile) {
           return;
         }
 
-        tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-        tempPosition.y += 0.05;
+        const tileBiomeId = isSpectating
+          ? getTileAt(components, DEFAULT_COORD_ALT, globalCol + FELT_CENTER(), rowEntry.globalRow + FELT_CENTER())
+              ?.biome
+          : undefined;
+        const visibleBiome = resolveVisibleWorldmapBiome({
+          exploredBiome,
+          isSpectating,
+          simulateAllExplored,
+          tileBiomeId,
+          simulatedBiome: perfSimulation?.getSimulatedBiome(globalCol, rowEntry.globalRow) ?? BiomeType.Grassland,
+        });
 
-        // Performance simulation: treat all hexes as explored when flag is set
-        const effectivelyExplored = isExplored || this.simulateAllExplored;
-
-        if (effectivelyExplored) {
-          // Use actual biome if explored, or generate deterministic biome for simulation
-          const biome = isExplored
-            ? (isExplored as BiomeType)
-            : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
-          const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
-          tempMatrix.setPosition(tempPosition);
-
-          const pooledMatrix = matrixPool.getMatrix();
-          pooledMatrix.copy(tempMatrix);
-          biomeHexes[biomeVariant].push(pooledMatrix);
+        if (!visibleBiome.shouldRenderOutline && visibleBiome.biome !== null) {
+          const biomeVariant = getBiomeVariant(visibleBiome.biome, globalCol, rowEntry.globalRow);
+          appendTerrainCell(rowIndex, colIndex, biomeVariant);
         } else {
-          tempPosition.y = 0.01;
-          tempMatrix.setPosition(tempPosition);
-
-          const pooledMatrix = matrixPool.getMatrix();
-          pooledMatrix.copy(tempMatrix);
-          biomeHexes.Outline.push(pooledMatrix);
+          appendTerrainCell(rowIndex, colIndex, "Outline");
         }
       };
 
@@ -3592,12 +3749,27 @@ export default class WorldmapScene extends HexagonScene {
         const frameStart = performance.now();
         let processedThisFrame = 0;
 
-        while (currentIndex < totalHexes) {
-          processCell(currentIndex);
+        while (currentIndex < totalTargetsToProcess) {
+          let targetRowIndex = currentRowIndex;
+          let targetColIndex = currentColIndex;
+          if (canUseStripUpdate) {
+            const encodedTarget = stripProcessTargets[currentIndex]!;
+            targetRowIndex = Math.floor(encodedTarget / cols);
+            targetColIndex = encodedTarget % cols;
+          }
+
+          processCell(targetRowIndex, targetColIndex);
           currentIndex += 1;
           processedThisFrame += 1;
+          if (!canUseStripUpdate) {
+            currentColIndex += 1;
+            if (currentColIndex >= cols) {
+              currentColIndex = 0;
+              currentRowIndex += 1;
+            }
+          }
 
-          if (currentIndex >= totalHexes) {
+          if (currentIndex >= totalTargetsToProcess) {
             break;
           }
 
@@ -3609,13 +3781,19 @@ export default class WorldmapScene extends HexagonScene {
           }
         }
 
-        if (currentIndex < totalHexes) {
+        if (currentIndex < totalTargetsToProcess) {
           this.hexGridFrameHandle = requestAnimationFrame(processFrame);
         } else {
+          if (processCellsTimingActive) {
+            processCellsTimingActive = false;
+            PerformanceMonitor.end("hexGrid.processCells");
+          }
           finalizeSuccess();
         }
       };
 
+      PerformanceMonitor.begin("hexGrid.processCells");
+      processCellsTimingActive = true;
       this.hexGridFrameHandle = requestAnimationFrame(processFrame);
     });
 
@@ -3757,7 +3935,9 @@ export default class WorldmapScene extends HexagonScene {
           models: TORII_BOUNDS_MODELS.map((model) => model.model),
         });
       }
+      PerformanceMonitor.begin("boundsSwitch.total");
       const result = await this.toriiStreamManager.switchBounds(descriptor);
+      PerformanceMonitor.end("boundsSwitch.total");
       if (result.outcome === "stale_dropped") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_stale_dropped");
         return;
@@ -3771,6 +3951,7 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
     } catch (error) {
+      PerformanceMonitor.end("boundsSwitch.total");
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
     }
@@ -3793,16 +3974,16 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateUnsubscribes = [];
   }
 
-  private beginToriiFetch() {
-    if (this.isSwitchedOff) return;
+  private beginToriiFetch(priority: "critical" | "background") {
+    if (this.isSwitchedOff || priority !== "critical") return;
     if (this.toriiLoadingCounter === 0) {
       this.state.setLoading(LoadingStateKey.Map, true);
     }
     this.toriiLoadingCounter += 1;
   }
 
-  private endToriiFetch() {
-    if (this.toriiLoadingCounter === 0) {
+  private endToriiFetch(priority: "critical" | "background") {
+    if (priority !== "critical" || this.toriiLoadingCounter === 0) {
       return;
     }
 
@@ -3812,35 +3993,81 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private async computeTileEntities(chunkKey: string): Promise<boolean> {
+  private scheduleBackgroundChunkHydration(chunkKeys: string[], targetChunkKey: string): void {
+    const filteredChunkKeys = chunkKeys.filter((chunkKey) => chunkKey !== targetChunkKey);
+    if (filteredChunkKeys.length === 0) {
+      return;
+    }
+
+    if (this.backgroundHydrationTimeout) {
+      clearTimeout(this.backgroundHydrationTimeout);
+      this.backgroundHydrationTimeout = null;
+    }
+
+    const hydrationToken = ++this.backgroundHydrationToken;
+    this.backgroundHydrationTimeout = window.setTimeout(() => {
+      if (hydrationToken !== this.backgroundHydrationToken || this.isSwitchedOff) {
+        return;
+      }
+
+      filteredChunkKeys.forEach((chunkKey) => {
+        void this.computeTileEntities(chunkKey, { priority: "background" });
+      });
+      this.backgroundHydrationTimeout = null;
+    }, BACKGROUND_HYDRATION_DELAY_MS);
+  }
+
+  private async computeTileEntities(
+    chunkKey: string,
+    options: { priority?: "critical" | "background" } = {},
+  ): Promise<boolean> {
     if (this.isSwitchedOff) {
       return false;
     }
 
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-    if (this.fetchedChunks.has(fetchKey)) {
+    const priority = options.priority ?? "background";
+    const fetchPlan = resolveWorldmapFetchPlan({
+      chunkKey,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+      superAreaStrides: WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+      priority,
+    });
+    const { cacheKey, fetchKey, bounds } = fetchPlan;
+    const fetchAreaHexes = (bounds.maxCol - bounds.minCol + 1) * (bounds.maxRow - bounds.minRow + 1);
+    PerformanceMonitor.sample(`tileFetch.areaHexes.${priority}`, fetchAreaHexes);
+
+    if (priority === "critical" && this.fetchedChunks.has(this.getRenderAreaKeyForChunk(chunkKey))) {
+      return true;
+    }
+
+    if ((priority === "critical" ? this.fetchedCriticalChunks : this.fetchedChunks).has(cacheKey)) {
       return true;
     }
 
     const existingPromise = this.pendingChunks.get(fetchKey);
     if (existingPromise) {
-      return existingPromise;
+      const pendingAwaitMetricName = `tileFetch.pendingAwait.${priority}`;
+      PerformanceMonitor.begin(pendingAwaitMetricName);
+      try {
+        return await existingPromise;
+      } finally {
+        PerformanceMonitor.end(pendingAwaitMetricName);
+      }
     }
-
-    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBoundsForArea(fetchKey);
 
     if (import.meta.env.DEV) {
       console.log(
         "[RENDER FETCH]",
-        { chunkKey, fetchKey },
-        `cols: ${minCol}-${maxCol}`,
-        `rows: ${minRow}-${maxRow}`,
+        { chunkKey, fetchKey, priority },
+        `cols: ${bounds.minCol}-${bounds.maxCol}`,
+        `rows: ${bounds.minRow}-${bounds.maxRow}`,
         "fetched chunks",
         this.fetchedChunks,
       );
     }
 
-    const fetchPromise = this.executeTileEntitiesFetch(fetchKey, minCol, maxCol, minRow, maxRow);
+    const fetchPromise = this.executeTileEntitiesFetch(fetchPlan, chunkKey);
     const ownedFetchPromise = fetchPromise.finally(() => {
       finalizePendingChunkFetchOwnership({
         pendingChunks: this.pendingChunks,
@@ -3855,29 +4082,37 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async executeTileEntitiesFetch(
-    fetchKey: string,
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
+    fetchPlan: {
+      cacheKey: string;
+      fetchKey: string;
+      bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number };
+      priority: "critical" | "background";
+    },
+    chunkKey: string,
   ): Promise<boolean> {
-    this.beginToriiFetch();
+    const { cacheKey, fetchKey, bounds, priority } = fetchPlan;
+    const fetchMetricName = priority === "critical" ? "tileFetch.critical" : "tileFetch.background";
+    this.beginToriiFetch(priority);
+    PerformanceMonitor.begin(fetchMetricName);
     try {
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
-        minCol + FELT_CENTER(),
-        maxCol + FELT_CENTER(),
-        minRow + FELT_CENTER(),
-        maxRow + FELT_CENTER(),
+        bounds.minCol + FELT_CENTER(),
+        bounds.maxCol + FELT_CENTER(),
+        bounds.minRow + FELT_CENTER(),
+        bounds.maxRow + FELT_CENTER(),
       );
-      // Only add to the fetched cache if the render area is still pinned (still relevant)
-      if (this.pinnedRenderAreas.has(fetchKey)) {
-        this.fetchedChunks.add(fetchKey);
+
+      if (priority === "critical") {
+        this.fetchedCriticalChunks.add(cacheKey);
+        this.scheduleHydratedChunkRefresh(chunkKey);
+      } else if (this.pinnedRenderAreas.has(cacheKey)) {
+        this.fetchedChunks.add(cacheKey);
         const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
         if (
           shouldScheduleHydratedChunkRefreshForFetch({
-            fetchAreaKey: fetchKey,
+            fetchAreaKey: cacheKey,
             currentAreaKey,
           })
         ) {
@@ -3892,7 +4127,8 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
-      this.endToriiFetch();
+      PerformanceMonitor.end(fetchMetricName);
+      this.endToriiFetch(priority);
     }
   }
 
@@ -4238,7 +4474,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     try {
-      await this.computeTileEntities(targetChunkKey);
+      await this.computeTileEntities(targetChunkKey, { priority: "background" });
       const [targetStartRow, targetStartCol] = targetChunkKey.split(",").map(Number);
       if (!Number.isFinite(targetStartRow) || !Number.isFinite(targetStartCol)) {
         return;
@@ -4246,7 +4482,7 @@ export default class WorldmapScene extends HexagonScene {
 
       // Fire-and-forget surrounding prewarm to reduce edge pop-in on cross-chunk tabbing.
       this.getSurroundingChunkKeys(targetStartRow, targetStartCol).forEach((chunkKey) => {
-        void this.computeTileEntities(chunkKey);
+        void this.computeTileEntities(chunkKey, { priority: "background" });
       });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -4300,23 +4536,35 @@ export default class WorldmapScene extends HexagonScene {
     return this.cameraGroundIntersectionScratch;
   }
 
-  public requestChunkRefresh(force: boolean = false) {
+  public requestChunkRefresh(force: boolean = false, source: WorldmapRefreshRequestSource = "unknown") {
     if (this.isSwitchedOff) {
       return;
     }
 
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     if (force) {
       this.pendingChunkRefreshForce = true;
     }
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested", { force, source });
       this.scheduleLegacyChunkRefresh();
       return;
     }
 
+    const refreshRequestPlan = resolveRefreshRequestPlan({
+      hasPendingTimer: this.chunkRefreshTimeout !== null,
+    });
+
+    if (!refreshRequestPlan.shouldIncrementToken) {
+      return;
+    }
+
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested", { force, source });
     this.chunkRefreshRequestToken += 1;
-    this.scheduleChunkRefreshExecution();
+
+    if (refreshRequestPlan.shouldScheduleTimer) {
+      this.scheduleChunkRefreshExecution();
+    }
   }
 
   private scheduleLegacyChunkRefresh(): void {
@@ -4494,185 +4742,224 @@ export default class WorldmapScene extends HexagonScene {
     reason: "default" | "shortcut",
     switchPosition?: Vector3,
   ) {
-    // Track memory usage during chunk switch
-    const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
-      ?.memoryMonitor;
-    const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
+    PerformanceMonitor.begin("chunkSwitch.total");
+    try {
+      // Track memory usage during chunk switch
+      const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
+        ?.memoryMonitor;
+      const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
-    // Keep selection continuity during shortcut tabbing to avoid visible label/selection flashes.
-    if (reason !== "shortcut") {
-      this.clearEntitySelection();
-    }
+      // Keep selection continuity during shortcut tabbing to avoid visible label/selection flashes.
+      if (reason !== "shortcut") {
+        this.clearEntitySelection();
+      }
 
-    const oldChunk = this.currentChunk;
-    const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
-      previousSwitchPosition: this.lastChunkSwitchPosition
-        ? {
-            x: this.lastChunkSwitchPosition.x,
-            z: this.lastChunkSwitchPosition.z,
-          }
-        : null,
-      nextSwitchPosition: switchPosition
-        ? {
-            x: switchPosition.x,
-            z: switchPosition.z,
-          }
-        : null,
-      previousMovementVector: this.lastChunkSwitchMovement,
-      minMovementDistance: 0.001,
-    });
-    const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
-    const effectiveForce = force || shouldAggressiveReversalRefresh;
-    const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-    const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
-    const hasFiniteOldChunkCoordinates =
-      oldChunkCoordinates !== null &&
-      Number.isFinite(oldChunkCoordinates[0]) &&
-      Number.isFinite(oldChunkCoordinates[1]);
-    const targetChunkBounds = this.computeChunkBounds(startRow, startCol);
-    this.visibilityManager?.registerChunk(chunkKey, targetChunkBounds);
-    if (hasFiniteOldChunkCoordinates) {
-      const previousChunkBounds = this.computeChunkBounds(oldChunkCoordinates[0], oldChunkCoordinates[1]);
-      this.applySceneChunkBounds(this.combineChunkBounds(previousChunkBounds, targetChunkBounds));
-    } else {
-      this.applySceneChunkBounds(targetChunkBounds);
-    }
-
-    // Load surrounding pinned chunks for better UX.
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    if (shouldAggressiveReversalRefresh) {
-      this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
-        includeSurroundingChunks: surroundingChunks,
-        invalidateFetchAreas: true,
+      const oldChunk = this.currentChunk;
+      const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
+        previousSwitchPosition: this.lastChunkSwitchPosition
+          ? {
+              x: this.lastChunkSwitchPosition.x,
+              z: this.lastChunkSwitchPosition.z,
+            }
+          : null,
+        nextSwitchPosition: switchPosition
+          ? {
+              x: switchPosition.x,
+              z: switchPosition.z,
+            }
+          : null,
+        previousMovementVector: this.lastChunkSwitchMovement,
+        minMovementDistance: 0.001,
       });
-    } else if (effectiveForce) {
-      this.removeCachedMatricesForChunk(startRow, startCol);
-    }
-
-    // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
-    const tileFetchPromise = this.computeTileEntities(chunkKey);
-
-    this.updatePinnedChunks(surroundingChunks);
-    const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
-
-    // Start loading all surrounding chunks (they will deduplicate automatically)
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
-
-    // Calculate the starting position for the new chunk - this is the main visual update
-    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-
-    // Wait for core tile data before updating managers to avoid empty renders
-    const tileFetchSucceeded = await tileFetchPromise;
-    await toriiBoundsSwitchPromise;
-    this.hydratedChunkRefreshes.delete(chunkKey);
-
-    const isCurrentTransition = transitionToken === this.chunkTransitionToken;
-    const chunkSwitchActions = resolveChunkSwitchActions({
-      fetchSucceeded: tileFetchSucceeded,
-      isCurrentTransition,
-      targetChunk: chunkKey,
-      previousChunk: oldChunk,
-    });
-
-    if (chunkSwitchActions.shouldRollback) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
-      this.currentChunk = oldChunk ?? "null";
-      this.updatePinnedChunks(previousPinnedChunks);
-      this.visibilityManager?.unregisterChunk(chunkKey);
-      if (oldChunk && oldChunk !== "null") {
-        if (chunkSwitchActions.shouldRestorePreviousState && hasFiniteOldChunkCoordinates) {
-          const [oldStartRow, oldStartCol] = oldChunkCoordinates;
-          this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
-          await this.updateHexagonGrid(
-            oldStartRow,
-            oldStartCol,
-            this.renderChunkSize.height,
-            this.renderChunkSize.width,
-          );
-          await this.updateToriiBoundsSubscription(oldChunk, transitionToken);
-        }
+      const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
+      const effectiveForce = force || shouldAggressiveReversalRefresh;
+      const targetChunkBounds = this.computeChunkBounds(startRow, startCol);
+      this.visibilityManager?.registerChunk(chunkKey, targetChunkBounds);
+      const previousChunkCoords = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
+      const hasPreviousChunkBounds =
+        previousChunkCoords !== null &&
+        Number.isFinite(previousChunkCoords[0]) &&
+        Number.isFinite(previousChunkCoords[1]);
+      if (hasPreviousChunkBounds) {
+        const previousChunkBounds = this.computeChunkBounds(previousChunkCoords[0], previousChunkCoords[1]);
+        this.applySceneChunkBounds(this.combineChunkBounds(previousChunkBounds, targetChunkBounds));
       } else {
-        this.applySceneChunkBounds(undefined);
+        this.applySceneChunkBounds(targetChunkBounds);
       }
+
+      // Load surrounding pinned chunks for better UX.
+      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+      if (shouldAggressiveReversalRefresh) {
+        this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
+          includeSurroundingChunks: surroundingChunks,
+          invalidateFetchAreas: true,
+        });
+      } else if (effectiveForce) {
+        this.removeCachedMatricesForChunk(startRow, startCol);
+      }
+
+      // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
+      const tileFetchPromise = this.computeTileEntities(chunkKey, { priority: "critical" });
+
+      this.updatePinnedChunks(surroundingChunks);
+      const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
+
+      // Start loading all surrounding chunks (they will deduplicate automatically)
+      PerformanceMonitor.begin("chunkSwitch.terrainBuild");
+      try {
+        // Calculate the starting position for the new chunk - this is the main visual update
+        await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+      } finally {
+        PerformanceMonitor.end("chunkSwitch.terrainBuild");
+      }
+
+      const isCurrentTransition = transitionToken === this.chunkTransitionToken;
+      if (!isCurrentTransition) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
+        if (this.currentChunk !== chunkKey) {
+          this.visibilityManager?.unregisterChunk(chunkKey);
+        }
+        return;
+      }
+
+      this.currentChunk = chunkKey;
+      this.updateCurrentChunkBounds(startRow, startCol);
+
+      // Ensure visibility state is fresh before manager renders
       this.visibilityManager?.forceUpdate();
-      return;
-    }
 
-    if (!chunkSwitchActions.shouldCommitManagers) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
-      if (this.currentChunk !== chunkKey) {
-        this.visibilityManager?.unregisterChunk(chunkKey);
+      PerformanceMonitor.begin("chunkSwitch.managerUpdate");
+      try {
+        // Update all managers concurrently once shared prerequisites are ready
+        await this.updateManagersForChunk(chunkKey, { force: effectiveForce, transitionToken });
+      } finally {
+        PerformanceMonitor.end("chunkSwitch.managerUpdate");
       }
-      return;
-    }
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
+      this.emitWorldmapReadySignal();
 
-    this.currentChunk = chunkKey;
-    this.updateCurrentChunkBounds(startRow, startCol);
-
-    // Ensure visibility state is fresh before manager renders
-    this.visibilityManager?.forceUpdate();
-
-    // Update all managers concurrently once shared prerequisites are ready
-    await this.updateManagersForChunk(chunkKey, { force: effectiveForce, transitionToken });
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
-
-    if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
-      this.unregisterChunkOnNextFrame(oldChunk);
-    }
-
-    // Track memory usage after chunk switch
-    if (memoryMonitor) {
-      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
-      if (preChunkStats && postChunkStats) {
-        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        // Memory monitoring hooks - intentionally silent unless threshold exceeded
-        void memoryDelta;
+      if (oldChunk && oldChunk !== chunkKey) {
+        this.unregisterChunkOnNextFrame(oldChunk);
       }
-    }
 
-    if (switchPosition) {
-      this.lastChunkSwitchPosition = switchPosition;
-      this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
-      this.hasChunkSwitchAnchor = true;
+      void this.awaitChunkSwitchHydration(chunkKey, transitionToken, tileFetchPromise);
+      this.scheduleBackgroundChunkHydration(surroundingChunks, chunkKey);
+      void (async () => {
+        PerformanceMonitor.begin("chunkSwitch.boundsAwait");
+        try {
+          await toriiBoundsSwitchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkSwitch.boundsAwait");
+        }
+      })();
+
+      // Track memory usage after chunk switch
+      if (memoryMonitor) {
+        const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
+        if (preChunkStats && postChunkStats) {
+          const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+          // Memory monitoring hooks - intentionally silent unless threshold exceeded
+          void memoryDelta;
+        }
+      }
+
+      if (switchPosition) {
+        this.lastChunkSwitchPosition = switchPosition;
+        this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
+        this.hasChunkSwitchAnchor = true;
+      }
+    } finally {
+      PerformanceMonitor.end("chunkSwitch.total");
     }
   }
 
-  private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {
-    const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
-      ?.memoryMonitor;
-    const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
+  private async awaitChunkSwitchHydration(
+    chunkKey: string,
+    transitionToken: number,
+    tileFetchPromise: Promise<boolean>,
+  ): Promise<void> {
+    let tileFetchSucceeded = false;
+    PerformanceMonitor.begin("chunkSwitch.tileFetchAwait");
+    try {
+      tileFetchSucceeded = await tileFetchPromise;
+    } finally {
+      PerformanceMonitor.end("chunkSwitch.tileFetchAwait");
+    }
 
-    this.updateCurrentChunkBounds(startRow, startCol);
-
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    this.removeCachedMatricesForChunk(startRow, startCol);
-
-    // Start tile data fetch after force invalidation.
-    const tileFetchPromise = this.computeTileEntities(chunkKey);
-
-    this.updatePinnedChunks(surroundingChunks);
-    const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
-
-    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-
-    // Wait for tile data before updating managers
-    const tileFetchSucceeded = await tileFetchPromise;
-    await toriiBoundsSwitchPromise;
-    this.hydratedChunkRefreshes.delete(chunkKey);
-    if (!tileFetchSucceeded) {
+    if (tileFetchSucceeded) {
       return;
     }
 
-    await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
+    if (transitionToken !== this.chunkTransitionToken || this.currentChunk !== chunkKey) {
+      return;
+    }
 
-    if (memoryMonitor) {
-      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
-      if (preChunkStats && postChunkStats) {
-        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        // Memory monitoring hooks - intentionally silent unless threshold exceeded
-        void memoryDelta;
+    this.requestChunkRefresh(true, "unknown");
+  }
+
+  private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {
+    PerformanceMonitor.begin("chunkRefresh.total");
+    try {
+      const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
+        ?.memoryMonitor;
+      const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
+
+      this.updateCurrentChunkBounds(startRow, startCol);
+
+      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+      this.removeCachedMatricesForChunk(startRow, startCol);
+
+      // Start tile data fetch after force invalidation.
+      const tileFetchPromise = this.computeTileEntities(chunkKey, { priority: "critical" });
+
+      this.updatePinnedChunks(surroundingChunks);
+      const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
+      PerformanceMonitor.begin("chunkRefresh.terrainBuild");
+      try {
+        await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+      } finally {
+        PerformanceMonitor.end("chunkRefresh.terrainBuild");
       }
+
+      let tileFetchSucceeded = false;
+      PerformanceMonitor.begin("chunkRefresh.tileFetchAwait");
+      try {
+        tileFetchSucceeded = await tileFetchPromise;
+      } finally {
+        PerformanceMonitor.end("chunkRefresh.tileFetchAwait");
+      }
+      void (async () => {
+        PerformanceMonitor.begin("chunkRefresh.boundsAwait");
+        try {
+          await toriiBoundsSwitchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkRefresh.boundsAwait");
+        }
+      })();
+      this.hydratedChunkRefreshes.delete(chunkKey);
+      if (!tileFetchSucceeded) {
+        return;
+      }
+
+      PerformanceMonitor.begin("chunkRefresh.managerUpdate");
+      try {
+        await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
+      } finally {
+        PerformanceMonitor.end("chunkRefresh.managerUpdate");
+      }
+      this.emitWorldmapReadySignal();
+      this.scheduleBackgroundChunkHydration(surroundingChunks, chunkKey);
+
+      if (memoryMonitor) {
+        const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
+        if (preChunkStats && postChunkStats) {
+          const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+          // Memory monitoring hooks - intentionally silent unless threshold exceeded
+          void memoryDelta;
+        }
+      }
+    } finally {
+      PerformanceMonitor.end("chunkRefresh.total");
     }
   }
 
@@ -4692,9 +4979,39 @@ export default class WorldmapScene extends HexagonScene {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
 
     const updateTasks = [
-      { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
-      { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
-      { label: "chest", promise: this.chestManager.updateChunk(chunkKey, options) },
+      {
+        label: "army",
+        promise: (async () => {
+          PerformanceMonitor.begin("chunkManager.army");
+          try {
+            await this.armyManager.updateChunk(chunkKey, { ...options, skipVisualSettle: true });
+          } finally {
+            PerformanceMonitor.end("chunkManager.army");
+          }
+        })(),
+      },
+      {
+        label: "structure",
+        promise: (async () => {
+          PerformanceMonitor.begin("chunkManager.structure");
+          try {
+            await this.structureManager.updateChunk(chunkKey, options);
+          } finally {
+            PerformanceMonitor.end("chunkManager.structure");
+          }
+        })(),
+      },
+      {
+        label: "chest",
+        promise: (async () => {
+          PerformanceMonitor.begin("chunkManager.chest");
+          try {
+            await this.chestManager.updateChunk(chunkKey, options);
+          } finally {
+            PerformanceMonitor.end("chunkManager.chest");
+          }
+        })(),
+      },
     ];
 
     const results = await Promise.allSettled(updateTasks.map((task) => task.promise));
@@ -4774,9 +5091,22 @@ export default class WorldmapScene extends HexagonScene {
     this.chunkDiagnosticsBaselines = [];
   }
 
-  private getChunkDiagnosticsSnapshot(): ReturnType<
-    NonNullable<WorldmapChunkDiagnosticsDebugWindow["getWorldmapChunkDiagnostics"]>
-  > {
+  private emitWorldmapReadySignal(): void {
+    const detail = {
+      ...this.getCameraTargetHex(),
+      currentChunk: this.currentChunk,
+    };
+
+    const dispatch = () => emitWorldmapReadyEvent(detail);
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => dispatch());
+      return;
+    }
+
+    dispatch();
+  }
+
+  private getChunkDiagnosticsSnapshot(): WorldmapChunkDiagnosticsSnapshot {
     return {
       diagnostics: this.snapshotChunkDiagnostics(),
       baselines: cloneChunkDiagnosticsBaselines(this.chunkDiagnosticsBaselines),
@@ -4784,6 +5114,149 @@ export default class WorldmapScene extends HexagonScene {
       chunkTransitionToken: this.chunkTransitionToken,
       chunkRefreshRequestToken: this.chunkRefreshRequestToken,
       chunkRefreshAppliedToken: this.chunkRefreshAppliedToken,
+    };
+  }
+
+  private getWorldmapPerfState(): WorldmapPerfDebugState {
+    const cameraTargetHex = this.getCameraTargetHex();
+
+    return {
+      currentChunk: this.currentChunk,
+      currentChunkSize: this.chunkSize,
+      renderChunkSize: {
+        width: this.renderChunkSize.width,
+        height: this.renderChunkSize.height,
+      },
+      cameraTargetHex: {
+        col: cameraTargetHex.col,
+        row: cameraTargetHex.row,
+      },
+      simulateAllExplored: this.simulateAllExplored,
+      biomeAnimationsEnabled: this.biomeAnimationsEnabled,
+      biomeShadowsEnabled: this.biomeShadowsEnabled,
+      visibleArmies: this.armyManager.getVisibleCount(),
+      visibleStructures: this.structureManager.getVisibleCount(),
+      visibleChests: this.chestManager.getVisibleCount(),
+      debugArmies: this.armyManager.getDebugArmyStats(),
+    };
+  }
+
+  private getThreePerformanceReport() {
+    return PerformanceMonitor.generateReport(MatrixPool.getInstance().getStats());
+  }
+
+  private resetThreePerformanceReport(): void {
+    PerformanceMonitor.reset();
+  }
+
+  private async forceWorldmapChunkRefresh(): Promise<WorldmapPerfDebugState> {
+    await this.updateVisibleChunks(true);
+    await waitForChunkTransitionToSettle(
+      () => this.globalChunkSwitchPromise,
+      (error) => console.warn("[WorldMap] Forced perf refresh settle failed:", error),
+    );
+
+    return this.getWorldmapPerfState();
+  }
+
+  private async setWorldmapPerfState(patch: WorldmapPerfControlPatch): Promise<WorldmapPerfDebugState> {
+    let shouldRefreshTerrain = false;
+
+    if (typeof patch.simulateAllExplored === "boolean" && patch.simulateAllExplored !== this.simulateAllExplored) {
+      this.simulateAllExplored = patch.simulateAllExplored;
+      shouldRefreshTerrain = true;
+    }
+
+    if (typeof patch.biomeAnimationsEnabled === "boolean") {
+      this.biomeAnimationsEnabled = patch.biomeAnimationsEnabled;
+    }
+
+    if (typeof patch.biomeShadowsEnabled === "boolean" && patch.biomeShadowsEnabled !== this.biomeShadowsEnabled) {
+      this.setBiomeShadowsEnabled(patch.biomeShadowsEnabled);
+    }
+
+    if (shouldRefreshTerrain && this.currentChunk !== "null") {
+      await this.updateVisibleChunks(true);
+    } else {
+      await waitForChunkTransitionToSettle(
+        () => this.globalChunkSwitchPromise,
+        (error) => console.warn("[WorldMap] Perf state settle failed:", error),
+      );
+    }
+
+    return this.getWorldmapPerfState();
+  }
+
+  private async spawnWorldmapDebugArmies(
+    options: Partial<WorldmapDebugArmySpawnOptions> = {},
+  ): Promise<WorldmapDebugArmyStats> {
+    const stats = await this.armyManager.spawnDebugArmiesForPerf(options);
+
+    if (this.currentChunk !== "null") {
+      await this.armyManager.updateChunk(this.currentChunk, {
+        force: true,
+        transitionToken: this.chunkTransitionToken,
+      });
+    }
+
+    return stats;
+  }
+
+  private clearWorldmapDebugArmies(): WorldmapDebugArmyStats {
+    const stats = this.armyManager.clearDebugArmiesForPerf();
+
+    if (this.currentChunk !== "null") {
+      void this.armyManager.updateChunk(this.currentChunk, {
+        force: true,
+        transitionToken: this.chunkTransitionToken,
+      });
+    }
+
+    return stats;
+  }
+
+  private async moveWorldmapToChunkOffset(
+    options: WorldmapChunkOffsetMoveOptions = {},
+  ): Promise<WorldmapPerfDebugState> {
+    if (this.currentChunk === "null") {
+      return this.getWorldmapPerfState();
+    }
+
+    const rowChunks = Math.trunc(options.rowChunks ?? 0);
+    const colChunks = Math.trunc(options.colChunks ?? 0);
+    const refreshMode = options.refreshMode ?? "force";
+
+    if (rowChunks === 0 && colChunks === 0) {
+      return this.getWorldmapPerfState();
+    }
+
+    const durationSeconds = Math.max(0, options.durationSeconds ?? 0.35);
+    const settleDelayMs = Math.max(300, Math.trunc(options.settleDelayMs ?? durationSeconds * 1000 + 250));
+    const [startRow, startCol] = this.currentChunk.split(",").map(Number);
+    const targetStartRow = startRow + rowChunks * this.chunkSize;
+    const targetStartCol = startCol + colChunks * this.chunkSize;
+    const targetChunkCenter = this.getChunkCenter(targetStartRow, targetStartCol);
+
+    this.moveCameraToColRow(targetChunkCenter.col, targetChunkCenter.row, durationSeconds);
+
+    await new Promise<void>((resolve) => window.setTimeout(resolve, settleDelayMs));
+    if (refreshMode === "force") {
+      return this.forceWorldmapChunkRefresh();
+    }
+
+    await waitForChunkTransitionToSettle(
+      () => this.globalChunkSwitchPromise,
+      (error) => console.warn("[WorldMap] Natural perf move settle failed:", error),
+    );
+
+    return this.getWorldmapPerfState();
+  }
+
+  private getWorldmapBenchmarkSnapshot(): WorldmapBenchmarkSnapshot {
+    return {
+      diagnostics: this.getChunkDiagnosticsSnapshot(),
+      performance: this.getThreePerformanceReport(),
+      state: this.getWorldmapPerfState(),
     };
   }
 
@@ -4874,18 +5347,26 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
-    debugWindow.getWorldmapChunkDiagnostics = () => this.getChunkDiagnosticsSnapshot();
-    debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
-    debugWindow.captureWorldmapChunkBaseline = (label?: string) => this.captureChunkDiagnosticsBaseline(label);
-    debugWindow.evaluateWorldmapChunkSwitchP95Regression = (
-      baselineLabel?: string,
-      allowedRegressionFraction?: number,
-    ) => this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
-    debugWindow.evaluateWorldmapTileFetchVolumeRegression = (
-      baselineLabel?: string,
-      allowedIncreaseFraction?: number,
-    ) => this.evaluateTileFetchVolumeRegressionAgainstBaseline(baselineLabel, allowedIncreaseFraction);
+    installWorldmapPerfDebugHooks({
+      callbacks: {
+        getChunkDiagnostics: () => this.getChunkDiagnosticsSnapshot(),
+        resetChunkDiagnostics: () => this.resetChunkDiagnostics(),
+        captureChunkBaseline: (label?: string) => this.captureChunkDiagnosticsBaseline(label),
+        evaluateChunkSwitchP95Regression: (baselineLabel?: string, allowedRegressionFraction?: number) =>
+          this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction),
+        evaluateTileFetchVolumeRegression: (baselineLabel?: string, allowedIncreaseFraction?: number) =>
+          this.evaluateTileFetchVolumeRegressionAgainstBaseline(baselineLabel, allowedIncreaseFraction),
+        getPerformanceReport: () => this.getThreePerformanceReport(),
+        resetPerformanceReport: () => this.resetThreePerformanceReport(),
+        getPerfState: () => this.getWorldmapPerfState(),
+        setPerfState: (patch) => this.setWorldmapPerfState(patch),
+        spawnDebugArmies: (options) => this.spawnWorldmapDebugArmies(options),
+        clearDebugArmies: () => this.clearWorldmapDebugArmies(),
+        forceChunkRefresh: () => this.forceWorldmapChunkRefresh(),
+        moveToChunkOffset: (options) => this.moveWorldmapToChunkOffset(options),
+        getBenchmarkSnapshot: () => this.getWorldmapBenchmarkSnapshot(),
+      },
+    });
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
@@ -4893,12 +5374,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
-    debugWindow.getWorldmapChunkDiagnostics = undefined;
-    debugWindow.resetWorldmapChunkDiagnostics = undefined;
-    debugWindow.captureWorldmapChunkBaseline = undefined;
-    debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
-    debugWindow.evaluateWorldmapTileFetchVolumeRegression = undefined;
+    removeWorldmapPerfDebugHooks();
   }
 
   private monitorTerrainVisibilityHealth(): void {
@@ -5071,8 +5547,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public clearTileEntityCache() {
+    if (this.backgroundHydrationTimeout) {
+      clearTimeout(this.backgroundHydrationTimeout);
+      this.backgroundHydrationTimeout = null;
+    }
+    this.backgroundHydrationToken += 1;
     this.clearQueuedPrefetchState();
     this.fetchedChunks.clear();
+    this.fetchedCriticalChunks.clear();
     this.pendingChunks.clear();
     this.pinnedRenderAreas.clear();
     this.clearCache();

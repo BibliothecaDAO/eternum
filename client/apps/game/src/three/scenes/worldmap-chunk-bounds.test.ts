@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   getRenderAreaKeyForChunk,
+  resolveWorldmapFetchPlan,
   getRenderFetchBoundsForArea,
   getRenderFetchBoundsForChunk,
 } from "./worldmap-chunk-bounds";
@@ -88,6 +89,46 @@ describe("getRenderFetchBoundsForArea", () => {
     })();
 
     expect(getRenderFetchBoundsForArea(areaKey, renderSize, chunkSize, superAreaStrides)).toEqual(expected);
+  });
+});
+
+describe("resolveWorldmapFetchPlan", () => {
+  const renderSize = { width: 48, height: 48 };
+  const chunkSize = 24;
+  const superAreaStrides = 4;
+
+  it("uses chunk-local bounds for critical fetches", () => {
+    expect(
+      resolveWorldmapFetchPlan({
+        chunkKey: "24,24",
+        renderSize,
+        chunkSize,
+        superAreaStrides,
+        priority: "critical",
+      }),
+    ).toEqual({
+      cacheKey: "24,24",
+      fetchKey: "critical:24,24",
+      bounds: { minCol: 12, maxCol: 59, minRow: 12, maxRow: 59 },
+      priority: "critical",
+    });
+  });
+
+  it("uses super-area bounds for background fetches", () => {
+    expect(
+      resolveWorldmapFetchPlan({
+        chunkKey: "24,24",
+        renderSize,
+        chunkSize,
+        superAreaStrides,
+        priority: "background",
+      }),
+    ).toEqual({
+      cacheKey: "0,0",
+      fetchKey: "0,0",
+      bounds: { minCol: -12, maxCol: 107, minRow: -12, maxRow: 107 },
+      priority: "background",
+    });
   });
 });
 

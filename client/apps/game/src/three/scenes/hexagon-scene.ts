@@ -126,6 +126,8 @@ export abstract class HexagonScene {
   protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
   private lastFogNear = 0;
   private lastFogFar = 0;
+  private programmaticCameraMotionToken = 0;
+  private programmaticCameraMotionInFlight = false;
 
   constructor(
     protected sceneName: SceneName,
@@ -158,6 +160,10 @@ export abstract class HexagonScene {
     this.controls.dispatchEvent({ type: "change" });
     this.frustumManager?.forceUpdate();
     this.visibilityManager?.markDirty();
+  }
+
+  protected isProgrammaticCameraMotionActive(): boolean {
+    return this.programmaticCameraMotionInFlight;
   }
 
   private initializeScene(): void {
@@ -737,13 +743,52 @@ export abstract class HexagonScene {
     return { col, row, x, z };
   }
 
+  private cancelProgrammaticCameraMotion(): void {
+    gsap.killTweensOf(this.controls.object.position);
+    gsap.killTweensOf(this.controls.target);
+    this.programmaticCameraMotionToken += 1;
+    this.programmaticCameraMotionInFlight = false;
+  }
+
+  private buildCameraPositionForTarget(target: Vector3): Vector3 {
+    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+
+    return new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+  }
+
+  private applyCameraViewState(view: CameraView): void {
+    this.currentCameraView = view;
+
+    switch (view) {
+      case CameraView.Close:
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.02;
+        this.cameraDistance = 10;
+        this.cameraAngle = Math.PI / 6;
+        break;
+      case CameraView.Medium:
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.015;
+        this.cameraDistance = 20;
+        this.cameraAngle = Math.PI / 3;
+        break;
+      case CameraView.Far:
+        this.mainDirectionalLight.castShadow = false;
+        this.cameraDistance = 40;
+        this.cameraAngle = (50 * Math.PI) / 180;
+        break;
+    }
+  }
+
   cameraAnimate(newPosition: Vector3, newTarget: Vector3, transitionDuration: number, onFinish?: () => void) {
     const camera = this.controls.object;
     const target = this.controls.target;
-    gsap.killTweensOf(camera.position);
-    gsap.killTweensOf(target);
+    this.cancelProgrammaticCameraMotion();
 
     const duration = transitionDuration || 2;
+    const motionToken = ++this.programmaticCameraMotionToken;
+    this.programmaticCameraMotionInFlight = true;
 
     const onUpdate = () => {
       this.notifyControlsChanged();
@@ -758,6 +803,10 @@ export abstract class HexagonScene {
       ease: "power3.inOut",
       onUpdate,
       onComplete: () => {
+        if (motionToken === this.programmaticCameraMotionToken) {
+          this.programmaticCameraMotionInFlight = false;
+          this.notifyControlsChanged();
+        }
         onFinish?.();
       },
     });
@@ -791,6 +840,7 @@ export abstract class HexagonScene {
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
     } else {
+      this.cancelProgrammaticCameraMotion();
       target.copy(newTarget);
       pos.copy(newPosition);
       this.notifyControlsChanged();
@@ -816,9 +866,35 @@ export abstract class HexagonScene {
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
     } else {
+      this.cancelProgrammaticCameraMotion();
       target.copy(newTarget);
       pos.copy(newPosition);
       this.notifyControlsChanged();
+    }
+  }
+
+  public moveCameraToColRowWithView(col: number, row: number, view: CameraView, duration: number = 2) {
+    const { x, y, z } = getWorldPositionForHex({ col, row });
+    const newTarget = new Vector3(x, y, z);
+    const previousView = this.currentCameraView;
+    this.applyCameraViewState(view);
+
+    const newPosition = this.buildCameraPositionForTarget(newTarget);
+    this.updateOutlineOpacityForDistance(this.cameraDistance);
+    this.updateCameraClipPlanesForDistance(this.cameraDistance);
+    this.updateFogForDistance(this.cameraDistance);
+
+    if (duration) {
+      this.cameraAnimate(newPosition, newTarget, duration);
+    } else {
+      this.cancelProgrammaticCameraMotion();
+      this.controls.target.copy(newTarget);
+      this.controls.object.position.copy(newPosition);
+      this.notifyControlsChanged();
+    }
+
+    if (view !== previousView) {
+      this.cameraViewListeners.forEach((listener) => listener(view));
     }
   }
 
@@ -1313,40 +1389,11 @@ export abstract class HexagonScene {
     console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
     const previousView = this.currentCameraView;
     const target = this.controls.target;
-    this.currentCameraView = position;
-
-    switch (position) {
-      case CameraView.Close: // Close view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.02;
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6; // 30 degrees
-        break;
-      case CameraView.Medium: // Medium view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.015;
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3; // 60 degrees
-        break;
-      case CameraView.Far: // Far view
-        this.mainDirectionalLight.castShadow = false;
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
-        break;
-    }
-
-    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-
-    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    this.applyCameraViewState(position);
+    const newPosition = this.buildCameraPositionForTarget(target);
     const viewDelta = Math.abs(position - previousView);
     const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
-    this.updateOutlineOpacityForDistance(this.cameraDistance);
-    this.updateCameraClipPlanesForDistance(this.cameraDistance);
-    this.updateFogForDistance(this.cameraDistance);
     this.cameraAnimate(newPosition, target, duration);
-
-    // Notify all listeners of the camera view change
     this.cameraViewListeners.forEach((listener) => listener(position));
   }
 

@@ -12,6 +12,8 @@ interface ChunkBounds {
   maxRow: number;
 }
 
+type WorldmapFetchPriority = "critical" | "background";
+
 function parseChunkKey(chunkKey: string): { startRow: number; startCol: number } {
   const segments = chunkKey.split(",");
   if (segments.length !== 2) {
@@ -69,5 +71,35 @@ export function getRenderFetchBoundsForArea(
     maxCol: lastBounds.maxCol,
     minRow: firstBounds.minRow,
     maxRow: lastBounds.maxRow,
+  };
+}
+
+export function resolveWorldmapFetchPlan(input: {
+  chunkKey: string;
+  renderSize: ChunkRenderSize;
+  chunkSize: number;
+  superAreaStrides: number;
+  priority: WorldmapFetchPriority;
+}): {
+  cacheKey: string;
+  fetchKey: string;
+  bounds: ChunkBounds;
+  priority: WorldmapFetchPriority;
+} {
+  if (input.priority === "critical") {
+    return {
+      cacheKey: input.chunkKey,
+      fetchKey: `critical:${input.chunkKey}`,
+      bounds: getRenderFetchBoundsForChunk(input.chunkKey, input.renderSize, input.chunkSize),
+      priority: input.priority,
+    };
+  }
+
+  const areaKey = getRenderAreaKeyForChunk(input.chunkKey, input.chunkSize, input.superAreaStrides);
+  return {
+    cacheKey: areaKey,
+    fetchKey: areaKey,
+    bounds: getRenderFetchBoundsForArea(areaKey, input.renderSize, input.chunkSize, input.superAreaStrides),
+    priority: input.priority,
   };
 }

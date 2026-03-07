@@ -100,6 +100,7 @@ export class CentralizedVisibilityManager {
 
   // Frame state
   private currentFrameId = 0;
+  private visibilityEpoch = 0;
   private frameState: FrameVisibilityState;
   private isDirty = true;
 
@@ -171,10 +172,11 @@ export class CentralizedVisibilityManager {
   beginFrame(): number {
     this.currentFrameId++;
 
-    // Only recompute if camera moved or first frame
-    if (this.isDirty || this.frameState.frameId !== this.currentFrameId) {
+    // Only recompute if camera moved, chunk registrations changed, or this is the first frame.
+    if (this.isDirty || this.frameState.frameId === 0) {
       this.updateFrustum();
       this.computeChunkVisibility();
+      this.visibilityEpoch++;
       this.frameState.frameId = this.currentFrameId;
       this.frameState.timestamp = performance.now();
       this.cachedBoxChecks = 0;
@@ -287,7 +289,7 @@ export class CentralizedVisibilityManager {
     const cached = this.boxVisibilityCache.get(box);
     if (
       cached &&
-      cached.frameId === this.currentFrameId &&
+      cached.frameId === this.visibilityEpoch &&
       cached.minX === box.min.x &&
       cached.minY === box.min.y &&
       cached.minZ === box.min.z &&
@@ -300,7 +302,7 @@ export class CentralizedVisibilityManager {
 
     const visible = this.frustum.intersectsBox(box);
     this.boxVisibilityCache.set(box, {
-      frameId: this.currentFrameId,
+      frameId: this.visibilityEpoch,
       visible,
       minX: box.min.x,
       minY: box.min.y,
@@ -321,7 +323,7 @@ export class CentralizedVisibilityManager {
     const cached = this.sphereVisibilityCache.get(sphere);
     if (
       cached &&
-      cached.frameId === this.currentFrameId &&
+      cached.frameId === this.visibilityEpoch &&
       cached.centerX === sphere.center.x &&
       cached.centerY === sphere.center.y &&
       cached.centerZ === sphere.center.z &&
@@ -332,7 +334,7 @@ export class CentralizedVisibilityManager {
 
     const visible = this.frustum.intersectsSphere(sphere);
     this.sphereVisibilityCache.set(sphere, {
-      frameId: this.currentFrameId,
+      frameId: this.visibilityEpoch,
       visible,
       centerX: sphere.center.x,
       centerY: sphere.center.y,
@@ -350,7 +352,7 @@ export class CentralizedVisibilityManager {
     const cached = this.pointVisibilityCache.get(point);
     if (
       cached &&
-      cached.frameId === this.currentFrameId &&
+      cached.frameId === this.visibilityEpoch &&
       cached.x === point.x &&
       cached.y === point.y &&
       cached.z === point.z
@@ -360,7 +362,7 @@ export class CentralizedVisibilityManager {
 
     const visible = this.frustum.containsPoint(point);
     this.pointVisibilityCache.set(point, {
-      frameId: this.currentFrameId,
+      frameId: this.visibilityEpoch,
       visible,
       x: point.x,
       y: point.y,
@@ -485,6 +487,7 @@ export class CentralizedVisibilityManager {
     this.frameState = this.createEmptyFrameState();
     this.camera = null;
     this.controls = null;
+    this.visibilityEpoch = 0;
 
     if (this.config.debug) {
       console.log("[CentralizedVisibilityManager] Disposed");

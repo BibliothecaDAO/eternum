@@ -1,3 +1,4 @@
+import { FELT_CENTER } from "@/ui/config";
 import { StructureType } from "@bibliothecadao/types";
 
 interface SyncedStructureRecord {
@@ -50,4 +51,21 @@ export const resolveInitialStructureSelection = (
     selectedStructure: toSelection(input.firstGlobalStructure),
     spectator: true,
   };
+};
+
+export const toStructureWorldMapPosition = (
+  structure: Pick<SyncedStructureRecord, "coord_x" | "coord_y">,
+): { col: number; row: number } | undefined => {
+  const col = structure.coord_x - FELT_CENTER();
+  const row = structure.coord_y - FELT_CENTER();
+
+  if (!Number.isFinite(col) || !Number.isFinite(row)) {
+    return undefined;
+  }
+
+  if (Math.abs(col) > 500_000 || Math.abs(row) > 500_000) {
+    return undefined;
+  }
+
+  return { col, row };
 };

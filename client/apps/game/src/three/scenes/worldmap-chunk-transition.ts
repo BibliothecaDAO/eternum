@@ -97,6 +97,11 @@ interface RefreshExecutionPlan {
   executionToken: number;
 }
 
+interface RefreshRequestPlan {
+  shouldIncrementToken: boolean;
+  shouldScheduleTimer: boolean;
+}
+
 interface RefreshRunningActions {
   shouldMarkRerunRequested: boolean;
   shouldRescheduleTimer: boolean;
@@ -124,11 +129,24 @@ interface ZoomRefreshDecisionInput {
   previousDistance: number | null;
   nextDistance: number;
   threshold: number;
+  chunkChanged: boolean;
+  isChunkTransitioning: boolean;
+  isProgrammaticCameraMotion: boolean;
 }
 
 interface ControlsChangeChunkRefreshPlan {
   shouldRequestRefresh: boolean;
   shouldForceRefresh: boolean;
+}
+
+interface ControlsChangePrefetchPlanInput {
+  currentChunk: string;
+  nextChunkKey: string;
+  isChunkTransitioning: boolean;
+}
+
+interface ControlsChangePrefetchPlan {
+  shouldPrefetchNextChunk: boolean;
 }
 
 interface StructureBoundsRefreshInput {
@@ -318,6 +336,24 @@ export function shouldRescheduleRefreshToken(scheduledToken: number, latestToken
 }
 
 /**
+ * Coalesce repeated latest-wins refresh requests while a timer is already pending.
+ * The pending timer will compute against the latest camera state when it fires.
+ */
+export function resolveRefreshRequestPlan(input: { hasPendingTimer: boolean }): RefreshRequestPlan {
+  if (input.hasPendingTimer) {
+    return {
+      shouldIncrementToken: false,
+      shouldScheduleTimer: false,
+    };
+  }
+
+  return {
+    shouldIncrementToken: true,
+    shouldScheduleTimer: true,
+  };
+}
+
+/**
  * Convert a scheduled refresh token into an execution token.
  * Stale scheduled work should execute using the latest token to avoid starvation.
  */
@@ -434,9 +470,10 @@ export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshD
 }
 
 /**
- * Controls-change events should always schedule a debounced chunk refresh when
- * distance samples are valid so pan traversal converges quickly. Large zoom
- * deltas still escalate to forced refresh.
+ * Controls-change events should only schedule a refresh when the camera crosses
+ * into another chunk or when a zoom delta is large enough to require a forced
+ * refresh. This avoids spamming refresh requests while panning inside the same
+ * chunk.
  */
 export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecisionInput): ControlsChangeChunkRefreshPlan {
   if (!Number.isFinite(input.nextDistance)) {
@@ -446,9 +483,37 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
     };
   }
 
+  if (input.isProgrammaticCameraMotion) {
+    return {
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    };
+  }
+
+  const shouldForceRefresh = !input.chunkChanged && shouldForceChunkRefreshForZoomDistanceChange(input);
+
+  if (input.isChunkTransitioning && !shouldForceRefresh) {
+    return {
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    };
+  }
+
   return {
-    shouldRequestRefresh: true,
-    shouldForceRefresh: shouldForceChunkRefreshForZoomDistanceChange(input),
+    shouldRequestRefresh: input.chunkChanged || shouldForceRefresh,
+    shouldForceRefresh,
+  };
+}
+
+export function resolveControlsChangePrefetchPlan(input: ControlsChangePrefetchPlanInput): ControlsChangePrefetchPlan {
+  if (input.currentChunk === "null" || input.isChunkTransitioning) {
+    return {
+      shouldPrefetchNextChunk: false,
+    };
+  }
+
+  return {
+    shouldPrefetchNextChunk: input.nextChunkKey !== input.currentChunk,
   };
 }
 
@@ -548,6 +613,12 @@ export function resolveDuplicateTileUpdateMode(input: DuplicateTileRefreshDecisi
     return "invalidate_and_refresh";
   }
 
+  const isStableVisibleChunk =
+    input.currentChunk !== "null" && !input.isChunkTransitioning && input.isVisibleInCurrentChunk;
+  if (!isStableVisibleChunk && input.hasBiomeDelta !== true) {
+    return "none";
+  }
+
   return "invalidate_only";
 }
 
@@ -603,6 +674,31 @@ export function resolveDuplicateTileReconcilePlan(
   return {
     shouldInvalidateCaches: true,
     refreshStrategy: shouldRunImmediateDuplicateTileRefresh(input) ? "immediate" : "deferred",
+  };
+}
+
+export function resolveDuplicateTileReconcileExecutionPlan(input: {
+  refreshStrategy: DuplicateTileReconcilePlan["refreshStrategy"];
+  hasPendingChunkRefresh: boolean;
+  isChunkRefreshRunning: boolean;
+  hasChunkTransitionInFlight: boolean;
+}): {
+  refreshStrategy: DuplicateTileReconcilePlan["refreshStrategy"];
+} {
+  if (input.refreshStrategy === "none") {
+    return {
+      refreshStrategy: "none",
+    };
+  }
+
+  if (input.hasPendingChunkRefresh || input.isChunkRefreshRunning || input.hasChunkTransitionInFlight) {
+    return {
+      refreshStrategy: "none",
+    };
+  }
+
+  return {
+    refreshStrategy: input.refreshStrategy,
   };
 }
 
