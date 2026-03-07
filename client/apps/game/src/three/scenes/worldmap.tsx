@@ -111,6 +111,7 @@ import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveDuplicateTileReconcileExecutionPlan,
   resolveControlsChangeChunkRefreshPlan,
   resolveControlsChangePrefetchPlan,
   resolveRefreshCompletionActions,
@@ -534,7 +535,7 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
   private fetchedCriticalChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
-  private backgroundHydrationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private backgroundHydrationTimeout: number | null = null;
   private backgroundHydrationToken = 0;
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
@@ -2874,14 +2875,20 @@ export default class WorldmapScene extends HexagonScene {
         this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
     };
     const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
+    const duplicateTileExecutionPlan = resolveDuplicateTileReconcileExecutionPlan({
+      refreshStrategy: duplicateTilePlan.refreshStrategy,
+      hasPendingChunkRefresh: this.chunkRefreshTimeout !== null,
+      isChunkRefreshRunning: this.chunkRefreshRunning,
+      hasChunkTransitionInFlight: this.globalChunkSwitchPromise !== null || this.isChunkTransitioning,
+    });
 
     if (duplicateTilePlan.shouldInvalidateCaches) {
       this.invalidateAllChunkCachesContainingHex(col, row);
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
 
-      if (duplicateTilePlan.refreshStrategy !== "none") {
+      if (duplicateTileExecutionPlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
-        if (duplicateTilePlan.refreshStrategy === "immediate") {
+        if (duplicateTileExecutionPlan.refreshStrategy === "immediate") {
           void this.updateVisibleChunks(true).catch((error) =>
             console.error("Failed to reconcile duplicate tile:", error),
           );
@@ -3928,7 +3935,9 @@ export default class WorldmapScene extends HexagonScene {
           models: TORII_BOUNDS_MODELS.map((model) => model.model),
         });
       }
+      PerformanceMonitor.begin("boundsSwitch.total");
       const result = await this.toriiStreamManager.switchBounds(descriptor);
+      PerformanceMonitor.end("boundsSwitch.total");
       if (result.outcome === "stale_dropped") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_stale_dropped");
         return;
@@ -3942,6 +3951,7 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
     } catch (error) {
+      PerformanceMonitor.end("boundsSwitch.total");
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
     }
@@ -4024,6 +4034,8 @@ export default class WorldmapScene extends HexagonScene {
       priority,
     });
     const { cacheKey, fetchKey, bounds } = fetchPlan;
+    const fetchAreaHexes = (bounds.maxCol - bounds.minCol + 1) * (bounds.maxRow - bounds.minRow + 1);
+    PerformanceMonitor.sample(`tileFetch.areaHexes.${priority}`, fetchAreaHexes);
 
     if (priority === "critical" && this.fetchedChunks.has(this.getRenderAreaKeyForChunk(chunkKey))) {
       return true;
@@ -4035,7 +4047,13 @@ export default class WorldmapScene extends HexagonScene {
 
     const existingPromise = this.pendingChunks.get(fetchKey);
     if (existingPromise) {
-      return existingPromise;
+      const pendingAwaitMetricName = `tileFetch.pendingAwait.${priority}`;
+      PerformanceMonitor.begin(pendingAwaitMetricName);
+      try {
+        return await existingPromise;
+      } finally {
+        PerformanceMonitor.end(pendingAwaitMetricName);
+      }
     }
 
     if (import.meta.env.DEV) {

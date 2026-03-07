@@ -78,6 +78,15 @@ describe("worldmap chunk-switch performance instrumentation", () => {
 
     expect(source).toContain('tileFetch.critical');
     expect(source).toContain('tileFetch.background');
+    expect(source).toContain('tileFetch.pendingAwait.');
+    expect(source).toContain('tileFetch.areaHexes.');
+    expect(source).toContain('PerformanceMonitor.begin("boundsSwitch.total")');
     expect(source).toContain('scheduleBackgroundChunkHydration(');
+  });
+
+  it("coalesces duplicate-tile refresh execution through the transition helper", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain("resolveDuplicateTileReconcileExecutionPlan({");
   });
 });

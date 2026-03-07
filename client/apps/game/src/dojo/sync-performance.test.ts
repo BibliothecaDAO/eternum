@@ -18,4 +18,15 @@ describe("initialSync startup scheduling", () => {
     expect(source).toContain('runTimedTask("map data refresh"');
     expect(source).toContain("await Promise.all(parallelTasks)");
   });
+
+  it("tracks sync batch pressure and apply cost for live stream analysis", () => {
+    const source = readSyncSource();
+
+    expect(source).toContain('PerformanceMonitor.begin("sync.applyBatch")');
+    expect(source).toContain('PerformanceMonitor.sample("sync.batch.total"');
+    expect(source).toContain('PerformanceMonitor.sample("sync.batch.upserts"');
+    expect(source).toContain('PerformanceMonitor.sample("sync.batch.deletions"');
+    expect(source).toContain('PerformanceMonitor.sample("sync.mainThread.queueDepth"');
+    expect(source).toContain('PerformanceMonitor.sample("sync.mainThread.batchSize"');
+  });
 });

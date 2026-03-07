@@ -10,6 +10,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
+import { PerformanceMonitor } from "../three/utils/performance-monitor";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -130,6 +131,7 @@ const createMainThreadQueueProcessor = (
     const batchRecord: Record<string, ToriiEntity> = {};
 
     const itemsToProcess = updateQueue.splice(0, batchSize);
+    PerformanceMonitor.sample("sync.mainThread.batchSize", itemsToProcess.length);
     if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
 
     itemsToProcess.forEach(({ entityId, data }) => {
@@ -168,6 +170,7 @@ const createMainThreadQueueProcessor = (
   return {
     queueUpdate: (entityId: string, data: ToriiEntity) => {
       updateQueue.push({ entityId, data });
+      PerformanceMonitor.sample("sync.mainThread.queueDepth", updateQueue.length);
       if (!isProcessing) {
         pendingTimeoutId = setTimeout(processNextInQueue, 200);
       }
@@ -231,17 +234,25 @@ export const syncEntitiesDebounced = async (
   } = setupResult;
 
   const applyBatch = ({ upserts, deletions }: BatchPayload) => {
-    if (deletions.length > 0) {
-      deletions.forEach((entityId) => {
-        world.deleteEntity(entityId as Entity);
-      });
-    }
+    PerformanceMonitor.sample("sync.batch.total", upserts.length + deletions.length);
+    PerformanceMonitor.sample("sync.batch.upserts", upserts.length);
+    PerformanceMonitor.sample("sync.batch.deletions", deletions.length);
+    PerformanceMonitor.begin("sync.applyBatch");
+    try {
+      if (deletions.length > 0) {
+        deletions.forEach((entityId) => {
+          world.deleteEntity(entityId as Entity);
+        });
+      }
 
-    if (upserts.length > 0) {
-      const modelsArray = upserts.map((value) => {
-        return { hashed_keys: value.hashed_keys, models: value.models };
-      });
-      setEntities(modelsArray, world.components, logging);
+      if (upserts.length > 0) {
+        const modelsArray = upserts.map((value) => {
+          return { hashed_keys: value.hashed_keys, models: value.models };
+        });
+        setEntities(modelsArray, world.components, logging);
+      }
+    } finally {
+      PerformanceMonitor.end("sync.applyBatch");
     }
   };
 

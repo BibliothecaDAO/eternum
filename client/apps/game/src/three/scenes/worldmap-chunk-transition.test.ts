@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import {
   resolveDuplicateTileReconcilePlan,
+  resolveDuplicateTileReconcileExecutionPlan,
   resolveEntityActionPathsTransitionTokenSync,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   shouldClearEntitySelectionForMissingActionPathOwnership,
@@ -1102,6 +1103,47 @@ describe("resolveDuplicateTileReconcilePlan", () => {
       }),
     ).toEqual({
       shouldInvalidateCaches: false,
+      refreshStrategy: "none",
+    });
+  });
+});
+
+describe("resolveDuplicateTileReconcileExecutionPlan", () => {
+  it("preserves immediate duplicate reconcile when no refresh work is already in flight", () => {
+    expect(
+      resolveDuplicateTileReconcileExecutionPlan({
+        refreshStrategy: "immediate",
+        hasPendingChunkRefresh: false,
+        isChunkRefreshRunning: false,
+        hasChunkTransitionInFlight: false,
+      }),
+    ).toEqual({
+      refreshStrategy: "immediate",
+    });
+  });
+
+  it("coalesces duplicate immediate reconcile during a chunk transition", () => {
+    expect(
+      resolveDuplicateTileReconcileExecutionPlan({
+        refreshStrategy: "immediate",
+        hasPendingChunkRefresh: false,
+        isChunkRefreshRunning: false,
+        hasChunkTransitionInFlight: true,
+      }),
+    ).toEqual({
+      refreshStrategy: "none",
+    });
+  });
+
+  it("coalesces duplicate deferred reconcile while a refresh timer is already pending", () => {
+    expect(
+      resolveDuplicateTileReconcileExecutionPlan({
+        refreshStrategy: "deferred",
+        hasPendingChunkRefresh: true,
+        isChunkRefreshRunning: false,
+        hasChunkTransitionInFlight: false,
+      }),
+    ).toEqual({
       refreshStrategy: "none",
     });
   });

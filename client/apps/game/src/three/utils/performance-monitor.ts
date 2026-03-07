@@ -125,6 +125,16 @@ class PerformanceMonitorImpl {
   }
 
   /**
+   * Record an arbitrary numeric sample under a metric name.
+   * Useful for queue depth, batch sizes, and other live diagnostics.
+   */
+  public sample(name: string, value: number): void {
+    if (!this.enabled || !Number.isFinite(value)) return;
+
+    this.recordMetric(name, value);
+  }
+
+  /**
    * Wrap a function with automatic timing
    */
   public wrap<T extends (...args: any[]) => any>(name: string, fn: T): T {

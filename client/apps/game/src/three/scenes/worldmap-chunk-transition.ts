@@ -677,6 +677,31 @@ export function resolveDuplicateTileReconcilePlan(
   };
 }
 
+export function resolveDuplicateTileReconcileExecutionPlan(input: {
+  refreshStrategy: DuplicateTileReconcilePlan["refreshStrategy"];
+  hasPendingChunkRefresh: boolean;
+  isChunkRefreshRunning: boolean;
+  hasChunkTransitionInFlight: boolean;
+}): {
+  refreshStrategy: DuplicateTileReconcilePlan["refreshStrategy"];
+} {
+  if (input.refreshStrategy === "none") {
+    return {
+      refreshStrategy: "none",
+    };
+  }
+
+  if (input.hasPendingChunkRefresh || input.isChunkRefreshRunning || input.hasChunkTransitionInFlight) {
+    return {
+      refreshStrategy: "none",
+    };
+  }
+
+  return {
+    refreshStrategy: input.refreshStrategy,
+  };
+}
+
 /**
  * Wait for any in-flight chunk transition promise to settle.
  * Re-checks after each await so callers handle promise replacement races.

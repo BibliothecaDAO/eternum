@@ -9,6 +9,20 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-08",
+    title: "Calmer Live Map Refreshes",
+    description:
+      "Repeated live map tile replays now avoid piling extra chunk refreshes on top of an update already in progress, which reduces hitching during active worlds while keeping chunk visibility stable.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-08",
+    title: "Live Map Diagnostics",
+    description:
+      "Added deeper world map performance diagnostics for live games, making it easier to pinpoint whether chunk issues come from stream updates, fetch pressure, or refresh churn.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-07",
     title: "Faster Map Charting",
     description:
