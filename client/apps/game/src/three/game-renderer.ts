@@ -748,9 +748,6 @@ export default class GameRenderer {
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener("change", () => {
       this.labelsDirty = true;
-      if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
-        this.worldmapScene.requestChunkRefresh();
-      }
     });
     this.controls.keys = {
       LEFT: "KeyA",

@@ -1256,6 +1256,8 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         previousDistance: 20,
         nextDistance: 20.75,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
       }),
     ).toBe(true);
   });
@@ -1266,6 +1268,8 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         previousDistance: 20,
         nextDistance: 20.4,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
       }),
     ).toBe(false);
   });
@@ -1276,6 +1280,8 @@ describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
         previousDistance: null,
         nextDistance: 40,
         threshold: 0.75,
+        chunkChanged: false,
+        isChunkTransitioning: false,
       }),
     ).toBe(false);
   });
@@ -1324,6 +1330,21 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
     ).toEqual({
       shouldRequestRefresh: true,
       shouldForceRefresh: true,
+    });
+  });
+
+  it("keeps chunk-crossing refreshes debounced even when zoom delta also crosses the threshold", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousDistance: 20,
+        nextDistance: 21,
+        threshold: 0.75,
+        chunkChanged: true,
+        isChunkTransitioning: false,
+      }),
+    ).toEqual({
+      shouldRequestRefresh: true,
+      shouldForceRefresh: false,
     });
   });
 

@@ -165,6 +165,7 @@ import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
   createWorldmapChunkDiagnostics,
   recordChunkDiagnosticsEvent,
+  type WorldmapRefreshRequestSource,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
@@ -422,7 +423,7 @@ export default class WorldmapScene extends HexagonScene {
     this.lastControlsCameraDistance = nextCameraDistance;
 
     if (refreshPlan.shouldRequestRefresh) {
-      this.requestChunkRefresh(refreshPlan.shouldForceRefresh);
+      this.requestChunkRefresh(refreshPlan.shouldForceRefresh, "controls_change");
     }
   };
   private isUrlChangedListenerAttached = false;
@@ -583,7 +584,7 @@ export default class WorldmapScene extends HexagonScene {
         this.simulateAllExplored = value;
       },
       getRenderChunkSize: () => this.renderChunkSize,
-      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
+      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force, "perf_simulation"),
       hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
     });
     this.perfSimulation.setupPerformanceSimulationGUI();
@@ -1905,7 +1906,7 @@ export default class WorldmapScene extends HexagonScene {
 
       this.clearPendingArmyMovement(entityId);
       if (fallbackPlan.shouldRequestChunkRefresh) {
-        this.requestChunkRefresh(true);
+        this.requestChunkRefresh(true, "pending_movement_fallback");
       }
 
       if (import.meta.env.DEV) {
@@ -1936,7 +1937,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (selectionPlan.shouldRequestChunkRefresh) {
-      this.requestChunkRefresh(true);
+      this.requestChunkRefresh(true, "pending_movement_selection");
     }
 
     if (selectionPlan.shouldBlockSelection) {
@@ -2846,7 +2847,7 @@ export default class WorldmapScene extends HexagonScene {
             console.error("Failed to reconcile duplicate tile:", error),
           );
         } else {
-          this.requestChunkRefresh(true);
+          this.requestChunkRefresh(true, "duplicate_tile");
         }
       }
 
@@ -2878,7 +2879,7 @@ export default class WorldmapScene extends HexagonScene {
         this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
       }
 
-      this.requestChunkRefresh(true);
+      this.requestChunkRefresh(true, "remove_explored");
       return;
     }
 
@@ -2973,7 +2974,7 @@ export default class WorldmapScene extends HexagonScene {
         chunkSize: this.chunkSize,
       })
     ) {
-      this.requestChunkRefresh(true);
+      this.requestChunkRefresh(true, "structure_bounds");
     }
   }
 
@@ -4340,7 +4341,7 @@ export default class WorldmapScene extends HexagonScene {
     return this.cameraGroundIntersectionScratch;
   }
 
-  public requestChunkRefresh(force: boolean = false) {
+  public requestChunkRefresh(force: boolean = false, source: WorldmapRefreshRequestSource = "unknown") {
     if (this.isSwitchedOff) {
       return;
     }
@@ -4350,7 +4351,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested", { force, source });
       this.scheduleLegacyChunkRefresh();
       return;
     }
@@ -4363,7 +4364,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested", { force, source });
     this.chunkRefreshRequestToken += 1;
 
     if (refreshRequestPlan.shouldScheduleTimer) {

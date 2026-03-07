@@ -27,6 +27,7 @@ export function sanitizeChunkDiagnosticsBaselineLabel(label?: string, fallback: 
 export function snapshotChunkDiagnostics(diagnostics: WorldmapChunkDiagnostics): WorldmapChunkDiagnostics {
   return {
     ...diagnostics,
+    refreshRequestedBySource: { ...diagnostics.refreshRequestedBySource },
     switchDurationMsSamples: [...diagnostics.switchDurationMsSamples],
     managerDurationMsSamples: [...diagnostics.managerDurationMsSamples],
   };

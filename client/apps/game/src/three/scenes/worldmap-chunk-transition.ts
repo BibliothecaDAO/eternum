@@ -472,7 +472,7 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
     };
   }
 
-  const shouldForceRefresh = shouldForceChunkRefreshForZoomDistanceChange(input);
+  const shouldForceRefresh = !input.chunkChanged && shouldForceChunkRefreshForZoomDistanceChange(input);
 
   if (input.isChunkTransitioning && !shouldForceRefresh) {
     return {

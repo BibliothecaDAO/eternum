@@ -26,6 +26,18 @@ export type WorldmapChunkDiagnosticsEvent =
   | "switch_duration_recorded"
   | "manager_duration_recorded";
 
+export type WorldmapRefreshRequestSource =
+  | "controls_change"
+  | "pending_movement_fallback"
+  | "pending_movement_selection"
+  | "duplicate_tile"
+  | "remove_explored"
+  | "structure_bounds"
+  | "perf_simulation"
+  | "unknown";
+
+export type WorldmapRefreshRequestSourceCounts = Record<WorldmapRefreshRequestSource, number>;
+
 export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
   transitionCommitted: number;
@@ -47,6 +59,8 @@ export interface WorldmapChunkDiagnostics {
   boundsSwitchSkippedStaleToken: number;
   boundsSwitchFailed: number;
   refreshRequested: number;
+  forcedRefreshRequested: number;
+  refreshRequestedBySource: WorldmapRefreshRequestSourceCounts;
   refreshExecuted: number;
   refreshSuperseded: number;
   duplicateTileCacheInvalidated: number;
@@ -62,9 +76,24 @@ export interface WorldmapChunkDiagnostics {
 
 interface WorldmapChunkDiagnosticsEventOptions {
   durationMs?: number;
+  source?: WorldmapRefreshRequestSource;
+  force?: boolean;
 }
 
 const MAX_DURATION_SAMPLES = 512;
+
+function createRefreshRequestSourceCounts(): WorldmapRefreshRequestSourceCounts {
+  return {
+    controls_change: 0,
+    pending_movement_fallback: 0,
+    pending_movement_selection: 0,
+    duplicate_tile: 0,
+    remove_explored: 0,
+    structure_bounds: 0,
+    perf_simulation: 0,
+    unknown: 0,
+  };
+}
 
 export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
   return {
@@ -88,6 +117,8 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     boundsSwitchSkippedStaleToken: 0,
     boundsSwitchFailed: 0,
     refreshRequested: 0,
+    forcedRefreshRequested: 0,
+    refreshRequestedBySource: createRefreshRequestSourceCounts(),
     refreshExecuted: 0,
     refreshSuperseded: 0,
     duplicateTileCacheInvalidated: 0,
@@ -169,6 +200,10 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "refresh_requested":
       diagnostics.refreshRequested += 1;
+      if (options?.force) {
+        diagnostics.forcedRefreshRequested += 1;
+      }
+      diagnostics.refreshRequestedBySource[options?.source ?? "unknown"] += 1;
       break;
     case "refresh_executed":
       diagnostics.refreshExecuted += 1;
