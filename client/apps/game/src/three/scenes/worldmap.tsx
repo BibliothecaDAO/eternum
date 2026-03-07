@@ -117,7 +117,6 @@ import {
   resolveRefreshExecutionPlan,
   resolveRefreshRequestPlan,
   resolveRefreshRunningActions,
-  resolveChunkSwitchActions,
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
@@ -4601,16 +4600,15 @@ export default class WorldmapScene extends HexagonScene {
       });
       const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
       const effectiveForce = force || shouldAggressiveReversalRefresh;
-      const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-      const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
-      const hasFiniteOldChunkCoordinates =
-        oldChunkCoordinates !== null &&
-        Number.isFinite(oldChunkCoordinates[0]) &&
-        Number.isFinite(oldChunkCoordinates[1]);
       const targetChunkBounds = this.computeChunkBounds(startRow, startCol);
       this.visibilityManager?.registerChunk(chunkKey, targetChunkBounds);
-      if (hasFiniteOldChunkCoordinates) {
-        const previousChunkBounds = this.computeChunkBounds(oldChunkCoordinates[0], oldChunkCoordinates[1]);
+      const previousChunkCoords = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
+      const hasPreviousChunkBounds =
+        previousChunkCoords !== null &&
+        Number.isFinite(previousChunkCoords[0]) &&
+        Number.isFinite(previousChunkCoords[1]);
+      if (hasPreviousChunkBounds) {
+        const previousChunkBounds = this.computeChunkBounds(previousChunkCoords[0], previousChunkCoords[1]);
         this.applySceneChunkBounds(this.combineChunkBounds(previousChunkBounds, targetChunkBounds));
       } else {
         this.applySceneChunkBounds(targetChunkBounds);
@@ -4644,56 +4642,8 @@ export default class WorldmapScene extends HexagonScene {
         PerformanceMonitor.end("chunkSwitch.terrainBuild");
       }
 
-      let tileFetchSucceeded = false;
-      PerformanceMonitor.begin("chunkSwitch.tileFetchAwait");
-      try {
-        tileFetchSucceeded = await tileFetchPromise;
-      } finally {
-        PerformanceMonitor.end("chunkSwitch.tileFetchAwait");
-      }
-      void (async () => {
-        PerformanceMonitor.begin("chunkSwitch.boundsAwait");
-        try {
-          await toriiBoundsSwitchPromise;
-        } finally {
-          PerformanceMonitor.end("chunkSwitch.boundsAwait");
-        }
-      })();
-      this.hydratedChunkRefreshes.delete(chunkKey);
-
       const isCurrentTransition = transitionToken === this.chunkTransitionToken;
-      const chunkSwitchActions = resolveChunkSwitchActions({
-        fetchSucceeded: tileFetchSucceeded,
-        isCurrentTransition,
-        targetChunk: chunkKey,
-        previousChunk: oldChunk,
-      });
-
-      if (chunkSwitchActions.shouldRollback) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
-        this.currentChunk = oldChunk ?? "null";
-        this.updatePinnedChunks(previousPinnedChunks);
-        this.visibilityManager?.unregisterChunk(chunkKey);
-        if (oldChunk && oldChunk !== "null") {
-          if (chunkSwitchActions.shouldRestorePreviousState && hasFiniteOldChunkCoordinates) {
-            const [oldStartRow, oldStartCol] = oldChunkCoordinates;
-            this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
-            await this.updateHexagonGrid(
-              oldStartRow,
-              oldStartCol,
-              this.renderChunkSize.height,
-              this.renderChunkSize.width,
-            );
-            await this.updateToriiBoundsSubscription(oldChunk, transitionToken);
-          }
-        } else {
-          this.applySceneChunkBounds(undefined);
-        }
-        this.visibilityManager?.forceUpdate();
-        return;
-      }
-
-      if (!chunkSwitchActions.shouldCommitManagers) {
+      if (!isCurrentTransition) {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
         if (this.currentChunk !== chunkKey) {
           this.visibilityManager?.unregisterChunk(chunkKey);
@@ -4717,9 +4667,19 @@ export default class WorldmapScene extends HexagonScene {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
       this.emitWorldmapReadySignal();
 
-      if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
+      if (oldChunk && oldChunk !== chunkKey) {
         this.unregisterChunkOnNextFrame(oldChunk);
       }
+
+      void this.awaitChunkSwitchHydration(chunkKey, transitionToken, tileFetchPromise);
+      void (async () => {
+        PerformanceMonitor.begin("chunkSwitch.boundsAwait");
+        try {
+          await toriiBoundsSwitchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkSwitch.boundsAwait");
+        }
+      })();
 
       // Track memory usage after chunk switch
       if (memoryMonitor) {
@@ -4739,6 +4699,30 @@ export default class WorldmapScene extends HexagonScene {
     } finally {
       PerformanceMonitor.end("chunkSwitch.total");
     }
+  }
+
+  private async awaitChunkSwitchHydration(
+    chunkKey: string,
+    transitionToken: number,
+    tileFetchPromise: Promise<boolean>,
+  ): Promise<void> {
+    let tileFetchSucceeded = false;
+    PerformanceMonitor.begin("chunkSwitch.tileFetchAwait");
+    try {
+      tileFetchSucceeded = await tileFetchPromise;
+    } finally {
+      PerformanceMonitor.end("chunkSwitch.tileFetchAwait");
+    }
+
+    if (tileFetchSucceeded) {
+      return;
+    }
+
+    if (transitionToken !== this.chunkTransitionToken || this.currentChunk !== chunkKey) {
+      return;
+    }
+
+    this.requestChunkRefresh(true, "unknown");
   }
 
   private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {

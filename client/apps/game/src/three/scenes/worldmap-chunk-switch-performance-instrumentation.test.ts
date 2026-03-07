@@ -42,4 +42,21 @@ describe("worldmap chunk-switch performance instrumentation", () => {
 
     expect(source).toContain("resolveVisibleWorldmapBiome({");
   });
+
+  it("commits the target chunk before awaiting tile hydration", () => {
+    const source = readWorldmapSource();
+    const commitIndex = source.indexOf("this.currentChunk = chunkKey;");
+    const awaitIndex = source.indexOf("tileFetchSucceeded = await tileFetchPromise;");
+
+    expect(commitIndex).toBeGreaterThan(-1);
+    expect(awaitIndex).toBeGreaterThan(-1);
+    expect(commitIndex).toBeLessThan(awaitIndex);
+  });
+
+  it("does not reference removed rollback-only chunk coordinate locals", () => {
+    const source = readWorldmapSource();
+
+    expect(source).not.toContain("hasFiniteOldChunkCoordinates");
+    expect(source).not.toContain("oldChunkCoordinates");
+  });
 });
