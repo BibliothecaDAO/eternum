@@ -77,17 +77,23 @@ async function main() {
 
   // Fetch owned structures (used for map highlighting + automation dry-run)
   const sql = client.sql as any;
-  let structures: { entity_id: number; coord_x: number; coord_y: number }[] = [];
+  let allStructures: { entity_id: number; coord_x: number; coord_y: number; category: number; level: number }[] = [];
   try {
-    if (typeof sql.fetchStructuresByOwner === "function") {
-      structures = await sql.fetchStructuresByOwner(PLAYER_ADDRESS);
-      console.log(`  Player owns ${structures.length} structures`);
+    if (typeof sql.fetchPlayerStructures === "function") {
+      allStructures = await sql.fetchPlayerStructures(PLAYER_ADDRESS);
+    } else if (typeof sql.fetchStructuresByOwner === "function") {
+      allStructures = await sql.fetchStructuresByOwner(PLAYER_ADDRESS);
     }
+    console.log(`  Player owns ${allStructures.length} structures total`);
   } catch {
     console.log("  Could not fetch owned structures");
   }
 
-  const ownedEntityIds = new Set(structures.map((s) => Number(s.entity_id)));
+  // Only automate Realms (1) and Villages (5)
+  const structures = allStructures.filter((s) => s.category === 1 || s.category === 5);
+  console.log(`  Realms/Villages: ${structures.length}`);
+
+  const ownedEntityIds = new Set(allStructures.map((s) => Number(s.entity_id)));
 
   // Build map snapshot
   const snapshot = renderMap(area.tiles, ownedEntityIds.size > 0 ? ownedEntityIds : undefined);
@@ -138,7 +144,7 @@ async function main() {
         const biome = structure
           ? (snapshot.gridIndex.get(`${structure.coord_x},${structure.coord_y}`)?.biome ?? 11)
           : 11;
-        const level = 1; // TODO: resolve from structure data
+        const level = structure?.level || 1;
 
         const realmState: RealmState = { biome, level, buildingCounts: snap.buildingCounts };
         const intent = nextIntent(realmState);

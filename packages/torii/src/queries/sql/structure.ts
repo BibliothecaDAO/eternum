@@ -1,7 +1,7 @@
 export const STRUCTURE_QUERIES = {
   STRUCTURES_BY_OWNER: `
-    SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
-    FROM [s1_eternum-Structure] 
+    SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner
+    FROM [s1_eternum-Structure]
     WHERE owner = '{owner}';
   `,
 
@@ -28,6 +28,8 @@ export const STRUCTURE_QUERIES = {
         \`base.coord_y\` AS coord_y,
         \`base.created_at\` AS created_tick,
         \`metadata.realm_id\` AS realm_id,
+        \`base.troop_explorer_count\` AS troop_explorer_count,
+        \`base.troop_max_explorer_count\` AS troop_max_explorer_count,
         category AS top_level_category,
         internal_created_at,
         internal_updated_at,
