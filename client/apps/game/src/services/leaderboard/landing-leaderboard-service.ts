@@ -55,6 +55,9 @@ export interface ScoreToBeatEntrySummary {
   address: string;
   displayName: string | null;
   combinedPoints: number;
+  /** All endpoint runs for the player, sorted desc by points. */
+  allRuns: ScoreToBeatRun[];
+  /** Best N runs used for combined score. */
   runs: ScoreToBeatRun[];
   totalRuns: number;
   staticGames: ScoreToBeatStaticGameBreakdown[];
@@ -762,14 +765,16 @@ export const fetchScoreToBeatAcrossEndpoints = async (
 
   const aggregatedEntries = Array.from(perPlayer.values())
     .map((player) => {
-      const sortedRuns = player.runs.toSorted((a, b) => b.points - a.points).slice(0, safeRunsToAggregate);
-      const combinedPoints = sortedRuns.reduce((sum, run) => sum + run.points, 0);
+      const allRuns = player.runs.toSorted((a, b) => b.points - a.points);
+      const bestRuns = allRuns.slice(0, safeRunsToAggregate);
+      const combinedPoints = bestRuns.reduce((sum, run) => sum + run.points, 0);
 
       return {
         address: player.address,
         displayName: player.displayName,
         combinedPoints,
-        runs: sortedRuns,
+        allRuns,
+        runs: bestRuns,
         totalRuns: player.runs.length,
         staticGames: buildStaticGameBreakdown(player.address),
       } satisfies ScoreToBeatEntrySummary;

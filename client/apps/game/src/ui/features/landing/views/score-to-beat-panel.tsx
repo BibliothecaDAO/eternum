@@ -378,51 +378,41 @@ export const ScoreToBeatPanel = () => {
   const handleDownloadData = () => {
     if (scoreToBeatRows.length === 0 || typeof window === "undefined") return;
 
+    const bestRunHeaders = Array.from({ length: runsToAggregate }, (_, index) => `Best run ${index + 1} score`);
+    const perGameHeaders = cappedSelectedGameNames.map((gameName) => `${gameName} score`);
+
     const rows = [
       [
         "Rank",
         "Display name",
         "Address",
-        "Score",
-        "Run 1 score",
-        "Run 2 score",
-        "Run 3 score",
-        `${SCORE_TO_BEAT_STATIC_GAMES[0]} points`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[1]} points`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[2]} points`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[3]} points`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[0]} chests`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[1]} chests`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[2]} chests`,
-        `${SCORE_TO_BEAT_STATIC_GAMES[3]} chests`,
+        "Combined score",
+        ...bestRunHeaders,
+        ...perGameHeaders,
       ],
       ...scoreToBeatRows.map((entry, index) => {
-        const run1 = entry.runs[0]?.points ?? "";
-        const run2 = entry.runs[1]?.points ?? "";
-        const run3 = entry.runs[2]?.points ?? "";
-        const staticGamePoints = SCORE_TO_BEAT_STATIC_GAMES.map(
-          (game) => entry.staticGames.find((stat) => stat.game === game)?.points ?? 0,
-        );
-        const staticGameChests = SCORE_TO_BEAT_STATIC_GAMES.map(
-          (game) => entry.staticGames.find((stat) => stat.game === game)?.chests ?? 0,
-        );
+        const bestRunScores = Array.from({ length: runsToAggregate }, (_, runIndex) => {
+          const run = entry.runs[runIndex];
+          return run ? `${run.points}` : "";
+        });
+
+        const scoreByGame = new Map<string, number>();
+        entry.allRuns.forEach((run) => {
+          scoreByGame.set(describeEndpoint(run.endpoint), run.points);
+        });
+
+        const perGameScores = cappedSelectedGameNames.map((gameName) => {
+          const score = scoreByGame.get(gameName);
+          return score == null ? "" : `${score}`;
+        });
 
         return [
           `${index + 1}`,
           entry.displayName ?? displayAddress(entry.address),
           entry.address,
           `${entry.combinedPoints ?? 0}`,
-          `${run1}`,
-          `${run2}`,
-          `${run3}`,
-          `${staticGamePoints[0]}`,
-          `${staticGamePoints[1]}`,
-          `${staticGamePoints[2]}`,
-          `${staticGamePoints[3]}`,
-          `${staticGameChests[0]}`,
-          `${staticGameChests[1]}`,
-          `${staticGameChests[2]}`,
-          `${staticGameChests[3]}`,
+          ...bestRunScores,
+          ...perGameScores,
         ];
       }),
     ];
