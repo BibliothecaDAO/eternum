@@ -8,7 +8,7 @@ import { loadSoul, loadTaskLists } from "./soul.js";
 // Types
 // ---------------------------------------------------------------------------
 
-export interface EvolutionSuggestion {
+interface EvolutionSuggestion {
   target: "soul" | "task_list" | "skill";
   domain?: string;
   action: "update" | "create";
@@ -16,7 +16,7 @@ export interface EvolutionSuggestion {
   reasoning: string;
 }
 
-export interface EvolutionResult {
+interface EvolutionResult {
   suggestions: EvolutionSuggestion[];
   analysis: string;
 }
@@ -86,11 +86,7 @@ function parseEvolutionResult(response: string): EvolutionResult {
       if (Array.isArray(parsed)) {
         suggestions = parsed
           .filter(
-            (s) =>
-              s &&
-              typeof s.target === "string" &&
-              typeof s.action === "string" &&
-              typeof s.content === "string",
+            (s) => s && typeof s.target === "string" && typeof s.action === "string" && typeof s.content === "string",
           )
           .map((s) => ({
             target: s.target,
@@ -159,9 +155,7 @@ export async function evolve(model: Model<any>, dataDir: string): Promise<Evolut
     messages: [{ role: "user" as const, content: prompt, timestamp: Date.now() }],
   });
 
-  const text = response.content.find(
-    (b): b is { type: "text"; text: string } => b.type === "text",
-  );
+  const text = response.content.find((b): b is { type: "text"; text: string } => b.type === "text");
   if (!text) return { suggestions: [], analysis: "No response from model." };
 
   const result = parseEvolutionResult(text.text);

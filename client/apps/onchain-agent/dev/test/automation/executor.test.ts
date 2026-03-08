@@ -18,11 +18,13 @@ describe("executeRealmTick", () => {
       provider: provider as any,
       signer,
       realmEntityId: 100,
-      buildActions: [{
-        step: { building: 4, label: "CoalMine" },
-        slot: { col: 11, row: 10, directions: [0] },
-        useSimple: false,
-      }],
+      buildActions: [
+        {
+          step: { building: 4, label: "CoalMine" },
+          slot: { col: 11, row: 10, directions: [0] },
+          useSimple: false,
+        },
+      ],
       upgradeIntent: null,
       productionCalls: null,
     });

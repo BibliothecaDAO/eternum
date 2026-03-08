@@ -1,31 +1,78 @@
 import type { TileState, ExplorerInfo } from "@bibliothecadao/client";
 
 const OCCUPIER_ASCII: Record<number, string> = {
-  0: ".", 1: "R", 2: "R", 3: "R", 4: "R",
-  5: "W", 6: "W", 7: "W", 8: "W",
-  9: "H", 10: "H", 11: "H",
-  12: "M", 13: "V", 14: "B",
-  15: "k", 16: "k", 17: "k",
-  18: "p", 19: "p", 20: "p",
-  21: "x", 22: "x", 23: "x",
-  24: "K", 25: "K", 26: "K",
-  27: "P", 28: "P", 29: "P",
-  30: "X", 31: "X", 32: "X",
-  33: "Q", 34: "C", 35: "S",
+  0: ".",
+  1: "R",
+  2: "R",
+  3: "R",
+  4: "R",
+  5: "W",
+  6: "W",
+  7: "W",
+  8: "W",
+  9: "H",
+  10: "H",
+  11: "H",
+  12: "M",
+  13: "V",
+  14: "B",
+  15: "k",
+  16: "k",
+  17: "k",
+  18: "p",
+  19: "p",
+  20: "p",
+  21: "x",
+  22: "x",
+  23: "x",
+  24: "K",
+  25: "K",
+  26: "K",
+  27: "P",
+  28: "P",
+  29: "P",
+  30: "X",
+  31: "X",
+  32: "X",
+  33: "Q",
+  34: "C",
+  35: "S",
 };
 
 /** Circled variants for agent-owned entities. */
 const OWNED_ASCII: Record<number, string> = {
-  1: "Ⓡ", 2: "Ⓡ", 3: "Ⓡ", 4: "Ⓡ",       // Realm
-  5: "Ⓦ", 6: "Ⓦ", 7: "Ⓦ", 8: "Ⓦ",       // Wonder
-  9: "Ⓗ", 10: "Ⓗ", 11: "Ⓗ",               // Hyperstructure
-  12: "Ⓜ", 13: "Ⓥ", 14: "Ⓑ",              // Mine, Village, Bank
-  15: "ⓚ", 16: "ⓚ", 17: "ⓚ",              // Explorer (knight regular)
-  18: "ⓟ", 19: "ⓟ", 20: "ⓟ",              // Explorer (paladin regular)
-  21: "ⓧ", 22: "ⓧ", 23: "ⓧ",              // Explorer (crossbow regular)
-  24: "Ⓚ", 25: "Ⓚ", 26: "Ⓚ",              // Explorer (knight daydreams)
-  27: "Ⓟ", 28: "Ⓟ", 29: "Ⓟ",              // Explorer (paladin daydreams)
-  30: "Ⓧ", 31: "Ⓧ", 32: "Ⓧ",              // Explorer (crossbow daydreams)
+  1: "Ⓡ",
+  2: "Ⓡ",
+  3: "Ⓡ",
+  4: "Ⓡ", // Realm
+  5: "Ⓦ",
+  6: "Ⓦ",
+  7: "Ⓦ",
+  8: "Ⓦ", // Wonder
+  9: "Ⓗ",
+  10: "Ⓗ",
+  11: "Ⓗ", // Hyperstructure
+  12: "Ⓜ",
+  13: "Ⓥ",
+  14: "Ⓑ", // Mine, Village, Bank
+  15: "ⓚ",
+  16: "ⓚ",
+  17: "ⓚ", // Explorer (knight regular)
+  18: "ⓟ",
+  19: "ⓟ",
+  20: "ⓟ", // Explorer (paladin regular)
+  21: "ⓧ",
+  22: "ⓧ",
+  23: "ⓧ", // Explorer (crossbow regular)
+  24: "Ⓚ",
+  25: "Ⓚ",
+  26: "Ⓚ", // Explorer (knight daydreams)
+  27: "Ⓟ",
+  28: "Ⓟ",
+  29: "Ⓟ", // Explorer (paladin daydreams)
+  30: "Ⓧ",
+  31: "Ⓧ",
+  32: "Ⓧ", // Explorer (crossbow daydreams)
 };
 
 /** Explorer occupier types: 15–32. */
@@ -70,8 +117,10 @@ export function renderMap(
     };
   }
 
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
   const grid = new Map<string, TileState>();
 
   for (const t of tiles) {
@@ -116,7 +165,7 @@ export function renderMap(
   // Map rows — north (maxY) at top
   for (let y = maxY; y >= minY; y--) {
     const mapRow = maxY - y + 1;
-    const indent = (y % 2 === 0) ? " " : "";
+    const indent = y % 2 === 0 ? " " : "";
     let row = indent;
     for (let x = minX; x <= maxX; x++) {
       const t = grid.get(`${x},${y}`);

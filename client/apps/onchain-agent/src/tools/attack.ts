@@ -49,7 +49,9 @@ export function createAttackTool(
       // ── Validate map ──
 
       if (!mapCtx.snapshot) {
-        throw new Error("Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.");
+        throw new Error(
+          "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
+        );
       }
 
       const armyHex = mapCtx.snapshot.resolve(army_row, army_col);
@@ -88,14 +90,18 @@ export function createAttackTool(
 
       const direction = directionBetween(explorer.position, targetHex);
       if (direction === null) {
-        throw new Error(`Army at ${army_row}:${army_col} is not adjacent to ${target_row}:${target_col}. You MUST call move_army first to get within 1 hex, THEN attack.`);
+        throw new Error(
+          `Army at ${army_row}:${army_col} is not adjacent to ${target_row}:${target_col}. You MUST call move_army first to get within 1 hex, THEN attack.`,
+        );
       }
 
       // ── Check stamina ──
 
       const STAMINA_ATTACK_REQ = 50;
       if (explorer.stamina < STAMINA_ATTACK_REQ) {
-        throw new Error(`Not enough stamina to attack (${explorer.stamina}/${STAMINA_ATTACK_REQ}). Wait for regeneration.`);
+        throw new Error(
+          `Not enough stamina to attack (${explorer.stamina}/${STAMINA_ATTACK_REQ}). Wait for regeneration.`,
+        );
       }
 
       // ── Identify target ──
@@ -113,13 +119,21 @@ export function createAttackTool(
 
       if (isExplorer(occupierType)) {
         const result = await attackExplorer(client, tx, explorer, tile.occupierId, direction, tile.biome);
-        try { await mapCtx.refresh?.(); } catch { /* non-fatal */ }
+        try {
+          await mapCtx.refresh?.();
+        } catch {
+          /* non-fatal */
+        }
         return result;
       }
 
       if (isStructure(occupierType)) {
         const result = await attackStructure(client, tx, explorer, targetHex, direction, tile.biome);
-        try { await mapCtx.refresh?.(); } catch { /* non-fatal */ }
+        try {
+          await mapCtx.refresh?.();
+        } catch {
+          /* non-fatal */
+        }
         return result;
       }
 
@@ -146,9 +160,7 @@ async function attackExplorer(
   const attackerStrength = calculateStrength(attacker.troopCount, attacker.troopTier, attacker.troopType, biome);
   const defenderStrength = calculateStrength(defender.troopCount, defender.troopTier, defender.troopType, biome);
 
-  const ratio = defenderStrength.base > 0
-    ? (attackerStrength.base / defenderStrength.base).toFixed(1)
-    : "overwhelming";
+  const ratio = defenderStrength.base > 0 ? (attackerStrength.base / defenderStrength.base).toFixed(1) : "overwhelming";
 
   try {
     await tx.provider.attack_explorer_vs_explorer({
@@ -163,16 +175,18 @@ async function attackExplorer(
   }
 
   return {
-    content: [{
-      type: "text" as const,
-      text: [
-        `Attacked explorer: ${attacker.troopType} ${attacker.troopTier} vs ${defender.troopType} ${defender.troopTier}`,
-        `Your strength: ${attackerStrength.display}`,
-        `Their strength: ${defenderStrength.display}`,
-        `Ratio: ${ratio}x`,
-        `Transaction submitted. Use inspect to check the outcome.`,
-      ].join("\n"),
-    }],
+    content: [
+      {
+        type: "text" as const,
+        text: [
+          `Attacked explorer: ${attacker.troopType} ${attacker.troopTier} vs ${defender.troopType} ${defender.troopTier}`,
+          `Your strength: ${attackerStrength.display}`,
+          `Their strength: ${defenderStrength.display}`,
+          `Ratio: ${ratio}x`,
+          `Transaction submitted. Use inspect to check the outcome.`,
+        ].join("\n"),
+      },
+    ],
     details: {
       attackerId: attacker.entityId,
       defenderId,
@@ -198,7 +212,7 @@ async function attackStructure(
     throw new Error(`Structure at (${target.x},${target.y}) not found.`);
   }
 
-  const nonEmptyGuards = structure.guards.filter(g => g.count > 0);
+  const nonEmptyGuards = structure.guards.filter((g) => g.count > 0);
   const attackerStrength = calculateStrength(attacker.troopCount, attacker.troopTier, attacker.troopType, biome);
 
   if (nonEmptyGuards.length === 0) {
@@ -215,14 +229,16 @@ async function attackStructure(
     }
 
     return {
-      content: [{
-        type: "text" as const,
-        text: [
-          `${structure.category} is unguarded — attacking to capture.`,
-          `Your strength: ${attackerStrength.display}`,
-          `Transaction submitted. Use inspect to check the outcome.`,
-        ].join("\n"),
-      }],
+      content: [
+        {
+          type: "text" as const,
+          text: [
+            `${structure.category} is unguarded — attacking to capture.`,
+            `Your strength: ${attackerStrength.display}`,
+            `Transaction submitted. Use inspect to check the outcome.`,
+          ].join("\n"),
+        },
+      ],
       details: {
         attackerId: attacker.entityId,
         structureId: structure.entityId,
@@ -234,9 +250,7 @@ async function attackStructure(
 
   const guardStrength = calculateGuardStrength(nonEmptyGuards, biome);
 
-  const ratio = guardStrength.base > 0
-    ? (attackerStrength.base / guardStrength.base).toFixed(1)
-    : "overwhelming";
+  const ratio = guardStrength.base > 0 ? (attackerStrength.base / guardStrength.base).toFixed(1) : "overwhelming";
 
   await tx.provider.attack_explorer_vs_guard({
     explorer_id: attacker.entityId,
@@ -246,16 +260,18 @@ async function attackStructure(
   });
 
   return {
-    content: [{
-      type: "text" as const,
-      text: [
-        `Attacked ${structure.category} guards: ${attacker.troopType} ${attacker.troopTier} vs guards`,
-        `Your strength: ${attackerStrength.display}`,
-        `Guard strength: ${guardStrength.display}`,
-        `Ratio: ${ratio}x`,
-        `Transaction submitted. Use inspect to check the outcome.`,
-      ].join("\n"),
-    }],
+    content: [
+      {
+        type: "text" as const,
+        text: [
+          `Attacked ${structure.category} guards: ${attacker.troopType} ${attacker.troopTier} vs guards`,
+          `Your strength: ${attackerStrength.display}`,
+          `Guard strength: ${guardStrength.display}`,
+          `Ratio: ${ratio}x`,
+          `Transaction submitted. Use inspect to check the outcome.`,
+        ].join("\n"),
+      },
+    ],
     details: {
       attackerId: attacker.entityId,
       structureId: structure.entityId,

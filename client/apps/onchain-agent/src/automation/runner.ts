@@ -14,10 +14,10 @@ import { type BuildOrder, type BuildStep, buildOrderForBiome } from "./build-ord
 
 // On-chain levels are 0-indexed: 0=Settlement, 1=City, 2=Kingdom, 3=Empire
 const LEVEL_SLOTS: Record<number, number> = {
-  0: 6,   // Settlement
-  1: 18,  // City
-  2: 36,  // Kingdom
-  3: 60,  // Empire
+  0: 6, // Settlement
+  1: 18, // City
+  2: 36, // Kingdom
+  3: 60, // Empire
 };
 
 const LEVEL_NAMES: Record<number, string> = {
@@ -48,20 +48,20 @@ export interface RealmState {
   buildingCounts: Map<number, number>;
 }
 
-export interface BuildIntent {
+interface BuildIntent {
   step: BuildStep;
   index: number;
   /** True if this WH was injected for population — paired with the next build. */
   injectedForPopulation?: boolean;
 }
 
-export interface UpgradeIntent {
+interface UpgradeIntent {
   fromLevel: number;
   fromName: string;
   toName: string;
 }
 
-export interface AutomationPlan {
+interface AutomationPlan {
   builds: BuildIntent[];
   upgrade: UpgradeIntent | null;
   idle: string | null;
@@ -77,10 +77,7 @@ export interface AutomationPlan {
  * when population is the bottleneck. Returns an upgrade intent if
  * slots run out and more buildings are needed.
  */
-export function nextPlan(
-  state: RealmState,
-  populationInfo: Record<number, BuildingPopulationInfo>,
-): AutomationPlan {
+export function nextPlan(state: RealmState, populationInfo: Record<number, BuildingPopulationInfo>): AutomationPlan {
   const order = buildOrderForBiome(state.biome);
   return resolvePlan(order, state, populationInfo);
 }
@@ -157,7 +154,11 @@ export function resolvePlan(
         if (slotsUsed >= maxSlots) {
           // No room for WorkersHut either — upgrade
           if (state.level >= 3) {
-            return { builds, upgrade: null, idle: builds.length === 0 ? "Empire — need population but no slots" : null };
+            return {
+              builds,
+              upgrade: null,
+              idle: builds.length === 0 ? "Empire — need population but no slots" : null,
+            };
           }
           return {
             builds,
@@ -170,7 +171,11 @@ export function resolvePlan(
           };
         }
 
-        builds.push({ step: { building: WORKERS_HUT, label: "WorkersHut" }, index: globalIndex, injectedForPopulation: true });
+        builds.push({
+          step: { building: WORKERS_HUT, label: "WorkersHut" },
+          index: globalIndex,
+          injectedForPopulation: true,
+        });
         slotsUsed++;
         const whInfo = populationInfo[WORKERS_HUT];
         if (whInfo) {

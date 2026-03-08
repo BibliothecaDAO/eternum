@@ -3,7 +3,7 @@ import type { WalletAccount } from "starknet";
 import { shortString } from "starknet";
 import { buildPolicies, type Chain, type TokenAddresses } from "./policies.js";
 
-export interface SessionConfig {
+interface SessionConfig {
   /** Chain name — determines manifest, season addresses, and signing domain. */
   chain: Chain;
   /** Starknet RPC URL. */
@@ -21,20 +21,13 @@ export interface SessionConfig {
 let provider: SessionProvider | null = null;
 
 /**
- * Clear the cached provider. Useful for testing or switching chains.
- */
-export function resetProvider(): void {
-  provider = null;
-}
-
-/**
  * Get or create the SessionProvider singleton.
  *
  * On first call, builds policies from the Dojo manifest for the given chain,
  * creates a SessionProvider, and returns it. Subsequent calls return the
  * same instance.
  */
-export function getProvider(config: SessionConfig): SessionProvider {
+function getProvider(config: SessionConfig): SessionProvider {
   if (provider) return provider;
 
   const policies = buildPolicies(config.chain, config.tokens, config.manifest);
@@ -85,7 +78,5 @@ export async function getAccount(config: SessionConfig): Promise<WalletAccount> 
     }
   }
 
-  throw new Error(
-    "Session authorization timed out after 5 minutes. Run the agent again to get a new auth URL.",
-  );
+  throw new Error("Session authorization timed out after 5 minutes. Run the agent again to get a new auth URL.");
 }

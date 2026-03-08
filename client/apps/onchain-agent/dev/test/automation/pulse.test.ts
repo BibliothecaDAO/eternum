@@ -5,7 +5,7 @@ import type { RealmState } from "../../../src/automation/runner.js";
 function makeState(overrides: Partial<RealmState> = {}): RealmState {
   return {
     biome: 11, // Grassland → Paladin path
-    level: 1,  // City
+    level: 1, // City
     buildingCounts: new Map(),
     ...overrides,
   };
@@ -29,13 +29,13 @@ describe("essence pulse — approaching T2", () => {
     // then PaladinT2 (600 essence)
     const state = makeState({
       buildingCounts: new Map([
-        [37, 1],  // Wheat
-        [1, 2],   // 2x WorkersHut
-        [4, 1],   // Coal
-        [6, 1],   // Copper
-        [5, 1],   // Wood
-        [34, 1],  // PaladinT1
-        [9, 1],   // GoldMine — built
+        [37, 1], // Wheat
+        [1, 2], // 2x WorkersHut
+        [4, 1], // Coal
+        [6, 1], // Copper
+        [5, 1], // Wood
+        [34, 1], // PaladinT1
+        [9, 1], // GoldMine — built
       ]),
     });
 
@@ -52,8 +52,13 @@ describe("essence pulse — approaching T2", () => {
   it("reports sufficient when essence covers PaladinT2", () => {
     const state = makeState({
       buildingCounts: new Map([
-        [37, 1], [1, 2], [4, 1], [6, 1], [5, 1],
-        [34, 1], [9, 1],
+        [37, 1],
+        [1, 2],
+        [4, 1],
+        [6, 1],
+        [5, 1],
+        [34, 1],
+        [9, 1],
       ]),
     });
 
@@ -69,9 +74,14 @@ describe("essence pulse — T3 milestone", () => {
   it("finds DragonhideTannery after PaladinT2 is built", () => {
     const state = makeState({
       buildingCounts: new Map([
-        [37, 1], [1, 2], [4, 1], [6, 1], [5, 1],
-        [34, 1], [9, 1],
-        [35, 2],  // 2x PaladinT2 built (both Kingdom-phase copies)
+        [37, 1],
+        [1, 2],
+        [4, 1],
+        [6, 1],
+        [5, 1],
+        [34, 1],
+        [9, 1],
+        [35, 2], // 2x PaladinT2 built (both Kingdom-phase copies)
       ]),
     });
 
@@ -84,10 +94,15 @@ describe("essence pulse — T3 milestone", () => {
   it("finds PaladinT3 after DragonhideTannery is built", () => {
     const state = makeState({
       buildingCounts: new Map([
-        [37, 1], [1, 2], [4, 1], [6, 1], [5, 1],
-        [34, 1], [9, 1],
-        [35, 2],  // 2x PaladinT2 (both Kingdom-phase copies)
-        [24, 1],  // Dragonhide
+        [37, 1],
+        [1, 2],
+        [4, 1],
+        [6, 1],
+        [5, 1],
+        [34, 1],
+        [9, 1],
+        [35, 2], // 2x PaladinT2 (both Kingdom-phase copies)
+        [24, 1], // Dragonhide
       ]),
     });
 
@@ -103,9 +118,13 @@ describe("essence pulse — Knight path", () => {
     const state = makeState({
       biome: 12, // Forest → Knight path
       buildingCounts: new Map([
-        [37, 1], [1, 2], [4, 1], [6, 1], [5, 1],
-        [28, 1],  // KnightT1
-        [13, 1],  // ColdIron
+        [37, 1],
+        [1, 2],
+        [4, 1],
+        [6, 1],
+        [5, 1],
+        [28, 1], // KnightT1
+        [13, 1], // ColdIron
       ]),
     });
 
@@ -142,8 +161,13 @@ describe("briefing format", () => {
   it("combines essence and wheat into readable briefing", () => {
     const state = makeState({
       buildingCounts: new Map([
-        [37, 1], [1, 2], [4, 1], [6, 1], [5, 1],
-        [34, 1], [9, 1],
+        [37, 1],
+        [1, 2],
+        [4, 1],
+        [6, 1],
+        [5, 1],
+        [34, 1],
+        [9, 1],
       ]),
     });
 

@@ -128,15 +128,14 @@ export class ViewClient {
     try {
       const allTiles = await this.sql.fetchAllTiles();
 
-      const tiles: TileState[] = allTiles
-        .map((t: any) => ({
-          position: { x: Number(t.col), y: Number(t.row) },
-          biome: Number(t.biome),
-          occupierId: Number(t.occupier_id ?? 0),
-          occupierType: Number(t.occupier_type ?? 0),
-          occupierIsStructure: Boolean(t.occupier_is_structure),
-          rewardExtracted: Boolean(t.reward_extracted),
-        }));
+      const tiles: TileState[] = allTiles.map((t: any) => ({
+        position: { x: Number(t.col), y: Number(t.row) },
+        biome: Number(t.biome),
+        occupierId: Number(t.occupier_id ?? 0),
+        occupierType: Number(t.occupier_type ?? 0),
+        occupierIsStructure: Boolean(t.occupier_is_structure),
+        rewardExtracted: Boolean(t.reward_extracted),
+      }));
 
       return { center: { x: opts.x, y: opts.y }, radius: opts.radius, tiles };
     } catch (error) {
@@ -211,9 +210,8 @@ export class ViewClient {
     const result: GuardInfo[] = [];
     for (const g of guards) {
       if (!g.troops || g.troops.count === 0n || g.troops.count === 0) continue;
-      const count = typeof g.troops.count === "bigint"
-        ? Number(g.troops.count) / RESOURCE_PRECISION
-        : Number(g.troops.count);
+      const count =
+        typeof g.troops.count === "bigint" ? Number(g.troops.count) / RESOURCE_PRECISION : Number(g.troops.count);
       if (count <= 0) continue;
       result.push({
         slot: GUARD_SLOT_NAMES[g.slot] ?? `Slot ${g.slot}`,

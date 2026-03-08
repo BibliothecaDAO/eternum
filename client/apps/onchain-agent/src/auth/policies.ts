@@ -22,7 +22,7 @@ interface ContractPolicy {
  * Mirrors SessionPolicies from @cartridge/presets (not directly importable
  * since it's bundled inside @cartridge/controller).
  */
-export interface SessionPolicies {
+interface SessionPolicies {
   contracts: Record<string, ContractPolicy>;
   messages?: SignMessagePolicy[];
 }
@@ -67,10 +67,7 @@ function loadJson(path: string): any {
 }
 
 /** Mirrors `getContractByName(manifest, "s1_eternum", systemName)` */
-function getContractAddress(
-  manifest: { contracts: { tag: string; address: string }[] },
-  systemName: string,
-): string {
+function getContractAddress(manifest: { contracts: { tag: string; address: string }[] }, systemName: string): string {
   const tag = `s1_eternum-${systemName}`;
   const entry = manifest.contracts.find((c) => c.tag === tag);
   if (!entry) {
@@ -87,23 +84,15 @@ function m(entrypoint: string): Method {
 /** The two standard dojo methods appended to every system contract */
 const DOJO_METHODS: Method[] = [m("dojo_name"), m("world_dispatcher")];
 
-function system(
-  manifest: any,
-  systemName: string,
-  methods: Method[],
-): [string, ContractPolicy] {
-  return [
-    getContractAddress(manifest, systemName),
-    { methods: [...methods, ...DOJO_METHODS] },
-  ];
+function system(manifest: any, systemName: string, methods: Method[]): [string, ContractPolicy] {
+  return [getContractAddress(manifest, systemName), { methods: [...methods, ...DOJO_METHODS] }];
 }
 
 // ---------------------------------------------------------------------------
 // VRF constant
 // ---------------------------------------------------------------------------
 
-const VRF_ADDRESS =
-  "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
+const VRF_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 
 // ---------------------------------------------------------------------------
 // buildPolicies
@@ -122,9 +111,7 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   function add(address: string, policy: ContractPolicy) {
     if (contracts[address]) {
       // Merge: deduplicate by entrypoint
-      const existing = new Set(
-        contracts[address].methods.map((m) => m.entrypoint),
-      );
+      const existing = new Set(contracts[address].methods.map((m) => m.entrypoint));
       for (const method of policy.methods) {
         if (!existing.has(method.entrypoint)) {
           contracts[address].methods.push(method);
@@ -139,22 +126,26 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   // -- entryToken (conditional) --
   if (tokens?.entryToken && tokens.entryToken !== "0x0") {
     add(tokens.entryToken, {
-      methods: [{
-        name: "token_lock",
-        entrypoint: "token_lock",
-        description: "Lock entry token for game participation",
-      }],
+      methods: [
+        {
+          name: "token_lock",
+          entrypoint: "token_lock",
+          description: "Lock entry token for game participation",
+        },
+      ],
     });
   }
 
   // -- feeToken (conditional) --
   if (tokens?.feeToken) {
     add(tokens.feeToken, {
-      methods: [{
-        name: "approve",
-        entrypoint: "approve",
-        description: "Approve fee token spending",
-      }],
+      methods: [
+        {
+          name: "approve",
+          entrypoint: "approve",
+          description: "Approve fee token spending",
+        },
+      ],
     });
   }
 
@@ -171,9 +162,7 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   });
 
   // -- bank_systems --
-  const [bankAddr, bankPolicy] = system(manifest, "bank_systems", [
-    m("create_banks"),
-  ]);
+  const [bankAddr, bankPolicy] = system(manifest, "bank_systems", [m("create_banks")]);
   add(bankAddr, bankPolicy);
 
   // -- villagePass: set_approval_for_all --
@@ -210,11 +199,7 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   add(configAddr, configPolicy);
 
   // -- dev_resource_systems --
-  const [devResAddr, devResPolicy] = system(
-    manifest,
-    "dev_resource_systems",
-    [m("mint")],
-  );
+  const [devResAddr, devResPolicy] = system(manifest, "dev_resource_systems", [m("mint")]);
   add(devResAddr, devResPolicy);
 
   // -- guild_systems --
@@ -235,30 +220,21 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   add(guildAddr, guildPolicy);
 
   // -- hyperstructure_systems --
-  const [hyperAddr, hyperPolicy] = system(
-    manifest,
-    "hyperstructure_systems",
-    [
-      m("initialize"),
-      m("contribute"),
-      m("claim_share_points"),
-      m("allocate_shares"),
-      m("update_construction_access"),
-    ],
-  );
+  const [hyperAddr, hyperPolicy] = system(manifest, "hyperstructure_systems", [
+    m("initialize"),
+    m("contribute"),
+    m("claim_share_points"),
+    m("allocate_shares"),
+    m("update_construction_access"),
+  ]);
   add(hyperAddr, hyperPolicy);
 
   // -- liquidity_systems --
-  const [liqAddr, liqPolicy] = system(manifest, "liquidity_systems", [
-    m("add"),
-    m("remove"),
-  ]);
+  const [liqAddr, liqPolicy] = system(manifest, "liquidity_systems", [m("add"), m("remove")]);
   add(liqAddr, liqPolicy);
 
   // -- name_systems --
-  const [nameAddr, namePolicy] = system(manifest, "name_systems", [
-    m("set_address_name"),
-  ]);
+  const [nameAddr, namePolicy] = system(manifest, "name_systems", [m("set_address_name")]);
   add(nameAddr, namePolicy);
 
   // -- ownership_systems --
@@ -281,9 +257,7 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   add(prodAddr, prodPolicy);
 
   // -- realm_systems --
-  const [realmAddr, realmPolicy] = system(manifest, "realm_systems", [
-    m("create"),
-  ]);
+  const [realmAddr, realmPolicy] = system(manifest, "realm_systems", [m("create")]);
   add(realmAddr, realmPolicy);
 
   // -- resource_systems --
@@ -291,10 +265,7 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   // address as separate object keys. In JS the second silently overwrites the
   // first, so the game client loses deposit/withdraw. We intentionally merge
   // both sets here so the agent has the complete policy.
-  const [resAddr, resPolicy] = system(manifest, "resource_systems", [
-    m("deposit"),
-    m("withdraw"),
-  ]);
+  const [resAddr, resPolicy] = system(manifest, "resource_systems", [m("deposit"), m("withdraw")]);
   add(resAddr, resPolicy);
   // Second set of methods for same contract
   add(getContractAddress(manifest, "resource_systems"), {
@@ -313,10 +284,7 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   });
 
   // -- relic_systems --
-  const [relicAddr, relicPolicy] = system(manifest, "relic_systems", [
-    m("open_chest"),
-    m("apply_relic"),
-  ]);
+  const [relicAddr, relicPolicy] = system(manifest, "relic_systems", [m("open_chest"), m("apply_relic")]);
   add(relicAddr, relicPolicy);
 
   // -- season_systems --
@@ -327,16 +295,11 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   add(seasonAddr, seasonPolicy);
 
   // -- structure_systems --
-  const [structAddr, structPolicy] = system(manifest, "structure_systems", [
-    m("level_up"),
-  ]);
+  const [structAddr, structPolicy] = system(manifest, "structure_systems", [m("level_up")]);
   add(structAddr, structPolicy);
 
   // -- swap_systems --
-  const [swapAddr, swapPolicy] = system(manifest, "swap_systems", [
-    m("buy"),
-    m("sell"),
-  ]);
+  const [swapAddr, swapPolicy] = system(manifest, "swap_systems", [m("buy"), m("sell")]);
   add(swapAddr, swapPolicy);
 
   // -- trade_systems --
@@ -348,61 +311,43 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOve
   add(tradeAddr, tradePolicy);
 
   // -- troop_battle_systems --
-  const [battleAddr, battlePolicy] = system(
-    manifest,
-    "troop_battle_systems",
-    [
-      m("attack_explorer_vs_explorer"),
-      m("attack_explorer_vs_guard"),
-      m("attack_guard_vs_explorer"),
-    ],
-  );
+  const [battleAddr, battlePolicy] = system(manifest, "troop_battle_systems", [
+    m("attack_explorer_vs_explorer"),
+    m("attack_explorer_vs_guard"),
+    m("attack_guard_vs_explorer"),
+  ]);
   add(battleAddr, battlePolicy);
 
   // -- troop_management_systems --
-  const [mgmtAddr, mgmtPolicy] = system(
-    manifest,
-    "troop_management_systems",
-    [
-      m("guard_add"),
-      m("guard_delete"),
-      m("explorer_create"),
-      m("explorer_add"),
-      m("explorer_delete"),
-      m("explorer_explorer_swap"),
-      m("explorer_guard_swap"),
-      m("guard_explorer_swap"),
-    ],
-  );
+  const [mgmtAddr, mgmtPolicy] = system(manifest, "troop_management_systems", [
+    m("guard_add"),
+    m("guard_delete"),
+    m("explorer_create"),
+    m("explorer_add"),
+    m("explorer_delete"),
+    m("explorer_explorer_swap"),
+    m("explorer_guard_swap"),
+    m("guard_explorer_swap"),
+  ]);
   add(mgmtAddr, mgmtPolicy);
 
   // -- troop_movement_systems --
-  const [moveAddr, movePolicy] = system(
-    manifest,
-    "troop_movement_systems",
-    [m("explorer_move"), m("explorer_extract_reward")],
-  );
+  const [moveAddr, movePolicy] = system(manifest, "troop_movement_systems", [
+    m("explorer_move"),
+    m("explorer_extract_reward"),
+  ]);
   add(moveAddr, movePolicy);
 
   // -- troop_movement_util_systems (dojo methods only) --
-  const [moveUtilAddr, moveUtilPolicy] = system(
-    manifest,
-    "troop_movement_util_systems",
-    [],
-  );
+  const [moveUtilAddr, moveUtilPolicy] = system(manifest, "troop_movement_util_systems", []);
   add(moveUtilAddr, moveUtilPolicy);
 
   // -- troop_raid_systems --
-  const [raidAddr, raidPolicy] = system(manifest, "troop_raid_systems", [
-    m("raid_explorer_vs_guard"),
-  ]);
+  const [raidAddr, raidPolicy] = system(manifest, "troop_raid_systems", [m("raid_explorer_vs_guard")]);
   add(raidAddr, raidPolicy);
 
   // -- village_systems --
-  const [villageAddr, villagePolicy] = system(manifest, "village_systems", [
-    m("upgrade"),
-    m("create"),
-  ]);
+  const [villageAddr, villagePolicy] = system(manifest, "village_systems", [m("upgrade"), m("create")]);
   add(villageAddr, villagePolicy);
 
   // -- VRF --

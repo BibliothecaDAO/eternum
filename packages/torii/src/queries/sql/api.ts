@@ -952,33 +952,41 @@ export class SqlApi {
    * Returns a parsed GameConfig ready for use by automation and other consumers.
    */
   async fetchGameConfig(): Promise<GameConfig> {
-    const [buildingRows, factoryRows, resourceListRows, buildingConfigRows, levelConfigRows, staminaConfigRows] = await Promise.all([
-      fetchWithErrorHandling<BuildingCategoryConfigRow>(
-        buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CATEGORY_CONFIGS),
-        "Failed to fetch building category configs",
-      ),
-      fetchWithErrorHandling<ResourceFactoryConfigRow>(
-        buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_FACTORY_CONFIGS),
-        "Failed to fetch resource factory configs",
-      ),
-      fetchWithErrorHandling<ResourceListRow>(
-        buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_LIST),
-        "Failed to fetch resource list",
-      ),
-      fetchWithErrorHandling<BuildingConfigRow>(
-        buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CONFIG),
-        "Failed to fetch building config",
-      ),
-      fetchWithErrorHandling<StructureLevelConfigRow>(
-        buildApiUrl(this.baseUrl, CONFIG_QUERIES.STRUCTURE_LEVEL_CONFIGS),
-        "Failed to fetch structure level configs",
-      ),
-      fetchWithErrorHandling<StaminaConfigRow>(
-        buildApiUrl(this.baseUrl, CONFIG_QUERIES.STAMINA_CONFIG),
-        "Failed to fetch stamina config",
-      ),
-    ]);
+    const [buildingRows, factoryRows, resourceListRows, buildingConfigRows, levelConfigRows, staminaConfigRows] =
+      await Promise.all([
+        fetchWithErrorHandling<BuildingCategoryConfigRow>(
+          buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CATEGORY_CONFIGS),
+          "Failed to fetch building category configs",
+        ),
+        fetchWithErrorHandling<ResourceFactoryConfigRow>(
+          buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_FACTORY_CONFIGS),
+          "Failed to fetch resource factory configs",
+        ),
+        fetchWithErrorHandling<ResourceListRow>(
+          buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_LIST),
+          "Failed to fetch resource list",
+        ),
+        fetchWithErrorHandling<BuildingConfigRow>(
+          buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CONFIG),
+          "Failed to fetch building config",
+        ),
+        fetchWithErrorHandling<StructureLevelConfigRow>(
+          buildApiUrl(this.baseUrl, CONFIG_QUERIES.STRUCTURE_LEVEL_CONFIGS),
+          "Failed to fetch structure level configs",
+        ),
+        fetchWithErrorHandling<StaminaConfigRow>(
+          buildApiUrl(this.baseUrl, CONFIG_QUERIES.STAMINA_CONFIG),
+          "Failed to fetch stamina config",
+        ),
+      ]);
 
-    return parseGameConfig(buildingRows, factoryRows, resourceListRows, extractFirstOrNull(buildingConfigRows), levelConfigRows, extractFirstOrNull(staminaConfigRows));
+    return parseGameConfig(
+      buildingRows,
+      factoryRows,
+      resourceListRows,
+      extractFirstOrNull(buildingConfigRows),
+      levelConfigRows,
+      extractFirstOrNull(staminaConfigRows),
+    );
   }
 }

@@ -31,19 +31,28 @@ function tileTravelCost(biomeId: number, troopType: string, stamina: StaminaConf
   const isPaladin = troopType === "Paladin";
 
   switch (biomeId) {
-    case 1: case 2: // DeepOcean, Ocean
+    case 1:
+    case 2: // DeepOcean, Ocean
       return base - bonus;
     case 4: // Scorched
       return base + bonus;
-    case 5: case 6: case 8: case 9: case 11: case 14: // Bare, Tundra, TempDesert, Shrubland, Grassland, SubtropDesert
+    case 5:
+    case 6:
+    case 8:
+    case 9:
+    case 11:
+    case 14: // Bare, Tundra, TempDesert, Shrubland, Grassland, SubtropDesert
       return isPaladin ? base - bonus : base;
-    case 10: case 12: case 13: case 15: case 16: // Taiga, TempDecidForest, TempRainForest, TropSeasonForest, TropRainForest
+    case 10:
+    case 12:
+    case 13:
+    case 15:
+    case 16: // Taiga, TempDecidForest, TempRainForest, TropSeasonForest, TropRainForest
       return isPaladin ? base + bonus : base;
     default: // Beach(3), Snow(7), None(0), unknown
       return base;
   }
 }
-
 
 export function createMoveTool(
   client: EternumClient,
@@ -74,11 +83,12 @@ export function createMoveTool(
       // Allow one automatic retry on stale-map "is occupied" errors
       const MAX_ATTEMPTS = 2;
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-
         // ── Validate map ──
 
         if (!mapCtx.snapshot) {
-          throw new Error("Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.");
+          throw new Error(
+            "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
+          );
         }
 
         const fromHex = mapCtx.snapshot.resolve(from_row, from_col);
@@ -178,8 +188,9 @@ export function createMoveTool(
         }
 
         const staminaCost = pathResult.staminaCost;
-        const reachedTarget = pathResult.path[pathResult.path.length - 1].x === target.x
-          && pathResult.path[pathResult.path.length - 1].y === target.y;
+        const reachedTarget =
+          pathResult.path[pathResult.path.length - 1].x === target.x &&
+          pathResult.path[pathResult.path.length - 1].y === target.y;
 
         // ── Determine if this is a travel or explore move ──
 
@@ -221,13 +232,21 @@ export function createMoveTool(
           const errStr = extractTxError(err);
 
           if (errStr.includes("not explored")) {
-            throw new Error(`Path to ${to_row}:${to_col} crosses unexplored tiles. Try a shorter move to an adjacent explored tile.`);
+            throw new Error(
+              `Path to ${to_row}:${to_col} crosses unexplored tiles. Try a shorter move to an adjacent explored tile.`,
+            );
           }
           if (errStr.includes("is occupied")) {
             // Refresh map and retry once with fresh pathfinding
-            try { await mapCtx.refresh?.(); } catch { /* non-fatal */ }
+            try {
+              await mapCtx.refresh?.();
+            } catch {
+              /* non-fatal */
+            }
             if (attempt < MAX_ATTEMPTS) continue; // retry with fresh map
-            throw new Error(`Path to ${to_row}:${to_col} is blocked by another entity. The map has been refreshed — try a different destination.`);
+            throw new Error(
+              `Path to ${to_row}:${to_col} is blocked by another entity. The map has been refreshed — try a different destination.`,
+            );
           }
           throw new Error(`Move failed: ${errStr}`);
         }
@@ -252,13 +271,14 @@ export function createMoveTool(
           ? `${action} ${pathResult.distance} steps to ${to_row}:${to_col}.`
           : `${action} ${pathResult.distance} steps toward ${to_row}:${to_col} (ran out of stamina — call move_army again next turn to continue).`;
         return {
-          content: [{
-            type: "text" as const,
-            text: [
-              statusLine,
-              `Stamina: ${explorer.stamina} → ${staminaAfter} (${movesAfter} moves remaining)`,
-            ].join("\n"),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: [statusLine, `Stamina: ${explorer.stamina} → ${staminaAfter} (${movesAfter} moves remaining)`].join(
+                "\n",
+              ),
+            },
+          ],
           details: {
             from: start,
             to: endPos,

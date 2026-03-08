@@ -170,26 +170,26 @@ function buildSteps(path: TroopPath): BuildStep[] {
 
 const BIOME_TO_TROOP: Record<number, TroopPath> = {
   // Paladin biomes (+30% damage)
-  5: "Paladin",   // Bare
-  6: "Paladin",   // Tundra
-  8: "Paladin",   // Temperate Desert
-  9: "Paladin",   // Shrubland
-  11: "Paladin",  // Grassland
-  14: "Paladin",  // Subtropical Desert
+  5: "Paladin", // Bare
+  6: "Paladin", // Tundra
+  8: "Paladin", // Temperate Desert
+  9: "Paladin", // Shrubland
+  11: "Paladin", // Grassland
+  14: "Paladin", // Subtropical Desert
 
   // Knight biomes (+30% damage)
-  10: "Knight",   // Taiga
-  12: "Knight",   // Temperate Deciduous Forest
-  13: "Knight",   // Temperate Rain Forest
-  15: "Knight",   // Tropical Seasonal Forest
-  16: "Knight",   // Tropical Rain Forest
+  10: "Knight", // Taiga
+  12: "Knight", // Temperate Deciduous Forest
+  13: "Knight", // Temperate Rain Forest
+  15: "Knight", // Tropical Seasonal Forest
+  16: "Knight", // Tropical Rain Forest
 
   // Crossbowman biomes (+30% damage)
-  1: "Crossbowman",  // Deep Ocean
-  2: "Crossbowman",  // Ocean
-  3: "Crossbowman",  // Beach
-  4: "Crossbowman",  // Scorched
-  7: "Crossbowman",  // Snow
+  1: "Crossbowman", // Deep Ocean
+  2: "Crossbowman", // Ocean
+  3: "Crossbowman", // Beach
+  4: "Crossbowman", // Scorched
+  7: "Crossbowman", // Snow
 };
 
 // ── Public API ────────────────────────────────────────────────────────

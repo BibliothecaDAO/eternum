@@ -97,8 +97,8 @@ describe("calculateGuardStrength", () => {
 
   it("uses biome modifier of the largest guard group", () => {
     const guards = [
-      { count: 100, troopTier: "T1", troopType: "Knight" },   // neutral on Grassland
-      { count: 800, troopTier: "T1", troopType: "Paladin" },  // +30% on Grassland
+      { count: 100, troopTier: "T1", troopType: "Knight" }, // neutral on Grassland
+      { count: 800, troopTier: "T1", troopType: "Paladin" }, // +30% on Grassland
     ];
     const s = calculateGuardStrength(guards, 11);
     expect(s.biomeModifier).toBe(30);

@@ -24,9 +24,22 @@ import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js"
 //   Crossbow +30%: biomes 1,2,3,4,7
 
 const BIOME_BEST_TROOP: Record<number, string> = {
-  1: "Crossbowman", 2: "Crossbowman", 3: "Crossbowman", 4: "Crossbowman", 7: "Crossbowman",
-  5: "Paladin", 6: "Paladin", 8: "Paladin", 9: "Paladin", 11: "Paladin", 14: "Paladin",
-  10: "Knight", 12: "Knight", 13: "Knight", 15: "Knight", 16: "Knight",
+  1: "Crossbowman",
+  2: "Crossbowman",
+  3: "Crossbowman",
+  4: "Crossbowman",
+  7: "Crossbowman",
+  5: "Paladin",
+  6: "Paladin",
+  8: "Paladin",
+  9: "Paladin",
+  11: "Paladin",
+  14: "Paladin",
+  10: "Knight",
+  12: "Knight",
+  13: "Knight",
+  15: "Knight",
+  16: "Knight",
 };
 
 function bestTroopForBiome(biome: number): { name: string; category: number } {
@@ -71,7 +84,9 @@ export function createCreateArmyTool(
       // ── Validate map ──
 
       if (!mapCtx.snapshot) {
-        throw new Error("Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.");
+        throw new Error(
+          "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
+        );
       }
 
       const hexCoords = mapCtx.snapshot.resolve(row, col);
@@ -142,12 +157,12 @@ export function createCreateArmyTool(
       const resources = structure.resources;
 
       if (resources.length === 0) {
-        throw new Error(`No resources available at this realm to create army. Troop type would be: ${troop.name} (+30% on ${biomeName})`);
+        throw new Error(
+          `No resources available at this realm to create army. Troop type would be: ${troop.name} (+30% on ${biomeName})`,
+        );
       }
 
-      const resourceSummary = resources
-        .map(r => `${r.amount.toLocaleString()} ${r.name}`)
-        .join(", ");
+      const resourceSummary = resources.map((r) => `${r.amount.toLocaleString()} ${r.name}`).join(", ");
 
       // ── Create army ──
 
@@ -168,15 +183,17 @@ export function createCreateArmyTool(
       }
 
       return {
-        content: [{
-          type: "text" as const,
-          text: [
-            `Army created: ${troop.name} T1 (+30% on ${biomeName})`,
-            `Armies: ${explorerCount + 1}/${maxExplorerCount}`,
-            `Spawn: ${directionName} of realm`,
-            `Resources: ${resourceSummary}`,
-          ].join("\n"),
-        }],
+        content: [
+          {
+            type: "text" as const,
+            text: [
+              `Army created: ${troop.name} T1 (+30% on ${biomeName})`,
+              `Armies: ${explorerCount + 1}/${maxExplorerCount}`,
+              `Spawn: ${directionName} of realm`,
+              `Resources: ${resourceSummary}`,
+            ].join("\n"),
+          },
+        ],
         details: {
           realmEntityId: structure.entityId,
           troopType: troop.name,

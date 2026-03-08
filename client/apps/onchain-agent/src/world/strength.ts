@@ -28,17 +28,27 @@ const TROOP_TYPE_INDEX: Record<string, number> = {
 };
 
 const BIOME_COMBAT_BONUS: Record<number, [number, number, number]> = {
-  1: [0, 30, -30], 2: [0, 30, -30], 4: [0, 30, -30],
-  3: [-30, 30, 0], 7: [-30, 30, 0],
-  5: [0, -30, 30], 6: [0, -30, 30], 8: [0, -30, 30], 9: [0, -30, 30],
-  11: [0, -30, 30], 14: [0, -30, 30],
-  10: [30, 0, -30], 12: [30, 0, -30], 13: [30, 0, -30],
-  15: [30, 0, -30], 16: [30, 0, -30],
+  1: [0, 30, -30],
+  2: [0, 30, -30],
+  4: [0, 30, -30],
+  3: [-30, 30, 0],
+  7: [-30, 30, 0],
+  5: [0, -30, 30],
+  6: [0, -30, 30],
+  8: [0, -30, 30],
+  9: [0, -30, 30],
+  11: [0, -30, 30],
+  14: [0, -30, 30],
+  10: [30, 0, -30],
+  12: [30, 0, -30],
+  13: [30, 0, -30],
+  15: [30, 0, -30],
+  16: [30, 0, -30],
 };
 
 // ── Strength calculation ─────────────────────────────────────────────
 
-export interface Strength {
+interface Strength {
   /** Base strength (troop count × tier value / 100). */
   base: number;
   /** Biome modifier percentage (e.g. 30, -30, or 0). */
@@ -55,18 +65,13 @@ export interface Strength {
  * @param troopType   "Knight", "Crossbowman", or "Paladin"
  * @param biome       Biome ID of the tile (for modifier display)
  */
-export function calculateStrength(
-  troopCount: number,
-  troopTier: string,
-  troopType: string,
-  biome: number,
-): Strength {
+export function calculateStrength(troopCount: number, troopTier: string, troopType: string, biome: number): Strength {
   const tierValue = TIER_VALUE[troopTier] ?? TIER_VALUE.T1;
   const base = Math.floor((troopCount * tierValue) / 100);
 
   const typeIdx = TROOP_TYPE_INDEX[troopType];
   const bonuses = BIOME_COMBAT_BONUS[biome];
-  const biomeModifier = (typeIdx !== undefined && bonuses) ? bonuses[typeIdx] : 0;
+  const biomeModifier = typeIdx !== undefined && bonuses ? bonuses[typeIdx] : 0;
 
   let display = base.toLocaleString();
   if (biomeModifier > 0) {

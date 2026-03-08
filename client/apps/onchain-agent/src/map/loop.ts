@@ -11,7 +11,7 @@ import { renderMap } from "./renderer.js";
 import type { MapContext } from "./context.js";
 import { isExplorer } from "../world/occupier.js";
 
-export interface MapLoop {
+interface MapLoop {
   start(): void;
   stop(): void;
   /** Force an immediate refresh (e.g. after a successful action). */
@@ -75,9 +75,7 @@ export function createMapLoop(
         const ownedArmyTiles = area.tiles.filter(
           (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && isExplorer(t.occupierType),
         );
-        const results = await Promise.allSettled(
-          ownedArmyTiles.map((t) => client.view.explorerInfo(t.occupierId)),
-        );
+        const results = await Promise.allSettled(ownedArmyTiles.map((t) => client.view.explorerInfo(t.occupierId)));
         for (const r of results) {
           if (r.status === "fulfilled" && r.value) {
             explorerDetails.set(r.value.entityId, r.value);

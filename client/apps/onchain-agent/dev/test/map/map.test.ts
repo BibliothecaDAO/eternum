@@ -134,7 +134,8 @@ describe("inspect tool — empty tiles", () => {
     const ctx = await loadMap(view);
     const inspectTool = createInspectTool(client, ctx);
 
-    let row = 0, col = 0;
+    let row = 0,
+      col = 0;
     for (let r = 1; r <= ctx.snapshot!.rowCount && row === 0; r++) {
       for (let c = 1; c <= ctx.snapshot!.colCount && row === 0; c++) {
         const tile = ctx.snapshot!.tileAt(r, c);
@@ -155,7 +156,8 @@ describe("inspect tool — empty tiles", () => {
     const ctx = await loadMap(view);
     const inspectTool = createInspectTool(client, ctx);
 
-    let row = 1, col = ctx.snapshot!.colCount;
+    let row = 1,
+      col = ctx.snapshot!.colCount;
     while (ctx.snapshot!.tileAt(row, col) && col > 1) col--;
     const result = await inspectTool.execute("call-2", { row, col });
     expect(result.content[0].text).toContain("Unexplored");
@@ -195,7 +197,11 @@ describe("inspect tool — structures", () => {
       },
     ]);
     sql.fetchResourceBalances = vi.fn().mockResolvedValue([
-      { entity_id: 42, WOOD_BALANCE: "0x00000000000000000000006fc23ac000", STONE_BALANCE: "0x000000000000000000000045d964b800" },
+      {
+        entity_id: 42,
+        WOOD_BALANCE: "0x00000000000000000000006fc23ac000",
+        STONE_BALANCE: "0x000000000000000000000045d964b800",
+      },
     ]);
 
     const view = new ViewClient(sql);
@@ -203,7 +209,8 @@ describe("inspect tool — structures", () => {
     const ctx = await loadMap(view);
     const inspectTool = createInspectTool(client, ctx);
 
-    let row = 0, col = 0;
+    let row = 0,
+      col = 0;
     for (let r = 1; r <= ctx.snapshot!.rowCount && row === 0; r++) {
       for (let c = 1; c <= ctx.snapshot!.colCount && row === 0; c++) {
         const tile = ctx.snapshot!.tileAt(r, c);
@@ -254,15 +261,18 @@ describe("inspect tool — explorers", () => {
       colCount: 1,
       tiles: [],
       gridIndex: new Map(),
-      resolve: (r, c) => r === 1 && c === 1 ? { x: 100, y: 200 } : null,
-      tileAt: (r, c) => r === 1 && c === 1 ? {
-        position: { x: 100, y: 200 },
-        biome: 11,
-        occupierId: 99,
-        occupierType: 15,
-        occupierIsStructure: false,
-        rewardExtracted: false,
-      } : null,
+      resolve: (r, c) => (r === 1 && c === 1 ? { x: 100, y: 200 } : null),
+      tileAt: (r, c) =>
+        r === 1 && c === 1
+          ? {
+              position: { x: 100, y: 200 },
+              biome: 11,
+              occupierId: 99,
+              occupierType: 15,
+              occupierIsStructure: false,
+              rewardExtracted: false,
+            }
+          : null,
     };
 
     const result = await inspectTool.execute("call-2", { row: 1, col: 1 });

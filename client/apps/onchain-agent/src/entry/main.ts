@@ -90,8 +90,7 @@ async function pruneMessages(messages: AgentMessage[], model: Model<any>): Promi
 
   // Summarize dropped messages using the agent's model
   const droppedLlm = dropped.filter(
-    (m): m is Message =>
-      m.role === "user" || m.role === "assistant" || m.role === "toolResult",
+    (m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult",
   );
 
   let summary = `[Context compacted: ${dropped.length} older messages dropped.]`;
@@ -215,8 +214,8 @@ export async function main() {
   const gameConfig = await (client.sql as any).fetchGameConfig();
   console.log(
     `  Game config: ${Object.keys(gameConfig.buildingCosts).length} buildings, ` +
-    `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
-    `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
+      `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
+      `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
   );
 
   // 3. Shared contexts
@@ -241,10 +240,7 @@ export async function main() {
   const model = (getModel as Function)(config.modelProvider, config.modelId) as Model<any>;
 
   const convertToLlm = (messages: AgentMessage[]): Message[] =>
-    messages.filter(
-      (m): m is Message =>
-        m.role === "user" || m.role === "assistant" || m.role === "toolResult",
-    );
+    messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
 
   const agent = new Agent({
     initialState: {
@@ -272,11 +268,12 @@ export async function main() {
         console.log(`[AGENT] tool call: ${event.toolName}(${JSON.stringify(event.args).slice(0, 200)})`);
         break;
       case "tool_execution_end": {
-        const resultText = event.result?.content
-          ?.filter((b: any) => b.type === "text")
-          ?.map((b: any) => b.text)
-          ?.join("")
-          ?.slice(0, 300) ?? "";
+        const resultText =
+          event.result?.content
+            ?.filter((b: any) => b.type === "text")
+            ?.map((b: any) => b.text)
+            ?.join("")
+            ?.slice(0, 300) ?? "";
         console.log(`[AGENT] tool result: ${event.toolName} ${event.isError ? "ERROR" : "ok"} — ${resultText}`);
         break;
       }
@@ -285,7 +282,10 @@ export async function main() {
         if (msg.role === "assistant" && typeof msg.content === "string" && msg.content.length > 0) {
           console.log(`[AGENT] says: ${msg.content.slice(0, 300)}`);
         } else if (msg.role === "assistant" && Array.isArray(msg.content)) {
-          const text = msg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+          const text = msg.content
+            .filter((b: any) => b.type === "text")
+            .map((b: any) => b.text)
+            .join("");
           if (text.length > 0) console.log(`[AGENT] says: ${text.slice(0, 300)}`);
         }
         break;
@@ -309,7 +309,9 @@ export async function main() {
     await new Promise((r) => setTimeout(r, 1000));
   }
   if (mapCtx.snapshot) {
-    console.log(`  Map loaded: ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols, ${mapCtx.snapshot.tiles.length} tiles`);
+    console.log(
+      `  Map loaded: ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols, ${mapCtx.snapshot.tiles.length} tiles`,
+    );
   } else {
     console.log("  WARNING: Map failed to load within 30s, starting agent anyway");
   }
@@ -342,7 +344,9 @@ export async function main() {
     const prompt = buildTickPrompt(mapCtx);
     agentBusy = true;
     agent.prompt(prompt).then(
-      () => { agentBusy = false; },
+      () => {
+        agentBusy = false;
+      },
       (err) => {
         agentBusy = false;
         console.error("Agent error:", err instanceof Error ? err.message : err);
@@ -357,7 +361,9 @@ export async function main() {
       evolving = true;
       evolve(model, config.dataDir)
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
-        .finally(() => { evolving = false; });
+        .finally(() => {
+          evolving = false;
+        });
     }
 
     runAgentTick();

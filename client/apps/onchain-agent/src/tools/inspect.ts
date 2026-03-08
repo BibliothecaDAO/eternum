@@ -19,26 +19,24 @@ function biomeName(biomeId: number): string {
 
 function formatGuards(guards: GuardInfo[], biome: number): string {
   if (guards.length === 0) return "Unguarded";
-  const nonEmpty = guards.filter(g => g.count > 0);
+  const nonEmpty = guards.filter((g) => g.count > 0);
   if (nonEmpty.length === 0) return "Unguarded";
-  const guardLines = nonEmpty.map(g =>
-    `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier} (${g.slot})`
-  ).join(", ");
+  const guardLines = nonEmpty
+    .map((g) => `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier} (${g.slot})`)
+    .join(", ");
   const strength = calculateGuardStrength(nonEmpty, biome);
   return `${guardLines}\nStrength: ${strength.display}`;
 }
 
 function formatResources(resources: ResourceInfo[]): string {
   if (resources.length === 0) return "None";
-  return resources.map(r => `${r.amount.toLocaleString()} ${r.name}`).join(", ");
+  return resources.map((r) => `${r.amount.toLocaleString()} ${r.name}`).join(", ");
 }
 
 function formatStructure(info: StructureInfo, biome: number): string {
   const lines: string[] = [];
 
-  const header = info.ownerAddress
-    ? `${info.category} (Owner: ${info.ownerAddress})`
-    : info.category;
+  const header = info.ownerAddress ? `${info.category} (Owner: ${info.ownerAddress})` : info.category;
   lines.push(header);
 
   if (info.category === "Realm" || info.category === "Village") {
@@ -94,7 +92,9 @@ export function createInspectTool(client: EternumClient, ctx: MapContext): Agent
       const { row, col } = params;
 
       if (!ctx.snapshot) {
-        throw new Error("Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.");
+        throw new Error(
+          "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
+        );
       }
 
       const hexCoords = ctx.snapshot.resolve(row, col);

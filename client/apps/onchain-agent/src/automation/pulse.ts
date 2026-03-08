@@ -16,14 +16,14 @@ import type { RealmState } from "./runner.js";
 
 const ESSENCE_COST: Record<number, number> = {
   // T2 troop buildings
-  29: 600,  // KnightT2
-  32: 600,  // CrossbowmanT2
-  35: 600,  // PaladinT2
+  29: 600, // KnightT2
+  32: 600, // CrossbowmanT2
+  35: 600, // PaladinT2
 
   // T3 resource buildings
-  21: 600,  // Adamantine
-  11: 600,  // Mithral
-  24: 600,  // Dragonhide
+  21: 600, // Adamantine
+  11: 600, // Mithral
+  24: 600, // Dragonhide
 
   // T3 troop buildings
   30: 1200, // KnightT3
@@ -33,20 +33,20 @@ const ESSENCE_COST: Record<number, number> = {
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export interface EssencePulse {
+interface EssencePulse {
   balance: number;
   milestone: { label: string; cost: number } | null;
   shortfall: number;
   sufficient: boolean;
 }
 
-export interface WheatPulse {
+interface WheatPulse {
   balance: number;
   movesRemaining: number;
   low: boolean;
 }
 
-export interface PulseCheck {
+interface PulseCheck {
   essence: EssencePulse;
   wheat: WheatPulse;
   briefing: string;
@@ -69,11 +69,7 @@ const LOW_MOVES_THRESHOLD = 10;
  * @param wheatBalance    Current wheat on hand
  * @param realmState      Current realm state (for build order progress)
  */
-export function checkPulse(
-  essenceBalance: number,
-  wheatBalance: number,
-  realmState: RealmState,
-): PulseCheck {
+export function checkPulse(essenceBalance: number, wheatBalance: number, realmState: RealmState): PulseCheck {
   const essence = checkEssence(essenceBalance, realmState);
   const wheat = checkWheat(wheatBalance);
   const briefing = formatBriefing(essence, wheat);
@@ -130,7 +126,9 @@ function formatBriefing(essence: EssencePulse, wheat: WheatPulse): string {
     if (essence.sufficient) {
       lines.push(`Essence: ${essence.balance} — sufficient for ${essence.milestone.label} (${essence.milestone.cost})`);
     } else {
-      lines.push(`Essence: ${essence.balance} — need ${essence.milestone.cost} for ${essence.milestone.label} (short ${essence.shortfall})`);
+      lines.push(
+        `Essence: ${essence.balance} — need ${essence.milestone.cost} for ${essence.milestone.label} (short ${essence.shortfall})`,
+      );
       lines.push(`Action: Capture a Fragment Mine`);
     }
   } else {
