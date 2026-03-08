@@ -18,8 +18,28 @@ interface ContractPolicy {
   methods: Method[];
 }
 
+/**
+ * Mirrors SessionPolicies from @cartridge/presets (not directly importable
+ * since it's bundled inside @cartridge/controller).
+ */
 export interface SessionPolicies {
   contracts: Record<string, ContractPolicy>;
+  messages?: SignMessagePolicy[];
+}
+
+interface SignMessagePolicy {
+  name: string;
+  description?: string;
+  types: Record<string, { name: string; type: string }[]>;
+  primaryType: string;
+  domain: Record<string, string>;
+}
+
+export interface TokenAddresses {
+  /** Entry token contract address (for token_lock). Omit or "0x0" to skip. */
+  entryToken?: string;
+  /** Fee token contract address (for approve). Omit to skip. */
+  feeToken?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,7 +109,7 @@ const VRF_ADDRESS =
 // buildPolicies
 // ---------------------------------------------------------------------------
 
-export function buildPolicies(chain: Chain): SessionPolicies {
+export function buildPolicies(chain: Chain, tokens?: TokenAddresses): SessionPolicies {
   const manifest = loadJson(manifestPath(chain));
   const addresses = loadJson(addressesPath(chain));
 
@@ -116,16 +136,27 @@ export function buildPolicies(chain: Chain): SessionPolicies {
     }
   }
 
-  // -- blitz_realm_systems --
-  const [blitzAddr, blitzPolicy] = system(manifest, "blitz_realm_systems", [
-    m("make_hyperstructures"),
-    m("register"),
-    m("obtain_entry_token"),
-    m("create"),
-    m("assign_realm_positions"),
-    m("settle_realms"),
-  ]);
-  add(blitzAddr, blitzPolicy);
+  // -- entryToken (conditional) --
+  if (tokens?.entryToken && tokens.entryToken !== "0x0") {
+    add(tokens.entryToken, { methods: [m("token_lock")] });
+  }
+
+  // -- feeToken (conditional) --
+  if (tokens?.feeToken) {
+    add(tokens.feeToken, { methods: [m("approve")] });
+  }
+
+  // -- blitz_realm_systems (no dojo methods — matches game client) --
+  add(getContractAddress(manifest, "blitz_realm_systems"), {
+    methods: [
+      m("make_hyperstructures"),
+      m("register"),
+      m("obtain_entry_token"),
+      m("create"),
+      m("assign_realm_positions"),
+      m("settle_realms"),
+    ],
+  });
 
   // -- bank_systems --
   const [bankAddr, bankPolicy] = system(manifest, "bank_systems", [
@@ -243,7 +274,11 @@ export function buildPolicies(chain: Chain): SessionPolicies {
   ]);
   add(realmAddr, realmPolicy);
 
-  // -- resource_systems (MERGED: two entries in game client) --
+  // -- resource_systems --
+  // NOTE: The game client has two entries for resource_systems with the same
+  // address as separate object keys. In JS the second silently overwrites the
+  // first, so the game client loses deposit/withdraw. We intentionally merge
+  // both sets here so the agent has the complete policy.
   const [resAddr, resPolicy] = system(manifest, "resource_systems", [
     m("deposit"),
     m("withdraw"),
@@ -375,5 +410,35 @@ export function buildPolicies(chain: Chain): SessionPolicies {
   // -- villagePass: set_approval_for_all (second entry, merges with earlier) --
   add(villagePassAddress, { methods: [m("set_approval_for_all")] });
 
-  return { contracts };
+  // -- Message signing policy --
+  const messages = [
+    {
+      name: "Eternum Message Signing",
+      description: "Allows signing messages for Eternum",
+      types: {
+        StarknetDomain: [
+          { name: "name", type: "shortstring" },
+          { name: "version", type: "shortstring" },
+          { name: "chainId", type: "shortstring" },
+          { name: "revision", type: "shortstring" },
+        ],
+        "s1_eternum-Message": [
+          { name: "identity", type: "ContractAddress" },
+          { name: "channel", type: "shortstring" },
+          { name: "content", type: "string" },
+          { name: "timestamp", type: "felt" },
+          { name: "salt", type: "felt" },
+        ],
+      },
+      primaryType: "s1_eternum-Message",
+      domain: {
+        name: "Eternum",
+        version: "1",
+        chainId: chain === "mainnet" ? "SN_MAIN" : "SN_SEPOLIA",
+        revision: "1",
+      },
+    },
+  ];
+
+  return { contracts, messages };
 }
