@@ -37,10 +37,15 @@ export function createAutomationLoop(
       const sql = client.sql as any;
       if (typeof sql.fetchStructuresByOwner !== "function") return;
 
-      const structures: { entity_id: number; coord_x: number; coord_y: number }[] =
-        await sql.fetchStructuresByOwner(playerAddress);
+      const allStructures: { entity_id: number; coord_x: number; coord_y: number; category: number; level: number }[] =
+        typeof sql.fetchPlayerStructures === "function"
+          ? await sql.fetchPlayerStructures(playerAddress)
+          : await sql.fetchStructuresByOwner(playerAddress);
 
-      const realmEntities = structures.filter((s) => Number(s.entity_id) > 0);
+      // Only process Realms (1) and Villages (5)
+      const realmEntities = allStructures.filter(
+        (s) => Number(s.entity_id) > 0 && (s.category === 1 || s.category === 5),
+      );
       if (realmEntities.length === 0) return;
 
       // Build coordinate → biome lookup from map snapshot
@@ -51,11 +56,12 @@ export function createAutomationLoop(
         realmEntities.map(async (s) => {
           const entityId = Number(s.entity_id);
           const biome = gridIndex?.get(`${s.coord_x},${s.coord_y}`)?.biome ?? 11;
+          const level = s.level || 1;
           try {
             const rows = await sql.fetchResourceBalancesAndProduction([entityId]);
-            return { entityId, biome, coordX: s.coord_x, coordY: s.coord_y, row: rows?.[0] ?? null };
+            return { entityId, biome, level, row: rows?.[0] ?? null };
           } catch {
-            return { entityId, biome, coordX: s.coord_x, coordY: s.coord_y, row: null };
+            return { entityId, biome, level, row: null };
           }
         }),
       );
@@ -83,10 +89,8 @@ export function createAutomationLoop(
       const realmStatuses: RealmStatus[] = [];
 
       const results = await Promise.allSettled(
-        snapshotRows.map(async ({ entityId, biome, row }) => {
+        snapshotRows.map(async ({ entityId, biome, level, row }) => {
           const snapshot = parseRealmSnapshot(row);
-
-          const level = 1; // TODO: resolve from structure level
           const realmName = `Realm ${entityId}`;
 
           const realmState: RealmState = {
