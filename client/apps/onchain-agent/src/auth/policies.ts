@@ -1,0 +1,379 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type Chain = "mainnet" | "sepolia" | "slot" | "slottest" | "local";
+
+interface Method {
+  name: string;
+  entrypoint: string;
+  description?: string;
+}
+
+interface ContractPolicy {
+  methods: Method[];
+}
+
+export interface SessionPolicies {
+  contracts: Record<string, ContractPolicy>;
+}
+
+// ---------------------------------------------------------------------------
+// Paths – resolve relative to this file up to the monorepo root
+// ---------------------------------------------------------------------------
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// src/auth -> src -> onchain-agent -> apps -> client -> root
+const ROOT = resolve(__dirname, "..", "..", "..", "..", "..");
+
+function manifestPath(chain: Chain): string {
+  return resolve(ROOT, "contracts", "game", `manifest_${chain}.json`);
+}
+
+function addressesPath(chain: Chain): string {
+  return resolve(ROOT, "contracts", "common", "addresses", `${chain}.json`);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function loadJson(path: string): any {
+  return JSON.parse(readFileSync(path, "utf-8"));
+}
+
+/** Mirrors `getContractByName(manifest, "s1_eternum", systemName)` */
+function getContractAddress(
+  manifest: { contracts: { tag: string; address: string }[] },
+  systemName: string,
+): string {
+  const tag = `s1_eternum-${systemName}`;
+  const entry = manifest.contracts.find((c) => c.tag === tag);
+  if (!entry) {
+    throw new Error(`Contract not found in manifest: ${tag}`);
+  }
+  return entry.address;
+}
+
+/** Shorthand to build a method entry where name === entrypoint */
+function m(entrypoint: string): Method {
+  return { name: entrypoint, entrypoint };
+}
+
+/** The two standard dojo methods appended to every system contract */
+const DOJO_METHODS: Method[] = [m("dojo_name"), m("world_dispatcher")];
+
+function system(
+  manifest: any,
+  systemName: string,
+  methods: Method[],
+): [string, ContractPolicy] {
+  return [
+    getContractAddress(manifest, systemName),
+    { methods: [...methods, ...DOJO_METHODS] },
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// VRF constant
+// ---------------------------------------------------------------------------
+
+const VRF_ADDRESS =
+  "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
+
+// ---------------------------------------------------------------------------
+// buildPolicies
+// ---------------------------------------------------------------------------
+
+export function buildPolicies(chain: Chain): SessionPolicies {
+  const manifest = loadJson(manifestPath(chain));
+  const addresses = loadJson(addressesPath(chain));
+
+  const seasonPassAddress: string = addresses.seasonPass;
+  const villagePassAddress: string = addresses.villagePass;
+
+  const contracts: Record<string, ContractPolicy> = {};
+
+  // Helper to add a contract, merging methods if the address already exists
+  function add(address: string, policy: ContractPolicy) {
+    if (contracts[address]) {
+      // Merge: deduplicate by entrypoint
+      const existing = new Set(
+        contracts[address].methods.map((m) => m.entrypoint),
+      );
+      for (const method of policy.methods) {
+        if (!existing.has(method.entrypoint)) {
+          contracts[address].methods.push(method);
+          existing.add(method.entrypoint);
+        }
+      }
+    } else {
+      contracts[address] = { methods: [...policy.methods] };
+    }
+  }
+
+  // -- blitz_realm_systems --
+  const [blitzAddr, blitzPolicy] = system(manifest, "blitz_realm_systems", [
+    m("make_hyperstructures"),
+    m("register"),
+    m("obtain_entry_token"),
+    m("create"),
+    m("assign_realm_positions"),
+    m("settle_realms"),
+  ]);
+  add(blitzAddr, blitzPolicy);
+
+  // -- bank_systems --
+  const [bankAddr, bankPolicy] = system(manifest, "bank_systems", [
+    m("create_banks"),
+  ]);
+  add(bankAddr, bankPolicy);
+
+  // -- villagePass: set_approval_for_all --
+  add(villagePassAddress, { methods: [m("set_approval_for_all")] });
+
+  // -- config_systems --
+  const [configAddr, configPolicy] = system(manifest, "config_systems", [
+    m("set_agent_config"),
+    m("set_world_config"),
+    m("set_mercenaries_name_config"),
+    m("set_season_config"),
+    m("set_vrf_config"),
+    m("set_starting_resources_config"),
+    m("set_map_config"),
+    m("set_capacity_config"),
+    m("set_resource_weight_config"),
+    m("set_tick_config"),
+    m("set_resource_factory_config"),
+    m("set_donkey_speed_config"),
+    m("set_battle_config"),
+    m("set_hyperstructure_config"),
+    m("set_bank_config"),
+    m("set_troop_config"),
+    m("set_building_config"),
+    m("set_building_category_config"),
+    m("set_resource_bridge_config"),
+    m("set_resource_bridge_fee_split_config"),
+    m("set_resource_bridge_whitelist_config"),
+    m("set_structure_max_level_config"),
+    m("set_structure_level_config"),
+    m("set_settlement_config"),
+    m("set_trade_config"),
+  ]);
+  add(configAddr, configPolicy);
+
+  // -- dev_resource_systems --
+  const [devResAddr, devResPolicy] = system(
+    manifest,
+    "dev_resource_systems",
+    [m("mint")],
+  );
+  add(devResAddr, devResPolicy);
+
+  // -- guild_systems --
+  // In the game client, dojo methods appear mid-list then more methods follow.
+  // We list all unique methods here; `system()` appends dojo methods at the end
+  // and `add()` deduplicates by entrypoint.
+  const [guildAddr, guildPolicy] = system(manifest, "guild_systems", [
+    m("create_guild"),
+    m("join_guild"),
+    m("leave_guild"),
+    m("whitelist_player"),
+    m("transfer_guild_ownership"),
+    m("remove_guild_member"),
+    m("remove_player_from_whitelist"),
+    m("update_whitelist"),
+    m("remove_member"),
+  ]);
+  add(guildAddr, guildPolicy);
+
+  // -- hyperstructure_systems --
+  const [hyperAddr, hyperPolicy] = system(
+    manifest,
+    "hyperstructure_systems",
+    [
+      m("initialize"),
+      m("contribute"),
+      m("claim_share_points"),
+      m("allocate_shares"),
+      m("update_construction_access"),
+    ],
+  );
+  add(hyperAddr, hyperPolicy);
+
+  // -- liquidity_systems --
+  const [liqAddr, liqPolicy] = system(manifest, "liquidity_systems", [
+    m("add"),
+    m("remove"),
+  ]);
+  add(liqAddr, liqPolicy);
+
+  // -- name_systems --
+  const [nameAddr, namePolicy] = system(manifest, "name_systems", [
+    m("set_address_name"),
+  ]);
+  add(nameAddr, namePolicy);
+
+  // -- ownership_systems --
+  const [ownerAddr, ownerPolicy] = system(manifest, "ownership_systems", [
+    m("transfer_structure_ownership"),
+    m("transfer_agent_ownership"),
+  ]);
+  add(ownerAddr, ownerPolicy);
+
+  // -- production_systems --
+  const [prodAddr, prodPolicy] = system(manifest, "production_systems", [
+    m("create_building"),
+    m("destroy_building"),
+    m("pause_building_production"),
+    m("resume_building_production"),
+    m("burn_resource_for_labor_production"),
+    m("burn_labor_for_resource_production"),
+    m("burn_resource_for_resource_production"),
+  ]);
+  add(prodAddr, prodPolicy);
+
+  // -- realm_systems --
+  const [realmAddr, realmPolicy] = system(manifest, "realm_systems", [
+    m("create"),
+  ]);
+  add(realmAddr, realmPolicy);
+
+  // -- resource_systems (MERGED: two entries in game client) --
+  const [resAddr, resPolicy] = system(manifest, "resource_systems", [
+    m("deposit"),
+    m("withdraw"),
+  ]);
+  add(resAddr, resPolicy);
+  // Second set of methods for same contract
+  add(getContractAddress(manifest, "resource_systems"), {
+    methods: [
+      m("approve"),
+      m("send"),
+      m("pickup"),
+      m("arrivals_offload"),
+      m("troop_troop_adjacent_transfer"),
+      m("troop_structure_adjacent_transfer"),
+      m("structure_troop_adjacent_transfer"),
+      ...DOJO_METHODS,
+      m("structure_burn"),
+      m("troop_burn"),
+    ],
+  });
+
+  // -- relic_systems --
+  const [relicAddr, relicPolicy] = system(manifest, "relic_systems", [
+    m("open_chest"),
+    m("apply_relic"),
+  ]);
+  add(relicAddr, relicPolicy);
+
+  // -- season_systems --
+  const [seasonAddr, seasonPolicy] = system(manifest, "season_systems", [
+    m("register_to_leaderboard"),
+    m("claim_leaderboard_rewards"),
+  ]);
+  add(seasonAddr, seasonPolicy);
+
+  // -- structure_systems --
+  const [structAddr, structPolicy] = system(manifest, "structure_systems", [
+    m("level_up"),
+  ]);
+  add(structAddr, structPolicy);
+
+  // -- swap_systems --
+  const [swapAddr, swapPolicy] = system(manifest, "swap_systems", [
+    m("buy"),
+    m("sell"),
+  ]);
+  add(swapAddr, swapPolicy);
+
+  // -- trade_systems --
+  const [tradeAddr, tradePolicy] = system(manifest, "trade_systems", [
+    m("create_order"),
+    m("accept_order"),
+    m("cancel_order"),
+  ]);
+  add(tradeAddr, tradePolicy);
+
+  // -- troop_battle_systems --
+  const [battleAddr, battlePolicy] = system(
+    manifest,
+    "troop_battle_systems",
+    [
+      m("attack_explorer_vs_explorer"),
+      m("attack_explorer_vs_guard"),
+      m("attack_guard_vs_explorer"),
+    ],
+  );
+  add(battleAddr, battlePolicy);
+
+  // -- troop_management_systems --
+  const [mgmtAddr, mgmtPolicy] = system(
+    manifest,
+    "troop_management_systems",
+    [
+      m("guard_add"),
+      m("guard_delete"),
+      m("explorer_create"),
+      m("explorer_add"),
+      m("explorer_delete"),
+      m("explorer_explorer_swap"),
+      m("explorer_guard_swap"),
+      m("guard_explorer_swap"),
+    ],
+  );
+  add(mgmtAddr, mgmtPolicy);
+
+  // -- troop_movement_systems --
+  const [moveAddr, movePolicy] = system(
+    manifest,
+    "troop_movement_systems",
+    [m("explorer_move"), m("explorer_extract_reward")],
+  );
+  add(moveAddr, movePolicy);
+
+  // -- troop_movement_util_systems (dojo methods only) --
+  const [moveUtilAddr, moveUtilPolicy] = system(
+    manifest,
+    "troop_movement_util_systems",
+    [],
+  );
+  add(moveUtilAddr, moveUtilPolicy);
+
+  // -- troop_raid_systems --
+  const [raidAddr, raidPolicy] = system(manifest, "troop_raid_systems", [
+    m("raid_explorer_vs_guard"),
+  ]);
+  add(raidAddr, raidPolicy);
+
+  // -- village_systems --
+  const [villageAddr, villagePolicy] = system(manifest, "village_systems", [
+    m("upgrade"),
+    m("create"),
+  ]);
+  add(villageAddr, villagePolicy);
+
+  // -- VRF --
+  add(VRF_ADDRESS, {
+    methods: [
+      {
+        name: "VRF",
+        description: "Verifiable Random Function",
+        entrypoint: "request_random",
+      },
+    ],
+  });
+
+  // -- seasonPass: set_approval_for_all --
+  add(seasonPassAddress, { methods: [m("set_approval_for_all")] });
+
+  // -- villagePass: set_approval_for_all (second entry, merges with earlier) --
+  add(villagePassAddress, { methods: [m("set_approval_for_all")] });
+
+  return { contracts };
+}
