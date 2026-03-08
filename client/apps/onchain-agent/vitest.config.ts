@@ -48,5 +48,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    include: ["dev/test/**/*.test.ts"],
   },
 });

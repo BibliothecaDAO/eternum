@@ -50,7 +50,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // src/auth -> src -> onchain-agent -> apps -> client -> root
 const ROOT = resolve(__dirname, "..", "..", "..", "..", "..");
 
-function manifestPath(chain: Chain): string {
+export function manifestPath(chain: Chain): string {
   return resolve(ROOT, "contracts", "game", `manifest_${chain}.json`);
 }
 
@@ -109,8 +109,8 @@ const VRF_ADDRESS =
 // buildPolicies
 // ---------------------------------------------------------------------------
 
-export function buildPolicies(chain: Chain, tokens?: TokenAddresses): SessionPolicies {
-  const manifest = loadJson(manifestPath(chain));
+export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOverride?: any): SessionPolicies {
+  const manifest = manifestOverride ?? loadJson(manifestPath(chain));
   const addresses = loadJson(addressesPath(chain));
 
   const seasonPassAddress: string = addresses.seasonPass;
@@ -138,12 +138,24 @@ export function buildPolicies(chain: Chain, tokens?: TokenAddresses): SessionPol
 
   // -- entryToken (conditional) --
   if (tokens?.entryToken && tokens.entryToken !== "0x0") {
-    add(tokens.entryToken, { methods: [m("token_lock")] });
+    add(tokens.entryToken, {
+      methods: [{
+        name: "token_lock",
+        entrypoint: "token_lock",
+        description: "Lock entry token for game participation",
+      }],
+    });
   }
 
   // -- feeToken (conditional) --
   if (tokens?.feeToken) {
-    add(tokens.feeToken, { methods: [m("approve")] });
+    add(tokens.feeToken, {
+      methods: [{
+        name: "approve",
+        entrypoint: "approve",
+        description: "Approve fee token spending",
+      }],
+    });
   }
 
   // -- blitz_realm_systems (no dojo methods — matches game client) --

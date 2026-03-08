@@ -1,293 +1,207 @@
-import { isToriiAvailable, resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
-import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "./factory-sql";
-import { patchManifestWithFactory } from "./manifest-patcher";
-import { normalizeRpcUrl } from "./normalize";
-import type { WorldProfile } from "./types";
+/**
+ * World discovery — resolves a chain + world name into all the config
+ * the agent needs (torii URL, world address, RPC URL, contract addresses).
+ *
+ * Reuses shared factory utilities from @bibliothecadao/torii and
+ * common/factory/endpoints so the agent stays in sync with the game client.
+ */
 
-import manifestLocal from "../../../../../contracts/game/manifest_local.json";
-import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
-import manifestSepolia from "../../../../../contracts/game/manifest_sepolia.json";
-import manifestSlot from "../../../../../contracts/game/manifest_slot.json";
-import manifestSlottest from "../../../../../contracts/game/manifest_slottest.json";
+import {
+  FACTORY_QUERIES,
+  buildApiUrl,
+  fetchWithErrorHandling,
+} from "@bibliothecadao/torii";
+import type { Chain } from "../auth/policies.js";
 
-export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
+const CARTRIDGE_API = "https://api.cartridge.gg";
 
-export type GameStatus = "upcoming" | "ongoing" | "ended" | "unknown";
-
-export interface DiscoveredWorld {
-  name: string;
-  chain: Chain;
-  status: GameStatus;
+/** Factory SQL base URL per chain (mirrors common/factory/endpoints.ts). */
+function getFactorySqlBaseUrl(chain: Chain): string {
+  switch (chain) {
+    case "mainnet":
+      return `${CARTRIDGE_API}/x/eternum-factory-mainnet/torii/sql`;
+    case "sepolia":
+      return `${CARTRIDGE_API}/x/eternum-factory-sepolia/torii/sql`;
+    case "slot":
+    case "slottest":
+    case "local":
+      return `${CARTRIDGE_API}/x/eternum-factory-slot-d/torii/sql`;
+    default:
+      return "";
+  }
 }
 
-async function discoverSlotFactories(): Promise<string[]> {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-  const suffixes = "abcdefghijklmnopqrstuvwxyz".split("");
-  const probe = async (suffix: string): Promise<string | null> => {
-    const url = `${base}/x/eternum-factory-slot-${suffix}/torii/sql`;
+// ---------------------------------------------------------------------------
+// Helpers (mirrors game client's factory-resolver.ts / normalize.ts)
+// ---------------------------------------------------------------------------
+
+function normalizeSelector(v: string): string {
+  const body = (v.startsWith("0x") || v.startsWith("0X") ? v.slice(2) : v).toLowerCase();
+  return `0x${body.padStart(64, "0")}`;
+}
+
+function normalizeAddress(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") {
     try {
-      const res = await fetch(`${url}?query=${encodeURIComponent("SELECT 1 LIMIT 1;")}`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      return res.ok ? url : null;
+      const n = BigInt(value);
+      if (n <= 0n) return null;
+      return `0x${n.toString(16).padStart(64, "0")}`;
     } catch {
       return null;
     }
-  };
-  const results = await Promise.all(suffixes.map(probe));
-  return results.filter((url): url is string => url !== null);
-}
-
-let cachedSlotFactories: string[] | null = null;
-
-async function getFactorySqlBaseUrls(chain: Chain): Promise<string[]> {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-  switch (chain) {
-    case "mainnet":
-      return [`${base}/x/eternum-factory-mainnet/torii/sql`];
-    case "sepolia":
-      return [`${base}/x/eternum-factory-sepolia/torii/sql`];
-    case "slot":
-    case "slottest":
-    case "local":
-      if (!cachedSlotFactories) {
-        cachedSlotFactories = await discoverSlotFactories();
-      }
-      return cachedSlotFactories;
   }
+  if (typeof value === "bigint" && value > 0n) return `0x${value.toString(16).padStart(64, "0")}`;
+  return null;
 }
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
-
-function getDefaultRpcUrl(chain: Chain): string {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-  switch (chain) {
-    case "mainnet":
-      return `${base}/x/starknet/mainnet`;
-    case "sepolia":
-      return `${base}/x/starknet/sepolia`;
-    case "slot":
-    case "slottest":
-    case "local":
-      return `${base}/x/eternum-blitz-slot-4/katana`;
-  }
-}
-
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-
-const parseMaybeHexToNumber = (v: unknown): number | null => {
-  if (v == null) return null;
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === "string") {
     try {
-      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
     } catch {
       return null;
+    }
+  }
+  if (typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
+  return null;
+}
+
+function extractWorldAddress(row: Record<string, unknown>): string | null {
+  for (const key of ["address", "contract_address", "world_address", "worldAddress"]) {
+    const addr = normalizeAddress(row[key]);
+    if (addr) return addr;
+  }
+  const data = asRecord(row.data);
+  if (data) {
+    for (const key of ["address", "contract_address", "world_address", "worldAddress"]) {
+      const addr = normalizeAddress(data[key]);
+      if (addr) return addr;
     }
   }
   return null;
-};
-
-function deriveGameStatus(startMainAt: number | null, endAt: number | null): GameStatus {
-  const nowSec = Math.floor(Date.now() / 1000);
-  if (endAt != null && endAt > 0 && nowSec > endAt) return "ended";
-  if (startMainAt != null && startMainAt > 0 && nowSec >= startMainAt) return "ongoing";
-  if (startMainAt != null && startMainAt > 0 && nowSec < startMainAt) return "upcoming";
-  return "unknown";
 }
 
-async function checkWorldAvailability(worldName: string): Promise<{ available: boolean; status: GameStatus }> {
-  const toriiBaseUrl = buildToriiBaseUrl(worldName);
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
-  const available = await isToriiAvailable(toriiBaseUrl);
-  if (!available) return { available: false, status: "unknown" };
-
-  try {
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return { available: true, status: "unknown" };
-    const rows = (await res.json()) as Record<string, unknown>[];
-    const row = rows[0];
-    if (!row) return { available: true, status: "unknown" };
-
-    const startMainAt = parseMaybeHexToNumber(row.start_main_at);
-    const endAt = parseMaybeHexToNumber(row.end_at);
-    const status = deriveGameStatus(startMainAt, endAt);
-    return { available: true, status };
-  } catch {
-    return { available: true, status: "unknown" };
-  }
-}
-
-const DISCOVERABLE_CHAINS: Chain[] = ["slot", "sepolia", "mainnet"];
-
-async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> {
-  const factoryUrls = await getFactorySqlBaseUrls(chain);
-  if (factoryUrls.length === 0) return [];
-
-  const query = `SELECT name FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT 1000;`;
-  const seen = new Set<string>();
-  const candidates: { name: string; chain: Chain }[] = [];
-
-  // Query all factory endpoints for this chain in parallel
-  const allRows = await Promise.all(
-    factoryUrls.map(async (url) => {
-      try {
-        return await fetchFactoryRows(url, query);
-      } catch {
-        return [];
-      }
-    }),
-  );
-
-  for (const rows of allRows) {
-    for (const row of rows) {
-      const nameFelt = extractNameFelt(row);
-      if (!nameFelt) continue;
-      const name = decodePaddedFeltAscii(nameFelt);
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
-      candidates.push({ name, chain });
-    }
-  }
-
-  // Check availability + game status in parallel
-  const checks = await Promise.all(
-    candidates.map(async (c) => {
-      const { available, status } = await checkWorldAvailability(c.name);
-      return { ...c, available, status };
-    }),
-  );
-
-  // Only show worlds that are upcoming or actively ongoing
-  return checks
-    .filter((w) => w.status === "upcoming" || w.status === "ongoing")
-    .map(({ name, chain, status }) => ({ name, chain, status }));
-}
-
-export async function discoverAllWorlds(): Promise<DiscoveredWorld[]> {
-  const results = await Promise.all(DISCOVERABLE_CHAINS.map(discoverWorldsForChain));
-  return results.flat();
+export interface WorldInfo {
+  toriiUrl: string;
+  worldAddress: string;
+  rpcUrl: string;
+  /** Normalized selector → contract address, from the factory's wf-WorldContract table. */
+  contractsBySelector: Record<string, string>;
 }
 
 /**
- * Resolve a specific world by name, trying each chain directly.
- * More reliable than discoverAllWorlds() for a known world name because it
- * only needs the factory to resolve deployment data — not list all worlds.
+ * Resolve a world name + chain into the full connection info the agent needs.
+ *
+ * 1. Torii URL derived from the world name
+ * 2. World address from factory's wf-WorldDeployed table
+ * 3. Contract addresses from factory's wf-WorldContract table
+ * 4. RPC URL defaults based on chain
  */
-export async function findWorldByName(worldName: string): Promise<DiscoveredWorld | null> {
-  const attempts = await Promise.all(
-    DISCOVERABLE_CHAINS.map(async (chain): Promise<DiscoveredWorld | null> => {
-      try {
-        const { deployment } = await resolveFromFactories(chain, worldName);
-        if (deployment?.worldAddress) {
-          const { status } = await checkWorldAvailability(worldName);
-          return { name: worldName, chain, status };
-        }
-      } catch {
-        // Chain doesn't have this world
-      }
-      return null;
-    }),
-  );
-  return attempts.find((w): w is DiscoveredWorld => w !== null) ?? null;
-}
+export async function discoverWorld(chain: Chain, worldName: string): Promise<WorldInfo> {
+  const toriiUrl = `${CARTRIDGE_API}/x/${worldName}/torii`;
 
-const normalizeTokenAddress = (value: unknown): string | undefined => {
-  if (value == null) return undefined;
-  if (typeof value === "string") return value || undefined;
-  if (typeof value === "bigint") return `0x${value.toString(16)}`;
-  return undefined;
-};
-
-const TOKEN_CONFIG_QUERY = `SELECT "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-
-async function fetchTokenAddresses(
-  toriiBaseUrl: string,
-): Promise<{ entryTokenAddress?: string; feeTokenAddress?: string }> {
+  // Verify Torii is reachable
   try {
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(TOKEN_CONFIG_QUERY)}`;
-    const res = await fetch(url);
-    if (!res.ok) return {};
-    const rows = (await res.json()) as Record<string, unknown>[];
-    const row = rows[0];
-    if (!row) return {};
-    return {
-      entryTokenAddress: normalizeTokenAddress(row.entry_token_address),
-      feeTokenAddress: normalizeTokenAddress(row.fee_token),
-    };
-  } catch {
-    return {};
+    const res = await fetch(`${toriiUrl}/sql`, { method: "HEAD" });
+    if (!res.ok) throw new Error(`Torii not available: ${res.status}`);
+  } catch (err) {
+    throw new Error(
+      `Cannot reach Torii for world "${worldName}" at ${toriiUrl}: ${err instanceof Error ? err.message : err}`,
+    );
   }
-}
 
-async function resolveFromFactories(
-  chain: Chain,
-  worldName: string,
-): Promise<{
-  contractsBySelector: Record<string, string>;
-  deployment: { worldAddress: string | null; rpcUrl: string | null } | null;
-}> {
-  const factoryUrls = await getFactorySqlBaseUrls(chain);
-
-  // Try each factory URL until we find one with contracts for this world
-  for (const factoryUrl of factoryUrls) {
-    try {
-      const [contractsBySelector, deployment] = await Promise.all([
-        resolveWorldContracts(factoryUrl, worldName),
-        resolveWorldDeploymentFromFactory(factoryUrl, worldName),
-      ]);
-      if (Object.keys(contractsBySelector).length > 0 || deployment?.worldAddress) {
-        return { contractsBySelector, deployment };
-      }
-    } catch {
-      // Try next factory
-    }
+  // Resolve from factory
+  const factoryUrl = getFactorySqlBaseUrl(chain);
+  if (!factoryUrl) {
+    throw new Error(`No factory endpoint for chain "${chain}"`);
   }
-  return { contractsBySelector: {}, deployment: null };
-}
 
-export async function buildWorldProfile(chain: Chain, worldName: string): Promise<WorldProfile> {
-  const { contractsBySelector, deployment } = await resolveFromFactories(chain, worldName);
+  // Run both factory queries in parallel
+  const [deployedRows, contractRows] = await Promise.all([
+    fetchWithErrorHandling<Record<string, unknown>>(
+      buildApiUrl(factoryUrl, FACTORY_QUERIES.WORLD_DEPLOYED_BY_PADDED_NAME(nameToPaddedFelt(worldName))),
+      `Factory lookup failed for world "${worldName}"`,
+    ),
+    fetchWithErrorHandling<{ contract_address: string; contract_selector: string }>(
+      buildApiUrl(factoryUrl, FACTORY_QUERIES.WORLD_CONTRACTS_BY_PADDED_NAME(nameToPaddedFelt(worldName))),
+      `Factory contract lookup failed for world "${worldName}"`,
+    ),
+  ]);
 
-  const worldAddress = deployment?.worldAddress;
+  if (deployedRows.length === 0) {
+    throw new Error(`World "${worldName}" not found in factory for chain "${chain}"`);
+  }
+
+  const worldAddress = extractWorldAddress(deployedRows[0]);
   if (!worldAddress) {
-    throw new Error(`Could not resolve world address for "${worldName}" on ${chain}`);
+    throw new Error(`Could not extract world address for "${worldName}" from factory`);
   }
 
-  const toriiBaseUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
-  const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? getDefaultRpcUrl(chain));
+  // Build selector → address map (same as game client's resolveWorldContracts)
+  const contractsBySelector: Record<string, string> = {};
+  for (const row of contractRows) {
+    const key = normalizeSelector(row.contract_selector);
+    contractsBySelector[key] = row.contract_address;
+  }
 
-  const { entryTokenAddress, feeTokenAddress } = await fetchTokenAddresses(toriiBaseUrl);
+  // Default RPC based on chain
+  const rpcUrl =
+    chain === "sepolia"
+      ? `${CARTRIDGE_API}/x/starknet/sepolia`
+      : `${CARTRIDGE_API}/x/starknet/mainnet`;
 
-  return {
-    name: worldName,
-    chain,
-    toriiBaseUrl,
-    rpcUrl,
-    worldAddress,
-    contractsBySelector,
-    entryTokenAddress,
-    feeTokenAddress,
-    fetchedAt: Date.now(),
-  };
+  return { toriiUrl, worldAddress, rpcUrl, contractsBySelector };
 }
 
-const EMBEDDED_MANIFESTS: Record<Chain, { contracts: unknown[] }> = {
-  slot: manifestSlot as unknown as { contracts: unknown[] },
-  slottest: manifestSlottest as unknown as { contracts: unknown[] },
-  local: manifestLocal as unknown as { contracts: unknown[] },
-  sepolia: manifestSepolia as unknown as { contracts: unknown[] },
-  mainnet: manifestMainnet as unknown as { contracts: unknown[] },
-};
+// ---------------------------------------------------------------------------
+// Manifest patching (mirrors game client's manifest-patcher.ts)
+// ---------------------------------------------------------------------------
 
-export async function buildResolvedManifest(chain: Chain, profile: WorldProfile): Promise<{ contracts: unknown[] }> {
-  const baseManifest = EMBEDDED_MANIFESTS[chain];
-  if (!baseManifest) {
-    throw new Error(`No embedded manifest for chain: ${chain}`);
+/**
+ * Returns a new manifest with contract addresses overwritten from the factory map
+ * and the world address set. This is the same logic as the game client's
+ * `patchManifestWithFactory`.
+ */
+export function patchManifest(
+  baseManifest: any,
+  worldAddress: string,
+  contractsBySelector: Record<string, string>,
+): any {
+  const manifest = JSON.parse(JSON.stringify(baseManifest));
+
+  if (manifest?.world) {
+    manifest.world.address = worldAddress;
   }
 
-  return patchManifestWithFactory(baseManifest, profile.worldAddress, profile.contractsBySelector);
+  if (Array.isArray(manifest?.contracts)) {
+    manifest.contracts = manifest.contracts.map((c: any) => {
+      if (!c?.selector) return c;
+      const key = normalizeSelector(c.selector);
+      const addr = contractsBySelector[key];
+      if (addr) {
+        return { ...c, address: addr };
+      }
+      return c;
+    });
+  }
+
+  return manifest;
+}
+
+// ---------------------------------------------------------------------------
+// Internal
+// ---------------------------------------------------------------------------
+
+function nameToPaddedFelt(name: string): string {
+  const bytes = new TextEncoder().encode(name);
+  let hex = "";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return `0x${hex.padStart(64, "0")}`;
 }

@@ -19,6 +19,7 @@ import {
   ChestTile,
   EntityWithRelics,
   EventType,
+  ExplorerData,
   Guard,
   GuardData,
   Hyperstructure,
@@ -52,6 +53,17 @@ import {
   hexToBigInt,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
+import {
+  CONFIG_QUERIES,
+  parseGameConfig,
+  type BuildingCategoryConfigRow,
+  type BuildingConfigRow,
+  type GameConfig,
+  type ResourceFactoryConfigRow,
+  type ResourceListRow,
+  type StructureLevelConfigRow,
+  type StaminaConfigRow,
+} from "./config";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 import {
@@ -162,6 +174,16 @@ export class SqlApi {
     const query = STRUCTURE_QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", formattedOwner);
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch structures by owner");
+  }
+
+  /**
+   * Fetch explorer IDs belonging to a set of structure entity IDs.
+   */
+  async fetchExplorersByStructures(structureIds: number[]): Promise<{ explorer_id: number }[]> {
+    const idList = structureIds.join(",");
+    const query = STRUCTURE_QUERIES.EXPLORERS_BY_STRUCTURES.replace("{structureIds}", idList);
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<{ explorer_id: number }>(url, "Failed to fetch explorers by structures");
   }
 
   /**
@@ -359,6 +381,17 @@ export class SqlApi {
 
     const firstResult = extractFirstOrNull(results);
     return firstResult?.address_owner ?? null;
+  }
+
+  /**
+   * Fetch a single explorer by entity ID with owner info.
+   * SQL queries always return arrays, so we extract the first result.
+   */
+  async fetchExplorerById(entityId: ID): Promise<ExplorerData | null> {
+    const query = BATTLE_QUERIES.EXPLORER_BY_ID.replace("{entityId}", entityId.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<ExplorerData>(url, "Failed to fetch explorer by ID");
+    return extractFirstOrNull(results);
   }
 
   /**
@@ -911,5 +944,41 @@ export class SqlApi {
     });
 
     return match ?? null;
+  }
+
+  /**
+   * Fetch game configuration from on-chain tables: building costs, production recipes,
+   * resource lists, and world config. Queries are run in parallel.
+   * Returns a parsed GameConfig ready for use by automation and other consumers.
+   */
+  async fetchGameConfig(): Promise<GameConfig> {
+    const [buildingRows, factoryRows, resourceListRows, buildingConfigRows, levelConfigRows, staminaConfigRows] = await Promise.all([
+      fetchWithErrorHandling<BuildingCategoryConfigRow>(
+        buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CATEGORY_CONFIGS),
+        "Failed to fetch building category configs",
+      ),
+      fetchWithErrorHandling<ResourceFactoryConfigRow>(
+        buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_FACTORY_CONFIGS),
+        "Failed to fetch resource factory configs",
+      ),
+      fetchWithErrorHandling<ResourceListRow>(
+        buildApiUrl(this.baseUrl, CONFIG_QUERIES.RESOURCE_LIST),
+        "Failed to fetch resource list",
+      ),
+      fetchWithErrorHandling<BuildingConfigRow>(
+        buildApiUrl(this.baseUrl, CONFIG_QUERIES.BUILDING_CONFIG),
+        "Failed to fetch building config",
+      ),
+      fetchWithErrorHandling<StructureLevelConfigRow>(
+        buildApiUrl(this.baseUrl, CONFIG_QUERIES.STRUCTURE_LEVEL_CONFIGS),
+        "Failed to fetch structure level configs",
+      ),
+      fetchWithErrorHandling<StaminaConfigRow>(
+        buildApiUrl(this.baseUrl, CONFIG_QUERIES.STAMINA_CONFIG),
+        "Failed to fetch stamina config",
+      ),
+    ]);
+
+    return parseGameConfig(buildingRows, factoryRows, resourceListRows, extractFirstOrNull(buildingConfigRows), levelConfigRows, extractFirstOrNull(staminaConfigRows));
   }
 }
