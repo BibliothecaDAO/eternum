@@ -1957,7 +1957,7 @@
     },
     {
       "address": "0x5275c85f31840e11f5ac56a3bf55bc58ee0da80e6731187403e11ca49d02157",
-      "class_hash": "0x809e9340097f9cbb57fec826a0478429b4a26d08855491beb7d74fca9d8453",
+      "class_hash": "0x53b458cfc221488c46b3f98e9acddbdcea794f289cbe9901a02d4ad2f3cb26c",
       "init_calldata": [],
       "tag": "s1_eternum-bank_systems",
       "selector": "0x44475a775d79049bbe99567b7c00a1e4d8d582cade61a8aec07ca3bb234f6e6",
@@ -2209,7 +2209,7 @@
     },
     {
       "address": "0x416c1e30a7bc12adc03b83a0a93524c1cccea0487521779cb1662233a0da9a9",
-      "class_hash": "0x1469c32184e459e5cc84a6a4298eef0ab021f7ffba612edce0e8c381d31c50d",
+      "class_hash": "0xf28cf32194002540e77a0e5c8373fc7af4951badbb89f9a48d2fa25af2dd1e",
       "init_calldata": [],
       "tag": "s1_eternum-blitz_realm_systems",
       "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",
@@ -4709,7 +4709,7 @@
     },
     {
       "address": "0x67ad93efe6d2d7e287cce4ce50c9fde305bc1c2b91587c2a006063b4c0ef917",
-      "class_hash": "0x5f89ae4ab81efda3a6733db539296ef577801119a3602764e2f4fcad001781c",
+      "class_hash": "0x3aff77faad4ceebee33abe6938edfc0ac8cc6a5141ad6d057b240fc8d040cb6",
       "init_calldata": [],
       "tag": "s1_eternum-hyperstructure_discovery_systems",
       "selector": "0x4de7ee78f9f01b8f7b98c172552cc0f7b81c8706ffc85e7b831021e820420d1",
@@ -5743,7 +5743,7 @@
     },
     {
       "address": "0x2f63d32697fc3148f1f447728c96c7428f9a568687866a10b31c1e139eeb13",
-      "class_hash": "0x4c9f1a7d63af79ee13c56b068e5bc8784b3027f37ddf1dd932d52b22079d095",
+      "class_hash": "0x2b6bdeb87223033da10a5f21dd6dd20c52305485b83afc5f1288be03b245e5d",
       "init_calldata": [],
       "tag": "s1_eternum-mine_discovery_systems",
       "selector": "0x567d970e2796f641f9a9c23fa16378ddaee5c8a7d27ac4e3edbd4dfa25a1743",
@@ -6663,7 +6663,7 @@
     },
     {
       "address": "0x1028ed06d96696895ed4ddea3556ddcab927fc15ce3015d02f43cd6f3427cd8",
-      "class_hash": "0x412bf2f767bf3d37b0d012b769da8a620b486c61dad3df05cae466ee23cf543",
+      "class_hash": "0x29822ca8c3f92f827c93f14d77577e33a75aa5b046c8e2fd9eb3b1d2037452c",
       "init_calldata": [],
       "tag": "s1_eternum-prize_distribution_systems",
       "selector": "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179",
@@ -7496,7 +7496,7 @@
     },
     {
       "address": "0x383a03ae0c8ba82ef6f62f4ce2a345c32ca5a93b7972e4ce55fb210fac1627d",
-      "class_hash": "0x616f59a97ce480a947756267e927789a91a6c6b7fd9e6a9a80e292f57132cda",
+      "class_hash": "0x59831a307c2ee394485a424ce8faf92917c9d43ae0b8f9d5dd68c1ed5cc988a",
       "init_calldata": [],
       "tag": "s1_eternum-realm_internal_systems",
       "selector": "0x4bb1850a95a41d6b0c7992a0c75bb1212f0ea054dc04866d6a6392cccec58b3",
@@ -12128,7 +12128,7 @@
     },
     {
       "address": "0x6e9870b9ddf86c542486a51748a88c1419232409f33e1221ca2d348c17a68c4",
-      "class_hash": "0x7aa314438682b34cfea146ac15e4eee20cf9abbca5197935e7cf2687cc4ea62",
+      "class_hash": "0x7858a24fbac49562534f3b4a38d321fd63ac5f0a13bca1f49592dde054d8a20",
       "init_calldata": [],
       "tag": "s1_eternum-village_discovery_systems",
       "selector": "0x52ecb1dffcd93e8b7f1379f426b123cc1de850735306874424bf8fe817f3862",
@@ -12605,7 +12605,7 @@
     },
     {
       "address": "0x63e6e29aa02282412ceb2b6ac350efa9a305a135e74a115d4f6442eee40ef91",
-      "class_hash": "0x74ef3f46f63673d8580f016cee71f8e2db14901077ce19fb077d898534fca35",
+      "class_hash": "0x257246351c72374c9f8c4a2b902420c77e9d19d72339bb099802f5d51e23127",
       "init_calldata": [],
       "tag": "s1_eternum-village_systems",
       "selector": "0x7626c7e3f63dbae9658ee764d453a8dbdbc0df9797ba797fa6564759c444771",
@@ -12871,10 +12871,10 @@
     },
     {
       "class_hash": "0x24a1a563c5b25df4ef2640fe0dc0fa7352f299cfd30684f95d2469433780c70",
-      "tag": "s1_eternum-structure_creation_library_v0_1_12",
+      "tag": "s1_eternum-structure_creation_library_v0_1_14",
       "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
       "systems": [],
-      "version": "0_1_12"
+      "version": "0_1_14"
     }
   ],
   "models": [
