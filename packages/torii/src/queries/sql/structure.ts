@@ -35,7 +35,7 @@ export const STRUCTURE_QUERIES = {
         internal_updated_at,
         resources_packed
     FROM \`s1_eternum-Structure\`
-    WHERE \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y};
+    WHERE \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y}
     LIMIT 1;
   `,
 
@@ -314,5 +314,12 @@ export const STRUCTURE_QUERIES = {
   LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
   
   ORDER BY et.explorer_id;
+  `,
+
+  EXPLORERS_BY_STRUCTURES: `
+    SELECT explorer_id
+    FROM [s1_eternum-ExplorerTroops]
+    WHERE owner IN ({structureIds})
+      AND \`troops.count\` != '0x0';
   `,
 } as const;

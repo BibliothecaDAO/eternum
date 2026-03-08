@@ -8,7 +8,7 @@ export interface RealmStatus {
   buildOrderProgress: string;
   tickResult: TickResult;
   essencePulse: { balance: number; sufficient: boolean };
-  wheatPulse: { balance: number; low: boolean; movesRemaining: number };
+  wheatPulse: { balance: number; low: boolean };
 }
 
 export interface StatusInput {
@@ -28,7 +28,7 @@ export function formatStatus(input: StatusInput): string {
     lines.push(`--- ${realm.realmName} (entity ${realm.realmEntityId}) ---`);
     lines.push(`Level: ${realm.level} | Build order: ${realm.buildOrderProgress}`);
 
-    if (r.built) lines.push(`Built: ${r.built}`);
+    if (r.built.length > 0) lines.push(`Built: ${r.built.join(", ")}`);
     if (r.upgraded) lines.push(`Upgraded: ${r.upgraded}`);
     lines.push(`Production: ${r.produced ? "executed" : "skipped"}`);
     if (r.idle) lines.push(`Status: Idle`);
@@ -36,7 +36,7 @@ export function formatStatus(input: StatusInput): string {
     const ess = realm.essencePulse;
     lines.push(`Essence: ${ess.balance}${ess.sufficient ? "" : " (INSUFFICIENT)"}`);
     const wh = realm.wheatPulse;
-    lines.push(`Wheat: ${wh.balance} (~${wh.movesRemaining} moves)${wh.low ? " LOW" : ""}`);
+    lines.push(`Wheat: ${wh.balance}${wh.low ? " LOW" : ""}`);
 
     if (r.errors.length > 0) {
       lines.push(`Errors: ${r.errors.join("; ")}`);

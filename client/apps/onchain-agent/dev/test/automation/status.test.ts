@@ -14,14 +14,14 @@ describe("formatStatus", () => {
           buildOrderProgress: "6/13",
           tickResult: {
             realmEntityId: 100,
-            built: "CoalMine",
+            built: ["CoalMine"],
             upgraded: null,
             produced: true,
             idle: false,
             errors: [],
           },
           essencePulse: { balance: 200, sufficient: true },
-          wheatPulse: { balance: 5000, low: false, movesRemaining: 250 },
+          wheatPulse: { balance: 5000, low: false,  },
         },
       ],
     });
@@ -43,14 +43,14 @@ describe("formatStatus", () => {
         buildOrderProgress: "13/13",
         tickResult: {
           realmEntityId: 100,
-          built: null,
+          built: [],
           upgraded: null,
           produced: false,
           idle: true,
           errors: [],
         },
         essencePulse: { balance: 0, sufficient: true },
-        wheatPulse: { balance: 100, low: true, movesRemaining: 5 },
+        wheatPulse: { balance: 100, low: true,  },
       }],
     });
 

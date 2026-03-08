@@ -2,8 +2,8 @@ import { getNeighborHexes, Direction } from "@bibliothecadao/types";
 
 const CENTER: [number, number] = [10, 10];
 
-// Max rings per realm level: Settlement=1, City=2, Kingdom=3, Empire=4
-const LEVEL_TO_MAX_RING: Record<number, number> = { 1: 1, 2: 2, 3: 3, 4: 4 };
+// Max rings per realm level (0-indexed): Settlement=1, City=2, Kingdom=3, Empire=4
+const LEVEL_TO_MAX_RING: Record<number, number> = { 0: 1, 1: 2, 2: 3, 3: 4 };
 
 /**
  * BFS from start to end on the inner hex grid, returning Direction[] path.
@@ -95,4 +95,26 @@ export function findOpenSlot(occupied: Set<string>, level: number): SlotResult |
   }
 
   return null;
+}
+
+/**
+ * Find up to `count` open build slots on a realm.
+ * Returns a mutable Set of occupied positions that includes the newly claimed slots.
+ */
+export function findOpenSlots(
+  occupied: Set<string>,
+  level: number,
+  count: number,
+): { slots: SlotResult[]; updatedOccupied: Set<string> } {
+  const working = new Set(occupied);
+  const slots: SlotResult[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const slot = findOpenSlot(working, level);
+    if (!slot) break;
+    slots.push(slot);
+    working.add(`${slot.col},${slot.row}`);
+  }
+
+  return { slots, updatedOccupied: working };
 }

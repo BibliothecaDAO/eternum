@@ -10,7 +10,7 @@ function makeProvider() {
 }
 
 describe("executeRealmTick", () => {
-  it("executes a build intent", async () => {
+  it("executes a single build action", async () => {
     const provider = makeProvider();
     const signer = {} as any;
 
@@ -18,18 +18,39 @@ describe("executeRealmTick", () => {
       provider: provider as any,
       signer,
       realmEntityId: 100,
-      buildIntent: {
-        action: "build" as const,
+      buildActions: [{
         step: { building: 4, label: "CoalMine" },
-        index: 2,
         slot: { col: 11, row: 10, directions: [0] },
-      },
+        useSimple: false,
+      }],
       upgradeIntent: null,
       productionCalls: null,
     });
 
     expect(provider.create_building).toHaveBeenCalledOnce();
-    expect(result.built).toBe("CoalMine");
+    expect(result.built).toEqual(["CoalMine"]);
+  });
+
+  it("executes multiple build actions in parallel", async () => {
+    const provider = makeProvider();
+    const signer = {} as any;
+
+    const result = await executeRealmTick({
+      provider: provider as any,
+      signer,
+      realmEntityId: 100,
+      buildActions: [
+        { step: { building: 4, label: "CoalMine" }, slot: { col: 11, row: 10, directions: [0] }, useSimple: false },
+        { step: { building: 5, label: "WoodMill" }, slot: { col: 9, row: 10, directions: [3] }, useSimple: false },
+        { step: { building: 6, label: "CopperSmelter" }, slot: { col: 10, row: 11, directions: [1] }, useSimple: true },
+      ],
+      upgradeIntent: null,
+      productionCalls: null,
+    });
+
+    expect(provider.create_building).toHaveBeenCalledTimes(3);
+    expect(result.built).toEqual(["CoalMine", "WoodMill", "CopperSmelter"]);
+    expect(result.idle).toBe(false);
   });
 
   it("executes an upgrade intent", async () => {
@@ -40,7 +61,7 @@ describe("executeRealmTick", () => {
       provider: provider as any,
       signer,
       realmEntityId: 100,
-      buildIntent: null,
+      buildActions: [],
       upgradeIntent: { fromLevel: 1, fromName: "Settlement", toName: "City" },
       productionCalls: null,
     });
@@ -57,7 +78,7 @@ describe("executeRealmTick", () => {
       provider: provider as any,
       signer,
       realmEntityId: 100,
-      buildIntent: null,
+      buildActions: [],
       upgradeIntent: null,
       productionCalls: {
         resourceToResource: [{ resource_id: 3, cycles: 10 }],
@@ -77,7 +98,7 @@ describe("executeRealmTick", () => {
       provider: provider as any,
       signer,
       realmEntityId: 100,
-      buildIntent: null,
+      buildActions: [],
       upgradeIntent: null,
       productionCalls: null,
     });

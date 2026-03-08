@@ -1,5 +1,6 @@
 import SessionProvider from "@cartridge/controller/session/node";
 import type { WalletAccount } from "starknet";
+import { shortString } from "starknet";
 import { buildPolicies, type Chain, type TokenAddresses } from "./policies.js";
 
 export interface SessionConfig {
@@ -13,6 +14,8 @@ export interface SessionConfig {
   tokens?: TokenAddresses;
   /** Directory for session persistence. Default: ".cartridge" */
   basePath?: string;
+  /** Pre-loaded manifest (e.g. patched with factory-discovered addresses). */
+  manifest?: any;
 }
 
 let provider: SessionProvider | null = null;
@@ -34,11 +37,15 @@ export function resetProvider(): void {
 export function getProvider(config: SessionConfig): SessionProvider {
   if (provider) return provider;
 
-  const policies = buildPolicies(config.chain, config.tokens);
+  const policies = buildPolicies(config.chain, config.tokens, config.manifest);
+
+  // The WASM session account expects chainId as a felt, not a human-readable
+  // string like "SN_MAIN". Encode the short string to its felt hex representation.
+  const chainIdFelt = shortString.encodeShortString(config.chainId);
 
   provider = new SessionProvider({
     rpc: config.rpcUrl,
-    chainId: config.chainId,
+    chainId: chainIdFelt,
     policies,
     basePath: config.basePath ?? ".cartridge",
   });
@@ -46,21 +53,39 @@ export function getProvider(config: SessionConfig): SessionProvider {
   return provider;
 }
 
+const POLL_INTERVAL_MS = 3_000;
+const POLL_TIMEOUT_MS = 5 * 60 * 1_000; // 5 minutes
+
 /**
  * Connect and return an authenticated WalletAccount.
  *
- * First run: prints a URL to open in a browser for one-time session approval.
- * Subsequent runs: reconnects from saved session on disk.
- *
- * Throws if connection fails or session is expired and re-auth is not completed.
+ * If no valid session exists (first run or expired), the SDK prints an auth URL.
+ * This function polls until the user completes the browser flow or the timeout is reached.
  */
 export async function getAccount(config: SessionConfig): Promise<WalletAccount> {
   const p = getProvider(config);
+
+  // First attempt — may return account immediately if session is valid
   const account = await p.connect();
-  if (!account) {
-    throw new Error(
-      "Cartridge session not established. Open the printed URL in a browser to authorize.",
-    );
+  if (account) return account;
+
+  // No session — the SDK has printed an auth URL. Poll until the user completes it.
+  console.log("\nNo active session. Complete the authorization in your browser.");
+  console.log("Waiting for session approval...\n");
+
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+
+    const retryAccount = await p.connect();
+    if (retryAccount) {
+      console.log("Session established.");
+      return retryAccount;
+    }
   }
-  return account;
+
+  throw new Error(
+    "Session authorization timed out after 5 minutes. Run the agent again to get a new auth URL.",
+  );
 }

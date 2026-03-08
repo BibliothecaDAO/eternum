@@ -6,6 +6,25 @@ export const BATTLE_QUERIES = {
     WHERE e.explorer_id = {entityId};
   `,
 
+  EXPLORER_BY_ID: `
+    SELECT
+      e.explorer_id,
+      e.owner,
+      e.\`troops.category\` AS troop_category,
+      e.\`troops.tier\` AS troop_tier,
+      e.\`troops.count\` AS troop_count,
+      e.\`troops.stamina.amount\` AS max_stamina,
+      e.\`troops.stamina.updated_tick\` AS last_refill_tick,
+      e.\`coord.x\` AS coord_x,
+      e.\`coord.y\` AS coord_y,
+      s.owner AS owner_address,
+      sos.name AS owner_name
+    FROM \`s1_eternum-ExplorerTroops\` e
+    LEFT JOIN \`s1_eternum-Structure\` s ON s.entity_id = e.owner
+    LEFT JOIN \`s1_eternum-StructureOwnerStats\` sos ON sos.owner = s.owner
+    WHERE e.explorer_id = {entityId};
+  `,
+
   BATTLE_LOGS: `
     SELECT 
         'ExplorerNewRaidEvent' as event_type,

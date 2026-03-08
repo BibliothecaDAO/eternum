@@ -182,11 +182,20 @@ export async function main() {
 
   bootstrapDataDir(config.dataDir);
 
+  // Load and patch manifest before auth so session policies use the correct
+  // contract addresses for this world (factory-discovered addresses differ
+  // from the base mainnet manifest).
+  let manifest = JSON.parse(readFileSync(manifestPath(config.chain), "utf-8"));
+  if (contractsBySelector) {
+    manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
+  }
+
   console.log(`Eternum Agent starting...`);
   console.log(`  Chain: ${config.chain}`);
   console.log(`  World: ${config.worldAddress}`);
   console.log(`  Data: ${config.dataDir}`);
   console.log(`  Model: ${config.modelProvider}/${config.modelId}`);
+  console.log(`  VRF: ${config.vrfProviderAddress.slice(0, 10)}...`);
 
   // 1. Auth — get a signed account (session stored in world dataDir)
   const account = await getAccount({
@@ -194,16 +203,21 @@ export async function main() {
     rpcUrl: config.rpcUrl,
     chainId: config.chainId,
     basePath: join(config.dataDir, ".cartridge"),
+    manifest,
   });
   console.log(`  Account: ${account.address}`);
 
   // 2. Create headless client (reads) + provider (writes)
   const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
-  let manifest = JSON.parse(readFileSync(manifestPath(config.chain), "utf-8"));
-  if (contractsBySelector) {
-    manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
-  }
-  const provider = new EternumProvider(manifest, config.rpcUrl);
+  const provider = new EternumProvider(manifest, config.rpcUrl, config.vrfProviderAddress);
+
+  // 2b. Load game config from Torii (building costs, production recipes)
+  const gameConfig = await (client.sql as any).fetchGameConfig();
+  console.log(
+    `  Game config: ${Object.keys(gameConfig.buildingCosts).length} buildings, ` +
+    `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
+    `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
+  );
 
   // 3. Shared contexts
   const mapFilePath = join(config.dataDir, "map.txt");
@@ -214,7 +228,7 @@ export async function main() {
   const tools: AgentTool[] = [
     ...createReadOnlyTools(config.dataDir),
     createInspectTool(client, mapCtx),
-    createMoveTool(client, mapCtx, account.address, txCtx),
+    createMoveTool(client, mapCtx, account.address, txCtx, gameConfig),
     createAttackTool(client, mapCtx, account.address, txCtx),
     createCreateArmyTool(client, mapCtx, account.address, txCtx),
   ];
@@ -248,9 +262,57 @@ export async function main() {
     },
   });
 
+  // 6b. Log agent events so we can see what the LLM is doing
+  agent.subscribe((event) => {
+    switch (event.type) {
+      case "agent_start":
+        console.log("[AGENT] thinking...");
+        break;
+      case "tool_execution_start":
+        console.log(`[AGENT] tool call: ${event.toolName}(${JSON.stringify(event.args).slice(0, 200)})`);
+        break;
+      case "tool_execution_end": {
+        const resultText = event.result?.content
+          ?.filter((b: any) => b.type === "text")
+          ?.map((b: any) => b.text)
+          ?.join("")
+          ?.slice(0, 300) ?? "";
+        console.log(`[AGENT] tool result: ${event.toolName} ${event.isError ? "ERROR" : "ok"} — ${resultText}`);
+        break;
+      }
+      case "message_end": {
+        const msg = event.message as any;
+        if (msg.role === "assistant" && typeof msg.content === "string" && msg.content.length > 0) {
+          console.log(`[AGENT] says: ${msg.content.slice(0, 300)}`);
+        } else if (msg.role === "assistant" && Array.isArray(msg.content)) {
+          const text = msg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+          if (text.length > 0) console.log(`[AGENT] says: ${text.slice(0, 300)}`);
+        }
+        break;
+      }
+      case "agent_end":
+        console.log("[AGENT] turn complete");
+        break;
+    }
+  });
+
   // 7. Map loop — refreshes tile data in the background
   const mapLoop = createMapLoop(client, mapCtx, account.address);
   mapLoop.start();
+  mapCtx.refresh = () => mapLoop.refresh();
+
+  // Wait for first map load before starting the agent — otherwise the LLM
+  // gets "Map not yet loaded" and wastes its first turn guessing coordinates.
+  console.log("Waiting for first map load...");
+  for (let i = 0; i < 30; i++) {
+    if (mapCtx.snapshot) break;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  if (mapCtx.snapshot) {
+    console.log(`  Map loaded: ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols, ${mapCtx.snapshot.tiles.length} tiles`);
+  } else {
+    console.log("  WARNING: Map failed to load within 30s, starting agent anyway");
+  }
 
   // 7b. Automation loop — builds, upgrades, and produces across all owned realms
   const automationLoop = createAutomationLoop(
@@ -260,15 +322,33 @@ export async function main() {
     account.address,
     config.dataDir,
     mapCtx,
+    gameConfig,
   );
   automationLoop.start();
 
-  // 8. Tick loop — uses followUp so ticks never interrupt tool execution.
-  //    With one-at-a-time mode, if the agent is still busy when the next
-  //    tick fires, only the latest tick prompt survives in the queue.
+  // 8. Tick loop — prompt() when idle, steer() when busy (matches game-agent pattern).
   const EVOLUTION_INTERVAL = 10; // evolve every N ticks
   let tickCount = 0;
   let evolving = false;
+  let agentBusy = false;
+
+  function runAgentTick() {
+    if (agentBusy) {
+      // Let the agent finish its current turn — the next prompt() will
+      // include fresh map data. Steering mid-turn just kills in-flight
+      // tool calls ("Skipped due to queued user message") and wastes work.
+      return;
+    }
+    const prompt = buildTickPrompt(mapCtx);
+    agentBusy = true;
+    agent.prompt(prompt).then(
+      () => { agentBusy = false; },
+      (err) => {
+        agentBusy = false;
+        console.error("Agent error:", err instanceof Error ? err.message : err);
+      },
+    );
+  }
 
   const tickTimer = setInterval(() => {
     tickCount++;
@@ -280,17 +360,11 @@ export async function main() {
         .finally(() => { evolving = false; });
     }
 
-    agent.followUp({
-      role: "user" as const,
-      content: buildTickPrompt(mapCtx),
-      timestamp: Date.now(),
-    });
+    runAgentTick();
   }, config.tickIntervalMs);
 
   // Kick off the first turn immediately
-  agent.prompt(buildTickPrompt(mapCtx)).catch((err) => {
-    console.error("Agent error:", err instanceof Error ? err.message : err);
-  });
+  runAgentTick();
 
   console.log(`Agent running (tick every ${config.tickIntervalMs / 1000}s). Ctrl+C to stop.`);
 

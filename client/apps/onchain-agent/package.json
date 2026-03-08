@@ -4,32 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "source .env && NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/cli.ts run",
-    "doctor": "source .env && NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/cli.ts doctor",
-    "init": "source .env && NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/cli.ts init",
-    "build:standalone": "bun run build.ts --compile",
-    "package:release": "tsx src/release/package-release.ts",
+    "dev": "NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/entry/index.ts",
     "build": "tsc --noEmit",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@bibliothecadao/client": "workspace:*",
-    "@bibliothecadao/game-agent": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@cartridge/controller": "^0.13.9",
     "@cartridge/controller-wasm": "^0.9.6",
     "@mariozechner/pi-agent-core": "^0.52.7",
     "@mariozechner/pi-ai": "^0.52.7",
-    "@mariozechner/pi-tui": "^0.52.7",
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@mariozechner/pi-coding-agent": "^0.52.7",
     "starknet": "catalog:",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@types/qrcode": "^1.5.6",
     "@vitest/coverage-v8": "^3.2.4",
     "typescript": "^5.7.0",
     "vitest": "^3.2.0"
