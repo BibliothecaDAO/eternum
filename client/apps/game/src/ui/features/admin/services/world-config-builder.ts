@@ -163,7 +163,7 @@ export const buildWorldConfigForFactory = ({
 
   const registrationCountMax = hasValue(overrides.registrationCountMax)
     ? parseNonNegativeNumber(overrides.registrationCountMax!, "Registration count max")
-    : 30;
+    : 24;
 
   const registrationDelaySeconds = hasValue(overrides.registrationDelaySeconds)
     ? parseNonNegativeNumber(overrides.registrationDelaySeconds!, "Registration delay seconds")
