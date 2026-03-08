@@ -1,4 +1,4 @@
-import { sqlApi } from "@/services/api";
+import { createSqlApi, sqlApi } from "@/services/api";
 import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
@@ -55,6 +55,9 @@ export interface ScoreToBeatEntrySummary {
   address: string;
   displayName: string | null;
   combinedPoints: number;
+  /** All endpoint runs for the player, sorted desc by points. */
+  allRuns: ScoreToBeatRun[];
+  /** Best N runs used for combined score. */
   runs: ScoreToBeatRun[];
   totalRuns: number;
   staticGames: ScoreToBeatStaticGameBreakdown[];
@@ -595,7 +598,7 @@ export const fetchLandingLeaderboard = async (
   offset: number = 0,
   toriiBaseUrl?: string,
 ): Promise<PlayerLeaderboardData[]> => {
-  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl) : sqlApi;
   return fetchLeaderboardWithClient(client, limit, offset);
 };
 
@@ -608,7 +611,7 @@ export const fetchLandingLeaderboardEntryByAddress = async (
     return null;
   }
 
-  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl) : sqlApi;
   const rawRow = await client.fetchPlayerLeaderboardByAddress(normalizedAddress);
 
   if (!rawRow) {
@@ -697,7 +700,7 @@ const fetchLeaderboardForEndpoint = async (
   return {
     endpoint,
     entries: await withTimeout(
-      fetchLeaderboardWithClient(new SqlApi(endpoint), limit, offset),
+      fetchLeaderboardWithClient(createSqlApi(endpoint), limit, offset),
       SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
       `Score to beat request timed out for ${endpoint}`,
     ),
@@ -706,11 +709,12 @@ const fetchLeaderboardForEndpoint = async (
 
 export const fetchScoreToBeatAcrossEndpoints = async (
   toriiEndpoints: string[],
-  { perEndpointLimit = 50, runsToAggregate = 2, maxPlayers = 10 }: ScoreToBeatOptions = {},
+  { perEndpointLimit = 50, runsToAggregate = 2, maxPlayers }: ScoreToBeatOptions = {},
 ): Promise<ScoreToBeatResult> => {
   const safePerEndpointLimit = perEndpointLimit > 0 ? perEndpointLimit : DEFAULT_LIMIT;
   const safeRunsToAggregate = runsToAggregate > 0 ? runsToAggregate : 2;
-  const safeMaxPlayers = maxPlayers > 0 ? maxPlayers : 10;
+  const safeMaxPlayers =
+    typeof maxPlayers === "number" && Number.isFinite(maxPlayers) && maxPlayers > 0 ? Math.floor(maxPlayers) : null;
 
   const sanitizedEndpoints = sanitiseToriiEndpoints(toriiEndpoints);
 
@@ -761,24 +765,25 @@ export const fetchScoreToBeatAcrossEndpoints = async (
 
   const aggregatedEntries = Array.from(perPlayer.values())
     .map((player) => {
-      const sortedRuns = player.runs.toSorted((a, b) => b.points - a.points).slice(0, safeRunsToAggregate);
-      const combinedPoints = sortedRuns.reduce((sum, run) => sum + run.points, 0);
+      const allRuns = player.runs.toSorted((a, b) => b.points - a.points);
+      const bestRuns = allRuns.slice(0, safeRunsToAggregate);
+      const combinedPoints = bestRuns.reduce((sum, run) => sum + run.points, 0);
 
       return {
         address: player.address,
         displayName: player.displayName,
         combinedPoints,
-        runs: sortedRuns,
+        allRuns,
+        runs: bestRuns,
         totalRuns: player.runs.length,
         staticGames: buildStaticGameBreakdown(player.address),
       } satisfies ScoreToBeatEntrySummary;
     })
     .filter((entry) => entry.runs.length > 0)
-    .toSorted((a, b) => b.combinedPoints - a.combinedPoints)
-    .slice(0, safeMaxPlayers);
+    .toSorted((a, b) => b.combinedPoints - a.combinedPoints);
 
   return {
-    entries: aggregatedEntries,
+    entries: safeMaxPlayers === null ? aggregatedEntries : aggregatedEntries.slice(0, safeMaxPlayers),
     endpoints: sanitizedEndpoints,
     failedEndpoints,
     generatedAt: Date.now(),
