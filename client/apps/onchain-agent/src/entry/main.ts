@@ -1,0 +1,307 @@
+/**
+ * Entry point for the Eternum autonomous agent.
+ *
+ * Config → Auth → EternumClient → Tools → Agent → Tick loop.
+ * Uses pi-agent-core directly (no game-agent framework).
+ */
+
+import { Agent } from "@mariozechner/pi-agent-core";
+import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
+import type { Message, Model } from "@mariozechner/pi-ai";
+import { getModel, completeSimple } from "@mariozechner/pi-ai";
+import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
+import { EternumClient } from "@bibliothecadao/client";
+import { EternumProvider } from "@bibliothecadao/provider";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+import { loadConfig } from "./config.js";
+import { discoverWorld, patchManifest } from "../world/discovery.js";
+import { bootstrapDataDir } from "./bootstrap.js";
+import { buildSystemPrompt } from "./soul.js";
+import { evolve } from "./evolution.js";
+import { getAccount } from "../auth/session.js";
+import { manifestPath } from "../auth/policies.js";
+import { createMapLoop } from "../map/loop.js";
+import { createAutomationLoop } from "../automation/loop.js";
+import type { MapContext } from "../map/context.js";
+import type { TxContext } from "../tools/tx-context.js";
+import { createInspectTool } from "../tools/inspect.js";
+import { createMoveTool } from "../tools/move.js";
+import { createAttackTool } from "../tools/attack.js";
+import { createCreateArmyTool } from "../tools/create-army.js";
+
+// ---------------------------------------------------------------------------
+// Context pruning — when messages exceed MAX_CONTEXT_CHARS, drops older
+// messages and uses the agent's model to summarize what was lost.
+// ---------------------------------------------------------------------------
+
+const MAX_CONTEXT_CHARS = 400_000;
+const PRUNE_TARGET_CHARS = 200_000;
+
+function estimateChars(messages: AgentMessage[]): number {
+  let total = 0;
+  for (const m of messages) {
+    const msg = m as Message;
+    if (typeof msg.content === "string") {
+      total += msg.content.length;
+    } else if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if ("text" in block) total += block.text.length;
+      }
+    }
+  }
+  return total;
+}
+
+function splitMessages(messages: AgentMessage[]): { dropped: AgentMessage[]; kept: AgentMessage[] } {
+  let kept = 0;
+  let cutIndex = messages.length;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i] as Message;
+    let chars = 0;
+    if (typeof msg.content === "string") {
+      chars = msg.content.length;
+    } else if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if ("text" in block) chars += block.text.length;
+      }
+    }
+    kept += chars;
+    if (kept > PRUNE_TARGET_CHARS) {
+      cutIndex = i + 1;
+      break;
+    }
+  }
+
+  if (cutIndex >= messages.length) cutIndex = messages.length - 1;
+  return {
+    dropped: messages.slice(0, cutIndex),
+    kept: messages.slice(cutIndex),
+  };
+}
+
+async function pruneMessages(messages: AgentMessage[], model: Model<any>): Promise<AgentMessage[]> {
+  if (estimateChars(messages) <= MAX_CONTEXT_CHARS) return messages;
+
+  const { dropped, kept } = splitMessages(messages);
+  if (dropped.length === 0) return kept;
+
+  // Summarize dropped messages using the agent's model
+  const droppedLlm = dropped.filter(
+    (m): m is Message =>
+      m.role === "user" || m.role === "assistant" || m.role === "toolResult",
+  );
+
+  let summary = `[Context compacted: ${dropped.length} older messages dropped.]`;
+  try {
+    const result = await completeSimple(model, {
+      systemPrompt:
+        "Summarize this conversation history in 2-3 paragraphs. Focus on: strategic decisions made, " +
+        "current military positions, resource state, ongoing plans, and any threats identified. " +
+        "Be specific about coordinates, entity names, and outcomes.",
+      messages: [
+        {
+          role: "user" as const,
+          content: droppedLlm
+            .map((m) => {
+              const text =
+                typeof m.content === "string"
+                  ? m.content
+                  : Array.isArray(m.content)
+                    ? m.content
+                        .filter((b): b is { type: "text"; text: string } => "text" in b)
+                        .map((b) => b.text)
+                        .join("\n")
+                    : "";
+              return `[${m.role}]: ${text}`;
+            })
+            .join("\n\n"),
+          timestamp: Date.now(),
+        },
+      ],
+    });
+
+    const text = result.content.find((b): b is { type: "text"; text: string } => b.type === "text");
+    if (text) {
+      summary = `[Context compacted: ${dropped.length} older messages summarized]\n\n${text.text}`;
+    }
+  } catch (err) {
+    console.error("Compaction summary failed, using fallback:", err instanceof Error ? err.message : err);
+    summary += " Use inspect and the map to re-orient.";
+  }
+
+  kept.unshift({
+    role: "user" as const,
+    content: summary,
+    timestamp: Date.now(),
+  } as AgentMessage);
+
+  return kept;
+}
+
+// ---------------------------------------------------------------------------
+// Tick prompt builder
+// ---------------------------------------------------------------------------
+
+function buildTickPrompt(mapCtx: MapContext): string {
+  const mapText = mapCtx.snapshot?.text ?? "Map not yet loaded.";
+  return [
+    "## Tick — New Turn",
+    "",
+    "Current map:",
+    mapText,
+    "",
+    "Review your priorities and decide what to do this turn.",
+    "Use inspect to examine targets, move_army to reposition, attack to engage, or create_army to build forces.",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+export async function main() {
+  const config = loadConfig();
+
+  // Auto-discover world if WORLD_NAME is set and explicit URLs are missing
+  let contractsBySelector: Record<string, string> | undefined;
+  if (config.worldName && (!config.toriiUrl || !config.worldAddress)) {
+    console.log(`Discovering world "${config.worldName}" on ${config.chain}...`);
+    const info = await discoverWorld(config.chain, config.worldName);
+    config.toriiUrl = info.toriiUrl;
+    config.worldAddress = info.worldAddress;
+    config.rpcUrl = info.rpcUrl;
+    contractsBySelector = info.contractsBySelector;
+    // Re-resolve dataDir now that we have the world address
+    config.dataDir = join(homedir(), ".axis", "worlds", info.worldAddress);
+    console.log(`  Discovered: torii=${info.toriiUrl}, world=${info.worldAddress}`);
+    console.log(`  Resolved ${Object.keys(info.contractsBySelector).length} contract addresses from factory`);
+  }
+
+  bootstrapDataDir(config.dataDir);
+
+  console.log(`Eternum Agent starting...`);
+  console.log(`  Chain: ${config.chain}`);
+  console.log(`  World: ${config.worldAddress}`);
+  console.log(`  Data: ${config.dataDir}`);
+  console.log(`  Model: ${config.modelProvider}/${config.modelId}`);
+
+  // 1. Auth — get a signed account (session stored in world dataDir)
+  const account = await getAccount({
+    chain: config.chain,
+    rpcUrl: config.rpcUrl,
+    chainId: config.chainId,
+    basePath: join(config.dataDir, ".cartridge"),
+  });
+  console.log(`  Account: ${account.address}`);
+
+  // 2. Create headless client (reads) + provider (writes)
+  const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
+  let manifest = JSON.parse(readFileSync(manifestPath(config.chain), "utf-8"));
+  if (contractsBySelector) {
+    manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
+  }
+  const provider = new EternumProvider(manifest, config.rpcUrl);
+
+  // 3. Shared contexts
+  const mapFilePath = join(config.dataDir, "map.txt");
+  const mapCtx: MapContext = { snapshot: null, filePath: mapFilePath };
+  const txCtx: TxContext = { provider, signer: account };
+
+  // 4. Tools — game-specific + read/grep/find/ls scoped to dataDir
+  const tools: AgentTool[] = [
+    ...createReadOnlyTools(config.dataDir),
+    createInspectTool(client, mapCtx),
+    createMoveTool(client, mapCtx, account.address, txCtx),
+    createAttackTool(client, mapCtx, account.address, txCtx),
+    createCreateArmyTool(client, mapCtx, account.address, txCtx),
+  ];
+
+  // 5. System prompt
+  const systemPrompt = buildSystemPrompt(config.dataDir);
+
+  // 6. Agent — uses followUp with one-at-a-time mode so tick messages
+  //    queue safely without interrupting in-progress tool calls.
+  const model = (getModel as Function)(config.modelProvider, config.modelId) as Model<any>;
+
+  const convertToLlm = (messages: AgentMessage[]): Message[] =>
+    messages.filter(
+      (m): m is Message =>
+        m.role === "user" || m.role === "assistant" || m.role === "toolResult",
+    );
+
+  const agent = new Agent({
+    initialState: {
+      systemPrompt,
+      model,
+      thinkingLevel: model.reasoning ? "medium" : "off",
+      tools,
+      messages: [],
+    },
+    convertToLlm,
+    followUpMode: "one-at-a-time",
+    transformContext: async (messages) => {
+      agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
+      return pruneMessages(messages, model);
+    },
+  });
+
+  // 7. Map loop — refreshes tile data in the background
+  const mapLoop = createMapLoop(client, mapCtx, account.address);
+  mapLoop.start();
+
+  // 7b. Automation loop — builds, upgrades, and produces across all owned realms
+  const automationLoop = createAutomationLoop(
+    client,
+    provider,
+    account,
+    account.address,
+    config.dataDir,
+  );
+  automationLoop.start();
+
+  // 8. Tick loop — uses followUp so ticks never interrupt tool execution.
+  //    With one-at-a-time mode, if the agent is still busy when the next
+  //    tick fires, only the latest tick prompt survives in the queue.
+  const EVOLUTION_INTERVAL = 10; // evolve every N ticks
+  let tickCount = 0;
+  let evolving = false;
+
+  const tickTimer = setInterval(() => {
+    tickCount++;
+
+    if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
+      evolving = true;
+      evolve(model, config.dataDir)
+        .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
+        .finally(() => { evolving = false; });
+    }
+
+    agent.followUp({
+      role: "user" as const,
+      content: buildTickPrompt(mapCtx),
+      timestamp: Date.now(),
+    });
+  }, config.tickIntervalMs);
+
+  // Kick off the first turn immediately
+  agent.prompt(buildTickPrompt(mapCtx)).catch((err) => {
+    console.error("Agent error:", err instanceof Error ? err.message : err);
+  });
+
+  console.log(`Agent running (tick every ${config.tickIntervalMs / 1000}s). Ctrl+C to stop.`);
+
+  // 9. Graceful shutdown
+  const shutdown = () => {
+    console.log("\nShutting down...");
+    clearInterval(tickTimer);
+    mapLoop.stop();
+    automationLoop.stop();
+    agent.abort();
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+}
