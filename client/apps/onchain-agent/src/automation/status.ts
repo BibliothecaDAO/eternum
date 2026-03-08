@@ -11,7 +11,7 @@ export interface RealmStatus {
   wheatPulse: { balance: number; low: boolean };
 }
 
-export interface StatusInput {
+interface StatusInput {
   timestamp: Date;
   realms: RealmStatus[];
 }

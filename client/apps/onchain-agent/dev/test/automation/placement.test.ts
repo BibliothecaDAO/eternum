@@ -23,14 +23,28 @@ describe("findOpenSlot", () => {
 
   it("skips occupied hexes", () => {
     // Occupy all ring 1 except one
-    const ring1 = [[11, 10], [11, 11], [10, 11], [9, 10], [10, 9], [11, 9]];
+    const ring1 = [
+      [11, 10],
+      [11, 11],
+      [10, 11],
+      [9, 10],
+      [10, 9],
+      [11, 9],
+    ];
     const occupied = new Set(ring1.slice(0, 5).map(([c, r]) => `${c},${r}`));
     const result = findOpenSlot(occupied, 0);
     expect(result).not.toBeNull();
   });
 
   it("returns null when all slots in range are occupied", () => {
-    const ring1 = [[11, 10], [11, 11], [10, 11], [9, 10], [10, 9], [11, 9]];
+    const ring1 = [
+      [11, 10],
+      [11, 11],
+      [10, 11],
+      [9, 10],
+      [10, 9],
+      [11, 9],
+    ];
     const occupied = new Set(ring1.map(([c, r]) => `${c},${r}`));
     const result = findOpenSlot(occupied, 0);
     expect(result).toBeNull();

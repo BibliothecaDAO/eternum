@@ -21,7 +21,7 @@ describe("formatStatus", () => {
             errors: [],
           },
           essencePulse: { balance: 200, sufficient: true },
-          wheatPulse: { balance: 5000, low: false,  },
+          wheatPulse: { balance: 5000, low: false },
         },
       ],
     });
@@ -35,23 +35,25 @@ describe("formatStatus", () => {
   it("formats idle realm", () => {
     const text = formatStatus({
       timestamp: new Date("2026-03-08T12:00:00Z"),
-      realms: [{
-        realmEntityId: 100,
-        realmName: "Quiet",
-        biome: 11,
-        level: 4,
-        buildOrderProgress: "13/13",
-        tickResult: {
+      realms: [
+        {
           realmEntityId: 100,
-          built: [],
-          upgraded: null,
-          produced: false,
-          idle: true,
-          errors: [],
+          realmName: "Quiet",
+          biome: 11,
+          level: 4,
+          buildOrderProgress: "13/13",
+          tickResult: {
+            realmEntityId: 100,
+            built: [],
+            upgraded: null,
+            produced: false,
+            idle: true,
+            errors: [],
+          },
+          essencePulse: { balance: 0, sufficient: true },
+          wheatPulse: { balance: 100, low: true },
         },
-        essencePulse: { balance: 0, sufficient: true },
-        wheatPulse: { balance: 100, low: true,  },
-      }],
+      ],
     });
 
     expect(text).toContain("Idle");

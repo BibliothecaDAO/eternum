@@ -22,8 +22,10 @@ function makeTile(x: number, y: number, occupierType = 0, occupierId = 0): TileS
 }
 
 function makeSnapshot(tiles: TileState[]): MapSnapshot {
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
   const grid = new Map<string, TileState>();
 
   for (const t of tiles) {
@@ -105,7 +107,9 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: null, filePath: null };
     const tool = createMoveTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 2 })).rejects.toThrow("Map not loaded");
+    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 2 })).rejects.toThrow(
+      "Map not loaded",
+    );
   });
 
   it("throws for invalid from coordinates", async () => {
@@ -113,7 +117,9 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 99, from_col: 99, to_row: 1, to_col: 1 })).rejects.toThrow("Invalid army position");
+    await expect(tool.execute("id", { from_row: 99, from_col: 99, to_row: 1, to_col: 1 })).rejects.toThrow(
+      "Invalid army position",
+    );
   });
 
   it("throws for invalid to coordinates", async () => {
@@ -121,7 +127,9 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 99, to_col: 99 })).rejects.toThrow("Invalid target position");
+    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 99, to_col: 99 })).rejects.toThrow(
+      "Invalid target position",
+    );
   });
 
   it("throws when no army at from position", async () => {

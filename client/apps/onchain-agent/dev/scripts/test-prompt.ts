@@ -41,16 +41,44 @@ const OUTPUT_FILE = join(process.cwd(), "test-prompt-output.txt");
 // ---------------------------------------------------------------------------
 
 const RESOURCE_NAMES: Record<number, string> = {
-  1: "Stone", 2: "Coal", 3: "Wood", 4: "Copper", 5: "Ironwood",
-  6: "Obsidian", 7: "Gold", 8: "Silver", 9: "Mithral", 10: "AlchemicalSilver",
-  11: "ColdIron", 12: "DeepCrystal", 13: "Ruby", 14: "Diamonds",
-  15: "Hartwood", 16: "Ignium", 17: "TwilightQuartz", 18: "TrueIce",
-  19: "Adamantine", 20: "Sapphire", 21: "EtherealSilica", 22: "Dragonhide",
-  23: "Labor", 24: "AncientFragment", 25: "Donkey",
-  26: "Knight", 27: "KnightT2", 28: "KnightT3",
-  29: "Crossbowman", 30: "CrossbowmanT2", 31: "CrossbowmanT3",
-  32: "Paladin", 33: "PaladinT2", 34: "PaladinT3",
-  35: "Wheat", 36: "Fish", 37: "Earthenshard", 38: "Essence",
+  1: "Stone",
+  2: "Coal",
+  3: "Wood",
+  4: "Copper",
+  5: "Ironwood",
+  6: "Obsidian",
+  7: "Gold",
+  8: "Silver",
+  9: "Mithral",
+  10: "AlchemicalSilver",
+  11: "ColdIron",
+  12: "DeepCrystal",
+  13: "Ruby",
+  14: "Diamonds",
+  15: "Hartwood",
+  16: "Ignium",
+  17: "TwilightQuartz",
+  18: "TrueIce",
+  19: "Adamantine",
+  20: "Sapphire",
+  21: "EtherealSilica",
+  22: "Dragonhide",
+  23: "Labor",
+  24: "AncientFragment",
+  25: "Donkey",
+  26: "Knight",
+  27: "KnightT2",
+  28: "KnightT3",
+  29: "Crossbowman",
+  30: "CrossbowmanT2",
+  31: "CrossbowmanT3",
+  32: "Paladin",
+  33: "PaladinT2",
+  34: "PaladinT3",
+  35: "Wheat",
+  36: "Fish",
+  37: "Earthenshard",
+  38: "Essence",
 };
 
 function rName(id: number): string {
@@ -85,10 +113,7 @@ function scaledBuildingCost(
   }));
 }
 
-function reserveBuildingCosts(
-  balances: Map<number, number>,
-  costs: { resource: number; amount: number }[],
-): boolean {
+function reserveBuildingCosts(balances: Map<number, number>, costs: { resource: number; amount: number }[]): boolean {
   for (const cost of costs) {
     if ((balances.get(cost.resource) ?? 0) < cost.amount) return false;
   }
@@ -122,8 +147,8 @@ async function main() {
   const gameConfig: GameConfig = await sql.fetchGameConfig();
   console.log(
     `  ${Object.keys(gameConfig.buildingCosts).length} building types, ` +
-    `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
-    `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
+      `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
+      `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
   );
 
   // Fetch map
@@ -182,11 +207,16 @@ async function main() {
     (async () => {
       try {
         if (typeof sql.fetchBuildingsByStructures === "function") {
-          return await sql.fetchBuildingsByStructures(entityIds) as {
-            outer_entity_id: number; inner_col: number; inner_row: number; category: number;
+          return (await sql.fetchBuildingsByStructures(entityIds)) as {
+            outer_entity_id: number;
+            inner_col: number;
+            inner_row: number;
+            category: number;
           }[];
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       return [] as { outer_entity_id: number; inner_col: number; inner_row: number; category: number }[];
     })(),
   ]);
@@ -222,7 +252,12 @@ async function main() {
     }
   }
 
-  console.log(`\nBuilding counts: [${[...buildingCounts.entries()].sort((a, b) => a[0] - b[0]).map(([k, v]) => `${k}×${v}`).join(", ")}]`);
+  console.log(
+    `\nBuilding counts: [${[...buildingCounts.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([k, v]) => `${k}×${v}`)
+      .join(", ")}]`,
+  );
 
   // --- Phase 2: Resolve build plan (same as loop.ts) ---
   console.log(`\n--- Build Order ---`);
@@ -260,7 +295,9 @@ async function main() {
       console.log(`${step.label} (complex, qty ${existingQuantity}):`);
       for (const cost of complexCosts) {
         const balance = productionBalances.get(cost.resource) ?? 0;
-        console.log(`  ${rName(cost.resource).padEnd(20)} need ${cost.amount.toFixed(2)}, have ${balance.toFixed(2)} ${balance >= cost.amount ? "✓" : "✗"}`);
+        console.log(
+          `  ${rName(cost.resource).padEnd(20)} need ${cost.amount.toFixed(2)}, have ${balance.toFixed(2)} ${balance >= cost.amount ? "✓" : "✗"}`,
+        );
       }
       reserved = reserveBuildingCosts(productionBalances, complexCosts);
     }
@@ -271,7 +308,9 @@ async function main() {
         console.log(`${step.label} (simple fallback, qty ${existingQuantity}):`);
         for (const cost of simpleCosts) {
           const balance = productionBalances.get(cost.resource) ?? 0;
-          console.log(`  ${rName(cost.resource).padEnd(20)} need ${cost.amount.toFixed(2)}, have ${balance.toFixed(2)} ${balance >= cost.amount ? "✓" : "✗"}`);
+          console.log(
+            `  ${rName(cost.resource).padEnd(20)} need ${cost.amount.toFixed(2)}, have ${balance.toFixed(2)} ${balance >= cost.amount ? "✓" : "✗"}`,
+          );
         }
         reserved = reserveBuildingCosts(productionBalances, simpleCosts);
         if (reserved) useSimple = true;
@@ -293,32 +332,34 @@ async function main() {
   // --- Phase 4: Plan production (same as loop.ts) ---
   console.log(`\n--- Production Plan ---`);
   const isTargetVillage = target.category === 5;
-  const plan = planProduction(productionBalances, buildingCounts, troopPath, gameConfig, 60, isTargetVillage);
+  const prodPlan = planProduction(productionBalances, buildingCounts, troopPath, gameConfig, 60, isTargetVillage);
 
-  if (plan.calls.length > 0) {
-    console.log(`Production calls (${plan.calls.length}):`);
-    for (const call of plan.calls) {
-      console.log(`  ${call.method.padEnd(8)} ${rName(call.resourceId).padEnd(20)} ${call.cycles} cycles → ${call.produced.toFixed(2)} produced`);
+  if (prodPlan.calls.length > 0) {
+    console.log(`Production calls (${prodPlan.calls.length}):`);
+    for (const call of prodPlan.calls) {
+      console.log(
+        `  ${call.method.padEnd(8)} ${rName(call.resourceId).padEnd(20)} ${call.cycles} cycles → ${call.produced.toFixed(2)} produced`,
+      );
     }
 
     console.log(`\nResources consumed:`);
-    for (const [resourceId, amount] of [...plan.consumed.entries()].sort((a, b) => a[0] - b[0])) {
+    for (const [resourceId, amount] of [...prodPlan.consumed.entries()].sort((a, b) => a[0] - b[0])) {
       const original = snap.balances.get(resourceId) ?? 0;
       const pct = original > 0 ? ((amount / original) * 100).toFixed(1) : "N/A";
       console.log(`  ${rName(resourceId).padEnd(20)} ${amount.toFixed(2)} of ${original.toFixed(2)} (${pct}%)`);
     }
 
     console.log(`\nResources produced:`);
-    for (const [resourceId, amount] of [...plan.produced.entries()].sort((a, b) => a[0] - b[0])) {
+    for (const [resourceId, amount] of [...prodPlan.produced.entries()].sort((a, b) => a[0] - b[0])) {
       console.log(`  ${rName(resourceId).padEnd(20)} +${amount.toFixed(2)}`);
     }
   } else {
     console.log(`No production calls planned`);
   }
 
-  if (plan.skipped.length > 0) {
+  if (prodPlan.skipped.length > 0) {
     console.log(`\nSkipped resources:`);
-    for (const skip of plan.skipped) {
+    for (const skip of prodPlan.skipped) {
       console.log(`  ${rName(skip.resourceId).padEnd(20)} ${skip.reason}`);
     }
   }
@@ -326,22 +367,28 @@ async function main() {
   // --- Phase 5: Summary — what executeRealmTick would do ---
   console.log(`\n--- Execution Summary (dry-run) ---`);
 
-  const resourceToResource = plan.calls
+  const resourceToResource = prodPlan.calls
     .filter((c) => c.method === "complex")
     .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
-  const laborToResource = plan.calls
+  const laborToResource = prodPlan.calls
     .filter((c) => c.method === "simple")
     .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
 
   if (resourceToResource.length > 0) {
     console.log(`1. execute_realm_production_plan:`);
-    console.log(`   resource_to_resource: [${resourceToResource.map((r) => `${rName(r.resource_id)}×${r.cycles}`).join(", ")}]`);
+    console.log(
+      `   resource_to_resource: [${resourceToResource.map((r) => `${rName(r.resource_id)}×${r.cycles}`).join(", ")}]`,
+    );
     if (laborToResource.length > 0) {
-      console.log(`   labor_to_resource: [${laborToResource.map((r) => `${rName(r.resource_id)}×${r.cycles}`).join(", ")}]`);
+      console.log(
+        `   labor_to_resource: [${laborToResource.map((r) => `${rName(r.resource_id)}×${r.cycles}`).join(", ")}]`,
+      );
     }
   } else if (laborToResource.length > 0) {
     console.log(`1. execute_realm_production_plan:`);
-    console.log(`   labor_to_resource: [${laborToResource.map((r) => `${rName(r.resource_id)}×${r.cycles}`).join(", ")}]`);
+    console.log(
+      `   labor_to_resource: [${laborToResource.map((r) => `${rName(r.resource_id)}×${r.cycles}`).join(", ")}]`,
+    );
   } else {
     console.log(`1. Production: SKIP (nothing to produce)`);
   }
@@ -349,7 +396,9 @@ async function main() {
   if (buildActions.length > 0) {
     console.log(`2. create_building (${buildActions.length} builds):`);
     for (const ba of buildActions) {
-      console.log(`   ${ba.step.label} (type ${ba.step.building}, ${ba.useSimple ? "simple" : "complex"}) → [${ba.slot.directions.join(", ")}]`);
+      console.log(
+        `   ${ba.step.label} (type ${ba.step.building}, ${ba.useSimple ? "simple" : "complex"}) → [${ba.slot.directions.join(", ")}]`,
+      );
     }
   } else {
     console.log(`2. Build: SKIP`);
@@ -373,7 +422,9 @@ async function main() {
     if (typeof sql.fetchBuildingsByStructures === "function") {
       allBuildingRows = await sql.fetchBuildingsByStructures(allEntityIds);
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const allBuildingCountsByRealm = new Map<number, Map<number, number>>();
   for (const br of allBuildingRows) {
@@ -391,7 +442,9 @@ async function main() {
     try {
       const rows = await sql.fetchResourceBalancesAndProduction([eid]);
       row = rows?.[0] ?? null;
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     const sn = parseRealmSnapshot(row);
     const bc = allBuildingCountsByRealm.get(eid) ?? sn.buildingCounts;
@@ -436,28 +489,39 @@ async function main() {
   const systemPrompt = buildSystemPrompt(DATA_DIR);
   const mapText = mapCtx.snapshot?.text ?? "Map not yet loaded.";
   const tickPrompt = [
-    "## Tick — New Turn", "", "Current map:", mapText, "",
+    "## Tick — New Turn",
+    "",
+    "Current map:",
+    mapText,
+    "",
     "Review your priorities and decide what to do this turn.",
     "Use inspect to examine targets, move_army to reposition, attack to engage, or create_army to build forces.",
   ].join("\n");
 
-  const automationStatus = realmStatuses.length > 0
-    ? formatStatus({ timestamp: new Date(), realms: realmStatuses })
-    : "No owned realms found — automation would be idle.";
+  const automationStatus =
+    realmStatuses.length > 0
+      ? formatStatus({ timestamp: new Date(), realms: realmStatuses })
+      : "No owned realms found — automation would be idle.";
 
   const fullOutput = [
     "=".repeat(80),
     "SYSTEM PROMPT",
     "=".repeat(80),
-    "", systemPrompt, "",
+    "",
+    systemPrompt,
+    "",
     "=".repeat(80),
     "TICK PROMPT (user message)",
     "=".repeat(80),
-    "", tickPrompt, "",
+    "",
+    tickPrompt,
+    "",
     "=".repeat(80),
     "AUTOMATION DRY-RUN",
     "=".repeat(80),
-    "", automationStatus, "",
+    "",
+    automationStatus,
+    "",
     "=".repeat(80),
     "METADATA",
     "=".repeat(80),

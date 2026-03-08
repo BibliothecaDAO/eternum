@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  findPath,
-  directionBetween,
-  buildTileIndex,
-} from "../../../src/world/pathfinding.js";
+import { findPath, directionBetween, buildTileIndex } from "../../../src/world/pathfinding.js";
 import { Direction } from "@bibliothecadao/types";
 import type { TileState, Position } from "@bibliothecadao/client";
 
@@ -150,8 +146,22 @@ describe("findPath — direction consistency", () => {
 describe("buildTileIndex", () => {
   it("marks explored tiles", () => {
     const tiles: TileState[] = [
-      { position: { x: 0, y: 0 }, biome: 11, occupierId: 0, occupierType: 0, occupierIsStructure: false, rewardExtracted: false },
-      { position: { x: 1, y: 0 }, biome: 11, occupierId: 0, occupierType: 0, occupierIsStructure: false, rewardExtracted: false },
+      {
+        position: { x: 0, y: 0 },
+        biome: 11,
+        occupierId: 0,
+        occupierType: 0,
+        occupierIsStructure: false,
+        rewardExtracted: false,
+      },
+      {
+        position: { x: 1, y: 0 },
+        biome: 11,
+        occupierId: 0,
+        occupierType: 0,
+        occupierIsStructure: false,
+        rewardExtracted: false,
+      },
     ];
     const idx = buildTileIndex(tiles);
     expect(idx.explored.has("0,0")).toBe(true);
@@ -161,7 +171,14 @@ describe("buildTileIndex", () => {
 
   it("marks structures as blocked", () => {
     const tiles: TileState[] = [
-      { position: { x: 5, y: 5 }, biome: 11, occupierId: 1, occupierType: 1, occupierIsStructure: true, rewardExtracted: false },
+      {
+        position: { x: 5, y: 5 },
+        biome: 11,
+        occupierId: 1,
+        occupierType: 1,
+        occupierIsStructure: true,
+        rewardExtracted: false,
+      },
     ];
     const idx = buildTileIndex(tiles);
     expect(idx.blocked.has("5,5")).toBe(true);
@@ -169,7 +186,14 @@ describe("buildTileIndex", () => {
 
   it("marks explorers as blocked", () => {
     const tiles: TileState[] = [
-      { position: { x: 3, y: 3 }, biome: 11, occupierId: 42, occupierType: 15, occupierIsStructure: false, rewardExtracted: false },
+      {
+        position: { x: 3, y: 3 },
+        biome: 11,
+        occupierId: 42,
+        occupierType: 15,
+        occupierIsStructure: false,
+        rewardExtracted: false,
+      },
     ];
     const idx = buildTileIndex(tiles);
     expect(idx.blocked.has("3,3")).toBe(true);
@@ -177,7 +201,14 @@ describe("buildTileIndex", () => {
 
   it("does not block empty tiles", () => {
     const tiles: TileState[] = [
-      { position: { x: 0, y: 0 }, biome: 11, occupierId: 0, occupierType: 0, occupierIsStructure: false, rewardExtracted: false },
+      {
+        position: { x: 0, y: 0 },
+        biome: 11,
+        occupierId: 0,
+        occupierType: 0,
+        occupierIsStructure: false,
+        rewardExtracted: false,
+      },
     ];
     const idx = buildTileIndex(tiles);
     expect(idx.blocked.has("0,0")).toBe(false);

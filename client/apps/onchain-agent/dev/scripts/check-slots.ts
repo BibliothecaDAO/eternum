@@ -53,9 +53,12 @@ async function main() {
 
     console.log(
       `${type} ${eid}: level=${level}, slots=${slotsUsed}/${maxSlots} (${slotsLeft} left), ` +
-      `pop=${popUsed}/${popCapacity}, buildings=[${buildingList}]`,
+        `pop=${popUsed}/${popCapacity}, buildings=[${buildingList}]`,
     );
   }
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

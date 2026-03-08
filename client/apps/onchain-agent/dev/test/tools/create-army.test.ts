@@ -21,8 +21,10 @@ function makeTile(x: number, y: number, occupierType = 0, occupierId = 0, biome 
 }
 
 function makeSnapshot(tiles: TileState[]): MapSnapshot {
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
   const grid = new Map<string, TileState>();
 
   for (const t of tiles) {
@@ -58,7 +60,8 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
 }
 
 function makeStructure(
-  x: number, y: number,
+  x: number,
+  y: number,
   resources: StructureInfo["resources"] = [],
   opts: {
     explorerCount?: number;
@@ -101,10 +104,7 @@ function makeTxCtx(): TxContext {
 
 /** Realm at (5,5) with open hex at (6,5). Row 1, col 1 = (5,5). */
 function realmSetup(biome = 11) {
-  const tiles = [
-    makeTile(5, 5, 1, 100, biome),
-    makeTile(6, 5, 0, 0, biome),
-  ];
+  const tiles = [makeTile(5, 5, 1, 100, biome), makeTile(6, 5, 0, 0, biome)];
   return { tiles, snapshot: makeSnapshot(tiles) };
 }
 
@@ -167,7 +167,8 @@ describe("create_army — army cap", () => {
   it("throws when army cap is reached", async () => {
     const { snapshot } = realmSetup();
     const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }], {
-      explorerCount: 3, maxExplorerCount: 3,
+      explorerCount: 3,
+      maxExplorerCount: 3,
     });
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
@@ -178,7 +179,8 @@ describe("create_army — army cap", () => {
   it("allows creation when under cap", async () => {
     const { snapshot } = realmSetup();
     const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }], {
-      explorerCount: 1, maxExplorerCount: 3,
+      explorerCount: 1,
+      maxExplorerCount: 3,
     });
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());

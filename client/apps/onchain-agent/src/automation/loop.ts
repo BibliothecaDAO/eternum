@@ -13,7 +13,7 @@ import { executeRealmTick, type BuildAction, type UpgradeAction, type Production
 import { formatStatus, type RealmStatus } from "./status.js";
 import type { RealmState } from "./runner.js";
 
-export interface AutomationLoop {
+interface AutomationLoop {
   start(): void;
   stop(): void;
   refresh(): Promise<void>;
@@ -53,10 +53,7 @@ function scaledBuildingCost(
 /**
  * Check if all costs are affordable without modifying the balances map.
  */
-function canAfford(
-  balances: Map<number, number>,
-  costs: { resource: number; amount: number }[],
-): boolean {
+function canAfford(balances: Map<number, number>, costs: { resource: number; amount: number }[]): boolean {
   for (const cost of costs) {
     const balance = balances.get(cost.resource) ?? 0;
     if (balance < cost.amount) return false;
@@ -68,10 +65,7 @@ function canAfford(
  * Subtract building costs from a balances map in-place.
  * Returns true if all costs could be reserved, false if any resource was insufficient.
  */
-function reserveBuildingCosts(
-  balances: Map<number, number>,
-  costs: { resource: number; amount: number }[],
-): boolean {
+function reserveBuildingCosts(balances: Map<number, number>, costs: { resource: number; amount: number }[]): boolean {
   // Check all costs are affordable first
   for (const cost of costs) {
     const balance = balances.get(cost.resource) ?? 0;
@@ -195,9 +189,14 @@ export function createAutomationLoop(
           const countsObj: Record<string, number> = {};
           for (const [k, v] of buildingCounts) countsObj[`type_${k}`] = v;
           console.log(`[AUTO] Realm ${entityId} | biome=${biome} level=${level} | buildings:`, countsObj);
-          console.log(`[AUTO] Realm ${entityId} | plan: ${plan.builds.length} builds, upgrade=${!!plan.upgrade}, idle=${plan.idle}`);
+          console.log(
+            `[AUTO] Realm ${entityId} | plan: ${plan.builds.length} builds, upgrade=${!!plan.upgrade}, idle=${plan.idle}`,
+          );
           if (plan.builds.length > 0) {
-            console.log(`[AUTO] Realm ${entityId} | planned:`, plan.builds.map(b => b.step.label));
+            console.log(
+              `[AUTO] Realm ${entityId} | planned:`,
+              plan.builds.map((b) => b.step.label),
+            );
           }
 
           // Don't upgrade in the same tick as builds — the provider batches
@@ -262,7 +261,9 @@ export function createAutomationLoop(
             let useSimple = false;
             const complexCosts = scaledBuildingCost(step.building, existingQuantity, gameConfig, false);
             const simpleCosts = scaledBuildingCost(step.building, existingQuantity, gameConfig, true);
-            console.log(`[AUTO] Realm ${entityId} | cost check ${step.label}(${step.building}): complexCosts=${complexCosts.length}, simpleCosts=${simpleCosts.length}`);
+            console.log(
+              `[AUTO] Realm ${entityId} | cost check ${step.label}(${step.building}): complexCosts=${complexCosts.length}, simpleCosts=${simpleCosts.length}`,
+            );
             if (complexCosts.length > 0) {
               const balForLog: Record<string, number> = {};
               for (const c of complexCosts) balForLog[`res_${c.resource}`] = productionBalances.get(c.resource) ?? 0;
@@ -291,7 +292,10 @@ export function createAutomationLoop(
             slotIdx++;
           }
 
-          console.log(`[AUTO] Realm ${entityId} | final buildActions: ${buildActions.length}`, buildActions.map(a => a.step.label));
+          console.log(
+            `[AUTO] Realm ${entityId} | final buildActions: ${buildActions.length}`,
+            buildActions.map((a) => a.step.label),
+          );
 
           // Plan: production (against remaining balance after building costs reserved)
           const troopPath = troopPathForBiome(biome);
@@ -303,11 +307,15 @@ export function createAutomationLoop(
           let productionCalls: ProductionActions | null = null;
           if (prodPlan.calls.length > 0) {
             const resourceToResource = useComplex
-              ? prodPlan.calls.filter((c) => c.method === "complex").map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }))
+              ? prodPlan.calls
+                  .filter((c) => c.method === "complex")
+                  .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }))
               : [];
             const laborToResource = useComplex
               ? []
-              : prodPlan.calls.filter((c) => c.method === "simple").map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
+              : prodPlan.calls
+                  .filter((c) => c.method === "simple")
+                  .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
 
             if (resourceToResource.length > 0 || laborToResource.length > 0) {
               productionCalls = { resourceToResource, laborToResource };
@@ -325,9 +333,8 @@ export function createAutomationLoop(
           });
 
           // Build order progress — use the last build's index or total if idle
-          const lastBuildIndex = plan.builds.length > 0
-            ? plan.builds[plan.builds.length - 1].index
-            : buildOrder.steps.length;
+          const lastBuildIndex =
+            plan.builds.length > 0 ? plan.builds[plan.builds.length - 1].index : buildOrder.steps.length;
           const progress = `${lastBuildIndex}/${buildOrder.steps.length}`;
 
           return {

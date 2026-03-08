@@ -33,7 +33,9 @@ export function extractTxError(err: any): string {
     try {
       const full = JSON.stringify(err);
       if (full.length > errStr.length) return `${errStr} ${full}`;
-    } catch { /* circular ref, ignore */ }
+    } catch {
+      /* circular ref, ignore */
+    }
   }
   return errStr;
 }

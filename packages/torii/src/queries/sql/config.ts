@@ -158,11 +158,7 @@ function buildResourceListIndex(rows: ResourceListRow[]): Map<string, ResourceCo
 /**
  * Resolve a cost list from the ResourceList index given a list_id and count.
  */
-function resolveCosts(
-  resourceIndex: Map<string, ResourceCost>,
-  listId: number,
-  count: number,
-): ResourceCost[] {
+function resolveCosts(resourceIndex: Map<string, ResourceCost>, listId: number, count: number): ResourceCost[] {
   const costs: ResourceCost[] = [];
   for (let i = 0; i < count; i++) {
     const entry = resourceIndex.get(`${listId},${i}`);
@@ -217,7 +213,11 @@ export function parseGameConfig(
   const realmUpgradeCosts: Record<number, ResourceCost[]> = {};
   if (levelConfigRows) {
     for (const row of levelConfigRows) {
-      realmUpgradeCosts[row.level] = resolveCosts(resourceIndex, row.required_resources_id, row.required_resource_count);
+      realmUpgradeCosts[row.level] = resolveCosts(
+        resourceIndex,
+        row.required_resources_id,
+        row.required_resource_count,
+      );
     }
   }
 

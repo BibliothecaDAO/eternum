@@ -10,19 +10,14 @@
  */
 
 import type { TileState, Position } from "@bibliothecadao/client";
-import {
-  Direction,
-  getNeighborOffsets,
-  getDirectionBetweenAdjacentHexes,
-  Coord,
-} from "@bibliothecadao/types";
+import { Direction, getNeighborOffsets, getDirectionBetweenAdjacentHexes, Coord } from "@bibliothecadao/types";
 
 // ── Types ────────────────────────────────────────────────────────────
 
 /** Cost function: given a destination tile key "x,y", return stamina cost to enter it. */
-export type TileCostFn = (tileKey: string) => number;
+type TileCostFn = (tileKey: string) => number;
 
-export interface PathResult {
+interface PathResult {
   /** Ordered hex positions from start to end (inclusive). */
   path: Position[];
   /** Direction values for each step. Length = path.length - 1. */
@@ -44,10 +39,7 @@ function hexDistance(a: Position, b: Position): number {
 // ── Direction between adjacent hexes ─────────────────────────────────
 
 export function directionBetween(from: Position, to: Position): Direction | null {
-  return getDirectionBetweenAdjacentHexes(
-    { col: from.x, row: from.y },
-    { col: to.x, row: to.y },
-  );
+  return getDirectionBetweenAdjacentHexes({ col: from.x, row: from.y }, { col: to.x, row: to.y });
 }
 
 // ── A* pathfinder ────────────────────────────────────────────────────
@@ -164,7 +156,9 @@ function reconstructPath(endNode: Node): PathResult {
   for (let i = 0; i < path.length - 1; i++) {
     const dir = directionBetween(path[i], path[i + 1]);
     if (dir === null) {
-      throw new Error(`Non-adjacent hex pair in path: (${path[i].x},${path[i].y}) → (${path[i + 1].x},${path[i + 1].y})`);
+      throw new Error(
+        `Non-adjacent hex pair in path: (${path[i].x},${path[i].y}) → (${path[i + 1].x},${path[i + 1].y})`,
+      );
     }
     directions.push(dir);
   }
@@ -174,7 +168,7 @@ function reconstructPath(endNode: Node): PathResult {
 
 // ── Build tile index from MapSnapshot tiles ──────────────────────────
 
-export interface TileIndex {
+interface TileIndex {
   explored: Set<string>;
   blocked: Set<string>;
 }

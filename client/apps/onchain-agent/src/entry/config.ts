@@ -26,7 +26,7 @@ function loadDotenv() {
   }
 }
 
-export interface AgentConfig {
+interface AgentConfig {
   // World connection
   chain: Chain;
   worldName?: string;

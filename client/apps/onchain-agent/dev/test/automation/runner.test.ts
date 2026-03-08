@@ -4,32 +4,32 @@ import { buildOrderForBiome } from "../../../src/automation/build-order.js";
 
 // Population info matching real game data
 const POP_INFO: Record<number, BuildingPopulationInfo> = {
-  1:  { populationCost: 0, capacityGrant: 6 },  // WorkersHut
-  4:  { populationCost: 2, capacityGrant: 0 },  // Coal
-  5:  { populationCost: 2, capacityGrant: 0 },  // Wood
-  6:  { populationCost: 2, capacityGrant: 0 },  // Copper
-  7:  { populationCost: 2, capacityGrant: 0 },  // Ironwood
-  9:  { populationCost: 2, capacityGrant: 0 },  // Gold
-  11: { populationCost: 2, capacityGrant: 0 },  // Mithral
-  13: { populationCost: 2, capacityGrant: 0 },  // ColdIron
-  21: { populationCost: 2, capacityGrant: 0 },  // Adamantine
-  24: { populationCost: 2, capacityGrant: 0 },  // Dragonhide
-  28: { populationCost: 3, capacityGrant: 0 },  // KnightT1
-  29: { populationCost: 3, capacityGrant: 0 },  // KnightT2
-  30: { populationCost: 3, capacityGrant: 0 },  // KnightT3
-  31: { populationCost: 3, capacityGrant: 0 },  // CrossbowmanT1
-  32: { populationCost: 3, capacityGrant: 0 },  // CrossbowmanT2
-  33: { populationCost: 3, capacityGrant: 0 },  // CrossbowmanT3
-  34: { populationCost: 3, capacityGrant: 0 },  // PaladinT1
-  35: { populationCost: 3, capacityGrant: 0 },  // PaladinT2
-  36: { populationCost: 3, capacityGrant: 0 },  // PaladinT3
-  37: { populationCost: 1, capacityGrant: 0 },  // Wheat
+  1: { populationCost: 0, capacityGrant: 6 }, // WorkersHut
+  4: { populationCost: 2, capacityGrant: 0 }, // Coal
+  5: { populationCost: 2, capacityGrant: 0 }, // Wood
+  6: { populationCost: 2, capacityGrant: 0 }, // Copper
+  7: { populationCost: 2, capacityGrant: 0 }, // Ironwood
+  9: { populationCost: 2, capacityGrant: 0 }, // Gold
+  11: { populationCost: 2, capacityGrant: 0 }, // Mithral
+  13: { populationCost: 2, capacityGrant: 0 }, // ColdIron
+  21: { populationCost: 2, capacityGrant: 0 }, // Adamantine
+  24: { populationCost: 2, capacityGrant: 0 }, // Dragonhide
+  28: { populationCost: 3, capacityGrant: 0 }, // KnightT1
+  29: { populationCost: 3, capacityGrant: 0 }, // KnightT2
+  30: { populationCost: 3, capacityGrant: 0 }, // KnightT3
+  31: { populationCost: 3, capacityGrant: 0 }, // CrossbowmanT1
+  32: { populationCost: 3, capacityGrant: 0 }, // CrossbowmanT2
+  33: { populationCost: 3, capacityGrant: 0 }, // CrossbowmanT3
+  34: { populationCost: 3, capacityGrant: 0 }, // PaladinT1
+  35: { populationCost: 3, capacityGrant: 0 }, // PaladinT2
+  36: { populationCost: 3, capacityGrant: 0 }, // PaladinT3
+  37: { populationCost: 1, capacityGrant: 0 }, // Wheat
 };
 
 function makeState(overrides: Partial<RealmState> = {}): RealmState {
   return {
     biome: 11, // Grassland → Paladin
-    level: 0,  // Settlement (6 slots)
+    level: 0, // Settlement (6 slots)
     buildingCounts: new Map(),
     ...overrides,
   };
@@ -50,7 +50,7 @@ describe("nextPlan — partial progress", () => {
     const state = makeState({
       buildingCounts: new Map([
         [37, 1], // WheatFarm built
-        [1, 1],  // WorkersHut built
+        [1, 1], // WorkersHut built
       ]),
     });
     const plan = nextPlan(state, POP_INFO);
@@ -65,7 +65,12 @@ describe("nextPlan — slot limit triggers upgrade", () => {
     const state = makeState({
       level: 0,
       buildingCounts: new Map([
-        [37, 1], [1, 1], [4, 1], [6, 1], [5, 1], [34, 1],
+        [37, 1],
+        [1, 1],
+        [4, 1],
+        [6, 1],
+        [5, 1],
+        [34, 1],
       ]),
     });
 
@@ -101,7 +106,11 @@ describe("nextPlan — fills all slots", () => {
     const state = makeState({
       level: 1, // City (18 slots)
       buildingCounts: new Map([
-        [37, 1], [1, 1], [4, 1], [6, 1], [5, 1],
+        [37, 1],
+        [1, 1],
+        [4, 1],
+        [6, 1],
+        [5, 1],
       ]),
     });
     const plan = nextPlan(state, POP_INFO);
@@ -116,10 +125,10 @@ describe("nextPlan — population bottleneck injects WorkersHut", () => {
       level: 1,
       buildingCounts: new Map([
         [37, 1], // Wheat — popCost=1
-        [1, 1],  // WorkersHut — cap=6
-        [4, 1],  // Coal — popCost=2
-        [6, 1],  // Copper — popCost=2
-        [5, 1],  // Wood — popCost=2
+        [1, 1], // WorkersHut — cap=6
+        [4, 1], // Coal — popCost=2
+        [6, 1], // Copper — popCost=2
+        [5, 1], // Wood — popCost=2
         // popUsed=7, popCap=6 → over capacity
       ]),
     });
@@ -156,7 +165,11 @@ describe("nextPlan — different biomes", () => {
       biome: 2,
       level: 1,
       buildingCounts: new Map([
-        [37, 1], [1, 2], [4, 1], [6, 1], [5, 1],
+        [37, 1],
+        [1, 2],
+        [4, 1],
+        [6, 1],
+        [5, 1],
       ]),
     });
     const plan = nextPlan(state, POP_INFO);

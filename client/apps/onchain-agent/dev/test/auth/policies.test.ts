@@ -9,8 +9,7 @@ describe("buildPolicies", () => {
     expect(addresses.length).toBeGreaterThan(20);
 
     // VRF contract should be present
-    const vrf =
-      "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
+    const vrf = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
     expect(policies.contracts?.[vrf]).toBeDefined();
     expect(policies.contracts?.[vrf]?.methods).toContainEqual(
       expect.objectContaining({ entrypoint: "request_random" }),
@@ -19,9 +18,7 @@ describe("buildPolicies", () => {
     // Troop battle should have the 3 attack methods + dojo methods
     const battleAddr = addresses.find((a) => {
       const methods = policies.contracts?.[a]?.methods ?? [];
-      return methods.some(
-        (m: any) => m.entrypoint === "attack_explorer_vs_explorer",
-      );
+      return methods.some((m: any) => m.entrypoint === "attack_explorer_vs_explorer");
     });
     expect(battleAddr).toBeDefined();
   });
@@ -32,9 +29,7 @@ describe("buildPolicies", () => {
 
     const approvalContracts = addresses.filter((a) => {
       const methods = policies.contracts?.[a]?.methods ?? [];
-      return methods.some(
-        (m: any) => m.entrypoint === "set_approval_for_all",
-      );
+      return methods.some((m: any) => m.entrypoint === "set_approval_for_all");
     });
     expect(approvalContracts.length).toBe(2);
   });
@@ -85,9 +80,7 @@ describe("buildPolicies", () => {
       feeToken: "0xFEE",
     });
     expect(policies.contracts["0xENTRY"]).toBeDefined();
-    expect(policies.contracts["0xENTRY"].methods[0].entrypoint).toBe(
-      "token_lock",
-    );
+    expect(policies.contracts["0xENTRY"].methods[0].entrypoint).toBe("token_lock");
     expect(policies.contracts["0xFEE"]).toBeDefined();
     expect(policies.contracts["0xFEE"].methods[0].entrypoint).toBe("approve");
   });

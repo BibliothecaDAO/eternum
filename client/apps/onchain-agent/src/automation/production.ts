@@ -24,14 +24,14 @@ import type { TroopPath } from "./build-order.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export interface ProductionCall {
+interface ProductionCall {
   resourceId: number;
   cycles: number;
   produced: number;
   method: "complex" | "simple";
 }
 
-export interface ProductionPlan {
+interface ProductionPlan {
   calls: ProductionCall[];
   consumed: Map<number, number>;
   produced: Map<number, number>;
@@ -90,22 +90,31 @@ interface TroopPathConfig {
 
 const TROOP_PATHS: Record<TroopPath, TroopPathConfig> = {
   Knight: {
-    t1: R.Knight, t2: R.KnightT2, t3: R.KnightT3,
-    t2Resource: R.ColdIron, t3Resource: R.Mithral,
+    t1: R.Knight,
+    t2: R.KnightT2,
+    t3: R.KnightT3,
+    t2Resource: R.ColdIron,
+    t3Resource: R.Mithral,
     t1Building: TROOP_BUILDING.KnightT1,
     t2Building: TROOP_BUILDING.KnightT2,
     t3Building: TROOP_BUILDING.KnightT3,
   },
   Crossbowman: {
-    t1: R.Crossbowman, t2: R.CrossbowmanT2, t3: R.CrossbowmanT3,
-    t2Resource: R.Ironwood, t3Resource: R.Adamantine,
+    t1: R.Crossbowman,
+    t2: R.CrossbowmanT2,
+    t3: R.CrossbowmanT3,
+    t2Resource: R.Ironwood,
+    t3Resource: R.Adamantine,
     t1Building: TROOP_BUILDING.CrossbowmanT1,
     t2Building: TROOP_BUILDING.CrossbowmanT2,
     t3Building: TROOP_BUILDING.CrossbowmanT3,
   },
   Paladin: {
-    t1: R.Paladin, t2: R.PaladinT2, t3: R.PaladinT3,
-    t2Resource: R.Gold, t3Resource: R.Dragonhide,
+    t1: R.Paladin,
+    t2: R.PaladinT2,
+    t3: R.PaladinT3,
+    t2Resource: R.Gold,
+    t3Resource: R.Dragonhide,
     t1Building: TROOP_BUILDING.PaladinT1,
     t2Building: TROOP_BUILDING.PaladinT2,
     t3Building: TROOP_BUILDING.PaladinT3,

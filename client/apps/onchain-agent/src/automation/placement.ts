@@ -14,9 +14,7 @@ export function getDirectionsArray(start: [number, number], end: [number, number
 
   if (startCol === endCol && startRow === endRow) return [];
 
-  const queue: { col: number; row: number; path: Direction[] }[] = [
-    { col: startCol, row: startRow, path: [] },
-  ];
+  const queue: { col: number; row: number; path: Direction[] }[] = [{ col: startCol, row: startRow, path: [] }];
   const visited = new Set<string>();
 
   while (queue.length > 0) {

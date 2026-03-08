@@ -5,7 +5,7 @@
 import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-export interface RealmSnapshot {
+interface RealmSnapshot {
   balances: Map<number, number>;
   buildingCounts: Map<number, number>;
   activeBuildings: Set<number>;

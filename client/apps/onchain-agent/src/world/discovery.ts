@@ -6,11 +6,7 @@
  * common/factory/endpoints so the agent stays in sync with the game client.
  */
 
-import {
-  FACTORY_QUERIES,
-  buildApiUrl,
-  fetchWithErrorHandling,
-} from "@bibliothecadao/torii";
+import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import type { Chain } from "../auth/policies.js";
 
 const CARTRIDGE_API = "https://api.cartridge.gg";
@@ -88,7 +84,7 @@ function extractWorldAddress(row: Record<string, unknown>): string | null {
 // Public API
 // ---------------------------------------------------------------------------
 
-export interface WorldInfo {
+interface WorldInfo {
   toriiUrl: string;
   worldAddress: string;
   rpcUrl: string;
@@ -152,10 +148,7 @@ export async function discoverWorld(chain: Chain, worldName: string): Promise<Wo
   }
 
   // Default RPC based on chain
-  const rpcUrl =
-    chain === "sepolia"
-      ? `${CARTRIDGE_API}/x/starknet/sepolia`
-      : `${CARTRIDGE_API}/x/starknet/mainnet`;
+  const rpcUrl = chain === "sepolia" ? `${CARTRIDGE_API}/x/starknet/sepolia` : `${CARTRIDGE_API}/x/starknet/mainnet`;
 
   return { toriiUrl, worldAddress, rpcUrl, contractsBySelector };
 }
