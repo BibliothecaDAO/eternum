@@ -382,14 +382,7 @@ export const ScoreToBeatPanel = () => {
     const perGameHeaders = cappedSelectedGameNames.map((gameName) => `${gameName} score`);
 
     const rows = [
-      [
-        "Rank",
-        "Display name",
-        "Address",
-        "Combined score",
-        ...bestRunHeaders,
-        ...perGameHeaders,
-      ],
+      ["Rank", "Display name", "Address", "Combined score", ...bestRunHeaders, ...perGameHeaders],
       ...scoreToBeatRows.map((entry, index) => {
         const bestRunScores = Array.from({ length: runsToAggregate }, (_, runIndex) => {
           const run = entry.runs[runIndex];
