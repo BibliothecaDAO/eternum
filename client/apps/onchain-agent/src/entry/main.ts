@@ -259,6 +259,7 @@ export async function main() {
     account,
     account.address,
     config.dataDir,
+    mapCtx,
   );
   automationLoop.start();
 

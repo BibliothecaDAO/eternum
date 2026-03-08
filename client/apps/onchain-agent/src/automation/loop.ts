@@ -2,6 +2,7 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import type { EternumClient } from "@bibliothecadao/client";
 import type { EternumProvider } from "@bibliothecadao/provider";
+import type { MapContext } from "../map/context.js";
 import { parseRealmSnapshot } from "./snapshot.js";
 import { resolveIntent } from "./runner.js";
 import { buildOrderForBiome, troopPathForBiome } from "./build-order.js";
@@ -24,6 +25,7 @@ export function createAutomationLoop(
   signer: any,
   playerAddress: string,
   dataDir: string,
+  mapCtx: MapContext,
   intervalMs = 60_000,
 ): AutomationLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -35,29 +37,35 @@ export function createAutomationLoop(
       const sql = client.sql as any;
       if (typeof sql.fetchStructuresByOwner !== "function") return;
 
-      const structures: { entity_id: number; category?: number }[] =
+      const structures: { entity_id: number; coord_x: number; coord_y: number }[] =
         await sql.fetchStructuresByOwner(playerAddress);
 
-      const realmEntities = structures.map((s) => Number(s.entity_id)).filter((id) => id > 0);
+      const realmEntities = structures.filter((s) => Number(s.entity_id) > 0);
       if (realmEntities.length === 0) return;
+
+      // Build coordinate → biome lookup from map snapshot
+      const gridIndex = mapCtx.snapshot?.gridIndex;
 
       // Phase 2: Fetch state in parallel
       const snapshotRows = await Promise.all(
-        realmEntities.map(async (entityId) => {
+        realmEntities.map(async (s) => {
+          const entityId = Number(s.entity_id);
+          const biome = gridIndex?.get(`${s.coord_x},${s.coord_y}`)?.biome ?? 11;
           try {
             const rows = await sql.fetchResourceBalancesAndProduction([entityId]);
-            return { entityId, row: rows?.[0] ?? null };
+            return { entityId, biome, coordX: s.coord_x, coordY: s.coord_y, row: rows?.[0] ?? null };
           } catch {
-            return { entityId, row: null };
+            return { entityId, biome, coordX: s.coord_x, coordY: s.coord_y, row: null };
           }
         }),
       );
 
       // Fetch building positions for all realms
+      const entityIds = realmEntities.map((s) => Number(s.entity_id));
       let buildingRows: { outer_entity_id: number; inner_col: number; inner_row: number; category: number }[] = [];
       try {
         if (typeof sql.fetchBuildingsByStructures === "function") {
-          buildingRows = await sql.fetchBuildingsByStructures(realmEntities);
+          buildingRows = await sql.fetchBuildingsByStructures(entityIds);
         }
       } catch {
         // Continue without building data
@@ -75,12 +83,10 @@ export function createAutomationLoop(
       const realmStatuses: RealmStatus[] = [];
 
       const results = await Promise.allSettled(
-        snapshotRows.map(async ({ entityId, row }) => {
+        snapshotRows.map(async ({ entityId, biome, row }) => {
           const snapshot = parseRealmSnapshot(row);
 
-          // Fallback biome/level — Task 7 will resolve real biome
-          const biome = 11;
-          const level = 1;
+          const level = 1; // TODO: resolve from structure level
           const realmName = `Realm ${entityId}`;
 
           const realmState: RealmState = {
