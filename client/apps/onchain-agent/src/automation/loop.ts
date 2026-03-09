@@ -169,7 +169,12 @@ export function createAutomationLoop(
 
       const results = await Promise.allSettled(
         snapshotRows.map(async ({ entityId, biome, level, row }) => {
-          const currentTimestamp = Math.floor(Date.now() / 1000);
+          // Use wall-clock seconds (same default as game client's getBlockTimestamp).
+          // Subtract a small buffer to avoid overestimating production when our
+          // clock is slightly ahead of the chain (mirrors the game client's
+          // CONSERVATIVE_TICK_BUFFER logic).
+          const CONSERVATIVE_BUFFER_SECONDS = 10;
+          const currentTimestamp = Math.floor(Date.now() / 1000) - CONSERVATIVE_BUFFER_SECONDS;
           const snapshot = parseRealmSnapshot(row, currentTimestamp);
           const realmName = `Realm ${entityId}`;
 
