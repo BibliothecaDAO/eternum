@@ -1,25 +1,25 @@
 /**
- * Production planner — rate-capped, dependency-ordered.
+ * Production planner — budget-capped, dependency-ordered.
  *
  * Given resource balances, building counts, and game config,
  * calculates how many production cycles to run for each resource
- * THIS tick. Each resource is capped at its building's output rate
- * × building count per tick, and inputs are consumed from a shared
- * budget so downstream recipes see reduced availability.
+ * THIS tick. Inputs are consumed from a shared budget (90% of
+ * balance) so downstream recipes see reduced availability.
  *
  * Processing order:
  *   1. T1 resources (Wood, Coal, Copper)
- *   2. T2 resources (path-specific: ColdIron / Ironwood / Gold)
- *   3. T3 resources (path-specific: Mithral / Adamantine / Dragonhide)
- *   4. T1 troops
- *   5. T2 troops (if building exists)
- *   6. T3 troops (if building exists)
+ *   2. Donkeys
+ *   3. T2 resources (path-specific: ColdIron / Ironwood / Gold)
+ *   4. T3 resources (path-specific: Mithral / Adamantine / Dragonhide)
+ *   5. T1 troops
+ *   6. T2 troops (if building exists)
+ *   7. T3 troops (if building exists)
  *
- * Simple recipes run as fallback for T1 resources and T1 troops
- * when complex inputs are insufficient.
+ * Each resource gets both complex and simple targets (if recipes
+ * exist), so both methods run in a single pass.
  */
 
-import type { GameConfig, ResourceFactoryConfig } from "@bibliothecadao/torii";
+import type { GameConfig } from "@bibliothecadao/torii";
 import type { TroopPath } from "./build-order.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -155,67 +155,40 @@ function resolveTargets(
     return factory.simpleInputs.length > 0 && factory.outputPerSimpleInput > 0;
   }
 
-  function addResourceIfAvailable(resourceId: number) {
-    const buildingType = resourceId + RESOURCE_TO_BUILDING_OFFSET;
+  /** Add complex then simple targets for a resource if the building exists. */
+  function addResource(resourceId: number, buildingType: number) {
     const count = getBuildingCount(buildingType);
     if (count <= 0) return;
     if (hasRecipe(resourceId, "complex")) {
       targets.push({ resourceId, method: "complex", buildingCount: count });
     }
-  }
-
-  function addTroopIfAvailable(resourceId: number, buildingType: number) {
-    const count = getBuildingCount(buildingType);
-    if (count <= 0) return;
-    if (hasRecipe(resourceId, "complex")) {
-      targets.push({ resourceId, method: "complex", buildingCount: count });
+    if (hasRecipe(resourceId, "simple")) {
+      targets.push({ resourceId, method: "simple", buildingCount: count });
     }
   }
 
   // Level 1: T1 resources
-  addResourceIfAvailable(R.Wood);
-  addResourceIfAvailable(R.Coal);
-  addResourceIfAvailable(R.Copper);
+  addResource(R.Wood, R.Wood + RESOURCE_TO_BUILDING_OFFSET);
+  addResource(R.Coal, R.Coal + RESOURCE_TO_BUILDING_OFFSET);
+  addResource(R.Copper, R.Copper + RESOURCE_TO_BUILDING_OFFSET);
+
+  // Donkeys (resource 25, building 27)
+  const DONKEY_RESOURCE = 25;
+  const DONKEY_BUILDING = DONKEY_RESOURCE + RESOURCE_TO_BUILDING_OFFSET;
+  addResource(DONKEY_RESOURCE, DONKEY_BUILDING);
 
   // Level 2: T2 resource (path-specific)
-  addResourceIfAvailable(tp.t2Resource);
+  addResource(tp.t2Resource, tp.t2Resource + RESOURCE_TO_BUILDING_OFFSET);
 
   // Level 3: T3 resource (path-specific)
-  addResourceIfAvailable(tp.t3Resource);
+  addResource(tp.t3Resource, tp.t3Resource + RESOURCE_TO_BUILDING_OFFSET);
 
-  // Level 4-6: Troops
-  addTroopIfAvailable(tp.t1, tp.t1Building);
-  addTroopIfAvailable(tp.t2, tp.t2Building);
-  addTroopIfAvailable(tp.t3, tp.t3Building);
-
-  // Simple fallbacks for T1 resources and T1 troops
-  for (const rid of [R.Wood, R.Coal, R.Copper]) {
-    const buildingType = rid + RESOURCE_TO_BUILDING_OFFSET;
-    const count = getBuildingCount(buildingType);
-    if (count > 0 && hasRecipe(rid, "simple")) {
-      targets.push({ resourceId: rid, method: "simple", buildingCount: count });
-    }
-  }
-  {
-    const count = getBuildingCount(tp.t1Building);
-    if (count > 0 && hasRecipe(tp.t1, "simple")) {
-      targets.push({ resourceId: tp.t1, method: "simple", buildingCount: count });
-    }
-  }
+  // Level 4-6: Troops (use troop-specific building types, not offset)
+  addResource(tp.t1, tp.t1Building);
+  addResource(tp.t2, tp.t2Building);
+  addResource(tp.t3, tp.t3Building);
 
   return targets;
-}
-
-// ── Rate cap ──────────────────────────────────────────────────────────
-
-function rateCap(
-  factory: ResourceFactoryConfig,
-  buildingCount: number,
-  tickSeconds: number,
-  isVillage: boolean,
-): number {
-  const baseRate = isVillage ? factory.villageOutputPerSecond : factory.realmOutputPerSecond;
-  return Math.floor(baseRate * buildingCount * tickSeconds);
 }
 
 // ── Planner ───────────────────────────────────────────────────────────
@@ -266,13 +239,6 @@ export function planProduction(
       continue;
     }
 
-    // Rate cap: max cycles this building can process per tick (rate × count × seconds)
-    const maxRate = rateCap(factory, target.buildingCount, tickSeconds, isVillage);
-    if (maxRate <= 0) {
-      skipped.push({ resourceId: target.resourceId, reason: "Zero production rate" });
-      continue;
-    }
-
     // Affordability: bottleneck across all inputs
     let affordableCycles = Infinity;
     for (const input of inputs) {
@@ -285,7 +251,7 @@ export function planProduction(
       affordableCycles = Math.min(affordableCycles, Math.floor(remaining / input.amount));
     }
 
-    const cycles = Math.min(maxRate, Number.isFinite(affordableCycles) ? affordableCycles : 0);
+    const cycles = Number.isFinite(affordableCycles) ? affordableCycles : 0;
 
     if (cycles <= 0) {
       skipped.push({ resourceId: target.resourceId, reason: `Insufficient ${target.method} inputs` });
