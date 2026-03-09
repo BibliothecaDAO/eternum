@@ -23,6 +23,14 @@ export type WorldmapChunkDiagnosticsEvent =
   | "refresh_superseded"
   | "duplicate_tile_cache_invalidated"
   | "duplicate_tile_reconcile_requested"
+  | "terrain_candidate_built"
+  | "terrain_candidate_rejected"
+  | "terrain_candidate_promoted"
+  | "terrain_cache_reuse_attempted"
+  | "terrain_cache_reuse_rejected"
+  | "terrain_reconcile_requested"
+  | "terrain_reconcile_dropped_stale"
+  | "terrain_fallback_recovery_started"
   | "switch_duration_recorded"
   | "manager_duration_recorded";
 
@@ -65,6 +73,14 @@ export interface WorldmapChunkDiagnostics {
   refreshSuperseded: number;
   duplicateTileCacheInvalidated: number;
   duplicateTileReconcileRequested: number;
+  terrainCandidateBuilt: number;
+  terrainCandidateRejected: number;
+  terrainCandidatePromoted: number;
+  terrainCacheReuseAttempted: number;
+  terrainCacheReuseRejected: number;
+  terrainReconcileRequested: number;
+  terrainReconcileDroppedStale: number;
+  terrainFallbackRecoveryStarted: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   switchDurationMsSamples: number[];
@@ -123,6 +139,14 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     refreshSuperseded: 0,
     duplicateTileCacheInvalidated: 0,
     duplicateTileReconcileRequested: 0,
+    terrainCandidateBuilt: 0,
+    terrainCandidateRejected: 0,
+    terrainCandidatePromoted: 0,
+    terrainCacheReuseAttempted: 0,
+    terrainCacheReuseRejected: 0,
+    terrainReconcileRequested: 0,
+    terrainReconcileDroppedStale: 0,
+    terrainFallbackRecoveryStarted: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     switchDurationMsSamples: [],
@@ -216,6 +240,30 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "duplicate_tile_reconcile_requested":
       diagnostics.duplicateTileReconcileRequested += 1;
+      break;
+    case "terrain_candidate_built":
+      diagnostics.terrainCandidateBuilt += 1;
+      break;
+    case "terrain_candidate_rejected":
+      diagnostics.terrainCandidateRejected += 1;
+      break;
+    case "terrain_candidate_promoted":
+      diagnostics.terrainCandidatePromoted += 1;
+      break;
+    case "terrain_cache_reuse_attempted":
+      diagnostics.terrainCacheReuseAttempted += 1;
+      break;
+    case "terrain_cache_reuse_rejected":
+      diagnostics.terrainCacheReuseRejected += 1;
+      break;
+    case "terrain_reconcile_requested":
+      diagnostics.terrainReconcileRequested += 1;
+      break;
+    case "terrain_reconcile_dropped_stale":
+      diagnostics.terrainReconcileDroppedStale += 1;
+      break;
+    case "terrain_fallback_recovery_started":
+      diagnostics.terrainFallbackRecoveryStarted += 1;
       break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;

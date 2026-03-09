@@ -1,3 +1,5 @@
+import type { WorldmapTerrainCandidateRejectReason, WorldmapTerrainSnapshot } from "./worldmap-terrain-convergence";
+
 export type WorldmapTerrainRecoveryReason = "zero" | "partial" | "offscreen";
 
 export interface WorldmapTerrainHealthState {
@@ -27,6 +29,9 @@ export interface WorldmapTerrainHealthState {
   currentChunkVisible: boolean | null;
   hasCurrentChunkBounds: boolean;
   terrainRecoveryInFlight: boolean;
+  activeTerrainSnapshot?: WorldmapTerrainSnapshot | null;
+  candidateTerrainSnapshot?: WorldmapTerrainSnapshot | null;
+  lastTerrainCandidateRejectReason?: WorldmapTerrainCandidateRejectReason | null;
 }
 
 export interface WorldmapTerrainRecoveryDebugEvent {
@@ -42,7 +47,12 @@ interface BuildTerrainRecoveryDebugEventInput {
 }
 
 export function buildWorldmapTerrainHealthState(input: WorldmapTerrainHealthState): WorldmapTerrainHealthState {
-  return { ...input };
+  return {
+    ...input,
+    activeTerrainSnapshot: input.activeTerrainSnapshot ?? null,
+    candidateTerrainSnapshot: input.candidateTerrainSnapshot ?? null,
+    lastTerrainCandidateRejectReason: input.lastTerrainCandidateRejectReason ?? null,
+  };
 }
 
 export function buildTerrainRecoveryDebugEvent(

@@ -20,10 +20,14 @@ interface RunChunkSwitchResult {
   committedChunk: string;
 }
 
+interface TerrainBuildResult {
+  promoted: boolean;
+}
+
 export function createWorldmapChunkOrchestrationFixture() {
   const tileFetch = createControlledAsyncCall<[string], boolean>();
   const boundsSwitch = createControlledAsyncCall<[string, number | undefined], void>();
-  const gridUpdate = createControlledAsyncCall<[number, number], void>();
+  const gridUpdate = createControlledAsyncCall<[number, number], TerrainBuildResult>();
   const managerUpdate = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
   let currentChunk = "null";
 
@@ -44,7 +48,16 @@ export function createWorldmapChunkOrchestrationFixture() {
       const tileFetchPromise = tileFetch.fn(input.chunkKey);
       const boundsSwitchPromise = boundsSwitch.fn(input.chunkKey, input.transitionToken);
 
-      await gridUpdate.fn(input.startRow, input.startCol);
+      const terrainBuildResult = (await gridUpdate.fn(input.startRow, input.startCol)) ?? { promoted: true };
+      if (!terrainBuildResult.promoted) {
+        return {
+          tileFetchSucceeded: false,
+          committedManagers: false,
+          rolledBack: true,
+          unregisteredPreviousChunk: false,
+          committedChunk: currentChunk,
+        };
+      }
 
       const tileFetchSucceeded = await tileFetchPromise;
       await boundsSwitchPromise;

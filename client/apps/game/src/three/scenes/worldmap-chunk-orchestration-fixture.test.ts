@@ -25,7 +25,7 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     expect(fixture.gridUpdate.calls).toEqual([[24, 24]]);
     expect(fixture.managerUpdate.calls).toEqual([]);
 
-    fixture.gridUpdate.resolveNext();
+    fixture.gridUpdate.resolveNext({ promoted: true });
     fixture.tileFetch.resolveNext(true);
     fixture.boundsSwitch.resolveNext();
 
@@ -64,7 +64,7 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
 
     await flushMicrotasks(2);
     expect(fixture.getCurrentChunk()).toBe("0,0");
-    fixture.gridUpdate.resolveNext();
+    fixture.gridUpdate.resolveNext({ promoted: true });
     fixture.tileFetch.resolveNext(false);
     fixture.boundsSwitch.resolveNext();
 
@@ -95,7 +95,7 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     });
 
     await flushMicrotasks(2);
-    fixture.gridUpdate.resolveNext();
+    fixture.gridUpdate.resolveNext({ promoted: true });
     fixture.tileFetch.resolveNext(true);
     fixture.boundsSwitch.resolveNext();
 
@@ -107,6 +107,35 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
       unregisteredPreviousChunk: false,
       committedChunk: "0,0",
     });
+    expect(fixture.managerUpdate.calls).toEqual([]);
+    expect(fixture.getCurrentChunk()).toBe("0,0");
+  });
+
+  it("preserves previous chunk authority when terrain promotion is rejected", async () => {
+    const fixture = createWorldmapChunkOrchestrationFixture();
+
+    const switchPromise = fixture.runChunkSwitch({
+      chunkKey: "24,24",
+      startRow: 24,
+      startCol: 24,
+      force: false,
+      transitionToken: 13,
+      isCurrentTransition: true,
+      previousChunk: "0,0",
+      currentChunk: "0,0",
+    });
+
+    await flushMicrotasks(2);
+    fixture.gridUpdate.resolveNext({ promoted: false });
+
+    await expect(switchPromise).resolves.toEqual({
+      tileFetchSucceeded: false,
+      committedManagers: false,
+      rolledBack: true,
+      unregisteredPreviousChunk: false,
+      committedChunk: "0,0",
+    });
+    expect(fixture.tileFetch.calls).toEqual([["24,24"]]);
     expect(fixture.managerUpdate.calls).toEqual([]);
     expect(fixture.getCurrentChunk()).toBe("0,0");
   });

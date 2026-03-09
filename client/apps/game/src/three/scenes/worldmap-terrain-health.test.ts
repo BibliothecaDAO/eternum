@@ -25,6 +25,9 @@ describe("worldmap terrain health", () => {
       currentChunkVisible: true,
       hasCurrentChunkBounds: true,
       terrainRecoveryInFlight: false,
+      activeTerrainSnapshot: null,
+      candidateTerrainSnapshot: null,
+      lastTerrainCandidateRejectReason: null,
     });
 
     expect(snapshot).toEqual<WorldmapTerrainHealthState>({
@@ -44,7 +47,13 @@ describe("worldmap terrain health", () => {
       currentChunkVisible: true,
       hasCurrentChunkBounds: true,
       terrainRecoveryInFlight: false,
+      activeTerrainSnapshot: null,
+      candidateTerrainSnapshot: null,
+      lastTerrainCandidateRejectReason: null,
     });
+    expect((snapshot as { activeTerrainSnapshot?: unknown }).activeTerrainSnapshot).toBeNull();
+    expect((snapshot as { candidateTerrainSnapshot?: unknown }).candidateTerrainSnapshot).toBeNull();
+    expect((snapshot as { lastTerrainCandidateRejectReason?: unknown }).lastTerrainCandidateRejectReason).toBeNull();
   });
 
   it("records recovery events with a stable timestamped snapshot", () => {
@@ -78,5 +87,8 @@ describe("worldmap terrain health", () => {
       recordedAtMs: 1234,
       snapshot,
     });
+    expect((event.snapshot as { activeTerrainSnapshot?: unknown }).activeTerrainSnapshot).toBeNull();
+    expect((event.snapshot as { candidateTerrainSnapshot?: unknown }).candidateTerrainSnapshot).toBeNull();
+    expect((event.snapshot as { lastTerrainCandidateRejectReason?: unknown }).lastTerrainCandidateRejectReason).toBeNull();
   });
 });

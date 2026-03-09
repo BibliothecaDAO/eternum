@@ -42,6 +42,14 @@ describe("worldmap-chunk-diagnostics", () => {
     });
     expect(diagnostics.duplicateTileCacheInvalidated).toBe(0);
     expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
+    expect((diagnostics as { terrainCandidateBuilt?: number }).terrainCandidateBuilt).toBe(0);
+    expect((diagnostics as { terrainCandidateRejected?: number }).terrainCandidateRejected).toBe(0);
+    expect((diagnostics as { terrainCandidatePromoted?: number }).terrainCandidatePromoted).toBe(0);
+    expect((diagnostics as { terrainCacheReuseAttempted?: number }).terrainCacheReuseAttempted).toBe(0);
+    expect((diagnostics as { terrainCacheReuseRejected?: number }).terrainCacheReuseRejected).toBe(0);
+    expect((diagnostics as { terrainReconcileRequested?: number }).terrainReconcileRequested).toBe(0);
+    expect((diagnostics as { terrainReconcileDroppedStale?: number }).terrainReconcileDroppedStale).toBe(0);
+    expect((diagnostics as { terrainFallbackRecoveryStarted?: number }).terrainFallbackRecoveryStarted).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
     expect(diagnostics.switchDurationMsMax).toBe(0);
     expect(diagnostics.switchDurationMsSamples).toEqual([]);
@@ -77,6 +85,14 @@ describe("worldmap-chunk-diagnostics", () => {
       "refresh_superseded",
       "duplicate_tile_cache_invalidated",
       "duplicate_tile_reconcile_requested",
+      "terrain_candidate_built",
+      "terrain_candidate_rejected",
+      "terrain_candidate_promoted",
+      "terrain_cache_reuse_attempted",
+      "terrain_cache_reuse_rejected",
+      "terrain_reconcile_requested",
+      "terrain_reconcile_dropped_stale",
+      "terrain_fallback_recovery_started",
     ];
 
     events.forEach((event) =>
@@ -113,6 +129,14 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.refreshSuperseded).toBe(1);
     expect(diagnostics.duplicateTileCacheInvalidated).toBe(1);
     expect(diagnostics.duplicateTileReconcileRequested).toBe(1);
+    expect((diagnostics as { terrainCandidateBuilt?: number }).terrainCandidateBuilt).toBe(1);
+    expect((diagnostics as { terrainCandidateRejected?: number }).terrainCandidateRejected).toBe(1);
+    expect((diagnostics as { terrainCandidatePromoted?: number }).terrainCandidatePromoted).toBe(1);
+    expect((diagnostics as { terrainCacheReuseAttempted?: number }).terrainCacheReuseAttempted).toBe(1);
+    expect((diagnostics as { terrainCacheReuseRejected?: number }).terrainCacheReuseRejected).toBe(1);
+    expect((diagnostics as { terrainReconcileRequested?: number }).terrainReconcileRequested).toBe(1);
+    expect((diagnostics as { terrainReconcileDroppedStale?: number }).terrainReconcileDroppedStale).toBe(1);
+    expect((diagnostics as { terrainFallbackRecoveryStarted?: number }).terrainFallbackRecoveryStarted).toBe(1);
   });
 
   it("accumulates switch and manager durations", () => {
