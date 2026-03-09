@@ -408,6 +408,7 @@ export default class WorldmapScene extends HexagonScene {
   private selectionPulseManager: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
+  private armyIdsByStructureOwner: Map<ID, Set<ID>> = new Map();
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
@@ -1366,11 +1367,8 @@ export default class WorldmapScene extends HexagonScene {
       })
       .forEach((armyId) => attachedArmyIds.add(armyId));
 
-    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
-      if (ownerStructureId === update.entityId) {
-        attachedArmyIds.add(armyId);
-      }
-    });
+    const trackedArmyIds = this.armyIdsByStructureOwner.get(update.entityId);
+    trackedArmyIds?.forEach((armyId) => attachedArmyIds.add(armyId));
 
     attachedArmyIds.forEach((armyId) => {
       const resolvedOwnerAddress = resolveAttachedArmyOwnerFromStructure({
@@ -2130,9 +2128,7 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
     // Show selection pulse for the selected army
-    const selectedArmyData = this.armyManager
-      .getArmies()
-      .find((army) => Number(army.entityId) === Number(selectedEntityId));
+    const selectedArmyData = this.armyManager.getArmy(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
@@ -2257,6 +2253,52 @@ export default class WorldmapScene extends HexagonScene {
     this.chestManager.addLabelsToScene();
   }
 
+  private setArmyStructureOwner(entityId: ID, ownerStructureId: ID | null | undefined): void {
+    if (ownerStructureId === undefined || ownerStructureId === null || ownerStructureId === 0) {
+      this.clearArmyStructureOwner(entityId);
+      return;
+    }
+
+    const previousStructureId = this.armyStructureOwners.get(entityId);
+    if (previousStructureId === ownerStructureId) {
+      return;
+    }
+
+    if (previousStructureId !== undefined) {
+      const previousArmyIds = this.armyIdsByStructureOwner.get(previousStructureId);
+      previousArmyIds?.delete(entityId);
+      if (previousArmyIds && previousArmyIds.size === 0) {
+        this.armyIdsByStructureOwner.delete(previousStructureId);
+      }
+    }
+
+    this.armyStructureOwners.set(entityId, ownerStructureId);
+    let trackedArmyIds = this.armyIdsByStructureOwner.get(ownerStructureId);
+    if (!trackedArmyIds) {
+      trackedArmyIds = new Set<ID>();
+      this.armyIdsByStructureOwner.set(ownerStructureId, trackedArmyIds);
+    }
+    trackedArmyIds.add(entityId);
+  }
+
+  private clearArmyStructureOwner(entityId: ID): void {
+    const previousStructureId = this.armyStructureOwners.get(entityId);
+    if (previousStructureId === undefined) {
+      return;
+    }
+
+    this.armyStructureOwners.delete(entityId);
+    const trackedArmyIds = this.armyIdsByStructureOwner.get(previousStructureId);
+    if (!trackedArmyIds) {
+      return;
+    }
+
+    trackedArmyIds.delete(entityId);
+    if (trackedArmyIds.size === 0) {
+      this.armyIdsByStructureOwner.delete(previousStructureId);
+    }
+  }
+
   private updateStructureOwnershipPulses(structureId: ID | undefined, extraHexes: HexPosition[] = []) {
     if (structureId === undefined || structureId === null) {
       this.selectionPulseManager.clearOwnershipPulses();
@@ -2280,16 +2322,10 @@ export default class WorldmapScene extends HexagonScene {
 
     addHex(this.getStructureHexPosition(structureId));
 
-    this.armyManager.getArmies().forEach((army) => {
+    this.armyManager.getArmiesForStructure(structureId).forEach((army) => {
       if (army.owningStructureId === structureId) {
         const normalized = army.hexCoords.getNormalized();
         addHex({ col: normalized.x, row: normalized.y });
-      }
-    });
-
-    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
-      if (ownerStructureId === structureId) {
-        addHex(this.armiesPositions.get(armyId));
       }
     });
 
@@ -2530,6 +2566,7 @@ export default class WorldmapScene extends HexagonScene {
       pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
       armyStructureOwners: this.armyStructureOwners,
+      armyIdsByStructureOwner: this.armyIdsByStructureOwner,
       fetchedChunks: this.fetchedChunks,
       pendingChunks: this.pendingChunks,
       pinnedChunkKeys: this.pinnedChunkKeys,
@@ -2568,7 +2605,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armiesPositions.delete(entityId);
     this.armyLastUpdateAt.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
-    this.armyStructureOwners.delete(entityId);
+    this.clearArmyStructureOwner(entityId);
     this.clearPendingArmyMovement(entityId);
   }
 
@@ -2753,11 +2790,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    if (ownerStructureId !== undefined && ownerStructureId !== null && ownerStructureId !== 0) {
-      this.armyStructureOwners.set(entityId, ownerStructureId);
-    } else {
-      this.armyStructureOwners.delete(entityId);
-    }
+    this.setArmyStructureOwner(entityId, ownerStructureId);
 
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
@@ -2791,7 +2824,7 @@ export default class WorldmapScene extends HexagonScene {
             this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
           }
           this.armiesPositions.delete(entityId);
-          this.armyStructureOwners.delete(entityId);
+          this.clearArmyStructureOwner(entityId);
           return;
         }
       } else {

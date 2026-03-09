@@ -136,6 +136,7 @@ export class ArmyManager {
   private visibleArmies: ArmyData[] = [];
   private visibleArmyOrder: ID[] = [];
   private visibleArmyIndices: Map<ID, number> = new Map();
+  private armiesByOwningStructure: Map<ID, Set<ID>> = new Map();
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
@@ -709,6 +710,10 @@ export class ArmyManager {
       return false;
     }
 
+    if (structureChanged) {
+      this.syncTrackedArmyStructureIndex(params.entityId, army.owningStructureId, nextOwningStructureId);
+    }
+
     army.owner.address = mergedOwner.address;
     army.owner.ownerName = mergedOwner.ownerName;
     army.owner.guildName = mergedOwner.guildName;
@@ -885,11 +890,54 @@ export class ArmyManager {
     return { modelTypesByEntity, requiredModelTypes };
   }
 
-  private addVisibleArmy(army: ArmyData, modelType: ModelType): void {
+  private setTrackedArmyStructure(entityId: ID, structureId: ID | null | undefined): void {
+    if (structureId === undefined || structureId === null || structureId === 0) {
+      return;
+    }
+
+    let attachedArmyIds = this.armiesByOwningStructure.get(structureId);
+    if (!attachedArmyIds) {
+      attachedArmyIds = new Set<ID>();
+      this.armiesByOwningStructure.set(structureId, attachedArmyIds);
+    }
+
+    attachedArmyIds.add(entityId);
+  }
+
+  private clearTrackedArmyStructure(entityId: ID, structureId: ID | null | undefined): void {
+    if (structureId === undefined || structureId === null || structureId === 0) {
+      return;
+    }
+
+    const attachedArmyIds = this.armiesByOwningStructure.get(structureId);
+    if (!attachedArmyIds) {
+      return;
+    }
+
+    attachedArmyIds.delete(entityId);
+    if (attachedArmyIds.size === 0) {
+      this.armiesByOwningStructure.delete(structureId);
+    }
+  }
+
+  private syncTrackedArmyStructureIndex(
+    entityId: ID,
+    previousStructureId: ID | null | undefined,
+    nextStructureId: ID | null | undefined,
+  ): void {
+    if (previousStructureId === nextStructureId) {
+      return;
+    }
+
+    this.clearTrackedArmyStructure(entityId, previousStructureId);
+    this.setTrackedArmyStructure(entityId, nextStructureId);
+  }
+
+  private addVisibleArmy(army: ArmyData, modelType: ModelType, options?: { trackOrder?: boolean }): void {
     const numericId = this.toNumericId(army.entityId);
     const slot = this.armyModel.allocateInstanceSlot(numericId);
     this.visibleArmyIndices.set(army.entityId, slot);
-    if (!this.visibleArmyOrder.includes(army.entityId)) {
+    if (options?.trackOrder ?? true) {
       this.visibleArmyOrder.push(army.entityId);
     }
     this.refreshArmyInstance(army, slot, modelType);
@@ -991,16 +1039,15 @@ export class ArmyManager {
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
   }
 
-  private removeVisibleArmy(entityId: ID): number | null {
+  private removeVisibleArmy(entityId: ID, options?: { trackOrder?: boolean }): number | null {
     const slot = this.visibleArmyIndices.get(entityId);
     if (slot === undefined) {
       return null;
     }
 
     this.visibleArmyIndices.delete(entityId);
-    const orderIndex = this.visibleArmyOrder.indexOf(entityId);
-    if (orderIndex !== -1) {
-      this.visibleArmyOrder.splice(orderIndex, 1);
+    if (options?.trackOrder ?? true) {
+      this.visibleArmyOrder = this.visibleArmyOrder.filter((visibleEntityId) => visibleEntityId !== entityId);
     }
 
     const storedArmy = this.armies.get(entityId);
@@ -1201,10 +1248,7 @@ export class ArmyManager {
       }
 
       visibleArmies = computeVisibleArmies();
-      const sortedVisibleArmies = visibleArmies.toSorted(
-        (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
-      );
-      ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
+      ({ modelTypesByEntity } = this.collectModelInfo(visibleArmies));
 
       let buffersDirty = false;
 
@@ -1221,7 +1265,7 @@ export class ArmyManager {
           });
 
         toRemove.forEach((entityId) => {
-          const removalResult = this.removeVisibleArmy(entityId);
+          const removalResult = this.removeVisibleArmy(entityId, { trackOrder: false });
           if (removalResult !== null) {
             buffersDirty = true;
           }
@@ -1234,7 +1278,7 @@ export class ArmyManager {
             if (!modelType) {
               return;
             }
-            this.addVisibleArmy(army, modelType);
+            this.addVisibleArmy(army, modelType, { trackOrder: false });
             buffersDirty = true;
           });
 
@@ -1250,9 +1294,8 @@ export class ArmyManager {
           });
         }
 
-        const visibleArmySet = new Set(this.visibleArmyOrder);
         this.entityIdLabels.forEach((_, entityId) => {
-          if (!visibleArmySet.has(entityId)) {
+          if (!desiredIds.has(entityId)) {
             this.removeEntityIdLabel(entityId);
           }
         });
@@ -1692,6 +1735,7 @@ export class ArmyManager {
       battleCooldownEnd: finalBattleCooldownEnd,
       battleTimerLeft: finalBattleTimerLeft,
     });
+    this.setTrackedArmyStructure(params.entityId, finalOwningStructureId);
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
 
@@ -1835,6 +1879,7 @@ export class ArmyManager {
       // console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
       return;
     }
+    this.clearTrackedArmyStructure(entityId, army.owningStructureId);
 
     // console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
@@ -1888,6 +1933,17 @@ export class ArmyManager {
     return Array.from(this.armies.values());
   }
 
+  public getArmiesForStructure(structureId: ID) {
+    const attachedArmyIds = this.armiesByOwningStructure.get(structureId);
+    if (!attachedArmyIds) {
+      return [];
+    }
+
+    return Array.from(attachedArmyIds)
+      .map((entityId) => this.armies.get(entityId))
+      .filter((army): army is ArmyData => Boolean(army));
+  }
+
   public getArmy(entityId: ID): ArmyData | undefined {
     return this.armies.get(entityId);
   }
@@ -1899,9 +1955,14 @@ export class ArmyManager {
     guildName?: string;
   }): ID[] {
     const updatedArmyIds: ID[] = [];
+    const attachedArmyIds = this.armiesByOwningStructure.get(params.structureId);
+    if (!attachedArmyIds) {
+      return updatedArmyIds;
+    }
 
-    this.armies.forEach((army, entityId) => {
-      if (army.owningStructureId !== params.structureId) {
+    Array.from(attachedArmyIds).forEach((entityId) => {
+      const army = this.armies.get(entityId);
+      if (!army) {
         return;
       }
 

@@ -7,6 +7,7 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>
   pendingArmyMovementStartedAt: Map<TEntityId, number>;
   pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
   armyStructureOwners: Map<TEntityId, unknown>;
+  armyIdsByStructureOwner: Map<TEntityId, Set<TEntityId>>;
   fetchedChunks: Set<string>;
   pendingChunks: Map<string, TPendingChunk>;
   pinnedChunkKeys: Set<string>;
@@ -50,6 +51,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovementStartedAt,
   pendingArmyMovementFallbackTimeouts,
   armyStructureOwners,
+  armyIdsByStructureOwner,
   fetchedChunks,
   pendingChunks,
   pinnedChunkKeys,
@@ -68,6 +70,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovementStartedAt.clear();
   pendingArmyMovementFallbackTimeouts.clear();
   armyStructureOwners.clear();
+  armyIdsByStructureOwner.clear();
 
   clearQueuedPrefetchState();
   fetchedChunks.clear();

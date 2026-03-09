@@ -18,6 +18,7 @@ describe("worldmap runtime lifecycle", () => {
     const pendingArmyMovementStartedAt = new Map<number, number>([[101, Date.now()]]);
     const pendingArmyMovementFallbackTimeouts = new Map<number, string>([[101, "fallback-timeout"]]);
     const armyStructureOwners = new Map<number, number>([[101, 88]]);
+    const armyIdsByStructureOwner = new Map<number, Set<number>>([[88, new Set([101])]]);
     const fetchedChunks = new Set<string>(["8,8"]);
     const pendingChunks = new Map<string, Promise<boolean>>([["8,8", Promise.resolve(true)]]);
     const pinnedChunkKeys = new Set<string>(["8,8"]);
@@ -36,6 +37,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts,
       armyStructureOwners,
+      armyIdsByStructureOwner,
       fetchedChunks,
       pendingChunks,
       pinnedChunkKeys,
@@ -59,6 +61,7 @@ describe("worldmap runtime lifecycle", () => {
     expect(pendingArmyMovementStartedAt.size).toBe(0);
     expect(pendingArmyMovementFallbackTimeouts.size).toBe(0);
     expect(armyStructureOwners.size).toBe(0);
+    expect(armyIdsByStructureOwner.size).toBe(0);
     expect(fetchedChunks.size).toBe(0);
     expect(pendingChunks.size).toBe(0);
     expect(pinnedChunkKeys.size).toBe(0);
@@ -86,6 +89,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
       armyStructureOwners: new Map(),
+      armyIdsByStructureOwner: new Map(),
       fetchedChunks: new Set(),
       pendingChunks: new Map(),
       pinnedChunkKeys: new Set(),
