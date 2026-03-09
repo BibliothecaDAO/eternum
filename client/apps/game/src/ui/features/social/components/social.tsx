@@ -79,6 +79,8 @@ export const Social = () => {
   );
 
   useEffect(() => {
+    if (!isOpen) return;
+
     // update first time - initialize with interval on first call
     const manager = LeaderboardManager.instance(
       components,
@@ -87,10 +89,12 @@ export const Social = () => {
     );
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
-  }, [components, setPlayersByRank]);
+  }, [components, isOpen, setPlayersByRank]);
 
   // Add periodic updates every 1 minute to refresh unregistered shareholder points
   useEffect(() => {
+    if (!isOpen) return;
+
     const interval = setInterval(() => {
       const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
       manager.updatePoints();
@@ -98,18 +102,22 @@ export const Social = () => {
     }, LEADERBOARD_UPDATE_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [components, setPlayersByRank]);
+  }, [components, isOpen, setPlayersByRank]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     void refreshPlayerData();
     const intervalId = window.setInterval(() => {
       void refreshPlayerData();
     }, PLAYER_STRUCTURE_REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [refreshPlayerData]);
+  }, [isOpen, refreshPlayerData]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     let cancelled = false;
 
     const loadStructureCounts = async () => {
@@ -142,13 +150,15 @@ export const Social = () => {
     return () => {
       cancelled = true;
     };
-  }, [lastPlayerDataRefreshTime]);
+  }, [isOpen, lastPlayerDataRefreshTime]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     setPlayerInfo(
       getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, components, isOpen, setPlayerInfo]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
