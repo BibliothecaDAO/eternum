@@ -302,20 +302,15 @@ export function createAutomationLoop(
           const isVillage = realmEntities.find((r) => Number(r.entity_id) === entityId)?.category === 5;
           const prodPlan = planProduction(productionBalances, buildingCounts, troopPath, gameConfig, 60, isVillage);
 
-          // Alternate between complex and simple production each tick
-          const useComplex = tickCount % 2 === 1; // odd ticks = complex, even = simple
+          // Run both complex and simple production every tick
           let productionCalls: ProductionActions | null = null;
           if (prodPlan.calls.length > 0) {
-            const resourceToResource = useComplex
-              ? prodPlan.calls
-                  .filter((c) => c.method === "complex")
-                  .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }))
-              : [];
-            const laborToResource = useComplex
-              ? []
-              : prodPlan.calls
-                  .filter((c) => c.method === "simple")
-                  .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
+            const resourceToResource = prodPlan.calls
+              .filter((c) => c.method === "complex")
+              .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
+            const laborToResource = prodPlan.calls
+              .filter((c) => c.method === "simple")
+              .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
 
             if (resourceToResource.length > 0 || laborToResource.length > 0) {
               productionCalls = { resourceToResource, laborToResource };
