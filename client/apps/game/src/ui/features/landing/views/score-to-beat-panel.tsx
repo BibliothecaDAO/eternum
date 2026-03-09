@@ -7,6 +7,7 @@ import Download from "lucide-react/dist/esm/icons/download";
 
 import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { useWorldsAvailability } from "@/hooks/use-world-availability";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
@@ -321,8 +322,23 @@ export const ScoreToBeatPanel = () => {
   const scoreToBeatTopTen = scoreToBeatEntries.slice(0, 10);
   const topScoreToBeat = scoreToBeatTopTen[0] ?? null;
   const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
+  const scoreToBeatAddresses = scoreToBeatTopTen.map((entry) => entry.address);
+  const { data: avatarProfiles } = useAvatarProfiles(scoreToBeatAddresses);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalizedAddress = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalizedAddress || !profile.avatarUrl) return;
+      map.set(normalizedAddress, profile.avatarUrl);
+    });
+    return map;
+  }, [avatarProfiles]);
   const topScoreToBeatLabel = topScoreToBeat
     ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
+    : null;
+  const topScoreToBeatAddress = normalizeAvatarAddress(topScoreToBeat?.address ?? null);
+  const topScoreToBeatAvatarUrl = topScoreToBeatAddress
+    ? getAvatarUrl(topScoreToBeatAddress, avatarMap.get(topScoreToBeatAddress))
     : null;
 
   const updatedLabel = useMemo(() => getRelativeTimeLabel(lastUpdatedAt, "Awaiting sync"), [lastUpdatedAt]);
@@ -425,7 +441,17 @@ export const ScoreToBeatPanel = () => {
                 {formatPoints(topScoreToBeat.combinedPoints)}
                 <span className="text-lg font-normal text-gold/60">pts</span>
               </p>
-              <p className="mt-1 text-sm text-gold/60">{(topScoreToBeatLabel ?? "Unknown").trim()} leads the pack</p>
+              <div className="mt-2 flex items-center gap-2">
+                {topScoreToBeatAvatarUrl && (
+                  <img
+                    src={topScoreToBeatAvatarUrl}
+                    alt={`${topScoreToBeatLabel ?? "Player"} avatar`}
+                    className="h-7 w-7 rounded-full border border-gold/20 object-cover"
+                    loading="lazy"
+                  />
+                )}
+                <p className="text-sm text-gold/60">{(topScoreToBeatLabel ?? "Unknown").trim()} leads the pack</p>
+              </div>
             </>
           ) : (
             <p className="mt-2 text-sm text-gold/60">
@@ -684,6 +710,12 @@ export const ScoreToBeatPanel = () => {
                 {scoreToBeatTopTen.map((entry, index) => {
                   const rank = index + 1;
                   const isExpanded = activeExpandedAddress === entry.address;
+                  const normalizedAddress = normalizeAvatarAddress(entry.address);
+                  const avatarSeedAddress = normalizedAddress ?? entry.address;
+                  const avatarUrl = getAvatarUrl(
+                    avatarSeedAddress,
+                    normalizedAddress ? avatarMap.get(normalizedAddress) : undefined,
+                  );
 
                   return (
                     <tr
@@ -693,22 +725,30 @@ export const ScoreToBeatPanel = () => {
                     >
                       <td className="px-6 py-4 text-gold/50">#{rank}</td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-gold">
-                            {entry.displayName ?? displayAddress(entry.address)}
-                          </span>
-                          {entry.displayName && (
-                            <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
-                          )}
-                          {isExpanded && entry.runs.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {entry.runs.map((run, i) => (
-                                <span key={i} className="rounded bg-gold/10 px-2 py-1 text-xs text-gold/70">
-                                  {describeEndpoint(run.endpoint)}: {formatPoints(run.points)}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={avatarUrl}
+                            alt={`${entry.displayName ?? displayAddress(entry.address)} avatar`}
+                            className="mt-0.5 h-8 w-8 rounded-full border border-gold/20 object-cover"
+                            loading="lazy"
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gold">
+                              {entry.displayName ?? displayAddress(entry.address)}
+                            </span>
+                            {entry.displayName && (
+                              <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
+                            )}
+                            {isExpanded && entry.runs.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {entry.runs.map((run, i) => (
+                                  <span key={i} className="rounded bg-gold/10 px-2 py-1 text-xs text-gold/70">
+                                    {describeEndpoint(run.endpoint)}: {formatPoints(run.points)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right text-lg font-semibold text-gold">

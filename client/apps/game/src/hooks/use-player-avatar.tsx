@@ -61,29 +61,42 @@ export const normalizeAvatarAddress = (value?: string | bigint | number | null):
   const normalizeString = (raw: string): string | null => {
     const trimmed = raw.trim();
     if (!trimmed || trimmed === "undefined" || trimmed === "null") return null;
-    if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
-      return trimmed.toLowerCase();
-    }
-    if (/^[0-9]+$/.test(trimmed)) {
+    const lower = trimmed.toLowerCase();
+
+    const normalizeFromBigInt = (input: string): string | null => {
       try {
-        return `0x${BigInt(trimmed).toString(16)}`.toLowerCase();
+        const asBigInt = BigInt(input);
+        if (asBigInt < 0n) return null;
+        return `0x${asBigInt.toString(16)}`;
       } catch {
         return null;
       }
+    };
+
+    if (lower.startsWith("0x")) {
+      if (!/^0x[0-9a-f]+$/.test(lower)) return lower;
+      return normalizeFromBigInt(lower);
     }
-    if (/^[0-9a-fA-F]+$/.test(trimmed)) {
-      return `0x${trimmed.toLowerCase()}`;
+
+    if (/^[0-9]+$/.test(lower)) {
+      return normalizeFromBigInt(lower);
     }
-    return trimmed.toLowerCase();
+
+    if (/^[0-9a-f]+$/.test(lower)) {
+      return normalizeFromBigInt(`0x${lower}`);
+    }
+
+    return lower;
   };
 
   if (typeof value === "bigint") {
-    return `0x${value.toString(16)}`.toLowerCase();
+    if (value < 0n) return null;
+    return `0x${value.toString(16)}`;
   }
 
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    return `0x${Math.trunc(value).toString(16)}`.toLowerCase();
+    if (!Number.isFinite(value) || value < 0) return null;
+    return `0x${Math.trunc(value).toString(16)}`;
   }
 
   if (typeof value === "string") {
@@ -108,6 +121,26 @@ const uniqueAddresses = (addresses: Array<string | bigint | number | null | unde
   return Array.from(new Set(normalized));
 };
 
+const padAvatarHexAddress = (address: string): string | null => {
+  if (!address.startsWith("0x")) return null;
+  const hex = address.slice(2);
+  if (!/^[0-9a-f]+$/.test(hex)) return null;
+  return `0x${hex.padStart(64, "0")}`;
+};
+
+const toAvatarAddressCandidates = (address: string): string[] => {
+  const normalized = normalizeAvatarAddress(address);
+  if (!normalized) return [];
+
+  const candidates = new Set<string>([normalized]);
+  const padded = padAvatarHexAddress(normalized);
+  if (padded && padded !== normalized) {
+    candidates.add(padded);
+  }
+
+  return Array.from(candidates);
+};
+
 const uniqueUsernames = (usernames: Array<string | null | undefined>): string[] => {
   const normalized = usernames
     .map((username) => normalizeAvatarUsername(username))
@@ -123,17 +156,22 @@ export function usePlayerAvatar(playerAddress?: string | bigint | number | null)
       if (!normalizedAddress) return null;
 
       try {
-        const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/profile-by-address/${normalizedAddress}`);
+        const candidates = toAvatarAddressCandidates(normalizedAddress);
+        for (const candidate of candidates) {
+          const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/profile-by-address/${candidate}`);
 
-        if (response.status === 404) {
-          return null;
+          if (response.status === 404) {
+            continue;
+          }
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch avatar");
+          }
+
+          return await response.json();
         }
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch avatar");
-        }
-
-        return await response.json();
+        return null;
       } catch (error) {
         console.error("Error fetching player avatar:", error);
         return null;
@@ -379,10 +417,15 @@ export function useAvatarProfiles(addresses: Array<string | bigint | number | nu
     queryFn: async (): Promise<AvatarProfile[]> => {
       if (normalizedAddresses.length === 0) return [];
 
+      const queryAddresses = Array.from(
+        new Set(normalizedAddresses.flatMap((address) => toAvatarAddressCandidates(address))),
+      );
+      if (queryAddresses.length === 0) return [];
+
       const batches: string[][] = [];
       const batchSize = 100;
-      for (let i = 0; i < normalizedAddresses.length; i += batchSize) {
-        batches.push(normalizedAddresses.slice(i, i + batchSize));
+      for (let i = 0; i < queryAddresses.length; i += batchSize) {
+        batches.push(queryAddresses.slice(i, i + batchSize));
       }
 
       const results = await Promise.all(
