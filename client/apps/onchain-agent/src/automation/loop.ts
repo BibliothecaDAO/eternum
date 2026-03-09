@@ -123,7 +123,9 @@ export function createAutomationLoop(
           const biome = gridIndex?.get(`${s.coord_x},${s.coord_y}`)?.biome ?? 11;
           const level = s.level || 1;
           try {
-            const rows = await sql.fetchResourceBalancesAndProduction([entityId]);
+            const rows = typeof sql.fetchResourceBalancesWithProduction === "function"
+              ? await sql.fetchResourceBalancesWithProduction([entityId])
+              : await sql.fetchResourceBalancesAndProduction([entityId]);
             return { entityId, biome, level, row: rows?.[0] ?? null };
           } catch {
             return { entityId, biome, level, row: null };
@@ -167,7 +169,8 @@ export function createAutomationLoop(
 
       const results = await Promise.allSettled(
         snapshotRows.map(async ({ entityId, biome, level, row }) => {
-          const snapshot = parseRealmSnapshot(row);
+          const currentTimestamp = Math.floor(Date.now() / 1000);
+          const snapshot = parseRealmSnapshot(row, currentTimestamp);
           const realmName = `Realm ${entityId}`;
 
           // Merge building counts: the SQL building query has ALL buildings
