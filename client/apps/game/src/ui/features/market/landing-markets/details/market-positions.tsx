@@ -74,13 +74,31 @@ export const MarketPositions = ({
 
   const positionTokenIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id)), [market.position_ids]);
   const { marketBuys, isLoading: isActivityLoading, isError: isActivityError } = useMarketActivity(market.market_id);
+  const accountAddressFilters = useMemo(() => {
+    if (!address) return undefined;
+    const variants = new Set<string>();
+    variants.add(address);
+    try {
+      variants.add(`0x${BigInt(address).toString(16)}`);
+    } catch {
+      // Ignore invalid variant derivation and keep the original address.
+    }
+    try {
+      variants.add(addAddressPadding(address.toLowerCase()));
+    } catch {
+      // Ignore invalid padding conversion and keep available variants.
+    }
+    return Array.from(variants);
+  }, [address]);
 
   const { tokens, balances, isLoading, isError } = useTokens(
     {
       contractAddresses: [vaultPositionsAddress],
       // contractAddresses: [vaultPositionsAddress, vaultFeesAddress],
       tokenIds: undefined,
-      accountAddresses: undefined,
+      // When viewing "My Positions", fetch the connected account explicitly so redeemable values
+      // can be computed from actual position balances instead of SQL buy-history fallback.
+      accountAddresses: accountAddressFilters,
       pagination: {
         cursor: undefined,
         direction: "Backward",
@@ -92,6 +110,7 @@ export const MarketPositions = ({
   );
 
   const outcomes = useMemo(() => market.getMarketOutcomes(), [market]);
+  const hasPayoutNumerators = Boolean(market.conditionResolution?.payout_numerators?.length);
   const marketIdHex = useMemo(() => {
     try {
       return addAddressPadding(`0x${BigInt(market.market_id).toString(16)}`);
@@ -102,11 +121,62 @@ export const MarketPositions = ({
   const paddedAddress = useMemo(() => {
     if (!address) return null;
     try {
-      return addAddressPadding(address.toLowerCase());
+      return addAddressPadding(`0x${BigInt(address).toString(16)}`);
     } catch {
       return null;
     }
   }, [address]);
+  const conditionIdHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.condition_id || 0).toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [market.condition_id]);
+  const oracleHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.oracle || 0).toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [market.oracle]);
+  const questionIdHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.question_id || 0).toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [market.question_id]);
+
+  const { data: conditionResolutionRow } = useQuery({
+    queryKey: ["pm", "market", "condition-resolution", resolvedChain, conditionIdHex, oracleHex, questionIdHex],
+    enabled: Boolean(market.isResolved() && !hasPayoutNumerators && conditionIdHex && oracleHex && questionIdHex),
+    queryFn: async () => {
+      if (!conditionIdHex || !oracleHex || !questionIdHex) return null;
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[resolvedChain]).fetchConditionResolutionByKeys(
+        conditionIdHex,
+        oracleHex,
+        questionIdHex,
+      );
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const payoutNumerators = useMemo<Array<bigint> | undefined>(() => {
+    const marketPayouts = market.conditionResolution?.payout_numerators;
+    if (marketPayouts && marketPayouts.length > 0) {
+      return marketPayouts.map((value) => BigInt(value));
+    }
+
+    if (!conditionResolutionRow?.payout_numerators) return undefined;
+    try {
+      const parsed = JSON.parse(conditionResolutionRow.payout_numerators);
+      if (!Array.isArray(parsed)) return undefined;
+      return parsed.map((value) => BigInt(value as string | number));
+    } catch {
+      return undefined;
+    }
+  }, [conditionResolutionRow?.payout_numerators, market.conditionResolution?.payout_numerators]);
 
   const {
     data: userBuyRows = [],
@@ -157,6 +227,7 @@ export const MarketPositions = ({
         market,
         positionIndex,
         balance,
+        payoutNumerators,
       });
       holder.totalRedeemable += valueRaw;
       holder.positions.push({
@@ -172,7 +243,7 @@ export const MarketPositions = ({
     });
 
     return Array.from(map.values()).toSorted((a, b) => (a.totalRaw < b.totalRaw ? 1 : -1));
-  }, [balances, tokens, positionTokenIds, outcomes, market]);
+  }, [balances, tokens, positionTokenIds, outcomes, market, payoutNumerators]);
 
   const holdersFromBuys = useMemo(() => {
     const map = new Map<string, HolderPosition>();
@@ -255,24 +326,38 @@ export const MarketPositions = ({
     const positions = Array.from(byOutcome.entries())
       .map(([index, amountRaw]) => {
         const outcome = outcomes[index];
+        const syntheticBalance = {
+          account_address: paddedAddress,
+          contract_address: vaultPositionsAddress,
+          token_id: positionTokenIds[index]?.toString() ?? "0",
+          balance: amountRaw.toString(),
+        } as unknown as TokenBalance;
+        const { valueRaw, valueFormatted } = computeRedeemableValue({
+          market,
+          positionIndex: index,
+          balance: syntheticBalance,
+          payoutNumerators,
+        });
         return {
           index,
           label: outcome?.name ?? `Outcome #${index + 1}`,
           amountRaw,
           amountFormatted: formatUnits(amountRaw, Number(market.collateralToken.decimals), 4),
-          valueFormatted: "0",
-          valueRaw: 0n,
+          valueFormatted,
+          valueRaw,
         };
       })
       .toSorted((a, b) => (a.amountRaw < b.amountRaw ? 1 : -1));
+
+    const totalRedeemable = positions.reduce((sum, position) => sum + position.valueRaw, 0n);
 
     return {
       account: paddedAddress,
       positions,
       totalRaw,
-      totalRedeemable: 0n,
+      totalRedeemable,
     };
-  }, [market.collateralToken.decimals, outcomes, paddedAddress, userBuyRows]);
+  }, [market, outcomes, paddedAddress, payoutNumerators, positionTokenIds, userBuyRows, vaultPositionsAddress]);
 
   const userHolder = useMemo(() => {
     if (!address) return null;
@@ -284,7 +369,11 @@ export const MarketPositions = ({
         return false;
       }
     });
-    return fromHolders ?? fallback;
+    if (!fromHolders) return fallback;
+    if (!fallback) return fromHolders;
+    if (fromHolders.totalRedeemable > 0n) return fromHolders;
+    if (fallback.totalRedeemable > 0n) return fallback;
+    return fromHolders;
   }, [address, holders, userHolderFromSql]);
 
   const holdersToRender = address ? (userHolder ? [userHolder] : []) : holders;
