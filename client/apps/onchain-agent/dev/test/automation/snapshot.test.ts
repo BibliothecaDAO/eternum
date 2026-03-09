@@ -62,3 +62,95 @@ describe("parseRealmSnapshot", () => {
     expect(snapshot.balances.size).toBe(0);
   });
 });
+
+describe("parseRealmSnapshot — balance projection", () => {
+  it("projects balance forward using production_rate and elapsed time", () => {
+    // Coal: raw balance 5000 units, production_rate 2e9 (2/sec in precision),
+    // last_updated_at 100, currentTimestamp 160 (60 seconds elapsed)
+    // Projected: 5000 + (60 * 2) = 5120
+    const row: Record<string, any> = {
+      COAL_BALANCE: "0x48C27395000", // 5000 * 1e9
+      "COAL_PRODUCTION.building_count": 1,
+      "COAL_PRODUCTION.production_rate": "0x77359400", // 2e9 = 2 per second in precision
+      "COAL_PRODUCTION.output_amount_left": "0x2E90EDD00000", // 50000 * 1e9 (plenty of fuel)
+      "COAL_PRODUCTION.last_updated_at": 100,
+    };
+
+    const snapshot = parseRealmSnapshot(row, 160);
+
+    // 5000 + floor(60 * 2) = 5120
+    expect(snapshot.balances.get(2)).toBe(5120);
+  });
+
+  it("caps projected production by output_amount_left for non-food", () => {
+    // Coal: raw balance 5000, production_rate 2/sec, 60 seconds elapsed
+    // Would produce 120, but output_amount_left is only 50 units (50e9 in precision)
+    const row: Record<string, any> = {
+      COAL_BALANCE: "0x48C27395000", // 5000 * 1e9
+      "COAL_PRODUCTION.building_count": 1,
+      "COAL_PRODUCTION.production_rate": "0x77359400", // 2e9
+      "COAL_PRODUCTION.output_amount_left": "0xBA43B7400", // 50 * 1e9 (only 50 fuel left)
+      "COAL_PRODUCTION.last_updated_at": 100,
+    };
+
+    const snapshot = parseRealmSnapshot(row, 160);
+
+    // 5000 + 50 (capped by fuel) = 5050
+    expect(snapshot.balances.get(2)).toBe(5050);
+  });
+
+  it("does not cap food resources by output_amount_left", () => {
+    // Wheat (ResourcesIds 35) is food — production is unlimited
+    const row: Record<string, any> = {
+      WHEAT_BALANCE: "0x1D1A94A2000", // 2000 * 1e9
+      "WHEAT_PRODUCTION.building_count": 1,
+      "WHEAT_PRODUCTION.production_rate": "0x3B9ACA00", // 1e9 = 1 per second
+      "WHEAT_PRODUCTION.output_amount_left": "0x0", // zero fuel — should NOT cap food
+      "WHEAT_PRODUCTION.last_updated_at": 100,
+    };
+
+    const snapshot = parseRealmSnapshot(row, 160);
+
+    // 2000 + 60 = 2060 (not capped by output_amount_left)
+    expect(snapshot.balances.get(35)).toBe(2060);
+  });
+
+  it("falls back to raw balance when no currentTimestamp provided", () => {
+    const row: Record<string, any> = {
+      COAL_BALANCE: "0x48C27395000", // 5000 * 1e9
+      "COAL_PRODUCTION.building_count": 1,
+      "COAL_PRODUCTION.production_rate": "0x77359400",
+      "COAL_PRODUCTION.output_amount_left": "0x2E90EDD00000",
+      "COAL_PRODUCTION.last_updated_at": 100,
+    };
+
+    const snapshot = parseRealmSnapshot(row);
+
+    expect(snapshot.balances.get(2)).toBe(5000);
+  });
+
+  it("handles zero production_rate gracefully", () => {
+    const row: Record<string, any> = {
+      COAL_BALANCE: "0x48C27395000", // 5000
+      "COAL_PRODUCTION.building_count": 1,
+      "COAL_PRODUCTION.production_rate": "0x0",
+      "COAL_PRODUCTION.output_amount_left": "0x2E90EDD00000",
+      "COAL_PRODUCTION.last_updated_at": 100,
+    };
+
+    const snapshot = parseRealmSnapshot(row, 160);
+
+    expect(snapshot.balances.get(2)).toBe(5000);
+  });
+
+  it("handles missing production columns gracefully", () => {
+    const row: Record<string, any> = {
+      COAL_BALANCE: "0x48C27395000", // 5000
+      "COAL_PRODUCTION.building_count": 1,
+    };
+
+    const snapshot = parseRealmSnapshot(row, 160);
+
+    expect(snapshot.balances.get(2)).toBe(5000);
+  });
+});
