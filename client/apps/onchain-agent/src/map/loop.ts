@@ -7,6 +7,7 @@
 
 import { writeFileSync } from "fs";
 import type { EternumClient, ExplorerInfo } from "@bibliothecadao/client";
+import type { StaminaConfig } from "@bibliothecadao/torii";
 import { renderMap } from "./renderer.js";
 import type { MapContext } from "./context.js";
 import { isExplorer } from "../world/occupier.js";
@@ -24,6 +25,7 @@ export function createMapLoop(
   ctx: MapContext,
   playerAddress?: string,
   intervalMs = 10_000,
+  staminaConfig?: StaminaConfig,
 ): MapLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
   let running = false;
@@ -83,7 +85,7 @@ export function createMapLoop(
         }
       }
 
-      const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails);
+      const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails, staminaConfig);
       ctx.snapshot = snapshot;
 
       // Fresh Torii data supersedes optimistic tracking.

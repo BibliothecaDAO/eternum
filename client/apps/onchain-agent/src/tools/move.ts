@@ -20,6 +20,7 @@ import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 import { isExplorer } from "../world/occupier.js";
 import { findPath, buildTileIndex } from "../world/pathfinding.js";
+import { projectExplorerStamina } from "../world/stamina.js";
 
 /**
  * Get stamina cost to travel into a tile based on biome and troop type.
@@ -143,8 +144,10 @@ export function createMoveTool(
           }
         }
 
-        if (explorer.stamina <= 0) {
-          throw new Error(`Cannot move — no stamina (${explorer.stamina}). Wait for regeneration.`);
+        const projectedStamina = projectExplorerStamina(explorer, gameConfig.stamina);
+
+        if (projectedStamina <= 0) {
+          throw new Error(`Cannot move — no stamina (${projectedStamina}). Wait for regeneration.`);
         }
 
         // Build biome lookup so the pathfinder can weight edges by stamina cost
@@ -158,7 +161,7 @@ export function createMoveTool(
           return tileTravelCost(biome, explorer.troopType, gameConfig.stamina);
         };
 
-        let pathResult = findPath(start, target, explored, blocked, explorer.stamina, tileCost);
+        let pathResult = findPath(start, target, explored, blocked, projectedStamina, tileCost);
 
         if (!pathResult) {
           throw new Error(`No path to ${to_row}:${to_col}. Target may be blocked, unexplored, or unreachable.`);
@@ -166,7 +169,7 @@ export function createMoveTool(
 
         // If path exceeds stamina, truncate to move as far as we can afford
         if (pathResult.reachedLimit) {
-          let budget = explorer.stamina;
+          let budget = projectedStamina;
           let truncateAt = 0; // how many steps we can take
           for (let i = 1; i < pathResult.path.length; i++) {
             const key = `${pathResult.path[i].x},${pathResult.path[i].y}`;
@@ -176,13 +179,13 @@ export function createMoveTool(
             truncateAt = i;
           }
           if (truncateAt === 0) {
-            throw new Error(`Cannot move — stamina too low (${explorer.stamina}) for even the cheapest adjacent tile.`);
+            throw new Error(`Cannot move — stamina too low (${projectedStamina}) for even the cheapest adjacent tile.`);
           }
           pathResult = {
             path: pathResult.path.slice(0, truncateAt + 1),
             directions: pathResult.directions.slice(0, truncateAt),
             distance: truncateAt,
-            staminaCost: explorer.stamina - budget,
+            staminaCost: projectedStamina - budget,
             reachedLimit: false,
           };
         }
@@ -198,7 +201,7 @@ export function createMoveTool(
         const endKey = `${endPos.x},${endPos.y}`;
         const isExploreMove = !explored.has(endKey);
 
-        const staminaAfter = explorer.stamina - staminaCost;
+        const staminaAfter = projectedStamina - staminaCost;
         const movesAfter = Math.floor(staminaAfter / gameConfig.stamina.travelCost);
 
         try {
@@ -274,7 +277,7 @@ export function createMoveTool(
           content: [
             {
               type: "text" as const,
-              text: [statusLine, `Stamina: ${explorer.stamina} → ${staminaAfter} (${movesAfter} moves remaining)`].join(
+              text: [statusLine, `Stamina: ${projectedStamina} → ${staminaAfter} (${movesAfter} moves remaining)`].join(
                 "\n",
               ),
             },

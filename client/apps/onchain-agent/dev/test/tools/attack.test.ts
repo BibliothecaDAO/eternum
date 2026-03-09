@@ -4,6 +4,7 @@ import type { MapContext } from "../../../src/map/context.js";
 import type { MapSnapshot } from "../../../src/map/renderer.js";
 import type { TxContext } from "../../../src/tools/tx-context.js";
 import type { TileState, EternumClient, ExplorerInfo, StructureInfo } from "@bibliothecadao/client";
+import type { GameConfig } from "@bibliothecadao/torii";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -59,7 +60,27 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
   };
 }
 
+const testGameConfig: GameConfig = {
+  buildingCosts: {},
+  resourceFactories: {},
+  buildingBaseCostPercentIncrease: 0,
+  realmUpgradeCosts: {},
+  stamina: {
+    travelCost: 20,
+    exploreCost: 30,
+    bonusValue: 10,
+    gainPerTick: 1,
+    knightMaxStamina: 100,
+    paladinMaxStamina: 120,
+    crossbowmanMaxStamina: 100,
+    armiesTickInSeconds: 1,
+  },
+};
+
 function makeExplorer(x: number, y: number, opts: Partial<ExplorerInfo> = {}): ExplorerInfo {
+  // Set staminaUpdatedTick to the current tick so projectExplorerStamina
+  // returns the raw stamina value (no regen projection in tests).
+  const currentTick = Math.floor(Date.now() / 1000);
   return {
     entityId: 1,
     ownerName: "TestPlayer",
@@ -68,13 +89,14 @@ function makeExplorer(x: number, y: number, opts: Partial<ExplorerInfo> = {}): E
     troopTier: "T2",
     troopCount: 2000,
     stamina: 80,
-    staminaUpdatedTick: 0,
+    staminaUpdatedTick: currentTick,
     position: { x, y },
     ...opts,
   };
 }
 
 function makeDefender(x: number, y: number, opts: Partial<ExplorerInfo> = {}): ExplorerInfo {
+  const currentTick = Math.floor(Date.now() / 1000);
   return {
     entityId: 42,
     ownerName: "Enemy",
@@ -83,7 +105,7 @@ function makeDefender(x: number, y: number, opts: Partial<ExplorerInfo> = {}): E
     troopTier: "T1",
     troopCount: 1000,
     stamina: 60,
-    staminaUpdatedTick: 0,
+    staminaUpdatedTick: currentTick,
     position: { x, y },
     ...opts,
   };
@@ -136,7 +158,7 @@ function makeTxCtx(): TxContext {
 describe("attack — prerequisites", () => {
   it("throws when no map is loaded", async () => {
     const mapCtx: MapContext = { snapshot: null, filePath: null };
-    const tool = createAttackTool(makeClient(null), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
       "Map not loaded",
@@ -146,7 +168,7 @@ describe("attack — prerequisites", () => {
   it("throws when no army at position", async () => {
     const tiles = [makeTile(0, 0), makeTile(1, 0)]; // no explorer
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
-    const tool = createAttackTool(makeClient(null), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
       "No army at",
@@ -157,7 +179,7 @@ describe("attack — prerequisites", () => {
     const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0, 15, 42)];
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const explorer = makeExplorer(0, 0, { ownerAddress: "0xENEMY" });
-    const tool = createAttackTool(makeClient(explorer), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(explorer), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
       "not yours",
@@ -177,7 +199,7 @@ describe("attack — adjacency", () => {
     }
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const attacker = makeExplorer(0, 0);
-    const tool = createAttackTool(makeClient(attacker), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(attacker), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     // Target at (5,5) → map row=1 (top, since maxY=5), col=6
     await expect(tool.execute("id", { army_row: 6, army_col: 1, target_row: 1, target_col: 6 })).rejects.toThrow(
@@ -192,7 +214,7 @@ describe("attack — stamina check", () => {
     const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0, 15, 42)];
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const attacker = makeExplorer(0, 0, { stamina: 30 });
-    const tool = createAttackTool(makeClient(attacker), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(attacker), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
       "Not enough stamina",
@@ -204,7 +226,7 @@ describe("attack — empty tile", () => {
   it("throws on attack on empty tile", async () => {
     const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0)];
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
-    const tool = createAttackTool(makeClient(makeExplorer(0, 0)), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(makeExplorer(0, 0)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
       "empty",
@@ -220,7 +242,7 @@ describe("attack — vs explorer", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const attacker = makeExplorer(0, 0);
     const defender = makeDefender(1, 0);
-    const tool = createAttackTool(makeClient(attacker, defender), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(attacker, defender), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
     const text = result.content[0].text;
@@ -244,7 +266,7 @@ describe("attack — vs structure", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const attacker = makeExplorer(0, 0);
     const structure = makeStructure(1, 0, [{ slot: "front", troopType: "Crossbowman", troopTier: "T1", count: 500 }]);
-    const tool = createAttackTool(makeClient(attacker, null, structure), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(attacker, null, structure), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
     const text = result.content[0].text;
@@ -261,7 +283,7 @@ describe("attack — vs structure", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const attacker = makeExplorer(0, 0);
     const structure = makeStructure(1, 0, []); // no guards
-    const tool = createAttackTool(makeClient(attacker, null, structure), mapCtx, PLAYER, makeTxCtx());
+    const tool = createAttackTool(makeClient(attacker, null, structure), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
     expect(result.content[0].text).toContain("unguarded");
