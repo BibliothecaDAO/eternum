@@ -169,12 +169,11 @@ export function createAutomationLoop(
 
       const results = await Promise.allSettled(
         snapshotRows.map(async ({ entityId, biome, level, row }) => {
-          // Use raw balances (no projection) for budget calculations.
-          // Projection overestimates when previous ticks consumed fuel that
-          // hasn't been reflected in last_updated_at yet, causing on-chain
-          // "Insufficient Balance" failures. The projection infrastructure
-          // in snapshot.ts is preserved for future use (e.g. UI display).
-          const snapshot = parseRealmSnapshot(row);
+          // Pass timestamp so snapshot computes projectedBalances (for prioritisation).
+          // Budget/spending uses snapshot.balances (raw on-chain values) to avoid
+          // "Insufficient Balance" tx failures from overestimation.
+          const currentTimestamp = Math.floor(Date.now() / 1000);
+          const snapshot = parseRealmSnapshot(row, currentTimestamp);
           const realmName = `Realm ${entityId}`;
 
           // Merge building counts: the SQL building query has ALL buildings
