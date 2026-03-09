@@ -154,13 +154,15 @@ describe("planProduction — budget-limited cycles", () => {
 
 describe("planProduction — dependency ordering", () => {
   it("produces T1 resources before troops", () => {
+    // Keep T1 resource inputs small so they don't exhaust the Wheat/Copper
+    // budget before Knight production runs.
     const balances = new Map([
-      [R.Wheat, 1000],
-      [R.Coal, 100],
-      [R.Copper, 100],
-      [R.Wood, 100],
+      [R.Wheat, 10000],
+      [R.Coal, 10],
+      [R.Copper, 10000],
+      [R.Wood, 10],
     ]);
-    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.KnightT1, 1]);
+    const bc = buildings([B.Wood, 1], [B.KnightT1, 1]);
     const plan = planProduction(balances, bc, "Knight", gameConfig, 60);
 
     const callOrder = plan.calls.map((c) => c.resourceId);
@@ -215,18 +217,19 @@ describe("planProduction — building checks", () => {
   });
 
   it("produces T2 and T3 troops when buildings exist", () => {
+    // Only include T2 and T3 buildings (no T1) so T1 doesn't exhaust
+    // shared inputs. Keep Paladin balance small so T2 is bottlenecked
+    // by Paladin (not Essence), leaving Essence available for T3.
     const balances = new Map([
-      [R.Wheat, 5000],
-      [R.Coal, 500],
-      [R.Copper, 500],
-      [R.Wood, 500],
-      [R.Gold, 200],
-      [R.Paladin, 500],
-      [R.PaladinT2, 500],
-      [R.Dragonhide, 200],
-      [R.Essence, 100],
+      [R.Wheat, 5000000],
+      [R.Copper, 500000],
+      [R.Gold, 500000],
+      [R.Paladin, 100],
+      [R.PaladinT2, 5000000],
+      [R.Dragonhide, 500000],
+      [R.Essence, 500000],
     ]);
-    const bc = buildings([B.PaladinT1, 1], [B.PaladinT2, 1], [B.PaladinT3, 1]);
+    const bc = buildings([B.PaladinT2, 1], [B.PaladinT3, 1]);
     const plan = planProduction(balances, bc, "Paladin", gameConfig, 60);
 
     const t2Call = plan.calls.find((c) => c.resourceId === R.PaladinT2);
