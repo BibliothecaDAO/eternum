@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { parseGameConfig } from "@bibliothecadao/torii";
-import { planProduction, computeSmartWeights } from "../../../src/automation/production.js";
+import { planProduction, computeSmartWeights, type BuildingTarget } from "../../../src/automation/production.js";
 
 // ── Load real Torii fixture data ─────────────────────────────────────
 
@@ -473,5 +473,110 @@ describe("planProduction — edge cases", () => {
     const balances = new Map([[R.Wheat, 10000]]);
     const plan = planProduction(balances, new Map(), "Paladin", gameConfig);
     expect(plan.calls).toHaveLength(0);
+  });
+});
+
+// ── Building targets ──────────────────────────────────────────────────
+
+describe("planProduction — building targets", () => {
+  it("includes affordable buildings in the plan", () => {
+    const balances = new Map([
+      [R.Wheat, 100000],
+      [R.Coal, 10000],
+      [R.Copper, 10000],
+      [R.Wood, 10000],
+      [R.Essence, 5000],
+      [R.Labor, 50000],
+    ]);
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1]);
+    const buildingTargets: BuildingTarget[] = [
+      {
+        buildingType: B.PaladinT1,
+        label: "PaladinT1",
+        costs: [
+          { resource: R.Wood, amount: 100 },
+          { resource: R.Copper, amount: 50 },
+        ],
+        useSimple: false,
+        slot: { directions: [1, 2] },
+      },
+    ];
+
+    const plan = planProduction(balances, bc, "Paladin", gameConfig, 60, false, buildingTargets);
+
+    expect(plan.affordableBuilds).toHaveLength(1);
+    expect(plan.affordableBuilds[0].label).toBe("PaladinT1");
+  });
+
+  it("skips buildings when budget is exhausted", () => {
+    const balances = new Map([
+      [R.Wood, 10],
+      [R.Copper, 10],
+    ]);
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1]);
+    const buildingTargets: BuildingTarget[] = [
+      {
+        buildingType: B.PaladinT1,
+        label: "PaladinT1",
+        costs: [
+          { resource: R.Wood, amount: 100 },
+          { resource: R.Copper, amount: 50 },
+        ],
+        useSimple: false,
+        slot: { directions: [1, 2] },
+      },
+    ];
+
+    const plan = planProduction(balances, bc, "Paladin", gameConfig, 60, false, buildingTargets);
+
+    expect(plan.affordableBuilds).toHaveLength(0);
+    expect(plan.skippedBuilds).toHaveLength(1);
+    expect(plan.skippedBuilds[0].reason).toBe("Insufficient budget");
+  });
+
+  it("buildings and production share the same budget", () => {
+    // Use Coal as the bottleneck input for Wood production.
+    // Coal=500, 90% budget=450, weight=20% of 500=100 → permitted=min(450,100)=100
+    // With building consuming 80 Coal → budget=370, permitted=min(370,100)=100 (same)
+    // Instead, use a scenario where budget is the binding constraint:
+    // Coal=100, 90% budget=90, weight=20% of 100=20 → permitted=min(90,20)=20
+    // With building consuming 15 Coal → budget=75, permitted=min(75,20)=20 (still same)
+    // We need the building to consume enough to push budget below weighted limit.
+    // Coal=100, budget=90, weight=20→20. Building costs 80 Coal → budget=10, permitted=min(10,20)=10
+    const balances = new Map([
+      [R.Wheat, 100000],
+      [R.Coal, 100],
+      [R.Copper, 100000],
+      [R.Wood, 100000],
+    ]);
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1]);
+
+    // Without building
+    const planNoBuild = planProduction(balances, bc, "Paladin", gameConfig, 60, false, []);
+    const coalConsumedNoBuild = planNoBuild.consumed.get(R.Coal) ?? 0;
+
+    // With building that costs 80 Coal — eats into the shared budget
+    const buildingTargets: BuildingTarget[] = [
+      {
+        buildingType: B.Coal,
+        label: "CoalMine",
+        costs: [{ resource: R.Coal, amount: 80 }],
+        useSimple: false,
+        slot: { directions: [1] },
+      },
+    ];
+    const planWithBuild = planProduction(new Map(balances), bc, "Paladin", gameConfig, 60, false, buildingTargets);
+    const coalConsumedByProductionWithBuild = (planWithBuild.consumed.get(R.Coal) ?? 0) - 80;
+
+    // Production should consume less Coal when building already took 80 from the budget
+    expect(coalConsumedByProductionWithBuild).toBeLessThan(coalConsumedNoBuild);
+    expect(planWithBuild.affordableBuilds).toHaveLength(1);
+  });
+
+  it("returns empty affordableBuilds when no buildingTargets provided", () => {
+    const balances = new Map([[R.Wheat, 1000]]);
+    const plan = planProduction(balances, new Map(), "Paladin", gameConfig);
+    expect(plan.affordableBuilds).toHaveLength(0);
+    expect(plan.skippedBuilds).toHaveLength(0);
   });
 });

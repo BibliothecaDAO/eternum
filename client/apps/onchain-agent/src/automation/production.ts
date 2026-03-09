@@ -38,6 +38,19 @@ interface ProductionPlan {
   skipped: Array<{ resourceId: number; reason: string }>;
 }
 
+export interface BuildingTarget {
+  buildingType: number;
+  label: string;
+  costs: { resource: number; amount: number }[];
+  useSimple: boolean;
+  slot: any; // SlotResult — opaque to the planner
+}
+
+export interface UnifiedPlan extends ProductionPlan {
+  affordableBuilds: BuildingTarget[];
+  skippedBuilds: Array<{ label: string; reason: string }>;
+}
+
 // ── Resource & building IDs ──────────────────────────────────────────
 
 const R = {
@@ -211,7 +224,8 @@ export function planProduction(
   gameConfig: GameConfig,
   tickSeconds: number = 60,
   isVillage: boolean = false,
-): ProductionPlan {
+  buildingTargets: BuildingTarget[] = [],
+): UnifiedPlan {
   const targets = resolveTargets(troopPath, buildingCounts, gameConfig);
   const smartWeights = computeSmartWeights(buildingCounts, troopPath);
 
@@ -225,6 +239,30 @@ export function planProduction(
   const consumed = new Map<number, number>();
   const produced = new Map<number, number>();
   const skipped: Array<{ resourceId: number; reason: string }> = [];
+
+  // Process buildings first — they consume exact costs from shared budget
+  const affordableBuilds: BuildingTarget[] = [];
+  const skippedBuilds: Array<{ label: string; reason: string }> = [];
+
+  for (const bt of buildingTargets) {
+    let canAfford = true;
+    for (const cost of bt.costs) {
+      const remaining = budget.get(cost.resource) ?? 0;
+      if (remaining < cost.amount) {
+        canAfford = false;
+        break;
+      }
+    }
+    if (canAfford) {
+      for (const cost of bt.costs) {
+        budget.set(cost.resource, (budget.get(cost.resource) ?? 0) - cost.amount);
+        consumed.set(cost.resource, (consumed.get(cost.resource) ?? 0) + cost.amount);
+      }
+      affordableBuilds.push(bt);
+    } else {
+      skippedBuilds.push({ label: bt.label, reason: "Insufficient budget" });
+    }
+  }
 
   for (const target of targets) {
     const factory = gameConfig.resourceFactories[target.resourceId];
@@ -290,7 +328,7 @@ export function planProduction(
     calls.push({ resourceId: target.resourceId, cycles, produced: amount, method: target.method });
   }
 
-  return { calls, consumed, produced, skipped };
+  return { calls, consumed, produced, skipped, affordableBuilds, skippedBuilds };
 }
 
 // ── Smart weight computation ────────────────────────────────────────
