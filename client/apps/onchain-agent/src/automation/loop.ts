@@ -7,7 +7,7 @@ import type { MapContext } from "../map/context.js";
 import { parseRealmSnapshot } from "./snapshot.js";
 import { resolvePlan } from "./runner.js";
 import { buildOrderForBiome, troopPathForBiome } from "./build-order.js";
-import { planProduction } from "./production.js";
+import { planProduction, type BuildingTarget } from "./production.js";
 import { findOpenSlots } from "./placement.js";
 import { executeRealmTick, type BuildAction, type UpgradeAction, type ProductionActions } from "./executor.js";
 import { formatStatus, type RealmStatus } from "./status.js";
@@ -48,37 +48,6 @@ function scaledBuildingCost(
     resource: cost.resource,
     amount: cost.amount + scaleFactor * scaleFactor * cost.amount * percentIncrease,
   }));
-}
-
-/**
- * Check if all costs are affordable without modifying the balances map.
- */
-function canAfford(balances: Map<number, number>, costs: { resource: number; amount: number }[]): boolean {
-  for (const cost of costs) {
-    const balance = balances.get(cost.resource) ?? 0;
-    if (balance < cost.amount) return false;
-  }
-  return true;
-}
-
-/**
- * Subtract building costs from a balances map in-place.
- * Returns true if all costs could be reserved, false if any resource was insufficient.
- */
-function reserveBuildingCosts(balances: Map<number, number>, costs: { resource: number; amount: number }[]): boolean {
-  // Check all costs are affordable first
-  for (const cost of costs) {
-    const balance = balances.get(cost.resource) ?? 0;
-    if (balance < cost.amount) return false;
-  }
-
-  // Subtract
-  for (const cost of costs) {
-    const balance = balances.get(cost.resource) ?? 0;
-    balances.set(cost.resource, balance - cost.amount);
-  }
-
-  return true;
 }
 
 export function createAutomationLoop(
@@ -213,7 +182,8 @@ export function createAutomationLoop(
           if (plan.upgrade && plan.builds.length === 0) {
             const targetLevel = plan.upgrade.fromLevel + 1;
             const upgradeCosts = gameConfig.realmUpgradeCosts[targetLevel];
-            if (upgradeCosts && upgradeCosts.length > 0 && canAfford(snapshot.balances, upgradeCosts)) {
+            const canAffordUpgrade = upgradeCosts?.length > 0 && upgradeCosts.every((c: { resource: number; amount: number }) => (snapshot.balances.get(c.resource) ?? 0) >= c.amount);
+            if (canAffordUpgrade) {
               upgradeIntent = plan.upgrade;
             } else {
               console.log(`[AUTO] Realm ${entityId} | skipping upgrade to level ${targetLevel} — can't afford costs`);
@@ -226,95 +196,73 @@ export function createAutomationLoop(
           const { slots } = findOpenSlots(occupied, level, plan.builds.length);
           console.log(`[AUTO] Realm ${entityId} | open slots found: ${slots.length}`);
 
-          // Reserve costs for each build; try complex first, fall back to simple.
-          // Track a running copy of existing counts for scaled cost calculation.
-          const productionBalances = new Map(snapshot.balances);
+          // Compute building targets with costs (planner handles affordability)
           const runningCounts = new Map(buildingCounts);
-          const buildActions: BuildAction[] = [];
+          const candidateBuilds: BuildingTarget[] = [];
 
           let slotIdx = 0;
           for (let bi = 0; bi < plan.builds.length && slotIdx < slots.length; bi++) {
             const build = plan.builds[bi];
             const { step } = build;
-
-            // If this is an injected WorkersHut, peek ahead to check if we can
-            // afford the build it was injected for. If not, skip both.
-            if (build.injectedForPopulation && bi + 1 < plan.builds.length) {
-              const nextBuild = plan.builds[bi + 1];
-              const nextQty = runningCounts.get(nextBuild.step.building) ?? 0;
-              const nextComplex = scaledBuildingCost(nextBuild.step.building, nextQty, gameConfig, false);
-              const nextSimple = scaledBuildingCost(nextBuild.step.building, nextQty, gameConfig, true);
-
-              // Check if the paired build is affordable (without reserving yet)
-              const canAffordNext =
-                (nextComplex.length > 0 && canAfford(productionBalances, nextComplex)) ||
-                (nextSimple.length > 0 && canAfford(productionBalances, nextSimple));
-
-              if (!canAffordNext && slotIdx + 1 >= slots.length) {
-                // Can't afford the paired build or no slot for it — skip the WH
-                break;
-              }
-              if (!canAffordNext) {
-                // Skip both the injected WH and the paired build
-                bi++; // skip next
-                continue;
-              }
-            }
-
             const slot = slots[slotIdx];
             const existingQuantity = runningCounts.get(step.building) ?? 0;
 
-            let useSimple = false;
             const complexCosts = scaledBuildingCost(step.building, existingQuantity, gameConfig, false);
             const simpleCosts = scaledBuildingCost(step.building, existingQuantity, gameConfig, true);
-            console.log(
-              `[AUTO] Realm ${entityId} | cost check ${step.label}(${step.building}): complexCosts=${complexCosts.length}, simpleCosts=${simpleCosts.length}`,
-            );
+
+            let costs: { resource: number; amount: number }[];
+            let useSimple: boolean;
             if (complexCosts.length > 0) {
-              const balForLog: Record<string, number> = {};
-              for (const c of complexCosts) balForLog[`res_${c.resource}`] = productionBalances.get(c.resource) ?? 0;
-              console.log(`[AUTO]   complex costs:`, complexCosts, `balances:`, balForLog);
-            }
-            if (simpleCosts.length > 0) {
-              const balForLog: Record<string, number> = {};
-              for (const c of simpleCosts) balForLog[`res_${c.resource}`] = productionBalances.get(c.resource) ?? 0;
-              console.log(`[AUTO]   simple costs:`, simpleCosts, `balances:`, balForLog);
-            }
-            if (complexCosts.length > 0 && reserveBuildingCosts(productionBalances, complexCosts)) {
+              costs = complexCosts;
               useSimple = false;
-              console.log(`[AUTO]   → using complex`);
+            } else if (simpleCosts.length > 0) {
+              costs = simpleCosts;
+              useSimple = true;
             } else {
-              if (simpleCosts.length > 0 && reserveBuildingCosts(productionBalances, simpleCosts)) {
-                useSimple = true;
-                console.log(`[AUTO]   → using simple`);
-              } else {
-                console.log(`[AUTO]   → CAN'T AFFORD, breaking`);
-                break;
-              }
+              continue;
             }
 
-            buildActions.push({ step, slot, useSimple });
+            candidateBuilds.push({
+              buildingType: step.building,
+              label: step.label,
+              costs,
+              useSimple,
+              slot,
+            });
+
             runningCounts.set(step.building, existingQuantity + 1);
             slotIdx++;
           }
 
-          console.log(
-            `[AUTO] Realm ${entityId} | final buildActions: ${buildActions.length}`,
-            buildActions.map((a) => a.step.label),
-          );
-
-          // Plan: production (against remaining balance after building costs reserved)
+          // Unified plan: buildings + production compete for the same budget
           const troopPath = troopPathForBiome(biome);
           const isVillage = realmEntities.find((r) => Number(r.entity_id) === entityId)?.category === 5;
-          const prodPlan = planProduction(productionBalances, buildingCounts, troopPath, gameConfig, 60, isVillage);
+          const unifiedPlan = planProduction(
+            snapshot.balances, buildingCounts, troopPath, gameConfig, 60, isVillage, candidateBuilds,
+          );
+
+          // Convert affordable builds to BuildActions for executor
+          const buildActions: BuildAction[] = unifiedPlan.affordableBuilds.map((bt) => ({
+            step: { building: bt.buildingType, label: bt.label },
+            slot: bt.slot,
+            useSimple: bt.useSimple,
+          }));
+
+          console.log(`[AUTO] Realm ${entityId} | candidates: ${candidateBuilds.length}, affordable: ${buildActions.length}`);
+          if (buildActions.length > 0) {
+            console.log(`[AUTO] Realm ${entityId} | building:`, buildActions.map((a) => a.step.label));
+          }
+          if (unifiedPlan.skippedBuilds.length > 0) {
+            console.log(`[AUTO] Realm ${entityId} | skipped builds:`, unifiedPlan.skippedBuilds.map((s) => s.label));
+          }
 
           // Run both complex and simple production every tick
           let productionCalls: ProductionActions | null = null;
-          if (prodPlan.calls.length > 0) {
-            const resourceToResource = prodPlan.calls
+          if (unifiedPlan.calls.length > 0) {
+            const resourceToResource = unifiedPlan.calls
               .filter((c) => c.method === "complex")
               .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
-            const laborToResource = prodPlan.calls
+            const laborToResource = unifiedPlan.calls
               .filter((c) => c.method === "simple")
               .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
 
