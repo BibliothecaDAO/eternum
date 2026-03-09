@@ -1,4 +1,6 @@
 import type { TileState, ExplorerInfo } from "@bibliothecadao/client";
+import type { StaminaConfig } from "@bibliothecadao/torii";
+import { projectExplorerStamina } from "../world/stamina.js";
 
 const OCCUPIER_ASCII: Record<number, string> = {
   0: ".",
@@ -103,6 +105,7 @@ export function renderMap(
   tiles: TileState[],
   ownedEntityIds?: Set<number>,
   explorerDetails?: Map<number, ExplorerInfo>,
+  staminaConfig?: StaminaConfig,
 ): MapSnapshot {
   if (tiles.length === 0) {
     return {
@@ -198,8 +201,11 @@ export function renderMap(
         if (isExplorerType(t.occupierType)) {
           const detail = explorerDetails?.get(t.occupierId);
           if (detail) {
+            const projected = staminaConfig
+              ? projectExplorerStamina(detail, staminaConfig)
+              : detail.stamina;
             armyItems.push(
-              `  ${ch} ${mapRow}:${col} (entity ${t.occupierId}) | ${detail.troopCount} ${detail.troopType} ${detail.troopTier} | stamina=${detail.stamina}`,
+              `  ${ch} ${mapRow}:${col} (entity ${t.occupierId}) | ${detail.troopCount} ${detail.troopType} ${detail.troopTier} | stamina=${projected}`,
             );
           } else {
             armyItems.push(`  ${ch} ${mapRow}:${col} (entity ${t.occupierId})`);

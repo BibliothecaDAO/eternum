@@ -15,15 +15,18 @@ import { Type } from "@mariozechner/pi-ai";
 import type { EternumClient, ExplorerInfo } from "@bibliothecadao/client";
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
+import type { GameConfig } from "@bibliothecadao/torii";
 import { isStructure, isExplorer } from "../world/occupier.js";
 import { directionBetween } from "../world/pathfinding.js";
 import { calculateStrength, calculateGuardStrength } from "../world/strength.js";
+import { projectExplorerStamina } from "../world/stamina.js";
 
 export function createAttackTool(
   client: EternumClient,
   mapCtx: MapContext,
   playerAddress: string,
   tx: TxContext,
+  gameConfig: GameConfig,
 ): AgentTool<any> {
   return {
     name: "attack",
@@ -97,10 +100,11 @@ export function createAttackTool(
 
       // ── Check stamina ──
 
+      const projectedStamina = projectExplorerStamina(explorer, gameConfig.stamina);
       const STAMINA_ATTACK_REQ = 50;
-      if (explorer.stamina < STAMINA_ATTACK_REQ) {
+      if (projectedStamina < STAMINA_ATTACK_REQ) {
         throw new Error(
-          `Not enough stamina to attack (${explorer.stamina}/${STAMINA_ATTACK_REQ}). Wait for regeneration.`,
+          `Not enough stamina to attack (${projectedStamina}/${STAMINA_ATTACK_REQ}). Wait for regeneration.`,
         );
       }
 

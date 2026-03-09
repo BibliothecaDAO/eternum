@@ -61,6 +61,9 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
 }
 
 function makeExplorer(x: number, y: number, stamina: number, opts: Partial<ExplorerInfo> = {}): ExplorerInfo {
+  // Set staminaUpdatedTick to the current tick so projectExplorerStamina
+  // returns the raw stamina value (no regen projection in tests).
+  const currentTick = Math.floor(Date.now() / 1000);
   return {
     entityId: 1,
     ownerName: "TestPlayer",
@@ -69,7 +72,7 @@ function makeExplorer(x: number, y: number, stamina: number, opts: Partial<Explo
     troopTier: "T1",
     troopCount: 100,
     stamina,
-    staminaUpdatedTick: 0,
+    staminaUpdatedTick: currentTick,
     position: { x, y },
     ...opts,
   };
@@ -97,7 +100,16 @@ const testGameConfig: GameConfig = {
   resourceFactories: {},
   buildingBaseCostPercentIncrease: 0,
   realmUpgradeCosts: {},
-  stamina: { travelCost: 20, exploreCost: 30, bonusValue: 10 },
+  stamina: {
+    travelCost: 20,
+    exploreCost: 30,
+    bonusValue: 10,
+    gainPerTick: 1,
+    knightMaxStamina: 100,
+    paladinMaxStamina: 100,
+    crossbowmanMaxStamina: 100,
+    armiesTickInSeconds: 1,
+  },
 };
 
 // ── Tests ────────────────────────────────────────────────────────────

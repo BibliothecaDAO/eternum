@@ -228,7 +228,7 @@ export async function main() {
     ...createReadOnlyTools(config.dataDir),
     createInspectTool(client, mapCtx),
     createMoveTool(client, mapCtx, account.address, txCtx, gameConfig),
-    createAttackTool(client, mapCtx, account.address, txCtx),
+    createAttackTool(client, mapCtx, account.address, txCtx, gameConfig),
     createCreateArmyTool(client, mapCtx, account.address, txCtx),
   ];
 
@@ -297,7 +297,7 @@ export async function main() {
   });
 
   // 7. Map loop — refreshes tile data in the background
-  const mapLoop = createMapLoop(client, mapCtx, account.address);
+  const mapLoop = createMapLoop(client, mapCtx, account.address, undefined, gameConfig.stamina);
   mapLoop.start();
   mapCtx.refresh = () => mapLoop.refresh();
 
