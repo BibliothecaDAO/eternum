@@ -169,13 +169,12 @@ export function createAutomationLoop(
 
       const results = await Promise.allSettled(
         snapshotRows.map(async ({ entityId, biome, level, row }) => {
-          // Use wall-clock seconds (same default as game client's getBlockTimestamp).
-          // Subtract a small buffer to avoid overestimating production when our
-          // clock is slightly ahead of the chain (mirrors the game client's
-          // CONSERVATIVE_TICK_BUFFER logic).
-          const CONSERVATIVE_BUFFER_SECONDS = 10;
-          const currentTimestamp = Math.floor(Date.now() / 1000) - CONSERVATIVE_BUFFER_SECONDS;
-          const snapshot = parseRealmSnapshot(row, currentTimestamp);
+          // Use raw balances (no projection) for budget calculations.
+          // Projection overestimates when previous ticks consumed fuel that
+          // hasn't been reflected in last_updated_at yet, causing on-chain
+          // "Insufficient Balance" failures. The projection infrastructure
+          // in snapshot.ts is preserved for future use (e.g. UI display).
+          const snapshot = parseRealmSnapshot(row);
           const realmName = `Realm ${entityId}`;
 
           // Merge building counts: the SQL building query has ALL buildings
