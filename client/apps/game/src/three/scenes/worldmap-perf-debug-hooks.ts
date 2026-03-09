@@ -2,6 +2,7 @@ import type { PerformanceReport } from "../utils/performance-monitor";
 import { registerDebugHook, unregisterDebugHook, type DebugHookInstallOptions } from "../utils/debug-hooks";
 import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 import type { WorldmapChunkDiagnosticsBaselineEntry } from "./worldmap-chunk-diagnostics-baseline";
+import type { WorldmapTerrainHealthState, WorldmapTerrainRecoveryDebugEvent } from "./worldmap-terrain-health";
 
 export interface WorldmapChunkDiagnosticsSnapshot {
   diagnostics: WorldmapChunkDiagnostics;
@@ -46,6 +47,8 @@ export interface WorldmapPerfDebugState {
   visibleStructures: number;
   visibleChests: number;
   debugArmies: WorldmapDebugArmyStats;
+  terrainHealth: WorldmapTerrainHealthState;
+  lastTerrainRecoveryEvent: WorldmapTerrainRecoveryDebugEvent | null;
 }
 
 export interface WorldmapChunkOffsetMoveOptions {
@@ -76,6 +79,8 @@ interface WorldmapPerfDebugHookCallbacks {
   clearDebugArmies: () => WorldmapDebugArmyStats;
   forceChunkRefresh: () => Promise<WorldmapPerfDebugState>;
   moveToChunkOffset: (options?: WorldmapChunkOffsetMoveOptions) => Promise<WorldmapPerfDebugState>;
+  getTerrainHealthState: () => WorldmapTerrainHealthState;
+  getLastTerrainRecoveryEvent: () => WorldmapTerrainRecoveryDebugEvent | null;
   getBenchmarkSnapshot: () => WorldmapBenchmarkSnapshot;
 }
 
@@ -97,6 +102,8 @@ export const WORLDMAP_PERF_DEBUG_HOOK_NAMES = [
   "clearWorldmapDebugArmies",
   "forceWorldmapChunkRefresh",
   "moveWorldmapToChunkOffset",
+  "getWorldmapTerrainHealthState",
+  "getLastWorldmapTerrainRecoveryEvent",
   "getWorldmapBenchmarkSnapshot",
 ] as const;
 
@@ -124,6 +131,8 @@ export function installWorldmapPerfDebugHooks(options: InstallWorldmapPerfDebugH
   registerDebugHook("clearWorldmapDebugArmies", callbacks.clearDebugArmies, installOptions);
   registerDebugHook("forceWorldmapChunkRefresh", callbacks.forceChunkRefresh, installOptions);
   registerDebugHook("moveWorldmapToChunkOffset", callbacks.moveToChunkOffset, installOptions);
+  registerDebugHook("getWorldmapTerrainHealthState", callbacks.getTerrainHealthState, installOptions);
+  registerDebugHook("getLastWorldmapTerrainRecoveryEvent", callbacks.getLastTerrainRecoveryEvent, installOptions);
   registerDebugHook("getWorldmapBenchmarkSnapshot", callbacks.getBenchmarkSnapshot, installOptions);
 }
 

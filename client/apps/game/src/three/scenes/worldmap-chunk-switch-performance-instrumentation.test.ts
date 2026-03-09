@@ -37,6 +37,13 @@ describe("worldmap chunk-switch performance instrumentation", () => {
     expect(source).toContain("this.moveCameraToColRowWithView(col, row, CameraView.Far, 0)");
   });
 
+  it("waits for spectator tile hydration before rebuilding terrain and rejects outline-heavy spectator caches", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain("await this.waitForSpectatorTerrainHydration(startRow, startCol, transitionToken)");
+    expect(source).toContain("shouldRejectCachedSpectatorTerrainSnapshot({");
+  });
+
   it("renders spectator terrain through visible biome resolution instead of outline-only fallback", () => {
     const source = readWorldmapSource();
 

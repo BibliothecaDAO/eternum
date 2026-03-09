@@ -44,6 +44,7 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
+  BiomeIdToType,
   BiomeType,
   ContractAddress,
   Direction,
@@ -153,7 +154,12 @@ import {
   finalizePendingChunkFetchOwnership,
   invalidateWorldmapSwitchOffTransitionState,
 } from "./worldmap-runtime-lifecycle";
-import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
+import {
+  hasSufficientSpectatorTileCoverage,
+  shouldRejectCachedExploredTerrainSnapshot,
+  shouldRejectCachedSpectatorTerrainSnapshot,
+  shouldRejectCachedTerrainSnapshot,
+} from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
@@ -202,6 +208,13 @@ import {
   type WorldmapPerfControlPatch,
   type WorldmapPerfDebugState,
 } from "./worldmap-perf-debug-hooks";
+import {
+  buildTerrainRecoveryDebugEvent,
+  buildWorldmapTerrainHealthState,
+  type WorldmapTerrainHealthState,
+  type WorldmapTerrainRecoveryDebugEvent,
+  type WorldmapTerrainRecoveryReason,
+} from "./worldmap-terrain-health";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -282,6 +295,7 @@ export default class WorldmapScene extends HexagonScene {
   private wheelDirection: -1 | 0 | 1 = 0;
   private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
+  private cameraViewRefreshTimeout: number | null = null;
   private renderChunkSize = this.chunkGeometry.renderSize;
 
   private totalStructures: number = 0;
@@ -303,6 +317,7 @@ export default class WorldmapScene extends HexagonScene {
   private terrainReferenceInstances = 0;
   private terrainReferenceChunkKey: string | null = null;
   private terrainRecoveryInFlight = false;
+  private lastTerrainRecoveryEvent: WorldmapTerrainRecoveryDebugEvent | null = null;
   private lastTerrainRecoveryAtMs = 0;
   private readonly zeroTerrainFrameThreshold = 3;
   private readonly lowTerrainFrameThreshold = 3;
@@ -313,6 +328,11 @@ export default class WorldmapScene extends HexagonScene {
   private readonly minCachedTerrainCoverageFraction = 0.08;
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
+  private readonly minSpectatorTileCoverageFraction = 0.85;
+  private readonly minExpectedSpectatorTilesForValidation = 128;
+  private readonly maxCachedSpectatorOutlineFraction = 0.1;
+  private readonly spectatorHydrationTimeoutMs = 700;
+  private readonly spectatorHydrationPollMs = 50;
   private currentTerrainCells: Map<string, string> = new Map();
   private currentTerrainWindow:
     | {
@@ -1130,10 +1150,22 @@ export default class WorldmapScene extends HexagonScene {
 
   public changeCameraView(position: CameraView) {
     super.changeCameraView(position);
+    if (this.cameraViewRefreshTimeout) {
+      clearTimeout(this.cameraViewRefreshTimeout);
+      this.cameraViewRefreshTimeout = null;
+    }
     if (!this.mainDirectionalLight) {
+      this.cameraViewRefreshTimeout = window.setTimeout(() => {
+        this.cameraViewRefreshTimeout = null;
+        this.requestChunkRefresh(true, "controls_change");
+      }, 750);
       return;
     }
     this.configureWorldmapShadows();
+    this.cameraViewRefreshTimeout = window.setTimeout(() => {
+      this.cameraViewRefreshTimeout = null;
+      this.requestChunkRefresh(true, "controls_change");
+    }, 750);
   }
 
   private configureWorldmapShadows() {
@@ -2375,6 +2407,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private resetZoomHardeningRuntimeState(): void {
+    if (this.cameraViewRefreshTimeout) {
+      clearTimeout(this.cameraViewRefreshTimeout);
+      this.cameraViewRefreshTimeout = null;
+    }
+
     const resetState = resetWorldmapZoomHardeningRuntimeState(
       {
         chunkRefreshTimeout: this.chunkRefreshTimeout,
@@ -2402,6 +2439,7 @@ export default class WorldmapScene extends HexagonScene {
     this.terrainReferenceInstances = 0;
     this.terrainReferenceChunkKey = null;
     this.lastChunkSwitchMovement = null;
+    this.lastTerrainRecoveryEvent = null;
   }
 
   onSwitchOff() {
@@ -3505,6 +3543,7 @@ export default class WorldmapScene extends HexagonScene {
         TropicalSeasonalForest: [],
         TropicalRainForest: [],
         Outline: [],
+        Empty: [],
       };
 
       let currentIndex = 0;
@@ -3535,6 +3574,7 @@ export default class WorldmapScene extends HexagonScene {
       const perfSimulation = this.perfSimulation;
       const isSpectating = this.state.isSpectating;
       const components = this.dojo.components as Parameters<typeof getTileAt>[0];
+      const currentTerrainCells = this.currentTerrainCells;
       const currentTerrainWindow = this.currentTerrainWindow;
       const stripUpdatePlan =
         currentTerrainWindow &&
@@ -3550,7 +3590,7 @@ export default class WorldmapScene extends HexagonScene {
               chunkSize: this.chunkSize,
             })
           : null;
-      const canUseStripUpdate = stripUpdatePlan?.mode === "strip" && this.currentTerrainCells.size > 0;
+      const canUseStripUpdate = stripUpdatePlan?.mode === "strip" && currentTerrainCells.size > 0;
       const nextTerrainCells = new Map<string, string>();
       const nextRenderBounds = stripUpdatePlan?.nextBounds ?? getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
       const stripProcessTargets: number[] = [];
@@ -3711,10 +3751,12 @@ export default class WorldmapScene extends HexagonScene {
       const processCell = (rowIndex: number, colIndex: number) => {
         const rowEntry = rowMetadata[rowIndex]!;
         const globalCol = nextRenderBounds.minCol + colIndex;
+        const terrainCellKey = this.getTerrainCellKey(globalCol, rowEntry.globalRow);
 
         const isStructure = structureHexCoords.get(globalCol)?.has(rowEntry.globalRow) || false;
         const shouldHideTile = isStructure;
         const exploredBiome = exploredTiles.get(globalCol)?.get(rowEntry.globalRow);
+        const existingTerrainBiomeKey = currentTerrainCells.get(terrainCellKey);
 
         if (shouldHideTile) {
           return;
@@ -3735,6 +3777,12 @@ export default class WorldmapScene extends HexagonScene {
         if (!visibleBiome.shouldRenderOutline && visibleBiome.biome !== null) {
           const biomeVariant = getBiomeVariant(visibleBiome.biome, globalCol, rowEntry.globalRow);
           appendTerrainCell(rowIndex, colIndex, biomeVariant);
+        } else if (
+          isSpectating &&
+          existingTerrainBiomeKey &&
+          this.isExploredBiomeCacheKey(existingTerrainBiomeKey)
+        ) {
+          appendTerrainCell(rowIndex, colIndex, existingTerrainBiomeKey);
         } else {
           appendTerrainCell(rowIndex, colIndex, "Outline");
         }
@@ -4104,6 +4152,15 @@ export default class WorldmapScene extends HexagonScene {
         bounds.maxRow + FELT_CENTER(),
       );
 
+      if (this.state.isSpectating) {
+        this.hydrateExploredTilesFromFetchedBounds({
+          minCol: bounds.minCol + FELT_CENTER(),
+          maxCol: bounds.maxCol + FELT_CENTER(),
+          minRow: bounds.minRow + FELT_CENTER(),
+          maxRow: bounds.maxRow + FELT_CENTER(),
+        });
+      }
+
       if (priority === "critical") {
         this.fetchedCriticalChunks.add(cacheKey);
         this.scheduleHydratedChunkRefresh(chunkKey);
@@ -4208,9 +4265,126 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  private getExpectedVisibleTerrainInstances(startRow: number, startCol: number): number {
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    let expectedVisibleTerrainInstances = 0;
+
+    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        if (!isStructure) {
+          expectedVisibleTerrainInstances += 1;
+        }
+      }
+    }
+
+    return expectedVisibleTerrainInstances;
+  }
+
+  private getResolvedSpectatorTileInstances(startRow: number, startCol: number): number {
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const components = this.dojo.components as Parameters<typeof getTileAt>[0];
+    let resolvedTileInstances = 0;
+
+    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        if (isStructure) {
+          continue;
+        }
+
+        const tile = getTileAt(components, DEFAULT_COORD_ALT, col + FELT_CENTER(), row + FELT_CENTER());
+        if (tile?.biome !== undefined) {
+          resolvedTileInstances += 1;
+        }
+      }
+    }
+
+    return resolvedTileInstances;
+  }
+
+  private hasSufficientSpectatorTileCoverage(startRow: number, startCol: number): boolean {
+    return hasSufficientSpectatorTileCoverage({
+      resolvedTileInstances: this.getResolvedSpectatorTileInstances(startRow, startCol),
+      expectedVisibleTerrainInstances: this.getExpectedVisibleTerrainInstances(startRow, startCol),
+      minCoverageFraction: this.minSpectatorTileCoverageFraction,
+      minExpectedVisibleTerrainInstances: this.minExpectedSpectatorTilesForValidation,
+    });
+  }
+
+  private async waitForSpectatorTerrainHydration(
+    startRow: number,
+    startCol: number,
+    transitionToken?: number,
+  ): Promise<boolean> {
+    const deadline = performance.now() + this.spectatorHydrationTimeoutMs;
+
+    while (!this.isSwitchedOff) {
+      if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+        return false;
+      }
+
+      if (this.hasSufficientSpectatorTileCoverage(startRow, startCol)) {
+        return true;
+      }
+
+      if (performance.now() >= deadline) {
+        return this.hasSufficientSpectatorTileCoverage(startRow, startCol);
+      }
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, this.spectatorHydrationPollMs);
+      });
+    }
+
+    return false;
+  }
+
+  private scheduleSpectatorHydrationRetry(transitionToken?: number): void {
+    window.setTimeout(() => {
+      if (this.isSwitchedOff) {
+        return;
+      }
+      if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+        return;
+      }
+      this.requestChunkRefresh(true, "unknown");
+    }, this.spectatorHydrationPollMs);
+  }
+
+  private hydrateExploredTilesFromFetchedBounds(bounds: {
+    minCol: number;
+    maxCol: number;
+    minRow: number;
+    maxRow: number;
+  }): void {
+    const components = this.dojo.components as Parameters<typeof getTileAt>[0];
+
+    for (let col = bounds.minCol; col <= bounds.maxCol; col += 1) {
+      for (let row = bounds.minRow; row <= bounds.maxRow; row += 1) {
+        const tile = getTileAt(components, DEFAULT_COORD_ALT, col, row);
+        if (!tile) {
+          continue;
+        }
+
+        const biome = BiomeIdToType[tile.biome];
+        if (biome === undefined) {
+          continue;
+        }
+
+        const normalizedBiome = biome === BiomeType.None ? BiomeType.Grassland : biome;
+        const normalizedPosition = new Position({ x: col, y: row }).getNormalized();
+        if (!this.exploredTiles.has(normalizedPosition.x)) {
+          this.exploredTiles.set(normalizedPosition.x, new Map());
+        }
+        this.exploredTiles.get(normalizedPosition.x)!.set(normalizedPosition.y, normalizedBiome);
+      }
+    }
+  }
+
   private isExploredBiomeCacheKey(biomeKey: string): boolean {
     const normalizedKey = biomeKey.toLowerCase();
-    return normalizedKey !== "outline" && normalizedKey !== "none";
+    return normalizedKey !== "outline" && normalizedKey !== "none" && normalizedKey !== "empty";
   }
 
   private getExpectedExploredTerrainInstances(startRow: number, startCol: number): number {
@@ -4242,6 +4416,7 @@ export default class WorldmapScene extends HexagonScene {
     const cachedChunk = this.cachedMatrices.get(chunkKey)!;
     let totalCachedTerrainInstances = 0;
     let cachedExploredTerrainInstances = 0;
+    let cachedOutlineTerrainInstances = 0;
 
     const { box, sphere } = this.computeChunkBounds(startRow, startCol);
     for (const [biome, model] of this.biomeModels) {
@@ -4255,6 +4430,8 @@ export default class WorldmapScene extends HexagonScene {
       totalCachedTerrainInstances += count;
       if (this.isExploredBiomeCacheKey(String(biome))) {
         cachedExploredTerrainInstances += count;
+      } else if (String(biome) === "Outline") {
+        cachedOutlineTerrainInstances += count;
       }
       if (count === 0) {
         this.releaseInstancedAttribute(matrices);
@@ -4274,19 +4451,30 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+    const expectedVisibleTerrainInstances = this.getExpectedVisibleTerrainInstances(startRow, startCol);
     if (
       this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
+      (this.state.isSpectating &&
+        shouldRejectCachedSpectatorTerrainSnapshot({
+          outlineTerrainInstances: cachedOutlineTerrainInstances,
+          expectedVisibleTerrainInstances,
+          maxOutlineFraction: this.maxCachedSpectatorOutlineFraction,
+          minExpectedVisibleTerrainInstances: this.minExpectedSpectatorTilesForValidation,
+        }))
     ) {
       if (import.meta.env.DEV) {
         console.warn("[CACHE] Rejecting suspicious terrain snapshot", {
           chunkKey,
           totalCachedTerrainInstances,
           cachedExploredTerrainInstances,
+          cachedOutlineTerrainInstances,
           expectedExploredTerrainInstances,
+          expectedVisibleTerrainInstances,
           renderHexCapacity: this.getRenderHexCapacity(),
           minCoverageFraction: this.minCachedTerrainCoverageFraction,
           minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+          maxSpectatorOutlineFraction: this.maxCachedSpectatorOutlineFraction,
         });
       }
       this.disposeCachedMatrices(chunkKey);
@@ -4325,6 +4513,7 @@ export default class WorldmapScene extends HexagonScene {
     if (cachedMatrices) {
       let totalCachedTerrainInstances = 0;
       let cachedExploredTerrainInstances = 0;
+      let cachedOutlineTerrainInstances = 0;
       for (const [biome, entry] of cachedMatrices) {
         if (biome === "__bounds__") {
           continue;
@@ -4333,23 +4522,36 @@ export default class WorldmapScene extends HexagonScene {
         totalCachedTerrainInstances += count;
         if (this.isExploredBiomeCacheKey(biome)) {
           cachedExploredTerrainInstances += count;
+        } else if (biome === "Outline") {
+          cachedOutlineTerrainInstances += count;
         }
       }
 
       const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+      const expectedVisibleTerrainInstances = this.getExpectedVisibleTerrainInstances(startRow, startCol);
       if (
         this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
+        (this.state.isSpectating &&
+          shouldRejectCachedSpectatorTerrainSnapshot({
+            outlineTerrainInstances: cachedOutlineTerrainInstances,
+            expectedVisibleTerrainInstances,
+            maxOutlineFraction: this.maxCachedSpectatorOutlineFraction,
+            minExpectedVisibleTerrainInstances: this.minExpectedSpectatorTilesForValidation,
+          }))
       ) {
         if (import.meta.env.DEV) {
           console.warn("[CACHE] Evicting suspicious cached terrain before apply", {
             chunkKey,
             totalCachedTerrainInstances,
             cachedExploredTerrainInstances,
+            cachedOutlineTerrainInstances,
             expectedExploredTerrainInstances,
+            expectedVisibleTerrainInstances,
             renderHexCapacity: this.getRenderHexCapacity(),
             minCoverageFraction: this.minCachedTerrainCoverageFraction,
             minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+            maxSpectatorOutlineFraction: this.maxCachedSpectatorOutlineFraction,
           });
         }
         this.removeCachedMatricesForChunk(startRow, startCol);
@@ -4674,7 +4876,8 @@ export default class WorldmapScene extends HexagonScene {
     const chunkChanged = this.currentChunk !== chunkKey;
 
     const isShortcutNavigation = options?.reason === "shortcut";
-    if (!force && chunkChanged && !isShortcutNavigation && this.shouldDelayChunkSwitch(focusPoint)) {
+    const isProgrammaticCameraMotion = this.isProgrammaticCameraMotionActive();
+    if (!force && chunkChanged && !isShortcutNavigation && !isProgrammaticCameraMotion && this.shouldDelayChunkSwitch(focusPoint)) {
       return false;
     }
 
@@ -4801,6 +5004,39 @@ export default class WorldmapScene extends HexagonScene {
       // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
       const tileFetchPromise = this.computeTileEntities(chunkKey, { priority: "critical" });
 
+      if (this.state.isSpectating) {
+        PerformanceMonitor.begin("chunkSwitch.tileFetchCriticalGate");
+        let criticalTileFetchSucceeded = false;
+        try {
+          criticalTileFetchSucceeded = await tileFetchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkSwitch.tileFetchCriticalGate");
+        }
+
+        if (!criticalTileFetchSucceeded) {
+          if (this.currentChunk !== chunkKey) {
+            this.visibilityManager?.unregisterChunk(chunkKey);
+          }
+          return;
+        }
+
+        PerformanceMonitor.begin("chunkSwitch.spectatorHydrationGate");
+        let spectatorHydrated = false;
+        try {
+          spectatorHydrated = await this.waitForSpectatorTerrainHydration(startRow, startCol, transitionToken);
+        } finally {
+          PerformanceMonitor.end("chunkSwitch.spectatorHydrationGate");
+        }
+
+        if (!spectatorHydrated && this.currentTerrainCells.size > 0) {
+          this.scheduleSpectatorHydrationRetry(transitionToken);
+          if (this.currentChunk !== chunkKey) {
+            this.visibilityManager?.unregisterChunk(chunkKey);
+          }
+          return;
+        }
+      }
+
       this.updatePinnedChunks(surroundingChunks);
       const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
 
@@ -4907,10 +5143,38 @@ export default class WorldmapScene extends HexagonScene {
       this.updateCurrentChunkBounds(startRow, startCol);
 
       const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-      this.removeCachedMatricesForChunk(startRow, startCol);
 
       // Start tile data fetch after force invalidation.
       const tileFetchPromise = this.computeTileEntities(chunkKey, { priority: "critical" });
+
+      if (this.state.isSpectating) {
+        PerformanceMonitor.begin("chunkRefresh.tileFetchCriticalGate");
+        let criticalTileFetchSucceeded = false;
+        try {
+          criticalTileFetchSucceeded = await tileFetchPromise;
+        } finally {
+          PerformanceMonitor.end("chunkRefresh.tileFetchCriticalGate");
+        }
+
+        if (!criticalTileFetchSucceeded) {
+          return;
+        }
+
+        PerformanceMonitor.begin("chunkRefresh.spectatorHydrationGate");
+        let spectatorHydrated = false;
+        try {
+          spectatorHydrated = await this.waitForSpectatorTerrainHydration(startRow, startCol, transitionToken);
+        } finally {
+          PerformanceMonitor.end("chunkRefresh.spectatorHydrationGate");
+        }
+
+        if (!spectatorHydrated && this.currentTerrainCells.size > 0) {
+          this.scheduleSpectatorHydrationRetry(transitionToken);
+          return;
+        }
+      }
+
+      this.removeCachedMatricesForChunk(startRow, startCol);
 
       this.updatePinnedChunks(surroundingChunks);
       const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
@@ -5138,7 +5402,130 @@ export default class WorldmapScene extends HexagonScene {
       visibleStructures: this.structureManager.getVisibleCount(),
       visibleChests: this.chestManager.getVisibleCount(),
       debugArmies: this.armyManager.getDebugArmyStats(),
+      terrainHealth: this.getWorldmapTerrainHealthState(),
+      lastTerrainRecoveryEvent: this.getLastTerrainRecoveryEvent(),
     };
+  }
+
+  private getTotalTerrainInstances(): number {
+    let totalTerrainInstances = 0;
+    this.biomeModels.forEach((biome) => {
+      totalTerrainInstances += biome.getCount();
+    });
+    return totalTerrainInstances;
+  }
+
+  private getTerrainBiomeBreakdown(): { nonZeroBiomeCount: number; biomeInstanceCounts: Record<string, number> } {
+    const biomeInstanceCounts: Record<string, number> = {};
+    let nonZeroBiomeCount = 0;
+
+    this.biomeModels.forEach((biome, biomeKey) => {
+      const count = biome.getCount();
+      if (count <= 0) {
+        return;
+      }
+
+      biomeInstanceCounts[String(biomeKey)] = count;
+      nonZeroBiomeCount += 1;
+    });
+
+    return { nonZeroBiomeCount, biomeInstanceCounts };
+  }
+
+  private getTerrainBiomeRenderStates(): Record<
+    string,
+    {
+      anyMeshVisible: boolean;
+      allMeshesVisible: boolean;
+      anyMeshFrustumCulled: boolean;
+      firstInstancePosition?: { x: number; y: number; z: number } | null;
+      firstInstanceInsideCurrentBounds?: boolean | null;
+    }
+  > {
+    const renderStates: Record<
+      string,
+      {
+        anyMeshVisible: boolean;
+        allMeshesVisible: boolean;
+        anyMeshFrustumCulled: boolean;
+        firstInstancePosition?: { x: number; y: number; z: number } | null;
+        firstInstanceInsideCurrentBounds?: boolean | null;
+      }
+    > = {};
+
+    const firstMatrix = new Matrix4();
+    const firstPosition = new Vector3();
+
+    this.biomeModels.forEach((biome, biomeKey) => {
+      const count = biome.getCount();
+      if (count <= 0) {
+        return;
+      }
+
+      const meshes = biome.instancedMeshes;
+      let firstInstancePosition: { x: number; y: number; z: number } | null = null;
+      let firstInstanceInsideCurrentBounds: boolean | null = null;
+
+      if (meshes.length > 0) {
+        meshes[0].getMatrixAt(0, firstMatrix);
+        firstPosition.setFromMatrixPosition(firstMatrix);
+        firstInstancePosition = { x: firstPosition.x, y: firstPosition.y, z: firstPosition.z };
+        firstInstanceInsideCurrentBounds = this.currentChunkBounds
+          ? this.currentChunkBounds.box.containsPoint(firstPosition)
+          : null;
+      }
+
+      renderStates[String(biomeKey)] = {
+        anyMeshVisible: meshes.some((mesh) => mesh.visible),
+        allMeshesVisible: meshes.every((mesh) => mesh.visible),
+        anyMeshFrustumCulled: meshes.some((mesh) => mesh.frustumCulled),
+        firstInstancePosition,
+        firstInstanceInsideCurrentBounds,
+      };
+    });
+
+    return renderStates;
+  }
+
+  private getWorldmapTerrainHealthState(): WorldmapTerrainHealthState {
+    const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
+    const currentChunkVisible = this.currentChunkBounds ? this.visibilityManager.isBoxVisible(this.currentChunkBounds.box) : null;
+    const { nonZeroBiomeCount, biomeInstanceCounts } = this.getTerrainBiomeBreakdown();
+    const biomeRenderStates = this.getTerrainBiomeRenderStates();
+
+    return buildWorldmapTerrainHealthState({
+      currentChunk: this.currentChunk,
+      currentAreaKey,
+      toriiBoundsAreaKey: this.toriiBoundsAreaKey,
+      nonZeroBiomeCount,
+      biomeInstanceCounts,
+      biomeRenderStates,
+      totalTerrainInstances: this.getTotalTerrainInstances(),
+      terrainReferenceInstances: this.terrainReferenceInstances,
+      zeroTerrainFrames: this.zeroTerrainFrames,
+      lowTerrainFrames: this.lowTerrainFrames,
+      offscreenChunkFrames: this.offscreenChunkFrames,
+      pendingFetches: this.pendingChunks.size,
+      fetchedAreaLoaded: currentAreaKey ? this.fetchedChunks.has(currentAreaKey) : false,
+      criticalAreaLoaded: currentAreaKey ? this.fetchedCriticalChunks.has(currentAreaKey) : false,
+      currentChunkVisible,
+      hasCurrentChunkBounds: Boolean(this.currentChunkBounds),
+      terrainRecoveryInFlight: this.terrainRecoveryInFlight,
+    });
+  }
+
+  private getLastTerrainRecoveryEvent(): WorldmapTerrainRecoveryDebugEvent | null {
+    return this.lastTerrainRecoveryEvent;
+  }
+
+  private recordTerrainRecoveryDebugEvent(reason: WorldmapTerrainRecoveryReason): WorldmapTerrainRecoveryDebugEvent {
+    const event = buildTerrainRecoveryDebugEvent({
+      reason,
+      recordedAtMs: performance.now(),
+      snapshot: this.getWorldmapTerrainHealthState(),
+    });
+    this.lastTerrainRecoveryEvent = event;
+    return event;
   }
 
   private getThreePerformanceReport() {
@@ -5364,6 +5751,8 @@ export default class WorldmapScene extends HexagonScene {
         clearDebugArmies: () => this.clearWorldmapDebugArmies(),
         forceChunkRefresh: () => this.forceWorldmapChunkRefresh(),
         moveToChunkOffset: (options) => this.moveWorldmapToChunkOffset(options),
+        getTerrainHealthState: () => this.getWorldmapTerrainHealthState(),
+        getLastTerrainRecoveryEvent: () => this.getLastTerrainRecoveryEvent(),
         getBenchmarkSnapshot: () => this.getWorldmapBenchmarkSnapshot(),
       },
     });
@@ -5413,15 +5802,13 @@ export default class WorldmapScene extends HexagonScene {
 
       this.lastTerrainRecoveryAtMs = now;
       this.terrainRecoveryInFlight = true;
+      const recoveryEvent = this.recordTerrainRecoveryDebugEvent("offscreen");
 
       console.warn("[WorldMap] Current chunk bounds remained offscreen; forcing chunk refresh", {
-        chunk: this.currentChunk,
-        offscreenChunkFrames: this.offscreenChunkFrames,
+        ...recoveryEvent,
       });
       this.emitZoomHardeningTelemetry("self_heal_start", {
-        chunk: this.currentChunk,
-        reason: "offscreen",
-        offscreenChunkFrames: this.offscreenChunkFrames,
+        ...recoveryEvent,
       });
 
       void this.updateVisibleChunks(true)
@@ -5444,10 +5831,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    let totalTerrainInstances = 0;
-    this.biomeModels.forEach((biome) => {
-      totalTerrainInstances += biome.getCount();
-    });
+    let totalTerrainInstances = this.getTotalTerrainInstances();
 
     if (this.terrainReferenceChunkKey !== this.currentChunk) {
       this.terrainReferenceChunkKey = this.currentChunk;
@@ -5484,22 +5868,14 @@ export default class WorldmapScene extends HexagonScene {
 
     this.lastTerrainRecoveryAtMs = now;
     this.terrainRecoveryInFlight = true;
+    const recoveryReason = anomalyResult.recoveryReason ?? "zero";
+    const recoveryEvent = this.recordTerrainRecoveryDebugEvent(recoveryReason);
 
     console.warn("[WorldMap] Terrain visibility anomaly detected; forcing chunk refresh", {
-      chunk: this.currentChunk,
-      reason: anomalyResult.recoveryReason,
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
-      zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
+      ...recoveryEvent,
     });
     this.emitZoomHardeningTelemetry("self_heal_start", {
-      chunk: this.currentChunk,
-      reason: anomalyResult.recoveryReason,
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
-      zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
+      ...recoveryEvent,
     });
 
     void this.updateVisibleChunks(true)

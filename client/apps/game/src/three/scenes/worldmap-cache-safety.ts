@@ -11,6 +11,20 @@ interface CachedExploredTerrainSnapshotInput {
   minExpectedExploredInstances: number;
 }
 
+interface SpectatorTileCoverageInput {
+  resolvedTileInstances: number;
+  expectedVisibleTerrainInstances: number;
+  minCoverageFraction: number;
+  minExpectedVisibleTerrainInstances: number;
+}
+
+interface CachedSpectatorTerrainSnapshotInput {
+  outlineTerrainInstances: number;
+  expectedVisibleTerrainInstances: number;
+  maxOutlineFraction: number;
+  minExpectedVisibleTerrainInstances: number;
+}
+
 export function shouldRejectCachedTerrainSnapshot(input: CachedTerrainSnapshotInput): boolean {
   const totalCachedTerrainInstances = Math.max(0, Math.floor(input.totalCachedTerrainInstances));
   const renderHexCapacity = Math.max(1, Math.floor(input.renderHexCapacity));
@@ -32,4 +46,32 @@ export function shouldRejectCachedExploredTerrainSnapshot(input: CachedExploredT
   const minRetentionFraction = Math.min(1, Math.max(0, input.minRetentionFraction));
   const minRetainedExploredInstances = Math.ceil(expectedExploredTerrainInstances * minRetentionFraction);
   return cachedExploredTerrainInstances < minRetainedExploredInstances;
+}
+
+export function hasSufficientSpectatorTileCoverage(input: SpectatorTileCoverageInput): boolean {
+  const resolvedTileInstances = Math.max(0, Math.floor(input.resolvedTileInstances));
+  const expectedVisibleTerrainInstances = Math.max(0, Math.floor(input.expectedVisibleTerrainInstances));
+  const minExpectedVisibleTerrainInstances = Math.max(0, Math.floor(input.minExpectedVisibleTerrainInstances));
+
+  if (expectedVisibleTerrainInstances < minExpectedVisibleTerrainInstances) {
+    return true;
+  }
+
+  const minCoverageFraction = Math.min(1, Math.max(0, input.minCoverageFraction));
+  const minResolvedTileInstances = Math.ceil(expectedVisibleTerrainInstances * minCoverageFraction);
+  return resolvedTileInstances >= minResolvedTileInstances;
+}
+
+export function shouldRejectCachedSpectatorTerrainSnapshot(input: CachedSpectatorTerrainSnapshotInput): boolean {
+  const outlineTerrainInstances = Math.max(0, Math.floor(input.outlineTerrainInstances));
+  const expectedVisibleTerrainInstances = Math.max(0, Math.floor(input.expectedVisibleTerrainInstances));
+  const minExpectedVisibleTerrainInstances = Math.max(0, Math.floor(input.minExpectedVisibleTerrainInstances));
+
+  if (expectedVisibleTerrainInstances < minExpectedVisibleTerrainInstances) {
+    return false;
+  }
+
+  const maxOutlineFraction = Math.min(1, Math.max(0, input.maxOutlineFraction));
+  const maxOutlineInstances = Math.floor(expectedVisibleTerrainInstances * maxOutlineFraction);
+  return outlineTerrainInstances > maxOutlineInstances;
 }

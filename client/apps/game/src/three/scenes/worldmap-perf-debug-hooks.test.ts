@@ -9,6 +9,8 @@ import {
 describe("worldmap perf debug hooks", () => {
   it("registers the full benchmark hook surface in DEV mode", () => {
     expect(WORLDMAP_PERF_DEBUG_HOOK_NAMES).toContain("forceWorldmapChunkRefresh");
+    expect(WORLDMAP_PERF_DEBUG_HOOK_NAMES).toContain("getWorldmapTerrainHealthState");
+    expect(WORLDMAP_PERF_DEBUG_HOOK_NAMES).toContain("getLastWorldmapTerrainRecoveryEvent");
 
     const target: Record<string, unknown> = {};
     const diagnostics = {
@@ -68,6 +70,29 @@ describe("worldmap perf debug hooks", () => {
       totalArmyCount: 0,
       visibleArmyCount: 0,
     };
+    const terrainHealth = {
+      currentChunk: "0,0",
+      currentAreaKey: "area:0,0",
+      toriiBoundsAreaKey: "area:0,0",
+      nonZeroBiomeCount: 2,
+      biomeInstanceCounts: { Grassland: 128, Ocean: 64 },
+      totalTerrainInstances: 0,
+      terrainReferenceInstances: 256,
+      zeroTerrainFrames: 3,
+      lowTerrainFrames: 0,
+      offscreenChunkFrames: 0,
+      pendingFetches: 1,
+      fetchedAreaLoaded: false,
+      criticalAreaLoaded: true,
+      currentChunkVisible: true,
+      hasCurrentChunkBounds: true,
+      terrainRecoveryInFlight: false,
+    };
+    const lastTerrainRecoveryEvent = {
+      reason: "zero" as const,
+      recordedAtMs: 1000,
+      snapshot: terrainHealth,
+    };
     const perfState = {
       currentChunk: "0,0",
       currentChunkSize: 16,
@@ -80,6 +105,8 @@ describe("worldmap perf debug hooks", () => {
       visibleStructures: 0,
       visibleChests: 0,
       debugArmies,
+      terrainHealth,
+      lastTerrainRecoveryEvent,
     };
     const performanceReport = {
       metrics: {},
@@ -101,6 +128,8 @@ describe("worldmap perf debug hooks", () => {
       clearDebugArmies: () => debugArmies,
       forceChunkRefresh: async () => perfState,
       moveToChunkOffset: async () => perfState,
+      getTerrainHealthState: () => terrainHealth,
+      getLastTerrainRecoveryEvent: () => lastTerrainRecoveryEvent,
       getBenchmarkSnapshot: () => ({
         diagnostics: chunkSnapshot,
         performance: performanceReport,

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
+import {
+  hasSufficientSpectatorTileCoverage,
+  shouldRejectCachedExploredTerrainSnapshot,
+  shouldRejectCachedSpectatorTerrainSnapshot,
+  shouldRejectCachedTerrainSnapshot,
+} from "./worldmap-cache-safety";
 
 describe("shouldRejectCachedTerrainSnapshot", () => {
   it("rejects completely empty cached terrain snapshots", () => {
@@ -80,6 +85,76 @@ describe("shouldRejectCachedExploredTerrainSnapshot", () => {
         expectedExploredTerrainInstances: 300,
         minRetentionFraction: 0.5,
         minExpectedExploredInstances: 64,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("hasSufficientSpectatorTileCoverage", () => {
+  it("treats low spectator tile coverage as insufficient once the sample is large enough", () => {
+    expect(
+      hasSufficientSpectatorTileCoverage({
+        resolvedTileInstances: 180,
+        expectedVisibleTerrainInstances: 512,
+        minCoverageFraction: 0.85,
+        minExpectedVisibleTerrainInstances: 128,
+      }),
+    ).toBe(false);
+  });
+
+  it("accepts spectator coverage when the resolved tiles retain the configured fraction", () => {
+    expect(
+      hasSufficientSpectatorTileCoverage({
+        resolvedTileInstances: 450,
+        expectedVisibleTerrainInstances: 512,
+        minCoverageFraction: 0.85,
+        minExpectedVisibleTerrainInstances: 128,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not block spectator hydration on tiny samples", () => {
+    expect(
+      hasSufficientSpectatorTileCoverage({
+        resolvedTileInstances: 12,
+        expectedVisibleTerrainInstances: 20,
+        minCoverageFraction: 0.95,
+        minExpectedVisibleTerrainInstances: 128,
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("shouldRejectCachedSpectatorTerrainSnapshot", () => {
+  it("rejects spectator snapshots dominated by outlines", () => {
+    expect(
+      shouldRejectCachedSpectatorTerrainSnapshot({
+        outlineTerrainInstances: 420,
+        expectedVisibleTerrainInstances: 512,
+        maxOutlineFraction: 0.1,
+        minExpectedVisibleTerrainInstances: 128,
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts spectator snapshots with limited outline coverage", () => {
+    expect(
+      shouldRejectCachedSpectatorTerrainSnapshot({
+        outlineTerrainInstances: 24,
+        expectedVisibleTerrainInstances: 512,
+        maxOutlineFraction: 0.1,
+        minExpectedVisibleTerrainInstances: 128,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not reject spectator snapshots when the expected visible sample is too small", () => {
+    expect(
+      shouldRejectCachedSpectatorTerrainSnapshot({
+        outlineTerrainInstances: 20,
+        expectedVisibleTerrainInstances: 32,
+        maxOutlineFraction: 0.05,
+        minExpectedVisibleTerrainInstances: 128,
       }),
     ).toBe(false);
   });
