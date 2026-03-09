@@ -213,6 +213,7 @@ export function planProduction(
   isVillage: boolean = false,
 ): ProductionPlan {
   const targets = resolveTargets(troopPath, buildingCounts, gameConfig);
+  const smartWeights = computeSmartWeights(buildingCounts, troopPath);
 
   // Budget = 90% of each resource's balance (same cap as game client)
   const budget = new Map<number, number>();
@@ -240,7 +241,22 @@ export function planProduction(
       continue;
     }
 
-    // Affordability: bottleneck across all inputs
+    // Get the weight for this target
+    const targetWeight = smartWeights.get(target.resourceId);
+    const weightPercent = targetWeight
+      ? target.method === "simple"
+        ? targetWeight.laborToResource
+        : targetWeight.resourceToResource
+      : 0;
+
+    // Skip if weight is 0
+    if (weightPercent <= 0) {
+      skipped.push({ resourceId: target.resourceId, reason: `Zero weight for ${target.method}` });
+      continue;
+    }
+
+    // Affordability: use weight% of each input's total balance as the limit,
+    // further constrained by remaining shared budget.
     let affordableCycles = Infinity;
     for (const input of inputs) {
       if (input.amount <= 0) continue;
@@ -249,7 +265,10 @@ export function planProduction(
         affordableCycles = 0;
         break;
       }
-      affordableCycles = Math.min(affordableCycles, Math.floor(remaining / input.amount));
+      const totalForInput = balances.get(input.resource) ?? 0;
+      const weightedLimit = Math.floor((totalForInput * weightPercent) / 100);
+      const permitted = Math.min(remaining, weightedLimit);
+      affordableCycles = Math.min(affordableCycles, Math.floor(permitted / input.amount));
     }
 
     const cycles = Number.isFinite(affordableCycles) ? affordableCycles : 0;
