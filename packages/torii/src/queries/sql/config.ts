@@ -46,6 +46,11 @@ export interface StaminaConfigRow {
   travel_cost: number;
   explore_cost: number;
   bonus_value: number;
+  gain_per_tick: number;
+  knight_max: number;
+  paladin_max: number;
+  crossbowman_max: number;
+  armies_tick_in_seconds: number;
 }
 
 // ── Parsed types ─────────────────────────────────────────────────────
@@ -78,6 +83,11 @@ export interface StaminaConfig {
   travelCost: number;
   exploreCost: number;
   bonusValue: number;
+  gainPerTick: number;
+  knightMaxStamina: number;
+  paladinMaxStamina: number;
+  crossbowmanMaxStamina: number;
+  armiesTickInSeconds: number;
 }
 
 export interface GameConfig {
@@ -128,7 +138,12 @@ export const CONFIG_QUERIES = {
     SELECT
       \`troop_stamina_config.stamina_travel_stamina_cost\` AS travel_cost,
       \`troop_stamina_config.stamina_explore_stamina_cost\` AS explore_cost,
-      \`troop_stamina_config.stamina_bonus_value\` AS bonus_value
+      \`troop_stamina_config.stamina_bonus_value\` AS bonus_value,
+      \`troop_stamina_config.stamina_gain_per_tick\` AS gain_per_tick,
+      \`troop_stamina_config.stamina_knight_max\` AS knight_max,
+      \`troop_stamina_config.stamina_paladin_max\` AS paladin_max,
+      \`troop_stamina_config.stamina_crossbowman_max\` AS crossbowman_max,
+      \`tick_config.armies_tick_in_seconds\` AS armies_tick_in_seconds
     FROM \`s1_eternum-WorldConfig\`
     LIMIT 1
   `,
@@ -230,6 +245,11 @@ export function parseGameConfig(
       travelCost: staminaConfigRow?.travel_cost ?? 20,
       exploreCost: staminaConfigRow?.explore_cost ?? 30,
       bonusValue: staminaConfigRow?.bonus_value ?? 10,
+      gainPerTick: staminaConfigRow?.gain_per_tick ?? 7,
+      knightMaxStamina: staminaConfigRow?.knight_max ?? 160,
+      paladinMaxStamina: staminaConfigRow?.paladin_max ?? 180,
+      crossbowmanMaxStamina: staminaConfigRow?.crossbowman_max ?? 140,
+      armiesTickInSeconds: staminaConfigRow?.armies_tick_in_seconds ?? 1,
     },
   };
 }
