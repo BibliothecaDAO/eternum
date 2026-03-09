@@ -36,7 +36,7 @@ export function ChestStageContainer({
       {/* Contained stage - fixed height for consistency across all stages */}
       <div
         className={`
-          relative w-full max-w-5xl h-[700px] max-h-[90vh] mx-4
+          relative w-full max-w-5xl h-[650px] max-h-[90vh] mx-4
           bg-gradient-to-br from-gold/5 via-black/60 to-black/90
           rounded-2xl border border-gold/20
           shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)]

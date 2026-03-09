@@ -1,23 +1,20 @@
+import {
+  BLITZ_CARD_BASE_STYLES,
+  BLITZ_CARD_FONT_IMPORT,
+  BLITZ_CARD_GOLD_THEME,
+} from "@/ui/shared/lib/blitz-card-shared";
 import Button from "@/ui/design-system/atoms/button";
 import { useChestSounds } from "../hooks/use-chest-sounds";
 import { useRevealShare } from "../hooks/use-reveal-share";
-import { AssetRarity, ChestAsset, RARITY_STYLES } from "../utils/cosmetics";
+import { AssetRarity, ChestAsset } from "../utils/cosmetics";
 import Copy from "lucide-react/dist/esm/icons/copy";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import Share2 from "lucide-react/dist/esm/icons/share-2";
 import X from "lucide-react/dist/esm/icons/x";
 import { useEffect, useRef, useState } from "react";
-import { ChestStageContainer, ChestStageContent, ChestStageHeader } from "./chest-stage-container";
+import { ChestStageContainer, ChestStageContent } from "./chest-stage-container";
 import { TiltCard } from "./tilt-card";
 import { createCardRevealAnimation } from "./use-gsap-timeline";
-
-// X (Twitter) brand icon
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
 
 interface RevealStageProps {
   assets: ChestAsset[];
@@ -145,6 +142,31 @@ const resolveAndPreloadAssetImages = async (assets: ChestAsset[]): Promise<Map<s
   return imageMap;
 };
 
+const CHEST_REVEAL_CARD_STYLES = `
+  ${BLITZ_CARD_FONT_IMPORT}
+  ${BLITZ_CARD_BASE_STYLES}
+  ${BLITZ_CARD_GOLD_THEME}
+
+  .blitz-card-root.reveal-card-shell .reveal-center {
+    position: absolute;
+    left: 188px;
+    top: 138px;
+    width: 584px;
+    height: 268px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .blitz-card-root.reveal-card-shell .reveal-grid {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
 export function RevealStage({
   assets,
   chestRarity,
@@ -242,20 +264,19 @@ export function RevealStage({
     if (count === 1) return "justify-center";
     if (count === 2) return "justify-center gap-6";
     if (count === 3) return "justify-center gap-4";
-    return "justify-center gap-4 flex-wrap";
+    return "justify-center gap-3 flex-wrap";
   };
 
   // Get card size based on count and screen
   const getCardSize = () => {
     const count = displayAssets.length;
     if (count === 1) {
-      // Smaller size for single item to fit in container without overflow
-      return { width: 280, height: 370 };
+      return { width: 240, height: 320 };
     }
     if (count <= 3) {
-      return { width: 260, height: 340 };
+      return { width: 190, height: 250 };
     }
-    return { width: 220, height: 290 };
+    return { width: 160, height: 210 };
   };
 
   // The rarest item is already in the middle after reordering
@@ -277,96 +298,98 @@ export function RevealStage({
           )}
 
           {/* Capture area for screenshot - excludes share buttons */}
-          <div ref={captureRef} className="flex flex-col items-center w-full pt-4 pb-6">
-            {/* Header - show once images are loaded */}
-            <div className={`transition-opacity duration-500 ${canShowCards ? "opacity-100" : "opacity-0"}`}>
-              <ChestStageHeader
-                title="Chest Opened!"
-                subtitle={`You received ${displayAssets.length} item${displayAssets.length !== 1 ? "s" : ""}`}
-              />
-            </div>
-
-            {/* Cards container - only render when images are loaded */}
-            {imagesLoaded && (
+          <div className="w-full overflow-x-auto pt-2 pb-4">
+            <div ref={captureRef} className="mx-auto min-w-[960px] w-[960px]">
               <div
-                ref={cardsRef}
-                className={`flex ${getLayoutClass()} items-center max-w-full overflow-hidden py-4 px-8`}
+                className="blitz-card-root card-gold reveal-card-shell no-player"
+                aria-label="Loot chest reveal card"
               >
-                {displayAssets.map((asset, index) => (
-                  <div
-                    key={`${asset.id}-${index}`}
-                    className="reveal-card opacity-0"
-                    style={{
-                      // Highlight the rarest item (only when multiple items)
-                      zIndex: asset === rarestAsset && displayAssets.length > 1 ? 10 : 1,
-                      transform: asset === rarestAsset && displayAssets.length > 1 ? "scale(1.05)" : "scale(1)",
-                    }}
-                  >
-                    <TiltCard
-                      asset={asset}
-                      size={
-                        asset === rarestAsset && displayAssets.length > 1
-                          ? { width: cardSize.width * 1.1, height: cardSize.height * 1.1 }
-                          : cardSize
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+                <style dangerouslySetInnerHTML={{ __html: CHEST_REVEAL_CARD_STYLES }} />
 
-            {/* Stats summary - always rendered to prevent layout shift */}
-            <div
-              className={`mt-6 flex flex-wrap justify-center gap-3 transition-opacity duration-500 ${
-                canShowCards && animationComplete ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              {Object.entries(
-                displayAssets.reduce(
-                  (acc, asset) => {
-                    acc[asset.rarity] = (acc[asset.rarity] || 0) + 1;
-                    return acc;
-                  },
-                  {} as Record<string, number>,
-                ),
-              ).map(([rarity, count]) => {
-                const style = RARITY_STYLES[rarity as keyof typeof RARITY_STYLES];
-                return (
-                  <div key={rarity} className={`px-3 py-1.5 rounded-lg ${style.bg}/20 border ${style.border}`}>
-                    <span className={`text-sm font-bold ${style.text}`}>
-                      {count}x {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
-                    </span>
-                  </div>
-                );
-              })}
+                <div className="bg-mark" />
+                <div className="bg-smoke" />
+                <div className="bg-texture" />
+                <div className="bg-layer gradient-overlay" />
+                <div className="bg-layer dark-overlay" />
+
+                <img className="corner-mark" src="/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+                <div className="title-stack">
+                  <span className="eyebrow">Loot Chest</span>
+                  <span className="title">Reveal</span>
+                </div>
+
+                <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+                <div className="reveal-center">
+                  {imagesLoaded && (
+                    <div ref={cardsRef} className={`reveal-grid ${getLayoutClass()}`}>
+                      {displayAssets.map((asset, index) => (
+                        <div
+                          key={`${asset.id}-${index}`}
+                          className="reveal-card opacity-0"
+                          style={{
+                            // Highlight the rarest item (only when multiple items)
+                            zIndex: asset === rarestAsset && displayAssets.length > 1 ? 10 : 1,
+                            transform: asset === rarestAsset && displayAssets.length > 1 ? "scale(1.08)" : "scale(1)",
+                          }}
+                        >
+                          <TiltCard
+                            asset={asset}
+                            size={
+                              asset === rarestAsset && displayAssets.length > 1
+                                ? { width: cardSize.width * 1.1, height: cardSize.height * 1.1 }
+                                : cardSize
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="powered">
+                  <img src="/images/logos/Starknet.png" alt="Starknet logo" />
+                  <div className="copy">Powered by Starknet</div>
+                </div>
+
+                <div className="cta">
+                  <div className="cta-title">Play Now</div>
+                  <div className="cta-subtitle">blitz.realms.world</div>
+                </div>
+
+                <div className="bg-layer border-frame" />
+              </div>
             </div>
           </div>
 
           {/* Action buttons - outside capture area */}
           <div
-            className={`mt-6 flex w-full justify-between items-center px-4 transition-opacity duration-500 ${
+            className={`mt-2 flex w-full justify-between items-center px-4 transition-opacity duration-500 ${
               canShowCards && animationComplete ? "opacity-100" : "opacity-0"
             }`}
           >
             {/* Left group: Share buttons */}
             <div className="flex gap-3">
               <Button
-                variant="outline"
-                onClick={shareOnX}
-                className="gap-2 text-gold border-gold/50 hover:bg-gold/10"
+                variant="secondary"
+                onClick={copyImageToClipboard}
                 disabled={isCapturing}
+                className="gap-2 !px-3 !py-2"
+                forceUppercase={false}
               >
-                <XIcon className="w-4 h-4" />
-                Share on X
+                {isCapturing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                {isCapturing ? "Copying..." : "Copy PNG"}
               </Button>
               <Button
                 variant="outline"
-                onClick={copyImageToClipboard}
+                onClick={shareOnX}
+                className="gap-2 !px-3 !py-2"
+                forceUppercase={false}
                 disabled={isCapturing}
-                className="gap-2 text-gold border-gold/50 hover:bg-gold/10"
               >
-                {isCapturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
-                {isCapturing ? "Preparing..." : "Copy Image"}
+                <Share2 className="h-4 w-4" />
+                Share on X
               </Button>
             </div>
 
@@ -395,60 +418,5 @@ export function RevealStage({
         </div>
       </ChestStageContent>
     </ChestStageContainer>
-  );
-}
-
-// Collection summary component (optional, can be shown after reveal)
-interface CollectionSummaryProps {
-  assets: ChestAsset[];
-  totalOwned?: number;
-  collectionSize?: number;
-}
-
-function CollectionSummary({ assets, totalOwned = 0, collectionSize = 22 }: CollectionSummaryProps) {
-  // Group by rarity
-  const byRarity = assets.reduce(
-    (acc, asset) => {
-      acc[asset.rarity] = (acc[asset.rarity] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  return (
-    <div className="bg-black/60 rounded-2xl p-6 backdrop-blur-sm border border-gold/20">
-      <h3 className="text-lg font-bold text-gold mb-4">Items Received</h3>
-
-      {/* Rarity breakdown */}
-      <div className="space-y-2">
-        {Object.entries(byRarity).map(([rarity, count]) => {
-          const style = RARITY_STYLES[rarity as keyof typeof RARITY_STYLES];
-          return (
-            <div key={rarity} className="flex items-center justify-between">
-              <span className={`${style.text} capitalize`}>{rarity}</span>
-              <span className="text-gold font-mono">{count}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Collection progress */}
-      {collectionSize > 0 && (
-        <div className="mt-4 pt-4 border-t border-gold/20">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gold/60">Collection Progress</span>
-            <span className="text-gold font-bold">
-              {totalOwned}/{collectionSize}
-            </span>
-          </div>
-          <div className="mt-2 h-2 bg-gold/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gold rounded-full transition-all duration-500"
-              style={{ width: `${(totalOwned / collectionSize) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
