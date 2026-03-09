@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { parseGameConfig } from "@bibliothecadao/torii";
-import { planProduction } from "../../../src/automation/production.js";
+import { planProduction, computeSmartWeights } from "../../../src/automation/production.js";
 
 // ── Load real Torii fixture data ─────────────────────────────────────
 
@@ -335,6 +335,68 @@ describe("planProduction — dual method per resource", () => {
     if (factory && factory.simpleInputs.length > 0 && factory.outputPerSimpleInput > 0) {
       expect(simpleColdIron).toBeDefined();
     }
+  });
+});
+
+// ── Edge cases ───────────────────────────────────────────────────────
+
+// ── Smart weight computation ─────────────────────────────────────────
+
+describe("computeSmartWeights", () => {
+  it("returns 5% labor-only for T1 when T1 is incomplete", () => {
+    const weights = computeSmartWeights(buildings([B.Wood, 1]), "Paladin");
+    const woodWeight = weights.get(R.Wood);
+    expect(woodWeight).toBeDefined();
+    expect(woodWeight!.laborToResource).toBe(5);
+    expect(woodWeight!.resourceToResource).toBe(0);
+  });
+
+  it("returns 30% resource for T1 when T1 complete, no higher tiers", () => {
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1]);
+    const weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.get(R.Wood)!.resourceToResource).toBe(30);
+    expect(weights.get(R.Coal)!.resourceToResource).toBe(30);
+    expect(weights.get(R.Copper)!.resourceToResource).toBe(30);
+  });
+
+  it("returns adjusted T1 weights when higher tiers present", () => {
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1]);
+    const weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.get(R.Wood)!.resourceToResource).toBe(20);
+    expect(weights.get(R.Coal)!.resourceToResource).toBe(20);
+    expect(weights.get(R.Copper)!.resourceToResource).toBe(30);
+  });
+
+  it("returns troop weights scaled by highest tier", () => {
+    // T1 only → 30%
+    let bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1]);
+    let weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.get(R.Paladin)!.resourceToResource).toBe(30);
+
+    // T2 exists → T2=30%, T1=10%
+    bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1], [B.PaladinT2, 1]);
+    weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.get(R.PaladinT2)!.resourceToResource).toBe(30);
+    expect(weights.get(R.Paladin)!.resourceToResource).toBe(10);
+
+    // T3 exists → T3=50%, T2=30%, T1=10%
+    bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1], [B.PaladinT2, 1], [B.PaladinT3, 1]);
+    weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.get(R.PaladinT3)!.resourceToResource).toBe(50);
+    expect(weights.get(R.PaladinT2)!.resourceToResource).toBe(30);
+    expect(weights.get(R.Paladin)!.resourceToResource).toBe(10);
+  });
+
+  it("returns 0 weights for resources without buildings", () => {
+    const bc = buildings([B.Wood, 1]);
+    const weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.has(R.Coal)).toBe(false);
+  });
+
+  it("includes donkey weight when donkey building exists", () => {
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [27, 1]); // 27 = donkey building
+    const weights = computeSmartWeights(bc, "Paladin");
+    expect(weights.get(R.Donkey)!.resourceToResource).toBe(10);
   });
 });
 

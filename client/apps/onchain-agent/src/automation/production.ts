@@ -50,6 +50,7 @@ const R = {
   ColdIron: 11,
   Adamantine: 19,
   Dragonhide: 22,
+  Donkey: 25,
   Knight: 26,
   KnightT2: 27,
   KnightT3: 28,
@@ -271,4 +272,123 @@ export function planProduction(
   }
 
   return { calls, consumed, produced, skipped };
+}
+
+// ── Smart weight computation ────────────────────────────────────────
+
+export interface SmartWeight {
+  resourceToResource: number;
+  laborToResource: number;
+}
+
+// T1 resource building types
+const T1_BUILDING_TYPES = [
+  R.Wood + RESOURCE_TO_BUILDING_OFFSET, // 5
+  R.Coal + RESOURCE_TO_BUILDING_OFFSET, // 4
+  R.Copper + RESOURCE_TO_BUILDING_OFFSET, // 6
+];
+
+// T1 resource IDs
+const T1_RESOURCE_IDS = [R.Wood, R.Coal, R.Copper];
+
+// Donkey building type
+const DONKEY_BUILDING = R.Donkey + RESOURCE_TO_BUILDING_OFFSET; // 27
+
+/**
+ * Compute smart production weights based on the realm's development stage.
+ *
+ * Weights determine what percentage of each resource's balance should be
+ * allocated to production. The stage is inferred from which buildings exist.
+ *
+ * @param buildingCounts  Map of BuildingType → count on the realm
+ * @param troopPath       Which troop path this realm follows
+ * @returns Map of resource ID → SmartWeight
+ */
+export function computeSmartWeights(
+  buildingCounts: Map<number, number>,
+  troopPath: TroopPath,
+): Map<number, SmartWeight> {
+  const weights = new Map<number, SmartWeight>();
+  const tp = TROOP_PATHS[troopPath];
+
+  function has(buildingType: number): boolean {
+    return (buildingCounts.get(buildingType) ?? 0) > 0;
+  }
+
+  // Count distinct T1 resource building types present
+  const t1Present = T1_BUILDING_TYPES.filter((bt) => has(bt));
+  const t1Complete = t1Present.length >= 3;
+
+  // Check for higher-tier buildings (T2/T3 resources or any troop building)
+  const higherTierBuildings = [
+    tp.t2Resource + RESOURCE_TO_BUILDING_OFFSET,
+    tp.t3Resource + RESOURCE_TO_BUILDING_OFFSET,
+    tp.t1Building,
+    tp.t2Building,
+    tp.t3Building,
+  ];
+  const hasHigherTiers = higherTierBuildings.some((bt) => has(bt));
+
+  // ── T1 Resources ──
+  if (!t1Complete) {
+    // T1 incomplete: labor-only at 5%
+    for (let i = 0; i < T1_RESOURCE_IDS.length; i++) {
+      if (has(T1_BUILDING_TYPES[i])) {
+        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: 0, laborToResource: 5 });
+      }
+    }
+  } else if (!hasHigherTiers) {
+    // T1 complete only: 30% resource
+    for (let i = 0; i < T1_RESOURCE_IDS.length; i++) {
+      if (has(T1_BUILDING_TYPES[i])) {
+        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: 30, laborToResource: 0 });
+      }
+    }
+  } else {
+    // T1 + higher tiers: Wood=20, Coal=20, Copper=30
+    const t1Weights = [20, 20, 30]; // Wood, Coal, Copper
+    for (let i = 0; i < T1_RESOURCE_IDS.length; i++) {
+      if (has(T1_BUILDING_TYPES[i])) {
+        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: t1Weights[i], laborToResource: 0 });
+      }
+    }
+  }
+
+  // ── Donkey ──
+  if (has(DONKEY_BUILDING)) {
+    weights.set(R.Donkey, { resourceToResource: 10, laborToResource: 0 });
+  }
+
+  // ── T2/T3 Resources ──
+  if (hasHigherTiers) {
+    const t2ResBldg = tp.t2Resource + RESOURCE_TO_BUILDING_OFFSET;
+    if (has(t2ResBldg)) {
+      weights.set(tp.t2Resource, { resourceToResource: 10, laborToResource: 0 });
+    }
+    const t3ResBldg = tp.t3Resource + RESOURCE_TO_BUILDING_OFFSET;
+    if (has(t3ResBldg)) {
+      weights.set(tp.t3Resource, { resourceToResource: 10, laborToResource: 0 });
+    }
+  }
+
+  // ── Troops ──
+  const hasT1Troop = has(tp.t1Building);
+  const hasT2Troop = has(tp.t2Building);
+  const hasT3Troop = has(tp.t3Building);
+
+  if (hasT3Troop) {
+    // T3 exists: T3=50%, T2=30%, T1=10%
+    weights.set(tp.t3, { resourceToResource: 50, laborToResource: 0 });
+    if (hasT2Troop) weights.set(tp.t2, { resourceToResource: 30, laborToResource: 0 });
+    if (hasT1Troop) weights.set(tp.t1, { resourceToResource: 10, laborToResource: 0 });
+  } else if (hasT2Troop) {
+    // T2 exists: T2=30%, T1=10%
+    weights.set(tp.t2, { resourceToResource: 30, laborToResource: 0 });
+    if (hasT1Troop) weights.set(tp.t1, { resourceToResource: 10, laborToResource: 0 });
+  } else if (hasT1Troop) {
+    // T1 only: 30%
+    weights.set(tp.t1, { resourceToResource: 30, laborToResource: 0 });
+  }
+
+  return weights;
 }
