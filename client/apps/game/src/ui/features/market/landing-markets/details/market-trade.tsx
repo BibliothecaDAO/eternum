@@ -25,6 +25,7 @@ import { useMarketRedeem } from "../use-market-redeem";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 const RISK_ACK_SESSION_KEY = "pm_trade_risk_ack_v1";
+type MarketDataChain = "slot" | "mainnet";
 
 const getStoredRiskAck = () => {
   if (typeof window === "undefined") return false;
@@ -313,12 +314,14 @@ export function MarketTrade({
   selectedOutcome,
   setSelectedOutcome,
   onTradeSuccess,
+  chain,
   compact = false,
 }: {
   market: MarketClass;
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
   onTradeSuccess?: () => void | Promise<void>;
+  chain?: MarketDataChain;
   compact?: boolean;
 }) {
   const {
@@ -335,7 +338,7 @@ export function MarketTrade({
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
-  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
+  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market, chain);
 
   // Helper to calculate if a trade is profitable for a given outcome index
   const isProfitableForOutcome = useMemo(() => {
