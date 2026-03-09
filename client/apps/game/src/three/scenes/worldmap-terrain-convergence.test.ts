@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateWorldmapTerrainCandidate,
   isTerrainCacheCompatible,
+  resolveWorldmapTerrainFetchState,
   resolveWorldmapTerrainReconcileRequest,
   type WorldmapTerrainSnapshot,
 } from "./worldmap-terrain-convergence";
@@ -27,6 +28,36 @@ function createSnapshot(overrides: Partial<WorldmapTerrainSnapshot> = {}): World
     ...overrides,
   };
 }
+
+describe("resolveWorldmapTerrainFetchState", () => {
+  it("tracks critical fetch completion by chunk key while area hydration stays area-scoped", () => {
+    expect(
+      resolveWorldmapTerrainFetchState({
+        areaKey: "0,0",
+        chunkKey: "24,24",
+        fetchedAreaKeys: new Set(["0,0"]),
+        fetchedCriticalChunkKeys: new Set(["24,24"]),
+      }),
+    ).toEqual({
+      fetchedAreaLoaded: true,
+      criticalAreaLoaded: true,
+    });
+  });
+
+  it("does not treat area-scoped background fetch state as critical chunk hydration", () => {
+    expect(
+      resolveWorldmapTerrainFetchState({
+        areaKey: "0,0",
+        chunkKey: "24,24",
+        fetchedAreaKeys: new Set(["0,0"]),
+        fetchedCriticalChunkKeys: new Set(["0,0"]),
+      }),
+    ).toEqual({
+      fetchedAreaLoaded: true,
+      criticalAreaLoaded: false,
+    });
+  });
+});
 
 describe("evaluateWorldmapTerrainCandidate", () => {
   it("rejects blank candidates when the active terrain is still valid", () => {

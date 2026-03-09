@@ -218,6 +218,7 @@ import {
 import {
   evaluateWorldmapTerrainCandidate,
   isTerrainCacheCompatible,
+  resolveWorldmapTerrainFetchState,
   resolveWorldmapTerrainReconcileRequest,
   type WorldmapTerrainCandidateRejectReason,
   type WorldmapTerrainReconcileRequest,
@@ -3522,6 +3523,12 @@ export default class WorldmapScene extends HexagonScene {
     transitionToken?: number;
   }): WorldmapTerrainSnapshot {
     const areaKey = this.getRenderAreaKeyForChunk(input.chunkKey);
+    const fetchState = resolveWorldmapTerrainFetchState({
+      areaKey,
+      chunkKey: input.chunkKey,
+      fetchedAreaKeys: this.fetchedChunks,
+      fetchedCriticalChunkKeys: this.fetchedCriticalChunks,
+    });
     return {
       chunkKey: input.chunkKey,
       areaKey,
@@ -3535,8 +3542,8 @@ export default class WorldmapScene extends HexagonScene {
       totalInstances: Math.max(0, Math.floor(input.totalInstances)),
       referenceInstances: this.getTerrainReferenceInstanceTarget(input.startRow, input.startCol),
       biomeCounts: input.biomeCounts,
-      fetchedAreaLoaded: this.fetchedChunks.has(areaKey),
-      criticalAreaLoaded: this.fetchedCriticalChunks.has(areaKey),
+      fetchedAreaLoaded: fetchState.fetchedAreaLoaded,
+      criticalAreaLoaded: fetchState.criticalAreaLoaded,
       builtAtMs: performance.now(),
     };
   }
@@ -3818,9 +3825,15 @@ export default class WorldmapScene extends HexagonScene {
           }
         });
         const totalTerrainInstances = Object.values(biomeCounts).reduce((sum, count) => sum + count, 0);
+        const fetchState = resolveWorldmapTerrainFetchState({
+          areaKey: this.getRenderAreaKeyForChunk(chunkKey),
+          chunkKey,
+          fetchedAreaKeys: this.fetchedChunks,
+          fetchedCriticalChunkKeys: this.fetchedCriticalChunks,
+        });
         const candidateSource: WorldmapTerrainSnapshot["source"] = canUseStripUpdate
           ? "strip"
-          : this.fetchedCriticalChunks.has(this.getRenderAreaKeyForChunk(chunkKey))
+          : fetchState.criticalAreaLoaded
             ? "critical_fetch"
             : "background_fetch";
         const candidateSnapshot = this.buildTerrainSnapshot({
@@ -5825,6 +5838,15 @@ export default class WorldmapScene extends HexagonScene {
     const currentChunkVisible = this.currentChunkBounds ? this.visibilityManager.isBoxVisible(this.currentChunkBounds.box) : null;
     const { nonZeroBiomeCount, biomeInstanceCounts } = this.getTerrainBiomeBreakdown();
     const biomeRenderStates = this.getTerrainBiomeRenderStates();
+    const fetchState =
+      this.currentChunk !== "null" && currentAreaKey
+        ? resolveWorldmapTerrainFetchState({
+            areaKey: currentAreaKey,
+            chunkKey: this.currentChunk,
+            fetchedAreaKeys: this.fetchedChunks,
+            fetchedCriticalChunkKeys: this.fetchedCriticalChunks,
+          })
+        : { fetchedAreaLoaded: false, criticalAreaLoaded: false };
 
     return buildWorldmapTerrainHealthState({
       currentChunk: this.currentChunk,
@@ -5839,8 +5861,8 @@ export default class WorldmapScene extends HexagonScene {
       lowTerrainFrames: this.lowTerrainFrames,
       offscreenChunkFrames: this.offscreenChunkFrames,
       pendingFetches: this.pendingChunks.size,
-      fetchedAreaLoaded: currentAreaKey ? this.fetchedChunks.has(currentAreaKey) : false,
-      criticalAreaLoaded: currentAreaKey ? this.fetchedCriticalChunks.has(currentAreaKey) : false,
+      fetchedAreaLoaded: fetchState.fetchedAreaLoaded,
+      criticalAreaLoaded: fetchState.criticalAreaLoaded,
       currentChunkVisible,
       hasCurrentChunkBounds: Boolean(this.currentChunkBounds),
       terrainRecoveryInFlight: this.terrainRecoveryInFlight,

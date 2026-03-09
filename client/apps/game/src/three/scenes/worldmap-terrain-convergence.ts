@@ -18,6 +18,18 @@ export interface WorldmapTerrainSnapshot {
   builtAtMs: number;
 }
 
+interface ResolveWorldmapTerrainFetchStateInput {
+  areaKey: string;
+  chunkKey: string;
+  fetchedAreaKeys: ReadonlySet<string>;
+  fetchedCriticalChunkKeys: ReadonlySet<string>;
+}
+
+interface WorldmapTerrainFetchState {
+  fetchedAreaLoaded: boolean;
+  criticalAreaLoaded: boolean;
+}
+
 export type WorldmapTerrainCandidateRejectReason =
   | "stale_transition"
   | "stale_revision"
@@ -89,6 +101,15 @@ function getReferenceTerrainInstances(
     normalizeCount(activeSnapshot?.totalInstances ?? 0),
     normalizeCount(candidateSnapshot.referenceInstances),
   );
+}
+
+export function resolveWorldmapTerrainFetchState(
+  input: ResolveWorldmapTerrainFetchStateInput,
+): WorldmapTerrainFetchState {
+  return {
+    fetchedAreaLoaded: input.fetchedAreaKeys.has(input.areaKey),
+    criticalAreaLoaded: input.fetchedCriticalChunkKeys.has(input.chunkKey),
+  };
 }
 
 export function evaluateWorldmapTerrainCandidate(

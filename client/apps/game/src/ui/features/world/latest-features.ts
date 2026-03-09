@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-10",
+    title: "More Reliable World Terrain",
+    description:
+      "Fixed a world map terrain loading bug where biome coverage checks could miss successful chunk fetches, making blank terrain recovery and refresh behavior more reliable while moving around the map.",
+    type: "fix",
+  },
+  {
     date: "2026-03-08",
     title: "Calmer Live Map Refreshes",
     description:
