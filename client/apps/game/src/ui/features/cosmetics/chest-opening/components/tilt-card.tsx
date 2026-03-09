@@ -12,33 +12,33 @@ interface TiltCardProps {
   asset: ChestAsset;
   tiltEffect?: "normal" | "reverse";
   size?: { width: number; height: number };
+  showText?: boolean;
   className?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   onClick?: () => void;
 }
 
-// Get icon component for each asset type
-const getAssetTypeIcon = (type: AssetType) => {
+function renderAssetTypeIcon(type: AssetType, className: string) {
   switch (type) {
     case AssetType.TroopArmor:
-      return Shield;
+      return <Shield className={className} />;
     case AssetType.TroopPrimary:
-      return Sword;
+      return <Sword className={className} />;
     case AssetType.TroopSecondary:
-      return Shield;
+      return <Shield className={className} />;
     case AssetType.TroopAura:
-      return Sparkles;
+      return <Sparkles className={className} />;
     case AssetType.TroopBase:
-      return Hexagon;
+      return <Hexagon className={className} />;
     case AssetType.RealmSkin:
-      return Castle;
+      return <Castle className={className} />;
     case AssetType.RealmAura:
-      return Crown;
+      return <Crown className={className} />;
     default:
-      return Diamond;
+      return <Diamond className={className} />;
   }
-};
+}
 
 // Hover sound
 const HOVER_SOUND_SRC = "/sound/ui/ui-click-1.wav";
@@ -47,6 +47,7 @@ export function TiltCard({
   asset,
   tiltEffect = "reverse",
   size = { width: 280, height: 360 },
+  showText = true,
   className = "",
   onMouseEnter,
   onMouseLeave,
@@ -63,8 +64,6 @@ export function TiltCard({
   });
 
   const rarityStyle = RARITY_STYLES[asset.rarity];
-  const TypeIcon = getAssetTypeIcon(asset.type);
-
   // Play hover sound
   const playHoverSound = useCallback(() => {
     if (!audioRef.current) {
@@ -156,11 +155,22 @@ export function TiltCard({
             backgroundPosition: `${tiltValues.bX}% ${tiltValues.bY}%`,
             backgroundSize: "120% auto",
             transition: isActive ? "none" : "background-position 0.5s ease-out",
+            filter: showText ? "brightness(1)" : "brightness(1.3) saturate(1.16) contrast(1.04)",
           }}
         />
 
+        {!showText && (
+          <div className="absolute inset-[10%] rounded-[40%] bg-white/10 blur-3xl opacity-70 mix-blend-screen" />
+        )}
+
         {/* Gradient overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+        <div
+          className={`absolute inset-0 ${
+            showText
+              ? "bg-gradient-to-t from-black/90 via-black/30 to-transparent"
+              : "bg-gradient-to-t from-black/34 via-black/0 to-white/5"
+          }`}
+        />
 
         {/* Corner decorations */}
         <div
@@ -180,32 +190,36 @@ export function TiltCard({
           `}
         />
 
-        {/* Rarity badge - top left */}
-        <div className="absolute top-4 left-4 z-10">
-          <span
-            className={`${rarityStyle.bg} text-white capitalize font-bold px-3 py-1 rounded-md text-xs inline-flex items-center`}
-          >
-            {asset.rarity}
-          </span>
-        </div>
+        {showText && (
+          <>
+            {/* Rarity badge - top left */}
+            <div className="absolute top-4 left-4 z-10">
+              <span
+                className={`${rarityStyle.bg} text-white capitalize font-bold px-3 py-1 rounded-md text-xs inline-flex items-center`}
+              >
+                {asset.rarity}
+              </span>
+            </div>
 
-        {/* Content area - bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-5" style={{ transform: "translateZ(20px)" }}>
-          {/* Type icon and badge */}
-          <div className="flex items-center gap-2 mb-2">
-            <TypeIcon className={`w-4 h-4 ${rarityStyle.text}`} />
-            <span className="text-xs text-gold/70 uppercase tracking-wider">{asset.type}</span>
-          </div>
+            {/* Content area - bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-5" style={{ transform: "translateZ(20px)" }}>
+              {/* Type icon and badge */}
+              <div className="flex items-center gap-2 mb-2">
+                {renderAssetTypeIcon(asset.type, `w-4 h-4 ${rarityStyle.text}`)}
+                <span className="text-xs text-gold/70 uppercase tracking-wider">{asset.type}</span>
+              </div>
 
-          {/* Asset name */}
-          <h3 className="text-xl font-bold text-gold mb-2 leading-tight">{asset.name}</h3>
+              {/* Asset name */}
+              <h3 className="text-xl font-bold text-gold mb-2 leading-tight">{asset.name}</h3>
 
-          {/* Set name */}
-          {asset.set && <p className="text-sm text-gold/50">{asset.set}</p>}
+              {/* Set name */}
+              {asset.set && <p className="text-sm text-gold/50">{asset.set}</p>}
 
-          {/* Troop type if applicable */}
-          {asset.troopType && <p className="text-xs text-gold/40 mt-1">For: {asset.troopType}</p>}
-        </div>
+              {/* Troop type if applicable */}
+              {asset.troopType && <p className="text-xs text-gold/40 mt-1">For: {asset.troopType}</p>}
+            </div>
+          </>
+        )}
 
         {/* Shine effect on hover */}
         {isActive && (
@@ -221,40 +235,6 @@ export function TiltCard({
             }}
           />
         )}
-      </div>
-    </div>
-  );
-}
-
-// Smaller variant for selection grids
-function TiltCardMini({
-  asset,
-  selected = false,
-  onClick,
-}: {
-  asset: ChestAsset;
-  selected?: boolean;
-  onClick?: () => void;
-}) {
-  const rarityStyle = RARITY_STYLES[asset.rarity];
-
-  // Use imagePath directly - it's now a full URL from IPFS
-  const imagePath = asset.imagePath;
-
-  return (
-    <div
-      className={`
-        relative w-20 h-24 rounded-lg overflow-hidden cursor-pointer
-        transition-all duration-200 hover:scale-105
-        ${selected ? `ring-2 ${rarityStyle.border} scale-105` : ""}
-        ${rarityStyle.glow}
-      `}
-      onClick={onClick}
-    >
-      <img src={imagePath} alt={asset.name} className="w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-      <div className="absolute bottom-1 left-1 right-1">
-        <p className="text-[10px] text-gold truncate font-medium">{asset.name}</p>
       </div>
     </div>
   );
