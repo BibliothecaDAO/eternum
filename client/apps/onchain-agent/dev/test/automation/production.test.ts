@@ -103,10 +103,10 @@ describe("gameConfig fixture", () => {
   });
 });
 
-// ── Rate-capped production ───────────────────────────────────────────
+// ── Budget-limited production ────────────────────────────────────────
 
-describe("planProduction — rate caps", () => {
-  it("caps wood at 60 cycles with 1 building for 60s tick", () => {
+describe("planProduction — budget-limited cycles", () => {
+  it("produces wood cycles limited only by input budget (no rate cap)", () => {
     const balances = new Map([
       [R.Wheat, 10000],
       [R.Coal, 1000],
@@ -114,60 +114,39 @@ describe("planProduction — rate caps", () => {
     ]);
     const plan = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60);
 
-    const woodCall = plan.calls.find((c) => c.resourceId === R.Wood);
+    const woodCall = plan.calls.find((c) => c.resourceId === R.Wood && c.method === "complex");
     expect(woodCall).toBeDefined();
-    expect(woodCall!.cycles).toBe(60); // 1/sec × 1 building × 60s
+    // Should be limited by 90% of Coal or Copper (whichever is bottleneck), not by rate
+    expect(woodCall!.cycles).toBeGreaterThan(60);
   });
 
-  it("scales rate with building count — 3 wood buildings = 180 max", () => {
+  it("limits cycles to 90% of bottleneck input", () => {
+    const balances = new Map([
+      [R.Wheat, 100],
+      [R.Coal, 5],
+      [R.Copper, 1000],
+    ]);
+    const plan = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60);
+
+    const woodCall = plan.calls.find((c) => c.resourceId === R.Wood && c.method === "complex");
+    expect(woodCall).toBeDefined();
+    expect(woodCall!.cycles).toBe(20);
+  });
+
+  it("building count does not cap cycles (only affects rate, which we ignore)", () => {
     const balances = new Map([
       [R.Wheat, 100000],
       [R.Coal, 100000],
       [R.Copper, 100000],
     ]);
-    const plan = planProduction(balances, buildings([B.Wood, 3]), "Paladin", gameConfig, 60);
+    const plan1 = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60);
+    const plan3 = planProduction(new Map(balances), buildings([B.Wood, 3]), "Paladin", gameConfig, 60);
 
-    const woodCall = plan.calls.find((c) => c.resourceId === R.Wood);
-    expect(woodCall).toBeDefined();
-    expect(woodCall!.cycles).toBe(180); // 1/sec × 3 buildings × 60s
-  });
-
-  it("caps troop production at 300 cycles with 1 building", () => {
-    const balances = new Map([
-      [R.Wheat, 100000],
-      [R.Copper, 100000],
-    ]);
-    const plan = planProduction(balances, buildings([B.PaladinT1, 1]), "Paladin", gameConfig, 60);
-
-    const troopCall = plan.calls.find((c) => c.resourceId === R.Paladin);
-    expect(troopCall).toBeDefined();
-    expect(troopCall!.cycles).toBe(300); // 5/sec × 1 building × 60s
-  });
-
-  it("uses village rate when isVillage is true", () => {
-    const balances = new Map([
-      [R.Wheat, 10000],
-      [R.Coal, 1000],
-      [R.Copper, 1000],
-    ]);
-    const plan = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60, true);
-
-    const woodCall = plan.calls.find((c) => c.resourceId === R.Wood);
-    expect(woodCall).toBeDefined();
-    expect(woodCall!.cycles).toBe(30); // 0.5/sec × 1 building × 60s
-  });
-
-  it("limits cycles to affordable amount when budget < rate cap", () => {
-    const balances = new Map([
-      [R.Wheat, 100],
-      [R.Coal, 5], // 5 Coal / 0.2 per cycle = 25 affordable, 90% budget = 4/0.2 = 20
-      [R.Copper, 1000],
-    ]);
-    const plan = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60);
-
-    const woodCall = plan.calls.find((c) => c.resourceId === R.Wood);
-    expect(woodCall).toBeDefined();
-    expect(woodCall!.cycles).toBe(20);
+    const wood1 = plan1.calls.find((c) => c.resourceId === R.Wood && c.method === "complex");
+    const wood3 = plan3.calls.find((c) => c.resourceId === R.Wood && c.method === "complex");
+    expect(wood1).toBeDefined();
+    expect(wood3).toBeDefined();
+    expect(wood1!.cycles).toBe(wood3!.cycles);
   });
 });
 
@@ -257,17 +236,33 @@ describe("planProduction — building checks", () => {
   });
 });
 
-// ── No donkeys ───────────────────────────────────────────────────────
+// ── Donkey production ────────────────────────────────────────────────
 
-describe("planProduction — no donkeys", () => {
-  it("never produces donkeys", () => {
+describe("planProduction — donkey production", () => {
+  it("produces donkeys when donkey building exists and inputs available", () => {
     const balances = new Map([
       [R.Wheat, 100000],
       [R.Coal, 10000],
       [R.Copper, 10000],
       [R.Wood, 10000],
     ]);
-    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1]);
+    // Donkey building type = 27 (resource ID 25 + offset 2)
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1], [B.PaladinT1, 1], [27, 1]);
+    const plan = planProduction(balances, bc, "Paladin", gameConfig, 60);
+
+    const donkeyCall = plan.calls.find((c) => c.resourceId === R.Donkey);
+    expect(donkeyCall).toBeDefined();
+    expect(donkeyCall!.cycles).toBeGreaterThan(0);
+  });
+
+  it("skips donkeys when no donkey building exists", () => {
+    const balances = new Map([
+      [R.Wheat, 100000],
+      [R.Coal, 10000],
+      [R.Copper, 10000],
+      [R.Wood, 10000],
+    ]);
+    const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1]);
     const plan = planProduction(balances, bc, "Paladin", gameConfig, 60);
 
     const donkeyCall = plan.calls.find((c) => c.resourceId === R.Donkey);
@@ -304,6 +299,39 @@ describe("planProduction — simple fallback", () => {
     const simpleCalls = plan.calls.filter((c) => c.method === "simple");
     expect(complexCalls.length).toBeGreaterThan(0);
     expect(simpleCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ── Dual method per resource ────────────────────────────────────────
+
+describe("planProduction — dual method per resource", () => {
+  it("runs both complex and simple for the same resource in one pass", () => {
+    const balances = new Map([
+      [R.Wheat, 1000],
+      [R.Coal, 50],
+      [R.Copper, 50],
+      [R.Labor, 500],
+    ]);
+    const plan = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60);
+
+    const complexWood = plan.calls.find((c) => c.resourceId === R.Wood && c.method === "complex");
+    const simpleWood = plan.calls.find((c) => c.resourceId === R.Wood && c.method === "simple");
+    expect(complexWood).toBeDefined();
+    expect(simpleWood).toBeDefined();
+  });
+
+  it("runs simple for T2 resources when available", () => {
+    const balances = new Map([
+      [R.Wheat, 1000],
+      [R.Labor, 500],
+    ]);
+    const plan = planProduction(balances, buildings([B.ColdIron, 1]), "Knight", gameConfig, 60);
+
+    const simpleColdIron = plan.calls.find((c) => c.resourceId === R.ColdIron && c.method === "simple");
+    const factory = gameConfig.resourceFactories[R.ColdIron];
+    if (factory && factory.simpleInputs.length > 0 && factory.outputPerSimpleInput > 0) {
+      expect(simpleColdIron).toBeDefined();
+    }
   });
 });
 
