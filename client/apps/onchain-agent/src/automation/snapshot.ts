@@ -1,12 +1,17 @@
 /**
- * Snapshot parser — converts raw SQL balance+production rows from
- * `fetchResourceBalancesAndProduction` into typed maps the planners consume.
+ * Snapshot parser — converts raw SQL balance+production rows into typed maps.
+ *
+ * Returns both raw on-chain balances (safe for spending/budget) and projected
+ * balances (includes unharvested production — useful for prioritisation).
  */
 import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-interface RealmSnapshot {
+export interface RealmSnapshot {
+  /** Raw on-chain balances — safe for spending decisions and budget caps. */
   balances: Map<number, number>;
+  /** Projected balances including unharvested production — use for prioritisation only. */
+  projectedBalances: Map<number, number>;
   buildingCounts: Map<number, number>;
   activeBuildings: Set<number>;
 }
@@ -48,16 +53,22 @@ export function parseRealmSnapshot(
   currentTimestamp?: number,
 ): RealmSnapshot {
   const balances = new Map<number, number>();
+  const projectedBalances = new Map<number, number>();
   const buildingCounts = new Map<number, number>();
   const activeBuildings = new Set<number>();
 
-  if (!row) return { balances, buildingCounts, activeBuildings };
+  if (!row) return { balances, projectedBalances, buildingCounts, activeBuildings };
 
   for (const { column, resourceId } of RESOURCE_BALANCE_COLUMNS) {
     const amount = parseBalance(row[column]);
     const resourceName = column.replace("_BALANCE", "");
 
-    // Project balance forward using production state
+    // Raw balance — safe for spending
+    if (amount > 0) {
+      balances.set(resourceId, Math.floor(amount));
+    }
+
+    // Projected balance — includes unharvested production
     let projectedAmount = amount;
 
     if (currentTimestamp !== undefined && currentTimestamp > 0) {
@@ -80,7 +91,7 @@ export function parseRealmSnapshot(
     }
 
     if (projectedAmount > 0) {
-      balances.set(resourceId, Math.floor(projectedAmount));
+      projectedBalances.set(resourceId, Math.floor(projectedAmount));
     }
 
     // Parse production building count
@@ -93,5 +104,5 @@ export function parseRealmSnapshot(
     }
   }
 
-  return { balances, buildingCounts, activeBuildings };
+  return { balances, projectedBalances, buildingCounts, activeBuildings };
 }
