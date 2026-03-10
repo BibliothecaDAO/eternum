@@ -32,6 +32,7 @@ import { createMoveTool } from "../tools/move.js";
 import { createAttackTool } from "../tools/attack.js";
 import { createCreateArmyTool } from "../tools/create-army.js";
 import { createOpenChestTool } from "../tools/open-chest.js";
+import { createViewMapTool } from "../tools/view-map.js";
 
 // ---------------------------------------------------------------------------
 // Context pruning — when messages exceed MAX_CONTEXT_CHARS, drops older
@@ -232,6 +233,7 @@ export async function main() {
     createAttackTool(client, mapCtx, account.address, txCtx, gameConfig),
     createCreateArmyTool(client, mapCtx, account.address, txCtx),
     createOpenChestTool(client, mapCtx, account.address, txCtx),
+    createViewMapTool(mapCtx),
   ];
 
   // 5. System prompt
