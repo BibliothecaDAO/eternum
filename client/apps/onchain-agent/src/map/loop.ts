@@ -101,6 +101,15 @@ export function createMapLoop(
         }
         if (ctx.recentlyMoved.size === 0) ctx.recentlyMoved = undefined;
       }
+      // Prune recentlyExplored — remove tiles that now appear in the snapshot.
+      if (ctx.recentlyExplored && ctx.recentlyExplored.size > 0) {
+        for (const tileKey of ctx.recentlyExplored) {
+          if (snapshot.gridIndex.has(tileKey)) {
+            ctx.recentlyExplored.delete(tileKey);
+          }
+        }
+        if (ctx.recentlyExplored.size === 0) ctx.recentlyExplored = undefined;
+      }
       // Note: staminaSpent is NOT cleared on refresh — Torii may not have
       // indexed the stamina-consuming tx yet. It's cleared per-army in the
       // move tool when explorerInfo returns an updated staminaUpdatedTick.
