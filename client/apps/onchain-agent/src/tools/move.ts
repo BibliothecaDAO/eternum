@@ -283,7 +283,7 @@ export function createMoveTool(
 
         const endPos = pathResult.path[pathResult.path.length - 1];
         const endKey = `${endPos.x},${endPos.y}`;
-        const isExploreMove = !explored.has(endKey);
+        let isExploreMove = !explored.has(endKey);
 
         // Adjust stamina cost: A* used travel cost for the explore step,
         // but actual explore cost may differ
@@ -335,6 +335,22 @@ export function createMoveTool(
             throw new Error(
               `Path to ${to_row}:${to_col} crosses unexplored tiles. Try a shorter move to an adjacent explored tile.`,
             );
+          }
+          if (errStr.includes("already explored")) {
+            // Tile was explored by another player/army between our snapshot
+            // and execution. Retry the whole path as travel (it's safe now).
+            try {
+              await tx.provider.explorer_travel({
+                explorer_id: explorer.entityId,
+                directions: pathResult.directions,
+                signer: tx.signer,
+              });
+              // Mark as non-explore so tracking below is correct
+              isExploreMove = false;
+              break; // success — fall through to tracking/response
+            } catch (retryErr: any) {
+              throw new Error(`Move failed on retry as travel: ${extractTxError(retryErr)}`);
+            }
           }
           if (errStr.includes("is occupied")) {
             // Refresh map and retry once with fresh pathfinding
