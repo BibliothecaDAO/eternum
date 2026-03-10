@@ -1,10 +1,10 @@
+import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import {
   fetchLandingLeaderboard,
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
-import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
 import { SqlApi, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
@@ -704,12 +704,12 @@ export interface GameReviewClaimSummary {
   claimBlockedReason: string | null;
 }
 
-export interface GameReviewUnclaimedPlayer {
+interface GameReviewUnclaimedPlayer {
   address: string;
   rank: number;
 }
 
-export interface GameReviewUnclaimedPlayersSummary {
+interface GameReviewUnclaimedPlayersSummary {
   rankingFinalized: boolean;
   totalRankedPlayers: number;
   unclaimedPlayers: GameReviewUnclaimedPlayer[];
