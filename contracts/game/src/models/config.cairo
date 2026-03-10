@@ -421,21 +421,46 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 }
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzSettlementConfig {
     pub base_distance: u32,
     pub side: u32,
     pub step: u32,
     pub point: u32,
     pub single_realm_mode: bool,
+    pub two_player_mode: bool,
 }
 
 #[generate_trait]
 pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
-    fn new(base_distance: u32, single_realm_mode: bool) -> BlitzSettlementConfig {
-        BlitzSettlementConfig { base_distance, single_realm_mode, side: 0, step: 1, point: 1 }
+    fn new(base_distance: u32, single_realm_mode: bool, two_player_mode: bool) -> BlitzSettlementConfig {
+        assert!(
+            !(single_realm_mode && two_player_mode),
+            "Eternum: single_realm_mode and two_player_mode cannot both be set",
+        );
+        BlitzSettlementConfig { base_distance, single_realm_mode, two_player_mode, side: 0, step: 1, point: 1 }
     }
 
+    fn next(ref self: BlitzSettlementConfig) {
+        if self.two_player_mode {
+            Blitz2PlayerSettlementConfigImpl::next(ref self);
+        } else {
+            BlitzMultplePlayerSettlementConfigImpl::next(ref self);
+        }
+    }
+
+    fn generate_coords(self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+        if self.two_player_mode {
+            return Blitz2PlayerSettlementConfigImpl::generate_coords(self, map_center);
+        } else {
+            return BlitzMultplePlayerSettlementConfigImpl::generate_coords(self, map_center);
+        }
+    }
+}
+
+
+#[generate_trait]
+pub impl BlitzMultplePlayerSettlementConfigImpl of BlitzMultplePlayerSettlementConfigTrait {
     fn next(ref self: BlitzSettlementConfig) {
         if self.side == 5 {
             if self.point == self.max_points() {
@@ -476,7 +501,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
 
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
 
-    fn generate_coords(ref self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+    fn generate_coords(self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::NorthEast, Direction::West), (Direction::West, Direction::SouthEast),
@@ -541,8 +566,38 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 }
 
+#[generate_trait]
+pub impl Blitz2PlayerSettlementConfigImpl of Blitz2PlayerSettlementConfigTrait {
+    fn next(ref config: BlitzSettlementConfig) {
+        config.side += 1;
+    }
+    // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
+    fn generate_coords(config: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+        assert!(config.side < 2, "Eternum: 2 players already settled on the map");
+        if config.side == 0 {
+            let a1: Coord = map_center.neighbor_after_distance(Direction::West, 8);
+            let a2: Coord = map_center
+                .neighbor_after_distance(Direction::West, 4)
+                .neighbor_after_distance(Direction::SouthWest, 2);
+            let a3: Coord = map_center
+                .neighbor_after_distance(Direction::West, 4)
+                .neighbor_after_distance(Direction::NorthWest, 2);
+            return (array![a1, a2, a3]);
+        } else {
+            let b1: Coord = map_center.neighbor_after_distance(Direction::East, 8);
+            let b2: Coord = map_center
+                .neighbor_after_distance(Direction::East, 4)
+                .neighbor_after_distance(Direction::SouthEast, 2);
+            let b3: Coord = map_center
+                .neighbor_after_distance(Direction::East, 4)
+                .neighbor_after_distance(Direction::NorthEast, 2);
+            return (array![b1, b2, b3]);
+        }
+    }
+}
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzHypersSettlementConfig {
     pub max_ring_count: u8,
     pub current_ring_count: u8,
@@ -555,25 +610,60 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
     fn new() -> BlitzHypersSettlementConfig {
         BlitzHypersSettlementConfig { max_ring_count: 0, current_ring_count: 0, side: 5, point: 1 }
     }
+    fn is_valid_ring(self: BlitzHypersSettlementConfig, two_player_mode: bool) -> bool {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::is_valid_ring(self)
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::is_valid_ring(self)
+        }
+    }
 
-    fn is_valid_ring(ref self: BlitzHypersSettlementConfig) -> bool {
-        if self.current_ring_count > self.max_ring_count {
+    fn next(ref self: BlitzHypersSettlementConfig, two_player_mode: bool) {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::next(ref self);
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::next(ref self);
+        }
+    }
+
+    fn next_coord(self: BlitzHypersSettlementConfig, map_center: Coord, two_player_mode: bool) -> Coord {
+        if two_player_mode {
+            return Blitz2PlayerHypersSettlementConfigImpl::next_coord(self, map_center);
+        } else {
+            return BlitzMultiplePlayerHypersSettlementConfigImpl::next_coord(self, map_center);
+        }
+    }
+
+    fn check_increase_max(ref world: WorldStorage, registration_count: u128, two_player_mode: bool) {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::check_increase_max(ref world, registration_count);
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::check_increase_max(ref world, registration_count);
+        }
+    }
+}
+
+
+#[generate_trait]
+pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHypersSettlementConfigTrait {
+    fn is_valid_ring(config: BlitzHypersSettlementConfig) -> bool {
+        if config.current_ring_count > config.max_ring_count {
             return false;
         }
         return true;
     }
 
-    fn next(ref self: BlitzHypersSettlementConfig) {
-        if self.point >= self.current_ring_count.into() {
-            self.point = 1;
-            if self.side == 5 {
-                self.side = 0;
-                self.current_ring_count += 1;
+    fn next(ref config: BlitzHypersSettlementConfig) {
+        if config.point >= config.current_ring_count {
+            config.point = 1;
+            if config.side == 5 {
+                config.side = 0;
+                config.current_ring_count += 1;
             } else {
-                self.side += 1;
+                config.side += 1;
             }
         } else {
-            self.point += 1;
+            config.point += 1;
         }
     }
 
@@ -582,22 +672,88 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
     }
 
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
-    fn next_coord(self: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
+    fn next_coord(config: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
             (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
             (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
         ];
-        let (start_direction, triangle_direction) = *start_directions.at(self.side);
+        let (start_direction, triangle_direction) = *start_directions.at(config.side);
         return start_coord
-            .neighbor_after_distance(start_direction, Self::ring_tile_distance() * self.current_ring_count.into())
-            .neighbor_after_distance(triangle_direction, Self::ring_tile_distance() * (self.point.into() - 1));
+            .neighbor_after_distance(start_direction, Self::ring_tile_distance() * config.current_ring_count.into())
+            .neighbor_after_distance(triangle_direction, Self::ring_tile_distance() * (config.point.into() - 1));
+    }
+
+
+    fn check_increase_max(ref world: WorldStorage, registration_count: u128) {
+        // increase hyperstructure ring count
+        // [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
+        // Where P is num registered players
+        // and R is hyperstructure ring count
+
+        let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
+        let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
+            world, blitz_hyperstructure_settlement_config_selector,
+        );
+        let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
+        let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
+        if max_ring_count_squared.is_zero()
+            || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
+            blitz_hyperstructure_settlement_config.max_ring_count += 1;
+            WorldConfigUtilImpl::set_member(
+                ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+            );
+        }
+    }
+}
+
+#[generate_trait]
+pub impl Blitz2PlayerHypersSettlementConfigImpl of Blitz2PlayerHypersSettlementConfigTrait {
+    fn is_valid_ring(config: BlitzHypersSettlementConfig) -> bool {
+        if config.current_ring_count > config.max_ring_count {
+            return false;
+        }
+        return true;
+    }
+
+    fn next(ref config: BlitzHypersSettlementConfig) {
+        config.current_ring_count += 1;
+    }
+
+    fn line_tile_distance() -> u32 {
+        6
+    }
+
+    // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
+    fn next_coord(config: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
+        if config.current_ring_count.is_zero() {
+            return map_center;
+        }
+
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::NorthEast, Direction::West), (Direction::SouthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(config.current_ring_count.into() - 1);
+        return map_center
+            .neighbor_after_distance(start_direction, Self::line_tile_distance())
+            .neighbor_after_distance(triangle_direction, Self::line_tile_distance() / 2);
+    }
+
+    fn check_increase_max(ref world: WorldStorage, registration_count: u128) {
+        let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
+        let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
+            world, blitz_hyperstructure_settlement_config_selector,
+        );
+        blitz_hyperstructure_settlement_config.max_ring_count = 2; // max 3 hypers for 2 player mode [0,1,2]
+        WorldConfigUtilImpl::set_member(
+            ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+        );
     }
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzRegistrationConfig {
     pub fee_amount: u256,
     pub fee_token: ContractAddress,

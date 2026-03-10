@@ -1,14 +1,12 @@
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
-import { getPmSqlApi } from "@/pm/hooks/queries";
-import { getPredictionMarketChain } from "@/pm/prediction-market-config";
+import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { formatUnits } from "@/pm/utils";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { TokenIcon } from "@/ui/features/market/landing-markets/token-icon";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import Button from "@/ui/design-system/atoms/button";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { MarketOdds } from "@/ui/features/market/landing-markets/market-odds";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
@@ -17,35 +15,47 @@ import { MarketActivity } from "@/ui/features/market/landing-markets/details/mar
 import { MarketFees } from "@/ui/features/market/landing-markets/details/market-fees";
 import { MarketHistory } from "@/ui/features/market/landing-markets/details/market-history";
 import { MarketPositions } from "@/ui/features/market/landing-markets/details/market-positions";
-import { MarketResolution } from "@/ui/features/market/landing-markets/details/market-resolution";
+import {
+  MarketResolutionView,
+  type MarketResolutionController,
+  useMarketResolutionController,
+} from "@/ui/features/market/landing-markets/details/market-resolution";
 import { MarketResolved } from "@/ui/features/market/landing-markets/details/market-resolved";
 import { MarketTrade } from "@/ui/features/market/landing-markets/details/market-trade";
 import { MarketVaultFees } from "@/ui/features/market/landing-markets/details/market-vault-fees";
-import { UserMessages } from "@/ui/features/market/landing-markets/details/user-messages";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
 import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-watch";
 import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
-import { ChevronDown, Play, RefreshCw, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, Loader2, Play, RefreshCw, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { addAddressPadding } from "starknet";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 
 interface MarketDetailsModalProps {
   market: MarketClass;
+  chain: MarketDataChain;
+  initialOutcomeIndex?: number;
   onClose: () => void;
 }
 
-type MarketDetailsTabKey = "terms" | "comments" | "activity" | "positions" | "vault-fees" | "resolution";
+type MarketDataChain = "slot" | "mainnet";
+
+type MarketDetailsTabKey = "terms" | "activity" | "positions" | "vault-fees" | "resolution";
 
 const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
   { key: "terms", label: "Terms" },
-  { key: "comments", label: "Comments" },
   { key: "activity", label: "Activity" },
   { key: "positions", label: "My Positions" },
   { key: "vault-fees", label: "Vault Fees" },
   { key: "resolution", label: "Resolution" },
 ];
 
+const TRADE_SYNC_MAX_ATTEMPTS = 10;
+const TRADE_SYNC_INTERVAL_MS = 2_000;
+
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const formatTimeLeft = (targetSeconds: number | null) => {
   if (targetSeconds == null || targetSeconds <= 0) return "TBD";
@@ -87,7 +97,14 @@ const formatCompactAmount = (amountRaw: bigint, decimals: number) => {
   }).format(amount);
 };
 
-const renderTabContent = (tab: MarketDetailsTabKey, market: MarketClass, refreshKey: number) => {
+const renderTabContent = (
+  tab: MarketDetailsTabKey,
+  market: MarketClass,
+  refreshKey: number,
+  chain: MarketDataChain,
+  address?: string,
+  resolution?: MarketResolutionController,
+) => {
   if (tab === "terms") {
     return market.terms ? (
       <div className="text-sm leading-relaxed text-white/80" dangerouslySetInnerHTML={{ __html: market.terms }} />
@@ -96,28 +113,39 @@ const renderTabContent = (tab: MarketDetailsTabKey, market: MarketClass, refresh
     );
   }
 
-  if (tab === "comments") return <UserMessages marketId={market.market_id} />;
   if (tab === "activity") return <MarketActivity market={market} refreshKey={refreshKey} />;
-  if (tab === "positions") return <MarketPositions market={market} />;
-  if (tab === "vault-fees") return <MarketVaultFees market={market} />;
+  if (tab === "positions") return <MarketPositions market={market} chain={chain} address={address} />;
+  if (tab === "vault-fees") return <MarketVaultFees market={market} chain={chain} address={address} />;
 
   if (market.isResolved()) return <MarketResolved market={market} />;
-  return <MarketResolution market={market} />;
+  return resolution ? <MarketResolutionView resolution={resolution} /> : null;
 };
 
-const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; refreshKey?: number }) => {
+const MarketDetailsTabs = ({
+  market,
+  refreshKey = 0,
+  chain,
+  address,
+  resolution,
+}: {
+  market: MarketClass;
+  refreshKey?: number;
+  chain: MarketDataChain;
+  address?: string;
+  resolution: MarketResolutionController;
+}) => {
   const [activeTab, setActiveTab] = useState<MarketDetailsTabKey>("terms");
   const [mobileOpenTab, setMobileOpenTab] = useState<MarketDetailsTabKey>("terms");
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
       <div className="hidden md:block">
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-nowrap items-center gap-1.5">
           {MARKET_DETAIL_TABS.map((tab) => (
             <button
               key={tab.key}
               className={cx(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors",
+                "whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-[0.06em] leading-none transition-colors",
                 activeTab === tab.key
                   ? "border-orange/70 bg-orange/20 text-orange"
                   : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
@@ -131,7 +159,7 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
         </div>
 
         <div className="rounded-lg border border-white/10 bg-black/35 p-4">
-          {renderTabContent(activeTab, market, refreshKey)}
+          {renderTabContent(activeTab, market, refreshKey, chain, address, resolution)}
         </div>
       </div>
 
@@ -152,7 +180,9 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
               </button>
 
               {isOpen ? (
-                <div className="border-t border-white/10 p-3">{renderTabContent(tab.key, market, refreshKey)}</div>
+                <div className="border-t border-white/10 p-3">
+                  {renderTabContent(tab.key, market, refreshKey, chain, address, resolution)}
+                </div>
               ) : null}
             </div>
           );
@@ -165,10 +195,22 @@ const MarketDetailsTabs = ({ market, refreshKey = 0 }: { market: MarketClass; re
 /**
  * Inner modal content that uses hooks requiring MarketsProviders context
  */
-const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: MarketClass; onClose: () => void }) => {
+const MarketDetailsModalContent = ({
+  initialMarket,
+  chain,
+  initialOutcomeIndex,
+  onClose,
+}: {
+  initialMarket: MarketClass;
+  chain: MarketDataChain;
+  initialOutcomeIndex?: number;
+  onClose: () => void;
+}) => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isTradeSyncing, setIsTradeSyncing] = useState(false);
+  const [isResolveActionPending, setIsResolveActionPending] = useState(false);
   const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
-  const { account } = useAccount();
+  const { address } = useAccount();
   const {
     config: { manifest },
   } = useDojoSdk();
@@ -183,6 +225,7 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
   }, [initialMarket.market_id]);
   const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(marketId);
   const market = fetchedMarket ?? initialMarket;
+  const resolutionController = useMarketResolutionController(market);
 
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
@@ -190,9 +233,12 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
   const watchDisabled = watchState.status !== "ready";
   const watchLoading = watchState.status === "checking" || isWatching;
 
-  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
+  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market, chain);
 
   const [selectedOutcome, setSelectedOutcome] = useState<MarketOutcome | undefined>(undefined);
+  const initialOutcomeAppliedRef = useRef(false);
+  const marketSyncSignatureRef = useRef("");
+  const tradeSyncRunIdRef = useRef(0);
   const positionIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id || 0)), [market.position_ids]);
 
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
@@ -222,15 +268,29 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
   }, [outcomes]);
 
   useEffect(() => {
-    if (!selectedOutcome && defaultHighestOutcome) {
-      setSelectedOutcome(defaultHighestOutcome);
-    } else if (selectedOutcome) {
+    if (selectedOutcome) {
       const updatedOutcome = outcomes.find((outcome) => outcome.index === selectedOutcome.index);
       if (updatedOutcome && updatedOutcome !== selectedOutcome) {
         setSelectedOutcome(updatedOutcome);
       }
+      return;
     }
-  }, [outcomes, defaultHighestOutcome, selectedOutcome]);
+
+    if (outcomes.length === 0) return;
+
+    if (!initialOutcomeAppliedRef.current && initialOutcomeIndex != null) {
+      const initialOutcome = outcomes.find((outcome) => outcome.index === initialOutcomeIndex);
+      initialOutcomeAppliedRef.current = true;
+      if (initialOutcome) {
+        setSelectedOutcome(initialOutcome);
+        return;
+      }
+    }
+
+    if (defaultHighestOutcome) {
+      setSelectedOutcome(defaultHighestOutcome);
+    }
+  }, [defaultHighestOutcome, initialOutcomeIndex, outcomes, selectedOutcome]);
 
   const handleRefresh = useCallback(async () => {
     await refreshMarket();
@@ -239,31 +299,40 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
 
   const marketIdHex = useMemo(() => {
     try {
-      return `0x${BigInt(market.market_id).toString(16)}`;
+      return addAddressPadding(`0x${BigInt(market.market_id).toString(16)}`);
     } catch {
       return null;
     }
   }, [market.market_id]);
 
   const { data: allTimeVolumeRaw = 0n } = useQuery({
-    queryKey: ["pm", "market", "all-time-volume", marketIdHex],
+    queryKey: ["pm", "market", "all-time-volume", chain, marketIdHex],
     enabled: Boolean(marketIdHex),
     queryFn: async () => {
       if (!marketIdHex) return 0n;
-      const rows = await getPmSqlApi().fetchMarketBuyAmountsByMarkets([marketIdHex]);
+      const rows = await getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchMarketBuyAmountsByMarkets([marketIdHex]);
       return rows.reduce((sum, row) => sum + toBigInt(row.amount_in), 0n);
     },
     staleTime: 30 * 1000,
   });
+  const { data: holdersFromBuysCount = 0 } = useQuery({
+    queryKey: ["pm", "market", "holders-count", chain, marketIdHex],
+    enabled: Boolean(marketIdHex),
+    queryFn: async () => {
+      if (!marketIdHex) return 0;
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchMarketBuyUniqueAccountsCountByMarket(marketIdHex);
+    },
+    staleTime: 30 * 1000,
+  });
 
-  const chainLabel = getPredictionMarketChain() === "mainnet" ? "Mainnet" : "Slot";
+  const chainLabel = chain === "mainnet" ? "Mainnet" : "Slot";
   const volumeDisplay = useMemo(
     () => formatCompactAmount(allTimeVolumeRaw, Number(market.collateralToken?.decimals ?? 18)),
     [allTimeVolumeRaw, market.collateralToken?.decimals],
   );
   const liquidityDisplay = useMemo(() => market.getTvl() || "0", [market]);
   const holdersCount = useMemo(() => {
-    if (!vaultPositionsAddress || positionIds.length === 0) return null;
+    if (!vaultPositionsAddress || positionIds.length === 0) return holdersFromBuysCount;
     const holders = new Set<string>();
 
     balances.forEach((balance) => {
@@ -273,16 +342,113 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
       holders.add(balance.account_address);
     });
 
-    return holders.size;
-  }, [balances, positionIds, vaultPositionsAddress]);
+    if (holders.size > 0) return holders.size;
+    return holdersFromBuysCount;
+  }, [balances, holdersFromBuysCount, positionIds, vaultPositionsAddress]);
+  const marketSyncSignature = useMemo(() => {
+    const denominatorSignature = toBigInt(market.vaultDenominator?.value ?? 0n).toString();
+    const numeratorsSignature = (market.vaultNumerators ?? [])
+      .map((entry) => `${entry.index}:${toBigInt(entry.value).toString()}`)
+      .join("|");
+    return [
+      allTimeVolumeRaw.toString(),
+      holdersFromBuysCount.toString(),
+      denominatorSignature,
+      numeratorsSignature,
+    ].join("::");
+  }, [allTimeVolumeRaw, holdersFromBuysCount, market.vaultDenominator?.value, market.vaultNumerators]);
+
+  useEffect(() => {
+    marketSyncSignatureRef.current = marketSyncSignature;
+  }, [marketSyncSignature]);
+
+  useEffect(() => {
+    return () => {
+      tradeSyncRunIdRef.current += 1;
+    };
+  }, []);
+
+  const handleTradeSuccess = useCallback(() => {
+    const baselineSignature = marketSyncSignatureRef.current;
+    tradeSyncRunIdRef.current += 1;
+    const runId = tradeSyncRunIdRef.current;
+    setIsTradeSyncing(true);
+
+    void (async () => {
+      try {
+        for (let attempt = 0; attempt < TRADE_SYNC_MAX_ATTEMPTS; attempt += 1) {
+          if (tradeSyncRunIdRef.current !== runId) return;
+
+          try {
+            await handleRefresh();
+          } catch (refreshError) {
+            console.error("[market-details] Failed to refresh after trade", refreshError);
+          }
+
+          if (tradeSyncRunIdRef.current !== runId) return;
+          if (marketSyncSignatureRef.current !== baselineSignature) return;
+
+          if (attempt < TRADE_SYNC_MAX_ATTEMPTS - 1) {
+            await wait(TRADE_SYNC_INTERVAL_MS);
+          }
+        }
+      } finally {
+        if (tradeSyncRunIdRef.current === runId) {
+          setIsTradeSyncing(false);
+        }
+      }
+    })();
+  }, [handleRefresh]);
+
   const endLabel = formatTimeLeft(market.end_at ?? null);
   const resolveLabel = formatTimeLeft(market.resolve_at ?? null);
 
   const showClaimPrimary = market.isResolved();
-  const claimDisabled = isRedeeming || !account?.address || !hasAnythingToClaim;
+  const claimDisabled = isRedeeming || !address || !hasAnythingToClaim;
+  const resolveOneClickDisabled =
+    !resolutionController.canResolve || resolutionController.isSubmittingTx || isTradeSyncing || isResolveActionPending;
+  const resolveOneClickIdleLabel = resolutionController.hasFinalRanking ? "Resolve Market" : "Compute + Resolve";
+  const resolveOneClickLabel = resolutionController.isResolvingWithCompute
+    ? resolutionController.isComputingScores
+      ? "Computing..."
+      : resolutionController.isResolving
+        ? "Resolving..."
+        : "Submitting..."
+    : isResolveActionPending
+      ? "Submitting..."
+      : resolveOneClickIdleLabel;
+  const resolveOneClickTitle = resolveOneClickDisabled
+    ? !resolutionController.canResolve
+      ? "Resolution opens after the resolve time."
+      : resolutionController.isSubmittingTx
+        ? "Submitting transactions..."
+        : "Please wait for market sync to finish."
+    : resolutionController.hasFinalRanking
+      ? "Resolve this market"
+      : "Compute scores if needed, then resolve in one click";
+  const resolveOneClickAriaLabel = resolutionController.hasFinalRanking
+    ? "Resolve market"
+    : "Compute scores and resolve market";
+
+  const handleResolveOneClick = useCallback(async () => {
+    setIsResolveActionPending(true);
+    try {
+      const resolved = await resolutionController.onResolveWithCompute();
+      if (resolved) {
+        await handleRefresh();
+      }
+    } finally {
+      setIsResolveActionPending(false);
+    }
+  }, [handleRefresh, resolutionController]);
+
+  const handleClaimWinnings = useCallback(async () => {
+    await redeem();
+    await handleRefresh();
+  }, [handleRefresh, redeem]);
 
   return (
-    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-auto md:max-h-[90vh] md:rounded-2xl">
+    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
       <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -308,13 +474,41 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
           </div>
 
           <div className="flex items-center gap-2">
+            {isTradeSyncing ? (
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
+                Syncing...
+              </span>
+            ) : null}
+            {!showClaimPrimary ? (
+              <button
+                type="button"
+                onClick={() => void handleResolveOneClick()}
+                disabled={resolveOneClickDisabled}
+                className={cx(
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#04060b]",
+                  resolveOneClickDisabled
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-orange/80 bg-orange/20 text-orange shadow-[0_0_16px_rgba(251,146,60,0.22)] hover:border-orange hover:bg-orange/30",
+                )}
+                title={resolveOneClickTitle}
+                aria-label={resolveOneClickAriaLabel}
+                aria-busy={resolutionController.isSubmittingTx || isResolveActionPending}
+              >
+                <span className="inline-flex items-center gap-2">
+                  {resolutionController.isSubmittingTx || isResolveActionPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  {resolveOneClickLabel}
+                </span>
+              </button>
+            ) : null}
             {showClaimPrimary ? (
               <button
                 type="button"
-                onClick={() => void redeem()}
+                onClick={() => void handleClaimWinnings()}
                 disabled={claimDisabled}
                 className={cx(
-                  "rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   claimDisabled
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                     : "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 hover:border-emerald-300 hover:bg-emerald-500/25",
@@ -326,17 +520,17 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
               <button
                 type="button"
                 onClick={() => void handleRefresh()}
-                disabled={isLoading}
+                disabled={isLoading || isTradeSyncing}
                 className={cx(
-                  "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
-                  isLoading
+                  "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
+                  isLoading || isTradeSyncing
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
                     : "border-orange/70 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25",
                 )}
                 title="Refresh market data"
+                aria-label="Refresh market data"
               >
-                <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
-                Refresh
+                <RefreshCw className={cx("h-4 w-4", (isLoading || isTradeSyncing) && "animate-spin")} />
               </button>
             )}
 
@@ -344,29 +538,31 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
               <button
                 type="button"
                 onClick={() => void handleRefresh()}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading || isTradeSyncing}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Refresh market data"
+                aria-label="Refresh market data"
               >
-                <RefreshCw className={cx("h-4 w-4", isLoading && "animate-spin")} />
-                <span className="hidden sm:inline">Refresh</span>
+                <RefreshCw className={cx("h-4 w-4", (isLoading || isTradeSyncing) && "animate-spin")} />
               </button>
             ) : null}
 
             {showWatchButton ? (
-              <Button
-                size="xs"
-                variant="outline"
-                forceUppercase={false}
-                className="gap-2"
+              <button
+                type="button"
                 onClick={() => void watchMarket(market)}
-                isLoading={watchLoading}
                 disabled={watchDisabled}
+                className={cx(
+                  "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
+                  watchDisabled
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-white/15 bg-white/5 text-white/75 hover:border-white/30 hover:bg-white/10",
+                )}
                 title="Watch game"
+                aria-label="Watch game"
               >
-                <Play className="h-4 w-4" />
-                <span className="hidden md:inline">Watch</span>
-              </Button>
+                {watchLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              </button>
             ) : null}
 
             <button
@@ -414,14 +610,14 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-        <div className="space-y-4">
-          <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
-            <MarketTimeline market={market} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 py-4 md:px-6 md:py-5 lg:overflow-hidden">
+        <div className="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden">
+          <div className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1">
             <div className="space-y-4">
+              <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
+                <MarketTimeline market={market} />
+              </div>
+
               <MarketHistory market={market} refreshKey={refreshKey} />
 
               <section className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
@@ -437,15 +633,28 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
                   collapsible
                 />
               </section>
-            </div>
 
-            <div className="flex flex-col gap-4 lg:sticky lg:top-0 lg:self-start">
-              <MarketTrade market={market} selectedOutcome={selectedOutcome} />
-              <MarketFees market={market} />
+              <MarketDetailsTabs
+                market={market}
+                refreshKey={refreshKey}
+                chain={chain}
+                address={address}
+                resolution={resolutionController}
+              />
             </div>
           </div>
 
-          <MarketDetailsTabs market={market} refreshKey={refreshKey} />
+          <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
+            <div className="flex flex-col gap-4">
+              <MarketTrade
+                market={market}
+                selectedOutcome={selectedOutcome}
+                onTradeSuccess={handleTradeSuccess}
+                chain={chain}
+              />
+              <MarketFees market={market} />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -455,10 +664,15 @@ const MarketDetailsModalContent = ({ initialMarket, onClose }: { initialMarket: 
 /**
  * Modal wrapper that provides the necessary context providers
  */
-export const MarketDetailsModal = ({ market, onClose }: MarketDetailsModalProps) => {
+export const MarketDetailsModal = ({ market, chain, initialOutcomeIndex, onClose }: MarketDetailsModalProps) => {
   return (
-    <MarketsProviders>
-      <MarketDetailsModalContent initialMarket={market} onClose={onClose} />
+    <MarketsProviders chain={chain}>
+      <MarketDetailsModalContent
+        initialMarket={market}
+        chain={chain}
+        initialOutcomeIndex={initialOutcomeIndex}
+        onClose={onClose}
+      />
     </MarketsProviders>
   );
 };

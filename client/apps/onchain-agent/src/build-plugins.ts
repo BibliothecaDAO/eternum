@@ -58,6 +58,29 @@ __wbg_set_wasm(instance.exports);
 };
 
 /**
+ * Patches wasm-bindgen glue code to work in Node/Bun environments.
+ *
+ * The glue code uses `instanceof Window` which fails in Node/Bun since
+ * there's no Window class. This plugin replaces those checks with a
+ * duck-type check for `localStorage` (what the WASM actually needs).
+ */
+export const wasmGluePlugin: BunPlugin = {
+  name: "wasm-glue-node-compat",
+  setup(build) {
+    build.onLoad({ filter: /controller-wasm\/pkg-[^/]+\/\w+_wasm_bg\.js$/ }, (args) => {
+      let source = readFileSync(args.path, "utf8");
+      // Replace: result = getObject(arg0) instanceof Window;
+      // With:    result = typeof getObject(arg0) === 'object' && getObject(arg0) !== null && 'localStorage' in getObject(arg0);
+      source = source.replace(
+        /result = getObject\(arg0\) instanceof Window;/g,
+        `result = (typeof getObject(arg0) === 'object' && getObject(arg0) !== null && 'localStorage' in getObject(arg0));`,
+      );
+      return { contents: source, loader: "js" };
+    });
+  },
+};
+
+/**
  * Patches pi-coding-agent's config.js to embed package.json data.
  *
  * The config module reads package.json from disk relative to the module

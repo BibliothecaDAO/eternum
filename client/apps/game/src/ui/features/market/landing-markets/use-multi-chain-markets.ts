@@ -263,10 +263,12 @@ const fetchChainMarkets = async ({
     .filter((item): item is EnrichedMarket => Boolean(item));
 };
 
-const mergeAndSortByVolume = (markets: EnrichedMarket[]) =>
+const mergeAndSortByNewest = (markets: EnrichedMarket[]) =>
   markets.toSorted((a, b) => {
+    const createdAtDifference = Number(b.market.created_at ?? 0) - Number(a.market.created_at ?? 0);
+    if (createdAtDifference !== 0) return createdAtDifference;
     if (a.volumeRaw !== b.volumeRaw) return a.volumeRaw > b.volumeRaw ? -1 : 1;
-    return Number(b.market.created_at ?? 0) - Number(a.market.created_at ?? 0);
+    return a.key.localeCompare(b.key);
   });
 
 const createEmptySourceStatus = (chains: MarketDataChain[]): Record<MarketDataChain, SourceStatus> => {
@@ -394,7 +396,7 @@ export function useMultiChainMarkets({
       });
 
       return {
-        markets: mergeAndSortByVolume(merged),
+        markets: mergeAndSortByNewest(merged),
         sourceStatus,
       };
     },

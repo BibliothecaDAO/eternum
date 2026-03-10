@@ -1,11 +1,19 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { MarketClass } from "@/pm/class";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
+import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { MarketImage } from "@/ui/features/market/landing-markets/market-image";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
+import {
+  getChainLabel,
+  resolveConnectedTxChainFromRuntime,
+  switchWalletToChain,
+  type WalletChainControllerLike,
+} from "@/ui/utils/network-switch";
+import { useAccount } from "@starknet-react/core";
 import {
   marketChainLabels,
   useMultiChainMarketCounts,
@@ -91,10 +99,12 @@ const shortMarketId = (id: string) => {
 const MarketTerminalCard = ({
   item,
   onOpen,
+  onSwitchNetwork,
   canTrade,
 }: {
   item: EnrichedMarket;
   onOpen: (market: MarketClass, chain: MarketDataChain) => void;
+  onSwitchNetwork: (chain: MarketDataChain) => void;
   canTrade: boolean;
 }) => {
   const outcomes = useMemo(() => {
@@ -154,7 +164,7 @@ const MarketTerminalCard = ({
           {visibleOutcomes.map((outcome) => (
             <div key={`${item.key}-${outcome.index}`} className="flex items-center justify-between gap-2">
               <p className="min-w-0 truncate text-xs text-white/80">
-                <MaybeController address={outcome.name} />
+                <MaybeController address={outcome.name} showAddress={false} />
               </p>
               <p className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-xs font-semibold text-emerald-300">
                 {formatOddsPercentage(outcome.odds)}
@@ -180,16 +190,21 @@ const MarketTerminalCard = ({
 
       <button
         type="button"
-        onClick={() => onOpen(item.market, item.chain)}
-        disabled={!canTrade}
+        onClick={() => {
+          if (canTrade) {
+            onOpen(item.market, item.chain);
+            return;
+          }
+          onSwitchNetwork(item.chain);
+        }}
         className={cn(
           "mt-3 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
           canTrade
             ? "border-orange/50 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25"
-            : "cursor-not-allowed border-white/10 bg-white/5 text-white/35",
+            : "border-blue-400/40 bg-blue-500/10 text-blue-300 hover:border-blue-300/60 hover:bg-blue-500/20",
         )}
       >
-        {canTrade ? "Open Market" : `View Only (${chainLabel})`}
+        {canTrade ? "Open Market" : `Switch To ${chainLabel}`}
       </button>
     </article>
   );
@@ -201,7 +216,13 @@ const MarketTerminalCard = ({
 const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const { chainId, connector } = useAccount();
   const runtimeChain = getPredictionMarketChain();
+  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
+  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
+  const activeTradingChain: MarketDataChain =
+    connectedTxChain === "mainnet" || connectedTxChain === "slot" ? connectedTxChain : runtimeChain;
+  const [switchTargetChain, setSwitchTargetChain] = useState<MarketDataChain | null>(null);
 
   const selectedStatus = getStatusFromParam(searchParams.get("status"));
   const selectedChain = getChainFromParam(searchParams.get("chain"));
@@ -212,6 +233,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const offset = (currentPage - 1) * PAGE_SIZE;
 
   const { counts, isLoading: isCountsLoading, isFetching: isCountsFetching } = useMultiChainMarketCounts(selectedChain);
+  const hasLiveMarkets = counts.live > 0;
 
   const { markets, totalCount, isLoading, isFetching, isError, sourceStatus, refresh } = useMultiChainMarkets({
     status: selectedStatus,
@@ -222,11 +244,26 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
 
   const handleCardClick = useCallback(
     (market: MarketClass, chain: MarketDataChain) => {
-      if (chain !== runtimeChain) return;
-      toggleModal(<MarketDetailsModal market={market} onClose={() => toggleModal(null)} />);
+      if (chain !== activeTradingChain) return;
+      toggleModal(<MarketDetailsModal market={market} chain={chain} onClose={() => toggleModal(null)} />);
     },
-    [runtimeChain, toggleModal],
+    [activeTradingChain, toggleModal],
   );
+
+  const handleOpenSwitchNetworkPrompt = useCallback((chain: MarketDataChain) => {
+    setSwitchTargetChain(chain);
+  }, []);
+
+  const handleSwitchNetwork = useCallback(async () => {
+    if (!switchTargetChain) return;
+    const switched = await switchWalletToChain({
+      controller,
+      targetChain: switchTargetChain,
+    });
+    if (switched) {
+      setSwitchTargetChain(null);
+    }
+  }, [controller, switchTargetChain]);
 
   const handleStatusChange = useCallback(
     (nextStatus: MarketStatusKey) => {
@@ -313,6 +350,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
         <div className="flex flex-wrap items-center gap-2">
           {STATUS_OPTIONS.map((option) => {
             const isActive = selectedStatus === option.key;
+            const isLiveOption = option.key === "live";
+            const showLiveGlow = isLiveOption && hasLiveMarkets;
             const isCountLoading = isCountsLoading || isCountsFetching;
             const countLabel = isCountLoading ? "..." : counts[option.key].toString();
 
@@ -323,9 +362,14 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 onClick={() => handleStatusChange(option.key)}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
-                  isActive
-                    ? "border-orange/80 bg-orange/20 text-orange"
-                    : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
+                  showLiveGlow &&
+                    (isActive
+                      ? "border-emerald-300 bg-emerald-500/25 text-emerald-200 shadow-[0_0_22px_rgba(16,185,129,0.45)]"
+                      : "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:border-emerald-300/80 hover:bg-emerald-500/20"),
+                  !showLiveGlow &&
+                    (isActive
+                      ? "border-orange/80 bg-orange/20 text-orange"
+                      : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"),
                 )}
               >
                 {option.label} ({countLabel})
@@ -359,7 +403,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070a10]/85 px-4 py-3 text-xs uppercase tracking-[0.12em] text-white/65">
         <span>{totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount}` : "No markets found"}</span>
         <div className="flex items-center gap-3">
-          <span>Sort: Volume (All-time)</span>
+          <span>Sort: Creation Date (Newest)</span>
           {isFetching ? <span className="text-white/40">Refreshing…</span> : null}
           <RefreshButton aria-label="Refresh markets" isLoading={isFetching || isLoading} onClick={refresh} />
         </div>
@@ -399,7 +443,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 key={item.key}
                 item={item}
                 onOpen={handleCardClick}
-                canTrade={item.chain === runtimeChain}
+                onSwitchNetwork={handleOpenSwitchNetworkPrompt}
+                canTrade={item.chain === activeTradingChain}
               />
             ))}
           </div>
@@ -441,6 +486,18 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
           </button>
         </div>
       ) : null}
+      <SwitchNetworkPrompt
+        open={switchTargetChain !== null}
+        description="This market is on a different chain than your current trading session."
+        hint={
+          switchTargetChain
+            ? `Switch your wallet to ${getChainLabel(switchTargetChain)} to continue.`
+            : "Switch network to continue."
+        }
+        switchLabel={switchTargetChain ? `Switch To ${getChainLabel(switchTargetChain)}` : "Switch Network"}
+        onClose={() => setSwitchTargetChain(null)}
+        onSwitch={handleSwitchNetwork}
+      />
     </div>
   );
 };

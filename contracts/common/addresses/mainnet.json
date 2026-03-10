@@ -1,7 +1,7 @@
 {
-  "Collectibles: Realms: Elite Invite": "0x1abcb509ac6bcf9f8bac592aabe16e54354fa6d0a1a0bfcc26eb22cde41a08a",
-  "Collectibles: Realms: Loot Chest": "0x1943078d36c49d9830444188fcac8ad3bc2f045946f7b557b1a48082eac3b1d",
-  "Collectibles: Realms: Cosmetic Items": "0x1d4ca776c24017ef64e8c94b0c4120578eca3f17832d32d42eeb82e4fec3049",
+  "Collectibles: Realms: Elite Invite": "0x0",
+  "Collectibles: Realms: Loot Chest": "0x0572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
+  "Collectibles: Realms: Cosmetic Items": "0x01f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02",
   "Collectibles: Timelock Maker": "0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711",
   "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
   "seasonPass": "0x60e8836acbebb535dfcd237ff01f20be503aae407b67bb6e3b5869afae97156",

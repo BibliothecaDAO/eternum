@@ -1,7 +1,7 @@
 import { EternumClient } from "@bibliothecadao/client";
 import { createHeartbeatLoop, createGameAgent, type HeartbeatJob } from "@bibliothecadao/game-agent";
 import { getModel } from "@mariozechner/pi-ai";
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { Account, RpcProvider, uint256, CallData, type AccountInterface } from "starknet";
 import { createShutdownGate } from "./shutdown-gate";
@@ -9,12 +9,18 @@ import { type AgentConfig, loadConfig } from "./config";
 import { EternumGameAdapter } from "./adapter/eternum-adapter";
 import { MutableGameAdapter } from "./adapter/mutable-adapter";
 import { ControllerSession } from "./session";
-import { readArtifacts } from "./session/artifacts";
+import { readArtifacts, writeArtifacts } from "./session/artifacts";
+import { buildSessionPoliciesFromRoutes } from "./session/controller-session";
+import { generateActions } from "./abi/action-gen";
+import { ETERNUM_OVERLAYS, createHiddenOverlays } from "./abi/domain-overlay";
 import { createPrivateKeyAccount } from "./session/privatekey-auth";
+import { findWorldByName, buildWorldProfile, buildResolvedManifest } from "./world/discovery";
 import { deriveChainIdFromRpcUrl } from "./world/normalize";
 import { createInspectTools } from "./tools/inspect-tools";
+import { createCombatTools } from "./tools/combat-tools";
+import { createMcpTools, type McpConnection } from "./tools/mcp-tools";
 import { getActionDefinitions } from "./adapter/action-registry";
-import { formatEternumTickPrompt, type EternumWorldState } from "./adapter/world-state";
+import { formatEternumTickPrompt, formatEternumTickDiff, type EternumWorldState } from "./adapter/world-state";
 import { JsonEmitter } from "./output/json-emitter";
 import { createApiServer } from "./api/server";
 import { startStdinReader } from "./input/stdin-reader";
@@ -129,17 +135,58 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
   // Propagate world-scoped dataDir so debug log helpers pick it up
   process.env.AGENT_DATA_DIR = config.dataDir;
 
-  // Ensure data dir is seeded (soul.md, HEARTBEAT.md, tasks/) even if `init` was never run
+  // Ensure all runtime directories exist even if `init` was never run
   seedDataDir(config.dataDir);
+  mkdirSync(config.sessionBasePath, { recursive: true });
 
   const emitter = new JsonEmitter({
     verbosity: options.verbosity,
     write: (line) => process.stdout.write(line + "\n"),
   });
 
-  // Read artifacts from session directory
+  // Read or bootstrap artifacts from session directory
   const worldDir = path.join(config.sessionBasePath, options.world!);
-  const artifacts = readArtifacts(worldDir);
+  let artifacts: ReturnType<typeof readArtifacts>;
+
+  try {
+    artifacts = readArtifacts(worldDir);
+    emitter.emit({ type: "startup", message: `Loaded artifacts for ${options.world}` });
+  } catch {
+    // Artifacts don't exist — bootstrap them via world discovery
+    emitter.emit({ type: "startup", message: `No artifacts for ${options.world}, bootstrapping via discovery...` });
+
+    const world = await findWorldByName(options.world!);
+    if (!world) {
+      emitter.emit({ type: "error", message: `World "${options.world}" not found on any chain` });
+      throw new Error(`World "${options.world}" not found`);
+    }
+
+    const profile = await buildWorldProfile(world.chain, world.name);
+    const manifest = await buildResolvedManifest(world.chain, profile);
+    const { routes } = generateActions(manifest as any, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest as any) },
+      gameName: config.gameName,
+    });
+    const policies = buildSessionPoliciesFromRoutes(routes, {
+      worldProfile: profile,
+    });
+
+    writeArtifacts(worldDir, {
+      profile,
+      manifest,
+      policy: policies as unknown as Record<string, unknown>,
+      auth: {
+        url: "",
+        status: "pending",
+        worldName: world.name,
+        chain: world.chain,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    artifacts = readArtifacts(worldDir);
+    emitter.emit({ type: "startup", message: `Bootstrapped artifacts for ${options.world} (${world.chain})` });
+  }
 
   // Override config from artifacts
   config.rpcUrl = artifacts.profile.rpcUrl ?? config.rpcUrl;
@@ -158,6 +205,13 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     account = createPrivateKeyAccount(config.rpcUrl, privateKey, accountAddress);
   } else {
     const sessionBasePath = path.join(config.sessionBasePath, options.world!);
+    const { routes: sessionRoutes } = generateActions(artifacts.manifest, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(artifacts.manifest as any) },
+      gameName: config.gameName,
+    });
+    const sessionPolicies = buildSessionPoliciesFromRoutes(sessionRoutes, {
+      worldProfile: artifacts.profile,
+    });
     session = new ControllerSession({
       rpcUrl: config.rpcUrl,
       chainId: config.chainId,
@@ -165,6 +219,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       basePath: sessionBasePath,
       manifest: artifacts.manifest,
       worldProfile: artifacts.profile,
+      policies: sessionPolicies,
     });
 
     // Try probe() first (uses SessionAccount WASM). If it crashes (starknet v8
@@ -175,8 +230,17 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       if (probed) {
         account = probed;
       } else {
-        // No cached session — need full connect (browser auth)
-        account = await session.connect();
+        // No cached session — can't do browser auth in headless mode
+        const authUrl = artifacts.auth?.url || "(run `axis auth " + options.world + "` to generate)";
+        emitter.emit({
+          type: "error",
+          message:
+            `No active session for ${options.world}. Auth required.\n` +
+            `  1. Open this URL in a browser: ${authUrl}\n` +
+            `  2. Approve the session\n` +
+            `  3. Run: axis auth ${options.world} --redirect-url="<redirect URL from browser>"`,
+        });
+        throw new Error(`No active session for ${options.world}. Run axis auth first.`);
       }
     } catch (probeError) {
       // SessionAccount WASM crashed — fall back to raw account from session.json
@@ -215,8 +279,16 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     toriiUrl: config.toriiUrl,
     worldAddress: config.worldAddress,
     manifest: artifacts.manifest as any,
+    vrfProviderAddress: "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f",
   });
   client.connect(account as any);
+
+  // Fetch game config to sync tick interval with on-chain armies tick
+  const sqlBaseUrl = `${artifacts.profile.toriiBaseUrl}/sql`;
+  const { fetchWorldConfig, getWorldConfig } = await import("./adapter/world-config");
+  await fetchWorldConfig(sqlBaseUrl);
+  const gameTickMs = getWorldConfig().armiesTickInSeconds * 1000;
+  if (gameTickMs > 0) config.tickIntervalMs = gameTickMs;
 
   const tokenConfig = artifacts.profile
     ? {
@@ -251,8 +323,8 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
   // Create game agent
   const model = (getModel as Function)(config.modelProvider, config.modelId);
   let isFirstTick = true;
-  const formatTickPromptWithHandbooks = (state: EternumWorldState): string => {
-    const base = formatEternumTickPrompt(state);
+  const formatTickPromptWithHandbooks = (state: EternumWorldState, prevState: EternumWorldState | null): string => {
+    const base = formatEternumTickDiff(state, prevState);
     const needsRegistration = state.player.structures === 0 && state.player.armies === 0;
 
     if (needsRegistration) {
@@ -284,13 +356,14 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     onMessage: (msg) => emitter.emit({ type: "config", message: msg }),
   });
 
+  const mcp = await createMcpTools(config.toriiUrl);
   game = createGameAgent({
     adapter: mutableAdapter,
     dataDir: config.dataDir,
     model,
     tickIntervalMs: config.tickIntervalMs,
     runtimeConfigManager,
-    extraTools: createInspectTools(client),
+    extraTools: [...createInspectTools(client, account.address), ...createCombatTools(client), ...mcp.tools],
     actionDefs: getActionDefinitions(),
     formatTickPrompt: formatTickPromptWithHandbooks,
     onTickError: (err) => {
@@ -377,6 +450,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
     ticker.stop();
     await disposeAgent();
     client.disconnect();
+    await mcp.close();
     if (apiClose) await apiClose();
     if (stdinClose) stdinClose();
     gate.shutdown();

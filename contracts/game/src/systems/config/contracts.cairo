@@ -199,7 +199,12 @@ pub trait IResourceBridgeConfig<T> {
 #[starknet::interface]
 pub trait ISettlementConfig<T> {
     fn set_settlement_config(
-        ref self: T, center: u32, base_distance: u32, subsequent_distance: u32, single_realm_mode: bool,
+        ref self: T,
+        center: u32,
+        base_distance: u32,
+        subsequent_distance: u32,
+        single_realm_mode: bool,
+        two_player_mode: bool,
     );
     fn set_blitz_registration_config(
         ref self: T,
@@ -828,7 +833,12 @@ pub mod config_systems {
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
         fn set_settlement_config(
-            ref self: ContractState, center: u32, base_distance: u32, subsequent_distance: u32, single_realm_mode: bool,
+            ref self: ContractState,
+            center: u32,
+            base_distance: u32,
+            subsequent_distance: u32,
+            single_realm_mode: bool,
+            two_player_mode: bool,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -842,7 +852,7 @@ pub mod config_systems {
             WorldConfigUtilImpl::set_member(
                 ref world,
                 selector!("blitz_settlement_config"),
-                BlitzSettlementConfigImpl::new(base_distance, single_realm_mode),
+                BlitzSettlementConfigImpl::new(base_distance, single_realm_mode, two_player_mode),
             );
 
             WorldConfigUtilImpl::set_member(

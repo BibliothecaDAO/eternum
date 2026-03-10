@@ -134,6 +134,39 @@ vi.mock("../src/session", () => ({
   },
 }));
 
+vi.mock("../src/adapter/world-config", () => ({
+  fetchWorldConfig: () => Promise.resolve({}),
+  getWorldConfig: () => ({ armiesTickInSeconds: 1 }),
+}));
+
+vi.mock("../src/tools/mcp-tools", () => ({
+  createMcpTools: () => Promise.resolve({ tools: [], close: () => Promise.resolve() }),
+}));
+
+vi.mock("../src/tools/inspect-tools", () => ({
+  createInspectTools: () => [],
+}));
+
+vi.mock("../src/tools/combat-tools", () => ({
+  createCombatTools: () => [],
+}));
+
+vi.mock("../src/adapter/mutable-adapter", () => ({
+  MutableGameAdapter: class {
+    setAdapter() {}
+    constructor(inner: unknown) {}
+  },
+}));
+
+vi.mock("../src/adapter/action-registry", () => ({
+  getActionDefinitions: () => [],
+}));
+
+vi.mock("../src/adapter/world-state", () => ({
+  formatEternumTickPrompt: () => "",
+  formatEternumTickDiff: () => "",
+}));
+
 describe("index bootstrap", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -234,12 +267,14 @@ describe("index bootstrap", () => {
       expect(mocks.sessionInstances).toHaveLength(1);
       expect(mocks.sessionInstances[0]?.connect).toHaveBeenCalledOnce();
       expect((mocks.sessionInstances[0]?.config as any)?.gameName).toBe("eternum");
-      expect(mocks.createClient).toHaveBeenCalledWith({
-        rpcUrl: "http://rpc.local",
-        toriiUrl: "http://torii.local",
-        worldAddress: "0xworld",
-        manifest: { contracts: [] },
-      });
+      expect(mocks.createClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rpcUrl: "http://rpc.local",
+          toriiUrl: "http://torii.local",
+          worldAddress: "0xworld",
+          manifest: { contracts: [] },
+        }),
+      );
       expect(mocks.client.connect).toHaveBeenCalledOnce();
       expect(mocks.ticker.start).toHaveBeenCalledOnce();
       expect(mocks.heartbeatLoop.start).toHaveBeenCalledOnce();

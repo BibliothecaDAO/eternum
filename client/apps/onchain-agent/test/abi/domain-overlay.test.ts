@@ -17,8 +17,7 @@ import {
   contributionTuples,
 } from "../../src/abi/domain-overlay";
 
-// Load real manifest from repo root
-const manifestPath = resolve(__dirname, "../manifest.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 // ── Overlay key validation ───────────────────────────────────────────────────
@@ -80,34 +79,33 @@ describe("overlays integrate with generateActions", () => {
     expect(types.has("send_resources")).toBe(true);
     expect(types.has("pickup_resources")).toBe(true);
     expect(types.has("claim_arrivals")).toBe(true);
-    expect(types.has("create_explorer")).toBe(true);
-    expect(types.has("add_to_explorer")).toBe(true);
-    expect(types.has("delete_explorer")).toBe(true);
-    expect(types.has("add_guard")).toBe(true);
-    expect(types.has("delete_guard")).toBe(true);
-    expect(types.has("move_explorer")).toBe(true);
-    expect(types.has("swap_explorer_to_explorer")).toBe(true);
-    expect(types.has("swap_explorer_to_guard")).toBe(true);
-    expect(types.has("swap_guard_to_explorer")).toBe(true);
-    expect(types.has("attack_explorer")).toBe(true);
-    expect(types.has("attack_guard")).toBe(true);
-    expect(types.has("guard_attack_explorer")).toBe(true);
-    expect(types.has("raid")).toBe(true);
-    expect(types.has("pause_production")).toBe(true);
-    expect(types.has("resume_production")).toBe(true);
+    expect(types.has("explorer_create")).toBe(true);
+    expect(types.has("explorer_add")).toBe(true);
+    expect(types.has("explorer_delete")).toBe(true);
+    expect(types.has("guard_add")).toBe(true);
+    expect(types.has("guard_delete")).toBe(true);
+    expect(types.has("explorer_explorer_swap")).toBe(true);
+    expect(types.has("explorer_guard_swap")).toBe(true);
+    expect(types.has("guard_explorer_swap")).toBe(true);
+    expect(types.has("attack_explorer_vs_explorer")).toBe(true);
+    expect(types.has("attack_explorer_vs_guard")).toBe(true);
+    expect(types.has("attack_guard_vs_explorer")).toBe(true);
+    expect(types.has("raid_explorer_vs_guard")).toBe(true);
+    expect(types.has("pause_building_production")).toBe(true);
+    expect(types.has("resume_building_production")).toBe(true);
     expect(types.has("buy_resources")).toBe(true);
     expect(types.has("sell_resources")).toBe(true);
     expect(types.has("add_liquidity")).toBe(true);
     expect(types.has("remove_liquidity")).toBe(true);
-    expect(types.has("upgrade_realm")).toBe(true);
+    expect(types.has("level_up")).toBe(true);
     expect(types.has("contribute_hyperstructure")).toBe(true);
   });
 
-  it("registers trade aliases", () => {
-    expect(routes.has("create_trade")).toBe(true);
-    expect(routes.has("accept_trade")).toBe(true);
-    expect(routes.has("cancel_trade")).toBe(true);
-    expect(routes.has("travel_explorer")).toBe(true);
+  it("internal actions still get routes but no definitions", () => {
+    // explorer_move is internal: true — has a route but no definition
+    expect(routes.has("explorer_move")).toBe(true);
+    const types = new Set(definitions.map((d) => d.type));
+    expect(types.has("explorer_move")).toBe(false);
   });
 
   it("hides admin/config entrypoints", () => {
@@ -149,26 +147,25 @@ describe("overlays integrate with generateActions", () => {
       "send_resources",
       "pickup_resources",
       "claim_arrivals",
-      "create_explorer",
-      "add_to_explorer",
-      "delete_explorer",
-      "add_guard",
-      "delete_guard",
-      "move_explorer",
-      "swap_explorer_to_explorer",
-      "swap_explorer_to_guard",
-      "swap_guard_to_explorer",
-      "attack_explorer",
-      "attack_guard",
-      "guard_attack_explorer",
-      "raid",
+      "explorer_create",
+      "explorer_add",
+      "explorer_delete",
+      "guard_add",
+      "guard_delete",
+      "explorer_explorer_swap",
+      "explorer_guard_swap",
+      "guard_explorer_swap",
+      "attack_explorer_vs_explorer",
+      "attack_explorer_vs_guard",
+      "attack_guard_vs_explorer",
+      "raid_explorer_vs_guard",
       "create_order",
       "accept_order",
       "cancel_order",
       "create_building",
       "destroy_building",
-      "pause_production",
-      "resume_production",
+      "pause_building_production",
+      "resume_building_production",
       "buy_resources",
       "sell_resources",
       "add_liquidity",
@@ -177,7 +174,7 @@ describe("overlays integrate with generateActions", () => {
       "join_guild",
       "leave_guild",
       "update_whitelist",
-      "upgrade_realm",
+      "level_up",
       "contribute_hyperstructure",
     ];
 

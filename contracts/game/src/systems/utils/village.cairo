@@ -26,6 +26,7 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
 };
 use crate::systems::utils::structure::iStructureImpl;
 use crate::systems::utils::troop::iMercenariesImpl;
+use crate::utils::cartridge::vrf::Source;
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {
@@ -66,7 +67,8 @@ pub impl iVillageImpl of iVillageTrait {
 pub impl iVillageResourceImpl of iVillageResourceTrait {
     fn random(owner: starknet::ContractAddress, world: WorldStorage) -> u8 {
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+        let vrf_seed: u256 = rng_library_dispatcher
+            .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
         let resource: u8 = *rng_library_dispatcher
             .get_weighted_choice_u8(Self::resources().span(), Self::resource_probabilities().span(), 1, true, vrf_seed)
             .at(0);

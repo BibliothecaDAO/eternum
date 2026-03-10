@@ -104,7 +104,9 @@ import {
   shouldAcceptArmyTabSelectionAttempt,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
+import { resolveExploreCompletionPendingClearPlan, type TravelEffectType } from "./worldmap-travel-effect-policy";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
+import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import {
   resolveDuplicateTileReconcilePlan,
@@ -480,7 +482,8 @@ export default class WorldmapScene extends HexagonScene {
   private readonly hexGridMinBatch = 120;
   private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
-  private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void }> = new Map();
+  private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
+    new Map();
   private hasInitialized = false;
   private initialSetupPromise: Promise<void> | null = null;
   private cancelHexGridComputation?: () => void;
@@ -820,8 +823,12 @@ export default class WorldmapScene extends HexagonScene {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onStructureUpdate((update) => {
         this.incrementToriiBoundsCounter("structures");
+        const previousStructureOwner = this.getTrackedStructureOwner(update.entityId);
         this.updateStructureHexes(update);
         this.structureManager.updateStructureLabelFromStructureUpdate(update);
+        if (previousStructureOwner !== update.owner.address) {
+          this.syncAttachedArmiesForStructureOwner(update);
+        }
       }),
     );
 
@@ -1216,6 +1223,94 @@ export default class WorldmapScene extends HexagonScene {
     return undefined;
   }
 
+  private getTrackedStructureOwner(entityId: ID): ContractAddress | undefined {
+    const structurePosition = this.structuresPositions.get(entityId);
+    if (structurePosition) {
+      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
+    }
+
+    for (const rowMap of this.structureHexes.values()) {
+      for (const structure of rowMap.values()) {
+        if (structure.id === entityId) {
+          return structure.owner;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private getTrackedArmyOwner(entityId: ID): ContractAddress | undefined {
+    const armyPosition = this.armiesPositions.get(entityId);
+    if (armyPosition) {
+      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
+    }
+
+    for (const rowMap of this.armyHexes.values()) {
+      for (const army of rowMap.values()) {
+        if (army.id === entityId) {
+          return army.owner;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private syncAttachedArmiesForStructureOwner(update: {
+    entityId: ID;
+    owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  }): void {
+    const structureOwnerAddress = update.owner.address;
+    if (structureOwnerAddress === undefined) {
+      return;
+    }
+
+    const attachedArmyIds = new Set<ID>();
+
+    this.armyManager
+      .syncAttachedArmiesOwnerForStructure({
+        structureId: update.entityId,
+        ownerAddress: structureOwnerAddress,
+        ownerName: update.owner.ownerName,
+        guildName: update.owner.guildName,
+      })
+      .forEach((armyId) => attachedArmyIds.add(armyId));
+
+    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
+      if (ownerStructureId === update.entityId) {
+        attachedArmyIds.add(armyId);
+      }
+    });
+
+    attachedArmyIds.forEach((armyId) => {
+      const resolvedOwnerAddress = resolveAttachedArmyOwnerFromStructure({
+        existingArmyOwner: this.getTrackedArmyOwner(armyId),
+        incomingStructureOwner: structureOwnerAddress,
+      });
+
+      let armyPosition = this.armiesPositions.get(armyId);
+      if (!armyPosition) {
+        const army = this.armyManager.getArmy(armyId);
+        if (army) {
+          const normalized = army.hexCoords.getNormalized();
+          armyPosition = { col: normalized.x, row: normalized.y };
+        }
+      }
+
+      if (!armyPosition) {
+        return;
+      }
+
+      this.updateArmyHexes({
+        entityId: armyId,
+        hexCoords: armyPosition,
+        ownerAddress: resolvedOwnerAddress,
+        ownerStructureId: update.entityId,
+      });
+    });
+  }
+
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
@@ -1569,7 +1664,6 @@ export default class WorldmapScene extends HexagonScene {
       );
 
       let cleaned = false;
-      let unsubscribe: (() => void) | undefined;
       const effectStartedAtMs = performance.now();
       let delayedCleanupTimeout: ReturnType<typeof setTimeout> | undefined;
       let maxLifetimeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -1586,8 +1680,6 @@ export default class WorldmapScene extends HexagonScene {
         }
         end();
         this.travelEffects.delete(key);
-        unsubscribe?.();
-        unsubscribe = undefined;
 
         const tracked = this.travelEffectsByEntity.get(selectedEntityId);
         if (tracked?.key === key) {
@@ -1613,11 +1705,7 @@ export default class WorldmapScene extends HexagonScene {
       // Store the cleanup function with the hex coordinates as key
       this.travelEffects.set(key, cleanup);
 
-      if (isExplored) {
-        unsubscribe = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
-      }
-
-      this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup });
+      this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup, effectType });
       maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
 
       // Mark army as having pending movement transaction
@@ -1629,10 +1717,6 @@ export default class WorldmapScene extends HexagonScene {
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
-          // Transaction submitted successfully, cleanup visual effects
-          if (!isExplored) {
-            cleanup();
-          }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
@@ -1776,12 +1860,26 @@ export default class WorldmapScene extends HexagonScene {
       clearTimeout(fallbackTimeout);
       this.pendingArmyMovementFallbackTimeouts.delete(entityId);
     }
+
+    // Clear any lingering movement fx when pending state is cleared outside
+    // of normal movement-start handling (e.g., stale timeout).
+    this.travelEffectsByEntity.get(entityId)?.cleanup();
   }
 
   private markPendingArmyMovement(entityId: ID): void {
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
     this.schedulePendingArmyMovementFallback(entityId);
+  }
+
+  private hasPendingTravelEffectForHex(key: string): boolean {
+    for (const [entityId, trackedEffect] of this.travelEffectsByEntity.entries()) {
+      if (trackedEffect.key === key && this.pendingArmyMovements.has(entityId)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private schedulePendingArmyMovementFallback(entityId: ID): void {
@@ -2643,8 +2741,15 @@ export default class WorldmapScene extends HexagonScene {
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
 
-    // Remove from pending movements when position is updated from blockchain
-    if (this.pendingArmyMovements.has(entityId)) {
+    const movedToDifferentHex = !!oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
+
+    // End travel/explore FX as soon as the army starts moving (first onchain position change).
+    if (movedToDifferentHex) {
+      this.travelEffectsByEntity.get(entityId)?.cleanup();
+    }
+
+    // Remove from pending movements only after onchain position change.
+    if (movedToDifferentHex && this.pendingArmyMovements.has(entityId)) {
       this.clearPendingArmyMovement(entityId);
     }
   }
@@ -2752,8 +2857,17 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if there's a compass effect for this hex and end it
     const key = `${hexCoords.col},${hexCoords.row}`;
+    const pendingExploreEntities = resolveExploreCompletionPendingClearPlan({
+      exploredHexKey: key,
+      trackedEffectsByEntity: this.travelEffectsByEntity,
+      pendingArmyMovements: this.pendingArmyMovements,
+    });
+    for (const entityId of pendingExploreEntities) {
+      this.clearPendingArmyMovement(entityId);
+    }
+
     const endCompass = this.travelEffects.get(key);
-    if (endCompass) {
+    if (endCompass && !this.hasPendingTravelEffectForHex(key)) {
       endCompass();
     }
 

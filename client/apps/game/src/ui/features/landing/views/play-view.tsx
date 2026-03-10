@@ -3,6 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
+import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { useAccount } from "@starknet-react/core";
 import {
   BookOpen,
@@ -413,7 +414,8 @@ const PlayTabContent = ({
               hideHeader
               hideLegend
               layout="vertical"
-              sortRegisteredFirst
+              sortClaimableRewardsFirst
+              sortEndedNewestFirst
               onGamesResolved={onEndedGamesResolved}
             />
           </div>
@@ -603,7 +605,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
   };
 
   return (
-    <>
+    <MarketsProviders>
       <div className={cn("flex flex-col gap-6", className)}>
         {/* Tab content */}
         {renderContent()}
@@ -634,6 +636,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
           onRequireSignIn={handleRequireSignIn}
         />
       )}
-    </>
+    </MarketsProviders>
   );
 };

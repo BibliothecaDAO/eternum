@@ -177,6 +177,7 @@ export const RARITY_STYLES = {
     border: "border-rarity-common",
     glow: "border-2 border-rarity-common bg-rarity-common/15 shadow-[0_0_15px_rgba(132,132,132,0.4)]",
     hex: "#848484",
+    hotHex: "#d8d8d8",
   },
   uncommon: {
     text: "text-rarity-uncommon",
@@ -184,6 +185,7 @@ export const RARITY_STYLES = {
     border: "border-rarity-uncommon",
     glow: "border-2 border-rarity-uncommon bg-rarity-uncommon/20 shadow-[0_0_18px_rgba(108,201,94,0.5)]",
     hex: "#6cc95e",
+    hotHex: "#b8f2ad",
   },
   rare: {
     text: "text-rarity-rare",
@@ -191,6 +193,7 @@ export const RARITY_STYLES = {
     border: "border-rarity-rare",
     glow: "border-2 border-rarity-rare bg-rarity-rare/20 shadow-[0_0_22px_rgba(86,200,218,0.6)]",
     hex: "#56c8da",
+    hotHex: "#94f3ff",
   },
   epic: {
     text: "text-rarity-epic",
@@ -198,6 +201,7 @@ export const RARITY_STYLES = {
     border: "border-rarity-epic",
     glow: "border-2 border-rarity-epic bg-rarity-epic/20 shadow-[0_0_28px_rgba(186,55,212,0.6)]",
     hex: "#ba37d4",
+    hotHex: "#ff72ff",
   },
   legendary: {
     text: "text-rarity-legendary",
@@ -205,6 +209,7 @@ export const RARITY_STYLES = {
     border: "border-rarity-legendary",
     glow: "border-2 border-rarity-legendary bg-rarity-legendary/20 shadow-[0_0_35px_rgba(233,176,98,0.7)]",
     hex: "#e9b062",
+    hotHex: "#ffd97a",
   },
   mythic: {
     text: "text-rarity-mythic",
@@ -212,6 +217,7 @@ export const RARITY_STYLES = {
     border: "border-rarity-mythic",
     glow: "border-2 border-rarity-mythic bg-rarity-mythic/20 shadow-[0_0_40px_rgba(255,100,150,0.8)]",
     hex: "#ff6496",
+    hotHex: "#ff9ec0",
   },
 } as const;
 

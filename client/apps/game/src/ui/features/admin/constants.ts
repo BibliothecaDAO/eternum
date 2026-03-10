@@ -41,7 +41,7 @@ export const FACTORY_ADDRESSES: Record<ChainType, string> = {
 
 // Default max actions per chain (mirrors FACTORY_ADDRESSES pattern)
 const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
-  mainnet: 100,
+  mainnet: 70,
   sepolia: 20,
   slot: 300,
   slottest: 300,
@@ -58,7 +58,7 @@ const parsePositiveInt = (value?: string): number | null => {
 };
 
 const DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN: Record<ChainType, number> = {
-  mainnet: 2,
+  mainnet: 3,
   sepolia: 1,
   slot: 1,
   slottest: 1,
@@ -96,7 +96,7 @@ export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
     case "sepolia":
       return `${CARTRIDGE_API_BASE}/x/starknet/sepolia`;
     case "slot":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-3/katana`;
+      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-4/katana`;
     case "slottest":
       return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-test/katana`;
     default:

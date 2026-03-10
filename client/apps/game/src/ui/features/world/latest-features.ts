@@ -9,6 +9,34 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-06",
+    title: "Tournament Leaderboard Table Cleanup",
+    description:
+      "The Tournaments Score to Beat table now consistently shows only Rank, Player, and Score in the main leaderboard view, removing extra per-game columns from the grid.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-06",
+    title: "Proving Grounds Static Leaderboard",
+    description:
+      "The Tournaments Score to Beat leaderboard now supports static proving-grounds data for s0-game-1 through s0-game-4, including per-game points and chest counts for each player when live Torii endpoints are unavailable.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-06",
+    title: "Tournament Series Selection",
+    description:
+      "Score to Beat in the Tournaments tab now lets you select either individual games or full series, automatically expanding each series into its indexed games for faster multi-game leaderboard setup.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-06",
+    title: "Reliable Mainnet Realm Settlement",
+    description:
+      "Fixed cases where mainnet settlement could stop after the first realm. Settlement now resumes correctly from partial progress and waits for confirmed transactions so all expected realms are created.",
+    type: "fix",
+  },
+  {
     date: "2026-02-18",
     title: "Smoother Worldmap Chunking",
     description:

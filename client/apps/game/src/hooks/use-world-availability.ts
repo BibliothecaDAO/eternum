@@ -12,7 +12,7 @@ import { useQueries } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
@@ -21,11 +21,12 @@ const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_S
 const rpcProviderCache = new Map<string, RpcProvider>();
 
 /**
- * Calculate number of hyperstructures left to create based on max ring count and created count.
- * Formula: total = 1 + 6*1 + 6*2 + ... + 6*max_ring_count = 1 + 6*(1+2+...+max_ring_count) = 1 + 6*max_ring_count*(max_ring_count+1)/2
+ * Calculate number of hyperstructures left to create based on mode, max ring count, and created count.
+ * - 2-player mode: total = max_ring_count + 1 (rings 0..max_ring_count)
+ * - multi-player mode: total = 1 + 6*(1+2+...+max_ring_count)
  */
-const calculateHyperstructuresLeft = (maxRingCount: number, createdCount: number): number => {
-  const total = 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
+const calculateHyperstructuresLeft = (maxRingCount: number, createdCount: number, twoPlayerMode: boolean): number => {
+  const total = twoPlayerMode ? maxRingCount + 1 : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
   return Math.max(0, total - createdCount);
 };
 
@@ -260,6 +261,8 @@ const fetchWorldConfigMeta = async (
         meta.devModeOn = devVal != null && devVal !== 0;
       }
 
+      const twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+
       // Calculate hyperstructures left from max_ring_count
       const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
       if (maxRingCount > 0) {
@@ -270,14 +273,14 @@ const fetchWorldConfigMeta = async (
           if (globalsResponse.ok) {
             const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
             const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount);
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
           } else {
             // If no globals exist yet, all hyperstructures are available
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
           }
         } catch {
           // If query fails, calculate based on zero created
-          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
         }
       }
     }

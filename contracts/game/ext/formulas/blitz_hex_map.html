@@ -240,6 +240,11 @@
         </div>
 
         <div class="control-group">
+          <label for="twoPlayerMode">Two Player Mode (Exact Cairo):</label>
+          <input type="checkbox" id="twoPlayerMode" />
+        </div>
+
+        <div class="control-group">
           <label>Current Zoom:</label>
           <span id="zoomDisplay">100%</span>
         </div>
@@ -317,11 +322,11 @@
         </div>
         <div class="legend-item">
           <div class="legend-color" style="background-color: #ff8c00"></div>
-          <span>Ring 1 Hyperstructures (6 total)</span>
+          <span>Ring 1 Hyperstructures</span>
         </div>
         <div class="legend-item">
           <div class="legend-color" style="background-color: #ff4500"></div>
-          <span>Ring 2+ Hyperstructures (Ring N = N×6 total)</span>
+          <span>Ring 2+ Hyperstructures</span>
         </div>
         <div class="legend-item">
           <div
@@ -352,6 +357,11 @@
           <strong>Hyperstructures:</strong> 🏗️ Placed in hexagonal rings with Ring N containing N points per side × 6
           sides = N×6 total hyperstructures. Ring 0 has 1 center hyperstructure, Ring 1 has 6, Ring 2 has 12, Ring 3 has
           18, etc. Ring distance is fixed at 15 tiles.
+        </p>
+        <p>
+          <strong>2-Player Mode:</strong> Uses the current Cairo implementation exactly. Settlements: side 0 = west
+          triangle, side 1+ = east triangle. Hyperstructures: fixed max ring count = 2, producing exactly 3 positions
+          (center + 2 side positions at line distance 6).
         </p>
         <p><strong>Auto-Update:</strong> ✅ Map regenerates automatically when sliders change</p>
         <p>
@@ -494,14 +504,21 @@
       }
 
       class BlitzSettlementConfig {
-        constructor(baseDistance) {
+        constructor(baseDistance, twoPlayerMode = false) {
           this.baseDistance = baseDistance;
+          this.twoPlayerMode = twoPlayerMode;
           this.side = 0;
           this.step = 1;
           this.point = 1;
         }
 
         next() {
+          if (this.twoPlayerMode) {
+            // Blitz2PlayerSettlementConfigImpl::next
+            this.side += 1;
+            return;
+          }
+
           if (this.side === 5) {
             if (this.point === this.maxPoints()) {
               this.step += 1;
@@ -520,6 +537,10 @@
         }
 
         generateCoords() {
+          if (this.twoPlayerMode) {
+            return this.generateCoordsTwoPlayer();
+          }
+
           const startCoord = Coord.center();
           const [startDirection, triangleDirection] = START_DIRECTIONS[this.side];
 
@@ -562,6 +583,23 @@
 
             return [a, b, c];
           }
+        }
+
+        // Blitz2PlayerSettlementConfigImpl::generate_coords
+        generateCoordsTwoPlayer() {
+          const mapCenter = Coord.center();
+          if (this.side === 0) {
+            const a1 = mapCenter.neighborAfterDistance(Direction.West, 8);
+            const a2 = mapCenter.neighborAfterDistance(Direction.West, 4).neighborAfterDistance(Direction.SouthWest, 2);
+            const a3 = mapCenter.neighborAfterDistance(Direction.West, 4).neighborAfterDistance(Direction.NorthWest, 2);
+            return [a1, a2, a3];
+          }
+
+          // Exact current Cairo behavior: side >= 1 uses the "else" branch.
+          const b1 = mapCenter.neighborAfterDistance(Direction.East, 8);
+          const b2 = mapCenter.neighborAfterDistance(Direction.East, 4).neighborAfterDistance(Direction.SouthEast, 2);
+          const b3 = mapCenter.neighborAfterDistance(Direction.East, 4).neighborAfterDistance(Direction.NorthEast, 2);
+          return [b1, b2, b3];
         }
       }
 
@@ -1126,17 +1164,18 @@
       let animationId = null;
       let currentDisplayStep = 0; // 0 means show all
       let maxStep = 0;
+      let currentTwoPlayerMode = false;
 
-      function generateAllSettlements(baseDistance, maxPoints) {
+      function generateAllSettlements(baseDistance, maxPoints, twoPlayerMode) {
         const settlements = [];
-        const config = new BlitzSettlementConfig(baseDistance);
+        const config = new BlitzSettlementConfig(baseDistance, twoPlayerMode);
 
         for (let i = 0; i < maxPoints; i++) {
           try {
             const coords = config.generateCoords();
-            const isMirrored = config.point > Math.floor(config.maxPoints() / 2);
+            const isMirrored = config.twoPlayerMode ? false : config.point > Math.floor(config.maxPoints() / 2);
             settlements.push({
-              step: config.step,
+              step: config.twoPlayerMode ? config.side + 1 : config.step,
               side: config.side,
               point: config.point,
               coords: coords,
@@ -1154,12 +1193,13 @@
 
       // BlitzHypersSettlementConfig class matching the Cairo implementation
       class BlitzHypersSettlementConfig {
-        constructor(ringDistance = 15) {
+        constructor(ringDistance = 15, twoPlayerMode = false) {
           this.max_ring_count = 0;
           this.current_ring_count = 0;
           this.side = 5;
           this.point = 1;
           this.ring_distance = ringDistance;
+          this.two_player_mode = twoPlayerMode;
         }
 
         isValidRing() {
@@ -1167,6 +1207,12 @@
         }
 
         next() {
+          if (this.two_player_mode) {
+            // Blitz2PlayerHypersSettlementConfigImpl::next
+            this.current_ring_count += 1;
+            return;
+          }
+
           if (this.point >= this.current_ring_count) {
             this.point = 1;
             if (this.side === 5) {
@@ -1185,6 +1231,20 @@
         }
 
         nextCoord() {
+          if (this.two_player_mode) {
+            // Blitz2PlayerHypersSettlementConfigImpl::next_coord
+            if (this.current_ring_count === 0) {
+              return Coord.center();
+            }
+
+            const startDirections = [
+              [Direction.NorthEast, Direction.West],
+              [Direction.SouthEast, Direction.West],
+            ];
+            const [startDirection, triangleDirection] = startDirections[this.current_ring_count - 1];
+            return Coord.center().neighborAfterDistance(startDirection, 6).neighborAfterDistance(triangleDirection, 3);
+          }
+
           const startCoord = Coord.center();
           const startDirections = [
             [Direction.East, Direction.NorthWest],
@@ -1203,10 +1263,10 @@
         }
       }
 
-      function generateHyperstructures(ringDistance, maxRings) {
+      function generateHyperstructures(ringDistance, maxRings, twoPlayerMode) {
         const hyperstructures = [];
-        const config = new BlitzHypersSettlementConfig(ringDistance);
-        config.max_ring_count = maxRings;
+        const config = new BlitzHypersSettlementConfig(ringDistance, twoPlayerMode);
+        config.max_ring_count = twoPlayerMode ? 2 : maxRings;
 
         // Generate hyperstructures using the new algorithm
         let count = 0;
@@ -1281,9 +1341,14 @@
         MIRROR_SECOND_STEP_TILE_DISTANCE = parseInt(document.getElementById("mirrorSecondDistance").value);
       }
 
+      function isTwoPlayerMode() {
+        return document.getElementById("twoPlayerMode").checked;
+      }
+
       function generateMap() {
         console.log("generateMap() called"); // Debug log
 
+        const twoPlayerMode = isTwoPlayerMode();
         const baseDistance = parseInt(document.getElementById("baseDistance").value);
         const maxPoints = parseInt(document.getElementById("maxPoints").value);
         const ringDistance = parseInt(document.getElementById("ringDistance").value);
@@ -1301,6 +1366,7 @@
           hyperstructureRings,
           hexSize,
           showGrid,
+          twoPlayerMode,
           STEP_TILE_DISTANCE,
           REALM_TILE_RADIUS,
           MIRROR_FIRST_STEP_TILE_DISTANCE,
@@ -1319,7 +1385,7 @@
           return; // Skip invalid inputs
         }
 
-        if (baseDistance % 2 !== 0) {
+        if (!twoPlayerMode && baseDistance % 2 !== 0) {
           console.log("Correcting odd base distance");
           document.getElementById("baseDistance").value = baseDistance + 1;
           updateSliderValue("baseDistance");
@@ -1335,12 +1401,13 @@
         try {
           renderer.setHexSize(hexSize);
           renderer.setShowGrid(showGrid);
+          currentTwoPlayerMode = twoPlayerMode;
 
           // Generate settlements
-          currentSettlements = generateAllSettlements(baseDistance, maxPoints);
+          currentSettlements = generateAllSettlements(baseDistance, maxPoints, twoPlayerMode);
 
           // Generate hyperstructures
-          const hyperstructures = generateHyperstructures(ringDistance, hyperstructureRings);
+          const hyperstructures = generateHyperstructures(ringDistance, hyperstructureRings, twoPlayerMode);
 
           renderer.drawSettlementMap(currentSettlements, -1, hyperstructures);
 
@@ -1350,7 +1417,11 @@
           maxStep = currentSettlements.length > 0 ? Math.max(...currentSettlements.map((s) => s.step)) : 0;
 
           // Update info with success
-          configElement.innerHTML = `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+          if (twoPlayerMode) {
+            configElement.innerHTML = `✅ 2-player mode: generated ${currentSettlements.length} settlement calls and ${hyperstructures.length} hyperstructures (center + 2 side positions). Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+          } else {
+            configElement.innerHTML = `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+          }
           configElement.style.color = "#4CAF50";
 
           // Reset color after a moment
@@ -1406,16 +1477,25 @@
 
         if (currentDisplayStep === 0) {
           const totalSettlements = currentSettlements.length;
-          const mirroredCount = currentSettlements.filter((s) => s.isMirrored).length;
-          const normalCount = totalSettlements - mirroredCount;
-          stepDetails.innerHTML = `All ${maxStep} steps shown<br/>${totalSettlements} total settlements (${normalCount} normal, ${mirroredCount} mirrored)`;
+          if (currentTwoPlayerMode) {
+            stepDetails.innerHTML = `2-player mode<br/>${totalSettlements} settlement calls shown`;
+          } else {
+            const mirroredCount = currentSettlements.filter((s) => s.isMirrored).length;
+            const normalCount = totalSettlements - mirroredCount;
+            stepDetails.innerHTML = `All ${maxStep} steps shown<br/>${totalSettlements} total settlements (${normalCount} normal, ${mirroredCount} mirrored)`;
+          }
         } else {
           const stepSettlements = currentSettlements.filter((s) => s.step === currentDisplayStep);
-          const mirroredInStep = stepSettlements.filter((s) => s.isMirrored).length;
-          const normalInStep = stepSettlements.length - mirroredInStep;
-          const pointsInStep = stepSettlements.length > 0 ? stepSettlements[0].step * 2 : 0;
-
-          stepDetails.innerHTML = `Step ${currentDisplayStep}<br/>${stepSettlements.length} settlements (${normalInStep} normal, ${mirroredInStep} mirrored)<br/>Max points per side: ${pointsInStep}`;
+          if (currentTwoPlayerMode) {
+            const side = stepSettlements.length > 0 ? stepSettlements[0].side : "-";
+            const coordCount = stepSettlements.reduce((acc, s) => acc + s.coords.length, 0);
+            stepDetails.innerHTML = `Call ${currentDisplayStep}<br/>${stepSettlements.length} settlement call(s), ${coordCount} coord(s)<br/>Cairo side value: ${side}`;
+          } else {
+            const mirroredInStep = stepSettlements.filter((s) => s.isMirrored).length;
+            const normalInStep = stepSettlements.length - mirroredInStep;
+            const pointsInStep = stepSettlements.length > 0 ? stepSettlements[0].step * 2 : 0;
+            stepDetails.innerHTML = `Step ${currentDisplayStep}<br/>${stepSettlements.length} settlements (${normalInStep} normal, ${mirroredInStep} mirrored)<br/>Max points per side: ${pointsInStep}`;
+          }
         }
       }
 
@@ -1424,6 +1504,25 @@
 
         if (currentSettlements.length === 0) {
           stepStatsContent.innerHTML = "Generate settlements to see step breakdown";
+          return;
+        }
+
+        if (currentTwoPlayerMode) {
+          const signatures = new Set(
+            currentSettlements.map((s) =>
+              s.coords
+                .map((c) => `${c.x}:${c.y}`)
+                .sort()
+                .join("|"),
+            ),
+          );
+          let statsHtml = `<br/><div><strong>2-player exact code path:</strong> side 0 => west triangle, side 1+ => east triangle.</div>`;
+          statsHtml += `<div style="margin-top: 5px;"><strong>Settlement calls:</strong> ${currentSettlements.length}</div>`;
+          statsHtml += `<div style="margin-top: 5px;"><strong>Unique coordinate groups:</strong> ${signatures.size}</div>`;
+          if (currentSettlements.length > 2) {
+            statsHtml += `<div style="margin-top: 5px; color: #ff9800;">Calls after #2 reuse the east triangle (matches current Cairo else branch).</div>`;
+          }
+          stepStatsContent.innerHTML = statsHtml;
           return;
         }
 
@@ -1563,6 +1662,7 @@
           hexSize: document.getElementById("hexSize"),
         };
         const showGridInput = document.getElementById("showGrid");
+        const twoPlayerModeInput = document.getElementById("twoPlayerMode");
 
         // Setup listeners for each slider
         Object.keys(sliders).forEach((key) => {
@@ -1574,7 +1674,7 @@
             addInputFeedback(this);
 
             // Special handling for base distance (must be even)
-            if (key === "baseDistance") {
+            if (key === "baseDistance" && !isTwoPlayerMode()) {
               const value = parseInt(this.value);
               if (value % 2 !== 0) {
                 this.value = value + 1;
@@ -1592,7 +1692,7 @@
               const value = parseInt(this.value);
               if (!isNaN(value) && value > 0) {
                 // For base distance, only update if even
-                if (key === "baseDistance" && value % 2 !== 0) {
+                if (key === "baseDistance" && !isTwoPlayerMode() && value % 2 !== 0) {
                   return;
                 }
 
@@ -1609,6 +1709,12 @@
           console.log("Show grid changed:", this.checked);
           renderer.setShowGrid(this.checked);
           renderer.redraw();
+        });
+
+        // Two-player mode toggle
+        twoPlayerModeInput.addEventListener("change", function () {
+          console.log("Two player mode changed:", this.checked);
+          generateMap();
         });
 
         // Step slider - navigate through steps

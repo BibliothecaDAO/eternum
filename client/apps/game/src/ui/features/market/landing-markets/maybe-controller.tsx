@@ -1,22 +1,31 @@
 import { useMemo } from "react";
 
-import { useControllers } from "@/pm/hooks/controllers/use-controllers";
+import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
 import { shortAddress } from "@/pm/utils";
 
-export function MaybeController({ address, className, ...props }: { address: string; className?: string }) {
-  const { findController } = useControllers();
+export function MaybeController({
+  address,
+  className,
+  showAddress = true,
+  ...props
+}: {
+  address: string;
+  className?: string;
+  showAddress?: boolean;
+}) {
+  const controllers = useOptionalControllers();
 
   const label = useMemo(() => {
-    const controller = findController(address);
+    const controller = controllers?.findController(address);
     if (controller) {
-      return `${controller.username} (${shortAddress(address)})`;
+      return showAddress ? `${controller.username} (${shortAddress(address)})` : controller.username;
     }
     try {
       return shortAddress(address);
     } catch {
       return address;
     }
-  }, [address, findController]);
+  }, [address, controllers, showAddress]);
 
   return (
     <div className={className} {...props}>

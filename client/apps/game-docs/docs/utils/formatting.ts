@@ -28,7 +28,10 @@ export const formatNumber = (num: number, decimals: number): string => {
   return str;
 };
 
-export function formatNumberWithCommas(number: number): string {
+export function formatNumberWithCommas(number?: number | null): string {
+  if (typeof number !== "number" || Number.isNaN(number)) {
+    return "0";
+  }
   return number.toLocaleString("en-US");
 }
 

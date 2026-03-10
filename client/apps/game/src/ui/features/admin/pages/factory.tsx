@@ -365,6 +365,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   );
   const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
+  const [twoPlayerModeOverrides, setTwoPlayerModeOverrides] = useState<Record<string, boolean>>({});
   const [seasonBridgeCloseAfterEndSecondsOverrides, setSeasonBridgeCloseAfterEndSecondsOverrides] = useState<
     Record<string, string>
   >({});
@@ -1712,6 +1713,38 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               Controls settlement spawning behavior.
                                             </p>
                                           </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Two Player Mode
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                id={`two-player-mode-${name}`}
+                                                type="checkbox"
+                                                checked={
+                                                  Object.prototype.hasOwnProperty.call(twoPlayerModeOverrides, name)
+                                                    ? !!twoPlayerModeOverrides[name]
+                                                    : !!eternumConfig.settlement?.two_player_mode
+                                                }
+                                                onChange={(e) =>
+                                                  setTwoPlayerModeOverrides((p) => ({
+                                                    ...p,
+                                                    [name]: e.target.checked,
+                                                  }))
+                                                }
+                                                className="h-4 w-4 accent-blue-600"
+                                              />
+                                              <label
+                                                htmlFor={`two-player-mode-${name}`}
+                                                className="text-xs text-gold/90"
+                                              >
+                                                Enable two player mode for this world
+                                              </label>
+                                            </div>
+                                            <p className="text-[10px] text-gold/60">
+                                              Mutually exclusive with single realm mode.
+                                            </p>
+                                          </div>
                                         </div>
 
                                         {/* Blitz Registration Fee Configuration */}
@@ -1786,12 +1819,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder="30"
+                                              placeholder="24"
                                               value={
                                                 registrationCountMaxOverrides[name] ??
                                                 String(
                                                   (eternumConfig as any)?.blitz?.registration?.registration_count_max ??
-                                                    30,
+                                                    24,
                                                 )
                                               }
                                               onChange={(e) =>
@@ -1802,7 +1835,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               }
                                               className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-gold/60">Default: 30.</p>
+                                            <p className="text-[10px] text-gold/60">Default: 24.</p>
                                           </div>
                                         </div>
 
@@ -2213,6 +2246,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   singleRealmModeOverrides,
                                                   name,
                                                 );
+                                                const hasTwoPlayerOverride = Object.prototype.hasOwnProperty.call(
+                                                  twoPlayerModeOverrides,
+                                                  name,
+                                                );
                                                 const hasDurationHoursOverride = Object.prototype.hasOwnProperty.call(
                                                   durationHoursOverrides,
                                                   name,
@@ -2256,6 +2293,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     factoryAddress: factoryAddressOverrides[name],
                                                     singleRealmMode: hasSingleRealmOverride
                                                       ? !!singleRealmModeOverrides[name]
+                                                      : undefined,
+                                                    twoPlayerMode: hasTwoPlayerOverride
+                                                      ? !!twoPlayerModeOverrides[name]
                                                       : undefined,
                                                     seasonBridgeCloseAfterEndSeconds:
                                                       seasonBridgeCloseAfterEndSecondsOverrides[name],

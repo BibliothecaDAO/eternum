@@ -13,6 +13,7 @@ import type {
 import { MarketClass } from "../../class";
 import { useConfig } from "../../providers";
 import { useDojoSdk } from "../dojo/use-dojo-sdk";
+import { getPmSqlApi } from "../queries";
 
 interface UseMarketResult {
   market: MarketClass | undefined;
@@ -109,6 +110,12 @@ export const useMarket = (marketId: bigint): UseMarketResult => {
   const fetchConditionResolution = useCallback(
     async (marketData: Market) => {
       try {
+        const conditionIdHex = addAddressPadding(
+          `0x${BigInt(marketData.condition_id || 0).toString(16)}`,
+        ).toLowerCase();
+        const questionIdHex = addAddressPadding(`0x${BigInt(marketData.question_id || 0).toString(16)}`).toLowerCase();
+        const oracleHex = addAddressPadding(`0x${BigInt(marketData.oracle || 0).toString(16)}`).toLowerCase();
+
         const conditionId_u256 = uint256.bnToUint256(marketData.condition_id || 0);
         const questionId_u256 = uint256.bnToUint256(marketData.question_id || 0);
 
@@ -131,7 +138,26 @@ export const useMarket = (marketId: bigint): UseMarketResult => {
 
         if (items[0]?.models.pm?.ConditionResolution) {
           setConditionResolution(items[0].models.pm.ConditionResolution as ConditionResolution);
+          return;
         }
+
+        // Torii SDK key query can miss rows for some markets; fallback to SQL by composite keys.
+        const sqlApi = getPmSqlApi();
+        const resolutionRow = await sqlApi.fetchConditionResolutionByKeys(conditionIdHex, oracleHex, questionIdHex);
+        if (!resolutionRow) return;
+
+        const rawPayouts = JSON.parse(resolutionRow.payout_numerators);
+        const payoutNumerators = Array.isArray(rawPayouts)
+          ? rawPayouts.map((value) => BigInt(value as string | number))
+          : [];
+
+        setConditionResolution({
+          condition_id: resolutionRow.condition_id,
+          oracle: resolutionRow.oracle,
+          question_id: resolutionRow.question_id,
+          outcome_slot_count: BigInt(resolutionRow.outcome_slot_count),
+          payout_numerators: payoutNumerators,
+        } as unknown as ConditionResolution);
       } catch (error) {
         console.error("[useMarket] Failed to fetch condition resolution:", error);
       }

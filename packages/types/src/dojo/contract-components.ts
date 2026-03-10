@@ -1558,6 +1558,7 @@ export function defineContractComponents(world: World) {
             step: RecsType.Number,
             point: RecsType.Number,
             single_realm_mode: RecsType.Boolean,
+            two_player_mode: RecsType.Boolean,
           },
           blitz_hypers_settlement_config: {
             max_ring_count: RecsType.Number,
@@ -1779,6 +1780,7 @@ export function defineContractComponents(world: World) {
               "u32", // BlitzSettlementConfig step
               "u32", // BlitzSettlementConfig point
               "bool", // BlitzSettlementConfig single_realm_mode
+              "bool", // BlitzSettlementConfig two_player_mode
               "u8", // BlitzHypersSettlementConfig max_ring_count
               "u8", // BlitzHypersSettlementConfig current_ring_count
               "u8", // BlitzHypersSettlementConfig point

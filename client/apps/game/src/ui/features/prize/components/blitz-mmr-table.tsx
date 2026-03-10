@@ -5,26 +5,33 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { hash } from "starknet";
 import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
 
 type PlayerMMR = { address: bigint; mmr: bigint };
+type MmrSnapshot = { key: string; rows: PlayerMMR[] };
+type RpcCallResponse = {
+  id: number;
+  result?: Array<string | number>;
+  error?: unknown;
+};
 
 // Batch size for JSON-RPC calls
 const BATCH_SIZE = 20;
 
 // Selector for get_player_mmr function
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
+let cachedMmrSnapshot: MmrSnapshot | null = null;
 
 export const BlitzMMRTable = () => {
   const {
     setup: { components },
   } = useDojo();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [playerMMRs, setPlayerMMRs] = useState<PlayerMMR[]>([]);
+  const [isLoading, setIsLoading] = useState(cachedMmrSnapshot == null);
+  const [playerMMRs, setPlayerMMRs] = useState<PlayerMMR[]>(() => cachedMmrSnapshot?.rows ?? []);
   const [error, setError] = useState<string | null>(null);
 
   // Get RPC URL from config
@@ -74,61 +81,72 @@ export const BlitzMMRTable = () => {
       return points !== undefined && points > 0n;
     });
   }, [registeredPlayerAddresses, playerPointsByPlayer]);
+  const registeredPlayersSignature = useMemo(
+    () =>
+      registeredPlayers
+        .map((address) => toHexString(address).toLowerCase())
+        .toSorted((a, b) => a.localeCompare(b))
+        .join(","),
+    [registeredPlayers],
+  );
 
   /**
    * Fetch MMRs for a batch of players using JSON-RPC batch request
    */
-  const fetchMMRBatch = async (players: bigint[], tokenAddress: string): Promise<PlayerMMR[]> => {
-    const batchRequest = players.map((playerAddress, idx) => ({
-      jsonrpc: "2.0",
-      id: idx,
-      method: "starknet_call",
-      params: [
-        {
-          contract_address: tokenAddress,
-          entry_point_selector: GET_PLAYER_MMR_SELECTOR,
-          calldata: [toHexString(playerAddress)],
-        },
-        "pre_confirmed",
-      ],
-    }));
+  const fetchMMRBatch = useCallback(
+    async (players: bigint[], tokenAddress: string): Promise<PlayerMMR[]> => {
+      const batchRequest = players.map((playerAddress, idx) => ({
+        jsonrpc: "2.0",
+        id: idx,
+        method: "starknet_call",
+        params: [
+          {
+            contract_address: tokenAddress,
+            entry_point_selector: GET_PLAYER_MMR_SELECTOR,
+            calldata: [toHexString(playerAddress)],
+          },
+          "pre_confirmed",
+        ],
+      }));
 
-    const response = await fetch(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(batchRequest),
-    });
+      const response = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batchRequest),
+      });
 
-    if (!response.ok) {
-      throw new Error(`RPC request failed: ${response.status}`);
-    }
-
-    const results = await response.json();
-    const resultsArray = Array.isArray(results) ? results : [results];
-
-    const playerMMRs: PlayerMMR[] = [];
-    for (let idx = 0; idx < players.length; idx++) {
-      const playerAddress = players[idx];
-      const result = resultsArray.find((r: any) => r.id === idx);
-
-      if (result?.error) {
-        throw new Error(`Failed to fetch MMR for ${toHexString(playerAddress)}: ${JSON.stringify(result.error)}`);
+      if (!response.ok) {
+        throw new Error(`RPC request failed: ${response.status}`);
       }
 
-      if (!result?.result) {
-        throw new Error(`No result for player ${toHexString(playerAddress)}`);
+      const results = (await response.json()) as RpcCallResponse | RpcCallResponse[];
+      const resultsArray: RpcCallResponse[] = Array.isArray(results) ? results : [results];
+
+      const playerMMRs: PlayerMMR[] = [];
+      for (let idx = 0; idx < players.length; idx++) {
+        const playerAddress = players[idx];
+        const result = resultsArray.find((r) => r.id === idx);
+
+        if (result?.error) {
+          throw new Error(`Failed to fetch MMR for ${toHexString(playerAddress)}: ${JSON.stringify(result.error)}`);
+        }
+
+        if (!result?.result) {
+          throw new Error(`No result for player ${toHexString(playerAddress)}`);
+        }
+
+        // u256 is returned as two felts [low, high]
+        const resultArray = result.result;
+        const low = BigInt(resultArray[0] ?? 0);
+        const high = BigInt(resultArray[1] ?? 0);
+        const mmr = low + (high << 128n);
+        playerMMRs.push({ address: playerAddress, mmr });
       }
 
-      // u256 is returned as two felts [low, high]
-      const resultArray = result.result;
-      const low = BigInt(resultArray[0] || "0");
-      const high = BigInt(resultArray[1] || "0");
-      const mmr = low + (high << 128n);
-      playerMMRs.push({ address: playerAddress, mmr });
-    }
-
-    return playerMMRs;
-  };
+      return playerMMRs;
+    },
+    [rpcUrl],
+  );
 
   // Fetch all player MMRs on mount or when dependencies change
   useEffect(() => {
@@ -137,8 +155,16 @@ export const BlitzMMRTable = () => {
       return;
     }
 
+    const fetchKey = `${rpcUrl}|${mmrTokenAddress}|${registeredPlayersSignature}`;
+    if (cachedMmrSnapshot?.key === fetchKey) {
+      setPlayerMMRs(cachedMmrSnapshot.rows);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchAllMMRs = async () => {
-      setIsLoading(true);
+      setIsLoading(cachedMmrSnapshot == null);
       setError(null);
 
       try {
@@ -156,23 +182,24 @@ export const BlitzMMRTable = () => {
         }
 
         // Sort by MMR descending (highest first)
-        allPlayerMMRs.sort((a, b) => {
+        const sortedPlayerMMRs = allPlayerMMRs.toSorted((a, b) => {
           if (a.mmr > b.mmr) return -1;
           if (a.mmr < b.mmr) return 1;
           return 0;
         });
 
-        setPlayerMMRs(allPlayerMMRs);
-      } catch (e: any) {
+        cachedMmrSnapshot = { key: fetchKey, rows: sortedPlayerMMRs };
+        setPlayerMMRs(sortedPlayerMMRs);
+      } catch (e: unknown) {
         console.error("Failed to fetch player MMRs:", e);
-        setError(e?.message || String(e));
+        setError(e instanceof Error ? e.message : String(e));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAllMMRs();
-  }, [mmrTokenAddress, registeredPlayers, rpcUrl]);
+  }, [fetchMMRBatch, mmrTokenAddress, registeredPlayers, registeredPlayersSignature, rpcUrl]);
 
   // Format MMR for display (convert from token units with 18 decimals)
   const formatMMR = (mmr: bigint): string => {
@@ -204,7 +231,7 @@ export const BlitzMMRTable = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="max-h-[700px] overflow-y-auto">
+      <div>
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-dark/90">
             <tr className="text-gold/70 border-b border-gold/10">

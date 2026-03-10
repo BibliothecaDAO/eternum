@@ -216,7 +216,7 @@ export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.V
 const BLITZ_REGISTRATION_FEE_TOKEN = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords!;
 const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8";
 const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * 10n ** 18n; // 10 LORDS/STRK
-const BLITZ_REGISTRATION_COUNT_MAX = 30;
+const BLITZ_REGISTRATION_COUNT_MAX = 24;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
 const BLITZ_REGISTRATION_PERIOD_SECONDS = 3 * ONE_HOUR_IN_SECONDS;
 
@@ -389,6 +389,7 @@ export const EternumGlobalConfig: Config = {
     base_distance: SETTLEMENT_BASE_DISTANCE,
     subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
     single_realm_mode: false,
+    two_player_mode: false,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,
