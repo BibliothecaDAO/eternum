@@ -14,11 +14,11 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { EternumClient } from "@bibliothecadao/client";
-import { packTileSeed } from "@bibliothecadao/types";
+import { packTileSeed, getNeighborOffsets } from "@bibliothecadao/types";
 import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
-import { isExplorer } from "../world/occupier.js";
+import { isExplorer, isStructure, isChest } from "../world/occupier.js";
 import { findPath, buildTileIndex } from "../world/pathfinding.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 
@@ -55,6 +55,47 @@ function tileTravelCost(biomeId: number, troopType: string, stamina: StaminaConf
   }
 }
 
+function describeOccupier(occupierType: number): string {
+  if (isStructure(occupierType)) return "structure";
+  if (isExplorer(occupierType)) return "army";
+  if (isChest(occupierType)) return "chest";
+  if (occupierType === 33) return "quest";
+  if (occupierType === 35) return "spire";
+  return "entity";
+}
+
+function describeAdjacent(
+  pos: { x: number; y: number },
+  tiles: Map<string, { occupierType: number; biome: number }>,
+  explored: Set<string>,
+): string {
+  const offsets = getNeighborOffsets(pos.y);
+  const counts = { unexplored: 0, empty: 0, structures: 0, armies: 0, chests: 0, other: 0 };
+
+  for (const { i, j } of offsets) {
+    const key = `${pos.x + i},${pos.y + j}`;
+    if (!explored.has(key)) {
+      counts.unexplored++;
+      continue;
+    }
+    const t = tiles.get(key);
+    if (!t || t.occupierType === 0) { counts.empty++; continue; }
+    if (isStructure(t.occupierType)) counts.structures++;
+    else if (isExplorer(t.occupierType)) counts.armies++;
+    else if (isChest(t.occupierType)) counts.chests++;
+    else counts.other++;
+  }
+
+  const parts: string[] = [];
+  if (counts.unexplored > 0) parts.push(`${counts.unexplored} unexplored`);
+  if (counts.structures > 0) parts.push(`${counts.structures} structures`);
+  if (counts.armies > 0) parts.push(`${counts.armies} armies`);
+  if (counts.chests > 0) parts.push(`${counts.chests} chests`);
+  if (counts.empty > 0) parts.push(`${counts.empty} empty`);
+  if (counts.other > 0) parts.push(`${counts.other} other`);
+  return parts.length > 0 ? `Adjacent: ${parts.join(", ")}` : "Adjacent: nothing visible";
+}
+
 export function createMoveTool(
   client: EternumClient,
   mapCtx: MapContext,
@@ -67,9 +108,10 @@ export function createMoveTool(
     label: "Move Army",
     description:
       "Move one of your armies to a target tile. Can move through explored tiles or explore into adjacent unexplored tiles. " +
+      "If the target is occupied (structure, army, chest), automatically stops 1 hex away. " +
       "Use your army's line:col from YOUR ENTITIES as from_row:from_col, and the destination as to_row:to_col. " +
       "Pathfinds automatically around obstacles. Exploring new tiles may yield rewards. " +
-      "Returns: success/failure, new position, stamina remaining.",
+      "Returns: success/failure, new position, stamina remaining, adjacent tiles.",
     parameters: Type.Object({
       from_row: Type.Number({ description: "Line number of your army on the map" }),
       from_col: Type.Number({ description: "Column of your army on the map" }),
@@ -167,13 +209,46 @@ export function createMoveTool(
           throw new Error(`No path to ${to_row}:${to_col}. Target may be blocked, unexplored, or unreachable.`);
         }
 
+        // If destination is occupied, stop 1 hex before (can't move onto occupied tiles)
+        const targetTile = mapCtx.snapshot.tileAt(to_row, to_col);
+        const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
+
+        if (targetIsOccupied) {
+          if (pathResult.path.length <= 2) {
+            // Path is [start, target] — already adjacent, no move needed
+            throw new Error(
+              `Already adjacent to ${describeOccupier(targetTile.occupierType)} at ${to_row}:${to_col}. Use attack or inspect.`,
+            );
+          }
+
+          // Trim the last step — stop adjacent to the target
+          const trimmedPath = pathResult.path.slice(0, -1);
+          const trimmedDirs = pathResult.directions.slice(0, -1);
+
+          let trimmedCost = 0;
+          for (let i = 1; i < trimmedPath.length; i++) {
+            const key = `${trimmedPath[i].x},${trimmedPath[i].y}`;
+            trimmedCost += tileCost(key);
+          }
+
+          pathResult = {
+            path: trimmedPath,
+            directions: trimmedDirs,
+            distance: trimmedDirs.length,
+            staminaCost: trimmedCost,
+            reachedLimit: false,
+          };
+        }
+
         // If path exceeds stamina, truncate to move as far as we can afford
         if (pathResult.reachedLimit) {
           let budget = projectedStamina;
           let truncateAt = 0; // how many steps we can take
           for (let i = 1; i < pathResult.path.length; i++) {
             const key = `${pathResult.path[i].x},${pathResult.path[i].y}`;
-            const cost = tileCost(key);
+            // Final step into unexplored tile costs exploreCost, not travel cost
+            const isExploreStep = i === pathResult.path.length - 1 && !explored.has(key);
+            const cost = isExploreStep ? gameConfig.stamina.exploreCost : tileCost(key);
             if (budget < cost) break;
             budget -= cost;
             truncateAt = i;
@@ -190,19 +265,25 @@ export function createMoveTool(
           };
         }
 
-        const staminaCost = pathResult.staminaCost;
-        const reachedTarget =
-          pathResult.path[pathResult.path.length - 1].x === target.x &&
-          pathResult.path[pathResult.path.length - 1].y === target.y;
-
-        // ── Determine if this is a travel or explore move ──
-
         const endPos = pathResult.path[pathResult.path.length - 1];
         const endKey = `${endPos.x},${endPos.y}`;
         const isExploreMove = !explored.has(endKey);
 
+        // Adjust stamina cost: A* used travel cost for the explore step,
+        // but actual explore cost may differ
+        let staminaCost = pathResult.staminaCost;
+        if (isExploreMove && pathResult.path.length > 1) {
+          const lastTravelCost = tileCost(endKey);
+          staminaCost = staminaCost - lastTravelCost + gameConfig.stamina.exploreCost;
+        }
+
+        const reachedTarget =
+          endPos.x === target.x && endPos.y === target.y;
+
         const staminaAfter = projectedStamina - staminaCost;
         const movesAfter = Math.floor(staminaAfter / gameConfig.stamina.travelCost);
+
+        console.warn(`[MOVE] Food cost check not implemented — ensure realm has sufficient wheat/fish for ${pathResult.distance} steps.`);
 
         try {
           if (isExploreMove) {
@@ -269,17 +350,38 @@ export function createMoveTool(
           // Non-fatal — stale map is better than crashing
         }
 
+        // Describe what's adjacent to the new position
+        const gridLookup = new Map<string, { occupierType: number; biome: number }>();
+        if (mapCtx.snapshot) {
+          for (const t of mapCtx.snapshot.tiles) {
+            gridLookup.set(`${t.position.x},${t.position.y}`, t);
+          }
+        }
+        const adjacentInfo = mapCtx.snapshot
+          ? describeAdjacent(endPos, gridLookup, explored)
+          : "";
+
         const action = isExploreMove ? "Explored" : "Moved";
-        const statusLine = reachedTarget
-          ? `${action} ${pathResult.distance} steps to ${to_row}:${to_col}.`
-          : `${action} ${pathResult.distance} steps toward ${to_row}:${to_col} (ran out of stamina — call move_army again next turn to continue).`;
+        let statusLine: string;
+        if (targetIsOccupied) {
+          statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${describeOccupier(targetTile!.occupierType)} at ${to_row}:${to_col}. You can now attack or inspect.`;
+        } else if (reachedTarget) {
+          statusLine = `${action} ${pathResult.distance} steps to ${to_row}:${to_col}.`;
+        } else {
+          statusLine = `${action} ${pathResult.distance} steps toward ${to_row}:${to_col} (ran out of stamina — call move_army again next turn to continue).`;
+        }
+
+        const responseLines = [
+          statusLine,
+          `Stamina: ${projectedStamina} → ${staminaAfter} (${movesAfter} moves remaining)`,
+        ];
+        if (adjacentInfo) responseLines.push(adjacentInfo);
+
         return {
           content: [
             {
               type: "text" as const,
-              text: [statusLine, `Stamina: ${projectedStamina} → ${staminaAfter} (${movesAfter} moves remaining)`].join(
-                "\n",
-              ),
+              text: responseLines.join("\n"),
             },
           ],
           details: {
@@ -290,6 +392,7 @@ export function createMoveTool(
             staminaCost,
             staminaAfter,
             explored: isExploreMove,
+            stoppedAdjacentTo: targetIsOccupied ? describeOccupier(targetTile!.occupierType) : undefined,
           },
         };
       }
