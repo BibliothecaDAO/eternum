@@ -129,7 +129,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
   return (
     <>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Assets Section */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Realms Card */}
@@ -161,7 +161,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex gap-2 pt-4">
+            <CardFooter className="flex gap-2 pt-2">
               <Link to={`/realms/bridge`} className="flex-1">
                 <Button variant="outline" size="sm" className="w-full">
                   <BridgeIcon className="mr-2 h-4 w-4" />
@@ -230,13 +230,13 @@ export function Homepage({ address }: { address: `0x${string}` }) {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Claims Section */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Available Claims</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="space-y-4">
               <div className="space-y-4">
                 <Link to={`/realms/claims`}>
                   <div className="realm-interactive-row group hover:bg-accent/70 rounded-lg p-4 transition-colors hover:border-[color:var(--realm-accent-brass)]">
@@ -319,7 +319,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 <CardHeader className="pb-4">
                   <CardTitle className="text-lg">Governance</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent>
                   <div className="text-center">
                     <h3 className="mb-2 text-lg font-semibold">
                       No Delegate Selected
@@ -407,7 +407,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                     <Card className="flex items-center justify-center">
                       <Link
                         to={`/realms`}
-                        className="flex h-full w-full items-center justify-center p-6"
+                        className="flex h-full w-full items-center justify-center p-4"
                       >
                         <div className="text-center">
                           <Plus className="text-muted-foreground mx-auto h-8 w-8" />
@@ -426,7 +426,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg">Your Realms</CardTitle>
               </CardHeader>
-              <CardContent className="p-12 text-center">
+              <CardContent className="pb-6 text-center">
                 <div className="text-muted-foreground text-lg">
                   No Realms found in your wallet
                 </div>

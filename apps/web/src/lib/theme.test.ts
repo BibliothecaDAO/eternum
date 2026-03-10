@@ -55,6 +55,12 @@ describe("account portal theme", () => {
     expect(styles).toContain("border-color: var(--border);");
   });
 
+  it("uses flat backgrounds instead of gradients", () => {
+    expect(styles).not.toContain("radial-gradient(");
+    expect(styles).not.toContain("background-image:");
+    expect(styles).not.toContain("background: linear-gradient(");
+  });
+
   it("points marketplace CTAs at market.realms.world", () => {
     expect(homepageSource).toContain('href="https://market.realms.world');
     expect(homepageSource).not.toContain("empire.realms.world/trade/realms");
@@ -63,5 +69,14 @@ describe("account portal theme", () => {
   it("keeps the dashboard title inline instead of inside a framed panel", () => {
     expect(indexRouteSource).not.toContain("realm-panel mb-4 rounded-3xl");
     expect(indexRouteSource).toContain('className="mb-3 flex flex-wrap');
+  });
+
+  it("keeps homepage spacing tight and consistent", () => {
+    expect(homepageSource).not.toContain('className="space-y-8"');
+    expect(homepageSource).not.toContain('className="grid grid-cols-1 gap-8');
+    expect(homepageSource).not.toContain(
+      'CardContent className="p-12 text-center"',
+    );
+    expect(homepageSource).toContain('className="space-y-6"');
   });
 });
