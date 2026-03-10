@@ -38,6 +38,16 @@ const formatPoints = (points: number) =>
     maximumFractionDigits: 0,
   }).format(points ?? 0);
 
+const formatCount = (value: number) =>
+  Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(Math.max(0, Math.floor(value ?? 0)));
+
+const formatLords = (value: number) =>
+  Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(Math.max(0, value ?? 0));
+
 const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
   if (!timestamp) {
     return fallback;
@@ -361,10 +371,23 @@ export const ScoreToBeatPanel = () => {
     if (scoreToBeatRows.length === 0 || typeof window === "undefined") return;
 
     const bestRunHeaders = Array.from({ length: runsToAggregate }, (_, index) => `Best run ${index + 1} score`);
-    const perGameHeaders = resolvedSelectedGameNames.map((gameName) => `${gameName} score`);
+    const perGameHeaders = resolvedSelectedGameNames.flatMap((gameName) => [
+      `${gameName} score`,
+      `${gameName} chests`,
+      `${gameName} lords`,
+    ]);
 
     const rows = [
-      ["Rank", "Display name", "Address", "Combined score", ...bestRunHeaders, ...perGameHeaders],
+      [
+        "Rank",
+        "Display name",
+        "Address",
+        "Combined score",
+        "Chests earned",
+        "Lords earned",
+        ...bestRunHeaders,
+        ...perGameHeaders,
+      ],
       ...scoreToBeatRows.map((entry, index) => {
         const bestRunScores = Array.from({ length: runsToAggregate }, (_, runIndex) => {
           const run = entry.runs[runIndex];
@@ -372,13 +395,20 @@ export const ScoreToBeatPanel = () => {
         });
 
         const scoreByGame = new Map<string, number>();
+        const chestsByGame = new Map<string, number>();
+        const lordsByGame = new Map<string, number>();
         entry.allRuns.forEach((run) => {
-          scoreByGame.set(describeEndpoint(run.endpoint), run.points);
+          const gameName = describeEndpoint(run.endpoint);
+          scoreByGame.set(gameName, run.points);
+          chestsByGame.set(gameName, run.chests);
+          lordsByGame.set(gameName, run.lords);
         });
 
-        const perGameScores = resolvedSelectedGameNames.map((gameName) => {
+        const perGameValues = resolvedSelectedGameNames.flatMap((gameName) => {
           const score = scoreByGame.get(gameName);
-          return score == null ? "" : `${score}`;
+          const chests = chestsByGame.get(gameName);
+          const lords = lordsByGame.get(gameName);
+          return [score == null ? "" : `${score}`, chests == null ? "" : `${chests}`, lords == null ? "" : `${lords}`];
         });
 
         return [
@@ -386,8 +416,10 @@ export const ScoreToBeatPanel = () => {
           entry.displayName ?? displayAddress(entry.address),
           entry.address,
           `${entry.combinedPoints ?? 0}`,
+          `${entry.combinedChests ?? 0}`,
+          `${entry.combinedLords ?? 0}`,
           ...bestRunScores,
-          ...perGameScores,
+          ...perGameValues,
         ];
       }),
     ];
@@ -654,6 +686,13 @@ export const ScoreToBeatPanel = () => {
                   <th className="px-6 py-4 font-medium">Rank</th>
                   <th className="px-6 py-4 font-medium">Player</th>
                   <th className="px-6 py-4 text-right font-medium">Score</th>
+                  <th className="px-6 py-4 text-right font-medium">Chests earned</th>
+                  <th className="px-6 py-4 text-right font-medium">
+                    <span className="inline-flex items-center justify-end gap-1">
+                      <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                      <span>Lords earned</span>
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
@@ -689,6 +728,13 @@ export const ScoreToBeatPanel = () => {
                       </td>
                       <td className="px-6 py-4 text-right text-lg font-semibold text-gold">
                         {formatPoints(entry.combinedPoints)}
+                      </td>
+                      <td className="px-6 py-4 text-right text-gold/80">{formatCount(entry.combinedChests)}</td>
+                      <td className="px-6 py-4 text-right text-gold/80">
+                        <span className="inline-flex items-center justify-end gap-1">
+                          <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                          <span>{formatLords(entry.combinedLords)}</span>
+                        </span>
                       </td>
                     </tr>
                   );
