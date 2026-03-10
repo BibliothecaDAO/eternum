@@ -1,19 +1,8 @@
 import { lazy, Suspense, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { useAccount } from "@starknet-start/react";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Copy, Link2 } from "lucide-react";
-import { formatUnits } from "viem";
-
 import { VelordsLockActivity } from "@/components/modules/velords/lock-activity";
 import { VelordsSourceBreakdown } from "@/components/modules/velords/source-breakdown";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useVelordsData } from "@/hooks/use-velords-data";
 import {
@@ -25,6 +14,11 @@ import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { calculateTrailingApyPercent } from "@/lib/velords-analytics";
 import { seo } from "@/utils/seo";
 import { formatNumber } from "@/utils/utils";
+import { useAccount } from "@starknet-start/react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { Copy, Link2 } from "lucide-react";
+import { formatUnits } from "viem";
 
 type VelordsPeriod = "3m" | "6m" | "1y";
 type VelordsView = "overview" | "sources" | "locks" | "trends";
@@ -161,7 +155,9 @@ function RouteComponent() {
   const estimatedWeeklyRewards = useMemo(() => {
     const latestWeek = rewardsSeriesQuery.data?.weekly.at(-1);
     if (!latestWeek || !userSharePercent) return undefined;
-    const latestWeekRewards = Number(formatUnits(BigInt(latestWeek.totalWei), 18));
+    const latestWeekRewards = Number(
+      formatUnits(BigInt(latestWeek.totalWei), 18),
+    );
     return (latestWeekRewards * Number(userSharePercent)) / 100;
   }, [rewardsSeriesQuery.data?.weekly, userSharePercent]);
 
@@ -230,11 +226,13 @@ function RouteComponent() {
       <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
-            <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            <p className="realm-eyebrow">Lords</p>
+            <h1 className="realm-page-title text-3xl sm:text-4xl">
               veLords Dashboard
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg">
-              Stake $LORDS in the Lordship Protocol and monitor reward performance.
+              Stake $LORDS in the Lordship Protocol and monitor reward
+              performance.
             </p>
           </div>
           <div className="flex gap-2">
@@ -251,8 +249,12 @@ function RouteComponent() {
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Total Voting Power (veLORDS)</div>
-            <div className="text-2xl font-bold">{totalSupply ?? "Loading..."}</div>
+            <div className="text-muted-foreground text-sm">
+              Total Voting Power (veLORDS)
+            </div>
+            <div className="text-2xl font-bold">
+              {totalSupply ?? "Loading..."}
+            </div>
             {userBalance !== undefined && userSharePercent !== undefined && (
               <div className="text-muted-foreground mt-1 text-sm">
                 Your share: {userBalance} ({userSharePercent}%)
@@ -260,11 +262,13 @@ function RouteComponent() {
             )}
           </div>
           <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">LORDS Locked</div>
-            <div className="text-2xl font-bold">{lordsLocked ?? "Loading..."}</div>
+            <div className="text-muted-foreground text-sm">LORDS Locked</div>
+            <div className="text-2xl font-bold">
+              {lordsLocked ?? "Loading..."}
+            </div>
           </div>
           <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">TVL</div>
+            <div className="text-muted-foreground text-sm">TVL</div>
             <div className="text-2xl font-bold">
               {typeof tvl === "number" && Number.isFinite(tvl)
                 ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -274,23 +278,35 @@ function RouteComponent() {
             </div>
           </div>
           <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Rewards (7d)</div>
-            <div className="text-2xl font-bold">{rewards7d ?? "Loading..."}</div>
+            <div className="text-muted-foreground text-sm">Rewards (7d)</div>
+            <div className="text-2xl font-bold">
+              {rewards7d ?? "Loading..."}
+            </div>
           </div>
           <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Rewards (30d)</div>
-            <div className="text-2xl font-bold">{rewards30d ?? "Loading..."}</div>
+            <div className="text-muted-foreground text-sm">Rewards (30d)</div>
+            <div className="text-2xl font-bold">
+              {rewards30d ?? "Loading..."}
+            </div>
           </div>
           <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Trailing APY (4w avg)</div>
-            <div className="text-2xl font-bold">{formatNumber(trailingApy, 2)}%</div>
+            <div className="text-muted-foreground text-sm">
+              Trailing APY (4w avg)
+            </div>
+            <div className="text-2xl font-bold">
+              {formatNumber(trailingApy, 2)}%
+            </div>
           </div>
         </div>
 
         <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
           <div className="space-y-6 xl:col-span-3">
             <div className="bg-card rounded-lg border p-6">
-              <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-md border" />}>
+              <Suspense
+                fallback={
+                  <div className="h-[360px] w-full animate-pulse rounded-md border" />
+                }
+              >
                 <VeLordsRewardsChart
                   selectedPeriod={selectedPeriod}
                   totalSupplyRaw={totalSupplyRaw}
@@ -359,12 +375,17 @@ function RouteComponent() {
               <div className="text-sm font-medium">Your Position</div>
               <div className="text-muted-foreground mt-2 space-y-1 text-sm">
                 <div>veLORDS Balance: {userBalance ?? "-"}</div>
-                <div>Supply Share: {userSharePercent ? `${userSharePercent}%` : "-"}</div>
+                <div>
+                  Supply Share:{" "}
+                  {userSharePercent ? `${userSharePercent}%` : "-"}
+                </div>
                 <div>Locked LORDS: {userLocked?.amount ?? "-"}</div>
                 <div>
                   Unlock Time:{" "}
                   {userLocked?.unlockTime
-                    ? new Date(userLocked.unlockTime * 1000).toLocaleDateString()
+                    ? new Date(
+                        userLocked.unlockTime * 1000,
+                      ).toLocaleDateString()
                     : "-"}
                 </div>
                 <div>

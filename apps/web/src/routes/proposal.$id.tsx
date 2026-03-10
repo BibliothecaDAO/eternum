@@ -16,8 +16,8 @@ import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useVotingPower } from "@/hooks/governance/use-voting-power";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
 import { getProposalQueryOptions } from "@/lib/snapshot/getProposals";
-import { isMatchingProposalVote } from "@/lib/snapshot/proposal-id";
 import { getUserVotesQueryOptions } from "@/lib/snapshot/getUserVotes";
+import { isMatchingProposalVote } from "@/lib/snapshot/proposal-id";
 import {
   formatAddress,
   shortenAddress,
@@ -76,8 +76,8 @@ function RouteComponent() {
   );
 
   // Find the vote that matches this proposal ID
-  const userVoteRef = userVotesQuery?.votes?.find(
-    (vote) => isMatchingProposalVote(vote?.proposal, id),
+  const userVoteRef = userVotesQuery?.votes?.find((vote) =>
+    isMatchingProposalVote(vote?.proposal, id),
   );
 
   const proposal = proposalQuery.proposal;
@@ -143,8 +143,11 @@ function RouteComponent() {
           <Card className="mb-8">
             <CardHeader>
               <div className="flex flex-col gap-2">
+                <p className="realm-eyebrow">Governance</p>
                 <div className="flex items-center justify-between gap-3">
-                  <h1 className="text-3xl font-bold">{title}</h1>
+                  <h1 className="realm-page-title text-3xl sm:text-4xl">
+                    {title}
+                  </h1>
                   {proposalStatus && (
                     <Badge
                       variant={"outline"}
@@ -190,7 +193,7 @@ function RouteComponent() {
           {votingPower && (
             <Badge
               variant={"outline"}
-              className="max-w-30 mx-auto flex justify-center rounded text-center text-lg"
+              className="mx-auto flex max-w-30 justify-center rounded text-center text-lg"
             >
               {Number(votingPower).toString()} Realms
             </Badge>

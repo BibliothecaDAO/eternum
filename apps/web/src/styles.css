@@ -300,6 +300,16 @@
     text-transform: uppercase;
   }
 
+  .realm-card-title {
+    color: var(--primary);
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
   .realm-eyebrow {
     color: color-mix(in oklab, var(--primary) 82%, white 18%);
     font-family: var(--font-serif);

@@ -68,12 +68,13 @@ function RouteComponent() {
       }
     >
       <SidebarInset>
-        <div className="container mx-auto p-8">
-          <h1 className="mb-4 text-2xl font-semibold">
+        <div className="container mx-auto space-y-4 p-8">
+          <p className="realm-eyebrow">Governance</p>
+          <h1 className="realm-page-title text-3xl sm:text-4xl">
             Your Profile {shortenAddress(session?.user.id)}
           </h1>
           {!isLoading && (
-            <Card className="mb-8">
+            <Card>
               <CardContent className="p-6">
                 <DelegateProfileForm
                   delegate={

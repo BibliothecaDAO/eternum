@@ -3,10 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import { getRealmsLordsClaimsQueryOptions } from "@/lib/getRealmsLordsClaims";
-import {
-  formatNumber,
-  shortenAddress,
-} from "@/utils/utils";
+import { formatNumber, shortenAddress } from "@/utils/utils";
 import { useAccount, useExplorer } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
@@ -43,7 +40,12 @@ export const ClaimRewards = () => {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <h1 className="text-2xl font-bold">Past Realms Claims Dashboard</h1>
+      <div className="space-y-2">
+        <p className="realm-eyebrow">Realms</p>
+        <h1 className="realm-page-title text-3xl sm:text-4xl">
+          Past Realms Claims Dashboard
+        </h1>
+      </div>
       <div className="grid gap-6 sm:grid-cols-3">
         {/* Claim Rewards Section */}
         <Card className="relative overflow-hidden">
