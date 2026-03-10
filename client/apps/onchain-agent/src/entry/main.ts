@@ -155,7 +155,8 @@ function buildTickPrompt(mapCtx: MapContext): string {
     mapText,
     "",
     "Review your priorities and decide what to do this turn.",
-    "Use inspect to examine targets, move_army to reposition, attack to engage, or create_army to build forces.",
+    "You can move troops across multiple explored tiles in a single move_army call, but movement into unexplored territory is limited to 1 step at a time.",
+    "Use inspect to examine targets, move_army to reposition, attack to engage, open_chest to claim relics, or create_army to build forces.",
   ].join("\n");
 }
 
