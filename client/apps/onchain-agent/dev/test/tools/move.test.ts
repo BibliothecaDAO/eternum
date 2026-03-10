@@ -39,6 +39,7 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
   const totalRows = maxY - minY + 1;
   const totalCols = maxX - minX + 1;
 
+  const anchor = { minX, minY, maxX, maxY };
   return {
     text: "(test snapshot)",
     headerLines: 0,
@@ -57,6 +58,7 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
       if (!pos) return null;
       return grid.get(`${pos.x},${pos.y}`) ?? null;
     },
+    anchor,
   };
 }
 
