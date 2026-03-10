@@ -109,17 +109,17 @@ export function createMoveTool(
     description:
       "Move one of your armies to a target tile. Can move through explored tiles or explore into adjacent unexplored tiles. " +
       "If the target is occupied (structure, army, chest), automatically stops 1 hex away. " +
-      "Use your army's line:col from YOUR ENTITIES as from_row:from_col, and the destination as to_row:to_col. " +
+      "Use your army's line:col from YOUR ENTITIES as army_row:army_col, and the destination as target_row:target_col. " +
       "Pathfinds automatically around obstacles. Exploring new tiles may yield rewards. " +
       "Returns: success/failure, new position, stamina remaining, adjacent tiles.",
     parameters: Type.Object({
-      from_row: Type.Number({ description: "Line number of your army on the map" }),
-      from_col: Type.Number({ description: "Column of your army on the map" }),
-      to_row: Type.Number({ description: "Target line number on the map" }),
-      to_col: Type.Number({ description: "Target column on the map" }),
+      army_row: Type.Number({ description: "Line number of your army on the map" }),
+      army_col: Type.Number({ description: "Column of your army on the map" }),
+      target_row: Type.Number({ description: "Target line number on the map" }),
+      target_col: Type.Number({ description: "Target column on the map" }),
     }),
     async execute(_toolCallId, params, signal) {
-      const { from_row, from_col, to_row, to_col } = params;
+      const { army_row: from_row, army_col: from_col, target_row: to_row, target_col: to_col } = params;
 
       if (signal?.aborted) throw new Error("Operation cancelled");
 

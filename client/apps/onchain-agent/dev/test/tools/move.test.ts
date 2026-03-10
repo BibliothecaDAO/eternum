@@ -121,7 +121,7 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: null, filePath: null };
     const tool = createMoveTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 2 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
       "Map not loaded",
     );
   });
@@ -131,7 +131,7 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 99, from_col: 99, to_row: 1, to_col: 1 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_row: 99, army_col: 99, target_row: 1, target_col: 1 })).rejects.toThrow(
       "Invalid army position",
     );
   });
@@ -141,7 +141,7 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 99, to_col: 99 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 99, target_col: 99 })).rejects.toThrow(
       "Invalid target position",
     );
   });
@@ -151,7 +151,7 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 2 })).rejects.toThrow("No army at");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow("No army at");
   });
 
   it("throws when army is not yours", async () => {
@@ -160,7 +160,7 @@ describe("move_army — prerequisites", () => {
     const explorer = makeExplorer(0, 0, 100, { ownerAddress: "0xENEMY" });
     const tool = createMoveTool(makeClient(explorer), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 2 })).rejects.toThrow("not yours");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow("not yours");
   });
 });
 
@@ -170,7 +170,7 @@ describe("move_army — already at target", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(5, 5, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 1 })).rejects.toThrow("Already at");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 1 })).rejects.toThrow("Already at");
   });
 });
 
@@ -181,7 +181,7 @@ describe("move_army — no stamina", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 0)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 3 })).rejects.toThrow("no stamina");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 3 })).rejects.toThrow("no stamina");
   });
 });
 
@@ -193,7 +193,7 @@ describe("move_army — successful move", () => {
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     // Move from (0,0) col=1 to (3,0) col=4
-    const result = await tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4 });
+    const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 4 });
     expect(result.content[0].text).toContain("3 steps");
     // Paladin on Grassland (biome 11): cost = 20 - 10 = 10 per hex. 3 * 10 = 30. 100 - 30 = 70.
     expect(result.content[0].text).toContain("100 → 70");
@@ -207,7 +207,7 @@ describe("move_army — successful move", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 20)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    const result = await tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 11 });
+    const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 11 });
     // Should move 2 steps (20 stamina / 10 per hex) toward target, not throw
     expect(result.content[0].text).toContain("2 steps toward");
     expect(result.content[0].text).toContain("ran out of stamina");
@@ -235,7 +235,7 @@ describe("move_army — obstacle avoidance", () => {
 
     // (0,1) → maxY=2, y=1 → row=2. minX=0, x=0 → col=1
     // (4,1) → row=2, col=5
-    const result = await tool.execute("id", { from_row: 2, from_col: 1, to_row: 2, to_col: 5 });
+    const result = await tool.execute("id", { army_row: 2, army_col: 1, target_row: 2, target_col: 5 });
     expect(result.content[0].text).toContain("steps");
     const details = result.details as any;
     expect(details.distance).toBeGreaterThanOrEqual(4);

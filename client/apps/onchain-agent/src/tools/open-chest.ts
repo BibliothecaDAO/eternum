@@ -30,11 +30,11 @@ export function createOpenChestTool(
     parameters: Type.Object({
       army_row: Type.Number({ description: "Line number of your army on the map" }),
       army_col: Type.Number({ description: "Column of your army on the map" }),
-      chest_row: Type.Number({ description: "Line number of the chest on the map" }),
-      chest_col: Type.Number({ description: "Column of the chest on the map" }),
+      target_row: Type.Number({ description: "Line number of the chest on the map" }),
+      target_col: Type.Number({ description: "Column of the chest on the map" }),
     }),
     async execute(_toolCallId, params) {
-      const { army_row, army_col, chest_row, chest_col } = params;
+      const { army_row, army_col, target_row: chest_row, target_col: chest_col } = params;
 
       if (!mapCtx.snapshot) {
         throw new Error("Map not loaded yet. Wait for the next tick.");
