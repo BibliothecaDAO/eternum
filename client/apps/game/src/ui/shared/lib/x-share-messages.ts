@@ -112,7 +112,7 @@ export const buildChestRevealShareMessage = (chestRarity: AssetRarity): string =
   return `${normalizedRarity} pull from a Realms Loot Chest! 🗝️\n\n${tweetFooter}`;
 };
 
-export type GameReviewShareStep =
+type GameReviewShareStep =
   | "finished"
   | "personal"
   | "awards"
