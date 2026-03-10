@@ -22,6 +22,10 @@ const claimsPath = resolve(
   currentDir,
   "../components/modules/realms/claims.tsx",
 );
+const appSidebarPath = resolve(
+  currentDir,
+  "../components/layout/app-sidebar.tsx",
+);
 const delegateListPath = resolve(currentDir, "../routes/delegate.list.tsx");
 const comingSoonPath = resolve(currentDir, "../routes/coming-soon.index.tsx");
 const markdownRendererPath = resolve(
@@ -37,6 +41,7 @@ const delegateProfileSource = readFileSync(delegateProfilePath, "utf8");
 const proposalDetailSource = readFileSync(proposalDetailPath, "utf8");
 const velordsIndexSource = readFileSync(velordsIndexPath, "utf8");
 const claimsSource = readFileSync(claimsPath, "utf8");
+const appSidebarSource = readFileSync(appSidebarPath, "utf8");
 const delegateListSource = readFileSync(delegateListPath, "utf8");
 const comingSoonSource = readFileSync(comingSoonPath, "utf8");
 const markdownRendererSource = readFileSync(markdownRendererPath, "utf8");
@@ -151,5 +156,13 @@ describe("account portal theme", () => {
     expect(styles).toContain("color: var(--primary);");
     expect(styles).toContain(".realm-prose-h1");
     expect(styles).toContain("color: var(--foreground);");
+  });
+
+  it("uses the cleaned sidebar destination map", () => {
+    expect(appSidebarSource).not.toContain('title: "Claims"');
+    expect(appSidebarSource).toContain("https://market.realms.world");
+    expect(appSidebarSource).toContain('url: "https://realms.world"');
+    expect(appSidebarSource).toContain('url: "https://blitz.realms.world"');
+    expect(appSidebarSource).toContain('url: "https://docs.realms.world"');
   });
 });
