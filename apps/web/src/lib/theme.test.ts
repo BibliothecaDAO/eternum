@@ -139,4 +139,17 @@ describe("account portal theme", () => {
     expect(markdownRendererSource).toContain("realm-prose-h1");
     expect(markdownRendererSource).toContain("realm-prose-h2");
   });
+
+  it("uses one dark surface value across header, sidebar, and panels", () => {
+    expect(styles).toContain("--card: oklch(0.16 0.006 260);");
+    expect(styles).toContain("--popover: oklch(0.16 0.006 260);");
+    expect(styles).toContain("--sidebar: oklch(0.16 0.006 260);");
+  });
+
+  it("keeps gold limited to structural text roles", () => {
+    expect(styles).toContain(".realm-card-title");
+    expect(styles).toContain("color: var(--primary);");
+    expect(styles).toContain(".realm-prose-h1");
+    expect(styles).toContain("color: var(--foreground);");
+  });
 });
