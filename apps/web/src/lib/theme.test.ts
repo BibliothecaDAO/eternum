@@ -6,8 +6,13 @@ import { describe, expect, it } from "vitest";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const stylesPath = resolve(currentDir, "../styles.css");
 const buttonPath = resolve(currentDir, "../components/ui/button.tsx");
+const homepagePath = resolve(
+  currentDir,
+  "../components/modules/homepage/homepage.tsx",
+);
 const styles = readFileSync(stylesPath, "utf8");
 const buttonSource = readFileSync(buttonPath, "utf8");
+const homepageSource = readFileSync(homepagePath, "utf8");
 
 describe("account portal theme", () => {
   it("uses the realms-world-site font stack", () => {
@@ -33,5 +38,17 @@ describe("account portal theme", () => {
     expect(buttonSource).toContain(
       "hover:border-[color:var(--realm-accent-brass)]",
     );
+  });
+
+  it("uses brass accents instead of white edge highlights", () => {
+    expect(styles).not.toContain("white 10%");
+    expect(styles).not.toContain("white 8%");
+    expect(styles).not.toContain("white 7%");
+    expect(styles).toContain("var(--realm-accent-brass)");
+  });
+
+  it("points marketplace CTAs at market.realms.world", () => {
+    expect(homepageSource).toContain('href="https://market.realms.world');
+    expect(homepageSource).not.toContain("empire.realms.world/trade/realms");
   });
 });

@@ -169,7 +169,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </Button>
               </Link>
               <a
-                href="https://empire.realms.world/trade/realms"
+                href="https://market.realms.world"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"
@@ -434,7 +434,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                   Visit the marketplace to acquire your first Realm
                 </p>
                 <a
-                  href="https://empire.realms.world/trade/realms"
+                  href="https://market.realms.world"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-4 inline-block"
