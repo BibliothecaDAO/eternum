@@ -43,7 +43,7 @@ describe("army manager performance regressions", () => {
       /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*this\.syncTrackedArmyOwnerState\(\s*\{[\s\S]*deferVisibleRefresh:\s*true[\s\S]*\}\s*\)/,
     );
     expect(source).toMatch(
-      /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*this\.armyModel\.updateAllInstances\(\)[\s\S]*this\.syncVisibleSlots\(\)/,
+      /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*this\.flushDirtyArmyModelUpdates\(\)/,
     );
   });
 
@@ -67,5 +67,21 @@ describe("army manager performance regressions", () => {
     expect(source).toMatch(/private\s+armiesWithActiveBattleTimers:\s*Set<ID>\s*=\s*new Set\(\)/);
     expect(source).toMatch(/for\s*\(\s*const\s+entityId\s+of\s+this\.armiesWithActiveBattleTimers\s*\)/);
     expect(source).not.toMatch(/private\s+recomputeBattleTimersForAllArmies[\s\S]*this\.armies\.forEach/);
+  });
+
+  it("tracks dirty attached armies and updates attachment transforms outside the full visible-army loop", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/private\s+dirtyAttachedArmyEntities:\s*Set<number>\s*=\s*new Set\(\)/);
+    expect(source).toMatch(/private\s+markAttachedArmyTransformDirty\s*\(/);
+    expect(source).toMatch(/private\s+updateDirtyArmyAttachmentTransforms\s*\(/);
+    expect(source).not.toMatch(/private\s+updateVisibleArmiesBatched[\s\S]*resolveArmyMountTransforms/);
+  });
+
+  it("flushes dirty army model uploads instead of global instance uploads during chunk reconcile", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/this\.armyModel\.flushDirtyModelUpdates\(\)/);
+    expect(source).not.toMatch(/if\s*\(buffersDirty\)\s*\{[\s\S]*this\.armyModel\.updateAllInstances\(\)[\s\S]*this\.armyModel\.computeBoundingSphere\(\)/);
   });
 });

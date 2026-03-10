@@ -91,6 +91,8 @@ const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.MID]: 0.45,
   [GraphicsSettings.LOW]: 0.25,
 };
+const DEFAULT_RENDERER_TONE_MAPPING = ACESFilmicToneMapping;
+const DEFAULT_RENDERER_TONE_MAPPING_EXPOSURE = 0.8;
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -338,8 +340,8 @@ export default class GameRenderer {
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
     this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.8;
+    this.renderer.toneMapping = DEFAULT_RENDERER_TONE_MAPPING;
+    this.renderer.toneMappingExposure = DEFAULT_RENDERER_TONE_MAPPING_EXPOSURE;
     this.renderer.autoClear = false;
     // Disable auto-reset of renderer.info so we can capture full frame stats
     this.renderer.info.autoReset = false;
@@ -838,6 +840,9 @@ export default class GameRenderer {
   private setupPostProcessingEffects() {
     const effectsConfig = this.getPostProcessingConfig();
     if (!effectsConfig) {
+      this.postProcessingConfig = undefined;
+      this.toneMappingEffect = undefined;
+      this.syncToneMappingPath();
       return; // Skip post-processing for low graphics settings
     }
     this.postProcessingConfig = effectsConfig;
@@ -1450,8 +1455,11 @@ export default class GameRenderer {
 
   private rebuildPostProcessing(features: QualityFeatures): void {
     if (!this.postProcessingConfig || !this.toneMappingEffect) {
+      this.syncToneMappingPath();
       return;
     }
+
+    this.syncToneMappingPath();
 
     if (this.effectPass) {
       const passes = (this.composer as any).passes as unknown[] | undefined;
@@ -1512,5 +1520,20 @@ export default class GameRenderer {
 
     this.effectPass = new EffectPass(this.camera, ...effects);
     this.composer.addPass(this.effectPass);
+  }
+
+  private syncToneMappingPath(): void {
+    if (!this.renderer) {
+      return;
+    }
+
+    if (this.postProcessingConfig && this.toneMappingEffect) {
+      this.renderer.toneMapping = NoToneMapping;
+      this.renderer.toneMappingExposure = 1;
+      return;
+    }
+
+    this.renderer.toneMapping = DEFAULT_RENDERER_TONE_MAPPING;
+    this.renderer.toneMappingExposure = DEFAULT_RENDERER_TONE_MAPPING_EXPOSURE;
   }
 }

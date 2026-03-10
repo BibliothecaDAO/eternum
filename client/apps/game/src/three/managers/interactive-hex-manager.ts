@@ -202,6 +202,41 @@ export class InteractiveHexManager {
     this.hexBuckets.set(bucketKey, bucket);
   }
 
+  removeHex(hex: { col: number; row: number }) {
+    const key = `${hex.col},${hex.row}`;
+    if (!this.allHexes.delete(key)) {
+      return;
+    }
+
+    this.visibleHexes.delete(key);
+
+    const bucketKey = this.getBucketKey(hex.col, hex.row);
+    const bucket = this.hexBuckets.get(bucketKey);
+    if (bucket) {
+      bucket.delete(key);
+      if (bucket.size === 0) {
+        this.hexBuckets.delete(bucketKey);
+      }
+    }
+
+    const cachedIndex = this.hexKeyToIndex.get(key);
+    if (cachedIndex === undefined) {
+      return;
+    }
+
+    const lastIndex = this.hexCoordsCount - 1;
+    if (cachedIndex !== lastIndex) {
+      const lastCol = this.hexCoordsCache[lastIndex * 2];
+      const lastRow = this.hexCoordsCache[lastIndex * 2 + 1];
+      this.hexCoordsCache[cachedIndex * 2] = lastCol;
+      this.hexCoordsCache[cachedIndex * 2 + 1] = lastRow;
+      this.hexKeyToIndex.set(`${lastCol},${lastRow}`, cachedIndex);
+    }
+
+    this.hexCoordsCount = Math.max(0, lastIndex);
+    this.hexKeyToIndex.delete(key);
+  }
+
   /**
    * Phase 1 optimization: Add hex coordinates to typed array cache
    */

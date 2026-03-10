@@ -296,13 +296,17 @@ export default class InstancedModel {
   needsUpdate() {
     this.instancedMeshes.forEach((mesh) => {
       mesh.instanceMatrix.needsUpdate = true;
-      mesh.computeBoundingSphere();
+      if (!this.worldBounds) {
+        mesh.computeBoundingSphere();
+      }
       this.applyWorldBounds(mesh);
     });
 
     if (this.contactShadowMesh) {
       this.contactShadowMesh.instanceMatrix.needsUpdate = true;
-      this.contactShadowMesh.computeBoundingSphere();
+      if (!this.worldBounds) {
+        this.contactShadowMesh.computeBoundingSphere();
+      }
       this.applyWorldBounds(this.contactShadowMesh);
     }
   }

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Object3D } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/store/use-account-store", () => ({
@@ -181,6 +182,67 @@ describe("StructureManager performance regressions", () => {
     const source = readStructureManagerSource();
 
     expect(source).toMatch(/new\s+PointsLabelRenderer\([\s\S]*this\.frustumManager,\s*this\.visibilityManager[\s\S]*\)/);
+  });
+
+  it("does not sweep setCount(0) across every loaded structure model on visible refresh", () => {
+    const source = readStructureManagerSource();
+
+    expect(source).not.toMatch(
+      /performVisibleStructuresUpdate[\s\S]*this\.wonderEntityIdMaps\.clear\(\)[\s\S]*this\.structureModels\.forEach\(\(models\)\s*=>\s*\{[\s\S]*model\.setCount\(0\)/,
+    );
+    expect(source).not.toMatch(
+      /performVisibleStructuresUpdate[\s\S]*this\.wonderEntityIdMaps\.clear\(\)[\s\S]*this\.cosmeticStructureModels\.forEach\(\(models\)\s*=>\s*\{[\s\S]*model\.setCount\(0\)/,
+    );
+    expect(source).toMatch(/private\s+activeVisibleModels:\s*Set<InstancedModel>\s*=\s*new Set\(\)/);
+  });
+
+  it("only updates structure models that were previously active or are visible now", async () => {
+    const visibleModel = { setMatrixAt: vi.fn(), setCount: vi.fn() };
+    const staleModel = { setMatrixAt: vi.fn(), setCount: vi.fn() };
+    const idleModel = { setMatrixAt: vi.fn(), setCount: vi.fn() };
+    const subject = Object.create(StructureManager.prototype) as any;
+
+    subject.currentChunk = "0,0";
+    subject.visibleStructureCount = 0;
+    subject.hasCosmeticSkin = vi.fn(() => false);
+    subject.getVisibleStructuresForChunk = vi.fn(() => [
+      {
+        entityId: 1,
+        structureType: "Bank",
+        stage: 0,
+        level: 0,
+        hasWonder: false,
+        hexCoords: { col: 0, row: 0 },
+      },
+    ]);
+    subject.ensureStructureModels = vi.fn();
+    subject.ensureCosmeticStructureModels = vi.fn();
+    subject.structureModels = new Map([
+      ["Bank", [visibleModel]],
+      ["FragmentMine", [staleModel]],
+      ["Realm", [idleModel]],
+    ]);
+    subject.cosmeticStructureModels = new Map();
+    subject.wonderEntityIdMaps = new Map();
+    subject.entityIdMaps = new Map();
+    subject.cosmeticEntityIdMaps = new Map();
+    subject.entityIdLabels = new Map();
+    subject.activeVisibleModels = new Set([visibleModel, staleModel]);
+    subject.previousVisibleIds = new Set();
+    subject.prepareVisibleStructureRenderState = vi.fn();
+    subject.attachmentManager = { removeAttachments: vi.fn() };
+    subject.activeStructureAttachmentEntities = new Set();
+    subject.structureAttachmentSignatures = new Map();
+    subject.removeEntityIdLabel = vi.fn();
+    subject.pointsRenderers = undefined;
+    subject.structures = { getStructureByEntityId: vi.fn() };
+    subject.dummy = new Object3D();
+
+    await subject.performVisibleStructuresUpdate();
+
+    expect(visibleModel.setCount).toHaveBeenCalledWith(1);
+    expect(staleModel.setCount).toHaveBeenCalledWith(0);
+    expect(idleModel.setCount).not.toHaveBeenCalled();
   });
 
   it("reconciles visible structures once during a chunk update", async () => {

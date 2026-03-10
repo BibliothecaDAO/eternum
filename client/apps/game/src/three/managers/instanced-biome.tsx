@@ -250,20 +250,19 @@ export default class InstancedModel {
   }
 
   setMatricesAndCount(matrices: THREE.InstancedBufferAttribute, count: number) {
+    this.setDenseMatricesAndCount(matrices.array as Float32Array, count);
+  }
+
+  setDenseMatricesAndCount(matrices: Float32Array, count: number) {
     let resolvedCount = count;
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
         const targetArray = child.instanceMatrix.array as Float32Array;
-        const sourceArray = matrices.array as Float32Array;
         const maxInstances = Math.floor(targetArray.length / child.instanceMatrix.itemSize);
         const finalCount = Math.min(count, maxInstances);
-        const floatsToCopy = Math.min(
-          finalCount * child.instanceMatrix.itemSize,
-          sourceArray.length,
-          targetArray.length,
-        );
+        const floatsToCopy = Math.min(finalCount * child.instanceMatrix.itemSize, matrices.length, targetArray.length);
         if (floatsToCopy > 0) {
-          targetArray.set(sourceArray.subarray(0, floatsToCopy));
+          targetArray.set(matrices.subarray(0, floatsToCopy));
         }
         child.count = finalCount;
         child.instanceMatrix.needsUpdate = true;

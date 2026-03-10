@@ -232,4 +232,31 @@ describe("ArmyModel performance regressions", () => {
 
     expect(updateModelAnimations).not.toHaveBeenCalled();
   });
+
+  it("flushes instance uploads and bounds only for dirty model subsets", () => {
+    const subject = new ArmyModel(new Scene());
+    const knightModel = createModelData();
+    const boatModel = createModelData();
+    const knightMeshBounds = vi.spyOn(knightModel.instancedMeshes[0], "computeBoundingSphere");
+    const boatMeshBounds = vi.spyOn(boatModel.instancedMeshes[0], "computeBoundingSphere");
+
+    (subject as any).models.set(ModelType.Knight1, knightModel);
+    (subject as any).models.set(ModelType.Boat, boatModel);
+
+    subject.assignModelToEntity(1, ModelType.Knight1);
+    subject.assignModelToEntity(2, ModelType.Boat);
+    subject.updateInstance(1, 0, new Vector3(0, 0, 0), new Vector3(1, 1, 1));
+    subject.updateInstance(2, 1, new Vector3(1, 0, 0), new Vector3(1, 1, 1));
+
+    (subject as any).flushDirtyModelUpdates();
+    knightMeshBounds.mockClear();
+    boatMeshBounds.mockClear();
+
+    subject.updateInstance(1, 0, new Vector3(2, 0, 0), new Vector3(1, 1, 1));
+
+    (subject as any).flushDirtyModelUpdates();
+
+    expect(knightMeshBounds).toHaveBeenCalled();
+    expect(boatMeshBounds).not.toHaveBeenCalled();
+  });
 });

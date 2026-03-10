@@ -73,6 +73,8 @@ export class ArmyModel {
   private readonly entityIdsByCosmeticId: Map<string, Set<number>> = new Map();
   private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
   private readonly activeCosmeticByEntity: Map<number, string | null> = new Map();
+  private readonly dirtyBaseModels: Set<ModelType> = new Set();
+  private readonly dirtyCosmeticModels: Set<string> = new Set();
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
@@ -360,6 +362,18 @@ export class ArmyModel {
     }
   }
 
+  private markBaseModelDirty(modelType: ModelType | null | undefined): void {
+    if (modelType !== null && modelType !== undefined) {
+      this.dirtyBaseModels.add(modelType);
+    }
+  }
+
+  private markCosmeticModelDirty(cosmeticId: string | null | undefined): void {
+    if (cosmeticId !== null && cosmeticId !== undefined) {
+      this.dirtyCosmeticModels.add(cosmeticId);
+    }
+  }
+
   private createModelData(gltf: any): ModelData {
     const group = new Group();
     const instancedMeshes: AnimatedInstancedMesh[] = [];
@@ -554,6 +568,7 @@ export class ArmyModel {
         if (modelData) {
           modelData.activeInstances.delete(matrixIndex);
           this.clearModelSlot(modelData, matrixIndex);
+          this.markBaseModelDirty(activeBaseModel);
         }
       }
 
@@ -564,6 +579,7 @@ export class ArmyModel {
         if (cosmeticData) {
           cosmeticData.activeInstances.delete(matrixIndex);
           this.clearModelSlot(cosmeticData, matrixIndex);
+          this.markCosmeticModelDirty(activeCosmetic);
         }
       }
     } else {
@@ -575,6 +591,8 @@ export class ArmyModel {
       this.cosmeticModels.forEach((modelData) => {
         this.clearModelSlot(modelData, matrixIndex);
       });
+      this.models.forEach((_, modelType) => this.markBaseModelDirty(modelType));
+      this.cosmeticModels.forEach((_, cosmeticId) => this.markCosmeticModelDirty(cosmeticId));
     }
 
     this.setAnimationState(matrixIndex, false);
@@ -747,6 +765,7 @@ export class ArmyModel {
         this.ensureModelCapacity(modelData, Math.max(oldSlot, newSlot) + 1);
         this.updateInstanceTransform(instanceData.position, this.getScaleForModelType(activeBaseModel), instanceData.rotation);
         this.updateInstanceMeshes(modelData, newSlot, entityId, instanceData.position, instanceData.color);
+        this.markBaseModelDirty(activeBaseModel);
       }
     }
 
@@ -758,6 +777,7 @@ export class ArmyModel {
         this.ensureModelCapacity(modelData, Math.max(oldSlot, newSlot) + 1);
         this.updateInstanceTransform(instanceData.position, this.normalScale, instanceData.rotation);
         this.updateInstanceMeshes(modelData, newSlot, entityId, instanceData.position, instanceData.color);
+        this.markCosmeticModelDirty(activeCosmetic);
       }
     }
 
@@ -825,6 +845,7 @@ export class ArmyModel {
           this.ensureModelCapacity(prevModelData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevModelData, index, entityId, state.position, state.color);
+          this.markBaseModelDirty(prevActiveBaseModel);
         }
       }
       this.activeBaseModelByEntity.set(entityId, activeBaseModel);
@@ -839,6 +860,7 @@ export class ArmyModel {
           this.ensureModelCapacity(prevCosmeticData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.position, state.color);
+          this.markCosmeticModelDirty(prevActiveCosmetic);
         }
       }
       this.activeCosmeticByEntity.set(entityId, activeCosmetic);
@@ -853,6 +875,7 @@ export class ArmyModel {
         this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
         this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+        this.markBaseModelDirty(activeBaseModel);
       }
     }
 
@@ -864,6 +887,7 @@ export class ArmyModel {
         this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
+        this.markCosmeticModelDirty(activeCosmetic);
       }
     }
   }
@@ -1910,30 +1934,9 @@ export class ArmyModel {
   }
 
   public updateAllInstances(): void {
-    this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.instanceColor) {
-          mesh.instanceColor.needsUpdate = true;
-        }
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-      }
-    });
-
-    // Also update cosmetic models
-    this.cosmeticModels.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.instanceColor) {
-          mesh.instanceColor.needsUpdate = true;
-        }
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-      }
-    });
+    this.models.forEach((_, modelType) => this.dirtyBaseModels.add(modelType));
+    this.cosmeticModels.forEach((_, cosmeticId) => this.dirtyCosmeticModels.add(cosmeticId));
+    this.flushDirtyModelUpdates();
   }
 
   public setVisibleSlots(slots: Iterable<number>): void {
@@ -1951,9 +1954,11 @@ export class ArmyModel {
     this.currentVisibleCount = activeCount;
     const globalDrawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
 
-    // Set per-model draw counts based on their active instances
-    // Models with no active instances get mesh.count = 0 (skip rendering/raycasting/animation)
-    this.models.forEach((modelData) => {
+    this.dirtyBaseModels.forEach((modelType) => {
+      const modelData = this.models.get(modelType);
+      if (!modelData) {
+        return;
+      }
       this.ensureModelCapacity(modelData, globalDrawCount);
       const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
@@ -1964,8 +1969,11 @@ export class ArmyModel {
       }
     });
 
-    // Also update cosmetic models with per-model counts
-    this.cosmeticModels.forEach((modelData) => {
+    this.dirtyCosmeticModels.forEach((cosmeticId) => {
+      const modelData = this.cosmeticModels.get(cosmeticId);
+      if (!modelData) {
+        return;
+      }
       this.ensureModelCapacity(modelData, globalDrawCount);
       const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
@@ -2012,20 +2020,52 @@ export class ArmyModel {
   }
 
   public computeBoundingSphere(): void {
-    this.models.forEach((modelData) => {
+    this.models.forEach((_, modelType) => this.dirtyBaseModels.add(modelType));
+    this.cosmeticModels.forEach((_, cosmeticId) => this.dirtyCosmeticModels.add(cosmeticId));
+    this.flushDirtyModelUpdates();
+  }
+
+  public flushDirtyModelUpdates(): number {
+    let dirtyModelCount = 0;
+
+    this.dirtyBaseModels.forEach((modelType) => {
+      const modelData = this.models.get(modelType);
+      if (!modelData) {
+        return;
+      }
+
+      dirtyModelCount += 1;
       modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
         mesh.computeBoundingSphere();
       });
       modelData.contactShadowMesh?.computeBoundingSphere();
     });
 
-    // Also compute for cosmetic models
-    this.cosmeticModels.forEach((modelData) => {
+    this.dirtyCosmeticModels.forEach((cosmeticId) => {
+      const modelData = this.cosmeticModels.get(cosmeticId);
+      if (!modelData) {
+        return;
+      }
+
+      dirtyModelCount += 1;
       modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
         mesh.computeBoundingSphere();
       });
       modelData.contactShadowMesh?.computeBoundingSphere();
     });
+
+    this.dirtyBaseModels.clear();
+    this.dirtyCosmeticModels.clear();
+
+    return dirtyModelCount;
   }
 
   public raycastAll(raycaster: Raycaster): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {

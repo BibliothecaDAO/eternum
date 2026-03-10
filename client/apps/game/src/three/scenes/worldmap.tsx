@@ -226,7 +226,7 @@ import {
 } from "./worldmap-terrain-convergence";
 
 interface CachedMatrixEntry {
-  matrices: InstancedBufferAttribute | null;
+  matrices: Float32Array | null;
   count: number;
   landColors?: Float32Array | null;
   box?: Box3;
@@ -371,6 +371,8 @@ export default class WorldmapScene extends HexagonScene {
         terrainRevision: number;
       }
     | null = null;
+  private currentInteractiveWindow: { startRow: number; startCol: number; width: number; height: number } | null =
+    null;
   private toriiLoadingCounter = 0;
   private isSwitchedOff = false;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
@@ -3444,16 +3446,55 @@ export default class WorldmapScene extends HexagonScene {
     const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
     const interactiveStartRow = chunkCenterRow - Math.floor(normalizedHeight / 2);
     const interactiveStartCol = chunkCenterCol - Math.floor(normalizedWidth / 2);
+    const stripPlan =
+      this.currentInteractiveWindow &&
+      this.currentInteractiveWindow.width === normalizedWidth &&
+      this.currentInteractiveWindow.height === normalizedHeight
+        ? resolveHexGridStripUpdatePlan({
+            previousStartRow: this.currentInteractiveWindow.startRow,
+            previousStartCol: this.currentInteractiveWindow.startCol,
+            nextStartRow: startRow,
+            nextStartCol: startCol,
+            renderSize: { width: normalizedWidth, height: normalizedHeight },
+            chunkSize: this.chunkSize,
+          })
+        : null;
 
-    // Keep interaction state bounded to the active rendered window.
-    this.interactiveHexManager.clearHexes();
-    for (let row = interactiveStartRow; row < interactiveStartRow + normalizedHeight; row++) {
-      for (let col = interactiveStartCol; col < interactiveStartCol + normalizedWidth; col++) {
-        this.interactiveHexManager.addHex({ col, row });
+    if (!stripPlan || stripPlan.mode === "full") {
+      this.interactiveHexManager.clearHexes();
+      for (let row = interactiveStartRow; row < interactiveStartRow + normalizedHeight; row++) {
+        for (let col = interactiveStartCol; col < interactiveStartCol + normalizedWidth; col++) {
+          this.interactiveHexManager.addHex({ col, row });
+        }
+      }
+    } else {
+      for (let row = stripPlan.previousBounds.minRow; row <= stripPlan.previousBounds.maxRow; row += 1) {
+        for (let col = stripPlan.previousBounds.minCol; col <= stripPlan.previousBounds.maxCol; col += 1) {
+          const isRetained =
+            row >= stripPlan.retainedBounds.minRow &&
+            row <= stripPlan.retainedBounds.maxRow &&
+            col >= stripPlan.retainedBounds.minCol &&
+            col <= stripPlan.retainedBounds.maxCol;
+          if (!isRetained) {
+            this.interactiveHexManager.removeHex({ col, row });
+          }
+        }
+      }
+
+      for (let row = stripPlan.incomingBounds.minRow; row <= stripPlan.incomingBounds.maxRow; row += 1) {
+        for (let col = stripPlan.incomingBounds.minCol; col <= stripPlan.incomingBounds.maxCol; col += 1) {
+          this.interactiveHexManager.addHex({ col, row });
+        }
       }
     }
 
     this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, normalizedWidth, normalizedHeight);
+    this.currentInteractiveWindow = {
+      startRow,
+      startCol,
+      width: normalizedWidth,
+      height: normalizedHeight,
+    };
   }
 
   private getTerrainCellKey(col: number, row: number): string {
@@ -3871,7 +3912,7 @@ export default class WorldmapScene extends HexagonScene {
 
         PerformanceMonitor.begin("hexGrid.cacheSnapshot");
         try {
-          this.cacheMatricesForChunk(startRow, startCol);
+          this.cacheGeneratedTerrainBuffersForChunk(startRow, startCol, biomeHexes);
           this.currentTerrainCells = nextTerrainCells;
           this.currentTerrainWindow = {
             startRow,
@@ -4415,12 +4456,7 @@ export default class WorldmapScene extends HexagonScene {
   private disposeCachedMatrices(chunkKey: string) {
     const cached = this.cachedMatrices.get(chunkKey);
     if (!cached) return;
-
-    cached.forEach(({ matrices }) => {
-      if (matrices) {
-        this.releaseInstancedAttribute(matrices);
-      }
-    });
+    cached.clear();
   }
 
   private releaseInstancedAttribute(attribute: InstancedBufferAttribute) {
@@ -4641,25 +4677,101 @@ export default class WorldmapScene extends HexagonScene {
     return this.getTerrainCountSnapshot(startRow, startCol).expectedExploredTerrainInstances;
   }
 
-  private cacheMatricesForChunk(startRow: number, startCol: number) {
+  private cacheGeneratedTerrainBuffersForChunk(
+    startRow: number,
+    startCol: number,
+    biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]>,
+  ) {
     const chunkKey = `${startRow},${startCol}`;
-    if (!this.cachedMatrices.has(chunkKey)) {
-      this.cachedMatrices.set(chunkKey, new Map());
+    const cachedChunk = new Map<string, CachedMatrixEntry>();
+    let totalCachedTerrainInstances = 0;
+    let cachedExploredTerrainInstances = 0;
+    let cachedOutlineTerrainInstances = 0;
+
+    const { box, sphere } = this.computeChunkBounds(startRow, startCol);
+    for (const [biome, matrices] of Object.entries(biomeHexes)) {
+      const count = matrices.length;
+      totalCachedTerrainInstances += count;
+      if (this.isExploredBiomeCacheKey(String(biome))) {
+        cachedExploredTerrainInstances += count;
+      } else if (String(biome) === "Outline") {
+        cachedOutlineTerrainInstances += count;
+      }
+
+      if (count === 0) {
+        cachedChunk.set(biome, { matrices: null, count, landColors: null });
+        continue;
+      }
+
+      const denseMatrices = new Float32Array(count * 16);
+      matrices.forEach((matrix, index) => {
+        denseMatrices.set(matrix.elements, index * 16);
+      });
+      cachedChunk.set(biome, {
+        matrices: denseMatrices,
+        count,
+        landColors: null,
+      });
     }
 
-    const cachedChunk = this.cachedMatrices.get(chunkKey)!;
+    const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+    const expectedVisibleTerrainInstances = this.getExpectedVisibleTerrainInstances(startRow, startCol);
+    if (
+      this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
+      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
+      (this.state.isSpectating &&
+        shouldRejectCachedSpectatorTerrainSnapshot({
+          outlineTerrainInstances: cachedOutlineTerrainInstances,
+          expectedVisibleTerrainInstances,
+          maxOutlineFraction: this.maxCachedSpectatorOutlineFraction,
+          minExpectedVisibleTerrainInstances: this.minExpectedSpectatorTilesForValidation,
+        }))
+    ) {
+      if (import.meta.env.DEV) {
+        console.warn("[CACHE] Rejecting suspicious terrain snapshot", {
+          chunkKey,
+          totalCachedTerrainInstances,
+          cachedExploredTerrainInstances,
+          cachedOutlineTerrainInstances,
+          expectedExploredTerrainInstances,
+          expectedVisibleTerrainInstances,
+          renderHexCapacity: this.getRenderHexCapacity(),
+          minCoverageFraction: this.minCachedTerrainCoverageFraction,
+          minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
+          maxSpectatorOutlineFraction: this.maxCachedSpectatorOutlineFraction,
+        });
+      }
+      this.cachedMatrices.delete(chunkKey);
+      const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
+      if (existingIndex !== -1) {
+        this.cachedMatrixOrder.splice(existingIndex, 1);
+      }
+      return;
+    }
+
+    cachedChunk.set("__bounds__", {
+      matrices: null,
+      count: 0,
+      box,
+      sphere,
+      terrainRevision: this.terrainRevision,
+      areaKey: this.getRenderAreaKeyForChunk(chunkKey),
+    });
+
+    this.cachedMatrices.set(chunkKey, cachedChunk);
+    this.touchMatrixCache(chunkKey);
+    this.ensureMatrixCacheLimit();
+  }
+
+  private cacheMatricesForChunk(startRow: number, startCol: number) {
+    const chunkKey = `${startRow},${startCol}`;
+    const cachedChunk = new Map<string, CachedMatrixEntry>();
     let totalCachedTerrainInstances = 0;
     let cachedExploredTerrainInstances = 0;
     let cachedOutlineTerrainInstances = 0;
 
     const { box, sphere } = this.computeChunkBounds(startRow, startCol);
     for (const [biome, model] of this.biomeModels) {
-      const existing = cachedChunk.get(biome);
-      if (existing) {
-        if (existing.matrices) {
-          this.releaseInstancedAttribute(existing.matrices);
-        }
-      }
       const { matrices, count } = model.getMatricesAndCount();
       totalCachedTerrainInstances += count;
       if (this.isExploredBiomeCacheKey(String(biome))) {
@@ -4672,6 +4784,9 @@ export default class WorldmapScene extends HexagonScene {
         cachedChunk.set(biome, { matrices: null, count, landColors: null });
         continue;
       }
+      const denseMatrices = new Float32Array(count * 16);
+      denseMatrices.set((matrices.array as Float32Array).subarray(0, count * 16));
+      this.releaseInstancedAttribute(matrices);
       const landMesh = model.instancedMeshes.find((mesh) => mesh.name === LAND_NAME);
       let landColors: Float32Array | null = null;
       if (landMesh?.instanceColor) {
@@ -4681,7 +4796,7 @@ export default class WorldmapScene extends HexagonScene {
         landColors.set(source.subarray(0, requiredFloats));
       }
 
-      cachedChunk.set(biome, { matrices, count, landColors });
+      cachedChunk.set(biome, { matrices: denseMatrices, count, landColors });
     }
 
     const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
@@ -4721,7 +4836,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     cachedChunk.set("__bounds__", {
-      matrices: null as InstancedBufferAttribute | null,
+      matrices: null,
       count: 0,
       box,
       sphere,
@@ -4729,6 +4844,7 @@ export default class WorldmapScene extends HexagonScene {
       areaKey: this.getRenderAreaKeyForChunk(chunkKey),
     });
 
+    this.cachedMatrices.set(chunkKey, cachedChunk);
     this.touchMatrixCache(chunkKey);
     this.ensureMatrixCacheLimit();
   }
@@ -4862,7 +4978,7 @@ export default class WorldmapScene extends HexagonScene {
         const { matrices, count, landColors } = entry;
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         if (matrices) {
-          hexMesh.setMatricesAndCount(matrices, count);
+          hexMesh.setDenseMatricesAndCount(matrices, count);
         } else {
           hexMesh.setCount(count);
         }
@@ -6275,6 +6391,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyLastUpdateAt.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
+    this.currentInteractiveWindow = null;
   }
 
   destroy() {

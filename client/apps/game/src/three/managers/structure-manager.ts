@@ -164,6 +164,7 @@ export class StructureManager {
   private needsSpatialReindex = false;
   private visibleStructureCount = 0;
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
+  private activeVisibleModels: Set<InstancedModel> = new Set();
   private isDestroyed = false;
   private pruneTransitionChunkHistory(): void {
     this.transitionChunkByToken.forEach((_, token) => {
@@ -1215,16 +1216,8 @@ export class StructureManager {
 
     this.wonderEntityIdMaps.clear();
 
-    // Reset all model counts - use a batched approach to avoid repeated needsUpdate/computeBoundingSphere
-    // We'll track counts per model and call setCount once at the end
-    this.structureModels.forEach((models) => {
-      models.forEach((model) => model.setCount(0));
-    });
-    this.cosmeticStructureModels.forEach((models) => {
-      models.forEach((model) => model.setCount(0));
-    });
-    this.entityIdMaps.clear();
-    this.cosmeticEntityIdMaps.clear();
+    const nextEntityIdMaps = new Map<StructureType, Map<number, ID>>();
+    const nextCosmeticEntityIdMaps = new Map<string, Map<number, ID>>();
 
     // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
     const modelInstanceCounts = new Map<InstancedModel, number>();
@@ -1241,9 +1234,8 @@ export class StructureManager {
         continue;
       }
 
-      if (!this.entityIdMaps.has(structureType)) {
-        this.entityIdMaps.set(structureType, new Map());
-      }
+      const entityIdMap = nextEntityIdMaps.get(structureType) ?? new Map<number, ID>();
+      nextEntityIdMaps.set(structureType, entityIdMap);
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
@@ -1257,7 +1249,7 @@ export class StructureManager {
           const currentCount = modelInstanceCounts.get(modelType) ?? 0;
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
           modelInstanceCounts.set(modelType, currentCount + 1);
-          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+          entityIdMap.set(currentCount, structure.entityId);
 
           if (structure.hasWonder) {
             const wonderModel = models[WONDER_MODEL_INDEX];
@@ -1271,7 +1263,7 @@ export class StructureManager {
           const currentCount = modelInstanceCounts.get(modelType) ?? 0;
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
           modelInstanceCounts.set(modelType, currentCount + 1);
-          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+          entityIdMap.set(currentCount, structure.entityId);
         }
       });
 
@@ -1286,9 +1278,8 @@ export class StructureManager {
         continue;
       }
 
-      if (!this.cosmeticEntityIdMaps.has(cosmeticId)) {
-        this.cosmeticEntityIdMaps.set(cosmeticId, new Map());
-      }
+      const cosmeticEntityIdMap = nextCosmeticEntityIdMaps.get(cosmeticId) ?? new Map<number, ID>();
+      nextCosmeticEntityIdMaps.set(cosmeticId, cosmeticEntityIdMap);
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
@@ -1302,17 +1293,26 @@ export class StructureManager {
           const currentCount = modelInstanceCounts.get(model) ?? 0;
           model.setMatrixAt(currentCount, this.dummy.matrix);
           modelInstanceCounts.set(model, currentCount + 1);
-          this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
+          cosmeticEntityIdMap.set(currentCount, structure.entityId);
         }
       });
 
       // Note: setCount will be called once per model after all structures are processed
     }
 
+    for (const model of this.activeVisibleModels) {
+      if (!modelInstanceCounts.has(model)) {
+        model.setCount(0);
+      }
+    }
+
     // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
     for (const [model, count] of modelInstanceCounts) {
       model.setCount(count);
     }
+    this.activeVisibleModels = new Set(modelInstanceCounts.keys());
+    this.entityIdMaps = nextEntityIdMaps;
+    this.cosmeticEntityIdMaps = nextCosmeticEntityIdMaps;
 
     // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
     if (this.pointsRenderers) {

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { NoToneMapping } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@bibliothecadao/eternum", () => {
@@ -197,5 +198,48 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
+  });
+});
+
+describe("GameRenderer tone-mapping path", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.restoreAllMocks();
+  });
+
+  it("disables renderer tone mapping when composer tone mapping is active", () => {
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.renderer = {
+      toneMapping: 1,
+      toneMappingExposure: 0.8,
+    };
+    subject.postProcessingConfig = {
+      toneMapping: {
+        exposure: 0.7,
+        mode: 1,
+        whitePoint: 1,
+      },
+    };
+    subject.toneMappingEffect = {};
+
+    subject.syncToneMappingPath();
+
+    expect(subject.renderer.toneMapping).toBe(NoToneMapping);
+    expect(subject.renderer.toneMappingExposure).toBe(1);
+  });
+
+  it("restores renderer tone mapping when post-processing tone mapping is inactive", () => {
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.renderer = {
+      toneMapping: NoToneMapping,
+      toneMappingExposure: 1,
+    };
+    subject.postProcessingConfig = undefined;
+    subject.toneMappingEffect = undefined;
+
+    subject.syncToneMappingPath();
+
+    expect(subject.renderer.toneMapping).not.toBe(NoToneMapping);
+    expect(subject.renderer.toneMappingExposure).toBe(0.8);
   });
 });

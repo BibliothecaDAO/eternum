@@ -153,4 +153,20 @@ describe("InteractiveHexManager resolveHexFromPoint", () => {
     expect(resolved.hexCoords).toEqual({ col: 0, row: -1 });
     expect(resolved.position.z).toBeCloseTo(-1.5, 5);
   });
+
+  it("removes outgoing hexes from the retained interactive window without clearing the whole set", () => {
+    const scene = new THREE.Scene();
+    const subject = new InteractiveHexManager(scene) as any;
+
+    subject.addHex({ col: 0, row: 0 });
+    subject.addHex({ col: 1, row: 0 });
+    subject.addHex({ col: 2, row: 0 });
+    subject.removeHex({ col: 0, row: 0 });
+    subject.updateVisibleHexes(1, 0, 3, 1);
+
+    expect(subject.allHexes.has("0,0")).toBe(false);
+    expect(subject.visibleHexes.has("0,0")).toBe(false);
+    expect(subject.visibleHexes.has("1,0")).toBe(true);
+    expect(subject.visibleHexes.has("2,0")).toBe(true);
+  });
 });

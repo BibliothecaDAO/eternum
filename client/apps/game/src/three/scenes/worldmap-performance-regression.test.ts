@@ -24,4 +24,22 @@ describe("worldmap performance regressions", () => {
     expect(source).toMatch(/getExpectedVisibleTerrainInstances[\s\S]*this\.getTerrainCountSnapshot\(/);
     expect(source).toMatch(/getResolvedSpectatorTileInstances[\s\S]*this\.getTerrainCountSnapshot\(/);
   });
+
+  it("stores terrain cache entries from cache-owned dense buffers instead of snapshotting live instanced meshes after commit", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/interface\s+CachedMatrixEntry\s*\{[\s\S]*matrices:\s*Float32Array\s*\|\s*null;/);
+    expect(source).toMatch(/private\s+cacheGeneratedTerrainBuffersForChunk\s*\(/);
+    expect(source).not.toMatch(/updateHexagonGrid[\s\S]*this\.cacheMatricesForChunk\(startRow,\s*startCol\)/);
+  });
+
+  it("updates interactive hex windows incrementally for adjacent chunk shifts", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/private\s+currentInteractiveWindow:/);
+    expect(source).toMatch(/computeInteractiveHexes[\s\S]*resolveHexGridStripUpdatePlan\(/);
+    expect(source).toMatch(
+      /computeInteractiveHexes[\s\S]*if\s*\(!stripPlan\s*\|\|\s*stripPlan\.mode === "full"\)\s*\{[\s\S]*this\.interactiveHexManager\.clearHexes\(\)/,
+    );
+  });
 });

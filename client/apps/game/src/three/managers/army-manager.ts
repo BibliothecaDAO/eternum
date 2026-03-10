@@ -188,6 +188,7 @@ export class ArmyManager {
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
+  private dirtyAttachedArmyEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private chunkToArmies: Map<string, Set<ID>> = new Map();
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
@@ -747,9 +748,7 @@ export class ArmyManager {
       }
 
       this.refreshVisibleArmyOwnerState(army);
-      this.armyModel.updateAllInstances();
-      this.syncVisibleSlots();
-      this.frustumVisibilityDirty = true;
+      this.flushDirtyArmyModelUpdates();
     }
 
     return true;
@@ -1089,6 +1088,7 @@ export class ArmyManager {
     const updatedArmy = { ...army, matrixIndex: slot };
     this.armies.set(army.entityId, updatedArmy);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
+    this.markAttachedArmyTransformDirty(numericId);
   }
 
   private removeVisibleArmy(entityId: ID, options?: { trackOrder?: boolean }): number | null {
@@ -1126,6 +1126,7 @@ export class ArmyManager {
       this.activeArmyAttachmentEntities.delete(numericId);
       this.armyAttachmentSignatures.delete(numericId);
     }
+    this.dirtyAttachedArmyEntities.delete(numericId);
 
     this.armyModel.freeInstanceSlot(numericId, slot);
 
@@ -1184,6 +1185,15 @@ export class ArmyManager {
     this.armyModel.setVisibleSlots(this.visibleArmyIndices.values());
   }
 
+  private flushDirtyArmyModelUpdates(): void {
+    this.syncVisibleSlots();
+    const dirtyModelCount = this.armyModel.flushDirtyModelUpdates();
+    if (dirtyModelCount > 0) {
+      this.playerIndicatorManager.computeBoundingSphere();
+      this.frustumVisibilityDirty = true;
+    }
+  }
+
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
     if (templates.length === 0) {
       return "";
@@ -1218,6 +1228,7 @@ export class ArmyManager {
         this.attachmentManager.spawnAttachments(entityId, templates);
         this.armyAttachmentSignatures.set(entityId, signature);
         this.activeArmyAttachmentEntities.add(entityId);
+        this.markAttachedArmyTransformDirty(entityId);
       }
     });
 
@@ -1236,17 +1247,27 @@ export class ArmyManager {
       this.attachmentManager.removeAttachments(entityId);
       this.activeArmyAttachmentEntities.delete(entityId);
       this.armyAttachmentSignatures.delete(entityId);
+      this.dirtyAttachedArmyEntities.delete(entityId);
     });
   }
 
-  private updateArmyAttachmentTransforms() {
-    if (this.activeArmyAttachmentEntities.size === 0) {
+  private markAttachedArmyTransformDirty(entityId: ID | number): void {
+    this.dirtyAttachedArmyEntities.add(this.toNumericId(entityId));
+  }
+
+  private updateDirtyArmyAttachmentTransforms() {
+    if (this.activeArmyAttachmentEntities.size === 0 || this.dirtyAttachedArmyEntities.size === 0) {
       return;
     }
 
-    this.visibleArmies.forEach((army) => {
-      const entityId = this.toNumericId(army.entityId);
+    Array.from(this.dirtyAttachedArmyEntities).forEach((entityId) => {
       if (!this.activeArmyAttachmentEntities.has(entityId)) {
+        this.dirtyAttachedArmyEntities.delete(entityId);
+        return;
+      }
+      const army = this.armies.get(entityId);
+      if (!army || !this.visibleArmyIndices.has(army.entityId)) {
+        this.dirtyAttachedArmyEntities.delete(entityId);
         return;
       }
 
@@ -1271,6 +1292,9 @@ export class ArmyManager {
       const mountTransforms = resolveArmyMountTransforms(modelType, baseTransform, this.armyAttachmentTransformScratch);
 
       this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms);
+      if (!this.armyModel.isEntityMoving(entityId)) {
+        this.dirtyAttachedArmyEntities.delete(entityId);
+      }
     });
   }
 
@@ -1381,8 +1405,8 @@ export class ArmyManager {
       PerformanceMonitor.begin("armyChunk.attachments");
       try {
         this.syncVisibleArmyAttachments(this.visibleArmies);
-        this.updateArmyAttachmentTransforms();
-        this.syncVisibleSlots();
+        this.updateDirtyArmyAttachmentTransforms();
+        this.flushDirtyArmyModelUpdates();
       } finally {
         PerformanceMonitor.end("armyChunk.attachments");
       }
@@ -1390,10 +1414,7 @@ export class ArmyManager {
       if (buffersDirty) {
         PerformanceMonitor.begin("armyChunk.upload");
         try {
-          this.armyModel.updateAllInstances();
-          this.armyModel.computeBoundingSphere();
-          this.playerIndicatorManager.computeBoundingSphere();
-          this.frustumVisibilityDirty = true;
+          this.flushDirtyArmyModelUpdates();
         } finally {
           PerformanceMonitor.end("armyChunk.upload");
         }
@@ -1968,9 +1989,7 @@ export class ArmyManager {
       this.visibleArmies = this.visibleArmyOrder
         .map((visibleId) => this.armies.get(visibleId))
         .filter((visible): visible is ArmyData => Boolean(visible));
-      this.syncVisibleSlots();
-      this.armyModel.updateAllInstances();
-      this.frustumVisibilityDirty = true;
+      this.flushDirtyArmyModelUpdates();
     }
 
     this.armyModel.releaseEntity(numericEntityId);
@@ -2059,9 +2078,7 @@ export class ArmyManager {
     });
 
     if (refreshedVisibleArmy) {
-      this.armyModel.updateAllInstances();
-      this.syncVisibleSlots();
-      this.frustumVisibilityDirty = true;
+      this.flushDirtyArmyModelUpdates();
     }
 
     return updatedArmyIds;
@@ -2267,31 +2284,12 @@ export class ArmyManager {
         );
       }
 
-      // 2. Update attachment transforms
-      if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
-        if (instanceData?.position) {
-          this.tempCosmeticPosition.copy(instanceData.position);
-        } else {
-          this.getArmyWorldPositionInto(this.tempCosmeticPosition, army.hexCoords);
-        }
-
-        const baseTransform = {
-          position: this.tempCosmeticPosition,
-          rotation: instanceData?.rotation,
-          scale: instanceData?.scale ?? this.scale,
-        };
-
-        const { x, y } = army.hexCoords.getContract();
-        const biome = Biome.getBiome(x, y);
-        const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
-
-        const mountTransforms = resolveArmyMountTransforms(
-          modelType,
-          baseTransform,
-          this.armyAttachmentTransformScratch,
-        );
-
-        this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
+      if (
+        hasActiveAttachments &&
+        this.activeArmyAttachmentEntities.has(numericEntityId) &&
+        this.armyModel.isEntityMoving(numericEntityId)
+      ) {
+        this.markAttachedArmyTransformDirty(numericEntityId);
       }
     }
 
@@ -2301,6 +2299,8 @@ export class ArmyManager {
       this.pointsRenderers.ally.endBatch();
       this.pointsRenderers.agent.endBatch();
     }
+
+    this.updateDirtyArmyAttachmentTransforms();
   }
 
   private applyFrustumVisibilityToLabels() {
@@ -2432,9 +2432,7 @@ export class ArmyManager {
       .map((id) => this.armies.get(id))
       .filter((army): army is ArmyData => Boolean(army));
 
-    this.armyModel.updateAllInstances();
-    this.syncVisibleSlots();
-    this.frustumVisibilityDirty = true;
+    this.flushDirtyArmyModelUpdates();
   }
 
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
@@ -3107,6 +3105,7 @@ ${
     this.attachmentManager.clear();
     this.activeArmyAttachmentEntities.clear();
     this.armyAttachmentSignatures.clear();
+    this.dirtyAttachedArmyEntities.clear();
 
     // Clean up points renderers
     if (this.pointsRenderers) {
