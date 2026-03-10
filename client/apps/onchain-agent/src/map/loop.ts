@@ -90,9 +90,11 @@ export function createMapLoop(
       const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails, staminaConfig, previousAnchor);
       ctx.snapshot = snapshot;
 
-      // Fresh Torii data supersedes optimistic tracking.
+      // Fresh Torii data supersedes optimistic position tracking.
       ctx.recentlyMoved = undefined;
-      ctx.staminaSpent = undefined;
+      // Note: staminaSpent is NOT cleared on refresh — Torii may not have
+      // indexed the stamina-consuming tx yet. It's cleared per-army in the
+      // move tool when explorerInfo returns an updated staminaUpdatedTick.
 
       if (ctx.filePath) writeFileSync(ctx.filePath, snapshot.text);
     } catch (_) {

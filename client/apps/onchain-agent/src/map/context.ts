@@ -15,10 +15,10 @@ export interface MapContext {
    */
   recentlyMoved?: Set<string>;
   /**
-   * Stamina consumed by each army this tick (entity ID → stamina spent).
-   * Cleared on each fresh map load from Torii. Used to prevent stale
-   * stamina data from causing failed transactions when an army moves
-   * multiple times in one tick before Torii indexes the updates.
+   * Stamina consumed by each army since last on-chain update.
+   * Keyed by entity ID → { spent, atTick } where atTick is the
+   * staminaUpdatedTick when the spend was recorded. When explorerInfo
+   * returns a newer staminaUpdatedTick, the entry is stale and ignored.
    */
-  staminaSpent?: Map<number, number>;
+  staminaSpent?: Map<number, { spent: number; atTick: number }>;
 }
