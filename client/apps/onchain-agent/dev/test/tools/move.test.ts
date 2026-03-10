@@ -151,7 +151,9 @@ describe("move_army — prerequisites", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow("No army at");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
+      "No army at",
+    );
   });
 
   it("throws when army is not yours", async () => {
@@ -160,7 +162,9 @@ describe("move_army — prerequisites", () => {
     const explorer = makeExplorer(0, 0, 100, { ownerAddress: "0xENEMY" });
     const tool = createMoveTool(makeClient(explorer), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow("not yours");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
+      "not yours",
+    );
   });
 });
 
@@ -170,7 +174,9 @@ describe("move_army — already at target", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(5, 5, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 1 })).rejects.toThrow("Already at");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 1 })).rejects.toThrow(
+      "Already at",
+    );
   });
 });
 
@@ -181,7 +187,9 @@ describe("move_army — no stamina", () => {
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 0)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 3 })).rejects.toThrow("no stamina");
+    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 3 })).rejects.toThrow(
+      "no stamina",
+    );
   });
 });
 

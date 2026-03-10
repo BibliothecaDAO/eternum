@@ -102,9 +102,7 @@ export function createAttackTool(
 
       const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
       const tracked = mapCtx.staminaSpent?.get(explorer.entityId);
-      const alreadySpent = (tracked && tracked.atTick === explorer.staminaUpdatedTick)
-        ? tracked.spent
-        : 0;
+      const alreadySpent = tracked && tracked.atTick === explorer.staminaUpdatedTick ? tracked.spent : 0;
       const projectedStamina = Math.max(0, baseProjected - alreadySpent);
       const STAMINA_ATTACK_REQ = 50;
       if (projectedStamina < STAMINA_ATTACK_REQ) {

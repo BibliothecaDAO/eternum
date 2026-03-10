@@ -7,7 +7,7 @@
 import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-export interface RealmSnapshot {
+interface RealmSnapshot {
   /** Raw on-chain balances — safe for spending decisions and budget caps. */
   balances: Map<number, number>;
   /** Projected balances including unharvested production — use for prioritisation only. */
