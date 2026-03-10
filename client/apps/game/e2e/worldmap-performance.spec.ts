@@ -1,13 +1,25 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import type { WorldmapBenchmarkSnapshot } from "../src/three/scenes/worldmap-perf-debug-hooks";
 
 const DEFAULT_DEBUG_ARMY_COUNT = readOptionalNumber("WORLDMAP_DEBUG_ARMY_COUNT") ?? 80;
 const DEFAULT_SWEEP_ITERATIONS = readOptionalNumber("WORLDMAP_SWEEP_ITERATIONS") ?? 8;
+const DEFAULT_WORLD_NAME = process.env.WORLDMAP_SPECTATOR_WORLD ?? "s0-game-9";
+const DEFAULT_WORLD_CHAIN = (process.env.WORLDMAP_SPECTATOR_CHAIN as
+  | "mainnet"
+  | "sepolia"
+  | "slot"
+  | "slottest"
+  | "local"
+  | undefined) ?? "mainnet";
 const FRAME_P95_BUDGET_MS = readOptionalNumber("WORLDMAP_FRAME_P95_BUDGET_MS");
 const SWITCH_P95_BUDGET_MS = readOptionalNumber("WORLDMAP_SWITCH_P95_BUDGET_MS");
 const FRAME_P95_REGRESSION_FRACTION = readOptionalNumber("WORLDMAP_FRAME_P95_REGRESSION_FRACTION");
 const SWITCH_P95_REGRESSION_FRACTION = readOptionalNumber("WORLDMAP_SWITCH_P95_REGRESSION_FRACTION");
+const BENCHMARK_OUTPUT_PATH = process.env.WORLDMAP_BENCHMARK_OUTPUT_PATH;
+const BENCHMARK_SCREENSHOT_PATH = process.env.WORLDMAP_BENCHMARK_SCREENSHOT_PATH;
 
 interface ScenarioResult {
   label: string;
@@ -47,12 +59,40 @@ function getRegressionFraction(baseline: number | null, current: number | null):
   return (current - baseline) / baseline;
 }
 
-async function openSpectatorWorldmap(page: Page): Promise<void> {
-  await page.goto("/");
-  await page.getByText("Spectate").first().click();
-  await page.waitForURL(/\/play\/map/);
+async function seedActiveWorld(page: Page, worldName: string): Promise<void> {
+  await page.addInitScript(
+    ({ seededWorldName, seededWorldChain }) => {
+      const profiles = {
+        [seededWorldName]: {
+          name: seededWorldName,
+          chain: seededWorldChain,
+          toriiBaseUrl: `https://api.cartridge.gg/x/${seededWorldName}/torii`,
+          worldAddress: "0x0",
+          contractsBySelector: {},
+          fetchedAt: Date.now(),
+        },
+      };
+
+      window.localStorage.setItem("ACTIVE_WORLD_NAME", seededWorldName);
+      window.localStorage.setItem("ACTIVE_WORLD_CHAIN", seededWorldChain);
+      window.localStorage.setItem("WORLD_PROFILES", JSON.stringify(profiles));
+    },
+    { seededWorldName: worldName, seededWorldChain: DEFAULT_WORLD_CHAIN },
+  );
+}
+
+async function openSpectatorWorldmap(page: Page, worldName: string): Promise<void> {
+  await seedActiveWorld(page, worldName);
+  await page.goto(`/play/${encodeURIComponent(worldName)}/map?col=0&row=0&spectate=true`);
   await expect(page.locator("#main-canvas")).toBeVisible({ timeout: 60_000 });
-  await page.waitForTimeout(2_500);
+  await page.waitForFunction(() => {
+    const target = window as unknown as {
+      getWorldmapPerfState?: () => { currentChunk?: string } | null;
+    };
+    const state = target.getWorldmapPerfState?.();
+    return Boolean(state && state.currentChunk && state.currentChunk !== "null");
+  });
+  await page.waitForTimeout(1_500);
 }
 
 async function waitForBenchmarkHooks(page: Page): Promise<void> {
@@ -188,7 +228,7 @@ test.describe("worldmap performance benchmark", () => {
       pageErrors.push(error.stack ?? error.message);
     });
 
-    await openSpectatorWorldmap(page);
+    await openSpectatorWorldmap(page, DEFAULT_WORLD_NAME);
 
     if (consoleMessages.some((message) => message.includes("Error creating WebGL context"))) {
       test.skip(true, "Infra-blocked: browser environment could not create a WebGL context.");
@@ -232,6 +272,12 @@ test.describe("worldmap performance benchmark", () => {
     };
 
     await attachArtifacts(testInfo, page, {
+      metadata: {
+        capturedAt: new Date().toISOString(),
+        debugArmyCount: DEFAULT_DEBUG_ARMY_COUNT,
+        sweepIterations: DEFAULT_SWEEP_ITERATIONS,
+        playwrightProject: testInfo.project.name,
+      },
       terrainOnly,
       terrainAndUnits,
       comparison,
@@ -267,13 +313,28 @@ test.describe("worldmap performance benchmark", () => {
 });
 
 async function attachArtifacts(testInfo: TestInfo, page: Page, payload: Record<string, unknown>): Promise<void> {
+  const benchmarkJson = Buffer.from(JSON.stringify(payload, null, 2), "utf8");
+  const screenshot = await page.screenshot({ fullPage: true });
+
   await testInfo.attach("worldmap-benchmark.json", {
-    body: Buffer.from(JSON.stringify(payload, null, 2), "utf8"),
+    body: benchmarkJson,
     contentType: "application/json",
   });
 
   await testInfo.attach("worldmap-benchmark.png", {
-    body: await page.screenshot({ fullPage: true }),
+    body: screenshot,
     contentType: "image/png",
   });
+
+  await persistOptionalArtifact(BENCHMARK_OUTPUT_PATH, benchmarkJson);
+  await persistOptionalArtifact(BENCHMARK_SCREENSHOT_PATH, screenshot);
+}
+
+async function persistOptionalArtifact(filePath: string | undefined, contents: Buffer): Promise<void> {
+  if (!filePath) {
+    return;
+  }
+
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, contents);
 }

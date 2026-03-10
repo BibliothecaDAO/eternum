@@ -4,6 +4,9 @@
   "type": "module",
   "scripts": {
     "bench:worldmap": "playwright test e2e/worldmap-performance.spec.ts",
+    "bench:worldmap:feedback": "node ./scripts/worldmap-optimization-feedback.mjs",
+    "bench:worldmap:feedback:baseline": "node ./scripts/worldmap-optimization-feedback.mjs --update-baseline",
+    "bench:worldmap:feedback:headed": "node ./scripts/worldmap-optimization-feedback.mjs --headed",
     "bench:worldmap:headed": "playwright test e2e/worldmap-performance.spec.ts --headed",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "coverage": "vitest run --coverage",

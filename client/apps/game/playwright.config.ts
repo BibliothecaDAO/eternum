@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = "https://127.0.0.1:4173";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "https://127.0.0.1:4173";
+const baseUrl = new URL(baseURL);
+const webServerHost = baseUrl.hostname;
+const webServerPort = baseUrl.port || (baseUrl.protocol === "https:" ? "443" : "80");
 const shouldManageWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER !== "1";
 
 export default defineConfig({
@@ -31,7 +34,8 @@ export default defineConfig({
   ],
   webServer: shouldManageWebServer
     ? {
-        command: 'PATH="/Users/os/Library/pnpm:$PATH" pnpm dev --host 127.0.0.1 --port 4173',
+        command: `PATH="/Users/os/Library/pnpm:$PATH" pnpm dev --host ${webServerHost} --port ${webServerPort} --strictPort`,
+        ignoreHTTPSErrors: true,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
