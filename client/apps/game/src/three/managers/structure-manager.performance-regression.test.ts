@@ -176,6 +176,30 @@ describe("StructureManager performance regressions", () => {
     expect(updateVisibleStructures).not.toHaveBeenCalled();
   });
 
+  it("does not create hover labels during bulk showLabels calls", () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const addEntityIdLabel = vi.fn();
+
+    subject.currentChunk = "0,0";
+    subject.entityIdLabels = new Map();
+    subject.scratchPosition = { y: 0 };
+    subject.scratchLabelPosition = {
+      copy: vi.fn(() => subject.scratchLabelPosition),
+      y: 0,
+    };
+    subject.getVisibleStructuresForChunk = vi.fn(() => [
+      {
+        entityId: 1,
+        hexCoords: { col: 4, row: 6 },
+      },
+    ]);
+    subject.addEntityIdLabel = addEntityIdLabel;
+
+    subject.showLabels();
+
+    expect(addEntityIdLabel).not.toHaveBeenCalled();
+  });
+
   it("moves visible ownership-bucket point icons without a full visible rebuild", () => {
     const myRealmRemovePoint = vi.fn();
     const enemyRealmSetPoint = vi.fn();

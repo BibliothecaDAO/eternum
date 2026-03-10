@@ -1484,33 +1484,6 @@ export class StructureManager {
     this.frustumVisibilityDirty = true;
   }
 
-  private ensureLabelsForCurrentChunk(): void {
-    if (!isCommittedManagerChunk(this.currentChunk)) {
-      return;
-    }
-
-    const [startRow, startCol] = this.currentChunk.split(",").map(Number);
-    const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
-
-    visibleStructures.forEach((structure) => {
-      getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, this.scratchPosition);
-      this.scratchPosition.y += 0.05;
-
-      const existingLabel = this.entityIdLabels.get(structure.entityId);
-      if (existingLabel) {
-        this.updateStructureLabelData(structure, existingLabel);
-        this.scratchLabelPosition.copy(this.scratchPosition);
-        this.scratchLabelPosition.y += 1.95;
-        existingLabel.position.copy(this.scratchLabelPosition);
-        return;
-      }
-
-      this.addEntityIdLabel(structure, this.scratchPosition);
-    });
-
-    this.frustumVisibilityDirty = true;
-  }
-
   private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
     if (this.needsSpatialReindex) {
       this.rebuildSpatialIndex();
@@ -1848,7 +1821,7 @@ export class StructureManager {
   }
 
   public showLabels() {
-    this.ensureLabelsForCurrentChunk();
+    this.frustumVisibilityDirty = true;
   }
 
   public showLabel(entityId: ID): void {
