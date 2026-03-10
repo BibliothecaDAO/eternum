@@ -79,7 +79,10 @@ function describeAdjacent(
       continue;
     }
     const t = tiles.get(key);
-    if (!t || t.occupierType === 0) { counts.empty++; continue; }
+    if (!t || t.occupierType === 0) {
+      counts.empty++;
+      continue;
+    }
     if (isStructure(t.occupierType)) counts.structures++;
     else if (isExplorer(t.occupierType)) counts.armies++;
     else if (isChest(t.occupierType)) counts.chests++;
@@ -199,9 +202,7 @@ export function createMoveTool(
         const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
         const tracked = mapCtx.staminaSpent?.get(explorer.entityId);
         // If Torii has indexed a newer tick, our tracked spend is stale — discard it.
-        const alreadySpent = (tracked && tracked.atTick === explorer.staminaUpdatedTick)
-          ? tracked.spent
-          : 0;
+        const alreadySpent = tracked && tracked.atTick === explorer.staminaUpdatedTick ? tracked.spent : 0;
         const projectedStamina = Math.max(0, baseProjected - alreadySpent);
 
         if (projectedStamina <= 0) {
@@ -293,13 +294,14 @@ export function createMoveTool(
           staminaCost = staminaCost - lastTravelCost + gameConfig.stamina.exploreCost;
         }
 
-        const reachedTarget =
-          endPos.x === target.x && endPos.y === target.y;
+        const reachedTarget = endPos.x === target.x && endPos.y === target.y;
 
         const staminaAfter = projectedStamina - staminaCost;
         const movesAfter = Math.floor(staminaAfter / gameConfig.stamina.travelCost);
 
-        console.warn(`[MOVE] Food cost check not implemented — ensure realm has sufficient wheat/fish for ${pathResult.distance} steps.`);
+        console.warn(
+          `[MOVE] Food cost check not implemented — ensure realm has sufficient wheat/fish for ${pathResult.distance} steps.`,
+        );
 
         try {
           if (isExploreMove) {
@@ -403,9 +405,7 @@ export function createMoveTool(
             gridLookup.set(`${t.position.x},${t.position.y}`, t);
           }
         }
-        const adjacentInfo = mapCtx.snapshot
-          ? describeAdjacent(endPos, gridLookup, explored)
-          : "";
+        const adjacentInfo = mapCtx.snapshot ? describeAdjacent(endPos, gridLookup, explored) : "";
 
         const action = isExploreMove ? "Explored" : "Moved";
         let statusLine: string;

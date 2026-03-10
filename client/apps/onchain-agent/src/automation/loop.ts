@@ -92,9 +92,10 @@ export function createAutomationLoop(
           const biome = gridIndex?.get(`${s.coord_x},${s.coord_y}`)?.biome ?? 11;
           const level = s.level || 1;
           try {
-            const rows = typeof sql.fetchResourceBalancesWithProduction === "function"
-              ? await sql.fetchResourceBalancesWithProduction([entityId])
-              : await sql.fetchResourceBalancesAndProduction([entityId]);
+            const rows =
+              typeof sql.fetchResourceBalancesWithProduction === "function"
+                ? await sql.fetchResourceBalancesWithProduction([entityId])
+                : await sql.fetchResourceBalancesAndProduction([entityId]);
             return { entityId, biome, level, row: rows?.[0] ?? null };
           } catch {
             return { entityId, biome, level, row: null };
@@ -182,7 +183,11 @@ export function createAutomationLoop(
           if (plan.upgrade && plan.builds.length === 0) {
             const targetLevel = plan.upgrade.fromLevel + 1;
             const upgradeCosts = gameConfig.realmUpgradeCosts[targetLevel];
-            const canAffordUpgrade = upgradeCosts?.length > 0 && upgradeCosts.every((c: { resource: number; amount: number }) => (snapshot.balances.get(c.resource) ?? 0) >= c.amount);
+            const canAffordUpgrade =
+              upgradeCosts?.length > 0 &&
+              upgradeCosts.every(
+                (c: { resource: number; amount: number }) => (snapshot.balances.get(c.resource) ?? 0) >= c.amount,
+              );
             if (canAffordUpgrade) {
               upgradeIntent = plan.upgrade;
             } else {
@@ -238,7 +243,13 @@ export function createAutomationLoop(
           const troopPath = troopPathForBiome(biome);
           const isVillage = realmEntities.find((r) => Number(r.entity_id) === entityId)?.category === 5;
           const unifiedPlan = planProduction(
-            snapshot.balances, buildingCounts, troopPath, gameConfig, 60, isVillage, candidateBuilds,
+            snapshot.balances,
+            buildingCounts,
+            troopPath,
+            gameConfig,
+            60,
+            isVillage,
+            candidateBuilds,
           );
 
           // Convert affordable builds to BuildActions for executor
@@ -248,12 +259,20 @@ export function createAutomationLoop(
             useSimple: bt.useSimple,
           }));
 
-          console.log(`[AUTO] Realm ${entityId} | candidates: ${candidateBuilds.length}, affordable: ${buildActions.length}`);
+          console.log(
+            `[AUTO] Realm ${entityId} | candidates: ${candidateBuilds.length}, affordable: ${buildActions.length}`,
+          );
           if (buildActions.length > 0) {
-            console.log(`[AUTO] Realm ${entityId} | building:`, buildActions.map((a) => a.step.label));
+            console.log(
+              `[AUTO] Realm ${entityId} | building:`,
+              buildActions.map((a) => a.step.label),
+            );
           }
           if (unifiedPlan.skippedBuilds.length > 0) {
-            console.log(`[AUTO] Realm ${entityId} | skipped builds:`, unifiedPlan.skippedBuilds.map((s) => s.label));
+            console.log(
+              `[AUTO] Realm ${entityId} | skipped builds:`,
+              unifiedPlan.skippedBuilds.map((s) => s.label),
+            );
           }
 
           // Run both complex and simple production every tick

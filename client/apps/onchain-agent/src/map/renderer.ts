@@ -226,9 +226,7 @@ export function renderMap(
         if (isExplorerType(t.occupierType)) {
           const detail = explorerDetails?.get(t.occupierId);
           if (detail) {
-            const projected = staminaConfig
-              ? projectExplorerStamina(detail, staminaConfig)
-              : detail.stamina;
+            const projected = staminaConfig ? projectExplorerStamina(detail, staminaConfig) : detail.stamina;
             armyItems.push(
               `  ${ch} ${mapRow}:${col} (entity ${t.occupierId}) | ${detail.troopCount} ${detail.troopType} ${detail.troopTier} | stamina=${projected}`,
             );
@@ -320,5 +318,15 @@ export function renderMap(
   }
 
   const anchor: MapAnchor = { minX, minY, maxX, maxY };
-  return { text, headerLines, rowCount: totalRows, colCount: totalCols, tiles, gridIndex: grid, resolve, tileAt, anchor };
+  return {
+    text,
+    headerLines,
+    rowCount: totalRows,
+    colCount: totalCols,
+    tiles,
+    gridIndex: grid,
+    resolve,
+    tileAt,
+    anchor,
+  };
 }

@@ -46,7 +46,7 @@ export interface BuildingTarget {
   slot: any; // SlotResult — opaque to the planner
 }
 
-export interface UnifiedPlan extends ProductionPlan {
+interface UnifiedPlan extends ProductionPlan {
   affordableBuilds: BuildingTarget[];
   skippedBuilds: Array<{ label: string; reason: string }>;
 }
@@ -333,7 +333,7 @@ export function planProduction(
 
 // ── Smart weight computation ────────────────────────────────────────
 
-export interface SmartWeight {
+interface SmartWeight {
   resourceToResource: number;
   laborToResource: number;
 }
