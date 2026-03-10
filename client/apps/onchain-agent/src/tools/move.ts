@@ -186,6 +186,14 @@ export function createMoveTool(
           }
         }
 
+        // Merge in tiles explored recently but not yet in Torii's snapshot.
+        // This prevents explorer_explore on tiles we already explored this tick.
+        if (mapCtx.recentlyExplored) {
+          for (const key of mapCtx.recentlyExplored) {
+            explored.add(key);
+          }
+        }
+
         // Project stamina forward, then subtract any stamina already spent
         // since the last on-chain update (before Torii indexes the new tx).
         const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
@@ -349,6 +357,12 @@ export function createMoveTool(
         if (!mapCtx.recentlyMoved) mapCtx.recentlyMoved = new Map();
         mapCtx.recentlyMoved.set(`${endPos.x},${endPos.y}`, explorer.entityId);
         mapCtx.recentlyMoved.delete(`${start.x},${start.y}`);
+
+        // Track explored tile so subsequent moves treat it as travel, not explore.
+        if (isExploreMove) {
+          if (!mapCtx.recentlyExplored) mapCtx.recentlyExplored = new Set();
+          mapCtx.recentlyExplored.add(`${endPos.x},${endPos.y}`);
+        }
 
         // Track stamina consumed so subsequent moves for this army see
         // accurate remaining stamina (before Torii indexes the tx).
