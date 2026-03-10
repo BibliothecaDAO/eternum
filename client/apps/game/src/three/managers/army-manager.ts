@@ -968,7 +968,8 @@ export class ArmyManager {
   }
 
   private updateBattleTimerTracking(entityId: ID, battleCooldownEnd: number | undefined): void {
-    if (battleCooldownEnd && getBattleTimerLeft(battleCooldownEnd) > 0) {
+    const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
+    if (battleTimerLeft !== undefined && battleTimerLeft > 0) {
       this.armiesWithActiveBattleTimers.add(entityId);
       return;
     }
@@ -2791,7 +2792,7 @@ ${
         }
       }
 
-      if (newBattleTimerLeft <= 0) {
+      if (newBattleTimerLeft === undefined || newBattleTimerLeft <= 0) {
         this.armiesWithActiveBattleTimers.delete(entityId);
       }
     }
