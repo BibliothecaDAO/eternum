@@ -16,6 +16,12 @@ export interface MapContext {
    */
   recentlyMoved?: Map<string, number>;
   /**
+   * Chests opened recently but not yet reflected in Torii's snapshot.
+   * Keyed by tile "x,y". Pruned when the tile's occupierType becomes 0
+   * (chest removed) in the snapshot.
+   */
+  recentlyOpenedChests?: Set<string>;
+  /**
    * Tiles explored by our armies recently but not yet in Torii's snapshot.
    * Added after a successful explore move. Merged into the explored set
    * for pathfinding so subsequent moves treat these as travel, not explore.

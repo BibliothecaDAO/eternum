@@ -48,28 +48,9 @@ export async function executeRealmTick(input: TickInput): Promise<TickResult> {
     errors: [],
   };
 
-  // Production runs independently (no population impact).
-  const productionJob = (input.productionCalls &&
-    (input.productionCalls.resourceToResource.length > 0 || input.productionCalls.laborToResource.length > 0))
-    ? provider
-        .execute_realm_production_plan({
-          realm_entity_id: realmEntityId,
-          resource_to_resource: input.productionCalls.resourceToResource,
-          labor_to_resource: input.productionCalls.laborToResource,
-          signer,
-        })
-        .then(() => {
-          result.produced = true;
-          result.idle = false;
-        })
-        .catch((e: any) => {
-          result.errors.push(`Production failed: ${e.message ?? e}`);
-        })
-    : Promise.resolve();
-
-  // Buildings must run sequentially — each one changes population,
-  // and parallel execution causes "Population exceeds capacity" errors
-  // because each tx validates against the same pre-build state.
+  // Buildings run first and sequentially — they consume resources and change
+  // population. Running them before production ensures building costs aren't
+  // eaten by parallel production burns.
   for (const build of input.buildActions) {
     try {
       await provider.create_building({
@@ -102,8 +83,25 @@ export async function executeRealmTick(input: TickInput): Promise<TickResult> {
     }
   }
 
-  // Wait for production to finish (it was running in parallel with builds)
-  await productionJob;
+  // Production runs after buildings complete — buildings get priority
+  // on shared resources to avoid "Insufficient Balance" errors.
+  if (input.productionCalls) {
+    const { resourceToResource, laborToResource } = input.productionCalls;
+    if (resourceToResource.length > 0 || laborToResource.length > 0) {
+      try {
+        await provider.execute_realm_production_plan({
+          realm_entity_id: realmEntityId,
+          resource_to_resource: resourceToResource,
+          labor_to_resource: laborToResource,
+          signer,
+        });
+        result.produced = true;
+        result.idle = false;
+      } catch (e: any) {
+        result.errors.push(`Production failed: ${e.message ?? e}`);
+      }
+    }
+  }
 
   return result;
 }

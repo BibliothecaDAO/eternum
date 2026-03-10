@@ -110,6 +110,16 @@ export function createMapLoop(
         }
         if (ctx.recentlyExplored.size === 0) ctx.recentlyExplored = undefined;
       }
+      // Prune recentlyOpenedChests — remove when tile no longer has a chest.
+      if (ctx.recentlyOpenedChests && ctx.recentlyOpenedChests.size > 0) {
+        for (const tileKey of ctx.recentlyOpenedChests) {
+          const tile = snapshot.gridIndex.get(tileKey);
+          if (!tile || tile.occupierType !== 34) {
+            ctx.recentlyOpenedChests.delete(tileKey);
+          }
+        }
+        if (ctx.recentlyOpenedChests.size === 0) ctx.recentlyOpenedChests = undefined;
+      }
       // Note: staminaSpent is NOT cleared on refresh — Torii may not have
       // indexed the stamina-consuming tx yet. It's cleared per-army in the
       // move tool when explorerInfo returns an updated staminaUpdatedTick.
