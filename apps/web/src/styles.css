@@ -91,7 +91,7 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--border);
   }
 }
 
@@ -113,8 +113,8 @@
     --accent-foreground: oklch(0.24 0 0);
     --destructive: oklch(0.63 0.19 33.34);
     --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.88 0 0);
-    --input: oklch(0.88 0 0);
+    --border: oklch(0.52 0.04 75);
+    --input: oklch(0.44 0.03 80);
     --ring: oklch(0.43 0.04 41.99);
     --success: oklch(0.56 0.15 145);
     --success-foreground: oklch(0.98 0.02 140);
@@ -131,7 +131,7 @@
     --sidebar-primary-foreground: oklch(0.99 0 0);
     --sidebar-accent: oklch(0.98 0 0);
     --sidebar-accent-foreground: oklch(0.33 0 0);
-    --sidebar-border: oklch(0.94 0 0);
+    --sidebar-border: oklch(0.52 0.04 75);
     --sidebar-ring: oklch(0.77 0 0);
     --realm-bg-void: oklch(0.22 0.012 260);
     --realm-bg-smoke: oklch(0.3 0.018 245);
@@ -184,8 +184,8 @@
     --accent-foreground: oklch(0.95 0 0);
     --destructive: oklch(0.63 0.19 33.34);
     --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.24 0.01 91.75);
-    --input: oklch(0.4 0 0);
+    --border: oklch(0.38 0.04 75);
+    --input: oklch(0.46 0.04 82);
     --ring: oklch(0.92 0.05 66.17);
     --success: oklch(0.55 0.15 145);
     --success-foreground: oklch(0.95 0.02 140);
@@ -202,7 +202,7 @@
     --sidebar-primary-foreground: oklch(0.12 0.012 260);
     --sidebar-accent: oklch(0.27 0.01 286.03);
     --sidebar-accent-foreground: oklch(0.97 0 286.38);
-    --sidebar-border: oklch(0.27 0.01 286.03);
+    --sidebar-border: oklch(0.38 0.04 75);
     --sidebar-ring: oklch(0.87 0.01 286.29);
     --realm-bg-void: oklch(0.12 0.012 260);
     --realm-bg-smoke: oklch(0.17 0.016 250);

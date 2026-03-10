@@ -47,6 +47,12 @@ describe("account portal theme", () => {
     expect(styles).toContain("var(--realm-accent-brass)");
   });
 
+  it("maps semantic borders onto the realm gold palette", () => {
+    expect(styles).toContain("--border: oklch(0.52 0.04 75);");
+    expect(styles).toContain("--border: oklch(0.38 0.04 75);");
+    expect(styles).toContain("border-color: var(--border);");
+  });
+
   it("points marketplace CTAs at market.realms.world", () => {
     expect(homepageSource).toContain('href="https://market.realms.world');
     expect(homepageSource).not.toContain("empire.realms.world/trade/realms");
