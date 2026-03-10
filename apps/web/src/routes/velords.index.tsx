@@ -1,7 +1,9 @@
 import { lazy, Suspense, useMemo } from "react";
+import { PageHeader } from "@/components/layout/page-header";
 import { VelordsLockActivity } from "@/components/modules/velords/lock-activity";
 import { VelordsSourceBreakdown } from "@/components/modules/velords/source-breakdown";
 import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useVelordsData } from "@/hooks/use-velords-data";
@@ -222,81 +224,59 @@ function RouteComponent() {
   };
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <p className="realm-eyebrow">Lords</p>
-            <h1 className="realm-page-title text-3xl sm:text-4xl">
-              veLords Dashboard
-            </h1>
-            <p className="text-muted-foreground text-base sm:text-lg">
-              Stake $LORDS in the Lordship Protocol and monitor reward
-              performance.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCopyLink}>
-              <Link2 className="mr-2 h-4 w-4" />
-              Copy Link
-            </Button>
-            <Button variant="outline" onClick={handleCopySummary}>
-              <Copy className="mr-2 h-4 w-4" />
-              Copy Summary
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Lords"
+          title="veLords Dashboard"
+          description="Stake $LORDS in the Lordship Protocol and monitor reward performance."
+          actions={
+            <>
+              <Button variant="outline" onClick={handleCopyLink}>
+                <Link2 className="mr-2 h-4 w-4" />
+                Copy Link
+              </Button>
+              <Button variant="outline" onClick={handleCopySummary}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Summary
+              </Button>
+            </>
+          }
+        />
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-muted-foreground text-sm">
-              Total Voting Power (veLORDS)
-            </div>
-            <div className="text-2xl font-bold">
-              {totalSupply ?? "Loading..."}
-            </div>
-            {userBalance !== undefined && userSharePercent !== undefined && (
-              <div className="text-muted-foreground mt-1 text-sm">
-                Your share: {userBalance} ({userSharePercent}%)
-              </div>
-            )}
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-muted-foreground text-sm">LORDS Locked</div>
-            <div className="text-2xl font-bold">
-              {lordsLocked ?? "Loading..."}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-muted-foreground text-sm">TVL</div>
-            <div className="text-2xl font-bold">
-              {typeof tvl === "number" && Number.isFinite(tvl)
+          <MetricCard
+            label="Total Voting Power (veLORDS)"
+            value={totalSupply ?? "Loading..."}
+            hint={
+              userBalance !== undefined && userSharePercent !== undefined
+                ? `Your share: ${userBalance} (${userSharePercent}%)`
+                : undefined
+            }
+          />
+          <MetricCard
+            label="LORDS Locked"
+            value={lordsLocked ?? "Loading..."}
+          />
+          <MetricCard
+            label="TVL"
+            value={
+              typeof tvl === "number" && Number.isFinite(tvl)
                 ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                 : isTVLLoading
                   ? "Loading..."
-                  : "$0"}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-muted-foreground text-sm">Rewards (7d)</div>
-            <div className="text-2xl font-bold">
-              {rewards7d ?? "Loading..."}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-muted-foreground text-sm">Rewards (30d)</div>
-            <div className="text-2xl font-bold">
-              {rewards30d ?? "Loading..."}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-muted-foreground text-sm">
-              Trailing APY (4w avg)
-            </div>
-            <div className="text-2xl font-bold">
-              {formatNumber(trailingApy, 2)}%
-            </div>
-          </div>
+                  : "$0"
+            }
+          />
+          <MetricCard label="Rewards (7d)" value={rewards7d ?? "Loading..."} />
+          <MetricCard
+            label="Rewards (30d)"
+            value={rewards30d ?? "Loading..."}
+          />
+          <MetricCard
+            label="Trailing APY (4w avg)"
+            value={`${formatNumber(trailingApy, 2)}%`}
+          />
         </div>
 
         <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">

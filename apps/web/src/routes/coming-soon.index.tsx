@@ -1,4 +1,5 @@
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/coming-soon/")({
@@ -7,12 +8,17 @@ export const Route = createFileRoute("/coming-soon/")({
 
 function RouteComponent() {
   return (
-    <div className="to-background via-background-sidebar from-secondary flex h-screen items-center justify-center bg-gradient-to-r">
-      <Card className="rounded bg-card p-12 text-center shadow-lg">
-        <h1 className="font-display mb-4 text-5xl font-bold">Coming Soon</h1>
-        <p className="text-xl">
-          We're working hard to bring you an amazing new experience. Stay tuned!
-        </p>
+    <div className="realm-shell flex min-h-screen items-center justify-center px-6">
+      <Card className="w-full max-w-xl text-center">
+        <CardHeader>
+          <PageHeader
+            eyebrow="Portal"
+            title="Coming Soon"
+            description="We're working hard to bring you an amazing new experience. Stay tuned!"
+            className="mb-0 text-center md:flex-col md:items-center"
+          />
+        </CardHeader>
+        <CardContent />
       </Card>
     </div>
   );

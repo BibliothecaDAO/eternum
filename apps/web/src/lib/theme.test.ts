@@ -22,6 +22,12 @@ const claimsPath = resolve(
   currentDir,
   "../components/modules/realms/claims.tsx",
 );
+const delegateListPath = resolve(currentDir, "../routes/delegate.list.tsx");
+const comingSoonPath = resolve(currentDir, "../routes/coming-soon.index.tsx");
+const markdownRendererPath = resolve(
+  currentDir,
+  "../components/ui/markdown-renderer.tsx",
+);
 const styles = readFileSync(stylesPath, "utf8");
 const buttonSource = readFileSync(buttonPath, "utf8");
 const homepageSource = readFileSync(homepagePath, "utf8");
@@ -31,6 +37,9 @@ const delegateProfileSource = readFileSync(delegateProfilePath, "utf8");
 const proposalDetailSource = readFileSync(proposalDetailPath, "utf8");
 const velordsIndexSource = readFileSync(velordsIndexPath, "utf8");
 const claimsSource = readFileSync(claimsPath, "utf8");
+const delegateListSource = readFileSync(delegateListPath, "utf8");
+const comingSoonSource = readFileSync(comingSoonPath, "utf8");
+const markdownRendererSource = readFileSync(markdownRendererPath, "utf8");
 
 describe("account portal theme", () => {
   it("uses the realms-world-site font stack", () => {
@@ -98,7 +107,7 @@ describe("account portal theme", () => {
 
   it("uses the shared page title treatment on primary portal screens", () => {
     expect(indexRouteSource).toContain("realm-page-title");
-    expect(velordsIndexSource).toContain("realm-page-title");
+    expect(velordsIndexSource).toContain("PageHeader");
     expect(proposalListSource).toContain("realm-page-title");
     expect(proposalDetailSource).toContain("realm-page-title");
     expect(delegateProfileSource).toContain("realm-page-title");
@@ -108,5 +117,26 @@ describe("account portal theme", () => {
   it("defines a shared card title utility", () => {
     expect(styles).toContain(".realm-card-title");
     expect(styles).toContain("font-size: 1.125rem;");
+  });
+
+  it("tokenizes heading tracking values", () => {
+    expect(styles).toContain("--tracking-page");
+    expect(styles).toContain("--tracking-card");
+    expect(styles).toContain("--tracking-eyebrow");
+  });
+
+  it("uses shared page shell primitives on outlier pages", () => {
+    expect(comingSoonSource).not.toContain("bg-gradient-to-r");
+    expect(delegateListSource).not.toContain("bg-background top-0");
+  });
+
+  it("uses shared components for the veLords header and stat cards", () => {
+    expect(velordsIndexSource).toContain("PageHeader");
+    expect(velordsIndexSource).toContain("MetricCard");
+  });
+
+  it("uses shared prose heading classes in markdown", () => {
+    expect(markdownRendererSource).toContain("realm-prose-h1");
+    expect(markdownRendererSource).toContain("realm-prose-h2");
   });
 });

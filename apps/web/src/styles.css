@@ -148,6 +148,11 @@
     --font-serif: MedievalSharp, serif;
     --font-mono: Source Code Pro, monospace;
     --font-display: Cinzel, serif;
+    --tracking-base: 0.08em;
+    --tracking-page: 0.16em;
+    --tracking-card: 0.14em;
+    --tracking-eyebrow: 0.18em;
+    --tracking-ui: 0.08em;
     --radius: 0.75rem;
     --shadow-2xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
@@ -215,6 +220,11 @@
     --font-serif: MedievalSharp, serif;
     --font-mono: Source Code Pro, monospace;
     --font-display: Cinzel, serif;
+    --tracking-base: 0.08em;
+    --tracking-page: 0.16em;
+    --tracking-card: 0.14em;
+    --tracking-eyebrow: 0.18em;
+    --tracking-ui: 0.08em;
     --radius: 0.75rem;
     --shadow-2xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
@@ -254,7 +264,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-base);
   }
 
   button:not(:disabled),
@@ -296,7 +306,7 @@
 
   .realm-page-title {
     font-family: var(--font-display);
-    letter-spacing: 0.16em;
+    letter-spacing: var(--tracking-page);
     text-transform: uppercase;
   }
 
@@ -305,7 +315,7 @@
     font-family: var(--font-display);
     font-size: 1.125rem;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: var(--tracking-card);
     line-height: 1.1;
     text-transform: uppercase;
   }
@@ -314,7 +324,53 @@
     color: color-mix(in oklab, var(--primary) 82%, white 18%);
     font-family: var(--font-serif);
     font-size: 0.8rem;
-    letter-spacing: 0.18em;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h1 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    color: var(--primary);
+    font-family: var(--font-display);
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h2 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    color: var(--primary);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h3 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-base);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h4 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-base);
     text-transform: uppercase;
   }
 
