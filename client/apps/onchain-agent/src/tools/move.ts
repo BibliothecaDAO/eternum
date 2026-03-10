@@ -187,9 +187,13 @@ export function createMoveTool(
         }
 
         // Project stamina forward, then subtract any stamina already spent
-        // this tick (before Torii indexes the on-chain updates).
+        // since the last on-chain update (before Torii indexes the new tx).
         const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
-        const alreadySpent = mapCtx.staminaSpent?.get(explorer.entityId) ?? 0;
+        const tracked = mapCtx.staminaSpent?.get(explorer.entityId);
+        // If Torii has indexed a newer tick, our tracked spend is stale — discard it.
+        const alreadySpent = (tracked && tracked.atTick === explorer.staminaUpdatedTick)
+          ? tracked.spent
+          : 0;
         const projectedStamina = Math.max(0, baseProjected - alreadySpent);
 
         if (projectedStamina <= 0) {
@@ -346,10 +350,13 @@ export function createMoveTool(
         // Remove the old position — the army left that tile.
         mapCtx.recentlyMoved.delete(`${start.x},${start.y}`);
 
-        // Track stamina consumed so subsequent moves for this army in the
-        // same tick see accurate remaining stamina (before Torii indexes it).
+        // Track stamina consumed so subsequent moves for this army see
+        // accurate remaining stamina (before Torii indexes the tx).
         if (!mapCtx.staminaSpent) mapCtx.staminaSpent = new Map();
-        mapCtx.staminaSpent.set(explorer.entityId, alreadySpent + staminaCost);
+        mapCtx.staminaSpent.set(explorer.entityId, {
+          spent: alreadySpent + staminaCost,
+          atTick: explorer.staminaUpdatedTick,
+        });
 
         // Refresh map so subsequent moves see the updated positions.
         // Await refresh so the next tool call in this tick gets fresh data.
