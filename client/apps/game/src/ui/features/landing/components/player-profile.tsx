@@ -22,6 +22,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
+import { buildProfileShareMessage } from "@/ui/shared/lib/x-share-messages";
 import type { MMRTier } from "@/ui/utils/mmr-tiers";
 import {
   getMMRTierFromRaw,
@@ -481,9 +482,13 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
       return url.toString();
     })();
 
-    const profileTitle = isOwnProfile ? "My Realms Blitz profile" : "Realms Blitz profile";
-
-    return `${profileTitle}\n\nPlayer: ${shareName}\nTier: ${tierLabel}\nMMR: ${mmrLabel}\n${profileUrl}\n\n#RealmsBlitz #Eternum`;
+    return buildProfileShareMessage({
+      isOwnProfile,
+      shareName,
+      tierLabel,
+      mmrLabel,
+      profileUrl,
+    });
   }, [displayName, isOwnProfile, mmrShareLabel, playerTier?.name, viewedPlayerAddress]);
 
   const handleCopyProfilePng = useCallback(async () => {
