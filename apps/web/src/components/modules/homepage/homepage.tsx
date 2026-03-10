@@ -1,3 +1,4 @@
+import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
 import type { Address } from "@starknet-start/react";
 import { Suspense } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
@@ -20,7 +21,6 @@ import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
-import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import {
@@ -41,7 +41,11 @@ import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 
-import { CollectionAddresses, LORDS, StakingAddresses } from "@realms-world/constants";
+import {
+  CollectionAddresses,
+  LORDS,
+  StakingAddresses,
+} from "@realms-world/constants";
 
 import { ProposalList } from "../governance/proposal-list";
 
@@ -77,7 +81,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
   const { data } = useCurrentDelegate();
   const delegateAddress =
-    data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : undefined;
+    data && BigInt(data) !== 0n
+      ? formatAddress(num.toHex(BigInt(data)))
+      : undefined;
   const currentDelegateQuery = useQuery(
     getDelegateByIDQueryOptions({
       address: delegateAddress,
@@ -134,7 +140,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold">{l1RealmCount}</div>
+                  <div className="realm-stat text-3xl font-bold">
+                    {l1RealmCount}
+                  </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <EthereumIcon className="h-4 w-4" />
                     Ethereum
@@ -143,7 +151,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold">
+                  <div className="realm-stat text-3xl font-bold">
                     {accountTokens?.length ?? 0}
                   </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -185,7 +193,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold">
+                  <div className="realm-stat text-3xl font-bold">
                     {formatNumber(Number(l1Balance?.formatted ?? 0))}
                   </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -196,7 +204,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold">
+                  <div className="realm-stat text-3xl font-bold">
                     {formatNumber(Number(starknetBalance?.formatted))}
                   </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -207,7 +215,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold">
+                  <div className="realm-stat text-3xl font-bold">
                     {formatNumber(
                       Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0))),
                     )}
@@ -231,7 +239,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="p-6">
               <div className="space-y-4">
                 <Link to={`/realms/claims`}>
-                  <div className="hover:bg-muted/50 group rounded-lg border p-4 transition-colors">
+                  <div className="realm-interactive-row group hover:bg-accent/70 rounded-lg p-4 transition-colors hover:border-[color:var(--realm-accent-brass)]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <LordsIcon className="h-6 w-6" />
@@ -242,7 +250,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                           </div>
                         </div>
                       </div>
-                      <div className="text-2xl font-bold">
+                      <div className="realm-stat text-2xl font-bold">
                         {l2RealmsBalance
                           ? formatNumber(Number(formatEther(l2RealmsBalance)))
                           : 0}
@@ -252,7 +260,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </Link>
 
                 <Link to={`/velords`}>
-                  <div className="hover:bg-muted/50 group rounded-lg border p-4 transition-colors">
+                  <div className="realm-interactive-row group hover:bg-accent/70 rounded-lg p-4 transition-colors hover:border-[color:var(--realm-accent-brass)]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <LordsIcon className="h-6 w-6" />
@@ -263,7 +271,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                           </div>
                         </div>
                       </div>
-                      <div className="text-2xl font-bold">
+                      <div className="realm-stat text-2xl font-bold">
                         {lordsClaimable
                           ? formatNumber(Number(formatEther(lordsClaimable)))
                           : 0}
@@ -331,13 +339,17 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                   user: currentDelegate.user,
                   delegateProfile: currentDelegate.delegateProfile
                     ? {
-                        twitter: currentDelegate.delegateProfile.twitter ?? undefined,
-                        github: currentDelegate.delegateProfile.github ?? undefined,
+                        twitter:
+                          currentDelegate.delegateProfile.twitter ?? undefined,
+                        github:
+                          currentDelegate.delegateProfile.github ?? undefined,
                         telegram:
                           currentDelegate.delegateProfile.telegram ?? undefined,
-                        discord: currentDelegate.delegateProfile.discord ?? undefined,
+                        discord:
+                          currentDelegate.delegateProfile.discord ?? undefined,
                         interests:
-                          currentDelegate.delegateProfile.interests ?? undefined,
+                          currentDelegate.delegateProfile.interests ??
+                          undefined,
                         statement: currentDelegate.delegateProfile.statement,
                       }
                     : undefined,
@@ -382,9 +394,15 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                  {accountTokens.slice(0, 5).map((realm: RawTokenBalanceWithMetadata) => (
-                    <RealmCard key={realm.token_id} token={realm} isGrid={true} />
-                  ))}
+                  {accountTokens
+                    .slice(0, 5)
+                    .map((realm: RawTokenBalanceWithMetadata) => (
+                      <RealmCard
+                        key={realm.token_id}
+                        token={realm}
+                        isGrid={true}
+                      />
+                    ))}
                   {accountTokens.length > 5 && (
                     <Card className="flex items-center justify-center">
                       <Link

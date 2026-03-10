@@ -53,14 +53,14 @@ export function Header() {
   return (
     <header
       className={cn(
-        "bg-sidebar sticky top-0 z-50 flex shrink-0 items-center border-b transition-[width,height] ease-linear",
+        "bg-sidebar/85 sticky top-0 z-50 flex shrink-0 items-center border-b border-[color:var(--realm-border-strong)] backdrop-blur-xl transition-[width,height] ease-linear",
       )}
     >
-      <div className="h-(--header-height) flex w-full gap-2">
+      <div className="flex h-(--header-height) w-full gap-2">
         <div
           className={
-            `${open ? "sm:w-(--sidebar-width) w-16 px-1" : "w-(--sidebar-width-icon)"}` +
-            " flex items-center justify-center border-r"
+            `${open ? "w-16 px-1 sm:w-(--sidebar-width)" : "w-(--sidebar-width-icon)"}` +
+            " flex items-center justify-center border-r border-[color:var(--realm-border-strong)]"
           }
         >
           <Link to="/">
@@ -85,7 +85,7 @@ export function Header() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="flex items-center gap-2 rounded px-3"
+                  className="flex items-center gap-2 rounded-xl px-3"
                 >
                   <img className="w-7" src={getConnectorIcon(connector)} />
                   {shortenAddress(address)}
@@ -99,9 +99,7 @@ export function Header() {
                         src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
                       />
                     </Avatar>
-                    <div className="text-xl">
-                      {shortenAddress(address)}
-                    </div>
+                    <div className="text-xl">{shortenAddress(address)}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <a

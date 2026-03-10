@@ -12,6 +12,7 @@ export function LoginCard() {
   return (
     <Card className="mx-auto mt-12 w-full max-w-lg">
       <CardHeader>
+        <p className="realm-eyebrow text-center">Enter The Realm</p>
         <CardTitle className="text-center text-2xl">
           Welcome to Realms Portal
         </CardTitle>
@@ -63,10 +64,12 @@ function FeatureItem({
   icon: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="realm-subtle-panel flex items-start gap-3 rounded-2xl p-4">
       <div className="text-2xl">{icon}</div>
       <div>
-        <h3 className="font-medium">{title}</h3>
+        <h3 className="font-display text-sm font-semibold tracking-[0.12em] uppercase">
+          {title}
+        </h3>
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
     </div>
