@@ -15,7 +15,6 @@ import type { Chain } from "@contracts";
 import { SCORE_TO_BEAT_STATIC_GAMES } from "@/services/leaderboard/landing-leaderboard-service";
 import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
 
-const MAX_GAMES = 10;
 const DEFAULT_RUNS_TO_AGGREGATE = 3;
 const RUNS_TO_AGGREGATE_OPTIONS = [1, 2, 3, 4] as const;
 const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
@@ -185,7 +184,7 @@ export const ScoreToBeatPanel = () => {
   const [selectedGames, setSelectedGames] = useState<string[]>(() => {
     const storedGames = loadStoredSelectedGames();
     const chainDefaultGames = selectedChain === "mainnet" ? [...SCORE_TO_BEAT_STATIC_GAMES] : [];
-    return (storedGames ?? chainDefaultGames).slice(0, MAX_GAMES);
+    return storedGames ?? chainDefaultGames;
   });
   const [selectedSeries, setSelectedSeries] = useState<string[]>(() => loadStoredSelectedSeries() ?? []);
   const [runsToAggregate, setRunsToAggregate] = useState<number>(
@@ -259,17 +258,10 @@ export const ScoreToBeatPanel = () => {
     [selectedGames, selectedSeries, availableSeriesByName],
   );
 
-  const cappedSelectedGameNames = useMemo(
-    () => resolvedSelectedGameNames.slice(0, MAX_GAMES),
-    [resolvedSelectedGameNames],
-  );
-
-  const omittedSelectedGameCount = Math.max(0, resolvedSelectedGameNames.length - cappedSelectedGameNames.length);
-
   // Build endpoints from selected games and selected series games
   const resolvedEndpoints = useMemo(
-    () => cappedSelectedGameNames.map((name) => buildToriiSqlUrl(name)),
-    [cappedSelectedGameNames],
+    () => resolvedSelectedGameNames.map((name) => buildToriiSqlUrl(name)),
+    [resolvedSelectedGameNames],
   );
 
   // Persist preferences
@@ -316,11 +308,6 @@ export const ScoreToBeatPanel = () => {
         }
 
         const next = [...current, gameName];
-        const projected = resolveSelectedGameNames(next, selectedSeries, availableSeriesByName);
-        if (projected.length > MAX_GAMES) {
-          return current;
-        }
-
         return next;
       });
     },
@@ -335,11 +322,6 @@ export const ScoreToBeatPanel = () => {
         }
 
         const next = [...current, seriesName];
-        const projected = resolveSelectedGameNames(selectedGames, next, availableSeriesByName);
-        if (projected.length > MAX_GAMES) {
-          return current;
-        }
-
         return next;
       });
     },
@@ -360,7 +342,7 @@ export const ScoreToBeatPanel = () => {
 
   const updatedLabel = useMemo(() => getRelativeTimeLabel(lastUpdatedAt, "Awaiting sync"), [lastUpdatedAt]);
 
-  const totalGames = cappedSelectedGameNames.length;
+  const totalGames = resolvedSelectedGameNames.length;
   const failedGames = failedEndpoints.length;
   const activeSyncedGames = syncedEndpoints.length || totalGames;
   const syncedGames = Math.max(0, activeSyncedGames - failedGames);
@@ -379,7 +361,7 @@ export const ScoreToBeatPanel = () => {
     if (scoreToBeatRows.length === 0 || typeof window === "undefined") return;
 
     const bestRunHeaders = Array.from({ length: runsToAggregate }, (_, index) => `Best run ${index + 1} score`);
-    const perGameHeaders = cappedSelectedGameNames.map((gameName) => `${gameName} score`);
+    const perGameHeaders = resolvedSelectedGameNames.map((gameName) => `${gameName} score`);
 
     const rows = [
       ["Rank", "Display name", "Address", "Combined score", ...bestRunHeaders, ...perGameHeaders],
@@ -394,7 +376,7 @@ export const ScoreToBeatPanel = () => {
           scoreByGame.set(describeEndpoint(run.endpoint), run.points);
         });
 
-        const perGameScores = cappedSelectedGameNames.map((gameName) => {
+        const perGameScores = resolvedSelectedGameNames.map((gameName) => {
           const score = scoreByGame.get(gameName);
           return score == null ? "" : `${score}`;
         });
@@ -549,11 +531,7 @@ export const ScoreToBeatPanel = () => {
               <span className="text-gold/50">{selectedSummary}</span>
             </div>
 
-            <div className="text-xs text-gold/40">
-              {cappedSelectedGameNames.length}/{MAX_GAMES} resolved games
-              {omittedSelectedGameCount > 0 &&
-                ` (using first ${MAX_GAMES}, ${omittedSelectedGameCount} omitted from selected series/games)`}
-            </div>
+            <div className="text-xs text-gold/40">{resolvedSelectedGameNames.length} resolved games</div>
 
             {isSelectorLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -568,22 +546,13 @@ export const ScoreToBeatPanel = () => {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                   {availableGameNames.map((gameName) => {
                     const isSelected = selectedGames.includes(gameName);
-                    const isDisabled =
-                      !isSelected &&
-                      resolveSelectedGameNames([...selectedGames, gameName], selectedSeries, availableSeriesByName)
-                        .length > MAX_GAMES;
                     return (
                       <button
                         key={gameName}
                         type="button"
                         onClick={() => handleToggleGame(gameName)}
-                        disabled={isDisabled}
                         className={`rounded-lg px-3 py-2 text-left text-sm transition ${
-                          isSelected
-                            ? "bg-gold/20 text-gold"
-                            : isDisabled
-                              ? "cursor-not-allowed text-gold/30"
-                              : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                          isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                         }`}
                       >
                         <span className="block truncate">{gameName}</span>
@@ -600,23 +569,14 @@ export const ScoreToBeatPanel = () => {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {availableSeries.map((series) => {
                   const isSelected = selectedSeries.includes(series.name);
-                  const isDisabled =
-                    !isSelected &&
-                    resolveSelectedGameNames(selectedGames, [...selectedSeries, series.name], availableSeriesByName)
-                      .length > MAX_GAMES;
 
                   return (
                     <button
                       key={series.name}
                       type="button"
                       onClick={() => handleToggleSeries(series.name)}
-                      disabled={isDisabled}
                       className={`rounded-lg px-3 py-2 text-left text-sm transition ${
-                        isSelected
-                          ? "bg-gold/20 text-gold"
-                          : isDisabled
-                            ? "cursor-not-allowed text-gold/30"
-                            : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                        isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                       }`}
                     >
                       <span className="block truncate font-medium">{series.name}</span>
@@ -743,7 +703,7 @@ export const ScoreToBeatPanel = () => {
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center py-16 text-gold/50">
-          {cappedSelectedGameNames.length === 0
+          {resolvedSelectedGameNames.length === 0
             ? "Select games or series above to see the leaderboard"
             : "No scores found yet"}
         </div>
