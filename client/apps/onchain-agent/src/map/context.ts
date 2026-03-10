@@ -8,12 +8,13 @@ export interface MapContext {
   /** Force an immediate map refresh (set by main after map loop is created). */
   refresh?: () => Promise<void>;
   /**
-   * Positions known to be occupied by armies that just moved this tick.
-   * Cleared on each fresh map load from Torii. Used to patch the blocked
-   * set in pathfinding so sequential moves don't route through each other.
-   * Keys are "x,y" strings.
+   * Positions known to be occupied by armies that moved recently.
+   * Keyed by tile "x,y" → army entity ID. Entries are pruned when Torii's
+   * snapshot confirms the army at that position (occupierId matches).
+   * Used to patch the blocked set in pathfinding so sequential moves
+   * don't route through each other.
    */
-  recentlyMoved?: Set<string>;
+  recentlyMoved?: Map<string, number>;
   /**
    * Stamina consumed by each army since last on-chain update.
    * Keyed by entity ID → { spent, atTick } where atTick is the

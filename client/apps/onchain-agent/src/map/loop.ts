@@ -90,8 +90,17 @@ export function createMapLoop(
       const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails, staminaConfig, previousAnchor);
       ctx.snapshot = snapshot;
 
-      // Fresh Torii data supersedes optimistic position tracking.
-      ctx.recentlyMoved = undefined;
+      // Prune recentlyMoved — remove entries where Torii now shows the army
+      // at the expected position. Keep entries where Torii hasn't caught up.
+      if (ctx.recentlyMoved && ctx.recentlyMoved.size > 0) {
+        for (const [tileKey, entityId] of ctx.recentlyMoved) {
+          const tile = snapshot.gridIndex.get(tileKey);
+          if (tile && tile.occupierId === entityId) {
+            ctx.recentlyMoved.delete(tileKey);
+          }
+        }
+        if (ctx.recentlyMoved.size === 0) ctx.recentlyMoved = undefined;
+      }
       // Note: staminaSpent is NOT cleared on refresh — Torii may not have
       // indexed the stamina-consuming tx yet. It's cleared per-army in the
       // move tool when explorerInfo returns an updated staminaUpdatedTick.
