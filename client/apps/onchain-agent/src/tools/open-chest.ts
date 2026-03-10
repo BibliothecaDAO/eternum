@@ -69,6 +69,12 @@ export function createOpenChestTool(
         throw new Error(`Chest at ${chest_row}:${chest_col} has already been opened.`);
       }
 
+      // Check if another army already opened this chest this tick
+      const chestKey = `${chestTile.position.x},${chestTile.position.y}`;
+      if (mapCtx.recentlyOpenedChests?.has(chestKey)) {
+        throw new Error(`Chest at ${chest_row}:${chest_col} was already opened this tick.`);
+      }
+
       // ── Check adjacency ──
 
       const chestHex = mapCtx.snapshot.resolve(chest_row, chest_col);
@@ -99,6 +105,10 @@ export function createOpenChestTool(
         const errStr = extractTxError(err);
         throw new Error(`Failed to open chest: ${errStr}`);
       }
+
+      // Track that this chest was opened so other armies don't try again.
+      if (!mapCtx.recentlyOpenedChests) mapCtx.recentlyOpenedChests = new Set();
+      mapCtx.recentlyOpenedChests.add(chestKey);
 
       // Refresh map — chest is now removed from the tile
       try {
