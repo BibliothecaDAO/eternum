@@ -83,7 +83,7 @@ import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
-  getChunkKeysContainingHexInRenderBounds,
+  getPotentialChunkKeysContainingHexInRenderBounds,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
 } from "../utils/chunk-geometry";
@@ -235,6 +235,12 @@ interface CachedMatrixEntry {
   areaKey?: string;
 }
 
+interface TerrainCountSnapshot {
+  expectedVisibleTerrainInstances: number;
+  expectedExploredTerrainInstances: number;
+  resolvedSpectatorTileInstances: number | null;
+}
+
 interface WorldmapTerrainCommitResult {
   promoted: boolean;
   rejectReason: WorldmapTerrainCandidateRejectReason | null;
@@ -350,6 +356,7 @@ export default class WorldmapScene extends HexagonScene {
   private readonly maxCachedSpectatorOutlineFraction = 0.1;
   private readonly spectatorHydrationTimeoutMs = 700;
   private readonly spectatorHydrationPollMs = 50;
+  private terrainCountSnapshots: Map<string, TerrainCountSnapshot> = new Map();
   private terrainRevision = 0;
   private activeTerrainSnapshot: WorldmapTerrainSnapshot | null = null;
   private candidateTerrainSnapshot: WorldmapTerrainSnapshot | null = null;
@@ -407,8 +414,6 @@ export default class WorldmapScene extends HexagonScene {
   private selectedHexManager: SelectedHexManager;
   private selectionPulseManager: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
-  private armyStructureOwners: Map<ID, ID> = new Map();
-  private armyIdsByStructureOwner: Map<ID, Set<ID>> = new Map();
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
@@ -1300,51 +1305,25 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const armyPosition = this.armiesPositions.get(entityId);
-    if (armyPosition) {
-      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
+    const trackedArmy = this.armyManager.getArmy(entityId);
+    if (trackedArmy) {
+      return trackedArmy.owner.address;
     }
 
-    const structurePosition = this.structuresPositions.get(entityId);
-    if (structurePosition) {
-      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
+    const trackedStructure = this.structureManager.structures.getStructureByEntityId(entityId);
+    if (trackedStructure) {
+      return trackedStructure.owner.address;
     }
 
     return undefined;
   }
 
   private getTrackedStructureOwner(entityId: ID): ContractAddress | undefined {
-    const structurePosition = this.structuresPositions.get(entityId);
-    if (structurePosition) {
-      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
-    }
-
-    for (const rowMap of this.structureHexes.values()) {
-      for (const structure of rowMap.values()) {
-        if (structure.id === entityId) {
-          return structure.owner;
-        }
-      }
-    }
-
-    return undefined;
+    return this.structureManager.structures.getStructureByEntityId(entityId)?.owner.address;
   }
 
   private getTrackedArmyOwner(entityId: ID): ContractAddress | undefined {
-    const armyPosition = this.armiesPositions.get(entityId);
-    if (armyPosition) {
-      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
-    }
-
-    for (const rowMap of this.armyHexes.values()) {
-      for (const army of rowMap.values()) {
-        if (army.id === entityId) {
-          return army.owner;
-        }
-      }
-    }
-
-    return undefined;
+    return this.armyManager.getArmy(entityId)?.owner.address;
   }
 
   private syncAttachedArmiesForStructureOwner(update: {
@@ -1357,6 +1336,9 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const attachedArmyIds = new Set<ID>();
+    this.armyManager.getArmiesForStructure(update.entityId).forEach((army) => {
+      attachedArmyIds.add(army.entityId);
+    });
 
     this.armyManager
       .syncAttachedArmiesOwnerForStructure({
@@ -1366,9 +1348,6 @@ export default class WorldmapScene extends HexagonScene {
         guildName: update.owner.guildName,
       })
       .forEach((armyId) => attachedArmyIds.add(armyId));
-
-    const trackedArmyIds = this.armyIdsByStructureOwner.get(update.entityId);
-    trackedArmyIds?.forEach((armyId) => attachedArmyIds.add(armyId));
 
     attachedArmyIds.forEach((armyId) => {
       const resolvedOwnerAddress = resolveAttachedArmyOwnerFromStructure({
@@ -2148,8 +2127,7 @@ export default class WorldmapScene extends HexagonScene {
       extraHexes.push(armyPosition);
     }
 
-    const owningStructureId =
-      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
+    const owningStructureId = selectedArmyData?.owningStructureId ?? this.armyManager.getArmy(selectedEntityId)?.owningStructureId ?? null;
 
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
     return true;
@@ -2251,52 +2229,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.chestManager.addLabelsToScene();
-  }
-
-  private setArmyStructureOwner(entityId: ID, ownerStructureId: ID | null | undefined): void {
-    if (ownerStructureId === undefined || ownerStructureId === null || ownerStructureId === 0) {
-      this.clearArmyStructureOwner(entityId);
-      return;
-    }
-
-    const previousStructureId = this.armyStructureOwners.get(entityId);
-    if (previousStructureId === ownerStructureId) {
-      return;
-    }
-
-    if (previousStructureId !== undefined) {
-      const previousArmyIds = this.armyIdsByStructureOwner.get(previousStructureId);
-      previousArmyIds?.delete(entityId);
-      if (previousArmyIds && previousArmyIds.size === 0) {
-        this.armyIdsByStructureOwner.delete(previousStructureId);
-      }
-    }
-
-    this.armyStructureOwners.set(entityId, ownerStructureId);
-    let trackedArmyIds = this.armyIdsByStructureOwner.get(ownerStructureId);
-    if (!trackedArmyIds) {
-      trackedArmyIds = new Set<ID>();
-      this.armyIdsByStructureOwner.set(ownerStructureId, trackedArmyIds);
-    }
-    trackedArmyIds.add(entityId);
-  }
-
-  private clearArmyStructureOwner(entityId: ID): void {
-    const previousStructureId = this.armyStructureOwners.get(entityId);
-    if (previousStructureId === undefined) {
-      return;
-    }
-
-    this.armyStructureOwners.delete(entityId);
-    const trackedArmyIds = this.armyIdsByStructureOwner.get(previousStructureId);
-    if (!trackedArmyIds) {
-      return;
-    }
-
-    trackedArmyIds.delete(entityId);
-    if (trackedArmyIds.size === 0) {
-      this.armyIdsByStructureOwner.delete(previousStructureId);
-    }
   }
 
   private updateStructureOwnershipPulses(structureId: ID | undefined, extraHexes: HexPosition[] = []) {
@@ -2565,8 +2497,6 @@ export default class WorldmapScene extends HexagonScene {
       pendingArmyMovements: this.pendingArmyMovements,
       pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
-      armyStructureOwners: this.armyStructureOwners,
-      armyIdsByStructureOwner: this.armyIdsByStructureOwner,
       fetchedChunks: this.fetchedChunks,
       pendingChunks: this.pendingChunks,
       pinnedChunkKeys: this.pinnedChunkKeys,
@@ -2593,19 +2523,15 @@ export default class WorldmapScene extends HexagonScene {
     if (oldPos) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
     } else {
-      // Fallback: scan hex cache in case tracking was cleared before cleanup
-      for (const rowMap of this.armyHexes.values()) {
-        const entry = Array.from(rowMap.entries()).find(([, data]) => data.id === entityId);
-        if (entry) {
-          rowMap.delete(entry[0]);
-          break;
-        }
+      const trackedArmy = this.armyManager.getArmy(entityId);
+      const fallbackPosition = trackedArmy?.hexCoords.getNormalized();
+      if (fallbackPosition) {
+        this.armyHexes.get(fallbackPosition.x)?.delete(fallbackPosition.y);
       }
     }
     this.armiesPositions.delete(entityId);
     this.armyLastUpdateAt.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
-    this.clearArmyStructureOwner(entityId);
     this.clearPendingArmyMovement(entityId);
   }
 
@@ -2664,7 +2590,7 @@ export default class WorldmapScene extends HexagonScene {
     const removalOwnerAddress =
       context?.ownerAddress ??
       (removalPosition ? this.armyHexes.get(removalPosition.col)?.get(removalPosition.row)?.owner : undefined);
-    const removalOwnerStructureId = context?.ownerStructureId ?? this.armyStructureOwners.get(entityId);
+    const removalOwnerStructureId = context?.ownerStructureId ?? this.armyManager.getArmy(entityId)?.owningStructureId;
     this.pendingArmyRemovalMeta.set(entityId, {
       scheduledAt,
       chunkKey: this.currentChunk,
@@ -2790,8 +2716,6 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    this.setArmyStructureOwner(entityId, ownerStructureId);
-
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
       if (import.meta.env.DEV) {
@@ -2801,15 +2725,13 @@ export default class WorldmapScene extends HexagonScene {
       // Check if we already have this army with a valid owner
       const existingArmy = this.armiesPositions.has(entityId);
       if (existingArmy) {
-        // Try to find existing army data in armyHexes to preserve owner
-        for (const rowMap of this.armyHexes.values()) {
-          for (const armyData of rowMap.values()) {
-            if (armyData.id === entityId && armyData.owner !== 0n) {
-              actualOwnerAddress = armyData.owner;
-              break;
-            }
-          }
-          if (actualOwnerAddress !== 0n) break;
+        const existingArmyPosition = this.armiesPositions.get(entityId);
+        const existingArmyHex =
+          existingArmyPosition !== undefined
+            ? this.armyHexes.get(existingArmyPosition.col)?.get(existingArmyPosition.row)
+            : undefined;
+        if (existingArmyHex?.owner !== undefined && existingArmyHex.owner !== 0n) {
+          actualOwnerAddress = existingArmyHex.owner;
         }
 
         // If we still have 0n owner, the army was defeated/deleted - clean up the cache
@@ -2824,13 +2746,12 @@ export default class WorldmapScene extends HexagonScene {
             this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
           }
           this.armiesPositions.delete(entityId);
-          this.clearArmyStructureOwner(entityId);
           return;
         }
       } else {
         // New army with 0n owner - MapDataStore likely hasn't cached it yet.
         // Resolve owner directly from ECS Structure component using ownerStructureId.
-        const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
+        const resolvedStructureId = ownerStructureId ?? this.armyManager.getArmy(entityId)?.owningStructureId;
         if (resolvedStructureId) {
           try {
             const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
@@ -2921,6 +2842,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Update structure position
     this.structuresPositions.set(entityId, newPos);
+    this.clearTerrainCountSnapshots();
 
     if (!this.structureHexes.has(newPos.col)) {
       this.structureHexes.set(newPos.col, new Map());
@@ -2953,6 +2875,7 @@ export default class WorldmapScene extends HexagonScene {
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
     this.invalidateCurrentTerrainWindow();
+    this.clearTerrainCountSnapshots();
 
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
@@ -3123,6 +3046,7 @@ export default class WorldmapScene extends HexagonScene {
       })
     ) {
       this.invalidateCurrentTerrainWindow();
+      this.clearTerrainCountSnapshots();
       this.requestChunkRefresh(true, "structure_bounds");
     }
   }
@@ -3215,22 +3139,29 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
-    const overlappingChunkKeys = getChunkKeysContainingHexInRenderBounds({
-      chunkKeys: this.cachedMatrices.keys(),
+    const overlappingChunkKeys = getPotentialChunkKeysContainingHexInRenderBounds({
       col,
       row,
       renderSize: this.renderChunkSize,
       chunkSize: this.chunkSize,
     });
 
+    let invalidatedOverlap = false;
     if (overlappingChunkKeys.length > 0) {
       overlappingChunkKeys.forEach((chunkKey) => {
+        if (!this.cachedMatrices.has(chunkKey)) {
+          return;
+        }
+
         const [chunkRow, chunkCol] = chunkKey.split(",").map(Number);
         if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
           this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+          invalidatedOverlap = true;
         }
       });
-      return;
+      if (invalidatedOverlap) {
+        return;
+      }
     }
 
     const pos = getWorldPositionForHex({ row, col });
@@ -3450,6 +3381,7 @@ export default class WorldmapScene extends HexagonScene {
   clearCache() {
     this.unregisterTrackedVisibilityChunks();
     this.invalidateCurrentTerrainWindow();
+    this.clearTerrainCountSnapshots();
     for (const chunkKey of this.cachedMatrices.keys()) {
       this.disposeCachedMatrices(chunkKey);
     }
@@ -3534,6 +3466,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private incrementTerrainRevision(): number {
     this.terrainRevision += 1;
+    this.clearTerrainCountSnapshots();
     return this.terrainRevision;
   }
 
@@ -4546,26 +4479,28 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  private getExpectedVisibleTerrainInstances(startRow: number, startCol: number): number {
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    let expectedVisibleTerrainInstances = 0;
-
-    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
-      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
-        if (!isStructure) {
-          expectedVisibleTerrainInstances += 1;
-        }
-      }
-    }
-
-    return expectedVisibleTerrainInstances;
+  private clearTerrainCountSnapshots(): void {
+    this.terrainCountSnapshots.clear();
   }
 
-  private getResolvedSpectatorTileInstances(startRow: number, startCol: number): number {
+  private getTerrainCountSnapshot(
+    startRow: number,
+    startCol: number,
+    options: { includeSpectatorTileResolution?: boolean } = {},
+  ): TerrainCountSnapshot {
+    const { includeSpectatorTileResolution = false } = options;
+    const snapshotKey = `${startRow},${startCol}:${this.renderChunkSize.width}x${this.renderChunkSize.height}`;
+    const cachedSnapshot = this.terrainCountSnapshots.get(snapshotKey);
+
+    if (cachedSnapshot && (!includeSpectatorTileResolution || cachedSnapshot.resolvedSpectatorTileInstances !== null)) {
+      return cachedSnapshot;
+    }
+
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const components = this.dojo.components as Parameters<typeof getTileAt>[0];
-    let resolvedTileInstances = 0;
+    let expectedVisibleTerrainInstances = 0;
+    let expectedExploredTerrainInstances = 0;
+    let resolvedSpectatorTileInstances = 0;
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
       for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
@@ -4574,14 +4509,37 @@ export default class WorldmapScene extends HexagonScene {
           continue;
         }
 
+        expectedVisibleTerrainInstances += 1;
+        if (this.simulateAllExplored || this.exploredTiles.get(col)?.has(row)) {
+          expectedExploredTerrainInstances += 1;
+        }
+        if (!includeSpectatorTileResolution) {
+          continue;
+        }
+
         const tile = getTileAt(components, DEFAULT_COORD_ALT, col + FELT_CENTER(), row + FELT_CENTER());
         if (tile?.biome !== undefined) {
-          resolvedTileInstances += 1;
+          resolvedSpectatorTileInstances += 1;
         }
       }
     }
 
-    return resolvedTileInstances;
+    const snapshot: TerrainCountSnapshot = {
+      expectedVisibleTerrainInstances,
+      expectedExploredTerrainInstances,
+      resolvedSpectatorTileInstances: includeSpectatorTileResolution ? resolvedSpectatorTileInstances : null,
+    };
+    this.terrainCountSnapshots.set(snapshotKey, snapshot);
+    return snapshot;
+  }
+
+  private getExpectedVisibleTerrainInstances(startRow: number, startCol: number): number {
+    return this.getTerrainCountSnapshot(startRow, startCol).expectedVisibleTerrainInstances;
+  }
+
+  private getResolvedSpectatorTileInstances(startRow: number, startCol: number): number {
+    return this.getTerrainCountSnapshot(startRow, startCol, { includeSpectatorTileResolution: true })
+      .resolvedSpectatorTileInstances!;
   }
 
   private hasSufficientSpectatorTileCoverage(startRow: number, startCol: number): boolean {
@@ -4669,6 +4627,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (didMutateTerrain) {
       this.incrementTerrainRevision();
+      this.clearTerrainCountSnapshots();
     }
   }
 
@@ -4678,23 +4637,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private getExpectedExploredTerrainInstances(startRow: number, startCol: number): number {
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    let expectedExploredTerrainInstances = 0;
-
-    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
-      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
-        if (isStructure) {
-          continue;
-        }
-
-        if (this.simulateAllExplored || this.exploredTiles.get(col)?.has(row)) {
-          expectedExploredTerrainInstances += 1;
-        }
-      }
-    }
-
-    return expectedExploredTerrainInstances;
+    return this.getTerrainCountSnapshot(startRow, startCol).expectedExploredTerrainInstances;
   }
 
   private cacheMatricesForChunk(startRow: number, startCol: number) {

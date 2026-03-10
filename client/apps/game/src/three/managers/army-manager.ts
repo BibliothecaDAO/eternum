@@ -126,6 +126,15 @@ interface DebugArmyStats {
   visibleArmyCount: number;
 }
 
+interface SyncTrackedArmyOwnerStateParams {
+  entityId: ID;
+  ownerAddress: bigint;
+  ownerName?: string;
+  guildName?: string;
+  ownerStructureId?: ID | null;
+  deferVisibleRefresh?: boolean;
+}
+
 export class ArmyManager {
   private scene: Scene;
   private armyModel: ArmyModel;
@@ -230,7 +239,7 @@ export class ArmyManager {
     this.needsSpatialReindex = true;
     this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
-    if (this.frustumManager) {
+    if (this.frustumManager && !this.visibilityManager) {
       this.frustumVisibilityDirty = true;
       this.unsubscribeFrustum = this.frustumManager.onChange(() => {
         this.frustumVisibilityDirty = true;
@@ -672,13 +681,7 @@ export class ArmyManager {
     return `0x${address.toString(16)}`;
   }
 
-  private syncTrackedArmyOwnerState(params: {
-    entityId: ID;
-    ownerAddress: bigint;
-    ownerName?: string;
-    guildName?: string;
-    ownerStructureId?: ID | null;
-  }): boolean {
+  private syncTrackedArmyOwnerState(params: SyncTrackedArmyOwnerStateParams): boolean {
     const army = this.armies.get(params.entityId);
     if (!army) {
       return false;
@@ -738,16 +741,31 @@ export class ArmyManager {
 
     const slot = this.visibleArmyIndices.get(params.entityId);
     if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
-      const numericId = this.toNumericId(params.entityId);
-      const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
-      const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
-      this.refreshArmyInstance(army, slot, modelType);
+      if (params.deferVisibleRefresh) {
+        this.frustumVisibilityDirty = true;
+        return true;
+      }
+
+      this.refreshVisibleArmyOwnerState(army);
       this.armyModel.updateAllInstances();
       this.syncVisibleSlots();
       this.frustumVisibilityDirty = true;
     }
 
+    return true;
+  }
+
+  private refreshVisibleArmyOwnerState(army: ArmyData): boolean {
+    const slot = this.visibleArmyIndices.get(army.entityId);
+    if (slot === undefined) {
+      return false;
+    }
+
+    const numericId = this.toNumericId(army.entityId);
+    const { x, y } = army.hexCoords.getContract();
+    const biome = Biome.getBiome(x, y);
+    const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+    this.refreshArmyInstance(army, slot, modelType);
     return true;
   }
 
@@ -2009,6 +2027,7 @@ export class ArmyManager {
     guildName?: string;
   }): ID[] {
     const updatedArmyIds: ID[] = [];
+    const visibleArmiesToRefresh: ArmyData[] = [];
     const attachedArmyIds = this.armiesByOwningStructure.get(params.structureId);
     if (!attachedArmyIds) {
       return updatedArmyIds;
@@ -2020,15 +2039,30 @@ export class ArmyManager {
         return;
       }
 
-      this.syncTrackedArmyOwnerState({
+      const changed = this.syncTrackedArmyOwnerState({
         entityId,
         ownerAddress: params.ownerAddress,
         ownerName: params.ownerName,
         guildName: params.guildName ?? army.owner.guildName,
         ownerStructureId: params.structureId,
+        deferVisibleRefresh: true,
       });
+      if (changed && this.visibleArmyIndices.has(entityId)) {
+        visibleArmiesToRefresh.push(army);
+      }
       updatedArmyIds.push(entityId);
     });
+
+    let refreshedVisibleArmy = false;
+    visibleArmiesToRefresh.forEach((army) => {
+      refreshedVisibleArmy = this.refreshVisibleArmyOwnerState(army) || refreshedVisibleArmy;
+    });
+
+    if (refreshedVisibleArmy) {
+      this.armyModel.updateAllInstances();
+      this.syncVisibleSlots();
+      this.frustumVisibilityDirty = true;
+    }
 
     return updatedArmyIds;
   }
@@ -2573,6 +2607,7 @@ export class ArmyManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemy: new PointsLabelRenderer(
                 this.scene,
@@ -2583,6 +2618,7 @@ export class ArmyManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               ally: new PointsLabelRenderer(
                 this.scene,
@@ -2593,6 +2629,7 @@ export class ArmyManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               agent: new PointsLabelRenderer(
                 this.scene,
@@ -2603,6 +2640,7 @@ export class ArmyManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
             };
 

@@ -262,7 +262,7 @@ export class StructureManager {
     this.components = dojoContext?.components as ClientComponents | undefined;
     this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
-    if (this.frustumManager) {
+    if (this.frustumManager && !this.visibilityManager) {
       this.frustumVisibilityDirty = true;
       this.unsubscribeFrustum = this.frustumManager.onChange(() => {
         this.frustumVisibilityDirty = true;
@@ -340,6 +340,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemyVillage: new PointsLabelRenderer(
                 this.scene,
@@ -350,6 +351,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               allyVillage: new PointsLabelRenderer(
                 this.scene,
@@ -360,6 +362,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               myRealm: new PointsLabelRenderer(
                 this.scene,
@@ -370,6 +373,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemyRealm: new PointsLabelRenderer(
                 this.scene,
@@ -380,6 +384,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               allyRealm: new PointsLabelRenderer(
                 this.scene,
@@ -390,6 +395,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               hyperstructure: new PointsLabelRenderer(
                 this.scene,
@@ -400,6 +406,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               bank: new PointsLabelRenderer(
                 this.scene,
@@ -410,6 +417,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               fragmentMine: new PointsLabelRenderer(
                 this.scene,
@@ -420,6 +428,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
             };
 
@@ -558,7 +567,11 @@ export class StructureManager {
     this.entityIdMaps.clear();
     this.cosmeticEntityIdMaps.clear();
     this.wonderEntityIdMaps.clear();
-    this.structures.getStructures().clear();
+    if (typeof this.structures.clear === "function") {
+      this.structures.clear();
+    } else {
+      this.structures.getStructures().clear();
+    }
     this.structureHexCoords.clear();
     this.chunkToStructures.clear();
     this.structuresWithActiveBattleTimer.clear();
@@ -1064,6 +1077,82 @@ export class StructureManager {
     return !structure.cosmeticId.endsWith(":base");
   }
 
+  private prepareVisibleStructureRenderState(
+    structure: StructureInfo,
+    structureType: StructureType,
+    existingLabel: CSS2DObject | undefined,
+    attachmentRetain: Set<number>,
+  ): void {
+    const { col, row } = structure.hexCoords;
+    getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+    this.scratchPosition.y += 0.05;
+
+    if (existingLabel) {
+      this.updateStructureLabelData(structure, existingLabel);
+      getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+      this.scratchLabelPosition.y += 2;
+      existingLabel.position.copy(this.scratchLabelPosition);
+    }
+
+    this.dummy.position.copy(this.scratchPosition);
+
+    if (structureType === StructureType.Bank) {
+      this.dummy.rotation.y = (4 * Math.PI) / 6;
+    } else {
+      const rotationHash = hashCoordinates(col, row);
+      const rotationIndex = Math.floor(rotationHash * 6);
+      this.dummy.rotation.y = (rotationIndex * Math.PI) / 3;
+    }
+    this.dummy.updateMatrix();
+
+    if (this.pointsRenderers) {
+      this.scratchIconPosition.copy(this.scratchPosition);
+      this.scratchIconPosition.y += 2;
+
+      const renderer = this.getRendererForStructure(structure);
+      if (renderer) {
+        renderer.setPoint({
+          entityId: structure.entityId,
+          position: this.scratchIconPosition,
+        });
+      }
+    }
+
+    const entityNumericId = Number(structure.entityId);
+    const templates = this.resolveStructureAttachmentsForRender(structure);
+    if (templates.length > 0) {
+      attachmentRetain.add(entityNumericId);
+      const signature = this.getAttachmentSignature(templates);
+      const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
+      if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
+        this.attachmentManager.spawnAttachments(entityNumericId, templates);
+        this.structureAttachmentSignatures.set(entityNumericId, signature);
+        this.activeStructureAttachmentEntities.add(entityNumericId);
+      }
+
+      this.tempCosmeticPosition.copy(this.scratchPosition);
+      this.tempCosmeticRotation.copy(this.dummy.rotation);
+
+      const baseTransform = {
+        position: this.tempCosmeticPosition,
+        rotation: this.tempCosmeticRotation,
+        scale: this.dummy.scale,
+      };
+
+      const mountTransforms = resolveStructureMountTransforms(
+        structureType,
+        baseTransform,
+        this.structureAttachmentTransformScratch,
+      );
+
+      this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
+    } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
+      this.attachmentManager.removeAttachments(entityNumericId);
+      this.activeStructureAttachmentEntities.delete(entityNumericId);
+      this.structureAttachmentSignatures.delete(entityNumericId);
+    }
+  }
+
   private async performVisibleStructuresUpdate(): Promise<void> {
     if (!isCommittedManagerChunk(this.currentChunk)) {
       this.visibleStructureCount = 0;
@@ -1158,80 +1247,7 @@ export class StructureManager {
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
-        // Use scratch vector to avoid allocation
-        const { col, row } = structure.hexCoords;
-        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-        this.scratchPosition.y += 0.05;
-
-        const existingLabel = this.entityIdLabels.get(structure.entityId);
-        if (existingLabel) {
-          this.updateStructureLabelData(structure, existingLabel);
-          // Use scratch vector for label position
-          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-          this.scratchLabelPosition.y += 2;
-          existingLabel.position.copy(this.scratchLabelPosition);
-        }
-
-        this.dummy.position.copy(this.scratchPosition);
-
-        if (structureType === StructureType.Bank) {
-          this.dummy.rotation.y = (4 * Math.PI) / 6;
-        } else {
-          const rotationSeed = hashCoordinates(col, row);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-          this.dummy.rotation.y = randomRotation;
-        }
-        this.dummy.updateMatrix();
-
-        // Add point icon for this structure (always visible)
-        if (this.pointsRenderers) {
-          // Use scratch vector for icon position
-          this.scratchIconPosition.copy(this.scratchPosition);
-          this.scratchIconPosition.y += 2; // Match CSS2D label height
-
-          const renderer = this.getRendererForStructure(structure);
-          if (renderer) {
-            renderer.setPoint({
-              entityId: structure.entityId,
-              position: this.scratchIconPosition,
-            });
-          }
-        }
-
-        const entityNumericId = Number(structure.entityId);
-        const templates = this.resolveStructureAttachmentsForRender(structure);
-        if (templates.length > 0) {
-          attachmentRetain.add(entityNumericId);
-          const signature = this.getAttachmentSignature(templates);
-          const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-          if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-            this.attachmentManager.spawnAttachments(entityNumericId, templates);
-            this.structureAttachmentSignatures.set(entityNumericId, signature);
-            this.activeStructureAttachmentEntities.add(entityNumericId);
-          }
-
-          this.tempCosmeticPosition.copy(this.scratchPosition);
-          this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-          const baseTransform = {
-            position: this.tempCosmeticPosition,
-            rotation: this.tempCosmeticRotation,
-            scale: this.dummy.scale,
-          };
-
-          const mountTransforms = resolveStructureMountTransforms(
-            structure.structureType,
-            baseTransform,
-            this.structureAttachmentTransformScratch,
-          );
-
-          this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-        } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-          this.attachmentManager.removeAttachments(entityNumericId);
-          this.activeStructureAttachmentEntities.delete(entityNumericId);
-          this.structureAttachmentSignatures.delete(entityNumericId);
-        }
+        this.prepareVisibleStructureRenderState(structure, structureType, this.entityIdLabels.get(structure.entityId), attachmentRetain);
 
         let modelType = models[structure.stage];
         if (structureType === StructureType.Realm) {
@@ -1276,77 +1292,8 @@ export class StructureManager {
 
       structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
-        // Use scratch vector to avoid allocation
-        const { col, row } = structure.hexCoords;
-        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-        this.scratchPosition.y += 0.05;
-
-        const existingLabel = this.entityIdLabels.get(structure.entityId);
-        if (existingLabel) {
-          this.updateStructureLabelData(structure, existingLabel);
-          // Use scratch vector for label position
-          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-          this.scratchLabelPosition.y += 2;
-          existingLabel.position.copy(this.scratchLabelPosition);
-        }
-
-        this.dummy.position.copy(this.scratchPosition);
-
-        const rotationSeed = hashCoordinates(col, row);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        this.dummy.rotation.y = randomRotation;
-        this.dummy.updateMatrix();
-
-        // Add point icon for this structure
-        if (this.pointsRenderers) {
-          // Use scratch vector for icon position
-          this.scratchIconPosition.copy(this.scratchPosition);
-          this.scratchIconPosition.y += 2;
-
-          const renderer = this.getRendererForStructure(structure);
-          if (renderer) {
-            renderer.setPoint({
-              entityId: structure.entityId,
-              position: this.scratchIconPosition,
-            });
-          }
-        }
-
-        // Handle attachments
-        const entityNumericId = Number(structure.entityId);
-        const templates = this.resolveStructureAttachmentsForRender(structure);
-        if (templates.length > 0) {
-          attachmentRetain.add(entityNumericId);
-          const signature = this.getAttachmentSignature(templates);
-          const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-          if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-            this.attachmentManager.spawnAttachments(entityNumericId, templates);
-            this.structureAttachmentSignatures.set(entityNumericId, signature);
-            this.activeStructureAttachmentEntities.add(entityNumericId);
-          }
-
-          this.tempCosmeticPosition.copy(this.scratchPosition);
-          this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-          const baseTransform = {
-            position: this.tempCosmeticPosition,
-            rotation: this.tempCosmeticRotation,
-            scale: this.dummy.scale,
-          };
-
-          const mountTransforms = resolveStructureMountTransforms(
-            structure.structureType,
-            baseTransform,
-            this.structureAttachmentTransformScratch,
-          );
-
-          this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-        } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-          this.attachmentManager.removeAttachments(entityNumericId);
-          this.activeStructureAttachmentEntities.delete(entityNumericId);
-          this.structureAttachmentSignatures.delete(entityNumericId);
-        }
+        const structureType = structure.structureType;
+        this.prepareVisibleStructureRenderState(structure, structureType, this.entityIdLabels.get(structure.entityId), attachmentRetain);
 
         // Cosmetic skins typically have a single model (index 0)
         const model = models[0];
@@ -2199,6 +2146,7 @@ export class StructureManager {
 
 class Structures {
   private structures: Map<StructureType, Map<ID, StructureInfo>> = new Map();
+  private structuresById: Map<ID, StructureInfo> = new Map();
 
   constructor(
     private readonly onRemove?: (structure: StructureInfo) => void,
@@ -2237,7 +2185,12 @@ class Structures {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(normalizedEntityId, {
+    const existingStructure = this.structuresById.get(normalizedEntityId);
+    if (existingStructure && existingStructure.structureType !== structureType) {
+      this.structures.get(existingStructure.structureType)?.delete(normalizedEntityId);
+    }
+
+    const nextStructure = {
       entityId: normalizedEntityId,
       structureName,
       hexCoords,
@@ -2259,7 +2212,10 @@ class Structures {
       attackedTowardDegrees,
       battleCooldownEnd,
       battleTimerLeft,
-    });
+    };
+
+    this.structures.get(structureType)!.set(normalizedEntityId, nextStructure);
+    this.structuresById.set(normalizedEntityId, nextStructure);
   }
 
   updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
@@ -2281,6 +2237,7 @@ class Structures {
         if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
           removalQueue.push(entityId);
           this.onRemove?.(structure);
+          this.structuresById.delete(entityId);
           removed = true;
         }
       });
@@ -2297,7 +2254,15 @@ class Structures {
     if (normalizedEntityId === undefined) {
       return;
     }
+    const existingStructure = this.structuresById.get(normalizedEntityId);
+    if (existingStructure && existingStructure.structureType !== structure.structureType) {
+      this.structures.get(existingStructure.structureType)?.delete(normalizedEntityId);
+    }
+    if (!this.structures.has(structure.structureType)) {
+      this.structures.set(structure.structureType, new Map());
+    }
     this.structures.get(structure.structureType)?.set(normalizedEntityId, structure);
+    this.structuresById.set(normalizedEntityId, structure);
   }
 
   removeStructure(entityId: ID): StructureInfo | null {
@@ -2306,16 +2271,14 @@ class Structures {
       return null;
     }
 
-    let removedStructure: StructureInfo | null = null;
+    const removedStructure = this.structuresById.get(normalizedEntityId) ?? null;
+    if (!removedStructure) {
+      return null;
+    }
 
-    this.structures.forEach((structures) => {
-      const structure = structures.get(normalizedEntityId);
-      if (structure) {
-        this.onRemove?.(structure);
-        structures.delete(normalizedEntityId);
-        removedStructure = structure;
-      }
-    });
+    this.onRemove?.(removedStructure);
+    this.structures.get(removedStructure.structureType)?.delete(normalizedEntityId);
+    this.structuresById.delete(normalizedEntityId);
 
     if (removedStructure) {
       this.onStructuresChanged?.();
@@ -2333,13 +2296,12 @@ class Structures {
     if (normalizedEntityId === undefined) {
       return undefined;
     }
-    for (const structures of this.structures.values()) {
-      const structure = structures.get(normalizedEntityId);
-      if (structure) {
-        return structure;
-      }
-    }
-    return undefined;
+    return this.structuresById.get(normalizedEntityId);
+  }
+
+  clear(): void {
+    this.structures.clear();
+    this.structuresById.clear();
   }
 
   recheckOwnership() {

@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/store/use-account-store", () => ({
@@ -146,7 +149,40 @@ vi.mock("./points-label-renderer", () => ({
 
 const { StructureManager } = await import("./structure-manager");
 
+function readStructureManagerSource(): string {
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+  return readFileSync(resolve(currentDir, "structure-manager.ts"), "utf8");
+}
+
 describe("StructureManager performance regressions", () => {
+  it("indexes structures directly by entity id", () => {
+    const source = readStructureManagerSource();
+
+    expect(source).toMatch(/private\s+structuresById:\s*Map<ID,\s*StructureInfo>\s*=\s*new Map\(\)/);
+    expect(source).toMatch(/getStructureByEntityId[\s\S]*return\s+this\.structuresById\.get\(normalizedEntityId\)/);
+    expect(source).not.toMatch(/getStructureByEntityId[\s\S]*for\s*\(\s*const\s+structures\s+of\s+this\.structures\.values\(\)\s*\)/);
+  });
+
+  it("shares structure render preparation across base and cosmetic model paths", () => {
+    const source = readStructureManagerSource();
+
+    expect(source).toMatch(/private\s+prepareVisibleStructureRenderState\s*\(/);
+    expect(source).toMatch(/prepareVisibleStructureRenderState\(structure,\s*structureType,\s*this\.entityIdLabels\.get/);
+    expect(source).not.toMatch(/for\s*\(const\s+\[cosmeticId,\s*structures\]\s+of\s+structuresByCosmeticId\)[\s\S]*const\s+rotationSeed\s*=\s*hashCoordinates/);
+  });
+
+  it("dedupes label dirtiness subscriptions when visibility manager is active", () => {
+    const source = readStructureManagerSource();
+
+    expect(source).toMatch(/if\s*\(this\.frustumManager\s*&&\s*!this\.visibilityManager\)\s*\{/);
+  });
+
+  it("passes visibility manager through to points renderers", () => {
+    const source = readStructureManagerSource();
+
+    expect(source).toMatch(/new\s+PointsLabelRenderer\([\s\S]*this\.frustumManager,\s*this\.visibilityManager[\s\S]*\)/);
+  });
+
   it("reconciles visible structures once during a chunk update", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
     const updateVisibleStructures = vi.fn(async () => {});

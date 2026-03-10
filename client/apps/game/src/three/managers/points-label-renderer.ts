@@ -1,6 +1,7 @@
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { createPointsLabelMaterial } from "../shaders/points-label-material";
+import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { FrustumManager } from "../utils/frustum-manager";
 
 /**
@@ -44,6 +45,8 @@ export class PointsLabelRenderer {
   private hoverArray: Float32Array;
   private frustumManager?: FrustumManager;
   private unsubscribeFrustum?: () => void;
+  private visibilityManager?: CentralizedVisibilityManager;
+  private unsubscribeVisibility?: () => void;
   private worldBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
   private boundsDirty = true;
   private batchMode = false; // When true, setPoint() skips refreshFrustumVisibility()
@@ -57,6 +60,7 @@ export class PointsLabelRenderer {
     hoverBrightness = 1.3,
     sizeAttenuation = false,
     frustumManager?: FrustumManager,
+    visibilityManager?: CentralizedVisibilityManager,
   ) {
     this.maxPoints = maxPoints;
 
@@ -94,7 +98,13 @@ export class PointsLabelRenderer {
     };
 
     this.frustumManager = frustumManager;
-    if (this.frustumManager) {
+    this.visibilityManager = visibilityManager;
+    if (this.visibilityManager) {
+      this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
+        this.refreshFrustumVisibility();
+      });
+      this.refreshFrustumVisibility();
+    } else if (this.frustumManager) {
       this.unsubscribeFrustum = this.frustumManager.onChange(() => {
         this.refreshFrustumVisibility();
       });
@@ -103,7 +113,7 @@ export class PointsLabelRenderer {
   }
 
   private refreshFrustumVisibility(): void {
-    if (!this.frustumManager) {
+    if (!this.visibilityManager && !this.frustumManager) {
       this.points.visible = this.currentCount > 0;
       return;
     }
@@ -114,7 +124,9 @@ export class PointsLabelRenderer {
     }
 
     if (this.worldBounds) {
-      this.points.visible = this.frustumManager.isSphereVisible(this.worldBounds.sphere);
+      this.points.visible = this.visibilityManager
+        ? this.visibilityManager.isSphereVisible(this.worldBounds.sphere)
+        : this.frustumManager!.isSphereVisible(this.worldBounds.sphere);
       return;
     }
 
@@ -123,7 +135,9 @@ export class PointsLabelRenderer {
       this.boundsDirty = false;
     }
 
-    this.points.visible = this.frustumManager.isSphereVisible(this.geometry.boundingSphere);
+    this.points.visible = this.visibilityManager
+      ? this.visibilityManager.isSphereVisible(this.geometry.boundingSphere)
+      : this.frustumManager!.isSphereVisible(this.geometry.boundingSphere);
   }
 
   /**
@@ -393,6 +407,10 @@ export class PointsLabelRenderer {
    * Dispose resources
    */
   public dispose(): void {
+    if (this.unsubscribeVisibility) {
+      this.unsubscribeVisibility();
+      this.unsubscribeVisibility = undefined;
+    }
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
       this.unsubscribeFrustum = undefined;

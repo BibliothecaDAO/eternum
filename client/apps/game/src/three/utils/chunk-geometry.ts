@@ -65,6 +65,39 @@ interface ChunkKeyOverlapInput {
   chunkSize: number;
 }
 
+interface PotentialChunkKeyOverlapInput {
+  col: number;
+  row: number;
+  renderSize: ChunkRenderSize;
+  chunkSize: number;
+}
+
+function getPotentialChunkStartsContainingCoordinate(
+  coordinate: number,
+  renderSpan: number,
+  chunkSize: number,
+): number[] {
+  const normalizedRenderSpan = Math.max(0, Math.floor(renderSpan));
+  const normalizedChunkSize = Math.max(1, Math.floor(chunkSize));
+
+  if (!Number.isFinite(coordinate) || normalizedRenderSpan === 0) {
+    return [];
+  }
+
+  const halfRenderSpan = Math.floor(normalizedRenderSpan / 2);
+  const centerOffset = Math.round(normalizedChunkSize / 2);
+  const minStart = coordinate - centerOffset + halfRenderSpan - (normalizedRenderSpan - 1);
+  const maxStart = coordinate - centerOffset + halfRenderSpan;
+  const firstStart = Math.ceil(minStart / normalizedChunkSize) * normalizedChunkSize;
+  const chunkStarts: number[] = [];
+
+  for (let start = firstStart; start <= maxStart; start += normalizedChunkSize) {
+    chunkStarts.push(start);
+  }
+
+  return chunkStarts;
+}
+
 /**
  * Return cached chunk keys whose render windows include the provided hex.
  * This is used to invalidate every overlapping render cache, not just the
@@ -81,6 +114,27 @@ export function getChunkKeysContainingHexInRenderBounds(input: ChunkKeyOverlapIn
 
     if (isHexWithinRenderBounds(input.col, input.row, startRow, startCol, input.renderSize, input.chunkSize)) {
       matches.push(chunkKey);
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * Derive the bounded set of stride-aligned chunk keys whose render windows can
+ * possibly include the provided hex. This avoids scanning every cached chunk key
+ * when overlap size is determined entirely by render size and chunk stride.
+ */
+export function getPotentialChunkKeysContainingHexInRenderBounds(input: PotentialChunkKeyOverlapInput): string[] {
+  const candidateRows = getPotentialChunkStartsContainingCoordinate(input.row, input.renderSize.height, input.chunkSize);
+  const candidateCols = getPotentialChunkStartsContainingCoordinate(input.col, input.renderSize.width, input.chunkSize);
+  const matches: string[] = [];
+
+  for (const startRow of candidateRows) {
+    for (const startCol of candidateCols) {
+      if (isHexWithinRenderBounds(input.col, input.row, startRow, startCol, input.renderSize, input.chunkSize)) {
+        matches.push(`${startRow},${startCol}`);
+      }
     }
   }
 

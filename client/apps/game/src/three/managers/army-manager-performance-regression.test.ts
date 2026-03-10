@@ -33,6 +33,20 @@ describe("army manager performance regressions", () => {
     );
   });
 
+  it("batches visible owner-sync uploads across attached armies", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(
+      /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*const\s+visibleArmiesToRefresh:\s*ArmyData\[\]\s*=\s*\[\]/,
+    );
+    expect(source).toMatch(
+      /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*this\.syncTrackedArmyOwnerState\(\s*\{[\s\S]*deferVisibleRefresh:\s*true[\s\S]*\}\s*\)/,
+    );
+    expect(source).toMatch(
+      /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*this\.armyModel\.updateAllInstances\(\)[\s\S]*this\.syncVisibleSlots\(\)/,
+    );
+  });
+
   it("compacts visible army slots instead of leaving sparse high-water gaps", () => {
     const source = readArmyManagerSource();
 

@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./utils", () => ({
   getWorldPositionForHex: ({ col, row }: { col: number; row: number }) => ({ x: col, y: 0, z: row }),
 }));
-import { getChunkKeysContainingHexInRenderBounds, getRenderBounds, isHexWithinRenderBounds } from "./chunk-geometry";
+import {
+  getChunkKeysContainingHexInRenderBounds,
+  getPotentialChunkKeysContainingHexInRenderBounds,
+  getRenderBounds,
+  isHexWithinRenderBounds,
+} from "./chunk-geometry";
 
 describe("getRenderBounds", () => {
   it("returns even-sized bounds with exact cell coverage", () => {
@@ -59,5 +64,30 @@ describe("getChunkKeysContainingHexInRenderBounds", () => {
     });
 
     expect(result.toSorted()).toEqual(["0,0", "24,24"].toSorted());
+  });
+});
+
+describe("getPotentialChunkKeysContainingHexInRenderBounds", () => {
+  it("derives the fixed-size overlap neighborhood for a target hex", () => {
+    const result = getPotentialChunkKeysContainingHexInRenderBounds({
+      col: 23,
+      row: 23,
+      renderSize: { width: 48, height: 48 },
+      chunkSize: 24,
+    });
+
+    expect(result.toSorted()).toEqual(["0,0", "0,24", "24,0", "24,24"].toSorted());
+  });
+
+  it("remains bounded even when render windows overlap multiple stride bands", () => {
+    const result = getPotentialChunkKeysContainingHexInRenderBounds({
+      col: 60,
+      row: 60,
+      renderSize: { width: 96, height: 96 },
+      chunkSize: 24,
+    });
+
+    expect(result.length).toBeLessThanOrEqual(16);
+    expect(result).toContain("48,48");
   });
 });
