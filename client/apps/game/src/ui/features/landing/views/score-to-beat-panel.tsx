@@ -5,12 +5,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { useWorldsAvailability } from "@/hooks/use-world-availability";
+import {
+  claimGameReviewRewardsForPlayers,
+  fetchGameReviewUnclaimedPlayers,
+} from "@/services/review/game-review-service";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { SCORE_TO_BEAT_STATIC_GAMES } from "@/services/leaderboard/landing-leaderboard-service";
 import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
@@ -189,7 +196,28 @@ const resolveSelectedGameNames = (
 const getSelectorCountLabel = (count: number, singular: string, plural: string): string =>
   `${count} ${count === 1 ? singular : plural}`;
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return "Unknown error";
+};
+
+const buildClaimGameKey = (chain: Chain, gameName: string): string => `${chain}:${gameName}`;
+
 export const ScoreToBeatPanel = () => {
+  const queryClient = useQueryClient();
+  const account = useAccountStore((state) => state.account);
   const [selectedChain, setSelectedChain] = useState<Chain>(() => loadStoredChain() ?? "mainnet");
   const [selectedGames, setSelectedGames] = useState<string[]>(() => {
     const storedGames = loadStoredSelectedGames();
@@ -203,6 +231,8 @@ export const ScoreToBeatPanel = () => {
   const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(true);
   const [selectorMode, setSelectorMode] = useState<SelectorMode>("games");
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
+  const [activeClaimGame, setActiveClaimGame] = useState<string | null>(null);
+  const [optimisticClaimedByGame, setOptimisticClaimedByGame] = useState<Record<string, string[]>>({});
 
   // Fetch available games from factory
   const { worlds: factoryWorlds, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
@@ -249,23 +279,19 @@ export const ScoreToBeatPanel = () => {
     [availableSeries],
   );
 
-  useEffect(() => {
-    setSelectedGames((current) => {
-      const filtered = current.filter((gameName) => availableGameNamesSet.has(gameName));
-      return filtered.length === current.length ? current : filtered;
-    });
-  }, [availableGameNamesSet]);
+  const filteredSelectedGames = useMemo(
+    () => selectedGames.filter((gameName) => availableGameNamesSet.has(gameName)),
+    [selectedGames, availableGameNamesSet],
+  );
 
-  useEffect(() => {
-    setSelectedSeries((current) => {
-      const filtered = current.filter((seriesName) => availableSeriesByName.has(seriesName));
-      return filtered.length === current.length ? current : filtered;
-    });
-  }, [availableSeriesByName]);
+  const filteredSelectedSeries = useMemo(
+    () => selectedSeries.filter((seriesName) => availableSeriesByName.has(seriesName)),
+    [selectedSeries, availableSeriesByName],
+  );
 
   const resolvedSelectedGameNames = useMemo(
-    () => resolveSelectedGameNames(selectedGames, selectedSeries, availableSeriesByName),
-    [selectedGames, selectedSeries, availableSeriesByName],
+    () => resolveSelectedGameNames(filteredSelectedGames, filteredSelectedSeries, availableSeriesByName),
+    [filteredSelectedGames, filteredSelectedSeries, availableSeriesByName],
   );
 
   // Build endpoints from selected games and selected series games
@@ -283,15 +309,15 @@ export const ScoreToBeatPanel = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY, JSON.stringify(selectedGames));
+      window.localStorage.setItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY, JSON.stringify(filteredSelectedGames));
     }
-  }, [selectedGames]);
+  }, [filteredSelectedGames]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(SCORE_TO_BEAT_SERIES_STORAGE_KEY, JSON.stringify(selectedSeries));
+      window.localStorage.setItem(SCORE_TO_BEAT_SERIES_STORAGE_KEY, JSON.stringify(filteredSelectedSeries));
     }
-  }, [selectedSeries]);
+  }, [filteredSelectedSeries]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -310,33 +336,128 @@ export const ScoreToBeatPanel = () => {
     refresh,
   } = useScoreToBeat(resolvedEndpoints, runsToAggregate);
 
-  const handleToggleGame = useCallback(
-    (gameName: string) => {
-      setSelectedGames((current) => {
-        if (current.includes(gameName)) {
-          return current.filter((name) => name !== gameName);
-        }
+  const claimStatusQueries = useQueries({
+    queries: resolvedSelectedGameNames.map((gameName) => ({
+      queryKey: ["gameReviewUnclaimedPlayers", selectedChain, gameName],
+      queryFn: () =>
+        fetchGameReviewUnclaimedPlayers({
+          worldName: gameName,
+          chain: selectedChain,
+        }),
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      retry: 1,
+    })),
+  });
 
-        const next = [...current, gameName];
-        return next;
+  const claimStatusByGame = useMemo(() => {
+    const byGame = new Map<
+      string,
+      {
+        rankingFinalized: boolean;
+        totalRankedPlayers: number;
+        unclaimedPlayerAddresses: string[];
+        isLoading: boolean;
+        error: string | null;
+      }
+    >();
+
+    resolvedSelectedGameNames.forEach((gameName, index) => {
+      const queryState = claimStatusQueries[index];
+      const data = queryState?.data;
+      byGame.set(gameName, {
+        rankingFinalized: data?.rankingFinalized ?? false,
+        totalRankedPlayers: data?.totalRankedPlayers ?? 0,
+        unclaimedPlayerAddresses: data?.unclaimedPlayers.map((player) => player.address) ?? [],
+        isLoading: queryState?.isLoading ?? false,
+        error: queryState?.error ? getErrorMessage(queryState.error) : null,
+      });
+    });
+
+    return byGame;
+  }, [claimStatusQueries, resolvedSelectedGameNames]);
+
+  const claimAllRewardsMutation = useMutation({
+    mutationFn: async ({ gameName, chain }: { gameName: string; chain: Chain }) => {
+      if (!account) {
+        throw new Error("Connect your wallet to claim rewards.");
+      }
+
+      const unclaimed = await fetchGameReviewUnclaimedPlayers({
+        worldName: gameName,
+        chain,
+      });
+
+      if (!unclaimed.rankingFinalized) {
+        throw new Error("Ranking is not finalized for this game yet.");
+      }
+
+      return claimGameReviewRewardsForPlayers({
+        worldName: gameName,
+        chain,
+        signer: account,
+        playerAddresses: unclaimed.unclaimedPlayers.map((player) => player.address),
       });
     },
-    [selectedSeries, availableSeriesByName],
-  );
+    onMutate: ({ gameName }) => {
+      setActiveClaimGame(gameName);
+    },
+    onSuccess: async (result, variables) => {
+      const claimKey = buildClaimGameKey(variables.chain, variables.gameName);
+      setOptimisticClaimedByGame((previous) => {
+        const existing = previous[claimKey] ?? [];
+        const merged = Array.from(new Set([...existing, ...result.playerAddresses]));
+        return {
+          ...previous,
+          [claimKey]: merged,
+        };
+      });
 
-  const handleToggleSeries = useCallback(
-    (seriesName: string) => {
-      setSelectedSeries((current) => {
-        if (current.includes(seriesName)) {
-          return current.filter((name) => name !== seriesName);
-        }
+      if (result.claimedPlayers > 0) {
+        toast.success(`Claimed ${result.claimedPlayers} player reward${result.claimedPlayers === 1 ? "" : "s"}.`, {
+          description: `${variables.gameName} updated in ${result.batchesSubmitted} batch${result.batchesSubmitted === 1 ? "" : "es"}.`,
+        });
+      } else {
+        toast("No unclaimed rewards left.", {
+          description: `${variables.gameName} is already fully claimed.`,
+        });
+      }
 
-        const next = [...current, seriesName];
-        return next;
+      await queryClient.invalidateQueries({
+        queryKey: ["gameReviewUnclaimedPlayers", variables.chain, variables.gameName],
       });
     },
-    [selectedGames, availableSeriesByName],
-  );
+    onError: (error, variables) => {
+      toast.error(`Failed to claim rewards for ${variables.gameName}.`, {
+        description: getErrorMessage(error),
+      });
+    },
+    onSettled: () => {
+      setActiveClaimGame(null);
+    },
+  });
+
+  const handleToggleGame = useCallback((gameName: string) => {
+    setSelectedGames((current) => {
+      if (current.includes(gameName)) {
+        return current.filter((name) => name !== gameName);
+      }
+
+      const next = [...current, gameName];
+      return next;
+    });
+  }, []);
+
+  const handleToggleSeries = useCallback((seriesName: string) => {
+    setSelectedSeries((current) => {
+      if (current.includes(seriesName)) {
+        return current.filter((name) => name !== seriesName);
+      }
+
+      const next = [...current, seriesName];
+      return next;
+    });
+  }, []);
 
   const handleClearSelected = useCallback(() => {
     setSelectedGames([]);
@@ -358,10 +479,10 @@ export const ScoreToBeatPanel = () => {
   const syncedGames = Math.max(0, activeSyncedGames - failedGames);
   const gameLabel = totalGames > 0 ? `${syncedGames}/${totalGames} games selected` : "No games selected";
 
-  const hasSelections = selectedGames.length > 0 || selectedSeries.length > 0;
+  const hasSelections = filteredSelectedGames.length > 0 || filteredSelectedSeries.length > 0;
   const selectedSummary = [
-    getSelectorCountLabel(selectedGames.length, "game", "games"),
-    getSelectorCountLabel(selectedSeries.length, "series", "series"),
+    getSelectorCountLabel(filteredSelectedGames.length, "game", "games"),
+    getSelectorCountLabel(filteredSelectedSeries.length, "series", "series"),
   ].join(" + ");
 
   const isSelectorLoading = isLoadingGames || isCheckingWorlds || isLoadingSeries;
@@ -577,7 +698,7 @@ export const ScoreToBeatPanel = () => {
               ) : (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                   {availableGameNames.map((gameName) => {
-                    const isSelected = selectedGames.includes(gameName);
+                    const isSelected = filteredSelectedGames.includes(gameName);
                     return (
                       <button
                         key={gameName}
@@ -600,7 +721,7 @@ export const ScoreToBeatPanel = () => {
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {availableSeries.map((series) => {
-                  const isSelected = selectedSeries.includes(series.name);
+                  const isSelected = filteredSelectedSeries.includes(series.name);
 
                   return (
                     <button
@@ -627,7 +748,7 @@ export const ScoreToBeatPanel = () => {
                   Clear all
                 </button>
                 <span className="text-gold/30">|</span>
-                {selectedGames.map((name) => (
+                {filteredSelectedGames.map((name) => (
                   <span
                     key={`game:${name}`}
                     className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-1 text-xs text-gold"
@@ -642,7 +763,7 @@ export const ScoreToBeatPanel = () => {
                     </button>
                   </span>
                 ))}
-                {selectedSeries.map((name) => (
+                {filteredSelectedSeries.map((name) => (
                   <span
                     key={`series:${name}`}
                     className="inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-2 py-1 text-xs text-cyan-200"
@@ -662,6 +783,75 @@ export const ScoreToBeatPanel = () => {
           </div>
         )}
       </div>
+
+      {resolvedSelectedGameNames.length > 0 && (
+        <div className="rounded-xl border border-gold/15 bg-black/30 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-gold">Tournament Reward Claims</h3>
+            {!account && <span className="text-xs text-gold/60">Connect wallet to claim.</span>}
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {resolvedSelectedGameNames.map((gameName) => {
+              const claimStatus = claimStatusByGame.get(gameName);
+              const rawUnclaimedPlayerAddresses = claimStatus?.unclaimedPlayerAddresses ?? [];
+              const optimisticClaimKey = buildClaimGameKey(selectedChain, gameName);
+              const optimisticClaimedAddresses = optimisticClaimedByGame[optimisticClaimKey] ?? [];
+              const optimisticClaimedAddressSet = new Set(optimisticClaimedAddresses);
+              const unclaimedPlayers = rawUnclaimedPlayerAddresses.filter(
+                (address) => !optimisticClaimedAddressSet.has(address),
+              ).length;
+              const totalRankedPlayers = claimStatus?.totalRankedPlayers ?? 0;
+              const claimedPlayers = Math.max(0, totalRankedPlayers - unclaimedPlayers);
+              const isLoadingStatus = claimStatus?.isLoading ?? false;
+              const statusError = claimStatus?.error;
+              const rankingFinalized = claimStatus?.rankingFinalized ?? false;
+              const isClaimingThisGame = claimAllRewardsMutation.isPending && activeClaimGame === gameName;
+
+              const claimDisabled =
+                isLoadingStatus ||
+                !account ||
+                !rankingFinalized ||
+                unclaimedPlayers === 0 ||
+                Boolean(statusError) ||
+                (claimAllRewardsMutation.isPending && activeClaimGame !== gameName);
+
+              return (
+                <div key={`claim:${gameName}`} className="rounded-lg border border-gold/15 bg-black/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium text-gold" title={gameName}>
+                      {gameName}
+                    </span>
+                    <span className="text-[11px] text-gold/60">
+                      {rankingFinalized
+                        ? `${claimedPlayers}/${totalRankedPlayers} claimed`
+                        : isLoadingStatus
+                          ? "Checking..."
+                          : "Ranking pending"}
+                    </span>
+                  </div>
+
+                  {statusError && <p className="mt-2 text-xs text-red-300">{statusError}</p>}
+
+                  <button
+                    type="button"
+                    onClick={() => claimAllRewardsMutation.mutate({ gameName, chain: selectedChain })}
+                    disabled={claimDisabled}
+                    className="mt-3 w-full rounded-lg border border-brilliance/40 bg-brilliance/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-brilliance transition hover:bg-brilliance/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isClaimingThisGame
+                      ? "Claiming..."
+                      : !rankingFinalized
+                        ? "Ranking Pending"
+                        : unclaimedPlayers > 0
+                          ? `Claim All (${unclaimedPlayers})`
+                          : "All Claimed"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Top score runs */}
       {scoreToBeatRuns.length > 0 && (
