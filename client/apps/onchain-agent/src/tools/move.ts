@@ -178,10 +178,10 @@ export function createMoveTool(
         const { explored, blocked } = buildTileIndex(mapCtx.snapshot.tiles);
         blocked.delete(`${start.x},${start.y}`);
 
-        // Merge in positions of armies that moved earlier this tick but
+        // Merge in positions of armies that moved recently but
         // whose new positions aren't yet reflected in the Torii snapshot.
         if (mapCtx.recentlyMoved) {
-          for (const key of mapCtx.recentlyMoved) {
+          for (const [key] of mapCtx.recentlyMoved) {
             blocked.add(key);
           }
         }
@@ -343,11 +343,11 @@ export function createMoveTool(
           throw new Error(`Move failed: ${errStr}`);
         }
 
-        // Track the new position so subsequent pathfinding in this tick
-        // knows this tile is now occupied (even before Torii indexes it).
-        if (!mapCtx.recentlyMoved) mapCtx.recentlyMoved = new Set();
-        mapCtx.recentlyMoved.add(`${endPos.x},${endPos.y}`);
-        // Remove the old position — the army left that tile.
+        // Track the new position so subsequent pathfinding knows this tile
+        // is occupied (even before Torii indexes it). Also remove the old
+        // position — the army left that tile.
+        if (!mapCtx.recentlyMoved) mapCtx.recentlyMoved = new Map();
+        mapCtx.recentlyMoved.set(`${endPos.x},${endPos.y}`, explorer.entityId);
         mapCtx.recentlyMoved.delete(`${start.x},${start.y}`);
 
         // Track stamina consumed so subsequent moves for this army see
