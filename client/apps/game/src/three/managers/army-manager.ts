@@ -20,7 +20,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import * as THREE from "three";
-import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
+import { Box3, Color, Euler, Group, Raycaster, Scene, Sphere, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -136,6 +136,7 @@ export class ArmyManager {
   private visibleArmies: ArmyData[] = [];
   private visibleArmyOrder: ID[] = [];
   private visibleArmyIndices: Map<ID, number> = new Map();
+  private visibleArmySlotOwners: Map<number, ID> = new Map();
   private armiesByOwningStructure: Map<ID, Set<ID>> = new Map();
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
@@ -165,6 +166,7 @@ export class ArmyManager {
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
+  private armiesWithActiveBattleTimers: Set<ID> = new Set();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -179,6 +181,7 @@ export class ArmyManager {
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private chunkToArmies: Map<string, Set<ID>> = new Map();
+  private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private chunkStride: number;
   private needsSpatialReindex = false;
   // Track source buckets for moving armies to keep them visible during animation
@@ -937,10 +940,40 @@ export class ArmyManager {
     const numericId = this.toNumericId(army.entityId);
     const slot = this.armyModel.allocateInstanceSlot(numericId);
     this.visibleArmyIndices.set(army.entityId, slot);
+    this.visibleArmySlotOwners.set(slot, army.entityId);
     if (options?.trackOrder ?? true) {
       this.visibleArmyOrder.push(army.entityId);
     }
     this.refreshArmyInstance(army, slot, modelType);
+  }
+
+  private getHighestVisibleSlot(): number | null {
+    if (this.visibleArmySlotOwners.size === 0) {
+      return null;
+    }
+
+    const denseCandidate = this.visibleArmySlotOwners.size - 1;
+    if (this.visibleArmySlotOwners.has(denseCandidate)) {
+      return denseCandidate;
+    }
+
+    let highestSlot = -1;
+    this.visibleArmySlotOwners.forEach((_entityId, slot) => {
+      if (slot > highestSlot) {
+        highestSlot = slot;
+      }
+    });
+
+    return highestSlot >= 0 ? highestSlot : null;
+  }
+
+  private updateBattleTimerTracking(entityId: ID, battleCooldownEnd: number | undefined): void {
+    if (battleCooldownEnd && getBattleTimerLeft(battleCooldownEnd) > 0) {
+      this.armiesWithActiveBattleTimers.add(entityId);
+      return;
+    }
+
+    this.armiesWithActiveBattleTimers.delete(entityId);
   }
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
@@ -1045,7 +1078,11 @@ export class ArmyManager {
       return null;
     }
 
+    const highestSlot = this.getHighestVisibleSlot();
+    const swapEntityId = highestSlot !== null ? this.visibleArmySlotOwners.get(highestSlot) : undefined;
+
     this.visibleArmyIndices.delete(entityId);
+    this.visibleArmySlotOwners.delete(slot);
     if (options?.trackOrder ?? true) {
       this.visibleArmyOrder = this.visibleArmyOrder.filter((visibleEntityId) => visibleEntityId !== entityId);
     }
@@ -1072,6 +1109,20 @@ export class ArmyManager {
     }
 
     this.armyModel.freeInstanceSlot(numericId, slot);
+
+    if (highestSlot !== null && highestSlot !== slot && swapEntityId !== undefined && swapEntityId !== entityId) {
+      const swapNumericId = this.toNumericId(swapEntityId);
+      this.armyModel.moveEntityToSlot(swapNumericId, slot);
+      this.visibleArmyIndices.set(swapEntityId, slot);
+      this.visibleArmySlotOwners.set(slot, swapEntityId);
+      this.visibleArmySlotOwners.delete(highestSlot);
+
+      const swappedArmy = this.armies.get(swapEntityId);
+      if (swappedArmy) {
+        this.armies.set(swapEntityId, { ...swappedArmy, matrixIndex: slot });
+      }
+    }
+
     return slot;
   }
 
@@ -1735,6 +1786,7 @@ export class ArmyManager {
       battleCooldownEnd: finalBattleCooldownEnd,
       battleTimerLeft: finalBattleTimerLeft,
     });
+    this.updateBattleTimerTracking(params.entityId, finalBattleCooldownEnd);
     this.setTrackedArmyStructure(params.entityId, finalOwningStructureId);
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
@@ -1879,6 +1931,7 @@ export class ArmyManager {
       // console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
       return;
     }
+    this.updateBattleTimerTracking(entityId, undefined);
     this.clearTrackedArmyStructure(entityId, army.owningStructureId);
 
     // console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
@@ -2552,6 +2605,12 @@ export class ArmyManager {
               ),
             };
 
+            if (this.currentChunkBounds) {
+              Object.values(this.pointsRenderers).forEach((renderer) => {
+                renderer.setWorldBounds(this.currentChunkBounds);
+              });
+            }
+
             // Re-render visible armies to populate points
             if (isCommittedManagerChunk(this.currentChunkKey)) {
               this.renderVisibleArmies(this.currentChunkKey);
@@ -2585,6 +2644,23 @@ export class ArmyManager {
     // Apply label transitions using the centralized function
     applyLabelTransitions(this.entityIdLabels, view);
   };
+
+  public setChunkBounds(bounds?: { box: Box3; sphere: Sphere }) {
+    this.currentChunkBounds = bounds
+      ? {
+          box: bounds.box.clone(),
+          sphere: bounds.sphere.clone(),
+        }
+      : undefined;
+
+    if (!this.pointsRenderers) {
+      return;
+    }
+
+    Object.values(this.pointsRenderers).forEach((renderer) => {
+      renderer.setWorldBounds(this.currentChunkBounds);
+    });
+  }
 
   public isArmySelectable(entityId: ID): boolean {
     // Check if army exists in our data
@@ -2695,23 +2771,30 @@ ${
    * Recompute battle timers for all armies and update visible labels every second
    */
   private recomputeBattleTimersForAllArmies(): void {
-    // Update all army data with active battle timers
-    this.armies.forEach((army, entityId) => {
-      if (army.battleCooldownEnd) {
-        const newBattleTimerLeft = getBattleTimerLeft(army.battleCooldownEnd);
+    for (const entityId of this.armiesWithActiveBattleTimers) {
+      const army = this.armies.get(entityId);
+      if (!army?.battleCooldownEnd) {
+        this.armiesWithActiveBattleTimers.delete(entityId);
+        continue;
+      }
 
-        // Only update if timer has changed or expired
-        if (army.battleTimerLeft !== newBattleTimerLeft) {
-          army.battleTimerLeft = newBattleTimerLeft;
+      const newBattleTimerLeft = getBattleTimerLeft(army.battleCooldownEnd);
 
-          // Update visible label if it exists
-          const label = this.entityIdLabels.get(entityId);
-          if (label) {
-            this.updateArmyLabelData(entityId, army, label);
-          }
+      // Only update if timer has changed or expired
+      if (army.battleTimerLeft !== newBattleTimerLeft) {
+        army.battleTimerLeft = newBattleTimerLeft;
+
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateArmyLabelData(entityId, army, label);
         }
       }
-    });
+
+      if (newBattleTimerLeft <= 0) {
+        this.armiesWithActiveBattleTimers.delete(entityId);
+      }
+    }
   }
 
   /**
@@ -2904,6 +2987,7 @@ ${
     army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
+    this.updateBattleTimerTracking(update.entityId, update.battleCooldownEnd);
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
@@ -2960,6 +3044,8 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.chunkToArmies.clear();
+    this.armiesWithActiveBattleTimers.clear();
+    this.visibleArmySlotOwners.clear();
     this.movementCompleteListeners.clear();
 
     // Clear path visualization

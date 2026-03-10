@@ -57,6 +57,7 @@ export class ArmyModel {
   private readonly models: Map<ModelType, ModelData> = new Map();
   private readonly pendingModelLoads: Map<ModelType, Promise<ModelData>> = new Map();
   private readonly entityModelMap: Map<number, ModelType> = new Map();
+  private readonly entityIdsByModelType: Map<ModelType, Set<number>> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
@@ -69,6 +70,7 @@ export class ArmyModel {
   private readonly cosmeticModels: Map<string, ModelData> = new Map();
   private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
   private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
+  private readonly entityIdsByCosmeticId: Map<string, Set<number>> = new Map();
   private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
   private readonly activeCosmeticByEntity: Map<number, string | null> = new Map();
 
@@ -242,7 +244,17 @@ export class ArmyModel {
   }
 
   private reapplyInstancesForCosmeticModel(cosmeticId: string, modelData: ModelData): void {
-    this.instanceData.forEach((instance, entityId) => {
+    const waitingEntityIds = this.entityIdsByCosmeticId.get(cosmeticId);
+    if (!waitingEntityIds) {
+      this.syncModelDrawCount(modelData);
+      return;
+    }
+
+    waitingEntityIds.forEach((entityId) => {
+      const instance = this.instanceData.get(entityId);
+      if (!instance) {
+        return;
+      }
       if (this.entityCosmeticMap.get(entityId) !== cosmeticId) {
         return;
       }
@@ -265,7 +277,17 @@ export class ArmyModel {
   }
 
   private reapplyInstancesForModel(modelType: ModelType, modelData: ModelData): void {
-    this.instanceData.forEach((instance, entityId) => {
+    const waitingEntityIds = this.entityIdsByModelType.get(modelType);
+    if (!waitingEntityIds) {
+      this.syncModelDrawCount(modelData);
+      return;
+    }
+
+    waitingEntityIds.forEach((entityId) => {
+      const instance = this.instanceData.get(entityId);
+      if (!instance) {
+        return;
+      }
       if (this.entityModelMap.get(entityId) !== modelType) {
         return;
       }
@@ -285,6 +307,43 @@ export class ArmyModel {
     });
 
     this.syncModelDrawCount(modelData);
+  }
+
+  private updateReverseIndex<TKey>(index: Map<TKey, Set<number>>, key: TKey | undefined, entityId: number, add: boolean): void {
+    if (key === undefined) {
+      return;
+    }
+
+    if (add) {
+      let entities = index.get(key);
+      if (!entities) {
+        entities = new Set<number>();
+        index.set(key, entities);
+      }
+      entities.add(entityId);
+      return;
+    }
+
+    const entities = index.get(key);
+    if (!entities) {
+      return;
+    }
+
+    entities.delete(entityId);
+    if (entities.size === 0) {
+      index.delete(key);
+    }
+  }
+
+  private removeSlotFromFreeList(slot: number): void {
+    if (!this.freeSlotSet.delete(slot)) {
+      return;
+    }
+
+    const slotIndex = this.freeSlots.lastIndexOf(slot);
+    if (slotIndex >= 0) {
+      this.freeSlots.splice(slotIndex, 1);
+    }
   }
 
   /**
@@ -556,7 +615,9 @@ export class ArmyModel {
   public assignModelToEntity(entityId: number, modelType: ModelType): void {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
+    this.updateReverseIndex(this.entityIdsByModelType, oldModelType, entityId, false);
     this.entityModelMap.set(entityId, modelType);
+    this.updateReverseIndex(this.entityIdsByModelType, modelType, entityId, true);
     void this.ensureModel(modelType).catch((error) => {
       console.error(`Failed to load model for ${modelType}`, error);
     });
@@ -579,7 +640,9 @@ export class ArmyModel {
   public assignCosmeticToEntity(entityId: number, cosmeticId: string, assetPath: string): void {
     const oldCosmeticId = this.entityCosmeticMap.get(entityId);
     if (oldCosmeticId === cosmeticId) return;
+    this.updateReverseIndex(this.entityIdsByCosmeticId, oldCosmeticId, entityId, false);
     this.entityCosmeticMap.set(entityId, cosmeticId);
+    this.updateReverseIndex(this.entityIdsByCosmeticId, cosmeticId, entityId, true);
     void this.ensureCosmeticModel(cosmeticId, assetPath).catch((error) => {
       console.error(`Failed to load cosmetic model ${cosmeticId}`, error);
     });
@@ -589,6 +652,7 @@ export class ArmyModel {
    * Clears cosmetic assignment for an entity, falling back to base ModelType.
    */
   public clearCosmeticForEntity(entityId: number): void {
+    this.updateReverseIndex(this.entityIdsByCosmeticId, this.entityCosmeticMap.get(entityId), entityId, false);
     this.entityCosmeticMap.delete(entityId);
   }
 
@@ -659,6 +723,54 @@ export class ArmyModel {
     }
     this.matrixIndexOwners.set(newSlot, entityId);
     this.rebindMovementMatrixIndex(entityId, newSlot);
+  }
+
+  public moveEntityToSlot(entityId: number, newSlot: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    const oldSlot = instanceData?.matrixIndex;
+    if (!instanceData || oldSlot === undefined || oldSlot === newSlot) {
+      return;
+    }
+
+    const occupiedBy = this.matrixIndexOwners.get(newSlot);
+    if (occupiedBy !== undefined && occupiedBy !== entityId) {
+      throw new Error(`[ArmyModel] Cannot move entity ${entityId} into occupied slot ${newSlot}`);
+    }
+
+    this.removeSlotFromFreeList(newSlot);
+
+    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+    if (activeBaseModel) {
+      const modelData = this.models.get(activeBaseModel);
+      if (modelData) {
+        modelData.activeInstances.add(newSlot);
+        this.ensureModelCapacity(modelData, Math.max(oldSlot, newSlot) + 1);
+        this.updateInstanceTransform(instanceData.position, this.getScaleForModelType(activeBaseModel), instanceData.rotation);
+        this.updateInstanceMeshes(modelData, newSlot, entityId, instanceData.position, instanceData.color);
+      }
+    }
+
+    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+    if (activeCosmetic) {
+      const modelData = this.cosmeticModels.get(activeCosmetic);
+      if (modelData) {
+        modelData.activeInstances.add(newSlot);
+        this.ensureModelCapacity(modelData, Math.max(oldSlot, newSlot) + 1);
+        this.updateInstanceTransform(instanceData.position, this.normalScale, instanceData.rotation);
+        this.updateInstanceMeshes(modelData, newSlot, entityId, instanceData.position, instanceData.color);
+      }
+    }
+
+    this.matrixIndexOwners.set(newSlot, entityId);
+    this.clearInstanceSlot(oldSlot);
+    this.matrixIndexOwners.delete(oldSlot);
+
+    if (!this.freeSlotSet.has(oldSlot)) {
+      this.freeSlotSet.add(oldSlot);
+      this.freeSlots.push(oldSlot);
+    }
+
+    this.rebindInstanceSlot(entityId, newSlot);
   }
 
   private getScaleForModelType(modelType: ModelType): Vector3 {
@@ -759,7 +871,9 @@ export class ArmyModel {
   public releaseEntity(entityId: number, freedSlot?: number): void {
     this.freeInstanceSlot(entityId, freedSlot);
     this.instanceData.delete(entityId);
+    this.updateReverseIndex(this.entityIdsByModelType, this.entityModelMap.get(entityId), entityId, false);
     this.entityModelMap.delete(entityId);
+    this.updateReverseIndex(this.entityIdsByCosmeticId, this.entityCosmeticMap.get(entityId), entityId, false);
     this.entityCosmeticMap.delete(entityId);
     this.activeBaseModelByEntity.delete(entityId);
     this.activeCosmeticByEntity.delete(entityId);
@@ -858,18 +972,61 @@ export class ArmyModel {
   }
 
   // Animation Methods
-  public updateAnimations(_deltaTime: number, _visibility?: AnimationVisibilityContext): void {
+  private isModelVisibleForAnimations(modelData: ModelData, visibility?: AnimationVisibilityContext): boolean {
+    if (!visibility) {
+      return true;
+    }
+
+    const primaryMesh = modelData.instancedMeshes[0];
+    if (!primaryMesh || primaryMesh.count === 0) {
+      return false;
+    }
+
+    if (!primaryMesh.boundingSphere) {
+      primaryMesh.computeBoundingSphere();
+    }
+
+    const sphere = primaryMesh.boundingSphere;
+    if (!sphere) {
+      return true;
+    }
+
+    if (visibility.maxDistance !== undefined && visibility.cameraPosition) {
+      const maxDistance = visibility.maxDistance + sphere.radius;
+      if (visibility.cameraPosition.distanceToSquared(sphere.center) > maxDistance * maxDistance) {
+        return false;
+      }
+    }
+
+    if (visibility.visibilityManager && !visibility.visibilityManager.isSphereVisible(sphere)) {
+      return false;
+    }
+
+    if (visibility.frustumManager && !visibility.frustumManager.isSphereVisible(sphere)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
     const now = performance.now();
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
+      if (!this.isModelVisibleForAnimations(modelData, visibility)) {
+        return;
+      }
       this.updateModelAnimations(modelData, time, now);
     });
 
     // Also update cosmetic model animations
     this.cosmeticModels.forEach((modelData) => {
+      if (!this.isModelVisibleForAnimations(modelData, visibility)) {
+        return;
+      }
       this.updateModelAnimations(modelData, time, now);
     });
   }
@@ -1934,7 +2091,9 @@ export class ArmyModel {
     this.models.clear();
     this.cosmeticModels.clear();
     this.entityModelMap.clear();
+    this.entityIdsByModelType.clear();
     this.entityCosmeticMap.clear();
+    this.entityIdsByCosmeticId.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
     this.matrixIndexOwners.clear();

@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-10",
+    title: "Smoother Worldmap Hot Paths",
+    description:
+      "World map structure, chest, and army rendering now does less duplicate work during chunk changes and movement, which reduces hitching in dense or long-running sessions.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-10",
     title: "More Reliable World Terrain",
     description:
       "Fixed a world map terrain loading bug where biome coverage checks could miss successful chunk fetches, making blank terrain recovery and refresh behavior more reliable while moving around the map.",

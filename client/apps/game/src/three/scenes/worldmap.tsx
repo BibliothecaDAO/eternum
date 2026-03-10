@@ -4987,6 +4987,7 @@ export default class WorldmapScene extends HexagonScene {
   private applySceneChunkBounds(bounds: { box: Box3; sphere: Sphere } | undefined): void {
     this.currentChunkBounds = bounds;
     this.biomeModels.forEach((biome) => biome.setWorldBounds(bounds));
+    this.armyManager.setChunkBounds(bounds);
     this.structureManager.setChunkBounds(bounds);
   }
 

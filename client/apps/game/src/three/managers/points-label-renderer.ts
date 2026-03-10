@@ -44,6 +44,7 @@ export class PointsLabelRenderer {
   private hoverArray: Float32Array;
   private frustumManager?: FrustumManager;
   private unsubscribeFrustum?: () => void;
+  private worldBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
   private boundsDirty = true;
   private batchMode = false; // When true, setPoint() skips refreshFrustumVisibility()
 
@@ -112,6 +113,11 @@ export class PointsLabelRenderer {
       return;
     }
 
+    if (this.worldBounds) {
+      this.points.visible = this.frustumManager.isSphereVisible(this.worldBounds.sphere);
+      return;
+    }
+
     if (this.boundsDirty || !this.geometry.boundingSphere) {
       this.geometry.computeBoundingSphere();
       this.boundsDirty = false;
@@ -134,6 +140,27 @@ export class PointsLabelRenderer {
    */
   public endBatch(): void {
     this.batchMode = false;
+    this.refreshFrustumVisibility();
+  }
+
+  public setWorldBounds(bounds?: { box: THREE.Box3; sphere: THREE.Sphere }): void {
+    this.worldBounds = bounds
+      ? {
+          box: bounds.box.clone(),
+          sphere: bounds.sphere.clone(),
+        }
+      : undefined;
+
+    if (this.worldBounds) {
+      this.geometry.boundingSphere = this.geometry.boundingSphere ?? new THREE.Sphere();
+      this.geometry.boundingSphere.copy(this.worldBounds.sphere);
+      this.geometry.boundingBox = this.geometry.boundingBox ?? new THREE.Box3();
+      this.geometry.boundingBox.copy(this.worldBounds.box);
+      this.boundsDirty = false;
+    } else {
+      this.boundsDirty = true;
+    }
+
     this.refreshFrustumVisibility();
   }
 
@@ -178,7 +205,7 @@ export class PointsLabelRenderer {
 
     // Update draw range
     this.geometry.setDrawRange(0, this.currentCount);
-    this.boundsDirty = true;
+    this.boundsDirty = this.worldBounds === undefined;
 
     // Skip refresh in batch mode - will be called once in endBatch()
     if (!this.batchMode) {
@@ -245,7 +272,7 @@ export class PointsLabelRenderer {
       this.hoveredEntityId = null;
     }
 
-    this.boundsDirty = true;
+    this.boundsDirty = this.worldBounds === undefined;
     this.refreshFrustumVisibility();
   }
 
@@ -260,7 +287,7 @@ export class PointsLabelRenderer {
     this.geometry.setDrawRange(0, 0);
     this.hoverArray.fill(0);
     this.geometry.attributes.hover.needsUpdate = true;
-    this.boundsDirty = true;
+    this.boundsDirty = this.worldBounds === undefined;
     this.refreshFrustumVisibility();
   }
 

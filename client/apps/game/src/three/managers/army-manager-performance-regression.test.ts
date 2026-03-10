@@ -32,4 +32,26 @@ describe("army manager performance regressions", () => {
       /public\s+syncAttachedArmiesOwnerForStructure[\s\S]*const\s+attachedArmyIds\s*=\s*this\.armiesByOwningStructure\.get\(params\.structureId\)/,
     );
   });
+
+  it("compacts visible army slots instead of leaving sparse high-water gaps", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/private\s+visibleArmySlotOwners:\s*Map<number,\s*ID>\s*=\s*new Map\(\)/);
+    expect(source).toContain("this.armyModel.moveEntityToSlot(");
+  });
+
+  it("applies fixed chunk bounds to moving-army point renderers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toContain("renderer.setWorldBounds(this.currentChunkBounds)");
+    expect(source).toMatch(/public\s+setChunkBounds\s*\(\s*bounds\?:\s*\{\s*box:\s*Box3;\s*sphere:\s*Sphere\s*\}\s*\)/);
+  });
+
+  it("recomputes battle timers from an active timer set instead of scanning all armies", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/private\s+armiesWithActiveBattleTimers:\s*Set<ID>\s*=\s*new Set\(\)/);
+    expect(source).toMatch(/for\s*\(\s*const\s+entityId\s+of\s+this\.armiesWithActiveBattleTimers\s*\)/);
+    expect(source).not.toMatch(/private\s+recomputeBattleTimersForAllArmies[\s\S]*this\.armies\.forEach/);
+  });
 });

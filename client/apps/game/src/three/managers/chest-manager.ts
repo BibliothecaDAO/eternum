@@ -14,6 +14,7 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
+import { ChestSpatialIndex, collectVisibleChestsForChunk } from "./chest-spatial-index";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import {
   isCommittedManagerChunk,
@@ -43,6 +44,7 @@ export class ChestManager {
   private chunkSize: number;
   private currentCameraView: CameraView;
   chestHexCoords: Map<number, Set<number>> = new Map();
+  private readonly chestIndex: ChestSpatialIndex<ID>;
   private animations: Map<number, THREE.AnimationMixer> = new Map();
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
@@ -70,6 +72,7 @@ export class ChestManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
     this.chunkSize = chunkSize;
+    this.chestIndex = new ChestSpatialIndex<ID>(this.chunkSize);
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.loadModel().then(() => {
       if (isCommittedManagerChunk(this.currentChunkKey)) {
@@ -215,11 +218,13 @@ export class ChestManager {
       this.chestHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
     }
 
+    const previousChest = this.chests.getChest(occupierId);
     this.chests.addChest(occupierId, position);
+    this.chestIndex.upsert(occupierId, previousChest?.hexCoords, position);
 
     // Re-render if we have a current chunk
     if (isCommittedManagerChunk(this.currentChunkKey)) {
-      this.renderVisibleChests(this.currentChunkKey);
+      this.syncVisibleChest(occupierId);
     }
   }
 
@@ -329,16 +334,61 @@ export class ChestManager {
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {
-    const visibleChests = Array.from(chests.values())
-      .filter((chest) => {
-        return this.isChestVisible(chest, startRow, startCol);
-      })
-      .map((chest) => ({
-        entityId: chest.entityId,
-        hexCoords: chest.hexCoords,
-      }));
+    return collectVisibleChestsForChunk({
+      chests,
+      index: this.chestIndex,
+      startRow,
+      startCol,
+      renderChunkSize: this.renderChunkSize,
+      chunkStride: this.chunkSize,
+      isVisible: (chest, row, col) => this.isChestVisible(chest, row, col),
+    }).map((chest) => ({
+      entityId: chest.entityId,
+      hexCoords: chest.hexCoords,
+    }));
+  }
 
-    return visibleChests;
+  private upsertVisibleChest(chest: ChestData): void {
+    const existingIndex = this.visibleChests.findIndex((visibleChest) => visibleChest.entityId === chest.entityId);
+    if (existingIndex >= 0) {
+      this.visibleChests[existingIndex] = chest;
+      return;
+    }
+
+    this.visibleChests.push(chest);
+  }
+
+  private removeVisibleChest(entityId: ID): void {
+    this.visibleChests = this.visibleChests.filter((chest) => chest.entityId !== entityId);
+  }
+
+  private syncVisibleChest(entityId: ID): void {
+    if (!this.chestModel || !isCommittedManagerChunk(this.currentChunkKey)) {
+      return;
+    }
+
+    const chest = this.chests.getChest(entityId);
+    const [startRow, startCol] = this.currentChunkKey.split(",").map(Number);
+    const isVisible = chest ? this.isChestVisible(chest, startRow, startCol) : false;
+    const hasVisibleInstance = this.chestInstanceIndices.has(entityId);
+
+    if (chest && isVisible) {
+      if (hasVisibleInstance) {
+        this.updateChestInstance(chest);
+      } else {
+        this.addChestInstance(chest);
+      }
+      this.upsertVisibleChest(chest);
+      this.chestModel.setCount(this.chestInstanceOrder.length);
+      return;
+    }
+
+    if (hasVisibleInstance) {
+      this.removeChestInstance(entityId);
+      this.chestModel.setCount(this.chestInstanceOrder.length);
+    }
+
+    this.removeVisibleChest(entityId);
   }
 
   private renderVisibleChests(chunkKey: string) {
@@ -579,23 +629,18 @@ export class ChestManager {
   }
 
   public async removeChest(entityId: ID) {
-    if (!this.chests.getChest(entityId)) {
+    const existingChest = this.chests.getChest(entityId);
+    if (!existingChest) {
       return;
     }
 
     // Remove chest from tracking
     this.chests.removeChest(entityId);
-
-    this.removeEntityIdLabel(entityId);
-
-    // Remove point icon
-    if (this.pointsRenderer) {
-      this.pointsRenderer.removePoint(entityId);
-    }
+    this.chestIndex.remove(entityId, existingChest.hexCoords);
 
     // Re-render visible chests
     if (isCommittedManagerChunk(this.currentChunkKey)) {
-      this.renderVisibleChests(this.currentChunkKey);
+      this.syncVisibleChest(entityId);
     }
   }
 
