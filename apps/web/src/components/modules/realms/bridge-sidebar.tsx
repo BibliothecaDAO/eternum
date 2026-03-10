@@ -136,16 +136,16 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
       variant="inset"
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
     >
-      <div className="flex items-center justify-end gap-2 text-sm">
-        Ethereum Wallet:
-        <EthereumConnect />
-      </div>
-      <SidebarSeparator className="mx-0 mt-2" />
-      <SidebarHeader>
-        <div className="border-b pb-2 text-xl">
+      <SidebarHeader className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm">Ethereum Wallet</span>
+          <EthereumConnect />
+        </div>
+        <SidebarSeparator className="mx-0" />
+        <h2 className="realm-card-title">
           Bridging {selectedRows.length} Realms to
           {selectedAsset === "Ethereum" ? " Starknet" : " Ethereum"}
-        </div>
+        </h2>
         <SidebarGroup>
           <div className="mb-4 flex flex-wrap gap-2">
             {selectedRows.map((row) => (
@@ -254,7 +254,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
             asChild
             className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
           >
-            <CollapsibleTrigger className="bg-sidebar-accent h-10">
+            <CollapsibleTrigger className="h-10">
               Transaction History
               <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
             </CollapsibleTrigger>

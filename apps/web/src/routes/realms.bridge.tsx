@@ -2,6 +2,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
+import { PageHeader } from "@/components/layout/page-header";
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { BridgeTable, columns } from "@/components/modules/realms/bridge-table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -117,41 +118,39 @@ function RouteComponent() {
       className="flex flex-1"
     >
       <SidebarInset className="px-6">
-        <div className="my-8 flex items-center justify-center space-x-4">
-          <Button
-            size="lg"
-            className={`bg-primary/80 hover:bg-primary/80 cursor-default rounded-full`}
-          >
-            From:
+        <PageHeader eyebrow="Realms" title="Starknet Bridge" className="mt-6" />
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <div className="realm-subtle-panel flex items-center gap-2 rounded-lg px-4 py-2.5">
+            <span className="text-muted-foreground text-sm">From</span>
             {selectedAsset === "Ethereum" ? (
               <>
-                <EthereumIcon className="w-6! h-6!" />
-                Ethereum
+                <EthereumIcon className="h-5 w-5" />
+                <span className="font-semibold">Ethereum</span>
               </>
             ) : (
               <>
-                <StarknetIcon className="w-6! h-6!" />
-                Starknet
+                <StarknetIcon className="h-5 w-5" />
+                <span className="font-semibold">Starknet</span>
               </>
             )}
+          </div>
+          <Button size="icon" variant="outline" onClick={swapAssets} className="rounded-full">
+            <ArrowLeftRight className="h-4 w-4" />
           </Button>
-          <Button size="icon" onClick={swapAssets} className="rounded">
-            <ArrowLeftRight className="h-7 w-7" />
-          </Button>
-          <Button size="lg" className="rounded-full" onClick={swapAssets}>
-            To:
+          <div className="realm-subtle-panel flex items-center gap-2 rounded-lg px-4 py-2.5">
+            <span className="text-muted-foreground text-sm">To</span>
             {selectedAsset === "Ethereum" ? (
               <>
-                <StarknetIcon className="w-6! h-6!" />
-                Starknet
+                <StarknetIcon className="h-5 w-5" />
+                <span className="font-semibold">Starknet</span>
               </>
             ) : (
               <>
-                <EthereumIcon className="w-6! h-6!" />
-                Ethereum
+                <EthereumIcon className="h-5 w-5" />
+                <span className="font-semibold">Ethereum</span>
               </>
             )}
-          </Button>
+          </div>
         </div>
         {selectedAsset === "Ethereum" && !l1Address && (
           <Alert className="mb-4 rounded border-warning">
@@ -160,14 +159,7 @@ function RouteComponent() {
               Your Ethereum wallet is not connected
             </AlertTitle>
             <AlertDescription>
-              <Button
-                className="pl-0 pr-2"
-                variant={"link"}
-                // onClick={openConnectModal}
-              >
-                Connect
-              </Button>
-              to view and bridge your Realms
+              Connect your Ethereum wallet using the sidebar to view and bridge your Realms
             </AlertDescription>
           </Alert>
         )}
@@ -179,13 +171,13 @@ function RouteComponent() {
             </AlertTitle>
             <AlertDescription>
               <Button
-                className="pl-0 pr-2"
-                variant={"link"}
+                className="h-auto p-0"
+                variant="link"
                 onClick={() => openStarknetKitModal()}
               >
-                Connect
+                Connect your Starknet wallet
               </Button>
-              to view and bridge your Realms
+              {" "}to view and bridge your Realms
             </AlertDescription>
           </Alert>
         )}

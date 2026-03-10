@@ -23,37 +23,22 @@ export function MarkdownRenderer({
       rehypePlugins={[rehypeRaw, rehypeSanitize]}
       urlTransform={(url) => {
         if (url.startsWith("ipfs://")) {
-          return url.replace(
-            "ipfs://",
-            env.VITE_PUBLIC_IPFS_GATEWAY ?? "",
-          );
+          return url.replace("ipfs://", env.VITE_PUBLIC_IPFS_GATEWAY ?? "");
         }
         return url;
       }}
       components={{
         h1: ({ _node, ...props }) => (
-          <h1
-            className="font-serif mb-4 mt-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-3xl"
-            {...props}
-          />
+          <h1 className="realm-prose-h1" {...props} />
         ),
         h2: ({ _node, ...props }) => (
-          <h2
-            className="font-serif mb-4 mt-6 scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight first:mt-0"
-            {...props}
-          />
+          <h2 className="realm-prose-h2 first:mt-0" {...props} />
         ),
         h3: ({ _node, ...props }) => (
-          <h3
-            className="font-serif mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight"
-            {...props}
-          />
+          <h3 className="realm-prose-h3" {...props} />
         ),
         h4: ({ _node, ...props }) => (
-          <h4
-            className="font-serif mb-4 mt-6 scroll-m-20 text-lg font-semibold tracking-tight"
-            {...props}
-          />
+          <h4 className="realm-prose-h4" {...props} />
         ),
         p: ({ _node, ...props }) => (
           <p className="mb-4 leading-7 [&:not(:first-child)]:mt-6" {...props} />
@@ -136,7 +121,7 @@ export function MarkdownRenderer({
             );
           }
           return (
-            <pre className="mb-4 mt-6 overflow-x-auto rounded-lg border bg-black p-4">
+            <pre className="mt-6 mb-4 overflow-x-auto rounded-lg border bg-black p-4">
               <code
                 className="relative font-mono text-sm text-white"
                 {...props}

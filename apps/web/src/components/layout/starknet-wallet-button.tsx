@@ -40,7 +40,7 @@ export const StarknetWalletButton = ({
   const isReferenceVariant = variant === "reference";
   const resolvedPickerMode = pickerMode ?? (variant === "reference" ? "sheet" : "dropdown");
   const pickerTriggerClassName = isReferenceVariant
-    ? "inline-flex h-9 w-9 items-center justify-center rounded-lg bg-background/40 text-foreground transition hover:bg-accent"
+    ? "inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground"
     : "inline-flex h-7 w-7 items-center justify-center rounded-md text-primary-foreground/80 transition hover:bg-primary-foreground/10";
 
   const connectPrimary = () => {
@@ -108,7 +108,8 @@ export const StarknetWalletButton = ({
       <div className={cn("relative w-full", className)}>
         <Button
           onClick={connectPrimary}
-          className="h-14 w-full justify-start rounded-2xl border px-3 pr-16 shadow-sm"
+          variant="outline"
+          className="h-14 w-full justify-start rounded-2xl px-3 pr-16 shadow-sm"
         >
           <span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted">
             {lastConnector ? (
@@ -118,10 +119,10 @@ export const StarknetWalletButton = ({
             )}
           </span>
           <span className="flex flex-col items-start leading-tight">
-            <span className="text-base font-semibold">
+            <span className="text-foreground text-base font-semibold">
               {label ?? "Connect wallet"}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {lastConnector
                 ? `Previously used ${lastConnector.name}`
                 : "Choose a Starknet wallet"}

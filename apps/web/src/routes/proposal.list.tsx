@@ -39,7 +39,9 @@ export const Route = createFileRoute("/proposal/list")({
 function RouteComponent() {
   const { data } = useCurrentDelegate();
   const delegateAddress =
-    data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : undefined;
+    data && BigInt(data) !== 0n
+      ? formatAddress(num.toHex(BigInt(data)))
+      : undefined;
 
   const currentDelegateQuery = useQuery(
     getDelegateByIDQueryOptions({
@@ -56,8 +58,9 @@ function RouteComponent() {
       }}
     >
       <SidebarInset>
-        <div className="container p-4 sm:p-8">
-          <h1 className="text-2xl font-semibold">Proposals</h1>
+        <div className="container space-y-3 px-4 py-6 sm:px-6 sm:py-8">
+          <p className="realm-eyebrow">Governance</p>
+          <h1 className="realm-page-title text-3xl sm:text-4xl">Proposals</h1>
           <Suspense fallback={<ProposalListSkeleton />}>
             <ProposalList limit={20} delegateId={currentDelegate?.user} />
           </Suspense>

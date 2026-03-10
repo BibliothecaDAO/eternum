@@ -112,7 +112,7 @@ export const StakeLords = () => {
       </CardHeader>
       {address ? <><div className="flex flex-col items-center sm:flex-row">
         <Card className="mt-4 sm:ml-8 sm:mt-0">
-          <CardContent className="flex items-center px-4 pb-0 pt-2 text-lg font-semibold md:text-2xl">
+          <CardContent className="realm-stat flex items-center px-4 pb-0 pt-2 text-lg font-semibold md:text-2xl">
             <LordsIcon className="mr-2 h-6 w-6" />
             {formatNumber(availableLords)}
           </CardContent>

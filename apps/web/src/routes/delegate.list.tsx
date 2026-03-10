@@ -29,7 +29,7 @@ function RouteComponent() {
   return (
     <div className="h-screen overflow-auto">
       {/* Sticky search input */}
-      <div className="bg-background top-0 z-10 mb-4 flex justify-between gap-6 border-b p-3 sm:sticky">
+      <div className="bg-card/85 top-0 z-10 mb-4 flex justify-between gap-6 rounded-xl border p-3 backdrop-blur-sm sm:sticky">
         <Input
           type="text"
           className="h-12 w-full rounded border p-3"
@@ -48,7 +48,10 @@ function RouteComponent() {
           </div>
         }
       >
-        <DelegateList searchQuery={deferredSearchQuery} sortMethod={sortMethod} />
+        <DelegateList
+          searchQuery={deferredSearchQuery}
+          sortMethod={sortMethod}
+        />
       </Suspense>
     </div>
   );

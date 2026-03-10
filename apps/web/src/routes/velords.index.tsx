@@ -1,19 +1,11 @@
 import { lazy, Suspense, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { useAccount } from "@starknet-start/react";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Copy, Link2 } from "lucide-react";
-import { formatUnits } from "viem";
-
+import { PageHeader } from "@/components/layout/page-header";
 import { VelordsLockActivity } from "@/components/modules/velords/lock-activity";
 import { VelordsSourceBreakdown } from "@/components/modules/velords/source-breakdown";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useVelordsData } from "@/hooks/use-velords-data";
 import {
@@ -25,6 +17,11 @@ import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { calculateTrailingApyPercent } from "@/lib/velords-analytics";
 import { seo } from "@/utils/seo";
 import { formatNumber } from "@/utils/utils";
+import { useAccount } from "@starknet-start/react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { Copy, Link2 } from "lucide-react";
+import { formatUnits } from "viem";
 
 type VelordsPeriod = "3m" | "6m" | "1y";
 type VelordsView = "overview" | "sources" | "locks" | "trends";
@@ -161,7 +158,9 @@ function RouteComponent() {
   const estimatedWeeklyRewards = useMemo(() => {
     const latestWeek = rewardsSeriesQuery.data?.weekly.at(-1);
     if (!latestWeek || !userSharePercent) return undefined;
-    const latestWeekRewards = Number(formatUnits(BigInt(latestWeek.totalWei), 18));
+    const latestWeekRewards = Number(
+      formatUnits(BigInt(latestWeek.totalWei), 18),
+    );
     return (latestWeekRewards * Number(userSharePercent)) / 100;
   }, [rewardsSeriesQuery.data?.weekly, userSharePercent]);
 
@@ -226,85 +225,85 @@ function RouteComponent() {
   };
 
   return (
-    <div className="bg-background min-h-screen">
-      <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              veLords Dashboard
-            </h1>
-            <p className="text-muted-foreground text-base sm:text-lg">
-              Stake $LORDS in the Lordship Protocol and monitor reward performance.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCopyLink}>
-              <Link2 className="mr-2 h-4 w-4" />
-              Copy Link
-            </Button>
-            <Button variant="outline" onClick={handleCopySummary}>
-              <Copy className="mr-2 h-4 w-4" />
-              Copy Summary
-            </Button>
-          </div>
-        </div>
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8">
+        <PageHeader
+          eyebrow="Lords"
+          title="veLords Dashboard"
+          description="Stake $LORDS in the Lordship Protocol and monitor reward performance."
+          actions={
+            <>
+              <Button variant="outline" onClick={handleCopyLink}>
+                <Link2 className="mr-2 h-4 w-4" />
+                Copy Link
+              </Button>
+              <Button variant="outline" onClick={handleCopySummary}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Summary
+              </Button>
+            </>
+          }
+        />
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Total Voting Power (veLORDS)</div>
-            <div className="text-2xl font-bold">{totalSupply ?? "Loading..."}</div>
-            {userBalance !== undefined && userSharePercent !== undefined && (
-              <div className="text-muted-foreground mt-1 text-sm">
-                Your share: {userBalance} ({userSharePercent}%)
-              </div>
-            )}
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">LORDS Locked</div>
-            <div className="text-2xl font-bold">{lordsLocked ?? "Loading..."}</div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">TVL</div>
-            <div className="text-2xl font-bold">
-              {typeof tvl === "number" && Number.isFinite(tvl)
+          <MetricCard
+            label="Total Voting Power (veLORDS)"
+            value={totalSupply ?? "Loading..."}
+            hint={
+              userBalance !== undefined && userSharePercent !== undefined
+                ? `Your share: ${userBalance} (${userSharePercent}%)`
+                : undefined
+            }
+          />
+          <MetricCard
+            label="LORDS Locked"
+            value={lordsLocked ?? "Loading..."}
+          />
+          <MetricCard
+            label="TVL"
+            value={
+              typeof tvl === "number" && Number.isFinite(tvl)
                 ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                 : isTVLLoading
                   ? "Loading..."
-                  : "$0"}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Rewards (7d)</div>
-            <div className="text-2xl font-bold">{rewards7d ?? "Loading..."}</div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Rewards (30d)</div>
-            <div className="text-2xl font-bold">{rewards30d ?? "Loading..."}</div>
-          </div>
-          <div className="bg-card rounded-lg border p-4">
-            <div className="text-sm text-muted-foreground">Trailing APY (4w avg)</div>
-            <div className="text-2xl font-bold">{formatNumber(trailingApy, 2)}%</div>
-          </div>
+                  : "$0"
+            }
+          />
+          <MetricCard label="Rewards (7d)" value={rewards7d ?? "Loading..."} />
+          <MetricCard
+            label="Rewards (30d)"
+            value={rewards30d ?? "Loading..."}
+          />
+          <MetricCard
+            label="Trailing APY (4w avg)"
+            value={`${formatNumber(trailingApy, 2)}%`}
+          />
         </div>
 
         <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
           <div className="space-y-6 xl:col-span-3">
-            <div className="bg-card rounded-lg border p-6">
-              <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-md border" />}>
-                <VeLordsRewardsChart
-                  selectedPeriod={selectedPeriod}
-                  totalSupplyRaw={totalSupplyRaw}
-                  data={veLordsBurnsQuery.data ?? []}
-                  onTimePeriodChange={handleTimePeriodChange}
-                  isLoading={veLordsBurnsQuery.isLoading}
-                  errorMessage={
-                    veLordsBurnsQuery.error instanceof Error
-                      ? veLordsBurnsQuery.error.message
-                      : undefined
+            <Card>
+              <CardContent className="p-6">
+                <Suspense
+                  fallback={
+                    <div className="h-[360px] w-full animate-pulse rounded-md border" />
                   }
-                />
-              </Suspense>
-            </div>
+                >
+                  <VeLordsRewardsChart
+                    selectedPeriod={selectedPeriod}
+                    totalSupplyRaw={totalSupplyRaw}
+                    data={veLordsBurnsQuery.data ?? []}
+                    onTimePeriodChange={handleTimePeriodChange}
+                    isLoading={veLordsBurnsQuery.isLoading}
+                    errorMessage={
+                      veLordsBurnsQuery.error instanceof Error
+                        ? veLordsBurnsQuery.error.message
+                        : undefined
+                    }
+                  />
+                </Suspense>
+              </CardContent>
+            </Card>
 
             <Tabs value={selectedView} onValueChange={handleViewChange}>
               <TabsList>
@@ -355,28 +354,37 @@ function RouteComponent() {
           </div>
 
           <div className="space-y-6 xl:col-span-2">
-            <div className="bg-card rounded-lg border p-4">
-              <div className="text-sm font-medium">Your Position</div>
-              <div className="text-muted-foreground mt-2 space-y-1 text-sm">
-                <div>veLORDS Balance: {userBalance ?? "-"}</div>
-                <div>Supply Share: {userSharePercent ? `${userSharePercent}%` : "-"}</div>
-                <div>Locked LORDS: {userLocked?.amount ?? "-"}</div>
-                <div>
-                  Unlock Time:{" "}
-                  {userLocked?.unlockTime
-                    ? new Date(userLocked.unlockTime * 1000).toLocaleDateString()
-                    : "-"}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Your Position</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-muted-foreground space-y-1 text-sm">
+                  <div>veLORDS Balance: {userBalance ?? "-"}</div>
+                  <div>
+                    Supply Share:{" "}
+                    {userSharePercent ? `${userSharePercent}%` : "-"}
+                  </div>
+                  <div>Locked LORDS: {userLocked?.amount ?? "-"}</div>
+                  <div>
+                    Unlock Time:{" "}
+                    {userLocked?.unlockTime
+                      ? new Date(
+                          userLocked.unlockTime * 1000,
+                        ).toLocaleDateString()
+                      : "-"}
+                  </div>
+                  <div>
+                    Est. Weekly Rewards:{" "}
+                    {estimatedWeeklyRewards !== undefined
+                      ? `~${formatNumber(estimatedWeeklyRewards, 2)} LORDS`
+                      : "-"}
+                  </div>
                 </div>
-                <div>
-                  Est. Weekly Rewards:{" "}
-                  {estimatedWeeklyRewards !== undefined
-                    ? `~${formatNumber(estimatedWeeklyRewards, 2)} LORDS`
-                    : "-"}
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="bg-card rounded-lg border">
+            <Card>
               <Suspense
                 fallback={
                   <div className="h-[320px] w-full animate-pulse rounded-md border" />
@@ -384,9 +392,9 @@ function RouteComponent() {
               >
                 <StakeLords />
               </Suspense>
-            </div>
+            </Card>
             {address && (
-              <div className="bg-card rounded-lg border">
+              <Card>
                 <Suspense
                   fallback={
                     <div className="h-[220px] w-full animate-pulse rounded-md border" />
@@ -394,7 +402,7 @@ function RouteComponent() {
                 >
                   <VelordsRewards />
                 </Suspense>
-              </div>
+              </Card>
             )}
           </div>
         </div>

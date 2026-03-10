@@ -31,11 +31,14 @@ function IndexComponent() {
     return <LoginCard />;
   }
   return (
-    <div className="flex flex-col gap-4 p-4 sm:px-8">
+    <div className="realm-shell flex flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       {/* Dashboard Statistics */}
-      <div className="mb-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="realm-eyebrow">Account Portal</p>
+            <h1 className="realm-page-title text-3xl sm:text-4xl">Dashboard</h1>
+          </div>
           <EthereumConnect />
         </div>
         <Suspense fallback={<HomepageSkeleton />}>

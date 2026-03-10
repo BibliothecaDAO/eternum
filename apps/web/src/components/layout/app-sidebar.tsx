@@ -13,7 +13,6 @@ import {
   Castle,
   ClipboardPen,
   ExternalLink,
-  HandCoins,
   Vote,
 } from "lucide-react";
 
@@ -36,7 +35,7 @@ const data = {
         {
           title: "Eternum Season Passes",
           target: "_blank",
-          url: "https://empire.realms.world/season-passes",
+          url: "https://market.realms.world",
         },
       ],
     },
@@ -62,11 +61,6 @@ const data = {
           url: "#",
         },
       ],*/
-    },
-    {
-      title: "Claims",
-      url: "/realms/claims",
-      icon: HandCoins,
     },
   ],
 
@@ -135,15 +129,15 @@ const data = {
       items: [
         {
           title: "Realms.World",
-          url: "https://realmsworld.notion.site/",
+          url: "https://realms.world",
         },
         {
           title: "Eternum",
-          url: "https://eternum-docs.realms.world/",
+          url: "https://blitz.realms.world",
         },
         {
           title: "Developer",
-          url: "https://eternum-docs.realms.world/development",
+          url: "https://docs.realms.world",
         },
       ],
     },
