@@ -14,4 +14,11 @@ export interface MapContext {
    * Keys are "x,y" strings.
    */
   recentlyMoved?: Set<string>;
+  /**
+   * Stamina consumed by each army this tick (entity ID → stamina spent).
+   * Cleared on each fresh map load from Torii. Used to prevent stale
+   * stamina data from causing failed transactions when an army moves
+   * multiple times in one tick before Torii indexes the updates.
+   */
+  staminaSpent?: Map<number, number>;
 }

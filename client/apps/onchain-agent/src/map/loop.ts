@@ -92,6 +92,7 @@ export function createMapLoop(
 
       // Fresh Torii data supersedes optimistic tracking.
       ctx.recentlyMoved = undefined;
+      ctx.staminaSpent = undefined;
 
       if (ctx.filePath) writeFileSync(ctx.filePath, snapshot.text);
     } catch (_) {

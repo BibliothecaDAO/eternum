@@ -186,7 +186,11 @@ export function createMoveTool(
           }
         }
 
-        const projectedStamina = projectExplorerStamina(explorer, gameConfig.stamina);
+        // Project stamina forward, then subtract any stamina already spent
+        // this tick (before Torii indexes the on-chain updates).
+        const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
+        const alreadySpent = mapCtx.staminaSpent?.get(explorer.entityId) ?? 0;
+        const projectedStamina = Math.max(0, baseProjected - alreadySpent);
 
         if (projectedStamina <= 0) {
           throw new Error(`Cannot move — no stamina (${projectedStamina}). Wait for regeneration.`);
@@ -341,6 +345,11 @@ export function createMoveTool(
         mapCtx.recentlyMoved.add(`${endPos.x},${endPos.y}`);
         // Remove the old position — the army left that tile.
         mapCtx.recentlyMoved.delete(`${start.x},${start.y}`);
+
+        // Track stamina consumed so subsequent moves for this army in the
+        // same tick see accurate remaining stamina (before Torii indexes it).
+        if (!mapCtx.staminaSpent) mapCtx.staminaSpent = new Map();
+        mapCtx.staminaSpent.set(explorer.entityId, alreadySpent + staminaCost);
 
         // Refresh map so subsequent moves see the updated positions.
         // Await refresh so the next tool call in this tick gets fresh data.
