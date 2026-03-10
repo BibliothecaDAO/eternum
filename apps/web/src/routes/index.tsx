@@ -31,10 +31,10 @@ function IndexComponent() {
     return <LoginCard />;
   }
   return (
-    <div className="realm-shell flex flex-col gap-6 p-4 sm:px-8">
+    <div className="realm-shell flex flex-col gap-4 px-4 py-3 sm:px-6">
       {/* Dashboard Statistics */}
-      <div className="realm-panel mb-4 rounded-3xl p-5 sm:p-8">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <p className="realm-eyebrow">Account Portal</p>
             <h1 className="realm-page-title text-3xl sm:text-4xl">Dashboard</h1>

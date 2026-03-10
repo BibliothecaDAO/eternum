@@ -10,9 +10,11 @@ const homepagePath = resolve(
   currentDir,
   "../components/modules/homepage/homepage.tsx",
 );
+const indexRoutePath = resolve(currentDir, "../routes/index.tsx");
 const styles = readFileSync(stylesPath, "utf8");
 const buttonSource = readFileSync(buttonPath, "utf8");
 const homepageSource = readFileSync(homepagePath, "utf8");
+const indexRouteSource = readFileSync(indexRoutePath, "utf8");
 
 describe("account portal theme", () => {
   it("uses the realms-world-site font stack", () => {
@@ -56,5 +58,10 @@ describe("account portal theme", () => {
   it("points marketplace CTAs at market.realms.world", () => {
     expect(homepageSource).toContain('href="https://market.realms.world');
     expect(homepageSource).not.toContain("empire.realms.world/trade/realms");
+  });
+
+  it("keeps the dashboard title inline instead of inside a framed panel", () => {
+    expect(indexRouteSource).not.toContain("realm-panel mb-4 rounded-3xl");
+    expect(indexRouteSource).toContain('className="mb-3 flex flex-wrap');
   });
 });
