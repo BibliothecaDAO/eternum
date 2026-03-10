@@ -231,6 +231,10 @@ const CHEST_REVEAL_CARD_STYLES = `
     margin-top: 0;
   }
 
+  .blitz-card-root.reveal-card-shell.layout-count-2 .reveal-meta-card {
+    min-height: 30px;
+  }
+
   .blitz-card-root.reveal-card-shell.layout-count-3 .reveal-card-stack {
     gap: 5px;
   }
@@ -260,7 +264,7 @@ const CHEST_REVEAL_CARD_STYLES = `
   .blitz-card-root.reveal-card-shell .reveal-center {
     position: absolute;
     left: 166px;
-    top: 118px;
+    top: 132px;
     width: 584px;
     height: 330px;
     z-index: 4;
@@ -536,7 +540,7 @@ export function RevealStage({
   const getBaseCardSize = () => {
     const count = displayAssets.length;
     if (count <= 3) {
-      return { width: 209, height: 250 };
+      return { width: 216, height: 216 };
     }
     return { width: 160, height: 210 };
   };
@@ -547,10 +551,10 @@ export function RevealStage({
       return { gap: 0, baseScale: 1.14, heroScale: 1, heroLift: -18, supportLift: 0 };
     }
     if (count === 2) {
-      return { gap: 34, baseScale: 1.05, heroScale: 1.04, heroLift: -10, supportLift: 10 };
+      return { gap: 38, baseScale: 1.05, heroScale: 1.04, heroLift: -10, supportLift: 10 };
     }
     if (count === 3) {
-      return { gap: 24, baseScale: 1, heroScale: 1.08, heroLift: -12, supportLift: 12 };
+      return { gap: 28, baseScale: 1, heroScale: 1.08, heroLift: -12, supportLift: 12 };
     }
     return { gap: 12, baseScale: 1, heroScale: 1, heroLift: 0, supportLift: 0 };
   };
@@ -560,24 +564,14 @@ export function RevealStage({
     height: Math.round(size.height * scale),
   });
 
-  // Always hero the middle card for 3-item reveals. For other counts, only promote a single clear best reward.
+  // Only 3-item reveals promote a hero card. 2-item reveals stay balanced.
   const middleIndex = Math.floor(displayAssets.length / 2);
-  const highestDisplayedRarity = displayAssets.reduce((highest, asset) => {
-    const currentIndex = RARITY_ORDER.indexOf(asset.rarity);
-    const highestIndex = RARITY_ORDER.indexOf(highest);
-    return currentIndex > highestIndex ? asset.rarity : highest;
-  }, AssetRarity.Common);
-  const highestRarityCount = displayAssets.filter((asset) => asset.rarity === highestDisplayedRarity).length;
-  const heroAsset =
-    displayAssets.length === 3
-      ? displayAssets[middleIndex]
-      : highestRarityCount === 1 && displayAssets.length > 1
-        ? displayAssets[middleIndex]
-        : null;
+  const heroAsset = displayAssets.length === 3 ? displayAssets[middleIndex] : null;
   const isSoloLayout = displayAssets.length === 1;
   const baseCardSize = getBaseCardSize();
   const layoutPreset = getLayoutPreset();
   const layoutCountClass = `layout-count-${Math.min(Math.max(displayAssets.length, 1), 3)}`;
+  const mockCountOptions = [1, 2, 3].filter((count) => count <= reorderedAssets.length);
 
   return (
     <ChestStageContainer>
@@ -708,6 +702,32 @@ export function RevealStage({
           >
             {/* Left group: Share buttons */}
             <div className="flex items-center gap-3">
+              {MOCK_CHEST_OPENING && mockCountOptions.length > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border border-gold/20 bg-black/30 px-2 py-1">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-gold/55">Items</span>
+                  <div className="flex items-center gap-1">
+                    {mockCountOptions.map((count) => {
+                      const isActive = mockDisplayCount === count;
+                      return (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => {
+                            setAnimationComplete(false);
+                            setMockDisplayCount(count);
+                          }}
+                          className={`min-w-7 rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+                            isActive ? "bg-gold text-dark" : "text-gold/70 hover:bg-white/10 hover:text-gold"
+                          }`}
+                          aria-pressed={isActive}
+                        >
+                          {count}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <Button
                 variant="secondary"
                 onClick={copyImageToClipboard}

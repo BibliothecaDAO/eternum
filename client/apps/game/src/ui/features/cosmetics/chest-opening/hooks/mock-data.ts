@@ -2,8 +2,8 @@ import { AssetRarity, ChestAsset, getAllChestAssets } from "../utils/cosmetics";
 import { MergedNftData } from "../utils/types";
 
 // Check if mock mode is enabled via environment variable
-// Defaulting to false outside of local visual iteration.
-export const MOCK_CHEST_OPENING = false;
+// Defaulting to true for local visual iteration.
+export const MOCK_CHEST_OPENING = true;
 
 // Mock chest data for testing the UI without blockchain interaction
 export const MOCK_CHESTS: Partial<MergedNftData>[] = [

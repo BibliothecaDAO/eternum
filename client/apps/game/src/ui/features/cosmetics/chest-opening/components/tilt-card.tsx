@@ -145,22 +145,43 @@ export function TiltCard({
           transform: `rotateX(${tiltValues.rX}deg) rotateY(${tiltValues.rY}deg)`,
           transformStyle: "preserve-3d",
           willChange: isActive ? "transform" : "auto",
+          ...(showText
+            ? {}
+            : {
+                borderColor: rarityStyle.hotHex,
+                boxShadow: `0 0 8px ${rarityStyle.hotHex}dd, 0 0 22px ${rarityStyle.hotHex}88, 0 0 44px ${rarityStyle.hex}66, inset 0 0 16px ${rarityStyle.hotHex}26`,
+              }),
         }}
       >
         {/* Background image with parallax effect */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className={`absolute inset-0 ${showText ? "bg-cover bg-center" : "scale-105 bg-cover bg-center opacity-24 blur-sm"}`}
           style={{
             backgroundImage: `url(${imagePath})`,
-            backgroundPosition: `${tiltValues.bX}% ${tiltValues.bY}%`,
-            backgroundSize: "120% auto",
+            backgroundPosition: showText ? `${tiltValues.bX}% ${tiltValues.bY}%` : "center",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: showText ? "120% auto" : "cover",
             transition: isActive ? "none" : "background-position 0.5s ease-out",
-            filter: showText ? "brightness(1)" : "brightness(1.3) saturate(1.16) contrast(1.04)",
+            filter: showText ? "brightness(1)" : "brightness(0.8) saturate(1.12)",
           }}
         />
 
         {!showText && (
-          <div className="absolute inset-[10%] rounded-[40%] bg-white/10 blur-3xl opacity-70 mix-blend-screen" />
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+            style={{ transform: "translateZ(18px)" }}
+          >
+            <img
+              src={imagePath}
+              alt={asset.name}
+              className="h-full w-full scale-[1.08] select-none object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.45)]"
+              draggable={false}
+            />
+          </div>
+        )}
+
+        {!showText && (
+          <div className="absolute inset-[4%] rounded-[40%] bg-white/10 blur-3xl opacity-70 mix-blend-screen" />
         )}
 
         {/* Gradient overlay for text readability */}
@@ -173,22 +194,26 @@ export function TiltCard({
         />
 
         {/* Corner decorations */}
-        <div
-          className={`
-            absolute top-3 right-3 w-4 h-4 border-t border-r
-            ${rarityStyle.border}
-            opacity-50 transition-all duration-300
-            ${isActive ? "w-[calc(100%-1.5rem)] h-[calc(100%-1.5rem)]" : ""}
-          `}
-        />
-        <div
-          className={`
-            absolute bottom-3 left-3 w-4 h-4 border-b border-l
-            ${rarityStyle.border}
-            opacity-50 transition-all duration-300
-            ${isActive ? "w-[calc(100%-1.5rem)] h-[calc(100%-1.5rem)]" : ""}
-          `}
-        />
+        {showText && (
+          <>
+            <div
+              className={`
+                absolute top-3 right-3 w-4 h-4 border-t border-r
+                ${rarityStyle.border}
+                opacity-50 transition-all duration-300
+                ${isActive ? "w-[calc(100%-1.5rem)] h-[calc(100%-1.5rem)]" : ""}
+              `}
+            />
+            <div
+              className={`
+                absolute bottom-3 left-3 w-4 h-4 border-b border-l
+                ${rarityStyle.border}
+                opacity-50 transition-all duration-300
+                ${isActive ? "w-[calc(100%-1.5rem)] h-[calc(100%-1.5rem)]" : ""}
+              `}
+            />
+          </>
+        )}
 
         {showText && (
           <>
