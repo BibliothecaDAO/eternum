@@ -77,15 +77,27 @@ describe("DayNightCycleManager", () => {
     fixture.manager.update(37.5);
     const beforeSun = fixture.directionalLight.intensity;
     const beforeHemisphere = fixture.hemisphereLight.intensity;
-    const beforeFogNear = fixture.fog.near;
-    const beforeFogFar = fixture.fog.far;
+    const beforeFogColor = fixture.fog.color.getHex();
 
     fixture.manager.applyWeatherModulation(0.8, 0.7, 0.6);
 
     expect(fixture.directionalLight.intensity).toBeLessThan(beforeSun);
     expect(fixture.hemisphereLight.intensity).toBeGreaterThan(beforeHemisphere);
-    expect(fixture.fog.near).toBeLessThan(beforeFogNear);
-    expect(fixture.fog.far).toBeLessThan(beforeFogFar);
+    expect(fixture.fog.color.getHex()).not.toBe(beforeFogColor);
+  });
+
+  it("does not take ownership of fog range during palette updates", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(37.5);
+
+    expect(fixture.fog.near).toBe(5);
+    expect(fixture.fog.far).toBe(50);
+
+    fixture.manager.applyWeatherModulation(0.5, 0.7, 0.4);
+
+    expect(fixture.fog.near).toBe(5);
+    expect(fixture.fog.far).toBe(50);
   });
 
   it("is idempotent on dispose", () => {

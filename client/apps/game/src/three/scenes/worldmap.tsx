@@ -174,7 +174,7 @@ import {
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
-import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
+import { resolveWorldmapShadowMapSize, shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
   createWorldmapChunkDiagnostics,
   recordChunkDiagnosticsEvent,
@@ -1206,7 +1206,8 @@ export default class WorldmapScene extends HexagonScene {
       this.getShadowsEnabledByQuality(),
       this.getCurrentCameraView() === CameraView.Far,
     );
-    this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
+    const shadowMapSize = resolveWorldmapShadowMapSize(this.shadowMapSizeByQuality);
+    this.mainDirectionalLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     this.mainDirectionalLight.shadow.camera.left = -60;
     this.mainDirectionalLight.shadow.camera.right = 60;
     this.mainDirectionalLight.shadow.camera.top = 45;

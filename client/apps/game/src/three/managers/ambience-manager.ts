@@ -1,4 +1,5 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { resolveAmbienceWeatherType } from "./ambience-weather-policy";
 import { WeatherType } from "./weather-manager";
 
 /**
@@ -182,6 +183,7 @@ export class AmbienceManager {
     deltaTime: number,
     weatherIntensity: number = this.params.weatherIntensity,
     stormIntensity: number = this.params.stormIntensity,
+    rainIntensity: number = 0,
   ): void {
     if (!this.params.enabled) {
       this.fadeOutAll(deltaTime);
@@ -195,14 +197,16 @@ export class AmbienceManager {
 
     this.params.weatherIntensity = Math.max(0, Math.min(1, weatherIntensity));
     this.params.stormIntensity = Math.max(0, Math.min(1, stormIntensity));
+    const clampedRainIntensity = Math.max(0, Math.min(1, rainIntensity));
 
     // Determine current time of day
     const newTimeOfDay = this.getTimeOfDay(cycleProgress);
-    const effectiveWeather = this.resolveEffectiveWeather(
+    const effectiveWeather = resolveAmbienceWeatherType({
       currentWeather,
-      this.params.weatherIntensity,
-      this.params.stormIntensity,
-    );
+      weatherIntensity: this.params.weatherIntensity,
+      rainIntensity: clampedRainIntensity,
+      stormIntensity: this.params.stormIntensity,
+    });
     const timeChanged = newTimeOfDay !== this.currentTimeOfDay;
     const weatherChanged = effectiveWeather !== this.currentWeather;
 
@@ -227,16 +231,6 @@ export class AmbienceManager {
 
     // Update active sounds (for fading)
     this.updateActiveSounds(deltaTime);
-  }
-
-  private resolveEffectiveWeather(
-    weatherType: WeatherType,
-    weatherIntensity: number,
-    stormIntensity: number,
-  ): WeatherType {
-    if (stormIntensity > 0.3) return WeatherType.STORM;
-    if (weatherIntensity > 0.2) return WeatherType.RAIN;
-    return weatherType;
   }
 
   /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
+import { resolveWorldmapShadowMapSize, shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 
 describe("shouldCastWorldmapDirectionalShadow", () => {
   it("disables shadows in far view", () => {
@@ -12,5 +12,10 @@ describe("shouldCastWorldmapDirectionalShadow", () => {
 
   it("enables shadows for non-far view when quality allows", () => {
     expect(shouldCastWorldmapDirectionalShadow(true, false)).toBe(true);
+  });
+
+  it("preserves the quality-selected shadow map size", () => {
+    expect(resolveWorldmapShadowMapSize(2048)).toBe(2048);
+    expect(resolveWorldmapShadowMapSize(1024)).toBe(1024);
   });
 });

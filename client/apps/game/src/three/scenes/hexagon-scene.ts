@@ -54,6 +54,8 @@ import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { applyFogDensityToRange, getStormFillLightMultiplier, getStormLightIntensity } from "./hexagon-scene-lighting-policy";
+import { LightningScheduler } from "./lightning-scheduler";
 
 export enum CameraView {
   Close = 1,
@@ -98,7 +100,7 @@ export abstract class HexagonScene {
   private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private lastLightningTriggerProgress: number = -1;
-  private lightningSequenceTimeout: NodeJS.Timeout | null = null;
+  private lightningScheduler = new LightningScheduler();
   private currentStrikeIndex: number = 0;
   private lightningStrikes: Array<{ delay: number; duration: number }> = [
     { delay: 0, duration: 80 },
@@ -118,7 +120,7 @@ export abstract class HexagonScene {
   private lastClipNear = 0;
   private lastClipFar = 0;
   private fogEnabledByQuality = false;
-  private fogEnabledByUser = false;
+  private fogEnabledByUser = true;
 
   // Performance tuning options (optimized defaults for better FPS)
   protected biomeShadowsEnabled = false;
@@ -179,7 +181,7 @@ export abstract class HexagonScene {
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
     this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
-    this.fogEnabledByUser = false;
+    this.fogEnabledByUser = true;
     if (this.fogEnabledByQuality && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
       const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
@@ -1131,9 +1133,7 @@ export abstract class HexagonScene {
     // Reduced base intensity to avoid overpowering directional light shadows
     // Also scale storm light with storm period intensity
     if (this.lightningEndTime === 0) {
-      const baseStormIntensity = stormDepth > 0.05 ? 0.6 : 0.2;
-      const stormIntensity = baseStormIntensity + Math.sin(elapsedTime * 0.3) * 0.15;
-      this.stormLight.intensity = stormIntensity;
+      this.stormLight.intensity = getStormLightIntensity(stormDepth, elapsedTime);
     }
 
     // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
@@ -1154,19 +1154,15 @@ export abstract class HexagonScene {
       this.stormHemisphereBaseIntensity ??= hemisphereBase;
     }
 
-    const ambientFlicker = 1 + Math.sin(elapsedTime * 2) * 0.06;
+    const ambientFlicker = getStormFillLightMultiplier(stormDepth, elapsedTime, 2);
     this.ambientPurpleLight.intensity = ambientBase * ambientFlicker;
 
-    const hemisphereFlicker = 1 + Math.sin(elapsedTime * 1.5) * 0.06;
+    const hemisphereFlicker = getStormFillLightMultiplier(stormDepth, elapsedTime, 1.5);
     this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
   }
 
   private startLightningSequence(): void {
-    // Clear any existing sequence
-    if (this.lightningSequenceTimeout) {
-      clearTimeout(this.lightningSequenceTimeout);
-    }
-
+    this.lightningScheduler.clear();
     this.currentStrikeIndex = 0;
     this.executeNextStrike();
   }
@@ -1181,7 +1177,7 @@ export abstract class HexagonScene {
     const strike = this.lightningStrikes[this.currentStrikeIndex];
 
     // Schedule this strike
-    this.lightningSequenceTimeout = setTimeout(() => {
+    this.lightningScheduler.scheduleStrike(() => {
       this.triggerSingleLightningStrike(strike.duration);
       this.currentStrikeIndex++;
       this.executeNextStrike(); // Schedule next strike
@@ -1226,7 +1222,7 @@ export abstract class HexagonScene {
     if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
       this.lastLightningTriggerProgress = 0;
       // Add 0.5 second delay before starting lightning sequence
-      setTimeout(() => {
+      this.lightningScheduler.scheduleStart(() => {
         this.startLightningSequence();
       }, 2000);
       return false; // Don't trigger immediately
@@ -1247,10 +1243,7 @@ export abstract class HexagonScene {
 
   // Cleanup method for lightning sequence
   protected cleanupLightning(): void {
-    if (this.lightningSequenceTimeout) {
-      clearTimeout(this.lightningSequenceTimeout);
-      this.lightningSequenceTimeout = null;
-    }
+    this.lightningScheduler.clear();
     // Reset lightning state
     if (this.lightningEndTime > 0) {
       this.endLightning();
@@ -1436,14 +1429,16 @@ export abstract class HexagonScene {
 
     const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
     const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
+    const fogDensity = this.weatherAtmosphereState?.fogDensity ?? 0;
+    const fogRange = applyFogDensityToRange(desiredNear, desiredFar, fogDensity);
 
-    if (Math.abs(desiredNear - this.lastFogNear) < 0.5 && Math.abs(desiredFar - this.lastFogFar) < 0.5) {
+    if (Math.abs(fogRange.near - this.lastFogNear) < 0.5 && Math.abs(fogRange.far - this.lastFogFar) < 0.5) {
       return;
     }
 
-    this.fog.near = desiredNear;
-    this.fog.far = desiredFar;
-    this.lastFogNear = desiredNear;
-    this.lastFogFar = desiredFar;
+    this.fog.near = fogRange.near;
+    this.fog.far = fogRange.far;
+    this.lastFogNear = fogRange.near;
+    this.lastFogFar = fogRange.far;
   }
 }

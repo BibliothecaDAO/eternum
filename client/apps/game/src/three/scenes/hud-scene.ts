@@ -159,6 +159,7 @@ export default class HUDScene {
       deltaTime,
       weatherState.intensity,
       weatherState.stormIntensity,
+      weatherState.rainIntensity,
     );
 
     // Update ambient particles (dust motes, fireflies)
