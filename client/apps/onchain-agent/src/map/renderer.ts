@@ -99,6 +99,16 @@ export interface MapSnapshot {
   resolve(row: number, col: number): { x: number; y: number } | null;
   /** Get tile data at a map row:col (1-indexed). Null if unexplored. */
   tileAt(row: number, col: number): TileState | null;
+  /** Fixed coordinate anchor — pass to subsequent renders to keep row:col stable. */
+  anchor: MapAnchor;
+}
+
+/** Fixed coordinate anchor — locks minX/minY so row:col positions are stable across renders. */
+export interface MapAnchor {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 }
 
 export function renderMap(
@@ -106,6 +116,7 @@ export function renderMap(
   ownedEntityIds?: Set<number>,
   explorerDetails?: Map<number, ExplorerInfo>,
   staminaConfig?: StaminaConfig,
+  mapAnchor?: MapAnchor,
 ): MapSnapshot {
   if (tiles.length === 0) {
     return {
@@ -117,22 +128,36 @@ export function renderMap(
       gridIndex: new Map(),
       resolve: () => null,
       tileAt: () => null,
+      anchor: mapAnchor ?? { minX: 0, minY: 0, maxX: 0, maxY: 0 },
     };
   }
 
-  let minX = Infinity,
-    maxX = -Infinity;
-  let minY = Infinity,
-    maxY = -Infinity;
+  // Compute the bounding box of explored tiles, but anchor the coordinate
+  // system to a fixed center so that row:col positions are stable across
+  // renders (new tile exploration doesn't shift existing coordinates).
+  // We use the midpoint of all tiles as the anchor on first render;
+  // subsequent renders use the same anchor via the stored minX/minY.
+  let rawMinX = Infinity,
+    rawMaxX = -Infinity;
+  let rawMinY = Infinity,
+    rawMaxY = -Infinity;
   const grid = new Map<string, TileState>();
 
   for (const t of tiles) {
-    if (t.position.x < minX) minX = t.position.x;
-    if (t.position.x > maxX) maxX = t.position.x;
-    if (t.position.y < minY) minY = t.position.y;
-    if (t.position.y > maxY) maxY = t.position.y;
+    if (t.position.x < rawMinX) rawMinX = t.position.x;
+    if (t.position.x > rawMaxX) rawMaxX = t.position.x;
+    if (t.position.y < rawMinY) rawMinY = t.position.y;
+    if (t.position.y > rawMaxY) rawMaxY = t.position.y;
     grid.set(`${t.position.x},${t.position.y}`, t);
   }
+
+  // Use the fixed anchor if provided (keeps coordinates stable across renders).
+  // If no anchor, use the current bounding box (first render).
+  const minX = mapAnchor?.minX ?? rawMinX;
+  const minY = mapAnchor?.minY ?? rawMinY;
+  // maxX/maxY always expand to include all tiles
+  const maxX = Math.max(mapAnchor?.maxX ?? rawMaxX, rawMaxX);
+  const maxY = Math.max(mapAnchor?.maxY ?? rawMaxY, rawMaxY);
 
   const totalRows = maxY - minY + 1;
   const totalCols = maxX - minX + 1;
@@ -294,5 +319,6 @@ export function renderMap(
     return grid.get(`${pos.x},${pos.y}`) ?? null;
   }
 
-  return { text, headerLines, rowCount: totalRows, colCount: totalCols, tiles, gridIndex: grid, resolve, tileAt };
+  const anchor: MapAnchor = { minX, minY, maxX, maxY };
+  return { text, headerLines, rowCount: totalRows, colCount: totalCols, tiles, gridIndex: grid, resolve, tileAt, anchor };
 }
