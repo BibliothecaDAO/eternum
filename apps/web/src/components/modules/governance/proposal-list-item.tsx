@@ -46,7 +46,7 @@ export const ProposalListItem = ({
       >
         <div className="flex flex-col gap-2">
           <div className="flex flex-col gap-1">
-            <h4 className="line-clamp-2 text-lg font-semibold">
+            <h4 className="realm-card-title line-clamp-2">
               {proposal.metadata?.title ?? `Proposal #${proposal.id}`}
             </h4>
             <div className="text-muted-foreground text-sm">

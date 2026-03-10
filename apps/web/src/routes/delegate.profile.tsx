@@ -68,7 +68,7 @@ function RouteComponent() {
       }
     >
       <SidebarInset>
-        <div className="container mx-auto space-y-4 p-8">
+        <div className="container mx-auto space-y-4 px-4 py-6 sm:px-6 sm:py-8">
           <p className="realm-eyebrow">Governance</p>
           <h1 className="realm-page-title text-3xl sm:text-4xl">
             Your Profile {shortenAddress(session?.user.id)}

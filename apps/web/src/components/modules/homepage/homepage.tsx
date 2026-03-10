@@ -135,7 +135,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           {/* Realms Card */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Realms</CardTitle>
+              <CardTitle>Realms</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -185,7 +185,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           {/* Lords Card */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2">
                 <LordsIcon className="h-6 w-6" />
                 Lords
               </CardTitle>
@@ -234,7 +234,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           {/* Claims Section */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Available Claims</CardTitle>
+              <CardTitle>Available Claims</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
@@ -317,11 +317,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               (currentDelegate.user && BigInt(currentDelegate.user) === 0n) ? (
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Governance</CardTitle>
+                  <CardTitle>Governance</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <h3 className="mb-2 text-lg font-semibold">
+                    <h3 className="realm-card-title mb-2">
                       No Delegate Selected
                     </h3>
                     <p className="text-muted-foreground mb-4 text-sm">
@@ -364,7 +364,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
         {/* Proposals Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-lg">Recent Proposals</CardTitle>
+            <CardTitle>Recent Proposals</CardTitle>
             <Link to={`/proposal/list`}>
               <Button variant="outline" size="sm">
                 View All
@@ -383,7 +383,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           {accountTokens?.length > 0 ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle className="text-lg">Your Realms</CardTitle>
+                <CardTitle>Your Realms</CardTitle>
                 {accountTokens.length > 5 && (
                   <Link to={`/realms`}>
                     <Button variant="outline" size="sm">
@@ -424,7 +424,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           ) : (
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Your Realms</CardTitle>
+                <CardTitle>Your Realms</CardTitle>
               </CardHeader>
               <CardContent className="pb-6 text-center">
                 <div className="text-muted-foreground text-lg">

@@ -31,7 +31,7 @@ function IndexComponent() {
     return <LoginCard />;
   }
   return (
-    <div className="realm-shell flex flex-col gap-4 px-4 py-3 sm:px-6">
+    <div className="realm-shell flex flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       {/* Dashboard Statistics */}
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

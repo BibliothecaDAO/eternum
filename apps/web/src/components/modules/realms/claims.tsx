@@ -56,7 +56,7 @@ export const ClaimRewards = () => {
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <LordsIcon className="w-9" />
-                <span className="text-3xl font-bold">
+                <span className="realm-stat text-3xl font-bold">
                   {balance && formatNumber(Number(formatEther(balance)))}
                 </span>{" "}
                 claimable
@@ -73,7 +73,7 @@ export const ClaimRewards = () => {
           </CardContent>
         </Card>
         {/* Rewards Info Section */}
-        <Card className="relativeoverflow-hidden">
+        <Card className="relative overflow-hidden">
           <CardHeader>
             <CardTitle>Lords Rewards have ended!</CardTitle>
           </CardHeader>

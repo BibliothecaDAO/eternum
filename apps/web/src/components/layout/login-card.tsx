@@ -67,7 +67,7 @@ function FeatureItem({
     <div className="realm-subtle-panel flex items-start gap-3 rounded-2xl p-4">
       <div className="text-2xl">{icon}</div>
       <div>
-        <h3 className="font-display text-sm font-semibold tracking-[0.12em] uppercase">
+        <h3 className="font-display text-sm font-semibold tracking-[var(--tracking-card)] uppercase">
           {title}
         </h3>
         <p className="text-muted-foreground text-sm">{description}</p>

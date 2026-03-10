@@ -90,13 +90,13 @@ export function DelegateCard({
                 src={`https://cdn.stamp.fyi/avatar/${delegate.user}?s=64`}
               />
             </Avatar>
-            <h2 className="text-xl font-bold">{name}</h2>
+            <h2 className="text-xl">{name}</h2>
           </div>
           {isCurrentDelegate ? <Badge>Current Delegate</Badge> : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        <p className="text-xl">
+        <p className="realm-stat text-xl">
           {formatNumber(Number(delegate.delegatedVotes), 0)}{" "}
           <span className="text-muted-foreground text-sm uppercase">
             Votes Delegated

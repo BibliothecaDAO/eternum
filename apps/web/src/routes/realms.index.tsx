@@ -71,12 +71,12 @@ function RealmsComponent() {
     <div className="flex flex-col gap-2 p-4">
       <div className="flex gap-2">
         <Link to={`/realms/bridge`}>
-          <Button variant={"outline"} size="lg" className="rounded px-3">
-            <BridgeIcon className="!h-5 !w-5" /> Starknet Bridge
+          <Button variant="outline" size="sm">
+            <BridgeIcon className="h-5! w-5!" /> Starknet Bridge
           </Button>
         </Link>
         <Link to={`/realms/claims`}>
-          <Button variant={"outline"} size="lg" className="rounded px-3">
+          <Button variant="outline" size="sm">
             <HandCoins /> Claim Lords
           </Button>
         </Link>
