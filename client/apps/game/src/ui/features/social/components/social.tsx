@@ -229,9 +229,9 @@ export const Social = () => {
           </div>
         ),
         component: (
-          <div className="h-full p-4">
-            <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)] h-full">
-              <div className="flex flex-col gap-3 h-full">
+          <div className="p-4">
+            <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)]">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-gold">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
                     <TrendingUp size={16} />
@@ -241,7 +241,7 @@ export const Social = () => {
                     <div className="text-xs text-gold/70">Player skill ratings</div>
                   </div>
                 </div>
-                <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex-1 overflow-auto">
+                <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4">
                   <BlitzMMRTable />
                 </div>
                 <div className="text-xs text-gold/70 mt-2">
@@ -307,6 +307,7 @@ export const Social = () => {
   return (
     <ExpandableOSWindow
       width="1100px"
+      height="760px"
       widthExpanded="400px"
       onClick={() => togglePopup(leaderboard)}
       show={isOpen}
