@@ -18,35 +18,49 @@ const formatTimestamp = (value: unknown) => {
   return date ? date.toLocaleString() : null;
 };
 
+type TimelineMarketFields = {
+  created_at?: unknown;
+  createdAt?: unknown;
+  start_at?: unknown;
+  startAt?: unknown;
+  end_at?: unknown;
+  endAt?: unknown;
+  resolve_at?: unknown;
+  resolveAt?: unknown;
+  resolved_at?: unknown;
+  resolvedAt?: unknown;
+};
+
 export const MarketTimeline = ({ market }: { market: MarketClass }) => {
-  const createdAt = toDate((market as any).created_at ?? (market as any).createdAt);
-  const startAt = toDate((market as any).start_at ?? (market as any).startAt ?? createdAt);
-  const endAt = toDate((market as any).end_at ?? (market as any).endAt ?? (market as any).resolve_at);
-  const resolveAt = toDate((market as any).resolve_at ?? (market as any).end_at ?? (market as any).endAt);
-  const resolvedAt = toDate((market as any).resolved_at ?? (market as any).resolvedAt);
+  const timelineMarket = market as MarketClass & TimelineMarketFields;
+  const createdAt = toDate(timelineMarket.created_at ?? timelineMarket.createdAt);
+  const startAt = toDate(timelineMarket.start_at ?? timelineMarket.startAt ?? createdAt);
+  const endAt = toDate(timelineMarket.end_at ?? timelineMarket.endAt ?? timelineMarket.resolve_at);
+  const resolveAt = toDate(timelineMarket.resolve_at ?? timelineMarket.end_at ?? timelineMarket.endAt);
+  const resolvedAt = toDate(timelineMarket.resolved_at ?? timelineMarket.resolvedAt);
 
   // Fall back to simple text when critical dates are missing.
   if (!createdAt || !startAt || !endAt || !resolveAt) {
     const start =
-      formatTimestamp((market as any).start_at ?? (market as any).startAt) ||
-      formatTimestamp((market as any).created_at ?? (market as any).createdAt);
-    const resolve = formatTimestamp((market as any).resolve_at ?? (market as any).end_at ?? (market as any).endAt);
-    const resolved = formatTimestamp((market as any).resolved_at ?? (market as any).resolvedAt);
+      formatTimestamp(timelineMarket.start_at ?? timelineMarket.startAt) ||
+      formatTimestamp(timelineMarket.created_at ?? timelineMarket.createdAt);
+    const resolve = formatTimestamp(timelineMarket.resolve_at ?? timelineMarket.end_at ?? timelineMarket.endAt);
+    const resolved = formatTimestamp(timelineMarket.resolved_at ?? timelineMarket.resolvedAt);
 
     return (
       <VStack className="gap-1 text-xs text-gold/70">
         <HStack className="justify-between">
           <span>Starts</span>
-          <span className="text-white/80">{start ?? "TBD"}</span>
+          <span className="text-lightest">{start ?? "TBD"}</span>
         </HStack>
         <HStack className="justify-between">
           <span>Resolves</span>
-          <span className="text-white/80">{resolve ?? "TBD"}</span>
+          <span className="text-lightest">{resolve ?? "TBD"}</span>
         </HStack>
         {resolved ? (
           <HStack className="justify-between">
             <span>Resolved</span>
-            <span className="text-white/80">{resolved}</span>
+            <span className="text-lightest">{resolved}</span>
           </HStack>
         ) : null}
       </VStack>
@@ -77,7 +91,7 @@ export const MarketTimeline = ({ market }: { market: MarketClass }) => {
   return (
     <VStack className="text-xs text-gold/70">
       <div className="relative my-3 h-[36px] w-full overflow-hidden">
-        <div className="absolute top-[15px] h-[5px] w-full bg-white/10" />
+        <div className="absolute top-[15px] h-[5px] w-full bg-gold/15" />
         <div className="absolute top-[15px] h-[5px] bg-gold/40" style={{ width: `${now}%` }} />
 
         <div className="absolute top-[0px] ml-[-5px]" style={{ left: `${start}%` }} title={`Start ${startLabel}`}>
@@ -111,7 +125,7 @@ export const MarketTimeline = ({ market }: { market: MarketClass }) => {
         ) : null}
       </div>
 
-      <HStack className="justify-between text-[11px] text-white/80">
+      <HStack className="justify-between text-[11px] text-gold/80">
         <span>{startLabel}</span>
         <span>{endLabel}</span>
         <span>{resolveLabel}</span>

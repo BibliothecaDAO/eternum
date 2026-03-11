@@ -64,7 +64,7 @@ const TimeRangePills = ({ value, onChange }: { value: TimeRange; onChange: (rang
         key={range}
         onClick={() => onChange(range)}
         className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors sm:px-2.5 sm:py-1 sm:text-xs ${
-          value === range ? "bg-gold/20 text-gold" : "text-white/50 hover:bg-white/5 hover:text-white/70"
+          value === range ? "bg-gold/20 text-gold" : "text-gold/55 hover:bg-brown/45 hover:text-gold/75"
         }`}
       >
         {range}
@@ -93,15 +93,15 @@ const HeaderStats = ({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-sm font-medium text-white/70">{title}</span>
+        <span className="text-sm font-medium text-gold/75">{title}</span>
         <span className="flex min-w-0 items-center gap-1.5">
           <span className="h-2 w-2 shrink-0 rounded-sm" style={{ backgroundColor: color }} />
-          <span className="truncate text-sm text-white">{focusedLabel}</span>
+          <span className="truncate text-sm text-lightest">{focusedLabel}</span>
         </span>
-        {rangeLabel && <span className="text-[10px] text-white/40">{rangeLabel}</span>}
+        {rangeLabel && <span className="text-[10px] text-gold/45">{rangeLabel}</span>}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-xl font-semibold tabular-nums text-white sm:text-2xl">{currentValue.toFixed(1)}%</span>
+        <span className="text-xl font-semibold tabular-nums text-lightest sm:text-2xl">{currentValue.toFixed(1)}%</span>
         <span
           className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
             isPositive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
@@ -167,8 +167,8 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
   // Empty state
   if (chartData.length === 0) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/70 shadow-inner">
-        <p className="text-white">Market history</p>
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/70 shadow-inner">
+        <p className="text-lightest">Market history</p>
         <p className="mt-1 text-xs text-gold/60">Price history will appear once trading begins.</p>
       </div>
     );
@@ -210,14 +210,15 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
         })
       : undefined;
 
+    type PlayerTooltipPayload = TooltipPayload<number, string> & { dataKey: string; color?: string };
     const playerPayloads = payload
-      .filter((item): item is TooltipPayload<number, string> & { dataKey: string } => typeof item.dataKey === "string")
+      .filter((item): item is PlayerTooltipPayload => typeof item.dataKey === "string")
       .toSorted((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
 
     return (
-      <div className="min-w-[200px] rounded-lg border border-white/10 bg-black/95 px-3 py-2 shadow-xl backdrop-blur">
+      <div className="min-w-[200px] rounded-lg border border-gold/15 bg-dark-wood px-3 py-2 shadow-xl backdrop-blur">
         {formattedDate && (
-          <div className="mb-2 border-b border-white/5 pb-1.5 text-[10px] uppercase tracking-[0.08em] text-white/50">
+          <div className="mb-2 border-b border-gold/10 pb-1.5 text-[10px] uppercase tracking-[0.08em] text-gold/55">
             {formattedDate}
           </div>
         )}
@@ -226,7 +227,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
           {playerPayloads.map((item) => {
             const dataKey = item.dataKey as string;
             const config = chartConfig[dataKey as keyof typeof chartConfig];
-            const color = config?.color || (item as any).color;
+            const color = config?.color || item.color;
             const isFocused = dataKey === effectiveFocus;
 
             return (
@@ -236,9 +237,9 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
               >
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 shrink-0 rounded-sm" style={{ backgroundColor: color }} />
-                  <span className="text-xs text-white">{config?.label || dataKey}</span>
+                  <span className="text-xs text-lightest">{config?.label || dataKey}</span>
                 </div>
-                <span className="text-xs font-mono font-semibold text-white">
+                <span className="text-xs font-mono font-semibold text-lightest">
                   {Number(item.value ?? 0).toFixed(1)}%
                 </span>
               </div>
@@ -250,7 +251,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
   };
 
   return (
-    <div className="w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner">
+    <div className="w-full rounded-lg border border-gold/15 bg-dark-wood p-4 shadow-inner">
       {/* Header with stats and time range pills */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <HeaderStats
@@ -300,7 +301,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
             scale="time"
             domain={[minTime, maxTime + (maxTime - minTime) * 0.02]}
             tickFormatter={formatXAxis}
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+            tick={{ fill: "rgba(223,170,84,0.58)", fontSize: 11 }}
           />
 
           {/* Sparse Y-axis */}
@@ -310,7 +311,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
             tickCount={5}
             domain={[0, Math.min(100, maxValue + 10)]}
             width={28}
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+            tick={{ fill: "rgba(223,170,84,0.58)", fontSize: 11 }}
             tickFormatter={(v) => `${v}%`}
           />
 

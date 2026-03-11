@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { MarketClass } from "@/pm/class";
 import { formatUint256 } from "@/pm/utils";
-import { HStack, VStack } from "@pm/ui";
+import { VStack } from "@pm/ui";
 import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2";
 import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
 
@@ -15,9 +15,8 @@ export function MarketResolved({
 }: {
   market: MarketClass;
 } & React.ComponentProps<"div">) {
-  const outcomes = market.getMarketTextOutcomes();
-
   const payouts = useMemo(() => {
+    const outcomes = market.getMarketTextOutcomes();
     switch (market.typ.activeVariant()) {
       case "Binary":
         return [
@@ -54,7 +53,7 @@ export function MarketResolved({
 
   return (
     <div
-      className={`w-full rounded-lg border border-white/10 bg-black/40 p-4 shadow-inner ${className ?? ""}`}
+      className={`w-full rounded-lg border border-gold/15 bg-dark-wood p-4 shadow-inner ${className ?? ""}`}
       {...props}
     >
       <VStack className="w-full gap-4">
@@ -78,11 +77,11 @@ export function MarketResolved({
                   className={`rounded-lg border px-3 py-3 ${
                     won
                       ? "border-progress-bar-good/60 bg-progress-bar-good/10"
-                      : "border-white/10 bg-white/5 opacity-70"
+                      : "border-gold/15 bg-brown/45 opacity-70"
                   }`}
                 >
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-white font-semibold">{idx === 0 ? "YES" : "NO"}</span>
+                    <span className="text-lightest font-semibold">{idx === 0 ? "YES" : "NO"}</span>
                     <span className="flex items-center gap-2 text-xs text-gold/70">
                       <TrendingUp className="h-3 w-3" />
                       {edge}%
@@ -100,9 +99,9 @@ export function MarketResolved({
         ) : null}
 
         {market.typBinary() && market.typBinaryScalar() ? (
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
+          <div className="rounded-lg border border-gold/15 bg-brown/45 p-3 text-sm text-gold/85">
             <div className="text-xs uppercase tracking-[0.08em] text-gold/70">Scalar outcome</div>
-            <div className="mt-2 text-lg font-semibold text-white">
+            <div className="mt-2 text-lg font-semibold text-lightest">
               {payouts[0].payoutNumerator > 0n && payouts[1].payoutNumerator === 0n
                 ? `< ${formatUint256(market.typBinaryScalar().low, 18)}`
                 : payouts[1].payoutNumerator > 0n && payouts[0].payoutNumerator === 0n
@@ -129,7 +128,7 @@ export function MarketResolved({
                   className="flex w-full flex-col gap-2 rounded-lg border border-progress-bar-good/50 bg-progress-bar-good/10 p-3"
                 >
                   <div className="flex w-full items-center justify-between gap-2 text-sm">
-                    <span className="text-white">
+                    <span className="text-lightest">
                       <MaybeController address={payout.name} />
                     </span>
                     <span className="flex shrink-0 items-center gap-1 text-xs text-gold/70">

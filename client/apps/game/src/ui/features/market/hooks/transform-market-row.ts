@@ -1,6 +1,6 @@
 import { CairoCustomEnum } from "starknet";
 
-import type { RegisteredToken } from "@/pm/bindings";
+import type { ConditionResolution, RegisteredToken } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
 import type { MarketWithDetailsRow, VaultNumeratorRow } from "@/pm/hooks/queries";
 import { replaceAndFormat } from "@/pm/utils";
@@ -114,11 +114,33 @@ export function transformMarketRowToClass(
     value: BigInt(entry.value),
   }));
 
+  const conditionResolution = (() => {
+    if (!row.resolution_payout_numerators) return undefined;
+
+    try {
+      const rawPayouts = JSON.parse(row.resolution_payout_numerators);
+      const payoutNumerators = Array.isArray(rawPayouts)
+        ? rawPayouts.map((value) => BigInt(value as string | number))
+        : [];
+
+      return {
+        condition_id: row.condition_id,
+        oracle: row.oracle,
+        question_id: row.question_id,
+        outcome_slot_count: BigInt(row.outcome_slot_count),
+        payout_numerators: payoutNumerators,
+      } as unknown as ConditionResolution;
+    } catch {
+      return undefined;
+    }
+  })();
+
   return new MarketClass({
     market: market as never,
     marketCreated: marketCreated as never,
     collateralToken,
     vaultDenominator: vaultDenominator as never,
     vaultNumerators: vaultNumerators as never[],
+    conditionResolution,
   });
 }

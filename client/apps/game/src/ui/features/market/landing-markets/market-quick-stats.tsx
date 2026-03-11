@@ -7,6 +7,7 @@ import Lock from "lucide-react/dist/esm/icons/lock";
 import Users from "lucide-react/dist/esm/icons/users";
 import Wallet from "lucide-react/dist/esm/icons/wallet";
 import { useAccount } from "@starknet-react/core";
+import type { RegisteredToken } from "@pm/sdk";
 
 import type { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
@@ -88,23 +89,23 @@ export const MarketQuickStats = ({ market, balances = [] }: MarketQuickStatsProp
     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gold/80">
       <span className="flex items-center gap-1">
         <Lock className="h-3 w-3 text-gold" />
-        <span className="text-white">{tvl ?? "--"}</span>
-        {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={12} /> : null}
+        <span className="text-lightest">{tvl ?? "--"}</span>
+        {market.collateralToken ? <TokenIcon token={market.collateralToken as RegisteredToken} size={12} /> : null}
       </span>
       <span className="flex items-center gap-1">
         <Users className="h-3 w-3" />
-        <span className="text-white">{holdersCount != null ? holdersCount : "--"} holders</span>
+        <span className="text-lightest">{holdersCount != null ? holdersCount : "--"} holders</span>
       </span>
       <span className={`flex items-center gap-1 ${showRedeemable ? "text-progress-bar-good" : ""}`}>
         <Wallet className="h-3 w-3" />
-        <span className={`${showRedeemable ? "font-semibold" : "text-white"}`}>
+        <span className={`${showRedeemable ? "font-semibold" : "text-lightest"}`}>
           {account?.address ? (showRedeemable ? `+${redeemableValue}` : (playerLockedAmount ?? "0")) : "--"}
         </span>
-        {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={12} /> : null}
+        {market.collateralToken ? <TokenIcon token={market.collateralToken as RegisteredToken} size={12} /> : null}
       </span>
       <span className="flex items-center gap-1">
         <Clock3 className="h-3 w-3" />
-        <span className="text-white">{isEnded ? "Ended" : `Ends in ${tradingEndsLabel}`}</span>
+        <span className="text-lightest">{isEnded ? "Ended" : `Ends in ${tradingEndsLabel}`}</span>
       </span>
     </div>
   );

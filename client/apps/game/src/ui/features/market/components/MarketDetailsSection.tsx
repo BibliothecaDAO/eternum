@@ -61,8 +61,8 @@ export const MarketDetailsSection = ({ initialMarket, onRefreshMarkets }: Market
     if (outcomes.length === 0) return undefined;
 
     return outcomes.reduce<MarketOutcome | undefined>((best, current) => {
-      const currentOdds = Number((current as any)?.odds ?? 0);
-      const bestOdds = best ? Number((best as any)?.odds ?? 0) : -Infinity;
+      const currentOdds = Number(current.odds ?? 0);
+      const bestOdds = best ? Number(best.odds ?? 0) : -Infinity;
 
       if (!Number.isFinite(currentOdds)) return best;
       if (!best || currentOdds > bestOdds) return current;
@@ -155,6 +155,7 @@ export const MarketDetailsSection = ({ initialMarket, onRefreshMarkets }: Market
                   selectable={!market.isEnded() && !market.isResolved()}
                   selectedOutcomeIndex={selectedOutcome?.index}
                   onSelect={(outcome) => setSelectedOutcome(outcome)}
+                  showPlayerMeta
                 />
               </Panel>
             </div>

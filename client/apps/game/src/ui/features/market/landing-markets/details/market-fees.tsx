@@ -1,5 +1,5 @@
 import { ClauseBuilder, ToriiQueryBuilder } from "@dojoengine/sdk";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CoreSettings, CurveRange, MarketModelVault } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
@@ -46,18 +46,12 @@ export const MarketFees = ({ market, defaultOpen = true }: MarketFeesProps) => {
     void fetchSettings();
   }, [sdk]);
 
-  const modelFees = useMemo(() => {
-    return market.getModelFees(Date.now());
-  }, [market, timer]);
-
-  const totalFees = useMemo(() => {
-    return (
-      BigInt(settings?.protocol_fee || 0) +
-      BigInt(market?.oracle_fee || 0) +
-      BigInt(market?.creator_fee || 0) +
-      BigInt(modelFees)
-    );
-  }, [modelFees, market?.creator_fee, market?.oracle_fee, settings?.protocol_fee]);
+  const modelFees = market.getModelFees(timer || market.start_at * 1_000);
+  const totalFees =
+    BigInt(settings?.protocol_fee || 0) +
+    BigInt(market.oracle_fee || 0) +
+    BigInt(market.creator_fee || 0) +
+    BigInt(modelFees);
 
   if (!settings) return null;
   if (!curveLinear) return null;
@@ -65,7 +59,7 @@ export const MarketFees = ({ market, defaultOpen = true }: MarketFeesProps) => {
   const totalLabel = `${formatUnits(totalFees, 2, 2)}%`;
 
   return (
-    <Card className="w-full rounded-md border border-white/10 bg-white/5 p-3 shadow-inner">
+    <Card className="w-full rounded-md border border-gold/15 bg-brown/45 p-3 shadow-inner">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-3 text-left"
@@ -74,10 +68,10 @@ export const MarketFees = ({ market, defaultOpen = true }: MarketFeesProps) => {
         aria-controls="market-fees-panel"
       >
         <CardHeader className="flex w-full flex-row items-center justify-between px-0 py-1">
-          <CardTitle className="text-sm font-semibold text-white">
+          <CardTitle className="text-sm font-semibold text-lightest">
             <HStack className="items-center gap-3">
               <span className="text-xs text-gold/80">Fees</span>
-              <span className="rounded-full bg-white/10 px-2 py-[2px] text-sm font-semibold text-gold">
+              <span className="rounded-full bg-gold/10 px-2 py-[2px] text-sm font-semibold text-gold">
                 Total {totalLabel}
               </span>
             </HStack>
@@ -88,23 +82,23 @@ export const MarketFees = ({ market, defaultOpen = true }: MarketFeesProps) => {
 
       {isOpen ? (
         <CardContent id="market-fees-panel" className="space-y-2 px-0 pb-1 text-xs text-gold/80">
-          <div className="flex items-center justify-between rounded-sm bg-white/5 px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm bg-brown/45 px-3 py-2">
             <span>Protocol</span>
-            <span className="text-white">{formatUnits(settings.protocol_fee, 2, 2)}%</span>
+            <span className="text-lightest">{formatUnits(settings.protocol_fee, 2, 2)}%</span>
           </div>
-          <div className="flex items-center justify-between rounded-sm bg-white/5 px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm bg-brown/45 px-3 py-2">
             <span>Oracle</span>
-            <span className="text-white">{formatUnits(market.oracle_fee, 2, 2)}%</span>
+            <span className="text-lightest">{formatUnits(market.oracle_fee, 2, 2)}%</span>
           </div>
-          <div className="flex items-center justify-between rounded-sm bg-white/5 px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm bg-brown/45 px-3 py-2">
             <span>Creator</span>
-            <span className="text-white">{formatUnits(market.creator_fee, 2, 2)}%</span>
+            <span className="text-lightest">{formatUnits(market.creator_fee, 2, 2)}%</span>
           </div>
-          <div className="flex items-center justify-between rounded-sm bg-white/5 px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm bg-brown/45 px-3 py-2">
             <span>
               Vault ({formatUnits(curveLinear.start, 2, 2)}% → {formatUnits(curveLinear.end, 2, 2)}%)
             </span>
-            <span className="text-white">{formatUnits(modelFees, 2, 2)}%</span>
+            <span className="text-lightest">{formatUnits(modelFees, 2, 2)}%</span>
           </div>
         </CardContent>
       ) : null}

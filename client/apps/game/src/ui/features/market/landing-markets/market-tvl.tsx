@@ -1,5 +1,6 @@
 import { MarketClass } from "@/pm/class";
 import { HStack } from "@pm/ui";
+import type { RegisteredToken } from "@pm/sdk";
 import { TokenIcon } from "./token-icon";
 
 const formatTvl = (value: unknown) => {
@@ -17,8 +18,8 @@ export const MarketTvl = ({ market }: { market: MarketClass }) => {
   return (
     <HStack className="gap-2 text-sm text-gold">
       <span className="text-xs uppercase text-gold/70">TVL</span>
-      <span className="font-semibold text-white">{tvlDisplay}</span>
-      {market.collateralToken ? <TokenIcon token={market.collateralToken as any} size={16} /> : null}
+      <span className="font-semibold text-lightest">{tvlDisplay}</span>
+      {market.collateralToken ? <TokenIcon token={market.collateralToken as RegisteredToken} size={16} /> : null}
     </HStack>
   );
 };
