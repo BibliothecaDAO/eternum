@@ -41,6 +41,7 @@ pub mod troop_raid_systems {
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::map::biomes::Biome;
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
@@ -316,7 +317,7 @@ pub mod troop_raid_systems {
                     TroopRaidOutcome::Chance => {
                         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
                         let vrf_seed: u256 = rng_library_dispatcher
-                            .get_random_number(starknet::get_caller_address(), world);
+                            .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
                         raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed, world);
                     },
                 }

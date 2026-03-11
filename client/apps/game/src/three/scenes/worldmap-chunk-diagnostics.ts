@@ -2,6 +2,7 @@ export type WorldmapChunkDiagnosticsEvent =
   | "transition_started"
   | "transition_committed"
   | "transition_rolled_back"
+  | "transition_prepare_stale_dropped"
   | "manager_update_started"
   | "manager_update_skipped_stale"
   | "manager_update_failed"
@@ -29,6 +30,7 @@ export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
   transitionCommitted: number;
   transitionRolledBack: number;
+  transitionPrepareStaleDropped: number;
   managerUpdateStarted: number;
   managerUpdateSkippedStale: number;
   managerUpdateFailed: number;
@@ -51,8 +53,10 @@ export interface WorldmapChunkDiagnostics {
   duplicateTileReconcileRequested: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
+  switchDurationMsSamples: number[];
   managerDurationMsTotal: number;
   managerDurationMsMax: number;
+  managerDurationMsSamples: number[];
   updatedAtMs: number;
 }
 
@@ -60,11 +64,14 @@ interface WorldmapChunkDiagnosticsEventOptions {
   durationMs?: number;
 }
 
+const MAX_DURATION_SAMPLES = 512;
+
 export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
   return {
     transitionStarted: 0,
     transitionCommitted: 0,
     transitionRolledBack: 0,
+    transitionPrepareStaleDropped: 0,
     managerUpdateStarted: 0,
     managerUpdateSkippedStale: 0,
     managerUpdateFailed: 0,
@@ -87,8 +94,10 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     duplicateTileReconcileRequested: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
+    switchDurationMsSamples: [],
     managerDurationMsTotal: 0,
     managerDurationMsMax: 0,
+    managerDurationMsSamples: [],
     updatedAtMs: Date.now(),
   };
 }
@@ -109,6 +118,9 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "transition_rolled_back":
       diagnostics.transitionRolledBack += 1;
+      break;
+    case "transition_prepare_stale_dropped":
+      diagnostics.transitionPrepareStaleDropped += 1;
       break;
     case "manager_update_started":
       diagnostics.managerUpdateStarted += 1;
@@ -174,12 +186,20 @@ export function recordChunkDiagnosticsEvent(
       const durationMs = options?.durationMs ?? 0;
       diagnostics.switchDurationMsTotal += durationMs;
       diagnostics.switchDurationMsMax = Math.max(diagnostics.switchDurationMsMax, durationMs);
+      diagnostics.switchDurationMsSamples.push(durationMs);
+      if (diagnostics.switchDurationMsSamples.length > MAX_DURATION_SAMPLES) {
+        diagnostics.switchDurationMsSamples.shift();
+      }
       break;
     }
     case "manager_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;
       diagnostics.managerDurationMsTotal += durationMs;
       diagnostics.managerDurationMsMax = Math.max(diagnostics.managerDurationMsMax, durationMs);
+      diagnostics.managerDurationMsSamples.push(durationMs);
+      if (diagnostics.managerDurationMsSamples.length > MAX_DURATION_SAMPLES) {
+        diagnostics.managerDurationMsSamples.shift();
+      }
       break;
     }
   }

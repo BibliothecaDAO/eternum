@@ -14,6 +14,18 @@ interface ShouldProcessPrefetchQueueItemInput {
   pinnedAreaKeys: Set<string>;
 }
 
+interface ResolvePrefetchQueueProcessingPlanInput {
+  isSwitchedOff: boolean;
+  queueLength: number;
+  activePrefetches: number;
+  maxConcurrentPrefetches: number;
+}
+
+interface PrefetchQueueProcessingPlan {
+  shouldClearQueuedPrefetchState: boolean;
+  shouldProcessNextQueueItem: boolean;
+}
+
 /**
  * Inserts prefetch work while keeping stable ascending priority ordering.
  * Equal-priority items keep FIFO ordering.
@@ -73,4 +85,23 @@ export function shouldProcessPrefetchQueueItem(input: ShouldProcessPrefetchQueue
   }
 
   return true;
+}
+
+/**
+ * Decide whether prefetch queue processing should run for the current worldmap state.
+ */
+export function resolvePrefetchQueueProcessingPlan(
+  input: ResolvePrefetchQueueProcessingPlanInput,
+): PrefetchQueueProcessingPlan {
+  if (input.isSwitchedOff) {
+    return {
+      shouldClearQueuedPrefetchState: true,
+      shouldProcessNextQueueItem: false,
+    };
+  }
+
+  return {
+    shouldClearQueuedPrefetchState: false,
+    shouldProcessNextQueueItem: input.queueLength > 0 && input.activePrefetches < input.maxConcurrentPrefetches,
+  };
 }

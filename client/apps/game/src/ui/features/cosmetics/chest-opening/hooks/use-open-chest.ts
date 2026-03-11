@@ -1,4 +1,8 @@
-import { getCosmeticsClaimAddress, getLootChestsAddress } from "@/utils/addresses";
+import {
+  COSMETICS_NETWORK_CONFIG,
+  CosmeticsNetwork,
+  DEFAULT_COSMETICS_NETWORK,
+} from "@/ui/features/cosmetics/config/networks";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useLandingDojo } from "../../providers/landing-dojo-provider";
@@ -19,9 +23,10 @@ interface UseOpenChestReturn {
  * Hook to open loot chests via blockchain transaction.
  * Uses Dojo system calls for proper transaction handling.
  */
-export function useOpenChest(): UseOpenChestReturn {
+export function useOpenChest(network: CosmeticsNetwork = DEFAULT_COSMETICS_NETWORK): UseOpenChestReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const networkConfig = COSMETICS_NETWORK_CONFIG[network];
 
   const {
     systemCalls: { open_loot_chest },
@@ -41,8 +46,8 @@ export function useOpenChest(): UseOpenChestReturn {
       setError(null);
 
       try {
-        const lootChestAddress = getLootChestsAddress();
-        const claimAddress = getCosmeticsClaimAddress();
+        const lootChestAddress = networkConfig.lootChestsAddress;
+        const claimAddress = networkConfig.cosmeticsClaimAddress;
 
         if (!lootChestAddress || !claimAddress) {
           throw new Error("Contract addresses not configured. Please ensure the contracts are deployed.");
@@ -68,7 +73,7 @@ export function useOpenChest(): UseOpenChestReturn {
         setIsLoading(false);
       }
     },
-    [account, open_loot_chest],
+    [account, networkConfig.cosmeticsClaimAddress, networkConfig.lootChestsAddress, open_loot_chest],
   );
 
   return {

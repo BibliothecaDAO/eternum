@@ -83,7 +83,7 @@ export const Biomes = () => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
                   target.parentElement!.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(20, 15, 10, 0.5); color: #dfc296; flex-direction: column; padding: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(30, 32, 48, 0.6); color: #c9b06a; flex-direction: column; padding: 8px;">
                       <div>Image not available</div>
                       <div><code>${biomeImageMap[biome]}</code></div>
                     </div>

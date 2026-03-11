@@ -1,5 +1,3 @@
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-
 /**
  * Skeleton for chart components (fixed height container to prevent layout shifts)
  */
@@ -69,11 +67,4 @@ export const PMErrorState = ({
       </button>
     )}
   </div>
-);
-
-/**
- * Inline loading spinner for buttons
- */
-export const PMButtonSpinner = ({ className = "" }: { className?: string }) => (
-  <Loader2 className={`h-4 w-4 animate-spin ${className}`} />
 );

@@ -15,6 +15,8 @@ interface ChestGalleryProps {
   onOpenChest: (chestId: string, epoch: ChestEpoch) => void;
   isLoading?: boolean;
   openingChestId?: string | null;
+  canOpenChests?: boolean;
+  openDisabledReason?: string;
 }
 
 // Helper to extract chest epoch from metadata
@@ -121,7 +123,14 @@ function FilterDropdown({ label, value, options, onChange }: FilterDropdownProps
   );
 }
 
-export function ChestGallery({ chests, onOpenChest, isLoading = false, openingChestId }: ChestGalleryProps) {
+export function ChestGallery({
+  chests,
+  onOpenChest,
+  isLoading = false,
+  openingChestId,
+  canOpenChests = true,
+  openDisabledReason,
+}: ChestGalleryProps) {
   const [sortMode, setSortMode] = useState<SortMode>("id-desc");
   const [filters, setFilters] = useState<Record<string, string | null>>({});
 
@@ -231,6 +240,12 @@ export function ChestGallery({ chests, onOpenChest, isLoading = false, openingCh
 
   return (
     <div className="flex flex-col gap-4">
+      {!canOpenChests && openDisabledReason && (
+        <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          {openDisabledReason}
+        </div>
+      )}
+
       {/* Filter and Sort Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Filters */}

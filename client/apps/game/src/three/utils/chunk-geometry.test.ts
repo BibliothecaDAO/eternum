@@ -46,7 +46,7 @@ describe("getChunkKeysContainingHexInRenderBounds", () => {
       chunkSize: 24,
     });
 
-    expect(result.sort()).toEqual(["0,0", "0,24", "24,0", "24,24"].sort());
+    expect(result.toSorted()).toEqual(["0,0", "0,24", "24,0", "24,24"].toSorted());
   });
 
   it("skips malformed chunk keys", () => {
@@ -58,6 +58,6 @@ describe("getChunkKeysContainingHexInRenderBounds", () => {
       chunkSize: 24,
     });
 
-    expect(result.sort()).toEqual(["0,0", "24,24"].sort());
+    expect(result.toSorted()).toEqual(["0,0", "24,24"].toSorted());
   });
 });

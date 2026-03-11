@@ -52,6 +52,7 @@ pub mod prize_distribution_systems {
     use crate::systems::utils::prize::iPrizeDistributionCalcImpl;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use crate::utils::world::CustomDojoWorldImpl;
     use super::{
@@ -263,7 +264,7 @@ pub mod prize_distribution_systems {
             let season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
 
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let mut _random_number = rng_library_dispatcher.get_random_number(caller, world);
+            let mut _random_number = rng_library_dispatcher.get_random_number(Source::Nonce(caller), world);
             for player in players {
                 // ensure player is eligible for prize
                 let mut player_rank: PlayerRank = world.read_model((final_trial_id, player));

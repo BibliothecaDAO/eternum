@@ -1,7 +1,6 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
-import { StructureType } from "@bibliothecadao/types";
 
 import { sqlApi } from "@/services/api";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
@@ -15,6 +14,7 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
@@ -342,32 +342,22 @@ export const initialSync = async (
     const hasConnectedAccount =
       typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
 
-    let selectedStructure: { entity_id: number; coord_x: number; coord_y: number } | null = null;
-    let selectAsSpectator = true;
+    let ownedStructures: Array<{ entity_id: number; coord_x: number; coord_y: number; category?: number | string }> =
+      [];
 
     if (hasConnectedAccount) {
       try {
-        const ownedStructures = await sqlApi.fetchPlayerStructures(accountAddress);
-        const preferredOwnedStructure =
-          ownedStructures.find((structure) => Number(structure.category) === StructureType.Realm) ?? ownedStructures[0];
-
-        if (preferredOwnedStructure) {
-          selectedStructure = {
-            entity_id: preferredOwnedStructure.entity_id,
-            coord_x: preferredOwnedStructure.coord_x,
-            coord_y: preferredOwnedStructure.coord_y,
-          };
-          selectAsSpectator = false;
-        }
+        ownedStructures = await sqlApi.fetchPlayerStructures(accountAddress);
       } catch (error) {
         console.error("[sync] Failed to fetch player-owned structures for initial selection", error);
       }
     }
 
-    if (!selectedStructure) {
-      selectedStructure = await sqlApi.fetchFirstStructure();
-      selectAsSpectator = true;
-    }
+    const firstGlobalStructure = ownedStructures.length === 0 ? await sqlApi.fetchFirstStructure() : null;
+    const { selectedStructure, spectator: selectAsSpectator } = resolveInitialStructureSelection({
+      ownedStructures,
+      firstGlobalStructure,
+    });
 
     if (selectedStructure) {
       const start = performance.now();

@@ -50,6 +50,7 @@ pub mod blitz_realm_systems {
     use crate::systems::utils::realm::iRealmImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::collectibles::iCollectiblesImpl;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 
@@ -228,6 +229,10 @@ pub mod blitz_realm_systems {
             );
             let map_center: Coord = CoordImpl::center(ref world);
             let mut coords: Array<Coord> = blitz_settlement_config.generate_coords(map_center);
+            // save the updated blitz settlement config
+            blitz_settlement_config.next();
+            WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
+
             // let player_position_spot_number: u16 = blitz_registration_config.registration_count;
 
             // this allows dev mode registration as opposed to the previous line
@@ -239,10 +244,6 @@ pub mod blitz_realm_systems {
             };
             world.write_model(@blitz_position_register);
 
-            // save the updated blitz settlement config
-            blitz_settlement_config.next();
-            WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
-
             // store structure reservation
             for coord in coords {
                 world.write_model(@StructureReservation { coord: coord, reserved: true });
@@ -251,27 +252,10 @@ pub mod blitz_realm_systems {
             ////////////////////////////////////////////////
             /// Update Hyperstructure Ring Count
             ////////////////////////////////////////////////
-
-            // increase hyperstructure ring count
-            // [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
-            // Where P is num registered players
-            // and R is hyperstructure ring count
-
-            let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
-            let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
-                WorldConfigUtilImpl::get_member(
-                world, blitz_hyperstructure_settlement_config_selector,
+            ///
+            BlitzHypersSettlementConfigImpl::check_increase_max(
+                ref world, blitz_registration_config.registration_count.into(), blitz_settlement_config.two_player_mode,
             );
-            let registration_count = blitz_registration_config.registration_count.into();
-            let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
-            let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
-            if max_ring_count_squared.is_zero()
-                || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
-                blitz_hyperstructure_settlement_config.max_ring_count += 1;
-                WorldConfigUtilImpl::set_member(
-                    ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
-                );
-            }
 
             // set name for the player
             //note: this can be abused. as you can pay to set the name for any player
@@ -313,7 +297,8 @@ pub mod blitz_realm_systems {
 
             // obtain vrf seed
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+            let vrf_seed: u256 = rng_library_dispatcher
+                .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
 
             // retrieve relevant configs
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
@@ -322,6 +307,9 @@ pub mod blitz_realm_systems {
             );
             let troop_stamina_config: TroopStaminaConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("troop_stamina_config"),
+            );
+            let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_settlement_config"),
             );
 
             // create center hyperstructure [when num hyperstructures is 0]
@@ -333,11 +321,12 @@ pub mod blitz_realm_systems {
             let map_center: Coord = CoordImpl::center(ref world);
 
             for i in 0..count {
-                if !blitz_hyperstructure_settlement_config.is_valid_ring() {
+                if !blitz_hyperstructure_settlement_config.is_valid_ring(blitz_settlement_config.two_player_mode) {
                     break;
                 }
 
-                let next_coord: Coord = blitz_hyperstructure_settlement_config.next_coord(map_center);
+                let next_coord: Coord = blitz_hyperstructure_settlement_config
+                    .next_coord(map_center, blitz_settlement_config.two_player_mode);
                 iHyperstructureDiscoveryImpl::create(
                     ref world,
                     next_coord,
@@ -351,7 +340,7 @@ pub mod blitz_realm_systems {
                 );
 
                 // move to the next location and see if we are done
-                blitz_hyperstructure_settlement_config.next();
+                blitz_hyperstructure_settlement_config.next(blitz_settlement_config.two_player_mode);
             }
 
             WorldConfigUtilImpl::set_member(
@@ -369,8 +358,11 @@ pub mod blitz_realm_systems {
                 WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_hypers_settlement_config"),
             );
+            let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_settlement_config"),
+            );
             assert!(
-                !blitz_hyperstructure_settlement_config.is_valid_ring(),
+                !blitz_hyperstructure_settlement_config.is_valid_ring(blitz_settlement_config.two_player_mode),
                 "Eternum: Not all hyperstructures have been created",
             );
 
@@ -388,7 +380,8 @@ pub mod blitz_realm_systems {
                 world, selector!("blitz_registration_config"),
             );
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+            let vrf_seed: u256 = rng_library_dispatcher
+                .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
             let upper_bound: u128 = blitz_registration_config.registration_count.into();
             let lower_bound: u128 = blitz_registration_config.assigned_positions_count.into();
             let range: u128 = (upper_bound - lower_bound).into();

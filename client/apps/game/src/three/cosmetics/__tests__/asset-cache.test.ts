@@ -1,48 +1,83 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const gltfLoadMock = vi.fn();
-const textureLoadAsyncMock = vi.fn();
-const getStandardMaterialMock = vi.fn((material) => material);
-const getBasicMaterialMock = vi.fn((material) => material);
+const testMocks = vi.hoisted(() => ({
+  gltfLoadMock: vi.fn(),
+  textureLoadAsyncMock: vi.fn(),
+  getStandardMaterialMock: vi.fn((material: unknown) => material),
+  getBasicMaterialMock: vi.fn((material: unknown) => material),
+}));
+
+const threeMocks = vi.hoisted(() => {
+  class MockMaterial {
+    dispose() {}
+  }
+
+  class MockMesh {
+    material: any;
+  }
+
+  class MockTexture {}
+
+  class MockMeshStandardMaterial extends MockMaterial {}
+
+  class MockMeshBasicMaterial extends MockMaterial {}
+
+  return {
+    MockMaterial,
+    MockMesh,
+    MockTexture,
+    MockMeshStandardMaterial,
+    MockMeshBasicMaterial,
+  };
+});
 
 vi.mock("@/three/utils/utils", () => ({
   gltfLoader: {
-    load: (...args: any[]) => gltfLoadMock(...args),
+    load: (...args: any[]) => testMocks.gltfLoadMock(...args),
   },
 }));
 
-class MockMaterial {
-  dispose() {}
-}
+vi.mock("@bibliothecadao/types", () => ({
+  TroopType: {
+    Knight: "Knight",
+    Crossbowman: "Crossbowman",
+    Paladin: "Paladin",
+  },
+  TroopTier: {
+    T1: "T1",
+    T2: "T2",
+    T3: "T3",
+  },
+  StructureType: {
+    1: "Realm",
+    Realm: 1,
+  },
+}));
 
-class MockMesh {
-  material: any;
-}
-
-class MockTexture {}
-
-class MockMeshStandardMaterial extends MockMaterial {}
-
-class MockMeshBasicMaterial extends MockMaterial {}
+vi.mock("@/three/constants/scene-constants", () => ({
+  getStructureModelPaths: () => ({
+    1: ["structures/realm.glb"],
+  }),
+}));
 
 vi.mock("three", () => ({
   TextureLoader: class {
     loadAsync(path: string) {
-      return textureLoadAsyncMock(path);
+      return testMocks.textureLoadAsyncMock(path);
     }
   },
-  Texture: MockTexture,
-  Mesh: MockMesh,
-  MeshBasicMaterial: MockMeshBasicMaterial,
-  MeshStandardMaterial: MockMeshStandardMaterial,
-  Material: MockMaterial,
+  Texture: threeMocks.MockTexture,
+  Mesh: threeMocks.MockMesh,
+  MeshBasicMaterial: threeMocks.MockMeshBasicMaterial,
+  MeshStandardMaterial: threeMocks.MockMeshStandardMaterial,
+  Material: threeMocks.MockMaterial,
 }));
 
 vi.mock("../../utils/material-pool", () => ({
   MaterialPool: {
     getInstance: () => ({
-      getStandardMaterial: getStandardMaterialMock,
-      getBasicMaterial: getBasicMaterialMock,
+      getStandardMaterial: testMocks.getStandardMaterialMock,
+      getBasicMaterial: testMocks.getBasicMaterialMock,
     }),
   },
 }));
@@ -54,10 +89,10 @@ describe("cosmetic asset cache", () => {
   beforeEach(() => {
     clearCosmeticAssetCache();
     clearRegistry();
-    gltfLoadMock.mockReset();
-    textureLoadAsyncMock.mockReset();
-    getStandardMaterialMock.mockClear();
-    getBasicMaterialMock.mockClear();
+    testMocks.gltfLoadMock.mockReset();
+    testMocks.textureLoadAsyncMock.mockReset();
+    testMocks.getStandardMaterialMock.mockClear();
+    testMocks.getBasicMaterialMock.mockClear();
   });
 
   it("loads gltf and texture assets and records the handle", async () => {
@@ -68,10 +103,10 @@ describe("cosmetic asset cache", () => {
       assetPaths: ["units/example.glb", "/images/example.png"],
     });
 
-    textureLoadAsyncMock.mockResolvedValue(new MockTexture());
-    gltfLoadMock.mockImplementation((_path, onLoad) => {
-      const material = new MockMeshStandardMaterial();
-      const mesh = new MockMesh();
+    testMocks.textureLoadAsyncMock.mockResolvedValue(new threeMocks.MockTexture());
+    testMocks.gltfLoadMock.mockImplementation((_path, onLoad) => {
+      const material = new threeMocks.MockMeshStandardMaterial();
+      const mesh = new threeMocks.MockMesh();
       mesh.material = material;
       onLoad({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
     });
@@ -83,6 +118,6 @@ describe("cosmetic asset cache", () => {
     expect(handle?.status).toBe("ready");
     expect(handle?.payload.gltfs).toHaveLength(1);
     expect(handle?.payload.textures).toHaveLength(1);
-    expect(getStandardMaterialMock).toHaveBeenCalledWith(expect.any(MockMeshStandardMaterial));
+    expect(testMocks.getStandardMaterialMock).toHaveBeenCalledWith(expect.any(threeMocks.MockMeshStandardMaterial));
   });
 });

@@ -1,0 +1,52 @@
+---
+layout: docs
+title: Axis CLI Reference
+---
+
+# Axis CLI Reference
+
+## Commands
+
+| Command                               | Description                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `axis` / `axis run`                   | Run in TUI mode                                                                                        |
+| `axis run --headless --world=<name>`  | Run in headless mode                                                                                   |
+| `axis worlds`                         | List discovered worlds                                                                                 |
+| `axis auth <world>`                   | Generate auth URL (non-blocking if no TTY)                                                             |
+| `axis auth <world> --redirect-url`    | Complete auth with redirect URL                                                                        |
+| `axis auth <world> --session-data`    | Complete auth with raw base64 session data                                                             |
+| `axis auth <world> --status`          | Check session status for one world                                                                     |
+| `axis auth <world> --method=password` | Direct password auth (no browser needed)                                                               |
+| `axis auth --all`                     | Auth all discovered worlds                                                                             |
+| `axis auth --all --status`            | Check status for all worlds                                                                            |
+| `axis doctor`                         | Validate configuration                                                                                 |
+| `axis init [world]`                   | Manually seed runtime directories and config (optional — all directories are auto-created when needed) |
+| `axis --version`                      | Print version                                                                                          |
+| `axis --help`                         | Print usage                                                                                            |
+
+## Run Flags
+
+| Flag                                         | Description                          |
+| -------------------------------------------- | ------------------------------------ |
+| `--headless`                                 | Run without TUI                      |
+| `--world=<name>`                             | Target world (required for headless) |
+| `--auth=session\|privatekey`                 | Auth strategy                        |
+| `--api-port=<port>`                          | Enable HTTP API                      |
+| `--api-host=<host>`                          | API bind host                        |
+| `--stdin`                                    | Enable stdin command stream          |
+| `--verbosity=quiet\|actions\|decisions\|all` | Output filter                        |
+| `--json`                                     | JSON output for command responses    |
+
+## Auth Flags
+
+| Flag                      | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `--all`                   | Target all discovered worlds                        |
+| `--status`                | Check session status instead of generating auth URL |
+| `--redirect-url=<url>`    | Complete auth with the redirect URL from browser    |
+| `--session-data=<base64>` | Complete auth with raw base64 session data          |
+| `--method=password`       | Direct password auth (no browser needed)            |
+| `--username=<user>`       | Username for password auth                          |
+| `--password=<pass>`       | Password for password auth                          |
+| `--callback-url=<url>`    | Public callback endpoint                            |
+| `--timeout=<ms>`          | Approval wait timeout                               |

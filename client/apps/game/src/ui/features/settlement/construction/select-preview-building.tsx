@@ -13,6 +13,13 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  getBuildReservationState,
+  reconcileBuildReservationState,
+  releaseOccupiedBuildSpot,
+  reserveOccupiedBuildSpot,
+  reserveVacatedBuildSpot,
+} from "./build-reservation-store";
 
 import {
   Biome,
@@ -64,6 +71,20 @@ type ArmyGroup = {
 };
 
 const buildablePositionsCache = new Map<number, Array<{ col: number; row: number }>>();
+const OCCUPIED_SPACE_REASON = "space is occupied";
+
+const extractErrorMessage = (error: unknown): string => {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+};
+
+const isOccupiedSpaceError = (error: unknown): boolean =>
+  extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
 const generateBuildablePositions = (radius: number) => {
   const cached = buildablePositionsCache.get(radius);
@@ -142,15 +163,17 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     return () => window.clearInterval(interval);
   }, []);
 
-  const occupiedSpotsRef = useRef<Set<string>>(new Set());
-  const vacatedSpotsRef = useRef<Set<string>>(new Set());
+  const initialReservationState = getBuildReservationState(entityId);
+  const occupiedSpotsRef = useRef<Set<string>>(initialReservationState.occupied);
+  const vacatedSpotsRef = useRef<Set<string>>(initialReservationState.vacated);
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
   const [pendingDestroys, setPendingDestroys] = useState<Record<string, boolean>>({});
   const [pendingPauseResume, setPendingPauseResume] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    occupiedSpotsRef.current.clear();
-    vacatedSpotsRef.current.clear();
+    const reservationState = getBuildReservationState(entityId);
+    occupiedSpotsRef.current = reservationState.occupied;
+    vacatedSpotsRef.current = reservationState.vacated;
     setPendingBuilds({});
     setPendingDestroys({});
     setPendingPauseResume({});
@@ -166,23 +189,15 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       row: outerRow,
     });
 
-    const occupied = occupiedSpotsRef.current;
-    const vacated = vacatedSpotsRef.current;
-
-    Array.from(occupied).forEach((key) => {
-      const [col, row] = key.split(",").map(Number);
-      if (tileManager.isHexOccupied({ col, row })) {
-        occupied.delete(key);
-      }
-    });
-
-    Array.from(vacated).forEach((key) => {
-      const [col, row] = key.split(",").map(Number);
-      if (!tileManager.isHexOccupied({ col, row })) {
-        vacated.delete(key);
-      }
-    });
-  }, [dojo.setup.components, dojo.setup.systemCalls, realm?.position?.x, realm?.position?.y, structureBuildings]);
+    reconcileBuildReservationState(entityId, ({ col, row }) => tileManager.isHexOccupied({ col, row }));
+  }, [
+    dojo.setup.components,
+    dojo.setup.systemCalls,
+    entityId,
+    realm?.position?.x,
+    realm?.position?.y,
+    structureBuildings,
+  ]);
   const hasAvailableBuildingTile = useMemo(() => {
     if (!realm?.position) return true;
 
@@ -247,6 +262,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       const vacated = vacatedSpotsRef.current;
       let occupiedKey: string | null = null;
       let didBuild = false;
+      let occupiedTileFailures = 0;
 
       setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
 
@@ -255,7 +271,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         const candidates = generateBuildablePositions(buildRadius);
         const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
 
-        const availableSpot = candidates.find((pos) => {
+        const availableSpots = candidates.filter((pos) => {
           const key = `${pos.col},${pos.row}`;
           if (key === centerKey) return false;
           if (occupied.has(key)) return false;
@@ -263,37 +279,65 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
         });
 
-        if (!availableSpot) {
+        if (availableSpots.length === 0) {
           toast.error("No empty building tiles available.");
           return;
         }
 
-        occupiedKey = `${availableSpot.col},${availableSpot.row}`;
-        occupied.add(occupiedKey);
-        vacated.delete(occupiedKey);
+        for (const availableSpot of availableSpots) {
+          const candidateKey = `${availableSpot.col},${availableSpot.row}`;
+          occupiedKey = candidateKey;
+          reserveOccupiedBuildSpot(entityId, candidateKey);
 
-        await tileManager.placeBuilding(
-          dojo.account.account,
-          entityId,
-          target.type,
-          { col: availableSpot.col, row: availableSpot.row },
-          useSimpleCost,
-        );
-        didBuild = true;
+          try {
+            await tileManager.placeBuilding(
+              dojo.account.account,
+              entityId,
+              target.type,
+              { col: availableSpot.col, row: availableSpot.row },
+              useSimpleCost,
+            );
+            didBuild = true;
 
-        setPreviewBuilding(null);
-        setSelectedBuildingHex({
-          outerCol,
-          outerRow,
-          innerCol: availableSpot.col,
-          innerRow: availableSpot.row,
-        });
+            setPreviewBuilding(null);
+            setSelectedBuildingHex({
+              outerCol,
+              outerRow,
+              innerCol: availableSpot.col,
+              innerRow: availableSpot.row,
+            });
+            break;
+          } catch (error) {
+            releaseOccupiedBuildSpot(entityId, candidateKey);
+            occupiedKey = null;
+
+            if (isOccupiedSpaceError(error)) {
+              occupiedTileFailures += 1;
+              continue;
+            }
+
+            throw error;
+          }
+        }
+
+        if (!didBuild) {
+          if (occupiedTileFailures > 0) {
+            toast.error("All auto-selected tiles became occupied. Please try again.");
+            return;
+          }
+          toast.error("No empty building tiles available.");
+          return;
+        }
       } catch (error) {
         console.error("Failed to auto-build", error);
-        toast.error("Building failed. Please try again.");
+        if (isOccupiedSpaceError(error)) {
+          toast.error("This tile is occupied. Please try again.");
+        } else {
+          toast.error("Building failed. Please try again.");
+        }
       } finally {
         if (occupiedKey && !didBuild) {
-          occupied.delete(occupiedKey);
+          releaseOccupiedBuildSpot(entityId, occupiedKey);
         }
         setPendingBuilds((prev) => {
           const next = { ...prev };
@@ -335,16 +379,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
 
-      const occupied = occupiedSpotsRef.current;
-      const vacated = vacatedSpotsRef.current;
       const destroyedKey = `${existing.col},${existing.row}`;
 
       setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
 
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
-        vacated.add(destroyedKey);
-        occupied.delete(destroyedKey);
+        reserveVacatedBuildSpot(entityId, destroyedKey);
         if (
           previewBuilding?.type === target.type &&
           (!target.resource || previewBuilding?.resource === target.resource)

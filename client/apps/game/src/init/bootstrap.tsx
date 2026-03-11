@@ -141,9 +141,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
     }
   }
   if (shouldReloadAfterProfileRefresh) {
-    console.log("[bootstrap] World profile refreshed, reloading to apply RPC changes");
-    window.location.reload();
-    return new Promise(() => {});
+    console.log("[bootstrap] World profile refreshed, continuing bootstrap without page reload");
   }
   if (!profile) profile = await ensureActiveWorldProfileWithUI(chain);
 
@@ -304,11 +302,12 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
   const currentWorldName = currentWorld?.name ?? null;
   const currentChain = currentWorld?.chain ?? null;
 
-  // If chain changed, we MUST reload the page for proper cleanup
+  // If chain changed, reset and re-bootstrap in-app.
   if (bootstrapPromise && bootstrappedChain && currentChain && bootstrappedChain !== currentChain) {
-    console.log(`[BOOTSTRAP] Chain changed from "${bootstrappedChain}" to "${currentChain}", reloading page...`);
-    window.location.reload();
-    return new Promise(() => {}); // Never resolves
+    console.log(
+      `[BOOTSTRAP] Chain changed from "${bootstrappedChain}" to "${currentChain}", resetting and re-bootstrapping...`,
+    );
+    resetBootstrap();
   }
 
   // If only world changed (same chain), reset and re-bootstrap without reload

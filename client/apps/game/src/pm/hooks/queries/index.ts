@@ -4,6 +4,7 @@
 
 export {
   getPmSqlApi,
+  getPmSqlApiForUrl,
   MarketStatusFilter,
   MarketTypeFilter,
   type MarketFiltersParams,

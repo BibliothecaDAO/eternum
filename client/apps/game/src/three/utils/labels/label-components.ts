@@ -1,5 +1,6 @@
-import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
+import { resolveOwnerDisplayName } from "./owner-display-name";
 import { resolveCameraView } from "./label-view";
 
 /**
@@ -221,7 +222,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
   container.setAttribute("data-component", "owner");
 
   // Create name element with optional structure name
-  const displayName = cleanText(owner.ownerName);
+  const displayName = resolveOwnerDisplayName(owner.ownerName, owner.address, BANDITS_NAME);
   const nameSpan = document.createElement("span");
 
   let fullText = displayName;

@@ -34,10 +34,16 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
-import { createCoalescedAsyncUpdateRunner, waitForVisualSettle } from "./manager-update-convergence";
+import {
+  createCoalescedAsyncUpdateRunner,
+  isCommittedManagerChunk,
+  MANAGER_UNCOMMITTED_CHUNK,
+  shouldAcceptManagerChunkRequest,
+  shouldRunManagerChunkUpdate,
+  waitForVisualSettle,
+} from "./manager-update-convergence";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { shouldRefreshVisibleStructures } from "./structure-update-policy";
-import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -106,7 +112,7 @@ export class StructureManager {
   private dummy: Object3D = new Object3D();
   public readonly structures: Structures;
   structureHexCoords: Map<number, Set<number>> = new Map();
-  private currentChunk: string = "";
+  private currentChunk: string = MANAGER_UNCOMMITTED_CHUNK;
   private renderChunkSize: RenderChunkSize;
   private labelsGroup: Group;
   private currentCameraView: CameraView;
@@ -117,6 +123,7 @@ export class StructureManager {
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
+  private transitionChunkByToken: Map<number, string> = new Map();
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
   private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
   private unsubscribeAccountStore?: () => void;
@@ -157,6 +164,15 @@ export class StructureManager {
   private needsSpatialReindex = false;
   private visibleStructureCount = 0;
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
+  private isDestroyed = false;
+  private pruneTransitionChunkHistory(): void {
+    this.transitionChunkByToken.forEach((_, token) => {
+      if (token < this.latestTransitionToken) {
+        this.transitionChunkByToken.delete(token);
+      }
+    });
+  }
+
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
@@ -409,7 +425,7 @@ export class StructureManager {
 
             console.log("[StructureManager] Points-based icon renderers initialized");
 
-            if (this.currentChunk) {
+            if (isCommittedManagerChunk(this.currentChunk)) {
               this.updateVisibleStructures();
             }
           }
@@ -467,6 +483,12 @@ export class StructureManager {
   }
 
   public destroy() {
+    if (this.isDestroyed) {
+      console.warn("StructureManager already destroyed, skipping cleanup");
+      return;
+    }
+    this.isDestroyed = true;
+
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
       this.unsubscribeFrustum = undefined;
@@ -784,7 +806,21 @@ export class StructureManager {
       if (isPendingStale) {
         this.pendingLabelUpdates.delete(entityId);
       } else {
-        finalOwner = pendingUpdate.owner;
+        // Building updates can arrive before tile updates and carry a placeholder empty owner.
+        // Merge owner fields conservatively so placeholder data cannot clobber fresher tile owner data.
+        const pendingOwner = pendingUpdate.owner;
+        if (pendingOwner) {
+          const hasPendingAddress = pendingOwner.address !== undefined && pendingOwner.address !== null;
+          const shouldApplyPendingAddress =
+            hasPendingAddress &&
+            (pendingUpdate.updateType === "structure" || pendingOwner.address !== 0n || finalOwner.address === 0n);
+
+          finalOwner = {
+            address: shouldApplyPendingAddress ? pendingOwner.address : finalOwner.address,
+            ownerName: pendingOwner.ownerName || finalOwner.ownerName,
+            guildName: pendingOwner.guildName || finalOwner.guildName,
+          };
+        }
         if (pendingUpdate.guardArmies) {
           finalGuardArmies = pendingUpdate.guardArmies;
         }
@@ -900,11 +936,21 @@ export class StructureManager {
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
     if (transitionToken !== undefined) {
-      this.latestTransitionToken = transitionToken;
+      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
+      this.transitionChunkByToken.set(transitionToken, chunkKey);
+      this.pruneTransitionChunkHistory();
     }
 
     if (!force && this.currentChunk === chunkKey) {
@@ -928,7 +974,15 @@ export class StructureManager {
       return;
     }
 
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
 
@@ -943,10 +997,14 @@ export class StructureManager {
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = (async () => {
-      if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
-        return;
-      }
-      if (transitionToken !== undefined && this.currentChunk !== chunkKey) {
+      if (
+        !shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunk,
+          transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        })
+      ) {
         return;
       }
 
@@ -982,6 +1040,10 @@ export class StructureManager {
   }
 
   private updateVisibleStructures(): Promise<void> {
+    if (!isCommittedManagerChunk(this.currentChunk)) {
+      return Promise.resolve();
+    }
+
     return this.runVisibleStructuresUpdate().catch((error) => {
       console.error("Failed to update visible structures", error);
     });
@@ -1003,8 +1065,10 @@ export class StructureManager {
   }
 
   private async performVisibleStructuresUpdate(): Promise<void> {
-    // Refresh visibility state when invoked outside the render loop
-    this.visibilityManager?.beginFrame();
+    if (!isCommittedManagerChunk(this.currentChunk)) {
+      this.visibleStructureCount = 0;
+      return;
+    }
 
     const visibleStructureIds = new Set<ID>();
     const attachmentRetain = new Set<number>();
@@ -1448,6 +1512,10 @@ export class StructureManager {
   }
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
+    if (!isCommittedManagerChunk(this.currentChunk)) {
+      return false;
+    }
+
     const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [];
     const bounds = this.getChunkBounds(chunkRow || 0, chunkCol || 0);
     // Use inclusive bounds (<=) to match isStructureVisible behavior

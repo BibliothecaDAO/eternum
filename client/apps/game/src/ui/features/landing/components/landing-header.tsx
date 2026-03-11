@@ -1,6 +1,6 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Home, Menu, Moon, Settings, Sun, TrendingUp, Trophy, User, X } from "lucide-react";
+import { Home, Menu, Settings, TrendingUp, Trophy, User, X } from "lucide-react";
 import { useState, useCallback } from "react";
 import { NavLink, useLocation, useSearchParams } from "react-router-dom";
 import { getSectionFromPath, getActiveSubItem } from "../context/navigation-config";
@@ -127,12 +127,15 @@ export const LandingHeader = ({ walletButton, onSettingsClick, className }: Land
   const activeSubItem = getActiveSubItem(activeSection, currentTab);
 
   const handleSubItemClick = (tab: string | null) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+
     if (tab === null) {
-      // Remove tab param for default tab
-      setSearchParams({});
+      nextSearchParams.delete("tab");
     } else {
-      setSearchParams({ tab });
+      nextSearchParams.set("tab", tab);
     }
+
+    setSearchParams(nextSearchParams);
   };
 
   const handleOpenMobileMenu = useCallback(() => {

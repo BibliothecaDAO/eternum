@@ -5,6 +5,7 @@ import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-c
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
 import { GUIManager } from "@/three/utils/";
+import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -50,9 +51,14 @@ import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
-import { shouldArmyRemainVisibleInBounds } from "./army-visibility";
-import { shouldAcceptTransitionToken } from "../scenes/worldmap-chunk-transition";
-import { waitForVisualSettle } from "./manager-update-convergence";
+import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
+import {
+  isCommittedManagerChunk,
+  MANAGER_UNCOMMITTED_CHUNK,
+  shouldAcceptManagerChunkRequest,
+  shouldRunManagerChunkUpdate,
+  waitForVisualSettle,
+} from "./manager-update-convergence";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -105,7 +111,7 @@ export class ArmyManager {
   private armyModel: ArmyModel;
   private armies: Map<ID, ArmyData> = new Map();
   private scale: Vector3;
-  private currentChunkKey: string | null = "190,170";
+  private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private visibleArmyOrder: ID[] = [];
@@ -143,6 +149,7 @@ export class ArmyManager {
   private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
+  private transitionChunkByToken: Map<number, string> = new Map();
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
@@ -168,6 +175,14 @@ export class ArmyManager {
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempColor: Color = new Color();
+
+  private pruneTransitionChunkHistory(): void {
+    this.transitionChunkByToken.forEach((_, token) => {
+      if (token < this.latestTransitionToken) {
+        this.transitionChunkByToken.delete(token);
+      }
+    });
+  }
 
   constructor(
     scene: Scene,
@@ -428,7 +443,7 @@ export class ArmyManager {
     mixTiers: boolean;
     isMine: boolean;
   }): void {
-    if (!this.currentChunkKey) {
+    if (!isCommittedManagerChunk(this.currentChunkKey)) {
       console.warn("[Debug Spawner] No current chunk key available");
       return;
     }
@@ -563,7 +578,14 @@ export class ArmyManager {
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition);
+      await this.moveArmy(entityId, newPosition);
+      this.syncTrackedArmyOwnerState({
+        entityId: update.entityId,
+        ownerAddress,
+        ownerName,
+        guildName,
+        ownerStructureId: update.ownerStructureId,
+      });
     } else {
       this.addArmy({
         entityId,
@@ -594,14 +616,109 @@ export class ArmyManager {
     return false;
   }
 
+  private resolveOwnerName(address: bigint, preferredName?: string, fallbackName?: string): string {
+    if (preferredName && preferredName.length > 0) {
+      return preferredName;
+    }
+    if (fallbackName && fallbackName.length > 0) {
+      return fallbackName;
+    }
+    return `0x${address.toString(16)}`;
+  }
+
+  private syncTrackedArmyOwnerState(params: {
+    entityId: ID;
+    ownerAddress: bigint;
+    ownerName?: string;
+    guildName?: string;
+    ownerStructureId?: ID | null;
+  }): boolean {
+    const army = this.armies.get(params.entityId);
+    if (!army) {
+      return false;
+    }
+
+    const mergedOwner = resolveArmyOwnerState({
+      existingOwner: army.owner,
+      incomingOwner: {
+        address: params.ownerAddress,
+        ownerName: this.resolveOwnerName(params.ownerAddress, params.ownerName, army.owner.ownerName),
+        guildName: params.guildName ?? army.owner.guildName,
+      },
+    });
+
+    const nextOwningStructureId =
+      params.ownerStructureId !== undefined ? params.ownerStructureId : army.owningStructureId;
+    const nextIsMine = isAddressEqualToAccount(mergedOwner.address);
+    const nextColor = this.getArmyColor({
+      isMine: nextIsMine,
+      isDaydreamsAgent: army.isDaydreamsAgent,
+      owner: { address: mergedOwner.address },
+    });
+
+    const ownerChanged =
+      army.owner.address !== mergedOwner.address ||
+      army.owner.ownerName !== mergedOwner.ownerName ||
+      army.owner.guildName !== mergedOwner.guildName;
+    const ownershipVisualChanged = army.isMine !== nextIsMine || army.color !== nextColor;
+    const structureChanged = army.owningStructureId !== nextOwningStructureId;
+
+    if (!ownerChanged && !ownershipVisualChanged && !structureChanged) {
+      return false;
+    }
+
+    army.owner.address = mergedOwner.address;
+    army.owner.ownerName = mergedOwner.ownerName;
+    army.owner.guildName = mergedOwner.guildName;
+    army.owningStructureId = nextOwningStructureId;
+    army.isMine = nextIsMine;
+    army.color = nextColor;
+    this.armies.set(params.entityId, army);
+
+    const label = this.entityIdLabels.get(params.entityId);
+    if (label) {
+      this.updateArmyLabelData(params.entityId, army, label);
+    }
+
+    if (ownerChanged || ownershipVisualChanged) {
+      this.removeArmyPointIcon(params.entityId);
+      const position = this.getArmyWorldPosition(params.entityId, army.hexCoords);
+      this.updateArmyPointIcon(army, position);
+    }
+
+    const slot = this.visibleArmyIndices.get(params.entityId);
+    if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
+      const numericId = this.toNumericId(params.entityId);
+      const { x, y } = army.hexCoords.getContract();
+      const biome = Biome.getBiome(x, y);
+      const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+      this.refreshArmyInstance(army, slot, modelType);
+      this.armyModel.updateAllInstances();
+      this.syncVisibleSlots();
+      this.frustumVisibilityDirty = true;
+    }
+
+    return true;
+  }
+
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
     if (transitionToken !== undefined) {
-      this.latestTransitionToken = transitionToken;
+      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
+      this.transitionChunkByToken.set(transitionToken, chunkKey);
+      this.pruneTransitionChunkHistory();
     }
 
     await this.armyModel.loadPromise;
@@ -625,7 +742,15 @@ export class ArmyManager {
       return;
     }
 
-    if (!shouldAcceptTransitionToken(transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldAcceptManagerChunkRequest({
+        chunkKey,
+        transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+        knownChunkForToken:
+          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
+      })
+    ) {
       return;
     }
 
@@ -653,7 +778,7 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
-    if (!chunkKey) {
+    if (!isCommittedManagerChunk(chunkKey)) {
       return Promise.resolve();
     }
 
@@ -988,15 +1113,16 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
-    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
+    if (
+      !shouldRunManagerChunkUpdate({
+        chunkKey,
+        currentChunk: this.currentChunkKey,
+        transitionToken: options?.transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+      })
+    ) {
       return;
     }
-    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
-      return;
-    }
-
-    // Ensure centralized visibility state is refreshed when invoked outside the render loop
-    this.visibilityManager?.beginFrame();
 
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
@@ -1009,10 +1135,14 @@ export class ArmyManager {
       await this.armyModel.preloadModels(requiredModelTypes);
     }
 
-    if (!shouldAcceptTransitionToken(options?.transitionToken, this.latestTransitionToken)) {
-      return;
-    }
-    if (options?.transitionToken !== undefined && this.currentChunkKey !== chunkKey) {
+    if (
+      !shouldRunManagerChunkUpdate({
+        chunkKey,
+        currentChunk: this.currentChunkKey,
+        transitionToken: options?.transitionToken,
+        latestTransitionToken: this.latestTransitionToken,
+      })
+    ) {
       return;
     }
 
@@ -1116,13 +1246,12 @@ export class ArmyManager {
     }
 
     const sourceState = this.movingArmySourceBuckets.get(army.entityId);
-    if (
-      !shouldArmyRemainVisibleInBounds(
-        { col: x, row: y },
-        bounds,
-        sourceState ? { col: sourceState.col, row: sourceState.row } : undefined,
-      )
-    ) {
+    const visibilityDecision = resolveArmyVisibilityBoundsDecision({
+      destination: { col: x, row: y },
+      bounds,
+      source: sourceState ? { col: sourceState.col, row: sourceState.row } : undefined,
+    });
+    if (!visibilityDecision.shouldRemainVisible) {
       return false;
     }
 
@@ -1350,9 +1479,21 @@ export class ArmyManager {
         // Use pending update data instead of initial data
         finalTroopCount = pendingUpdate.troopCount;
         finalCurrentStamina = updatedStamina;
-        finalOwnerAddress = pendingUpdate.ownerAddress;
         finalOnChainStamina = pendingUpdate.onChainStamina;
-        finalOwnerName = pendingUpdate.ownerName;
+        const pendingOwner = resolveArmyOwnerState({
+          existingOwner: {
+            address: finalOwnerAddress,
+            ownerName: finalOwnerName,
+            guildName: finalGuildName,
+          },
+          incomingOwner: {
+            address: pendingUpdate.ownerAddress,
+            ownerName: pendingUpdate.ownerName,
+            guildName: finalGuildName,
+          },
+        });
+        finalOwnerAddress = pendingOwner.address;
+        finalOwnerName = pendingOwner.ownerName;
         finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
         finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
         if (pendingUpdate.ownerStructureId !== undefined && pendingUpdate.ownerStructureId !== null) {
@@ -1484,7 +1625,9 @@ export class ArmyManager {
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
 
-    await this.renderVisibleArmies(this.currentChunkKey!);
+    if (isCommittedManagerChunk(this.currentChunkKey)) {
+      await this.renderVisibleArmies(this.currentChunkKey);
+    }
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position) {
@@ -1673,6 +1816,36 @@ export class ArmyManager {
 
   public getArmies() {
     return Array.from(this.armies.values());
+  }
+
+  public getArmy(entityId: ID): ArmyData | undefined {
+    return this.armies.get(entityId);
+  }
+
+  public syncAttachedArmiesOwnerForStructure(params: {
+    structureId: ID;
+    ownerAddress: bigint;
+    ownerName?: string;
+    guildName?: string;
+  }): ID[] {
+    const updatedArmyIds: ID[] = [];
+
+    this.armies.forEach((army, entityId) => {
+      if (army.owningStructureId !== params.structureId) {
+        return;
+      }
+
+      this.syncTrackedArmyOwnerState({
+        entityId,
+        ownerAddress: params.ownerAddress,
+        ownerName: params.ownerName,
+        guildName: params.guildName ?? army.owner.guildName,
+        ownerStructureId: params.structureId,
+      });
+      updatedArmyIds.push(entityId);
+    });
+
+    return updatedArmyIds;
   }
 
   public getVisibleCount(): number {
@@ -2229,7 +2402,7 @@ export class ArmyManager {
             };
 
             // Re-render visible armies to populate points
-            if (this.currentChunkKey) {
+            if (isCommittedManagerChunk(this.currentChunkKey)) {
               this.renderVisibleArmies(this.currentChunkKey);
             }
           }
@@ -2568,36 +2741,24 @@ ${
       }
     }
 
-    army.owner.address = resolvedOwnerAddress;
-    army.owner.ownerName = resolvedOwnerName;
-    army.owningStructureId = update.ownerStructureId;
-    // Update ownership status - this ensures armies are correctly marked as owned when the user's account
-    // becomes available after initial load, since tile updates may occur before account authentication
-    army.isMine = isAddressEqualToAccount(resolvedOwnerAddress);
-    // Update color to reflect new ownership
-    army.color = this.getArmyColor({
-      isMine: army.isMine,
-      isDaydreamsAgent: army.isDaydreamsAgent,
-      owner: { address: resolvedOwnerAddress },
+    const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
+    this.syncTrackedArmyOwnerState({
+      entityId: update.entityId,
+      ownerAddress: resolvedOwnerAddress,
+      ownerName: resolvedOwnerName,
+      guildName: army.owner.guildName,
+      ownerStructureId,
     });
+
     army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
-    const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
-    if (ownerStructureId) {
-      army.owningStructureId = ownerStructureId;
-    }
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
-
-    // Update point icon to reflect ownership change (e.g., player vs enemy)
-    this.removeArmyPointIcon(update.entityId);
-    const position = this.getArmyWorldPosition(update.entityId, army.hexCoords);
-    this.updateArmyPointIcon(army, position);
   }
 
   public destroy() {

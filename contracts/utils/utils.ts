@@ -16,6 +16,10 @@ import slottestGameManifest from "../../contracts/game/manifest_slottest.json";
 export interface SeasonAddresses {
   "Collectibles: Realms: Loot Chest": string;
   "Collectibles: Realms: Cosmetic Items": string;
+  /** New loot chest contract key used on some chains (mainnet). */
+  lootChests?: string;
+  /** New cosmetics contract key used on some chains (mainnet). */
+  cosmetics?: string;
   "Collectibles: Timelock Maker": string;
   "Collectibles: Realms: Elite Invite": string;
   /** Class hash of the collectibles ERC721 contract */

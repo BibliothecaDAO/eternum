@@ -1,0 +1,236 @@
+import { forwardRef, type Ref, useState } from "react";
+import { createPortal } from "react-dom";
+
+import {
+  BLITZ_CARD_BASE_STYLES,
+  BLITZ_CARD_FONT_IMPORT,
+  BLITZ_CARD_SILVER_THEME,
+  formatBlitzValue as formatValue,
+} from "../lib/blitz-card-shared";
+import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
+
+const REWARDS_RECAP_CARD_STYLES = `
+  ${BLITZ_CARD_FONT_IMPORT}
+  ${BLITZ_CARD_BASE_STYLES}
+  ${BLITZ_CARD_SILVER_THEME}
+
+  .blitz-card-root .bg-mark {
+    left: auto;
+    right: -${BLITZ_CARD_DIMENSIONS.width / 2}px;
+    opacity: 0.10;
+    filter: invert(1) brightness(1.7);
+  }
+
+  .blitz-card-root .bg-smoke {
+    opacity: 0.1;
+  }
+
+  .blitz-card-root .hero-metric {
+    position: absolute;
+    left: 32px;
+    top: 132px;
+    width: 640px;
+    z-index: 4;
+  }
+
+  .blitz-card-root .hero-label {
+    font-family: "IM Fell English", serif;
+    font-style: italic;
+    font-size: 24px;
+    line-height: 30px;
+    color: #ffffff;
+    opacity: 0.75;
+  }
+
+  .blitz-card-root .hero-value-row {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .blitz-card-root .lords-icon {
+    width: 84px;
+    height: 84px;
+    margin-left: -12px;
+    margin-top: 12px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.35));
+  }
+
+  .blitz-card-root .hero-value {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+    font-size: 84px;
+    line-height: 1;
+    letter-spacing: -0.012em;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
+    background: var(--rank-gradient);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-fill-color: transparent;
+  }
+
+  .blitz-card-root .reward-grid {
+    position: absolute;
+    left: 32px;
+    top: 304px;
+    width: 640px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    z-index: 4;
+  }
+
+  .blitz-card-root .reward-card {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .blitz-card-root .reward-label {
+    font-family: "IM Fell English", serif;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 22px;
+    color: #ffffff;
+    opacity: 0.75;
+  }
+
+  .blitz-card-root .reward-value {
+    margin-top: 8px;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+    font-size: 58px;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
+    color: var(--points-color);
+  }
+`;
+
+interface BlitzRewardsRecapCardProps {
+  worldName: string;
+  lordsWon: string;
+  chestsWon: number;
+  player?: { name: string; address: string } | null;
+}
+
+const BlitzRewardsRecapCard = forwardRef<SVGSVGElement, BlitzRewardsRecapCardProps>(
+  ({ worldName, lordsWon, chestsWon, player }, ref) => {
+    const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
+
+    const cardMarkup = (
+      <foreignObject width="100%" height="100%">
+        <div
+          className={`blitz-card-root card-silver ${player ? "" : "no-player"}`}
+          aria-label={`${worldName} rewards recap card`}
+        >
+          <style dangerouslySetInnerHTML={{ __html: REWARDS_RECAP_CARD_STYLES }} />
+
+          <div className="bg-mark" />
+          <div className="bg-smoke" />
+          <div className="bg-texture" />
+          <div className="bg-layer gradient-overlay" />
+          <div className="bg-layer dark-overlay" />
+
+          <img className="corner-mark" src="/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div className="title-stack">
+            <span className="eyebrow">{worldName}</span>
+            <span className="title">Rewards</span>
+          </div>
+
+          <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div className="hero-metric">
+            <div className="hero-label">$LORDS won</div>
+            <div className="hero-value-row">
+              <div className="hero-value">+{lordsWon}</div>
+              <img className="lords-icon" src="/assets/icons/resources/Lords.svg" alt="LORDS token icon" />
+            </div>
+          </div>
+
+          <div className="reward-grid">
+            <div className="reward-card">
+              <div className="reward-label">Chests won</div>
+              <div className="reward-value">+{formatValue(chestsWon)}</div>
+            </div>
+          </div>
+
+          {player && (
+            <div className="player">
+              <div className="name">{player.name}</div>
+              <div className="address">{player.address}</div>
+            </div>
+          )}
+
+          <div className="cta">
+            <div className="cta-title">Play Now</div>
+            <div className="cta-subtitle">blitz.realms.world</div>
+          </div>
+
+          <div className="powered">
+            <img src="/images/logos/Starknet.png" alt="Starknet logo" />
+            <div className="copy">Powered by Starknet</div>
+          </div>
+
+          <div className="bg-layer border-frame" />
+        </div>
+      </foreignObject>
+    );
+
+    return (
+      <>
+        <svg
+          ref={ref}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox={`0 0 ${BLITZ_CARD_DIMENSIONS.width} ${BLITZ_CARD_DIMENSIONS.height}`}
+          width={BLITZ_CARD_DIMENSIONS.width}
+          height={BLITZ_CARD_DIMENSIONS.height}
+          className="h-auto w-full max-w-[960px]"
+          role="img"
+          aria-label={`${worldName} rewards recap card`}
+          style={{
+            filter: "drop-shadow(0 32px 70px rgba(1, 11, 18, 0.64))",
+          }}
+        >
+          <g ref={setPortalTarget} />
+        </svg>
+        {portalTarget ? createPortal(cardMarkup, portalTarget) : null}
+      </>
+    );
+  },
+);
+
+BlitzRewardsRecapCard.displayName = "BlitzRewardsRecapCard";
+
+interface BlitzRewardsRecapCardWithSelectorProps extends BlitzRewardsRecapCardProps {
+  className?: string;
+  cardRef?: Ref<SVGSVGElement>;
+}
+
+export const BlitzRewardsRecapCardWithSelector = ({
+  className,
+  cardRef,
+  ...cardProps
+}: BlitzRewardsRecapCardWithSelectorProps) => {
+  const containerClasses = ["flex w-full flex-col items-center gap-4", className].filter(Boolean).join(" ");
+
+  return (
+    <div className={containerClasses}>
+      <div className="flex w-full justify-center">
+        <BlitzRewardsRecapCard {...cardProps} ref={cardRef} />
+      </div>
+    </div>
+  );
+};

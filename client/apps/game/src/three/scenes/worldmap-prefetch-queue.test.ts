@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
+  resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
 
@@ -149,5 +150,63 @@ describe("shouldProcessPrefetchQueueItem", () => {
         pinnedAreaKeys: new Set(),
       }),
     ).toBe(true);
+  });
+});
+
+describe("resolvePrefetchQueueProcessingPlan", () => {
+  it("clears queued prefetch state and skips processing when worldmap is switched off", () => {
+    const plan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: true,
+      queueLength: 3,
+      activePrefetches: 0,
+      maxConcurrentPrefetches: 2,
+    });
+
+    expect(plan).toEqual({
+      shouldClearQueuedPrefetchState: true,
+      shouldProcessNextQueueItem: false,
+    });
+  });
+
+  it("processes next queue item when switched on, queue has items, and concurrency is available", () => {
+    const plan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: false,
+      queueLength: 2,
+      activePrefetches: 1,
+      maxConcurrentPrefetches: 3,
+    });
+
+    expect(plan).toEqual({
+      shouldClearQueuedPrefetchState: false,
+      shouldProcessNextQueueItem: true,
+    });
+  });
+
+  it("does not process next item when queue is empty", () => {
+    const plan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: false,
+      queueLength: 0,
+      activePrefetches: 0,
+      maxConcurrentPrefetches: 2,
+    });
+
+    expect(plan).toEqual({
+      shouldClearQueuedPrefetchState: false,
+      shouldProcessNextQueueItem: false,
+    });
+  });
+
+  it("does not process next item when concurrency budget is exhausted", () => {
+    const plan = resolvePrefetchQueueProcessingPlan({
+      isSwitchedOff: false,
+      queueLength: 1,
+      activePrefetches: 2,
+      maxConcurrentPrefetches: 2,
+    });
+
+    expect(plan).toEqual({
+      shouldClearQueuedPrefetchState: false,
+      shouldProcessNextQueueItem: false,
+    });
   });
 });

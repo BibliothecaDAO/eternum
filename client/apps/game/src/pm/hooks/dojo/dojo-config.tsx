@@ -1,15 +1,16 @@
 import { createDojoConfig, DojoConfig, getContractByName } from "@dojoengine/core";
-import { createContext, useCallback, useContext, useMemo, type PropsWithChildren } from "react";
-import manifestMainnet from "../../manifests/manifest_mainnet_1-7.json";
-import manifestSlot from "../../manifests/manifest_slot.json";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import {
+  loadPredictionMarketManifest,
+  type PredictionMarketChain,
+  type PredictionMarketManifest,
+} from "../../manifest-loader";
 import { getPredictionMarketChain } from "../../prediction-market-config";
-
-// const manifest = getPredictionMarketChain() === "mainnet" ? manifestMainnet : manifestSlot;
-const manifest = getPredictionMarketChain() === "mainnet" ? manifestMainnet : manifestSlot;
 
 type DojoConfigProviderProps = PropsWithChildren<{
   toriiUrl: string;
   worldAddress: string;
+  chain?: PredictionMarketChain;
 }>;
 
 type DojoConfigProviderState = {
@@ -19,8 +20,39 @@ type DojoConfigProviderState = {
 
 const DojoConfigProviderContext = createContext<DojoConfigProviderState | undefined>(undefined);
 
-export function DojoConfigProvider({ children, toriiUrl, worldAddress }: DojoConfigProviderProps) {
+export function DojoConfigProvider({ children, toriiUrl, worldAddress, chain }: DojoConfigProviderProps) {
+  const resolvedChain = chain ?? getPredictionMarketChain();
+  const [manifest, setManifest] = useState<PredictionMarketManifest | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadManifest = async () => {
+      try {
+        const loadedManifest = await loadPredictionMarketManifest(resolvedChain);
+        if (!cancelled) {
+          setManifest(loadedManifest);
+        }
+      } catch (error) {
+        console.error("[pm-dojo] Failed to load prediction market manifest", error);
+        if (!cancelled) {
+          setManifest(null);
+        }
+      }
+    };
+
+    void loadManifest();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedChain]);
+
   const dojoConfig = useMemo(() => {
+    if (!manifest) {
+      return null;
+    }
+
     return createDojoConfig({
       toriiUrl,
       manifest: {
@@ -31,14 +63,21 @@ export function DojoConfigProvider({ children, toriiUrl, worldAddress }: DojoCon
         },
       },
     });
-  }, [toriiUrl, worldAddress]);
+  }, [manifest, toriiUrl, worldAddress]);
 
   const getContract = useCallback(
     (ns: string, name: string) => {
+      if (!dojoConfig) {
+        throw new Error("Dojo config has not loaded yet");
+      }
       return getContractByName(dojoConfig.manifest, ns, name);
     },
     [dojoConfig],
   );
+
+  if (!dojoConfig) {
+    return null;
+  }
 
   return (
     <DojoConfigProviderContext.Provider value={{ dojoConfig, getContract }}>

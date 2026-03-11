@@ -17,6 +17,10 @@ import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
+import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
+import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { normalizeSelector } from "@/runtime/world/normalize";
+import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -24,14 +28,38 @@ import { getWorldKey } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import {
+  buildSettlementExecutionPlan,
+  deriveSettlementStatus,
+  type SettlementSnapshot,
+} from "./game-entry-settlement.utils";
 import type { Chain } from "@contracts";
+import type { Account } from "starknet";
 
 const DEBUG_MODAL = false;
+const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
+const SETTLEMENT_PROGRESS_POLL_MS = 1000;
+const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 
 const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
     console.log("[GameEntryModal]", ..._args);
   }
+};
+
+const extractTransactionHash = (value: unknown): string | null => {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as { transaction_hash?: unknown; transactionHash?: unknown };
+
+  if (typeof candidate.transaction_hash === "string" && candidate.transaction_hash.length > 0) {
+    return candidate.transaction_hash;
+  }
+
+  if (typeof candidate.transactionHash === "string" && candidate.transactionHash.length > 0) {
+    return candidate.transactionHash;
+  }
+
+  return null;
 };
 
 // Types
@@ -605,13 +633,13 @@ export const GameEntryModal = ({
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
     let result: ModalPhase;
-    if (bootstrapError || bootstrapStatus === "error") {
+    if (isForgeMode) {
+      // Forge mode does not require game bootstrap or settlement checks
+      result = "forge";
+    } else if (bootstrapError || bootstrapStatus === "error") {
       result = "error";
     } else if (bootstrapStatus !== "ready") {
       result = "loading";
-    } else if (isForgeMode) {
-      // Forge mode - skip all checks and go straight to forge phase
-      result = "forge";
     } else if (isSpectateMode) {
       result = "ready";
     } else if (!checksComplete) {
@@ -652,6 +680,97 @@ export const GameEntryModal = ({
     worldName,
   ]);
 
+  const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
+    if (!setupResult || !account?.address) return null;
+
+    const { components } = setupResult;
+    const playerAddress = account.address;
+
+    const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
+    const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
+
+    const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
+    const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId) as {
+      registered?: boolean;
+      once_registered?: boolean;
+    } | null;
+    const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
+    const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
+
+    return {
+      registered: playerRegister?.registered === true,
+      onceRegistered: playerRegister?.once_registered === true,
+      hasSettledStructure: playerStructures.size > 0,
+      coordsCount: settleFinish?.coords?.length ?? 0,
+      settledCount: settleFinish?.structure_ids?.length ?? 0,
+    };
+  }, [setupResult, account]);
+
+  const syncSettlementStateFromSnapshot = useCallback(
+    (snapshot: SettlementSnapshot) => {
+      const status = deriveSettlementStatus(snapshot);
+      setAssignedRealmCount(status.assignedCount);
+      setSettledRealmCount(status.settledCount);
+      setNeedsSettlement(status.needsSettlement);
+      return status;
+    },
+    [setAssignedRealmCount, setSettledRealmCount, setNeedsSettlement],
+  );
+
+  const waitForSettlementTarget = useCallback(
+    async (
+      targetSettleCount: number,
+      timeoutMs = SETTLEMENT_PROGRESS_TIMEOUT_MS,
+    ): Promise<SettlementSnapshot | null> => {
+      const startedAt = Date.now();
+      let latestSnapshot: SettlementSnapshot | null = null;
+
+      while (Date.now() - startedAt < timeoutMs) {
+        const snapshot = await readSettlementSnapshot();
+        if (snapshot) {
+          latestSnapshot = snapshot;
+          const status = syncSettlementStateFromSnapshot(snapshot);
+          if (status.settledCount >= targetSettleCount || status.remainingToSettle === 0) {
+            return snapshot;
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, SETTLEMENT_PROGRESS_POLL_MS));
+      }
+
+      return latestSnapshot;
+    },
+    [readSettlementSnapshot, syncSettlementStateFromSnapshot],
+  );
+
+  const waitForSubmittedTransaction = useCallback(
+    async (result: unknown, label: string) => {
+      const txHash = extractTransactionHash(result);
+      if (!txHash) {
+        throw new Error(`Missing transaction hash for ${label}`);
+      }
+
+      const provider = setupResult?.network?.provider as
+        | {
+            waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
+          }
+        | undefined;
+
+      if (provider && typeof provider.waitForTransactionWithCheck === "function") {
+        await provider.waitForTransactionWithCheck(txHash);
+        return;
+      }
+
+      const accountWithWait = account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> };
+      if (typeof accountWithWait.waitForTransaction === "function") {
+        await accountWithWait.waitForTransaction(txHash);
+        return;
+      }
+
+      throw new Error(`Unable to confirm ${label}: no transaction wait method available`);
+    },
+    [setupResult, account],
+  );
+
   // Check settlement status after bootstrap completes
   useEffect(() => {
     debugLog(
@@ -679,57 +798,32 @@ export const GameEntryModal = ({
     const checkSettlementStatus = async () => {
       debugLog(worldName, "Running settlement status check...");
       try {
-        const { components } = setupResult;
-        const playerAddress = account?.address;
-        debugLog(worldName, "Player address:", playerAddress);
-
-        if (!playerAddress) {
+        if (!account?.address) {
           debugLog(worldName, "No player address, skipping settlement check");
           setNeedsSettlement(false);
           setSettlementCheckComplete(true);
           return;
         }
 
-        // Import Dojo utilities
-        const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
-        const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
-
-        const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
-        debugLog(worldName, "Entity ID:", entityId);
-
-        // Check if player is registered
-        const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId);
-        debugLog(worldName, "playerRegister:", playerRegister);
-        const isRegistered = playerRegister?.registered === true;
-
-        // Check if player has any structures (meaning they've settled)
-        const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
-        debugLog(worldName, "playerStructures count:", playerStructures.size);
-        const hasSettled = playerStructures.size > 0;
-
-        // Check settlement finish status
-        const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
-        debugLog(worldName, "settleFinish:", settleFinish);
-        const coordsCount = settleFinish?.coords?.length ?? 0;
-        const settledCount = settleFinish?.structure_ids?.length ?? 0;
-
-        setAssignedRealmCount(coordsCount + settledCount);
-        setSettledRealmCount(settledCount);
-
-        // Player needs settlement if registered but not fully settled
-        const canPlay = hasSettled && coordsCount + settledCount > 0 && settledCount === coordsCount + settledCount;
-        const needsSettlementResult = isRegistered && !canPlay;
+        const snapshot = await readSettlementSnapshot();
+        if (!snapshot) {
+          setNeedsSettlement(false);
+          setSettlementCheckComplete(true);
+          return;
+        }
+        const status = syncSettlementStateFromSnapshot(snapshot);
 
         debugLog(worldName, "Settlement check result:", {
-          isRegistered,
-          hasSettled,
-          coordsCount,
-          settledCount,
-          canPlay,
-          needsSettlement: needsSettlementResult,
+          registered: snapshot.registered,
+          onceRegistered: snapshot.onceRegistered,
+          hasSettledStructure: snapshot.hasSettledStructure,
+          coordsCount: snapshot.coordsCount,
+          settledCount: snapshot.settledCount,
+          assignedCount: status.assignedCount,
+          canPlay: status.canPlay,
+          needsSettlement: status.needsSettlement,
         });
 
-        setNeedsSettlement(needsSettlementResult);
         setSettlementCheckComplete(true);
       } catch (error) {
         debugLog(worldName, "Failed to check settlement status:", error);
@@ -741,7 +835,16 @@ export const GameEntryModal = ({
 
     // Run the check
     checkSettlementStatus();
-  }, [bootstrapStatus, setupResult, account, isSpectateMode, isForgeMode, worldName]);
+  }, [
+    bootstrapStatus,
+    setupResult,
+    account,
+    isSpectateMode,
+    isForgeMode,
+    worldName,
+    readSettlementSnapshot,
+    syncSettlementStateFromSnapshot,
+  ]);
 
   // Check hyperstructure initialization status after bootstrap completes
   useEffect(() => {
@@ -835,6 +938,10 @@ export const GameEntryModal = ({
       debugLog(worldName, "Modal not open, skipping bootstrap");
       return;
     }
+    if (isForgeMode) {
+      debugLog(worldName, "Forge mode active, skipping game bootstrap");
+      return;
+    }
 
     debugLog(worldName, "Starting bootstrap for", worldName, "chain:", chain);
 
@@ -863,6 +970,18 @@ export const GameEntryModal = ({
         const result = await bootstrapGame();
         debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
 
+        // After bootstrap patches the manifest with the selected world's
+        // contract addresses, refresh the controller's session policies
+        // if they changed. This recreates the keychain iframe with correct
+        // policies and re-probes to restore the user's account.
+        const connector = useAccountStore.getState().connector;
+        if (connector) {
+          const updated = await refreshSessionPolicies(connector);
+          if (updated) {
+            debugLog(worldName, "Session policies refreshed for new world");
+          }
+        }
+
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
         setSetupResult(result);
@@ -877,7 +996,7 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [isOpen, worldName, chain, updateTask]);
+  }, [isOpen, isForgeMode, worldName, chain, updateTask]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -941,7 +1060,6 @@ export const GameEntryModal = ({
     if (!setupResult || !account) return;
 
     setIsSettling(true);
-    setSettleStage("assigning");
 
     try {
       const { systemCalls } = setupResult;
@@ -954,44 +1072,54 @@ export const GameEntryModal = ({
 
       debugLog(worldName, "Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
 
-      // Settlement configuration
-      const SETTLEMENT_CONFIG = {
-        MAINNET: {
-          MULTI_REALM: { INITIAL_SETTLE_COUNT: 1, EXTRA_CALLS: 2 },
-          SINGLE_REALM: { INITIAL_SETTLE_COUNT: 1, EXTRA_CALLS: 0 },
-        },
-        NON_MAINNET: {
-          MULTI_REALM: { INITIAL_SETTLE_COUNT: 3 },
-          SINGLE_REALM: { INITIAL_SETTLE_COUNT: 1 },
-        },
-      };
+      const initialSnapshot = await readSettlementSnapshot();
+      if (!initialSnapshot) {
+        throw new Error("Unable to read settlement status for current player.");
+      }
+      const initialStatus = syncSettlementStateFromSnapshot(initialSnapshot);
+      let targetProgress = initialStatus.settledCount;
 
-      if (isMainnet) {
-        const config = singleRealmMode ? SETTLEMENT_CONFIG.MAINNET.SINGLE_REALM : SETTLEMENT_CONFIG.MAINNET.MULTI_REALM;
+      const plan = buildSettlementExecutionPlan({
+        isMainnet,
+        singleRealmMode,
+        snapshot: initialSnapshot,
+      });
+      debugLog(worldName, "Settlement execution plan:", plan);
 
-        debugLog(worldName, "Starting settlement (mainnet):", config);
-        await systemCalls.blitz_realm_assign_and_settle_realms({
+      if (plan.missingAssignmentRegistration) {
+        throw new Error("Cannot assign realm positions because the player is no longer in registered state.");
+      }
+
+      if (plan.shouldAssignAndSettle && plan.initialSettleCount > 0) {
+        setSettleStage("assigning");
+        debugLog(worldName, "Submitting assign + settle call:", { settlement_count: plan.initialSettleCount });
+        const assignResult = await systemCalls.blitz_realm_assign_and_settle_realms({
           signer: account,
-          settlement_count: config.INITIAL_SETTLE_COUNT,
+          settlement_count: plan.initialSettleCount,
         });
+        await waitForSubmittedTransaction(assignResult, "assign_and_settle_realms");
+        targetProgress = Math.min(plan.targetSettleCount, targetProgress + plan.initialSettleCount);
+        await waitForSettlementTarget(targetProgress);
+      }
 
-        if (config.EXTRA_CALLS > 0) {
-          setSettleStage("settling");
-          for (let i = 0; i < config.EXTRA_CALLS; i++) {
-            debugLog(worldName, `Extra settle call ${i + 1}/${config.EXTRA_CALLS}`);
-            await systemCalls.blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
-          }
+      if (plan.extraSettleCalls > 0) {
+        setSettleStage("settling");
+        for (let i = 0; i < plan.extraSettleCalls; i++) {
+          debugLog(worldName, `Extra settle call ${i + 1}/${plan.extraSettleCalls}`);
+          const settleResult = await systemCalls.blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+          await waitForSubmittedTransaction(settleResult, `settle_realms ${i + 1}/${plan.extraSettleCalls}`);
+          targetProgress = Math.min(plan.targetSettleCount, targetProgress + 1);
+          await waitForSettlementTarget(targetProgress);
         }
-      } else {
-        const config = singleRealmMode
-          ? SETTLEMENT_CONFIG.NON_MAINNET.SINGLE_REALM
-          : SETTLEMENT_CONFIG.NON_MAINNET.MULTI_REALM;
+      }
 
-        debugLog(worldName, "Starting settlement (non-mainnet):", config);
-        await systemCalls.blitz_realm_assign_and_settle_realms({
-          signer: account,
-          settlement_count: config.INITIAL_SETTLE_COUNT,
-        });
+      const finalSnapshot = await waitForSettlementTarget(plan.targetSettleCount);
+      if (!finalSnapshot) {
+        throw new Error("Timed out waiting for settlement progress.");
+      }
+      const finalStatus = syncSettlementStateFromSnapshot(finalSnapshot);
+      if (finalStatus.settledCount < plan.targetSettleCount) {
+        throw new Error(`Settlement incomplete: ${finalStatus.settledCount}/${plan.targetSettleCount} realms settled.`);
       }
 
       debugLog(worldName, "Settlement complete!");
@@ -1008,27 +1136,60 @@ export const GameEntryModal = ({
     } finally {
       setIsSettling(false);
     }
-  }, [setupResult, account, handleEnterGame, worldName]);
+  }, [
+    setupResult,
+    account,
+    handleEnterGame,
+    worldName,
+    readSettlementSnapshot,
+    syncSettlementStateFromSnapshot,
+    waitForSettlementTarget,
+    waitForSubmittedTransaction,
+  ]);
 
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
-    debugLog(worldName, "handleForgeHyperstructures called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
-    if (!setupResult || !account) return;
+    debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
+    if (!account) return;
 
     setIsForging(true);
 
     try {
-      const { systemCalls } = setupResult;
-      const { env } = await import("../../../../../env");
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+      if (!factorySqlBaseUrl) {
+        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
+      }
 
-      // Determine how many hyperstructures to forge based on chain
-      const hyperstructureCount = env.VITE_PUBLIC_CHAIN === "mainnet" ? 1 : 4;
+      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      const selector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
+      const blitzRealmSystemsAddress = contracts[selector];
+      if (!blitzRealmSystemsAddress) {
+        throw new Error("blitz_realm_systems contract not found for selected world");
+      }
+
+      const batchSize = chain === "mainnet" ? 1 : 4;
+      const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
+      const signer = account as unknown as Account;
+
+      const { env } = await import("../../../../../env");
+      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+
+      const calls = [];
+      if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
+        calls.push({
+          contractAddress: vrfProviderAddress,
+          entrypoint: "request_random",
+          calldata: [blitzRealmSystemsAddress, 0, signer.address],
+        });
+      }
+      calls.push({
+        contractAddress: blitzRealmSystemsAddress,
+        entrypoint: "make_hyperstructures",
+        calldata: [hyperstructureCount.toString()],
+      });
 
       debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
-      await systemCalls.blitz_realm_make_hyperstructures({
-        signer: account,
-        count: hyperstructureCount,
-      });
+      await signer.execute(calls);
 
       debugLog(worldName, "Hyperstructures forged!");
       // Update local count
@@ -1042,7 +1203,7 @@ export const GameEntryModal = ({
     } finally {
       setIsForging(false);
     }
-  }, [setupResult, account, worldName, chain, queryClient]);
+  }, [account, worldName, chain, queryClient, numHyperstructuresLeft]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(

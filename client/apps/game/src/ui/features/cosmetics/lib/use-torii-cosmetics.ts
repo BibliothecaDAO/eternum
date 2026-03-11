@@ -2,7 +2,11 @@ import {
   fetchTokenBalancesWithMetadata,
   fetchTotalCosmeticsSupply,
 } from "@/ui/features/cosmetics/chest-opening/services";
-import { getCosmeticsAddress } from "@/utils/addresses";
+import {
+  COSMETICS_NETWORK_CONFIG,
+  CosmeticsNetwork,
+  DEFAULT_COSMETICS_NETWORK,
+} from "@/ui/features/cosmetics/config/networks";
 import { useAccount } from "@starknet-react/core";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 
@@ -32,30 +36,35 @@ interface ToriiCosmeticAsset {
 
 interface UseToriiCosmeticsOptions extends Pick<UseQueryOptions<ToriiCosmeticAsset[], Error>, "staleTime" | "enabled"> {
   accountAddress?: string;
+  network?: CosmeticsNetwork;
 }
 
 export const useToriiCosmetics = (options: UseToriiCosmeticsOptions = {}) => {
   const { enabled = true, staleTime = 60_000 } = options;
   const { address: connectedAddress } = useAccount();
+  const network = options.network ?? DEFAULT_COSMETICS_NETWORK;
+  const networkConfig = COSMETICS_NETWORK_CONFIG[network];
 
   // Use connected wallet address, or fall back to provided address
   const accountAddress = options.accountAddress ?? connectedAddress;
   const isEnabled = enabled && Boolean(accountAddress);
 
   return useQuery({
-    queryKey: ["torii", "cosmetics", accountAddress],
+    queryKey: ["torii", "cosmetics", network, accountAddress],
     queryFn: async (): Promise<ToriiCosmeticAsset[]> => {
       if (!accountAddress) {
         return [];
       }
 
-      const cosmeticsAddress = getCosmeticsAddress();
+      const cosmeticsAddress = networkConfig.cosmeticsAddress;
       if (!cosmeticsAddress) {
         console.warn("Cosmetics contract address not configured");
         return [];
       }
 
-      const tokenBalances = await fetchTokenBalancesWithMetadata(cosmeticsAddress, accountAddress);
+      const tokenBalances = await fetchTokenBalancesWithMetadata(cosmeticsAddress, accountAddress, {
+        baseUrl: networkConfig.marketplaceUrl,
+      });
       console.log({ tokenBalances });
 
       // Map to ToriiCosmeticAsset format (already grouped by SQL)
@@ -79,19 +88,23 @@ export const useToriiCosmetics = (options: UseToriiCosmeticsOptions = {}) => {
  * Hook to fetch total unique cosmetic types across all users.
  * Used for calculating collection progress percentage.
  */
-export const useTotalCosmeticsSupply = (options: { enabled?: boolean; staleTime?: number } = {}) => {
+export const useTotalCosmeticsSupply = (
+  options: { enabled?: boolean; staleTime?: number; network?: CosmeticsNetwork } = {},
+) => {
   const { enabled = true, staleTime = 300_000 } = options; // Cache for 5 minutes
+  const network = options.network ?? DEFAULT_COSMETICS_NETWORK;
+  const networkConfig = COSMETICS_NETWORK_CONFIG[network];
 
   return useQuery({
-    queryKey: ["torii", "cosmetics", "totalSupply"],
+    queryKey: ["torii", "cosmetics", network, "totalSupply"],
     queryFn: async (): Promise<number> => {
-      const cosmeticsAddress = getCosmeticsAddress();
+      const cosmeticsAddress = networkConfig.cosmeticsAddress;
       if (!cosmeticsAddress) {
         console.warn("Cosmetics contract address not configured");
         return 0;
       }
 
-      return fetchTotalCosmeticsSupply(cosmeticsAddress);
+      return fetchTotalCosmeticsSupply(cosmeticsAddress, { baseUrl: networkConfig.marketplaceUrl });
     },
     enabled,
     staleTime,

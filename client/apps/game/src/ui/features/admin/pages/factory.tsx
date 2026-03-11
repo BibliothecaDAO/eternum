@@ -326,7 +326,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       const secs = Number(ETERNUM_CONFIG()?.season?.durationSeconds || 0);
       return Math.max(1, Math.round(secs / 3600));
     } catch {
-      return 24;
+      return 1;
     }
   });
   const [storedWorldNames, setStoredWorldNames] = useState<string[]>([]);
@@ -365,6 +365,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   );
   const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
+  const [twoPlayerModeOverrides, setTwoPlayerModeOverrides] = useState<Record<string, boolean>>({});
   const [seasonBridgeCloseAfterEndSecondsOverrides, setSeasonBridgeCloseAfterEndSecondsOverrides] = useState<
     Record<string, string>
   >({});
@@ -388,9 +389,20 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
   const baseDurationMinutes = useMemo(() => {
     const secs = Number(eternumConfig?.season?.durationSeconds || 0);
-    if (!Number.isFinite(secs) || secs <= 0) return 0;
+    if (!Number.isFinite(secs) || secs <= 0) return 30;
     return Math.max(0, Math.round((secs % 3600) / 60));
   }, [eternumConfig]);
+  const configuredBlitzFeeRecipient = (eternumConfig as any)?.blitz?.registration?.fee_recipient || "";
+  const defaultBlitzFeeRecipient = account?.address || configuredBlitzFeeRecipient;
+  const getBlitzFeeRecipientForWorld = useCallback(
+    (name: string) => {
+      if (Object.prototype.hasOwnProperty.call(blitzFeeRecipientOverrides, name)) {
+        return blitzFeeRecipientOverrides[name] ?? "";
+      }
+      return defaultBlitzFeeRecipient;
+    },
+    [blitzFeeRecipientOverrides, defaultBlitzFeeRecipient],
+  );
 
   // Check indexer and deployment status for all stored worlds
   const checkAllWorldStatuses = useCallback(async () => {
@@ -421,12 +433,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       if (preset === "blitz-slot") {
         setDevModeOn(false);
         setMmrEnabledOn(true);
-        setDurationHours(2);
+        setDurationHours(1);
 
         setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
         setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
-        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(2) as Record<string, number>) }));
-        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(1) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(30) as Record<string, number>) }));
       }
     },
     [storedWorldNames],
@@ -434,15 +446,29 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
+    let cancelled = false;
+
     const defaultFactory = FACTORY_ADDRESSES[currentChain];
     if (defaultFactory) {
       setFactoryAddress(defaultFactory);
     }
 
-    const manifest = getManifestJsonString(currentChain);
-    if (manifest) {
-      setManifestJson(manifest);
-    }
+    const loadManifest = async () => {
+      try {
+        const manifest = await getManifestJsonString(currentChain);
+        if (!cancelled) {
+          // Always set the latest load result to avoid displaying stale manifests after chain switches.
+          setManifestJson(manifest);
+        }
+      } catch (error) {
+        console.error(`[factory] Failed to load manifest for chain '${currentChain}'`, error);
+        if (!cancelled) {
+          setManifestJson("");
+        }
+      }
+    };
+
+    void loadManifest();
 
     // Load stored world names
     setStoredWorldNames(getStoredWorldNames());
@@ -457,6 +483,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentChain]);
 
   // Generate world name when account name changes
@@ -1009,9 +1039,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                               : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
                           }`}
                         >
-                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
+                          <p className="text-sm font-semibold text-gold">BLITZ SLOT (1h 30m game onslot)</p>
                           <p className="mt-1 text-xs text-gold/60">
-                            Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
+                            Sets Dev Mode OFF, MMR ON, and game duration to 1 hour 30 minutes.
                           </p>
                         </button>
                       </div>
@@ -1683,6 +1713,38 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               Controls settlement spawning behavior.
                                             </p>
                                           </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Two Player Mode
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                id={`two-player-mode-${name}`}
+                                                type="checkbox"
+                                                checked={
+                                                  Object.prototype.hasOwnProperty.call(twoPlayerModeOverrides, name)
+                                                    ? !!twoPlayerModeOverrides[name]
+                                                    : !!eternumConfig.settlement?.two_player_mode
+                                                }
+                                                onChange={(e) =>
+                                                  setTwoPlayerModeOverrides((p) => ({
+                                                    ...p,
+                                                    [name]: e.target.checked,
+                                                  }))
+                                                }
+                                                className="h-4 w-4 accent-blue-600"
+                                              />
+                                              <label
+                                                htmlFor={`two-player-mode-${name}`}
+                                                className="text-xs text-gold/90"
+                                              >
+                                                Enable two player mode for this world
+                                              </label>
+                                            </div>
+                                            <p className="text-[10px] text-gold/60">
+                                              Mutually exclusive with single realm mode.
+                                            </p>
+                                          </div>
                                         </div>
 
                                         {/* Blitz Registration Fee Configuration */}
@@ -1757,12 +1819,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               type="number"
                                               min={0}
                                               step={1}
-                                              placeholder="30"
+                                              placeholder="24"
                                               value={
                                                 registrationCountMaxOverrides[name] ??
                                                 String(
                                                   (eternumConfig as any)?.blitz?.registration?.registration_count_max ??
-                                                    30,
+                                                    24,
                                                 )
                                               }
                                               onChange={(e) =>
@@ -1773,7 +1835,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               }
                                               className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                             />
-                                            <p className="text-[10px] text-gold/60">Default: 30.</p>
+                                            <p className="text-[10px] text-gold/60">Default: 24.</p>
                                           </div>
                                         </div>
 
@@ -1784,13 +1846,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             </label>
                                             <input
                                               type="text"
-                                              placeholder={
-                                                (eternumConfig as any)?.blitz?.registration?.fee_recipient || "0x..."
-                                              }
-                                              value={
-                                                blitzFeeRecipientOverrides[name] ??
-                                                ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
-                                              }
+                                              placeholder={defaultBlitzFeeRecipient || "0x..."}
+                                              value={getBlitzFeeRecipientForWorld(name)}
                                               onChange={(e) =>
                                                 setBlitzFeeRecipientOverrides((p) => ({ ...p, [name]: e.target.value }))
                                               }
@@ -2189,6 +2246,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   singleRealmModeOverrides,
                                                   name,
                                                 );
+                                                const hasTwoPlayerOverride = Object.prototype.hasOwnProperty.call(
+                                                  twoPlayerModeOverrides,
+                                                  name,
+                                                );
                                                 const hasDurationHoursOverride = Object.prototype.hasOwnProperty.call(
                                                   durationHoursOverrides,
                                                   name,
@@ -2225,13 +2286,16 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     blitzFeeAmount: blitzFeeAmountOverrides[name],
                                                     blitzFeePrecision: blitzFeePrecisionOverrides[name],
                                                     blitzFeeToken: blitzFeeTokenOverrides[name],
-                                                    blitzFeeRecipient: blitzFeeRecipientOverrides[name],
+                                                    blitzFeeRecipient: getBlitzFeeRecipientForWorld(name),
                                                     registrationCountMax: registrationCountMaxOverrides[name],
                                                     registrationDelaySeconds: registrationDelaySecondsOverrides[name],
                                                     registrationPeriodSeconds: registrationPeriodSecondsOverrides[name],
                                                     factoryAddress: factoryAddressOverrides[name],
                                                     singleRealmMode: hasSingleRealmOverride
                                                       ? !!singleRealmModeOverrides[name]
+                                                      : undefined,
+                                                    twoPlayerMode: hasTwoPlayerOverride
+                                                      ? !!twoPlayerModeOverrides[name]
                                                       : undefined,
                                                     seasonBridgeCloseAfterEndSeconds:
                                                       seasonBridgeCloseAfterEndSecondsOverrides[name],

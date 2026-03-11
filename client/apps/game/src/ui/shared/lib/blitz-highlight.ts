@@ -1,4 +1,5 @@
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { buildBlitzShareMessageText } from "@/ui/shared/lib/x-share-messages";
 
 const DEFAULT_FALLBACK_ORIGIN = "https://eternum.game";
 
@@ -25,27 +26,6 @@ export interface BlitzHighlightPlayer {
 export const BLITZ_CARD_DIMENSIONS = {
   width: 960,
   height: 540,
-};
-
-const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
-
-const BLITZ_COVER_IMAGES = [
-  "/images/covers/blitz/01.png",
-  "/images/covers/blitz/02.png",
-  "/images/covers/blitz/03.png",
-  "/images/covers/blitz/04.png",
-  "/images/covers/blitz/05.png",
-  "/images/covers/blitz/06.png",
-  "/images/covers/blitz/07.png",
-  "/images/covers/blitz/08.png",
-] as const;
-
-const getBlitzCoverImage = (rank: number | null | undefined): string => {
-  if (!rank || rank < 1) {
-    return BLITZ_COVER_IMAGES[0];
-  }
-
-  return BLITZ_COVER_IMAGES[(rank - 1) % BLITZ_COVER_IMAGES.length];
 };
 
 export const formatOrdinal = (rank: number): string => {
@@ -95,14 +75,15 @@ export const buildBlitzShareMessage = ({
   rank,
   points,
   eventLabel = "Realms Blitz",
-  origin,
 }: BlitzShareMessageOptions = {}): string => {
   const placement = rank && rank > 0 ? formatOrdinal(rank) : "a top spot";
   const pointsLabel = currencyIntlFormat(points ?? 0, 0);
 
-  return `Secured ${placement} on ${eventLabel} with ${pointsLabel} pts 👑
-
-Participate in the most insane fully onchain game powered by Starknet. @realms_gg`;
+  return buildBlitzShareMessageText({
+    placement,
+    eventLabel,
+    pointsLabel,
+  });
 };
 
 export const BLITZ_DEFAULT_SHARE_ORIGIN = DEFAULT_FALLBACK_ORIGIN;
