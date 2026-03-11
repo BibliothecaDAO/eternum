@@ -179,6 +179,7 @@ import {
   evaluateTileFetchVolumeRegression,
   type TileFetchVolumeRegressionResult,
 } from "./worldmap-tile-fetch-volume-regression";
+import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
@@ -4549,22 +4550,23 @@ export default class WorldmapScene extends WarpTravel {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Kick off tile data fetch after invalidation so force mode truly bypasses stale caches.
-    const tileFetchPromise = this.computeTileEntities(chunkKey);
-
-    this.updatePinnedChunks(surroundingChunks);
-    const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
-
-    // Start loading all surrounding chunks (they will deduplicate automatically)
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
-
-    // Calculate the starting position for the new chunk - this is the main visual update
-    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-
-    // Wait for core tile data before updating managers to avoid empty renders
-    const tileFetchSucceeded = await tileFetchPromise;
-    await toriiBoundsSwitchPromise;
-    this.hydratedChunkRefreshes.delete(chunkKey);
+    const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
+      chunkKey,
+      startRow,
+      startCol,
+      surroundingChunks,
+      transitionToken,
+      renderSize: this.renderChunkSize,
+      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+      updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
+        this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+      updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
+        this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
+      onChunkHydrated: (hydratedChunkKey) => {
+        this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+      },
+    });
 
     const isCurrentTransition = transitionToken === this.chunkTransitionToken;
     const chunkSwitchActions = resolveChunkSwitchActions({
@@ -4647,19 +4649,23 @@ export default class WorldmapScene extends WarpTravel {
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.removeCachedMatricesForChunk(startRow, startCol);
 
-    // Start tile data fetch after force invalidation.
-    const tileFetchPromise = this.computeTileEntities(chunkKey);
-
-    this.updatePinnedChunks(surroundingChunks);
-    const toriiBoundsSwitchPromise = this.updateToriiBoundsSubscription(chunkKey, transitionToken);
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
-
-    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-
-    // Wait for tile data before updating managers
-    const tileFetchSucceeded = await tileFetchPromise;
-    await toriiBoundsSwitchPromise;
-    this.hydratedChunkRefreshes.delete(chunkKey);
+    const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
+      chunkKey,
+      startRow,
+      startCol,
+      surroundingChunks,
+      transitionToken,
+      renderSize: this.renderChunkSize,
+      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+      updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
+        this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+      updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
+        this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
+      onChunkHydrated: (hydratedChunkKey) => {
+        this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+      },
+    });
     if (!tileFetchSucceeded) {
       return;
     }
