@@ -1,3 +1,63 @@
+import { shouldRunManagerUpdate } from "../scenes/worldmap-chunk-transition";
+
+export const MANAGER_UNCOMMITTED_CHUNK = "null";
+
+export function isCommittedManagerChunk(chunkKey: string | null | undefined): chunkKey is string {
+  if (!chunkKey || chunkKey === MANAGER_UNCOMMITTED_CHUNK) {
+    return false;
+  }
+
+  const [startRow, startCol, extra] = chunkKey.split(",");
+  if (extra !== undefined) {
+    return false;
+  }
+
+  return Number.isFinite(Number(startRow)) && Number.isFinite(Number(startCol));
+}
+
+export function shouldAcceptManagerChunkRequest(input: {
+  chunkKey: string;
+  transitionToken?: number;
+  latestTransitionToken: number;
+  knownChunkForToken?: string;
+}): boolean {
+  if (!isCommittedManagerChunk(input.chunkKey)) {
+    return false;
+  }
+
+  if (input.transitionToken === undefined) {
+    return true;
+  }
+
+  if (input.transitionToken < input.latestTransitionToken) {
+    return false;
+  }
+
+  if (input.knownChunkForToken !== undefined && input.knownChunkForToken !== input.chunkKey) {
+    return false;
+  }
+
+  return true;
+}
+
+export function shouldRunManagerChunkUpdate(input: {
+  chunkKey: string;
+  currentChunk: string | null | undefined;
+  transitionToken?: number;
+  latestTransitionToken: number;
+}): boolean {
+  if (!isCommittedManagerChunk(input.chunkKey) || !isCommittedManagerChunk(input.currentChunk)) {
+    return false;
+  }
+
+  return shouldRunManagerUpdate({
+    transitionToken: input.transitionToken,
+    expectedTransitionToken: input.latestTransitionToken,
+    currentChunk: input.currentChunk,
+    targetChunk: input.chunkKey,
+  });
+}
+
 export function createCoalescedAsyncUpdateRunner(task: () => Promise<void>): () => Promise<void> {
   let updateInFlight: Promise<void> | null = null;
   let requestedVersion = 0;

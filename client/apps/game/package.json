@@ -5,6 +5,7 @@
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "coverage": "vitest run --coverage",
+    "coverage:three": "vitest run --coverage src/three",
     "dev": "vite",
     "generate-pwa-assets": "pwa-assets-generator",
     "format": "npx prettier --write . --root=..",
@@ -13,10 +14,13 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:ui": "vitest --ui",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@cartridge/connector": "catalog:",
+    "@cartridge/controller": "catalog:",
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",

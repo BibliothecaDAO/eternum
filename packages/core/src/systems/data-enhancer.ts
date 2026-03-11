@@ -1,6 +1,6 @@
-import { ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { StaminaManager } from "../managers";
-import { ActiveProduction, ArmyMapData, GuardArmy, MapDataStore } from "../stores/map-data-store";
+import { ActiveProduction, ArmyMapData, GuardArmy, MapDataStore, StructureMapData } from "../stores/map-data-store";
 
 export interface EnhancedArmyData {
   troopCount: number;
@@ -25,6 +25,7 @@ export interface EnhancedStructureData {
   owner: { address: bigint | undefined; ownerName: string; guildName: string };
   guardArmies: GuardArmy[];
   activeProductions: ActiveProduction[];
+  structureName?: string;
   battleData?: {
     battleCooldownEnd: number;
     latestAttackerId: number | null;
@@ -180,8 +181,22 @@ export class DataEnhancer {
       },
       guardArmies: structureMapData?.guardArmies || [],
       activeProductions: structureMapData?.activeProductions || [],
+      structureName: this.getStructureDisplayName(structureMapData),
       battleData: structureMapData?.battleData || undefined,
     };
+  }
+
+  private getStructureDisplayName(structureMapData: StructureMapData | undefined): string | undefined {
+    if (!structureMapData) {
+      return undefined;
+    }
+
+    if (structureMapData.structureType !== StructureType.Realm) {
+      return undefined;
+    }
+
+    const trimmedName = structureMapData.structureTypeName.trim();
+    return trimmedName.length > 0 ? trimmedName : undefined;
   }
 
   /**

@@ -3,6 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
+import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { useAccount } from "@starknet-react/core";
 import {
   BookOpen,
@@ -20,13 +21,14 @@ import {
   Trophy,
   RefreshCw,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeroTitle } from "../components/hero-title";
-import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
+import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
-import { ScoreCardModal } from "../components/score-card-modal";
+import { GameReviewModal } from "../components/game-review-modal";
+import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 
 interface PlayViewProps {
   className?: string;
@@ -89,10 +91,16 @@ const WRITTEN_GUIDES = [
 const LearnContent = ({
   onSelectGame,
   onSpectate,
+  onForgeHyperstructures,
+  onSeeScore,
+  onClaimRewards,
   onRegistrationComplete,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
+  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
+  onSeeScore: (selection: WorldSelection) => void;
+  onClaimRewards: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
 }) => (
   <div className="flex flex-col gap-4">
@@ -184,6 +192,9 @@ const LearnContent = ({
       <UnifiedGameGrid
         onSelectGame={onSelectGame}
         onSpectate={onSpectate}
+        onForgeHyperstructures={onForgeHyperstructures}
+        onSeeScore={onSeeScore}
+        onClaimRewards={onClaimRewards}
         onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
         hideHeader
@@ -287,20 +298,24 @@ const PlayTabContent = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onClaimRewards,
   onForgeHyperstructures,
   onRegistrationComplete,
   onRefresh,
   isRefreshing = false,
   disabled = false,
+  onEndedGamesResolved,
 }: {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
+  onClaimRewards: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
   disabled?: boolean;
+  onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
@@ -392,13 +407,16 @@ const PlayTabContent = ({
               onSelectGame={onSelectGame}
               onSpectate={onSpectate}
               onSeeScore={onSeeScore}
+              onClaimRewards={onClaimRewards}
               onRegistrationComplete={onRegistrationComplete}
               devModeFilter={false}
               statusFilter="ended"
               hideHeader
               hideLegend
               layout="vertical"
-              sortRegisteredFirst
+              sortClaimableRewardsFirst
+              sortEndedNewestFirst
+              onGamesResolved={onEndedGamesResolved}
             />
           </div>
         </div>
@@ -423,9 +441,10 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [isForgeMode, setIsForgeMode] = useState(false);
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
 
-  // Modal state for score card
-  const [scoreModalOpen, setScoreModalOpen] = useState(false);
-  const [scoreWorld, setScoreWorld] = useState<WorldSelection | null>(null);
+  // Review flow state
+  const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
+  const [reviewInitialStep, setReviewInitialStep] = useState<"claim-rewards" | undefined>(undefined);
+  const [endedGames, setEndedGames] = useState<GameData[]>([]);
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -490,13 +509,13 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
-    setScoreWorld(selection);
-    setScoreModalOpen(true);
+    setReviewInitialStep(undefined);
+    setReviewWorld(selection);
   }, []);
 
-  const handleCloseScoreModal = useCallback(() => {
-    setScoreModalOpen(false);
-    setScoreWorld(null);
+  const handleClaimRewards = useCallback((selection: WorldSelection) => {
+    setReviewInitialStep("claim-rewards");
+    setReviewWorld(selection);
   }, []);
 
   // Registration is handled inline by GameCardGrid - this callback is for any post-registration actions
@@ -516,6 +535,39 @@ export const PlayView = ({ className }: PlayViewProps) => {
     }
   }, [queryClient]);
 
+  const dismissReviewForWorld = useCallback((world: WorldSelection | null) => {
+    if (!world?.chain || !world.worldAddress) return;
+    setGameReviewDismissed(world.chain, world.worldAddress);
+  }, []);
+
+  const handleCloseReviewModal = useCallback(() => {
+    dismissReviewForWorld(reviewWorld);
+    setReviewInitialStep(undefined);
+    setReviewWorld(null);
+  }, [dismissReviewForWorld, reviewWorld]);
+
+  const handleRequireSignIn = useCallback(() => {
+    setModal(<SignInPromptModal />, true);
+  }, [setModal]);
+
+  const handleEndedGamesResolved = useCallback((games: GameData[]) => {
+    setEndedGames(games);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "play") return;
+    if (entryModalOpen || reviewWorld) return;
+    if (endedGames.length === 0) return;
+
+    const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
+    if (!candidate) return;
+    if (!candidate.worldAddress) return;
+    if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
+
+    setReviewInitialStep(undefined);
+    setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
+  }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "learn":
@@ -523,6 +575,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
           <LearnContent
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
+            onForgeHyperstructures={handleForgeHyperstructures}
+            onSeeScore={handleSeeScore}
+            onClaimRewards={handleClaimRewards}
             onRegistrationComplete={handleRegistrationComplete}
           />
         );
@@ -537,18 +592,20 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
+            onClaimRewards={handleClaimRewards}
             onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            disabled={entryModalOpen || scoreModalOpen}
+            disabled={entryModalOpen || Boolean(reviewWorld)}
+            onEndedGamesResolved={handleEndedGamesResolved}
           />
         );
     }
   };
 
   return (
-    <>
+    <MarketsProviders>
       <div className={cn("flex flex-col gap-6", className)}>
         {/* Tab content */}
         {renderContent()}
@@ -567,10 +624,18 @@ export const PlayView = ({ className }: PlayViewProps) => {
         />
       )}
 
-      {/* Score Card Modal - for ended games */}
-      {scoreWorld && (
-        <ScoreCardModal isOpen={scoreModalOpen} onClose={handleCloseScoreModal} worldName={scoreWorld.name} />
+      {reviewWorld && (
+        <GameReviewModal
+          isOpen={Boolean(reviewWorld)}
+          world={reviewWorld}
+          nextGame={null}
+          initialStep={reviewInitialStep}
+          showUpcomingGamesStep={true}
+          onClose={handleCloseReviewModal}
+          onRegistrationComplete={handleRegistrationComplete}
+          onRequireSignIn={handleRequireSignIn}
+        />
       )}
-    </>
+    </MarketsProviders>
   );
 };

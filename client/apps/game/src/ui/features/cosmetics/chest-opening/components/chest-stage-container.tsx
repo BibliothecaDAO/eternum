@@ -72,7 +72,7 @@ export function ChestStageContent({ children, className = "" }: { children: Reac
 /**
  * Header section for stage titles
  */
-export function ChestStageHeader({
+function ChestStageHeader({
   title,
   subtitle,
   className = "",

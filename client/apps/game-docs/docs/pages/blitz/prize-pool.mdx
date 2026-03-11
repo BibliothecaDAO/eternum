@@ -1,61 +1,239 @@
 ---
 title: Prize Pool & Distribution
-description: How prizes are distributed in Blitz competitive games
+description: How $LORDS prizes are calculated and distributed in Blitz
 ---
+
+import "@/styles.css";
 
 # Prize Pool & Distribution
 
-Blitz competitive games feature a prize distribution system that ensures fair rewards for top-ranked Lords while
-maintaining sustainable game economics. This system is designed to be flexible and can be adapted for use with any token
-on Starknet, allowing game hosts to deploy their own games with customized prize distribution settings.
+Blitz distributes **$LORDS** to players at the end of every game based on their final rank. The system adapts to lobby
+size, the ratio of entry fees to sponsored prizes, and how many players actually score — so payouts stay fair whether
+there are 2 or 24 players in a match.
 
-## Entry Fee Structure
+## Prize Pool Composition
 
-Every Blitz match in the Gladiator and Warrior brackets collects a $LORDS entry fee from each player. This fee is
-allocated to support both player rewards and the ecosystem:
+The total prize pool comes from two sources:
 
-- **70%** forms the **prize pool** that gets distributed among winners
-- **15%** fee is directed to the Realms ecosystem through the Lordship Protocol (veLORDS)
-- **15%** is sent to the development fund to support ongoing operations of the core team
+<div style={{ width: "100%", maxWidth: "100%" }}>
+  <table
+    style={{
+      width: "100%",
+      tableLayout: "fixed",
+      borderCollapse: "collapse",
+      backgroundColor: "#332f28",
+      border: "1px solid #564e3e",
+      borderRadius: "10px",
+      overflow: "hidden",
+      fontSize: "0.85rem",
+    }}
+  >
+    <thead style={{ backgroundColor: "#383a4a" }}>
+      <tr>
+        <th
+          style={{
+            width: "25%",
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            fontWeight: 700,
+            color: "#c9b06a",
+            borderBottom: "1px solid #6b6250",
+            whiteSpace: "nowrap",
+            fontSize: "0.85rem",
+          }}
+        >
+          Source
+        </th>
+        <th
+          style={{
+            width: "75%",
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            fontWeight: 700,
+            color: "#c9b06a",
+            borderBottom: "1px solid #6b6250",
+            fontSize: "0.85rem",
+          }}
+        >
+          Description
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            whiteSpace: "nowrap",
+            fontSize: "0.85rem",
+          }}
+        >
+          <strong>Entry fees (F)</strong>
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          Each player pays a $LORDS entry fee when registering for the game
+        </td>
+      </tr>
+      <tr>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            color: "#e8e4dc",
+            whiteSpace: "nowrap",
+            fontSize: "0.85rem",
+          }}
+        >
+          <strong>Sponsorship (S)</strong>
+        </td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>
+          Additional $LORDS added by the game host or external sponsors
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-At the conclusion of each Blitz match, players are ranked by their final score. **Top-ranking Lords** are designated as
-winners and eligible for prize distribution. If there are less than 5 players, the top ranked player is the sole winner.
+**Total Prize Pool = F + S**
 
-## Prize Distribution Mechanics
+### Fee Split
 
-The prize distribution system employs a weighting formula that ensures fair and predictable rewards. Each winner first
-receives a **refund of their $LORDS buy-in**, and the remainder of the prize pool is then distributed among winners
-according to a geometric weighting system based on finishing rank.
+Before the prize pool is formed, the collected entry fees are split:
 
-### Weighting System
+- **70%** → prize pool (distributed to winning players)
+- **15%** → [Lordship Protocol](https://realms.world) (veLORDS ecosystem support)
+- **15%** → development fund (core team operations)
 
-The weighting system uses a decay factor that adjusts based on lobby size, ensuring appropriate reward curves for
-different game scales. The decay factor `s` is calculated using the formula:
+Any sponsored amount is added **on top** of the 70% player share, so sponsorship always increases the prize pool without
+reducing the ecosystem or development allocations.
 
-`s(n) = min(0.95, 0.2 × log10(n) + 0.4)`
+> **Example:** 106 players × 250 $LORDS entry = 26,500 $LORDS collected. After the 70/15/15 split, 18,550 $LORDS goes to
+> the prize pool. Add 15,000 $LORDS in sponsorship → **33,550 $LORDS total prize pool**.
 
-Where `n` represents the number of players in the match. This formula creates steeper reward curves in smaller lobbies
-and flatter curves in larger ones, but never flatter than 0.95.
+## Who Wins?
 
-### Individual Winner Calculations
+Not every player receives a prize. The number of **winners** is calculated dynamically based on several factors:
 
-Each winner's bonus is calculated using their individual weight divided by the total weight sum. The weight for rank `i`
-is `s^(i-1)`, meaning the top finisher has a weight of 1, second place has weight `s`, third place has weight `s²`, and
-so on. The total weight sum `W` is calculated as the sum of this geometric series.
+1. **Registered player count (N)** — total players who entered
+2. **Scoring players (C)** — players who finished with points > 0
+3. **Entry-fee-to-pool ratio** — how much of the pool is sponsored vs. player-funded
+4. **A small-lobby adjustment** — prevents tiny games from paying out to nearly everyone
 
-The bonus for each winner is then calculated as: `bonus_i = (weight_i / W) × R`
+### Winner Count Formula
 
-Where `R` represents the remainder of the prize pool after refunds are distributed.
+The system computes a **base winner ratio** `rb` that sets a floor for how many players can win:
 
-## Flexibility and Customization
+```
+rb(N) = 1 − (1.03 × min(1, N/1000)^0.13)
+```
 
-This prize distribution system is designed to be adaptable for various gaming scenarios. Game hosts can deploy their own
-Blitz games with modified prize distribution settings, adjusting factors such as entry fees, winner percentages, and
-decay factors to suit their specific requirements. The system can also be configured to work with any token on Starknet,
-making it versatile for different blockchain gaming ecosystems.
+This ratio is clamped between **2%** and **60%** of the lobby. Larger lobbies push `rb` lower (fewer proportional
+winners), while small lobbies keep it higher.
 
-## NFT Prize Distribution
+A **sponsorship factor** `A` then expands the winner pool when sponsors contribute:
 
-In addition to $LORDS prize pools, eligible players receive Loot Chest NFT rewards through an automated, decentralized
-distribution system that mints rewards directly upon game completion. These chests contain cosmetic items and
-consumables—see [Loot Chests](/overview/chests/loot-chests) for details.
+```
+A = 1 − (F / P)^0.5
+```
+
+Where `F` is total entry fees (after the 70/15/15 split) and `P` is the full prize pool. More sponsorship → higher `A` →
+more winners.
+
+A **small-game weight** `gw` further adjusts for lobby size:
+
+```
+gw = 0.05 + 0.95 × (20 / (N + 20))²
+```
+
+These combine into a final winner ratio `r`:
+
+```
+r = clamp(rb + 3.3 × A × gw × (rcap − rb), 0.02, rcap)
+```
+
+Where `rcap = 0.5 + 0.5 × A`. The winner count `W` is then:
+
+```
+W = min(ceil(N × r), C)
+```
+
+The winner count can never exceed the number of players who actually scored.
+
+## Prize Calculation
+
+Once the winner count is known, prizes are distributed using a **geometric decay** model. Higher-ranked players receive
+proportionally more, with the curve controlled by a single parameter `s`.
+
+### The Decay Parameter (s)
+
+```
+s(N) = 0.3 + 0.64 × (1 − N^(−0.7))
+```
+
+- Small lobbies → lower `s` → steeper curve (1st place gets a larger share)
+- Large lobbies → higher `s` → flatter curve (prizes spread more evenly)
+
+`s` approaches but never exceeds ~0.94 even at very large player counts.
+
+### Rank Weights
+
+Each winning position `i` (starting from 1) receives a weight:
+
+```
+weight(i) = s^(i − 1)
+
+  1st → 1,  2nd → s,  3rd → s²,  4th → s³,  …  Wth → s^(W−1)
+```
+
+The total weight sum is the geometric series:
+
+```
+Σ = (s^W − 1) / (s − 1)
+```
+
+### Individual Prize
+
+Each winner's prize is their normalized weight times the prize pool:
+
+```
+prize(i) = (weight(i) / Σ) × P
+```
+
+Players ranked beyond position `W` receive **0 $LORDS**. If multiple players share the same rank (tied scores), their
+combined prize for that rank range is split equally among them.
+
+## NFT Rewards
+
+In addition to $LORDS, players may receive NFT rewards:
+
+### Loot Chests
+
+- **Game Reward Chests** — any player who finishes with **≥ 500 Victory Points** automatically receives a Loot Chest NFT
+  upon claiming their prize, regardless of whether they are in the winner pool.
+- **Series Chests** — additional Loot Chests are allocated across a game series and distributed proportionally based on
+  each player's registered points relative to the total. The number of series chests grows as more games are played in
+  the series.
+
+See [Loot Chests](/overview/chests/loot-chests) for details on chest contents.
+
+## Claiming Prizes
+
+Prize distribution is **permissionless** — anyone can submit the ranked player list to trigger payouts. The process:
+
+1. The game ends and points registration closes
+2. A caller submits the ordered player list (highest score first) along with a trial ID
+3. The contract verifies ordering, calculates prizes, and finalizes rankings
+4. Players (or anyone on their behalf) call the claim function to transfer $LORDS and mint any earned NFTs
+
+If only **one player** registered for a game, they receive a full refund of their entry fee with no fee split applied.

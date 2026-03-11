@@ -33,6 +33,21 @@ export const OPTIMISTIC_BUILDING_ENABLED = true;
 // Module-level Set to track pending builds across TileManager instances
 // This prevents race conditions between optimistic updates and Torii sync
 const pendingBuilds = new Set<string>();
+const OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS = 180_000;
+const OCCUPIED_SPACE_REASON = "space is occupied";
+
+const extractErrorMessage = (error: unknown): string => {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+};
+
+const isOccupiedSpaceError = (error: unknown): boolean =>
+  extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
 export class TileManager {
   private col: number;
@@ -236,6 +251,66 @@ export class TileManager {
     return resourceManager.optimisticResourceUpdate(resourceType, actualResourceChange);
   };
 
+  private _extractTransactionHash = (result: unknown): string | undefined => {
+    const tx = result as { transaction_hash?: unknown; transactionHash?: unknown } | undefined;
+    const transactionHash = tx?.transaction_hash ?? tx?.transactionHash;
+    return typeof transactionHash === "string" ? transactionHash : undefined;
+  };
+
+  private _scheduleOptimisticCleanupOnTransaction = (
+    signer: DojoAccount,
+    transactionHash: string | undefined,
+    cleanup: () => void,
+  ) => {
+    let isCleanedUp = false;
+    const finalize = () => {
+      if (isCleanedUp) return;
+      isCleanedUp = true;
+      cleanup();
+    };
+
+    const fallbackTimeout = setTimeout(() => {
+      console.warn("Forcing optimistic cleanup after transaction wait timeout.", { transactionHash });
+      finalize();
+    }, OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS);
+
+    const finalizeAndClearTimeout = () => {
+      clearTimeout(fallbackTimeout);
+      finalize();
+    };
+
+    if (!transactionHash) {
+      finalizeAndClearTimeout();
+      return;
+    }
+
+    if (!("waitForTransaction" in signer) || typeof signer.waitForTransaction !== "function") {
+      finalizeAndClearTimeout();
+      return;
+    }
+
+    void signer
+      .waitForTransaction(transactionHash)
+      .then((receipt) => {
+        const receiptAny = receipt as { isReverted?: () => boolean; revert_reason?: string; revertReason?: string };
+        if (typeof receiptAny.isReverted === "function" && receiptAny.isReverted()) {
+          const revertReason =
+            typeof receiptAny.revert_reason === "string"
+              ? receiptAny.revert_reason
+              : typeof receiptAny.revertReason === "string"
+                ? receiptAny.revertReason
+                : "Unknown revert reason";
+          console.warn(`Transaction ${transactionHash} reverted: ${revertReason}`);
+        }
+      })
+      .catch((error) => {
+        console.error(`Error while waiting for transaction ${transactionHash}`, error);
+      })
+      .finally(() => {
+        finalizeAndClearTimeout();
+      });
+  };
+
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
     const realmBase = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base;
@@ -371,6 +446,11 @@ export class TileManager {
   ) => {
     const { col, row } = hexCoords;
 
+    // Re-check occupancy at call time to avoid sending a known-invalid tx.
+    if (this.isHexOccupied({ col, row })) {
+      throw new Error(OCCUPIED_SPACE_REASON);
+    }
+
     // Track this build as pending to prevent race conditions
     const buildKey = `${this.col},${this.row},${col},${row}`;
     pendingBuilds.add(buildKey);
@@ -394,12 +474,11 @@ export class TileManager {
         use_simple: useSimpleCost,
       });
 
-      // On success, delay override removal to allow Torii sync
-      // The pendingBuilds Set ensures isHexOccupied returns true during this window
-      setTimeout(() => {
+      const transactionHash = this._extractTransactionHash(result);
+      this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, () => {
         removeBuildingOverride();
         pendingBuilds.delete(buildKey);
-      }, 500);
+      });
 
       return result;
     } catch (error) {
@@ -407,6 +486,9 @@ export class TileManager {
       removeBuildingOverride();
       pendingBuilds.delete(buildKey);
       console.error(error);
+      if (isOccupiedSpaceError(error)) {
+        throw new Error(OCCUPIED_SPACE_REASON);
+      }
       throw error;
     }
   };
@@ -419,7 +501,7 @@ export class TileManager {
     }
 
     try {
-      await this.systemCalls.destroy_building({
+      const result = await this.systemCalls.destroy_building({
         signer,
         entity_id: structureEntityId,
         building_coord: {
@@ -428,9 +510,11 @@ export class TileManager {
           y: row,
         },
       });
+
+      const transactionHash = this._extractTransactionHash(result);
+      this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, removeBuildingOverride);
     } catch (error) {
       console.log("error", error);
-    } finally {
       removeBuildingOverride();
     }
   };

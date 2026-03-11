@@ -1,4 +1,3 @@
-use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 
@@ -15,12 +14,8 @@ pub struct RNG {
 pub impl RNGImpl of RNGTrait {
     // We get random numbers this way to make sure that during multicalls,
     // the same calls to the rng function returns different values.
-    fn ensure_unique_tx_seed(ref world: WorldStorage, tx_hash: felt252, seed: u256) -> RNG {
-        let mut rng: RNG = world.read_model(tx_hash);
-        if rng.seed.is_zero() {
-            rng.seed = seed;
-        }
-        rng.seed += 1431; // random number
+    fn ensure_unique_tx_seed(ref world: WorldStorage, ref rng: RNG) -> RNG {
+        rng.seed += 1432; // random number
         world.write_model(@rng);
         rng
     }

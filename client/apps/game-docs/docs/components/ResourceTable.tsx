@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-import { formatAmount, section, table } from "./styles";
+import { colors, formatAmount, section, table } from "./styles";
 
 export default function ResourceTable() {
   const config = ETERNUM_CONFIG();
@@ -69,8 +69,10 @@ export default function ResourceTable() {
               {[ResourcesIds.Wheat, ResourcesIds.Fish].map((id) => (
                 <tr key={id}>
                   <td style={table.resourceCell}>
-                    <ResourceIcon id={id} name={getResourceName(id)} size="md" />
-                    {getResourceName(id)}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                      {getResourceName(id)}
+                    </span>
                   </td>
                   <td style={table.weightCell}>{formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}</td>
                   <td style={table.cell}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
@@ -96,8 +98,10 @@ export default function ResourceTable() {
               {config.startingResources.map(({ resource, amount }) => (
                 <tr key={resource}>
                   <td style={table.resourceCell}>
-                    <ResourceIcon id={resource} name={getResourceName(resource)} size="md" />
-                    {getResourceName(resource)}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <ResourceIcon id={resource} name={getResourceName(resource)} size="md" />
+                      {getResourceName(resource)}
+                    </span>
                   </td>
                   <td style={table.cell}>{formatAmount(amount)}</td>
                   <td style={table.cell}>
@@ -131,8 +135,10 @@ export default function ResourceTable() {
                 return (
                   <tr key={id}>
                     <td style={table.resourceCell}>
-                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
-                      {getResourceName(id)}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                        <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                        {getResourceName(id)}
+                      </span>
                     </td>
                     <td style={table.weightCell}>
                       {formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}
@@ -143,7 +149,7 @@ export default function ResourceTable() {
                         {inputs.map((input) => (
                           <div key={input.resource} style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>{getResourceName(input.resource)}:</span>
-                            <span style={{ color: "#dfc296" }}>{formatAmount(input.amount)}</span>
+                            <span style={{ color: colors.primary }}>{formatAmount(input.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -182,8 +188,10 @@ export default function ResourceTable() {
                 return (
                   <tr key={id}>
                     <td style={table.resourceCell}>
-                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
-                      {getResourceName(id)}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                        <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                        {getResourceName(id)}
+                      </span>
                     </td>
                     <td style={table.cell}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
                     <td style={table.cell}>{laborInput ? formatAmount(laborInput.amount) : "-"}</td>
@@ -191,7 +199,7 @@ export default function ResourceTable() {
                       {foodInput ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <span>{getResourceName(foodInput.resource)}</span>
-                          <span style={{ color: "#dfc296" }}>{formatAmount(foodInput.amount)}</span>
+                          <span style={{ color: colors.primary }}>{formatAmount(foodInput.amount)}</span>
                         </div>
                       ) : (
                         "-"

@@ -1,4 +1,5 @@
-import { BlitzWorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
+import "@/styles.css";
 
 # ⚔️ Armies
 
@@ -22,16 +23,228 @@ Where Tier Strength values are:
 - **T2**: 3
 - **T3**: 9
 
-### Deployment Caps
+### Deployment Caps & Army Slots
 
-Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed:
+Each Realm level has a maximum deployment cap that limits the total army strength that can be deployed, as well as a set
+number of field and guard army slots.
 
-| Realm Level | Deployment Cap |
-| ----------- | -------------- |
-| Settlement  | 3,000          |
-| City        | 15,000         |
-| Kingdom     | 45,000         |
-| Empire      | 90,000         |
+<div style={{ width: "100%", maxWidth: "100%" }}>
+  <table
+    style={{
+      width: "100%",
+      tableLayout: "fixed",
+      borderCollapse: "collapse",
+      backgroundColor: "#332f28",
+      border: "1px solid #564e3e",
+      borderRadius: "10px",
+      overflow: "hidden",
+      fontSize: "0.85rem",
+    }}
+  >
+    <thead style={{ backgroundColor: "#383a4a" }}>
+      <tr>
+        <th
+          style={{
+            width: "25%",
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            fontWeight: 700,
+            color: "#c9b06a",
+            borderBottom: "1px solid #6b6250",
+            fontSize: "0.85rem",
+          }}
+        >
+          Realm Level
+        </th>
+        <th
+          style={{
+            width: "25%",
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            fontWeight: 700,
+            color: "#c9b06a",
+            borderBottom: "1px solid #6b6250",
+            fontSize: "0.85rem",
+          }}
+        >
+          Deployment Cap
+        </th>
+        <th
+          style={{
+            width: "25%",
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            fontWeight: 700,
+            color: "#c9b06a",
+            borderBottom: "1px solid #6b6250",
+            fontSize: "0.85rem",
+          }}
+        >
+          Field Army Slots
+        </th>
+        <th
+          style={{
+            width: "25%",
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            fontWeight: 700,
+            color: "#c9b06a",
+            borderBottom: "1px solid #6b6250",
+            fontSize: "0.85rem",
+          }}
+        >
+          Guard Army Slots
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          Settlement
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          3,000
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          1
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          1
+        </td>
+      </tr>
+      <tr>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          City
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          15,000
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          3
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          2
+        </td>
+      </tr>
+      <tr>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "left",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          Kingdom
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          45,000
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          5
+        </td>
+        <td
+          style={{
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            color: "#e8e4dc",
+            borderBottom: "1px solid #564e3e",
+            fontSize: "0.85rem",
+          }}
+        >
+          3
+        </td>
+      </tr>
+      <tr>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>Empire</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>90,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>8</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>4</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 ### Maximum Army Size
 
@@ -50,19 +263,6 @@ Where Tier Modifiers are:
 - A Kingdom (45,000 cap) deploying T2 troops: (45,000 / 3) × 1.0 = **15,000 T2 troops** per army
 - A City (15,000 cap) deploying T3 troops: (15,000 / 9) × 1.5 = **2,500 T3 troops** per army
 - An Empire (90,000 cap) deploying T1 troops: (90,000 / 1) × 0.5 = **45,000 T1 troops** per army
-
-### Army Slots
-
-The number of field and guard army slots depends on the Realm level:
-
-| Realm Level | Field Army Slots | Guard Army Slots |
-| ----------- | ---------------- | ---------------- |
-| Settlement  | 1                | 1                |
-| City        | 3                | 2                |
-| Kingdom     | 5                | 3                |
-| Empire      | 8                | 4                |
-
-Lords can deploy armies from the Military tab in the Local view.
 
 ## Field Armies
 

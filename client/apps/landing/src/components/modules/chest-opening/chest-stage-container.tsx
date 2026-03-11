@@ -68,37 +68,3 @@ export function ChestStageContainer({
 export function ChestStageContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`flex flex-col items-center justify-center h-full p-6 ${className}`}>{children}</div>;
 }
-
-/**
- * Header section for stage titles
- */
-export function ChestStageHeader({
-  title,
-  subtitle,
-  className = "",
-}: {
-  title: string;
-  subtitle?: string;
-  className?: string;
-}) {
-  return (
-    <div className={`text-center mb-6 ${className}`}>
-      <h2 className="text-2xl sm:text-3xl font-bold text-gold mb-2">{title}</h2>
-      {subtitle && <p className="text-sm text-white/60">{subtitle}</p>}
-    </div>
-  );
-}
-
-/**
- * Footer section for action buttons
- */
-function ChestStageFooter({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={`flex items-center justify-center gap-4 p-4 border-t border-gold/10 ${className}`}
-      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-    >
-      {children}
-    </div>
-  );
-}

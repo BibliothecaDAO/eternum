@@ -8,6 +8,7 @@
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape, createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { ShapeGeometry } from "three";
+import { registerDebugHook, type DebugHookInstallOptions } from "./debug-hooks";
 
 interface GeometryConfig {
   size: number;
@@ -230,6 +231,9 @@ ${
   }
 }
 
-// Global debug functions for development
-(window as any).logHexGeometrySharing = () => HexGeometryPool.getInstance().logSharingStats();
-(window as any).getHexGeometryTypes = () => HexGeometryPool.getInstance().getAvailableTypes();
+export function installHexGeometryPoolDebugHooks(options: DebugHookInstallOptions = {}): void {
+  registerDebugHook("logHexGeometrySharing", () => HexGeometryPool.getInstance().logSharingStats(), options);
+  registerDebugHook("getHexGeometryTypes", () => HexGeometryPool.getInstance().getAvailableTypes(), options);
+}
+
+installHexGeometryPoolDebugHooks();

@@ -201,7 +201,9 @@ pub trait IResourceBridgeConfig<T> {
 
 #[starknet::interface]
 pub trait ISettlementConfig<T> {
-    fn set_settlement_config(ref self: T, settlement_config: SettlementConfig, single_realm_mode: bool);
+    fn set_settlement_config(
+        ref self: T, settlement_config: SettlementConfig, single_realm_mode: bool, two_player_mode: bool,
+    );
     fn set_blitz_registration_config(
         ref self: T,
         fee_token: starknet::ContractAddress,
@@ -861,7 +863,10 @@ pub mod config_systems {
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
         fn set_settlement_config(
-            ref self: ContractState, settlement_config: SettlementConfig, single_realm_mode: bool,
+            ref self: ContractState,
+            settlement_config: SettlementConfig,
+            single_realm_mode: bool,
+            two_player_mode: bool,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -871,7 +876,9 @@ pub mod config_systems {
             WorldConfigUtilImpl::set_member(
                 ref world,
                 selector!("blitz_settlement_config"),
-                BlitzSettlementConfigImpl::new(settlement_config.base_distance.into(), single_realm_mode),
+                BlitzSettlementConfigImpl::new(
+                    settlement_config.base_distance.into(), single_realm_mode, two_player_mode,
+                ),
             );
 
             WorldConfigUtilImpl::set_member(

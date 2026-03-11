@@ -2,7 +2,7 @@ export const STRUCTURE_QUERIES = {
   STRUCTURES_BY_OWNER: `
     SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
     FROM [s1_eternum-Structure] 
-    WHERE owner == '{owner}';
+    WHERE owner = '{owner}';
   `,
 
   OTHER_STRUCTURES: `

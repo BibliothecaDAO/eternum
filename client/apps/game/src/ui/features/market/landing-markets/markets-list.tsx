@@ -1,6 +1,6 @@
 import { getContractByName } from "@dojoengine/core";
 import { type MarketFiltersParams, useMarkets } from "@pm/sdk";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { MarketClass } from "@/pm/class";
@@ -132,12 +132,22 @@ const MarketCard = memo(function MarketCard({
 export function MarketsList({
   marketFilters,
   onCardClick,
+  emptyState,
 }: {
   marketFilters: MarketFiltersParams;
   onCardClick?: (market: MarketClass) => void;
+  emptyState?: {
+    title: string;
+    description?: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  };
 }) {
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  const filterKey = `${marketFilters.status}|${marketFilters.type}|${marketFilters.oracle}`;
+
+  // Keep pagination state per filter so changing filters naturally resets to page 1.
+  const [pagesByFilter, setPagesByFilter] = useState<Record<string, number>>({});
+  const currentPage = pagesByFilter[filterKey] ?? 1;
   const offset = (currentPage - 1) * PAGE_SIZE;
 
   const { markets, isFetching, isLoading, totalCount, refresh } = useMarkets({
@@ -149,11 +159,6 @@ export function MarketsList({
   const {
     config: { manifest },
   } = useDojoSdk();
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [marketFilters.status, marketFilters.type, marketFilters.oracle]);
 
   // Single subscription for all vault position balances - hoisted from MarketQuickStats
   const vaultPositionsAddress = useMemo(() => getContractByName(manifest, "pm", "VaultPositions")?.address, [manifest]);
@@ -181,6 +186,24 @@ export function MarketsList({
   const endIndex = Math.min(offset + sortedMarkets.length, totalCount);
 
   if (sortedMarkets.length === 0 && !isFetching) {
+    if (emptyState) {
+      return (
+        <div className="rounded-2xl border border-gold/20 bg-black/40 p-6 text-center">
+          <p className="font-cinzel text-lg text-gold">{emptyState.title}</p>
+          {emptyState.description ? <p className="mt-2 text-sm text-gold/70">{emptyState.description}</p> : null}
+          {emptyState.actionLabel && emptyState.onAction ? (
+            <button
+              type="button"
+              onClick={emptyState.onAction}
+              className="mt-4 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-semibold text-gold transition-colors hover:border-gold/60 hover:bg-gold/20"
+            >
+              {emptyState.actionLabel}
+            </button>
+          ) : null}
+        </div>
+      );
+    }
+
     return <p className="text-sm text-gold/70">No markets are available yet.</p>;
   }
 
@@ -219,7 +242,12 @@ export function MarketsList({
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 py-4">
           <button
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            onClick={() =>
+              setPagesByFilter((prev) => ({
+                ...prev,
+                [filterKey]: Math.max(1, (prev[filterKey] ?? 1) - 1),
+              }))
+            }
             disabled={currentPage === 1 || isFetching}
             aria-label="Previous page"
             className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
@@ -230,7 +258,12 @@ export function MarketsList({
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            onClick={() =>
+              setPagesByFilter((prev) => ({
+                ...prev,
+                [filterKey]: Math.min(totalPages, (prev[filterKey] ?? 1) + 1),
+              }))
+            }
             disabled={currentPage === totalPages || isFetching}
             aria-label="Next page"
             className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"

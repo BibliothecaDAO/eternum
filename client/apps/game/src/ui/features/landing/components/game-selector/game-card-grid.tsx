@@ -1,34 +1,91 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import {
-  useWorldsAvailability,
   getAvailabilityStatus,
   getWorldKey,
+  useWorldsAvailability,
   type WorldConfigMeta,
 } from "@/hooks/use-world-availability";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
+import type { MarketClass, MarketOutcome } from "@/pm/class";
+import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
+import { useConfig } from "@/pm/providers";
 import type { WorldSelectionInput } from "@/runtime/world";
+import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
+import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Eye, Play, UserPlus, Users, RefreshCw, Loader2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
+import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
+import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
+import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
+import {
+  getChainLabel,
+  resolveConnectedTxChainFromRuntime,
+  switchWalletToChain,
+  type WalletChainControllerLike,
+} from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
-import { useQueryClient } from "@tanstack/react-query";
+import { useAccount } from "@starknet-react/core";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
 /**
- * Format fee amount from wei to human-readable LORDS
+ * Format token amount from wei to human-readable LORDS
  */
-const formatFeeAmount = (amount: bigint): string => {
+const formatLordsAmount = (amount: bigint): string => {
+  if (amount === 0n) return "0";
+
   const divisor = 10n ** 18n;
   const whole = amount / divisor;
   const remainder = amount % divisor;
-  if (remainder === 0n) return whole.toString();
-  const decimal = (remainder * 100n) / divisor;
-  if (decimal === 0n) return whole.toString();
-  return `${whole}.${decimal.toString().padStart(2, "0")}`;
+  const wholeFormatted = whole.toLocaleString("en-US");
+  if (remainder === 0n) return wholeFormatted;
+
+  // Show the exact onchain value in LORDS units (18 decimals), trimming only trailing zeros.
+  const fraction = remainder.toString().padStart(18, "0").replace(/0+$/, "");
+  return `${wholeFormatted}.${fraction}`;
+};
+
+const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "0";
+
+  const normalized = trimmed.replace(/,/g, "");
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+    return trimmed;
+  }
+
+  const sign = normalized.startsWith("-") ? "-" : "";
+  const unsigned = sign ? normalized.slice(1) : normalized;
+
+  const [wholePart, decimalPart = ""] = unsigned.split(".");
+  const wholeFormatted = `${sign}${wholePart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  if (decimalPart.length === 0) return wholeFormatted;
+
+  const limitedDecimals = decimalPart.slice(0, 2).replace(/0+$/, "");
+  return limitedDecimals.length > 0 ? `${wholeFormatted}.${limitedDecimals}` : wholeFormatted;
+};
+
+const getErrorMessage = (error: unknown): string | null => {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return null;
 };
 
 /**
@@ -72,28 +129,75 @@ const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
  * Chain badge - shows which network the game is on
  */
 const ChainBadge = ({ chain }: { chain: Chain }) => {
-  const isMainnet = chain === "mainnet";
+  const chainStyles: Record<Chain, string> = {
+    mainnet: "text-brilliance/70 bg-brilliance/10 border border-brilliance/20",
+    sepolia: "text-orange/70 bg-orange/10 border border-orange/20",
+    slot: "text-gold/70 bg-gold/10 border border-gold/20",
+    slottest: "text-gold/70 bg-gold/10 border border-gold/20",
+    local: "text-white/70 bg-white/10 border border-white/20",
+  };
+
   return (
-    <span
-      className={cn(
-        "text-[8px] font-medium px-1 py-0.5 rounded",
-        isMainnet
-          ? "text-brilliance/70 bg-brilliance/10 border border-brilliance/20"
-          : "text-gold/70 bg-gold/10 border border-gold/20",
-      )}
-    >
-      {isMainnet ? "Mainnet" : "Slot"}
-    </span>
+    <span className={cn("text-[8px] font-medium px-1 py-0.5 rounded", chainStyles[chain])}>{getChainLabel(chain)}</span>
   );
 };
 
 export type WorldSelection = WorldSelectionInput;
 
 type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
+type MarketDataChain = "slot" | "mainnet";
 
-interface GameData {
+interface GameMarketSnapshot {
+  market: MarketClass;
+  chain: MarketDataChain;
+  topOutcomes: MarketOutcome[];
+  hiddenOutcomeCount: number;
+  isLive: boolean;
+}
+
+interface GameMarketState {
+  data: GameMarketSnapshot | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const formatOddsPercentage = (raw: string | number) => {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return "--";
+  if (value < 1) return `${value.toFixed(2)}%`;
+  return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
+};
+
+const getTopOutcomes = (market: MarketClass): { topOutcomes: MarketOutcome[]; hiddenOutcomeCount: number } => {
+  const sorted = (market.getMarketOutcomes() ?? [])
+    .map((outcome) => ({
+      ...outcome,
+      oddsNumeric: Number(outcome.odds),
+    }))
+    .toSorted((a, b) => {
+      if (!Number.isFinite(a.oddsNumeric) && !Number.isFinite(b.oddsNumeric)) return a.index - b.index;
+      if (!Number.isFinite(a.oddsNumeric)) return 1;
+      if (!Number.isFinite(b.oddsNumeric)) return -1;
+      if (a.oddsNumeric === b.oddsNumeric) return a.index - b.index;
+      return b.oddsNumeric - a.oddsNumeric;
+    });
+  const topOutcomes = sorted.slice(0, 2).map(
+    (outcome): MarketOutcome => ({
+      index: outcome.index,
+      name: outcome.name,
+      odds: outcome.odds,
+      gain: outcome.gain,
+    }),
+  );
+  return { topOutcomes, hiddenOutcomeCount: Math.max(0, sorted.length - topOutcomes.length) };
+};
+
+const toMarketChain = (chain: Chain): MarketDataChain => (chain === "mainnet" ? "mainnet" : "slot");
+
+export interface GameData {
   name: string;
   chain: Chain;
+  worldAddress: string | null;
   worldKey: string;
   status: "checking" | "ok" | "fail";
   gameStatus: GameStatus;
@@ -104,15 +208,38 @@ interface GameData {
   config: WorldConfigMeta | null;
 }
 
+const buildGameResolutionSignature = (game: GameData): string => {
+  const registrationValue = game.isRegistered === null ? "null" : game.isRegistered ? "1" : "0";
+  const config = game.config;
+
+  return [
+    game.worldKey,
+    game.worldAddress ?? "",
+    game.status,
+    game.gameStatus,
+    game.startMainAt ?? "",
+    game.endAt ?? "",
+    game.registrationCount ?? "",
+    registrationValue,
+    config?.devModeOn ? "1" : "0",
+    config?.mmrEnabled ? "1" : "0",
+    config?.numHyperstructuresLeft ?? "",
+    config?.winnerJackpotAmount?.toString() ?? "",
+  ].join(":");
+};
+
 interface GameCardProps {
   game: GameData;
   onPlay: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
+  onClaimRewards?: () => void;
+  claimSummary?: GameReviewClaimSummary | null;
   onForgeHyperstructures?: () => Promise<void> | void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
+  marketState?: GameMarketState;
 }
 
 /**
@@ -123,11 +250,24 @@ const GameCard = ({
   onPlay,
   onSpectate,
   onSeeScore,
+  onClaimRewards,
+  claimSummary,
   onForgeHyperstructures,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
+  marketState,
 }: GameCardProps) => {
+  const toggleModal = useUIStore((state) => state.toggleModal);
+  const { chainId, connector, address } = useAccount();
+  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
+  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
+  const hasConnectedWallet = Boolean(address);
+  const canInteractOnChain = useCallback(
+    (targetChain: Chain) => !hasConnectedWallet || (connectedTxChain !== null && connectedTxChain === targetChain),
+    [connectedTxChain, hasConnectedWallet],
+  );
+
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
@@ -140,11 +280,50 @@ const GameCard = ({
   // Forge hyperstructures button shown during registration period
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
   // Show forge button when we have config (even if 0 left, show disabled)
-  const showForgeButton = canRegisterPeriod && game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const showForgeButton = game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const lordsFeeAmount = game.config?.feeAmount ?? 0n;
+  const hasLordsFee = lordsFeeAmount > 0n;
+  const winnerJackpotAmount = game.config?.winnerJackpotAmount ?? 0n;
+  const isMainnetGame = game.chain === "mainnet";
+  const marketSnapshot = marketState?.data ?? null;
+  const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
+  const marketChain = marketSnapshot?.chain;
+  const marketCanTrade = marketChain ? canInteractOnChain(marketChain) : true;
+  const { claimableDisplay: marketClaimableDisplay, hasAnythingToClaim: hasMarketWinningsToClaim } = useMarketRedeem(
+    marketSnapshot?.market,
+    marketSnapshot?.chain,
+  );
+  const hasPositiveMarketClaimable = useMemo(() => {
+    const value = Number((marketClaimableDisplay ?? "0").replace(/,/g, ""));
+    return Number.isFinite(value) && value > 0;
+  }, [marketClaimableDisplay]);
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
+  const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
+  const [switchPromptContext, setSwitchPromptContext] = useState<"game" | "market">("game");
+  const targetChainLabel = getChainLabel(switchTargetChain ?? game.chain);
+
+  const runWithNetworkGuard = useCallback(
+    (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
+      if (!canInteractOnChain(targetChain)) {
+        setSwitchPromptContext(context);
+        setSwitchTargetChain(targetChain);
+        return;
+      }
+      action();
+    },
+    [canInteractOnChain, game.chain],
+  );
 
   // Inline registration hook
-  const { register, registrationStage, isRegistering, error, feeAmount, canRegister } = useWorldRegistration({
+  const {
+    register,
+    registrationStage,
+    isRegistering,
+    error,
+    canRegister,
+    isCheckingFeeBalance,
+    hasSufficientFeeBalance,
+  } = useWorldRegistration({
     worldName: game.name,
     chain: game.chain,
     config: game.config,
@@ -153,27 +332,61 @@ const GameCard = ({
   });
 
   // Handle registration with toast notification
-  const handleRegister = useCallback(async () => {
-    try {
-      await register();
-    } catch (err) {
-      console.error("Registration failed:", err);
-    }
-  }, [register]);
+  const handleRegister = useCallback(() => {
+    runWithNetworkGuard(() => {
+      void register().catch((err) => {
+        console.error("Registration failed:", err);
+      });
+    });
+  }, [register, runWithNetworkGuard]);
 
   const handleForgeClick = useCallback(() => {
     if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
 
-    setIsForgeButtonPending(true);
+    runWithNetworkGuard(() => {
+      setIsForgeButtonPending(true);
 
-    void Promise.resolve(onForgeHyperstructures())
-      .catch((err) => {
-        console.error("Forge action failed:", err);
-      })
-      .finally(() => {
-        setIsForgeButtonPending(false);
-      });
-  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending]);
+      void Promise.resolve(onForgeHyperstructures())
+        .catch((err) => {
+          console.error("Forge action failed:", err);
+        })
+        .finally(() => {
+          setIsForgeButtonPending(false);
+        });
+    });
+  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
+
+  const handleSwitchNetwork = useCallback(async () => {
+    if (!switchTargetChain) return;
+    const switched = await switchWalletToChain({
+      controller,
+      targetChain: switchTargetChain,
+    });
+    if (switched) {
+      setSwitchTargetChain(null);
+    }
+  }, [controller, switchTargetChain]);
+
+  const handleOpenMarket = useCallback(
+    (initialOutcomeIndex?: number) => {
+      if (!marketSnapshot) return;
+      runWithNetworkGuard(
+        () => {
+          toggleModal(
+            <MarketDetailsModal
+              market={marketSnapshot.market}
+              chain={marketSnapshot.chain}
+              initialOutcomeIndex={initialOutcomeIndex}
+              onClose={() => toggleModal(null)}
+            />,
+          );
+        },
+        marketSnapshot.chain,
+        "market",
+      );
+    },
+    [marketSnapshot, runWithNetworkGuard, toggleModal],
+  );
 
   // Show success toast when registration completes
   useEffect(() => {
@@ -201,6 +414,7 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
+  const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
 
   return (
     <div
@@ -261,12 +475,96 @@ const GameCard = ({
           />
         </div>
 
+        {marketSnapshot ? (
+          <div className="rounded-lg border border-emerald-400/35 bg-gradient-to-br from-emerald-500/10 via-black/40 to-black/20 p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]",
+                    marketSnapshot.isLive
+                      ? "border-emerald-300/70 bg-emerald-500/20 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.45)]"
+                      : "border-amber-300/40 bg-amber-500/10 text-amber-200/90",
+                  )}
+                >
+                  {marketSnapshot.isLive ? "Market Live" : "Market Closed"}
+                </span>
+                <span className="text-[9px] uppercase tracking-[0.12em] text-white/45">{marketSnapshot.chain}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleOpenMarket()}
+                className="rounded-md border border-emerald-300/40 bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-100 transition-colors hover:border-emerald-200/70 hover:bg-emerald-500/25"
+              >
+                Open
+              </button>
+            </div>
+
+            <div className="mt-2 space-y-1.5">
+              {hasMarketWinningsToClaim && hasPositiveMarketClaimable ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenMarket()}
+                  className="flex w-full items-center justify-between gap-2 rounded border border-gold/40 bg-gold/10 px-2 py-1.5 text-left transition-colors hover:border-gold/70 hover:bg-gold/20"
+                >
+                  <span className="inline-flex items-center gap-1 leading-none text-[10px] font-semibold uppercase tracking-[0.12em] text-gold/75">
+                    <span>Won {formatLordsDisplayMaxTwoDecimals(marketClaimableDisplay)}</span>
+                    <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="shrink-0 align-middle" />
+                  </span>
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-gold">Open To Claim</span>
+                </button>
+              ) : null}
+
+              {marketSnapshot.topOutcomes.map((outcome) => (
+                <div key={`${game.worldKey}-${outcome.index}`} className="flex items-center justify-between gap-2">
+                  <p className="min-w-0 truncate text-[11px] text-white/85">
+                    <MaybeController address={outcome.name} showAddress={false} />
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenMarket(outcome.index)}
+                    className={cn(
+                      "inline-flex h-5 w-[50px] items-center justify-center rounded border px-1 py-0 text-[9px] font-semibold tabular-nums leading-none transition-colors",
+                      marketCanTrade
+                        ? "border-emerald-300/30 bg-emerald-500/12 text-emerald-100/90 hover:border-emerald-200/55 hover:bg-emerald-500/22"
+                        : "border-blue-300/25 bg-blue-500/10 text-blue-100/85 hover:border-blue-200/45 hover:bg-blue-500/18",
+                    )}
+                  >
+                    {formatOddsPercentage(outcome.odds)}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {marketSnapshot.hiddenOutcomeCount > 0 ? (
+              <p className="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/45">
+                +{marketSnapshot.hiddenOutcomeCount} more outcomes
+              </p>
+            ) : null}
+          </div>
+        ) : hasPrizeAddress ? (
+          <div className="rounded-lg border border-white/15 bg-white/[0.04] px-2 py-1.5 text-[10px] text-white/55">
+            {marketState?.isLoading
+              ? "Loading prediction market..."
+              : marketState?.error
+                ? "Prediction market unavailable right now."
+                : "Prediction market not listed yet."}
+          </div>
+        ) : null}
+
+        {canClaimRewards && claimSummary && (
+          <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
+            Claimable: {formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted)} LORDS +{" "}
+            {claimSummary.chestsClaimedEstimate.toLocaleString()} chests
+          </div>
+        )}
+
         {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
         <div className="flex gap-1.5">
           {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
-              onClick={onPlay}
+              onClick={() => runWithNetworkGuard(onPlay)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
@@ -305,6 +603,15 @@ const GameCard = ({
                   <UserPlus className="w-3 h-3" />
                   Register
                 </button>
+              ) : isCheckingFeeBalance ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Checking fee
+                </div>
+              ) : !hasSufficientFeeBalance && isMainnetGame ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30">
+                  Insufficient balance
+                </div>
               ) : null}
             </>
           ) : !playerAddress && !showRegistered && canRegisterPeriod ? (
@@ -314,14 +621,27 @@ const GameCard = ({
           {/* See Score button for ended games where player participated */}
           {isEnded && showRegistered && onSeeScore && (
             <button
-              onClick={onSeeScore}
+              onClick={() => runWithNetworkGuard(onSeeScore)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 transition-colors",
               )}
             >
               <Trophy className="w-3 h-3" />
-              See Score
+              Review
+            </button>
+          )}
+
+          {canClaimRewards && onClaimRewards && (
+            <button
+              onClick={() => runWithNetworkGuard(onClaimRewards)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
+              )}
+            >
+              <Trophy className="w-3 h-3" />
+              Claim Rewards
             </button>
           )}
 
@@ -354,7 +674,7 @@ const GameCard = ({
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
-              onClick={onSpectate}
+              onClick={() => runWithNetworkGuard(onSpectate)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
                 "bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10",
@@ -366,9 +686,50 @@ const GameCard = ({
           )}
         </div>
 
-        {/* Fee info (shown when can register) */}
-        {canRegister && feeAmount > 0n && !isRegistering && (
-          <div className="text-[10px] text-gold/50 text-center">Fee: {formatFeeAmount(feeAmount)} LORDS</div>
+        {/* Only show fee/prize economics for mainnet games */}
+        {isMainnetGame && (
+          <div className="relative overflow-hidden rounded border border-gold/25 bg-gradient-to-b from-gold/[0.07] to-transparent">
+            {/* Animated shimmer sweep */}
+            <div
+              className="absolute inset-0 animate-shimmer pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, transparent 0%, rgba(223,170,84,0.1) 50%, transparent 100%)",
+                backgroundSize: "200% 100%",
+              }}
+            />
+            {/* Corner ornaments */}
+            <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 border-t border-l border-gold/35" />
+            <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 border-t border-r border-gold/35" />
+            <div className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 border-b border-l border-gold/35" />
+            <div className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 border-b border-r border-gold/35" />
+
+            <div className="relative px-2.5 py-1.5">
+              {/* Prize Pool - main attraction */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 shrink-0">
+                  <Trophy className="w-2.5 h-2.5 text-gold/70" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-gold/55">Prize Pool</span>
+                </div>
+                <div className="flex items-center gap-0.5 min-w-0">
+                  <span className="text-[13px] font-bold text-gold tabular-nums text-shadow-glow-yellow-xs truncate">
+                    {formatLordsAmount(winnerJackpotAmount)}
+                  </span>
+                  <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="shrink-0 ml-0.5" />
+                </div>
+              </div>
+
+              {/* Entry Fee - secondary */}
+              {hasLordsFee && (
+                <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-gold/[0.12]">
+                  <span className="text-[8px] uppercase tracking-wider text-white/30 shrink-0">Entry Fee</span>
+                  <span className="flex items-center gap-0.5 text-[9px] text-white/40 tabular-nums">
+                    {formatLordsAmount(lordsFeeAmount)}
+                    <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="opacity-40" />
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Error message - only show if not already registered */}
@@ -378,6 +739,18 @@ const GameCard = ({
           </div>
         )}
       </div>
+      <SwitchNetworkPrompt
+        open={switchTargetChain !== null}
+        description={
+          switchPromptContext === "market"
+            ? `Prediction market actions for ${game.name} are on another chain.`
+            : `You're trying to interact with ${game.name} while your wallet is on another chain.`
+        }
+        hint={`Switch your wallet to ${targetChainLabel} to continue.`}
+        switchLabel={`Switch To ${targetChainLabel}`}
+        onClose={() => setSwitchTargetChain(null)}
+        onSwitch={handleSwitchNetwork}
+      />
     </div>
   );
 };
@@ -386,6 +759,7 @@ interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
+  onClaimRewards?: (selection: WorldSelection) => void;
   /** Callback for forging hyperstructures - receives world selection and numHyperstructuresLeft */
   onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
@@ -404,6 +778,12 @@ interface UnifiedGameGridProps {
   layout?: "horizontal" | "vertical";
   /** Sort games where user is registered first */
   sortRegisteredFirst?: boolean;
+  /** Sort ended games with claimable rewards first */
+  sortClaimableRewardsFirst?: boolean;
+  /** Sort ended games by most recently ended first */
+  sortEndedNewestFirst?: boolean;
+  /** Optional callback to expose the resolved list (for reuse without extra queries) */
+  onGamesResolved?: (games: GameData[]) => void;
 }
 
 /**
@@ -413,6 +793,7 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
+  onClaimRewards,
   onForgeHyperstructures,
   onRegistrationComplete,
   className,
@@ -423,11 +804,15 @@ export const UnifiedGameGrid = ({
   hideLegend = false,
   layout = "horizontal",
   sortRegisteredFirst = false,
+  sortClaimableRewardsFirst = false,
+  sortEndedNewestFirst = false,
+  onGamesResolved,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
   const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
 
   const queryClient = useQueryClient();
+  const { getRegisteredToken } = useConfig();
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
@@ -491,6 +876,7 @@ export const UnifiedGameGrid = ({
         return {
           name: world.name,
           chain: world.chain,
+          worldAddress: world.worldAddress ?? null,
           worldKey,
           status,
           gameStatus,
@@ -547,6 +933,148 @@ export const UnifiedGameGrid = ({
     sortRegisteredFirst,
   ]);
 
+  const endedRegisteredGames = useMemo(
+    () => games.filter((game) => game.gameStatus === "ended" && game.isRegistered === true),
+    [games],
+  );
+
+  const claimSummaryQueries = useQueries({
+    queries:
+      !playerAddress || endedRegisteredGames.length === 0
+        ? []
+        : endedRegisteredGames.map((game) => ({
+            queryKey: ["gameReviewClaimSummary", game.chain, game.name, playerAddress],
+            queryFn: () =>
+              fetchGameReviewClaimSummary({
+                worldName: game.name,
+                chain: game.chain,
+                playerAddress,
+              }),
+            staleTime: 60_000,
+            gcTime: 10 * 60_000,
+            retry: 1,
+          })),
+  });
+
+  const claimSummaryByWorldKey = useMemo(() => {
+    const summaryByWorldKey = new Map<
+      string,
+      {
+        data: GameReviewClaimSummary | null;
+        isLoading: boolean;
+        error: string | null;
+      }
+    >();
+
+    endedRegisteredGames.forEach((game, index) => {
+      const queryState = claimSummaryQueries[index];
+      if (!queryState) return;
+
+      summaryByWorldKey.set(game.worldKey, {
+        data: queryState.data ?? null,
+        isLoading: queryState.isLoading,
+        error: getErrorMessage(queryState.error),
+      });
+    });
+
+    return summaryByWorldKey;
+  }, [claimSummaryQueries, endedRegisteredGames]);
+
+  const resolvedGames = useMemo(() => {
+    if (!sortClaimableRewardsFirst && !sortEndedNewestFirst) return games;
+
+    return games.toSorted((a, b) => {
+      const aIsEnded = a.gameStatus === "ended";
+      const bIsEnded = b.gameStatus === "ended";
+      if (!aIsEnded || !bIsEnded) return 0;
+
+      if (sortClaimableRewardsFirst) {
+        const aCanClaimNow = claimSummaryByWorldKey.get(a.worldKey)?.data?.canClaimNow === true;
+        const bCanClaimNow = claimSummaryByWorldKey.get(b.worldKey)?.data?.canClaimNow === true;
+        if (aCanClaimNow !== bCanClaimNow) return aCanClaimNow ? -1 : 1;
+      }
+
+      if (sortRegisteredFirst) {
+        const aRegistered = a.isRegistered ? 1 : 0;
+        const bRegistered = b.isRegistered ? 1 : 0;
+        if (aRegistered !== bRegistered) return bRegistered - aRegistered;
+      }
+
+      if (sortEndedNewestFirst) {
+        const aEndAt = a.endAt ?? 0;
+        const bEndAt = b.endAt ?? 0;
+        if (aEndAt !== bEndAt) return bEndAt - aEndAt;
+
+        const aStartAt = a.startMainAt ?? 0;
+        const bStartAt = b.startMainAt ?? 0;
+        if (aStartAt !== bStartAt) return bStartAt - aStartAt;
+      }
+
+      return 0;
+    });
+  }, [claimSummaryByWorldKey, games, sortClaimableRewardsFirst, sortEndedNewestFirst, sortRegisteredFirst]);
+
+  const gameMarketQueries = useQueries({
+    queries: resolvedGames.map((game) => {
+      const preferredChain = toMarketChain(game.chain);
+      const paddedPrizeAddress = normalizeHexAddress(game.config?.prizeDistributionAddress);
+
+      return {
+        queryKey: ["landing", "game-market", game.worldKey, preferredChain, paddedPrizeAddress ?? "none"],
+        enabled: Boolean(paddedPrizeAddress),
+        staleTime: 30 * 1000,
+        gcTime: 5 * 60 * 1000,
+        retry: 1,
+        queryFn: async (): Promise<GameMarketSnapshot | null> => {
+          if (!paddedPrizeAddress) return null;
+          const chainsToCheck: MarketDataChain[] =
+            preferredChain === "mainnet" ? ["mainnet", "slot"] : ["slot", "mainnet"];
+
+          for (const chain of chainsToCheck) {
+            const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]);
+            const row = await api.fetchMarketByPrizeAddress(paddedPrizeAddress);
+            if (!row) continue;
+
+            const numerators = await api.fetchVaultNumeratorsByMarkets([row.market_id]);
+            const market = transformMarketRowToClass(row, numerators, getRegisteredToken);
+            if (!market) continue;
+
+            const nowSec = Math.floor(Date.now() / 1000);
+            const { topOutcomes, hiddenOutcomeCount } = getTopOutcomes(market);
+            const isLive = !market.isResolved() && nowSec >= market.start_at && nowSec < market.end_at;
+
+            return {
+              market,
+              chain,
+              topOutcomes,
+              hiddenOutcomeCount,
+              isLive,
+            };
+          }
+
+          return null;
+        },
+      };
+    }),
+  });
+
+  const marketStateByWorldKey = useMemo(() => {
+    const states = new Map<string, GameMarketState>();
+
+    resolvedGames.forEach((game, index) => {
+      const queryState = gameMarketQueries[index];
+      if (!queryState) return;
+
+      states.set(game.worldKey, {
+        data: queryState.data ?? null,
+        isLoading: queryState.isLoading,
+        error: getErrorMessage(queryState.error),
+      });
+    });
+
+    return states;
+  }, [gameMarketQueries, resolvedGames]);
+
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
     await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
@@ -579,6 +1107,20 @@ export const UnifiedGameGrid = ({
       ended: games.filter((g) => g.gameStatus === "ended").length,
     };
   }, [games]);
+
+  const resolvedGamesSignature = useMemo(
+    () => resolvedGames.map((game) => buildGameResolutionSignature(game)).join("|"),
+    [resolvedGames],
+  );
+  const lastResolvedGamesSignatureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!onGamesResolved) return;
+    if (lastResolvedGamesSignatureRef.current === resolvedGamesSignature) return;
+
+    lastResolvedGamesSignatureRef.current = resolvedGamesSignature;
+    onGamesResolved(resolvedGames);
+  }, [onGamesResolved, resolvedGames, resolvedGamesSignature]);
 
   return (
     <div className={cn("relative", className)}>
@@ -658,42 +1200,46 @@ export const UnifiedGameGrid = ({
           </div>
         ) : layout === "vertical" ? (
           <div className="flex flex-col gap-3">
-            {games.map((game) => (
-              <GameCard
-                key={game.worldKey}
-                game={game}
-                onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
-                onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
-                onForgeHyperstructures={
-                  onForgeHyperstructures
-                    ? () =>
-                        onForgeHyperstructures(
-                          { name: game.name, chain: game.chain },
-                          game.config?.numHyperstructuresLeft ?? 0,
-                        )
-                    : undefined
-                }
-                onRegistrationComplete={handleRegistrationComplete}
-                playerAddress={playerAddress}
-                showChainBadge={true}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex gap-3 p-1">
-            {games.map((game) => (
-              <div key={game.worldKey} className="flex-shrink-0 w-[320px]">
+            {resolvedGames.map((game) => {
+              const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
+              const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
+
+              return (
                 <GameCard
+                  key={game.worldKey}
                   game={game}
-                  onPlay={() => onSelectGame({ name: game.name, chain: game.chain })}
-                  onSpectate={() => onSpectate({ name: game.name, chain: game.chain })}
-                  onSeeScore={onSeeScore ? () => onSeeScore({ name: game.name, chain: game.chain }) : undefined}
+                  onPlay={() =>
+                    onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                  }
+                  onSpectate={() =>
+                    onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                  }
+                  onSeeScore={
+                    onSeeScore
+                      ? () =>
+                          onSeeScore({
+                            name: game.name,
+                            chain: game.chain,
+                            worldAddress: game.worldAddress ?? undefined,
+                          })
+                      : undefined
+                  }
+                  onClaimRewards={
+                    canClaimFromCard
+                      ? () =>
+                          onClaimRewards?.({
+                            name: game.name,
+                            chain: game.chain,
+                            worldAddress: game.worldAddress ?? undefined,
+                          })
+                      : undefined
+                  }
+                  claimSummary={claimSummaryState?.data ?? null}
                   onForgeHyperstructures={
                     onForgeHyperstructures
                       ? () =>
                           onForgeHyperstructures(
-                            { name: game.name, chain: game.chain },
+                            { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
                             game.config?.numHyperstructuresLeft ?? 0,
                           )
                       : undefined
@@ -701,9 +1247,65 @@ export const UnifiedGameGrid = ({
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}
+                  marketState={marketStateByWorldKey.get(game.worldKey)}
                 />
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex gap-3 p-1">
+            {resolvedGames.map((game) => {
+              const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
+              const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
+
+              return (
+                <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
+                  <GameCard
+                    game={game}
+                    onPlay={() =>
+                      onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    }
+                    onSpectate={() =>
+                      onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    }
+                    onSeeScore={
+                      onSeeScore
+                        ? () =>
+                            onSeeScore({
+                              name: game.name,
+                              chain: game.chain,
+                              worldAddress: game.worldAddress ?? undefined,
+                            })
+                        : undefined
+                    }
+                    onClaimRewards={
+                      canClaimFromCard
+                        ? () =>
+                            onClaimRewards?.({
+                              name: game.name,
+                              chain: game.chain,
+                              worldAddress: game.worldAddress ?? undefined,
+                            })
+                        : undefined
+                    }
+                    claimSummary={claimSummaryState?.data ?? null}
+                    onForgeHyperstructures={
+                      onForgeHyperstructures
+                        ? () =>
+                            onForgeHyperstructures(
+                              { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
+                              game.config?.numHyperstructuresLeft ?? 0,
+                            )
+                        : undefined
+                    }
+                    onRegistrationComplete={handleRegistrationComplete}
+                    playerAddress={playerAddress}
+                    showChainBadge={true}
+                    marketState={marketStateByWorldKey.get(game.worldKey)}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -1,5 +1,3 @@
-import { getWorldPositionForHex } from "./utils";
-
 interface ChunkRenderSize {
   width: number;
   height: number;
@@ -45,25 +43,6 @@ export function getRenderBounds(
     minRow,
     maxRow: minRow + height - 1,
   };
-}
-
-/**
- * Compute world-space Box3/Sphere bounds for the render area.
- */
-function getWorldBoundsForRenderArea(
-  startRow: number,
-  startCol: number,
-  renderSize: ChunkRenderSize,
-  chunkSize: number,
-) {
-  const bounds = getRenderBounds(startRow, startCol, renderSize, chunkSize);
-  const corners = [
-    getWorldPositionForHex({ col: bounds.minCol, row: bounds.minRow }),
-    getWorldPositionForHex({ col: bounds.minCol, row: bounds.maxRow }),
-    getWorldPositionForHex({ col: bounds.maxCol, row: bounds.minRow }),
-    getWorldPositionForHex({ col: bounds.maxCol, row: bounds.maxRow }),
-  ];
-  return { corners };
 }
 
 export function isHexWithinRenderBounds(

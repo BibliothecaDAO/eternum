@@ -5,6 +5,7 @@ use crate::alias::ID;
 use crate::constants::ResourceTypes;
 use crate::models::structure::{StructureMetadata, StructureOwnerStoreImpl};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+use crate::utils::cartridge::vrf::Source;
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {
@@ -15,6 +16,11 @@ pub impl iVillageImpl of iVillageTrait {
     fn ensure_associated_with_village(
         ref world: WorldStorage, village_structure_metadata: StructureMetadata, check_realm_entity_id: ID,
     ) {
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        if blitz_mode_on {
+            return;
+        }
+
         assert!(village_structure_metadata.village_realm.is_non_zero(), "village owner is not set");
         assert!(check_realm_entity_id.is_non_zero(), "village realm owner is not set");
 
@@ -40,7 +46,8 @@ pub impl iVillageImpl of iVillageTrait {
 pub impl iVillageResourceImpl of iVillageResourceTrait {
     fn random(owner: starknet::ContractAddress, world: WorldStorage) -> u8 {
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+        let vrf_seed: u256 = rng_library_dispatcher
+            .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
         let resource: u8 = *rng_library_dispatcher
             .get_weighted_choice_u8(Self::resources().span(), Self::resource_probabilities().span(), 1, true, vrf_seed)
             .at(0);
@@ -89,5 +96,4 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
 // Note: Village discovery has been replaced by Camp discovery.
 // Villages are no longer discoverable through exploration.
 // Use iCampDiscoveryImpl in systems/utils/camp.cairo instead.
-
 

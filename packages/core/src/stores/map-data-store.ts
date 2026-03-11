@@ -25,8 +25,15 @@
 import { ArmyMapDataRaw, SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
 import { BuildingType, GuardSlot, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import realms from "../../../../client/public/jsons/realms.json";
-import { divideByPrecision, getIsBlitz, getStructureTypeName, unpackBuildingCounts } from "../utils";
+import { getRealmNameById } from "../data/realm-names";
+import {
+  divideByPrecision,
+  getEffectiveHyperstructureRealmCount,
+  getHyperstructureRealmCheckRadius,
+  getIsBlitz,
+  getStructureTypeName,
+  unpackBuildingCounts,
+} from "../utils";
 
 // Army category mapping
 const ARMY_CATEGORY_NAMES: Record<string, string> = {
@@ -381,16 +388,23 @@ export class MapDataStore {
 
   private async fetchAndStoreMapData(): Promise<void> {
     const isBlitz = getIsBlitz();
-    const realmsData = realms as Record<string, { name: string }>;
+    const hyperstructureRealmCheckRadius = getHyperstructureRealmCheckRadius();
 
     // Fetch all structures and armies in parallel
     const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await Promise.all([
       this.sqlApi.fetchAllStructuresMapData(),
       this.sqlApi.fetchAllArmiesMapData(),
-      this.sqlApi.fetchHyperstructuresWithRealmCount(8),
+      this.sqlApi.fetchHyperstructuresWithRealmCount(hyperstructureRealmCheckRadius),
     ]);
 
-    // Transform and store structures
+    // Build fresh maps so refresh commits atomically and drops stale entries.
+    const nextStructuresMap: Map<number, StructureMapData> = new Map();
+    const nextArmiesMap: Map<number, ArmyMapData> = new Map();
+    const nextAddressToNameMap: Map<string, string> = new Map();
+    const nextEntityToEntityIdMap: Map<string, number> = new Map();
+    const nextHyperstructureRealmCountMap: Map<ID, number> = new Map();
+
+    // Transform and stage structures
     structuresRaw.forEach((structureRaw: StructureMapDataRaw) => {
       const structure = structureRaw as StructureMapDataRawWithEntity;
       const structureEntityHex = structure.internal_entity_id ?? "";
@@ -411,7 +425,7 @@ export class MapDataStore {
 
       const structureTypeName =
         structure.realm_id && structure.realm_id !== 0
-          ? realmsData[structure.realm_id.toString()]?.name || "Unknown Realm"
+          ? getRealmNameById(structure.realm_id) || "Unknown Realm"
           : getStructureTypeName(structure.structure_type, isBlitz);
 
       const structureData: StructureMapData = {
@@ -445,14 +459,14 @@ export class MapDataStore {
         },
       };
 
-      this.structuresMap.set(structure.entity_id, structureData);
-      this.addressToNameMap.set(structureData.ownerAddress, ownerName);
+      nextStructuresMap.set(structure.entity_id, structureData);
+      nextAddressToNameMap.set(structureData.ownerAddress, ownerName);
       if (normalizedStructureEntityHex) {
-        this.entityToEntityIdMap.set(normalizedStructureEntityHex, structure.entity_id);
+        nextEntityToEntityIdMap.set(normalizedStructureEntityHex, structure.entity_id);
       }
     });
 
-    // Transform and store armies
+    // Transform and stage armies
     armiesRaw.forEach((armyRaw: ArmyMapDataRaw) => {
       const army = armyRaw as ArmyMapDataRawWithEntity;
       const armyEntityHex = army.internal_entity_id ?? "";
@@ -491,19 +505,27 @@ export class MapDataStore {
         },
       };
 
-      this.armiesMap.set(army.entity_id, armyData);
-      this.addressToNameMap.set(armyData.ownerAddress, ownerName);
+      nextArmiesMap.set(army.entity_id, armyData);
+      nextAddressToNameMap.set(armyData.ownerAddress, ownerName);
       if (normalizedArmyEntityHex) {
-        this.entityToEntityIdMap.set(normalizedArmyEntityHex, army.entity_id);
+        nextEntityToEntityIdMap.set(normalizedArmyEntityHex, army.entity_id);
       }
     });
 
-    // Store hyperstructure realm counts
+    // Stage hyperstructure realm counts
     hyperstructuresWithRealmCount.forEach((hyperstructure) => {
-      this.hyperstructureRealmCountMap.set(
-        hyperstructure.hyperstructure_entity_id,
-        hyperstructure.realm_count_within_radius,
-      );
+      const realmCount = getEffectiveHyperstructureRealmCount(hyperstructure.realm_count_within_radius);
+      nextHyperstructureRealmCountMap.set(hyperstructure.hyperstructure_entity_id, realmCount);
+    });
+
+    this.structuresMap = nextStructuresMap;
+    this.armiesMap = nextArmiesMap;
+    this.addressToNameMap = nextAddressToNameMap;
+    this.entityToEntityIdMap = nextEntityToEntityIdMap;
+    // Keep map identity stable for consumers that hold a reference (e.g. LeaderboardManager singleton).
+    this.hyperstructureRealmCountMap.clear();
+    nextHyperstructureRealmCountMap.forEach((realmCount, hyperstructureEntityId) => {
+      this.hyperstructureRealmCountMap.set(hyperstructureEntityId, realmCount);
     });
 
     this.lastFetchTime = Date.now();
@@ -684,6 +706,7 @@ export class MapDataStore {
   public clear(): void {
     this.structuresMap.clear();
     this.armiesMap.clear();
+    this.hyperstructureRealmCountMap.clear();
     this.addressToNameMap.clear();
     this.entityToEntityIdMap.clear();
     this.lastFetchTime = 0;
@@ -741,6 +764,7 @@ export class MapDataStore {
     this.stopAutoRefresh();
     this.structuresMap.clear();
     this.armiesMap.clear();
+    this.hyperstructureRealmCountMap.clear();
     this.addressToNameMap.clear();
     this.entityToEntityIdMap.clear();
     console.log("MapDataStore: Destroyed and cleaned up");

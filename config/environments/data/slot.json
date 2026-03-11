@@ -838,7 +838,8 @@
     "spires_layer_distance": 6,
     "spires_max_count": 1,
     "spires_settled_count": 0,
-    "single_realm_mode": false
+    "single_realm_mode": false,
+    "two_player_mode": false
   },
   "buildings": {
     "buildingCapacity": {

@@ -6,7 +6,7 @@ use crate::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatche
 
 #[generate_trait]
 pub impl VRFImpl of VRFTrait {
-    fn seed(player_id: ContractAddress, vrf_provider_address: ContractAddress) -> u256 {
+    fn seed(source: Source, vrf_provider_address: ContractAddress) -> u256 {
         let tx_info: TxInfo = starknet::get_tx_info().unbox();
 
         if vrf_provider_address.is_zero() {
@@ -18,7 +18,7 @@ pub impl VRFImpl of VRFTrait {
             return tx_info.transaction_hash.into();
         } else {
             let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
-            let random_value: felt252 = vrf_provider.consume_random(Source::Nonce(player_id));
+            let random_value: felt252 = vrf_provider.consume_random(source);
             return random_value.into();
         }
     }

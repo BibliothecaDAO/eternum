@@ -1,0 +1,41 @@
+name: Paymaster Policy Sync
+
+env:
+  SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Network (mainnet|sepolia|slot|slottest|local)"
+        required: true
+        default: "mainnet"
+      game_name:
+        description: "Game/world name (example: waterbox-batch-cooking)"
+        required: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Slot CLI
+        run: |
+          set -euo pipefail
+          curl -L https://slot.cartridge.sh | bash
+          /home/runner/.config/.slot/bin/slotup
+          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
+          slot --version || true
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Build actions and apply paymaster policy
+        run: |
+          bun scripts/ci/paymaster/sync-policy.ts \
+            --chain "${{ github.event.inputs.network }}" \
+            --game "${{ github.event.inputs.game_name }}" \
+            --paymaster "empire"

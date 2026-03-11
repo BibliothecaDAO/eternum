@@ -57,6 +57,7 @@ export class RainEffect {
 
   // Weather-driven intensity
   private weatherIntensity: number = 1.0;
+  private isDisposed = false;
 
   // Per-drop properties for size/speed variance
   private dropLengths!: Float32Array; // Individual drop lengths
@@ -492,6 +493,12 @@ export class RainEffect {
   }
 
   dispose() {
+    if (this.isDisposed) {
+      console.warn("RainEffect already disposed, skipping cleanup");
+      return;
+    }
+    this.isDisposed = true;
+
     if (this.rainParticles) {
       this.scene.remove(this.rainParticles);
       this.rainGeometry.dispose();

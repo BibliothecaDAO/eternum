@@ -566,8 +566,12 @@ pub impl TroopsImpl of TroopsTrait {
         return (ratio - _2_POINT_5) / (_10_POINT_0 - _2_POINT_5);
     }
 
-    fn start_resource_amount() -> u128 {
-        100 * RESOURCE_PRECISION
+    fn deployed_realm_troop_count() -> u128 {
+        1_500 * RESOURCE_PRECISION
+    }
+
+    fn deployed_village_troop_count() -> u128 {
+        10 * RESOURCE_PRECISION
     }
 
     fn start_troop_type(biome: Biome) -> (u8, (TroopType, TroopTier)) {

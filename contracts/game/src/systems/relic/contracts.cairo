@@ -51,6 +51,7 @@ pub mod relic_systems {
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::utils::cartridge::vrf::Source;
     use crate::utils::random::VRFImpl;
     use super::RelicRecipientTypeParam;
 
@@ -94,7 +95,8 @@ pub mod relic_systems {
             let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+            let vrf_seed: u256 = rng_library_dispatcher
+                .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
             let relics: Span<u8> = iRelicChestResourceFactoryImpl::grant_relics(
                 ref world, explorer_id, ref explorer_weight, map_config, vrf_seed,
             );

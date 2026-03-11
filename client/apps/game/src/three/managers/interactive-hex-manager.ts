@@ -7,7 +7,7 @@ import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
-import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils/utils";
 
 const INTERACTIVE_HEX_Y = 0.1;
 const RAY_PARALLEL_EPSILON = 1e-6;

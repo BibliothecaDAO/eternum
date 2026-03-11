@@ -2,7 +2,7 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { sqlApi } from "@/services/api";
 import { StructureType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import realms from "../../../../../public/jsons/realms.json";
+import realmNames from "../../../../../public/jsons/realm-names.json";
 
 export interface PlayerDataTransformed {
   explorerIds: string[];
@@ -63,7 +63,7 @@ export class PlayerDataStore {
   private async fetchAndStoreData(): Promise<void> {
     const mode = getGameModeConfig();
     const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
-    const realmsData = realms as Record<string, { name: string }>;
+    const realmsData = realmNames as Record<string, string>;
 
     // Clear existing data before repopulating to prevent stale entries
     this.addressToPlayerDataMap.clear();
@@ -106,7 +106,7 @@ export class PlayerDataStore {
           const realmName =
             actualRealmId === "0"
               ? (mode.structure.getTypeName(Number(actualCategory) as StructureType) ?? "Structure")
-              : realmsData[actualRealmId].name;
+              : (realmsData[actualRealmId] ?? "Unknown Realm");
           this.structureToNameMap.set(actualStructureId, realmName);
         });
 

@@ -2,14 +2,21 @@ import { env } from "../../../../../../env";
 
 const MARKETPLACE_API_URL = env.VITE_PUBLIC_MARKETPLACE_URL + "/sql";
 
+interface FetchSQLOptions {
+  baseUrl?: string;
+}
+
+const toSqlEndpoint = (baseUrl: string) => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
+
 /**
  * Generic API client for making SQL queries to the marketplace Torii.
  * Used for querying cosmetics and loot chests data.
  * @param query - The SQL query string
  * @returns The parsed JSON response
  */
-export async function fetchSQL<T = unknown>(query: string): Promise<T> {
-  const url = `${MARKETPLACE_API_URL}?query=${encodeURIComponent(query)}`;
+export async function fetchSQL<T = unknown>(query: string, options?: FetchSQLOptions): Promise<T> {
+  const apiBaseUrl = options?.baseUrl ? toSqlEndpoint(options.baseUrl) : MARKETPLACE_API_URL;
+  const url = `${apiBaseUrl}?query=${encodeURIComponent(query)}`;
   console.log({ url });
   const response = await fetch(url);
 

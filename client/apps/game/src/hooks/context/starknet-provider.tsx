@@ -11,7 +11,6 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { bootstrapGame } from "../../init/bootstrap";
 import { useAccountStore } from "../store/use-account-store";
-import { buildPolicies } from "./policies";
 import { useControllerAccount } from "./use-controller-account";
 
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -27,7 +26,7 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
 
@@ -85,18 +84,31 @@ const fallbackChain: DerivedChain = isSlot
 const resolvedChain = derivedChain ?? fallbackChain;
 const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
 const chain_id = resolvedChainId;
+const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+const controllerSupportedRpcUrls = Array.from(
+  new Set(
+    [
+      rpcUrl,
+      `${cartridgeApiBase}/x/eternum-blitz-slot-4/katana/rpc/v0_9`,
+      `${cartridgeApiBase}/x/starknet/sepolia/rpc/v0_9`,
+      `${cartridgeApiBase}/x/starknet/mainnet/rpc/v0_9`,
+    ].map((value) => normalizeRpcUrl(value)),
+  ),
+);
 
 const controller = new ControllerConnector({
   errorDisplayMode: "notification",
   propagateSessionErrors: true,
   // chain_id,
-  chains: [
-    {
-      rpcUrl,
-    },
-  ],
+  chains: controllerSupportedRpcUrls.map((chainRpcUrl) => ({
+    rpcUrl: chainRpcUrl,
+  })),
   defaultChainId: resolvedChainId,
-  policies: buildPolicies(dojoConfig.manifest),
+  // Policies are intentionally omitted here so that login/connect does NOT
+  // create a session upfront. Session policies are set later by
+  // refreshSessionPolicies() after the player selects a game and
+  // bootstrapGame() patches the manifest with the correct contract addresses.
+  // policies: buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
 });

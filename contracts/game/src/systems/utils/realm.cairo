@@ -72,7 +72,7 @@ pub impl iRealmImpl of iRealmTrait {
             );
 
         // grant starting resources
-        structure_creation_library.grant_starting_resources(world, structure_id, coord);
+        structure_creation_library.grant_starting_resources(world, structure_id, StructureCategory::Realm, coord);
 
         // place castle building
         BuildingImpl::create(

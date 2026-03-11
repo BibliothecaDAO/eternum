@@ -1,0 +1,58 @@
+---
+layout: docs
+---
+
+# 18th February 2026
+
+### Blitz Prize Pool Rewrite
+
+- [Blitz/Prize Pool](/blitz/prize-pool): Complete rewrite of the prize pool and distribution documentation. Updated
+  prize pool composition, tier breakdowns, and distribution mechanics to reflect current game state.
+
+### Component Architecture
+
+- Separated Blitz and Eternum component variants into dedicated directories (`blitz-components/`, `eternum-components/`)
+  for clearer maintainability. Affected components: DefendingArmies, HyperstructureRings, TroopMovementTable,
+  WeightTable, ResourceProduction, RewardsChestTable, and others.
+- Introduced shared `styles.ts` design system with consistent color palette, spacing, and reusable table/section/stats
+  styles across all components.
+
+### Visual Overhaul
+
+- Applied a Realms-themed design language across all documentation pages: dark card backgrounds, brass/gold accent
+  colors, consistent typography (Exo 2 headings), and hover states on table rows.
+- Rebuilt sidebar navigation with collapsible sections, chevron toggles, and improved hierarchy.
+- Fixed table dead space issues on Deployment Caps and Prize Pool Composition tables.
+- Centre-aligned numeric columns across multiple tables: Deployment Caps, Guard Slots, Damage Comparison, Max Stamina,
+  Buildable Hexes, Armies by Realm Level, and Starting Materials (Realms and Camps).
+- Reduced loot chest table cell margins to allow more width for description columns.
+- Unbolded numeric figures in Troop Tier Stats tables for cleaner readability.
+- Restructured Troop Movement stats as a flat list layout.
+- Added global mobile overflow protection for all tables.
+- Changed Hyperstructure ring formula notation from √(P/6) to (P/6)^(1/2).
+- Converted damage refund calculation rules to code blocks for consistency.
+
+### Content Updates
+
+- [Overview/Introduction](/overview/introduction): Linked 'Eternum' and 'Blitz' in Game Modes section to their
+  respective key concept pages.
+- [Blitz/Loot Chests](/overview/chests/contents): Updated Blitz and Eternum rewards chest tables with revised item
+  descriptions and column layout.
+- [Blitz/Armies](/blitz/military/armies): Converted Deployment Caps to inline HTML table with fixed layout.
+- [Blitz/Game Entry](/blitz/game-entry): Minor content adjustments.
+- [Blitz/MMR](/blitz/mmr): Removed redundant content.
+- [Development/Getting Started](/development/getting-started): Added setup notes.
+- Multiple Eternum section pages: Minor cross-reference and link fixes.
+
+### Sidebar & Navigation
+
+- Restructured `vocs.config.ts` sidebar: reordered sections, added new pages, improved collapsed/expanded defaults.
+- Added 18 February 2026 changelog to navigation.
+
+### Changelog Formatting
+
+- Standardised section heading levels across 8th December and 31st January changelog entries.
+
+---
+
+_This changelog covers all documentation changes in PR #4204._

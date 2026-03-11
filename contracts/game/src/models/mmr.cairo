@@ -5,7 +5,6 @@
 
 use core::num::traits::Zero;
 use starknet::ContractAddress;
-use crate::alias::ID;
 
 
 // ================================
@@ -69,7 +68,7 @@ pub impl MMRConfigDefaultImpl of MMRConfigDefaultTrait {
 #[dojo::model]
 pub struct MMRGameMeta {
     #[key]
-    pub world_id: ID,
+    pub world_id: u128,
     /// Total players in the game
     pub game_median: u128,
 }
@@ -79,7 +78,7 @@ pub struct MMRGameMeta {
 #[dojo::model]
 pub struct MMRClaimed {
     #[key]
-    pub world_id: ID,
+    pub world_id: u128,
     pub claimed_at: u64,
 }
 

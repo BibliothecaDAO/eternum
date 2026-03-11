@@ -4,7 +4,7 @@ import {
   ContractAddress,
   EternumStructureTypeToNameMapping,
   ID,
-  MERCENARIES,
+  BANDITS_NAME,
   Position,
   Structure,
   StructureType,
@@ -48,7 +48,7 @@ const getStructureInfo = (
   if (!structure) return;
 
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
-  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : MERCENARIES;
+  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : BANDITS_NAME;
 
   return {
     entityId: structure.entity_id,

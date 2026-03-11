@@ -1,0 +1,121 @@
+name: release-packages-on-changelog
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/**/changelog.md"
+      - "packages/**/CHANGELOG.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish-changed-packages
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve changed changelog files
+        id: changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          before_sha="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ -z "${before_sha}" ] || [ "${before_sha}" = "0000000000000000000000000000000000000000" ]; then
+            before_sha="$(git rev-parse HEAD^ 2>/dev/null || echo "")"
+          fi
+
+          if [ -z "${before_sha}" ]; then
+            changed="$(git show --name-only --pretty='' "${GITHUB_SHA}")"
+          else
+            changed="$(git diff --name-only "${before_sha}" "${GITHUB_SHA}")"
+          fi
+
+          changelog_files="$(printf "%s\n" "${changed}" | grep -E '^packages/.+/(changelog\.md|CHANGELOG\.md)$' || true)"
+
+          if [ -z "${changelog_files}" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          printf "%s\n" "${changelog_files}" > /tmp/changelog-files.txt
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish packages with changed changelogs
+        if: steps.changed.outputs.has_changes == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN secret is required (mapped to NODE_AUTH_TOKEN)." >&2
+            exit 1
+          fi
+
+          mapfile -t package_dirs < <(cat /tmp/changelog-files.txt | xargs -n1 dirname | sort -u)
+
+          for package_dir in "${package_dirs[@]}"; do
+            if [ ! -f "${package_dir}/package.json" ]; then
+              echo "Skipping ${package_dir}: package.json not found"
+              continue
+            fi
+
+            package_name="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.name || '')")"
+            package_version="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.version || '')")"
+            package_private="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.private ? 'true' : 'false')")"
+
+            if [ "${package_private}" = "true" ]; then
+              echo "Skipping ${package_dir}: package is private"
+              continue
+            fi
+
+            if [ -z "${package_name}" ] || [ -z "${package_version}" ]; then
+              echo "Skipping ${package_dir}: package name/version missing"
+              continue
+            fi
+
+            if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
+              echo "Skipping ${package_name}@${package_version}: already published"
+              continue
+            fi
+
+            echo "Publishing ${package_name}@${package_version} from ${package_dir}"
+            pnpm --dir "${package_dir}" build
+            (
+              cd "${package_dir}"
+              npm publish --access public --provenance
+            )
+          done
+
+      - name: No changelog updates
+        if: steps.changed.outputs.has_changes != 'true'
+        run: echo "No package changelog updates found. Skipping publish."

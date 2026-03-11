@@ -6,13 +6,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { hash } from "starknet";
 
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
+import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import type { Chain } from "@contracts";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const PAGE_SIZE = 25;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
+const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
+const EVENT_PLAYER_EXPR =
+  "lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1))";
+const EVENT_CONTRACT_EXPR =
+  "lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1))";
 
 type SortBy = "rank" | "timestamp" | "delta";
 
@@ -130,20 +137,32 @@ const getGlobalToriiBaseUrl = (chain: Chain): string => {
 const buildContractIdFilterClause = (chain: Chain): string => {
   const mmrToken = MMR_TOKEN_BY_CHAIN[chain];
   if (!mmrToken) return "";
-  return `AND lower(id) LIKE '%:${mmrToken.toLowerCase()}:%'`;
+  return `AND ${EVENT_CONTRACT_EXPR} = '${mmrToken.toLowerCase()}'`;
 };
 
-const buildCommonEventsCte = (chain: Chain) => `
+const buildPlayerSearchFilterClause = (searchTerm: string): string => {
+  if (!searchTerm) return "";
+  const safe = escapeLikeTerm(searchTerm);
+
+  if (safe.startsWith("0x")) {
+    return `AND ${EVENT_PLAYER_EXPR} LIKE '${safe}%' ESCAPE '\\\\'`;
+  }
+
+  return `AND ${EVENT_PLAYER_EXPR} LIKE '%${safe}%' ESCAPE '\\\\'`;
+};
+
+const buildCommonEventsCte = (chain: Chain, searchTerm: string) => `
 WITH mmr_events AS (
   SELECT
     id,
     executed_at,
     data,
-    lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1)) AS player_address
+    ${EVENT_PLAYER_EXPR} AS player_address
   FROM events
   WHERE instr(lower(keys), '/') > 0
-    AND ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
+    AND ${EVENT_KEY0_EXPR} = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
     ${buildContractIdFilterClause(chain)}
+    ${buildPlayerSearchFilterClause(searchTerm)}
 ),
 latest_events AS (
   SELECT
@@ -214,12 +233,6 @@ parsed_latest AS (
 )
 `;
 
-const buildSearchClause = (searchTerm: string): string => {
-  if (!searchTerm) return "";
-  const safe = escapeLikeTerm(searchTerm);
-  return `WHERE player_address LIKE '%${safe}%' ESCAPE '\\\\'`;
-};
-
 const buildPagedLeaderboardQuery = (
   chain: Chain,
   searchTerm: string,
@@ -227,7 +240,6 @@ const buildPagedLeaderboardQuery = (
   page: number,
 ): string => {
   const offset = (page - 1) * PAGE_SIZE;
-  const searchClause = buildSearchClause(searchTerm);
 
   const orderBy =
     sortBy === "timestamp"
@@ -235,7 +247,7 @@ const buildPagedLeaderboardQuery = (
       : "new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC";
 
   return `
-${buildCommonEventsCte(chain)}
+${buildCommonEventsCte(chain, searchTerm)}
 SELECT
   player_address,
   id,
@@ -248,7 +260,6 @@ SELECT
   ROW_NUMBER() OVER (ORDER BY new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC) AS mmr_rank,
   COUNT(*) OVER () AS total_rows
 FROM parsed_latest
-${searchClause}
 ORDER BY ${orderBy}
 LIMIT ${PAGE_SIZE}
 OFFSET ${offset};
@@ -256,10 +267,8 @@ OFFSET ${offset};
 };
 
 const buildAllRowsForDeltaQuery = (chain: Chain, searchTerm: string): string => {
-  const searchClause = buildSearchClause(searchTerm);
-
   return `
-${buildCommonEventsCte(chain)}
+${buildCommonEventsCte(chain, searchTerm)}
 SELECT
   player_address,
   id,
@@ -271,7 +280,6 @@ SELECT
   event_timestamp,
   ROW_NUMBER() OVER (ORDER BY new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC) AS mmr_rank
 FROM parsed_latest
-${searchClause}
 ORDER BY executed_at DESC, id DESC;
 `;
 };
@@ -330,7 +338,7 @@ export const MMRLeaderboard = () => {
     entries: [],
     isLoading: false,
     error: null,
-    selectedChain: "slot",
+    selectedChain: "mainnet",
     sortBy: "rank",
     searchInput: "",
     searchTerm: "",
@@ -343,6 +351,18 @@ export const MMRLeaderboard = () => {
     if (state.totalRows <= 0) return 1;
     return Math.max(1, Math.ceil(state.totalRows / PAGE_SIZE));
   }, [state.totalRows]);
+
+  const entryAddresses = useMemo(() => state.entries.map((entry) => entry.address), [state.entries]);
+  const { data: avatarProfiles } = useAvatarProfiles(entryAddresses);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalizedAddress = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalizedAddress || !profile.avatarUrl) return;
+      map.set(normalizedAddress, profile.avatarUrl);
+    });
+    return map;
+  }, [avatarProfiles]);
 
   const refreshLeaderboard = useCallback(async () => {
     const toriiBaseUrl = getGlobalToriiBaseUrl(state.selectedChain);
@@ -456,175 +476,186 @@ export const MMRLeaderboard = () => {
   const isEmpty = !state.isLoading && !state.error && state.entries.length === 0;
 
   return (
-    <div className="h-[85vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gold">Global MMR Leaderboard</h2>
-          <p className="mt-1 text-sm text-gold/60">Derived from MMRUpdated events across the selected chain.</p>
+    <div className="relative h-[85vh] w-full overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
+      <div className="flex h-full min-w-0 flex-col space-y-6 overflow-y-auto p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gold">Global MMR Leaderboard</h2>
+            <p className="mt-1 text-sm text-gold/60">Derived from MMRUpdated events across the selected chain.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={state.isLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {state.isLoading ? "Loading..." : "Refresh"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleManualRefresh}
-          disabled={state.isLoading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {state.isLoading ? "Loading..." : "Refresh"}
-        </button>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-6">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gold/60">Chain:</span>
-          <div className="flex gap-1">
-            {CHAIN_OPTIONS.map((chain) => {
-              const isComingSoon = chain === "mainnet";
-              const isSelected = state.selectedChain === chain;
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gold/60">Chain:</span>
+            <div className="flex gap-1">
+              {CHAIN_OPTIONS.map((chain) => {
+                const isSelected = state.selectedChain === chain;
 
-              return (
+                return (
+                  <button
+                    key={chain}
+                    type="button"
+                    onClick={() => setState((prev) => ({ ...prev, selectedChain: chain }))}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
+                      isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                    }`}
+                  >
+                    <span>{chain}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gold/60">Sort:</span>
+            <div className="flex gap-1">
+              {(
+                [
+                  ["rank", "Rank"],
+                  ["timestamp", "Last Update"],
+                  ["delta", "Biggest Update"],
+                ] as const
+              ).map(([sortBy, label]) => (
                 <button
-                  key={chain}
+                  key={sortBy}
                   type="button"
-                  disabled={isComingSoon}
-                  onClick={() => setState((prev) => ({ ...prev, selectedChain: chain }))}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
-                    isComingSoon
-                      ? "cursor-not-allowed text-gold/35"
-                      : isSelected
-                        ? "bg-gold/20 text-gold"
-                        : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                  onClick={() => setState((prev) => ({ ...prev, sortBy }))}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    state.sortBy === sortBy ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                   }`}
                 >
-                  <span>{chain}</span>
-                  {isComingSoon && <span className="ml-2 text-xs normal-case text-gold/45">Coming soon</span>}
+                  {label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          <div className="flex min-w-[260px] flex-1 items-center gap-2">
+            <span className="text-sm text-gold/60">Search:</span>
+            <input
+              type="text"
+              value={state.searchInput}
+              onChange={(event) => setState((prev) => ({ ...prev, searchInput: event.target.value }))}
+              placeholder="0x..."
+              className="w-full rounded-lg border border-gold/20 bg-black/40 px-3 py-2 text-sm text-gold placeholder:text-gold/40 focus:border-gold/40 focus:outline-none"
+            />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gold/60">Sort:</span>
-          <div className="flex gap-1">
-            {(
-              [
-                ["rank", "Rank"],
-                ["timestamp", "Last Update"],
-                ["delta", "Biggest Update"],
-              ] as const
-            ).map(([sortBy, label]) => (
-              <button
-                key={sortBy}
-                type="button"
-                onClick={() => setState((prev) => ({ ...prev, sortBy }))}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                  state.sortBy === sortBy ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+        {state.error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {state.error}
           </div>
-        </div>
+        )}
 
-        <div className="flex min-w-[260px] flex-1 items-center gap-2">
-          <span className="text-sm text-gold/60">Search:</span>
-          <input
-            type="text"
-            value={state.searchInput}
-            onChange={(event) => setState((prev) => ({ ...prev, searchInput: event.target.value }))}
-            placeholder="0x..."
-            className="w-full rounded-lg border border-gold/20 bg-black/40 px-3 py-2 text-sm text-gold placeholder:text-gold/40 focus:border-gold/40 focus:outline-none"
-          />
-        </div>
+        {state.isLoading && (
+          <div className="flex flex-1 items-center justify-center py-16">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+          </div>
+        )}
+
+        {isEmpty && (
+          <div className="py-16 text-center text-gold/50">No MMR updates found on {state.selectedChain}.</div>
+        )}
+
+        {!state.isLoading && state.entries.length > 0 && (
+          <div className="overflow-hidden rounded-xl border border-gold/10 bg-black/30">
+            <div className="max-h-[58vh] overflow-y-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 border-b border-gold/10 bg-black/80 backdrop-blur-sm">
+                  <tr className="text-left text-sm text-gold/60">
+                    <th className="px-6 py-4 font-medium">Rank</th>
+                    <th className="px-6 py-4 font-medium">Player</th>
+                    <th className="px-6 py-4 text-right font-medium">MMR</th>
+                    <th className="px-6 py-4 text-right font-medium">Tier</th>
+                    <th className="px-6 py-4 text-right font-medium">Delta</th>
+                    <th className="px-6 py-4 text-right font-medium">Last Update</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gold/5">
+                  {state.entries.map((entry) => {
+                    const tier = getMMRTierFromRaw(entry.newMmr);
+                    const normalizedAddress = normalizeAvatarAddress(entry.address) ?? entry.address;
+                    const avatarUrl = getAvatarUrl(normalizedAddress, avatarMap.get(normalizedAddress));
+
+                    return (
+                      <tr key={`${entry.address}-${entry.eventId}`} className="transition-colors hover:bg-gold/5">
+                        <td className="px-6 py-4 text-gold/50">#{entry.rank}</td>
+                        <td className="px-6 py-4 font-medium text-gold">
+                          <div className="flex items-center gap-3 rounded-md px-1 py-0.5">
+                            <img
+                              src={avatarUrl}
+                              alt={`${entry.address} avatar`}
+                              className="h-8 w-8 rounded-full border border-gold/20 object-cover"
+                              loading="lazy"
+                            />
+                            <MaybeController address={entry.address} className="font-medium text-gold" />
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end">
+                            <MMRTierBadge tier={tier} />
+                          </div>
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-right font-medium ${
+                            entry.delta >= 0n ? "text-emerald-300" : "text-red-300"
+                          }`}
+                        >
+                          {formatDelta(entry.delta)}
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-gold/70">
+                          {formatEventTimestamp(entry.updatedAtSeconds)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-gold/10 bg-black/40 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-gold/50">
+                Showing {(state.page - 1) * PAGE_SIZE + 1}-{Math.min(state.page * PAGE_SIZE, state.totalRows)} of{" "}
+                {state.totalRows}
+                {state.lastSyncAt ? ` · synced ${new Date(state.lastSyncAt).toLocaleTimeString()}` : ""}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setState((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  disabled={state.page <= 1}
+                  className="rounded-lg border border-gold/20 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span className="min-w-[92px] text-center text-sm text-gold/70">
+                  Page {state.page} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setState((prev) => ({ ...prev, page: Math.min(totalPages, prev.page + 1) }))}
+                  disabled={state.page >= totalPages}
+                  className="rounded-lg border border-gold/20 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {state.error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {state.error}
-        </div>
-      )}
-
-      {state.isLoading && (
-        <div className="flex flex-1 items-center justify-center py-16">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-        </div>
-      )}
-
-      {isEmpty && <div className="py-16 text-center text-gold/50">No MMR updates found on {state.selectedChain}.</div>}
-
-      {!state.isLoading && state.entries.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-gold/10 bg-black/30">
-          <div className="max-h-[58vh] overflow-y-auto">
-            <table className="w-full">
-              <thead className="sticky top-0 border-b border-gold/10 bg-black/80 backdrop-blur-sm">
-                <tr className="text-left text-sm text-gold/60">
-                  <th className="px-6 py-4 font-medium">Rank</th>
-                  <th className="px-6 py-4 font-medium">Player</th>
-                  <th className="px-6 py-4 text-right font-medium">MMR</th>
-                  <th className="px-6 py-4 text-right font-medium">Tier</th>
-                  <th className="px-6 py-4 text-right font-medium">Delta</th>
-                  <th className="px-6 py-4 text-right font-medium">Last Update</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gold/5">
-                {state.entries.map((entry) => {
-                  const tier = getMMRTierFromRaw(entry.newMmr);
-
-                  return (
-                    <tr key={`${entry.address}-${entry.eventId}`} className="transition-colors hover:bg-gold/5">
-                      <td className="px-6 py-4 text-gold/50">#{entry.rank}</td>
-                      <td className="px-6 py-4 font-medium text-gold">
-                        <MaybeController address={entry.address} className="font-medium text-gold" />
-                      </td>
-                      <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
-                      <td className={`px-6 py-4 text-right font-medium ${tier.color}`}>{tier.name}</td>
-                      <td
-                        className={`px-6 py-4 text-right font-medium ${
-                          entry.delta >= 0n ? "text-emerald-300" : "text-red-300"
-                        }`}
-                      >
-                        {formatDelta(entry.delta)}
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm text-gold/70">
-                        {formatEventTimestamp(entry.updatedAtSeconds)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-gold/10 bg-black/40 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-gold/50">
-              Showing {(state.page - 1) * PAGE_SIZE + 1}-{Math.min(state.page * PAGE_SIZE, state.totalRows)} of{" "}
-              {state.totalRows}
-              {state.lastSyncAt ? ` · synced ${new Date(state.lastSyncAt).toLocaleTimeString()}` : ""}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setState((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                disabled={state.page <= 1}
-                className="rounded-lg border border-gold/20 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <span className="min-w-[92px] text-center text-sm text-gold/70">
-                Page {state.page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setState((prev) => ({ ...prev, page: Math.min(totalPages, prev.page + 1) }))}
-                disabled={state.page >= totalPages}
-                className="rounded-lg border border-gold/20 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

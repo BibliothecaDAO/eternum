@@ -25,7 +25,7 @@ import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
   ContractAddress,
   ID,
-  MERCENARIES,
+  BANDITS_NAME,
   RelicEffectWithEndTick,
   StructureType,
   TroopTier,
@@ -91,7 +91,7 @@ export const StructureEntityDetail = memo(
             playerGuild: undefined,
             guards: [],
             isAlly: false,
-            addressName: MERCENARIES,
+            addressName: BANDITS_NAME,
             isMine: false,
             hyperstructureRealmCount: undefined,
           };
@@ -101,7 +101,7 @@ export const StructureEntityDetail = memo(
         const guards = getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n);
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
         const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-        const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
+        const addressName = structure.owner ? getAddressName(structure.owner, components) : BANDITS_NAME;
 
         const hyperstructureRealmCount =
           structure.base.category === StructureType.Hyperstructure

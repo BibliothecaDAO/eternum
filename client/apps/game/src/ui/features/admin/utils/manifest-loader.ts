@@ -1,9 +1,3 @@
-import manifestLocal from "@manifests/manifest_local.json";
-import manifestSepolia from "@manifests/manifest_sepolia.json";
-import manifestMainnet from "@manifests/manifest_mainnet.json";
-import manifestSlot from "@manifests/manifest_slot.json";
-import manifestSlottest from "@manifests/manifest_slottest.json";
-
 export type ChainType = "local" | "sepolia" | "mainnet" | "slot" | "slottest";
 
 interface ManifestContract {
@@ -38,19 +32,43 @@ interface ManifestData {
   events: ManifestEvent[];
 }
 
-const MANIFESTS: Record<ChainType, ManifestData> = {
-  local: manifestLocal as ManifestData,
-  sepolia: manifestSepolia as ManifestData,
-  mainnet: manifestMainnet as ManifestData,
-  slot: manifestSlot as ManifestData,
-  slottest: manifestSlottest as ManifestData,
+const MANIFEST_LOADERS: Record<ChainType, () => Promise<ManifestData>> = {
+  local: async () => (await import("@manifests/manifest_local.json")).default as ManifestData,
+  sepolia: async () => (await import("@manifests/manifest_sepolia.json")).default as ManifestData,
+  mainnet: async () => (await import("@manifests/manifest_mainnet.json")).default as ManifestData,
+  slot: async () => (await import("@manifests/manifest_slot.json")).default as ManifestData,
+  slottest: async () => (await import("@manifests/manifest_slottest.json")).default as ManifestData,
 };
 
-const loadManifestFromSource = (chain: ChainType): ManifestData | null => {
-  return MANIFESTS[chain] || null;
+const manifestCache = new Map<ChainType, ManifestData>();
+
+export type ManifestSourceLoader = (chain: ChainType) => Promise<ManifestData | null>;
+
+const loadManifestFromSource: ManifestSourceLoader = async (chain) => {
+  const cached = manifestCache.get(chain);
+  if (cached) {
+    return cached;
+  }
+
+  const loader = MANIFEST_LOADERS[chain];
+  if (!loader) {
+    return null;
+  }
+
+  const manifest = await loader();
+  manifestCache.set(chain, manifest);
+  return manifest;
 };
 
-export const getManifestJsonString = (chain: ChainType): string => {
-  const manifest = loadManifestFromSource(chain);
-  return manifest ? JSON.stringify(manifest, null, 2) : "";
+export const getManifestJsonString = async (
+  chain: ChainType,
+  manifestSourceLoader: ManifestSourceLoader = loadManifestFromSource,
+): Promise<string> => {
+  try {
+    const manifest = await manifestSourceLoader(chain);
+    return manifest ? JSON.stringify(manifest, null, 2) : "";
+  } catch (error) {
+    console.error(`[admin-manifest-loader] Failed to load manifest for chain '${chain}'`, error);
+    return "";
+  }
 };

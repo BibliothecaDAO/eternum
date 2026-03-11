@@ -10,7 +10,6 @@ interface WorldmapPerfSimulationConfig {
   getSimulateAllExplored: () => boolean;
   setSimulateAllExplored: (value: boolean) => void;
   getRenderChunkSize: () => { width: number; height: number };
-  setRenderChunkSize: (width: number, height: number) => void;
   requestChunkRefresh: (force: boolean) => void;
   hashCoordinates: (x: number, y: number) => number;
 }
@@ -46,17 +45,12 @@ export class WorldmapPerfSimulation {
         this.config.requestChunkRefresh(true);
       });
 
-    // Render window size control
-    const renderSizeOptions = {
-      renderSize: this.config.getRenderChunkSize().width,
+    // Render-size is fixed at runtime to keep scene/model/manager bounds in sync.
+    const renderChunkSize = this.config.getRenderChunkSize();
+    const renderSizeState = {
+      renderSize: `${renderChunkSize.width}x${renderChunkSize.height}`,
     };
-
-    perfFolder
-      .add(renderSizeOptions, "renderSize", [32, 48, 64, 80, 96])
-      .name("Render Size")
-      .onChange((value: number) => {
-        this.setRenderChunkSize(value);
-      });
+    perfFolder.add(renderSizeState, "renderSize").name("Render Size (Fixed)");
 
     // Sync simulation controls
     this.setupSyncSimulationGUI(perfFolder);
@@ -114,26 +108,6 @@ export class WorldmapPerfSimulation {
     syncFolder.add(syncControls, "logStats").name("Log Stats");
 
     syncFolder.close();
-  }
-
-  /**
-   * Update the render chunk size dynamically.
-   * Smaller values = fewer hexes rendered = better performance.
-   */
-  private setRenderChunkSize(size: number): void {
-    const currentSize = this.config.getRenderChunkSize();
-    const oldSize = currentSize.width;
-    if (size === oldSize) return;
-
-    console.log(`[Performance] Changing render size from ${oldSize}x${oldSize} to ${size}x${size}`);
-    console.log(
-      `[Performance] Hex count: ${oldSize * oldSize} -> ${size * size} (${Math.round(((size * size) / (oldSize * oldSize)) * 100)}%)`,
-    );
-
-    this.config.setRenderChunkSize(size, size);
-
-    // Force a full chunk refresh with the new size
-    this.config.requestChunkRefresh(true);
   }
 
   /**

@@ -39,7 +39,7 @@ export default function BuildingCosts({ buildingType }: Props) {
     title: {
       fontWeight: "bold",
       fontSize: "0.875rem",
-      color: "#f6c297",
+      color: "#c9b06a",
       marginBottom: "0.375rem",
     },
     modeHeader: {

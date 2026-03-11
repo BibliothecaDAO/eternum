@@ -1,5 +1,4 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -13,7 +12,7 @@ import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from 
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
+import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
@@ -24,9 +23,9 @@ import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react"
 const SOCIAL_LEADERBOARD_LIMIT = 1000;
 
 const normalizeAddress = (address: bigint | string): string => {
-  return toHexString(typeof address === "string" ? BigInt(address) : address)
-    .toLowerCase()
-    .padStart(66, "0");
+  const addressBigInt = typeof address === "string" ? BigInt(address) : address;
+  const canonicalHex = toHexString(addressBigInt).toLowerCase().replace(/^0x/, "");
+  return `0x${canonicalHex.padStart(64, "0")}`;
 };
 
 export const PlayersPanel = ({
@@ -58,7 +57,6 @@ export const PlayersPanel = ({
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
-  const seasonWinner = useUIStore((state) => state.gameWinner);
   const mode = useGameModeConfig();
 
   useEffect(() => {
@@ -131,13 +129,12 @@ export const PlayersPanel = ({
         };
       });
     return playersWithStructures;
-  }, [isLoading, players, components, account.address, mode]);
+  }, [GuildWhitelist, Structure, account.address, components, mode, players, userGuild]);
 
   const leaderboardEntryMap = useMemo(() => {
     const map = new Map<string, LandingLeaderboardEntry>();
 
     leaderboardEntries.forEach((entry) => {
-      console.log("setting for address", entry.address.toLowerCase(), "name", entry.displayName);
       map.set(normalizeAddress(entry.address), entry);
     });
 
@@ -147,7 +144,6 @@ export const PlayersPanel = ({
   const playersWithLeaderboardStats = useMemo(() => {
     return playersWithStructures.map((player) => {
       const normalizedAddress = normalizeAddress(player.address);
-      console.log("getting for address", normalizedAddress);
       const entry = leaderboardEntryMap.get(normalizedAddress) ?? null;
 
       return {
@@ -271,13 +267,13 @@ export const PlayersPanel = ({
                   <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim an Essence Rift or Camp from bandits</span>
+                  <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
                   <span className="text-gold font-semibold">
                     {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim a Hyperstructure from bandits</span>
+                  <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
                   <span className="text-gold font-semibold">
                     {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
                   </span>

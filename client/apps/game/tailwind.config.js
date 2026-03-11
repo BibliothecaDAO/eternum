@@ -183,6 +183,7 @@ export default {
         "row-glow-up": "rowGlowUp 2s ease-out forwards",
         "row-glow-down": "rowGlowDown 1.5s ease-out forwards",
         "burst-ring": "burstRing 0.6s ease-out forwards",
+        shimmer: "shimmer 3s ease-in-out infinite",
       },
       keyframes: {
         slowPulse: {
@@ -221,6 +222,11 @@ export default {
         burstRing: {
           "0%": { boxShadow: "0 0 0 0 currentColor", opacity: "0.6" },
           "100%": { boxShadow: "0 0 0 12px currentColor", opacity: "0" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "200% 0", opacity: "0" },
+          "50%": { opacity: "1" },
+          "100%": { backgroundPosition: "-200% 0", opacity: "0" },
         },
       },
     },

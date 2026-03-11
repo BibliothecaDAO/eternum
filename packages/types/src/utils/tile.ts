@@ -18,6 +18,7 @@ const REWARD_EXTRACTED_SHIFT = 113;
 const REWARD_EXTRACTED_MASK = 0x1n;
 const ALT_SHIFT = 127;
 const ALT_MASK = 0x1n;
+const MAX_U32 = 0xffff_ffffn;
 
 const extractField = (data: bigint, shift: number, mask: bigint): bigint => (data >> BigInt(shift)) & mask;
 
@@ -56,3 +57,22 @@ export const tileDataToTile = (dataInput: TileDataInput): Tile => {
 };
 
 export const tileOptToTile = (tileOpt: TileOpt): Tile => tileDataToTile(tileOpt.data);
+
+/**
+ * Packs tile coordinates into the same collision-free seed format used on-chain:
+ * [alt:1 bit | col:32 bits | row:32 bits]
+ */
+export const packTileSeed = ({ alt, col, row }: { alt: boolean; col: TileDataInput; row: TileDataInput }): bigint => {
+  const colValue = toBigInt(col);
+  const rowValue = toBigInt(row);
+
+  if (colValue < 0n || colValue > MAX_U32) {
+    throw new Error(`col out of u32 range: ${colValue.toString()}`);
+  }
+  if (rowValue < 0n || rowValue > MAX_U32) {
+    throw new Error(`row out of u32 range: ${rowValue.toString()}`);
+  }
+
+  const altValue = alt ? 1n : 0n;
+  return (altValue << 64n) + (colValue << 32n) + rowValue;
+};
