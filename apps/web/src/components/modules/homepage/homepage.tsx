@@ -49,18 +49,18 @@ import {
 
 import { ProposalList } from "../governance/proposal-list";
 
+/** Max realm cards shown on the homepage before "View All" */
+const HOMEPAGE_REALMS_PREVIEW_COUNT = 5;
+
+const INTERACTIVE_ROW_CLASS =
+  "realm-interactive-row group hover:bg-accent/70 rounded-lg p-4 transition-colors hover:border-[color:var(--realm-accent-brass)]";
+
+function StatValue({ children }: { children: React.ReactNode }) {
+  return <div className="realm-stat text-3xl font-bold">{children}</div>;
+}
+
 export function Homepage({ address }: { address: `0x${string}` }) {
-  //const { address } = useAccount();
   const { address: l1Address } = useL1Account();
-  /*const l2RealmsQuery = useSuspenseQuery(
-    getRealmsQueryOptions({
-      address,
-      collectionAddress: CollectionAddresses.realms[
-        SUPPORTED_L2_CHAIN_ID
-      ] as string,
-    }),
-  );
-  const l2Realms = l2RealmsQuery.data;*/
 
   const [l1UsersRealmsQuery, accountTokensQuery] = useSuspenseQueries({
     queries: [
@@ -140,9 +140,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="realm-stat text-3xl font-bold">
-                    {l1RealmCount}
-                  </div>
+                  <StatValue>{l1RealmCount}</StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <EthereumIcon className="h-4 w-4" />
                     Ethereum
@@ -151,9 +149,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="realm-stat text-3xl font-bold">
-                    {accountTokens?.length ?? 0}
-                  </div>
+                  <StatValue>{accountTokens?.length ?? 0}</StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <StarknetIcon className="h-4 w-4" />
                     Starknet
@@ -193,9 +189,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="realm-stat text-3xl font-bold">
+                  <StatValue>
                     {formatNumber(Number(l1Balance?.formatted ?? 0))}
-                  </div>
+                  </StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <EthereumIcon className="h-4 w-4" />
                     Ethereum
@@ -204,9 +200,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="realm-stat text-3xl font-bold">
+                  <StatValue>
                     {formatNumber(Number(starknetBalance?.formatted))}
-                  </div>
+                  </StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <StarknetIcon className="h-4 w-4" />
                     Starknet
@@ -215,11 +211,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="realm-stat text-3xl font-bold">
+                  <StatValue>
                     {formatNumber(
                       Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0))),
                     )}
-                  </div>
+                  </StatValue>
                   <div className="text-muted-foreground text-sm">
                     Staked (veLords)
                   </div>
@@ -239,7 +235,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 <Link to={`/realms/claims`}>
-                  <div className="realm-interactive-row group hover:bg-accent/70 rounded-lg p-4 transition-colors hover:border-[color:var(--realm-accent-brass)]">
+                  <div className={INTERACTIVE_ROW_CLASS}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <LordsIcon className="h-6 w-6" />
@@ -260,7 +256,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </Link>
 
                 <Link to={`/velords`}>
-                  <div className="realm-interactive-row group hover:bg-accent/70 rounded-lg p-4 transition-colors hover:border-[color:var(--realm-accent-brass)]">
+                  <div className={INTERACTIVE_ROW_CLASS}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <LordsIcon className="h-6 w-6" />
@@ -384,7 +380,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle>Your Realms</CardTitle>
-                {accountTokens.length > 5 && (
+                {accountTokens.length > HOMEPAGE_REALMS_PREVIEW_COUNT && (
                   <Link to={`/realms`}>
                     <Button variant="outline" size="sm">
                       View All ({accountTokens.length})
@@ -393,9 +389,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   {accountTokens
-                    .slice(0, 5)
+                    .slice(0, HOMEPAGE_REALMS_PREVIEW_COUNT)
                     .map((realm: RawTokenBalanceWithMetadata) => (
                       <RealmCard
                         key={realm.token_id}
@@ -403,7 +399,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         isGrid={true}
                       />
                     ))}
-                  {accountTokens.length > 5 && (
+                  {accountTokens.length > HOMEPAGE_REALMS_PREVIEW_COUNT && (
                     <Card className="flex items-center justify-center">
                       <Link
                         to={`/realms`}
@@ -412,7 +408,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         <div className="text-center">
                           <Plus className="text-muted-foreground mx-auto h-8 w-8" />
                           <div className="text-muted-foreground mt-2 text-sm">
-                            +{accountTokens.length - 5} more
+                            +{accountTokens.length - HOMEPAGE_REALMS_PREVIEW_COUNT} more
                           </div>
                         </div>
                       </Link>

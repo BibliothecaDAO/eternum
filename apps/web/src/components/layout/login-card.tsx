@@ -8,6 +8,26 @@ import {
 
 import { StarknetWalletButton } from "./starknet-wallet-button";
 
+function FeatureItem({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-baseline gap-2 px-1">
+      <span className="text-primary text-xs">&#x25C6;</span>
+      <div>
+        <h3 className="realm-card-title text-sm">
+          {title}
+        </h3>
+        <p className="text-muted-foreground text-xs">{description}</p>
+      </div>
+    </div>
+  );
+}
+
 export function LoginCard() {
   return (
     <Card className="mx-auto mt-12 w-full max-w-md">
@@ -41,25 +61,5 @@ export function LoginCard() {
         <StarknetWalletButton className="w-full" variant="reference" />
       </CardContent>
     </Card>
-  );
-}
-
-function FeatureItem({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-baseline gap-2 px-1">
-      <span className="text-primary text-xs">&#x25C6;</span>
-      <div>
-        <h3 className="font-display text-sm font-semibold tracking-[var(--tracking-card)] uppercase">
-          {title}
-        </h3>
-        <p className="text-muted-foreground text-xs">{description}</p>
-      </div>
-    </div>
   );
 }

@@ -56,27 +56,6 @@ export function DelegateCard({
     });
   };
 
-  // Utility function to return the proper React icon for each platform
-  const getSocialIcon = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      /*case "twitter":
-        return <FaTwitter className="text-blue-500" />;
-      case "linkedin":
-        return <FaLinkedin className="text-blue-700" />;
-      case "github":
-        return <FaGithub className="text-gray-800" />;*/
-      default:
-        return null;
-    }
-  };
-
-  const socialMedia = {
-    twitter: delegate.delegateProfile?.twitter,
-    github: delegate.delegateProfile?.github,
-    telegram: delegate.delegateProfile?.telegram,
-    discord: delegate.delegateProfile?.discord,
-  };
-
   const name = useStarkDisplayName(delegate.user as `0x${string}`);
 
   return (
@@ -152,19 +131,6 @@ export function DelegateCard({
           />
         </div>
 
-        <div className="flex items-center">
-          {Object.entries(socialMedia).map(([platform, url]) => (
-            <a
-              key={platform}
-              href={url ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mr-4"
-            >
-              {getSocialIcon(platform)}
-            </a>
-          ))}
-        </div>
       </CardContent>
       <CardFooter>
         <Button

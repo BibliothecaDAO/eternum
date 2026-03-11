@@ -15,6 +15,22 @@ export interface RealmMetadata {
   }[];
 }
 
+const GridDetails = ({
+  token,
+}: {
+  token: RealmMetadata | null;
+  address?: string;
+}) => (
+  <div className="flex h-full w-full flex-col justify-between">
+    <div className="pb-2">
+      <span className="truncate">{token?.name}</span>
+    </div>
+    <div className="h-[48px]">
+      <RealmResources traits={token?.attributes ?? []} />
+    </div>
+  </div>
+);
+
 export const RealmCard = ({
   token,
   isGrid,
@@ -36,17 +52,14 @@ export const RealmCard = ({
             src={image}
             alt={name ?? ""}
             mediaKey={""}
-            /*className={isGrid ? "mx-auto" : ""}
-  width={imageSize}
-  height={imageSize}*/
           />
         ) : (
-          <div className="w-96">
+          <div className="w-full max-w-sm">
             <AnimatedMap />
           </div>
         )}
         {isGrid && (
-          <span className="absolute bottom-1 right-1 bg-black px-1 py-1 text-xs">
+          <span className="absolute bottom-1 right-1 bg-foreground text-background px-1 py-1 text-xs">
             #{Number(token.token_id)}
           </span>
         )}
@@ -57,28 +70,3 @@ export const RealmCard = ({
     </Card>
   );
 };
-
-const GridDetails = ({
-  token,
-}: {
-  token: RealmMetadata | null;
-  address?: string;
-}) => (
-  <div className="flex h-full w-full flex-col justify-between">
-    <div className="flex justify-between pb-2">
-      <span className="truncate">{token?.name}</span>
-      <div className="flex justify-between font-sans">
-        {/*<Price token={token} />*/}
-        {/*token.last_price && (
-          <span className="flex text-bright-yellow/50">
-            {token.last_price}
-            <LordsIcon className="ml-2 h-4 w-4 self-center fill-current" />
-          </span>
-        )*/}
-      </div>
-    </div>
-    <div className="h-[48px]">
-      <RealmResources traits={token?.attributes ?? []} />
-    </div>
-  </div>
-);

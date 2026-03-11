@@ -388,6 +388,12 @@
   }
 }
 
+@layer utilities {
+  .border-realm-etched {
+    border-color: var(--realm-border-etched);
+  }
+}
+
 ::-webkit-scrollbar,
 .table-scroll::-webkit-scrollbar {
   width: 0.3em;
