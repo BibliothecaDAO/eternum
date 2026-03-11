@@ -1,65 +1,51 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
-import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
 
 describe("runWarpTravelManagerFanout", () => {
-  it("fans out one chunk update to every registered manager with the same options", async () => {
-    const army = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
-    const structure = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
-    const chest = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+  it("runs all manager updates concurrently and reports no failures when all succeed", async () => {
+    const calls: string[] = [];
 
-    const resultPromise = runWarpTravelManagerFanout({
+    const result = await runWarpTravelManagerFanout({
       chunkKey: "24,24",
-      options: { force: true, transitionToken: 11 },
+      options: { force: true, transitionToken: 7 },
       managers: [
-        { label: "army", updateChunk: army.fn },
-        { label: "structure", updateChunk: structure.fn },
-        { label: "chest", updateChunk: chest.fn },
+        { label: "army", updateChunk: async () => void calls.push("army") },
+        { label: "structure", updateChunk: async () => void calls.push("structure") },
+        { label: "chest", updateChunk: async () => void calls.push("chest") },
       ],
     });
 
-    await flushMicrotasks(2);
-
-    expect(army.calls).toEqual([["24,24", { force: true, transitionToken: 11 }]]);
-    expect(structure.calls).toEqual([["24,24", { force: true, transitionToken: 11 }]]);
-    expect(chest.calls).toEqual([["24,24", { force: true, transitionToken: 11 }]]);
-
-    army.resolveNext();
-    structure.resolveNext();
-    chest.resolveNext();
-
-    await expect(resultPromise).resolves.toEqual({
+    expect(calls).toEqual(["army", "structure", "chest"]);
+    expect(result).toEqual({
       failedManagers: [],
     });
   });
 
-  it("reports rejected managers without dropping successful updates", async () => {
-    const army = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
-    const structure = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
-    const chest = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+  it("collects failed labels and reports the corresponding error reasons", async () => {
+    const failure = new Error("manager failed");
+    const onManagerFailed = vi.fn();
 
-    const resultPromise = runWarpTravelManagerFanout({
+    const result = await runWarpTravelManagerFanout({
       chunkKey: "24,24",
-      options: { force: false, transitionToken: 12 },
+      options: { force: false, transitionToken: 8 },
       managers: [
-        { label: "army", updateChunk: army.fn },
-        { label: "structure", updateChunk: structure.fn },
-        { label: "chest", updateChunk: chest.fn },
+        { label: "army", updateChunk: async () => undefined },
+        {
+          label: "structure",
+          updateChunk: async () => {
+            throw failure;
+          },
+        },
+        { label: "chest", updateChunk: async () => undefined },
       ],
+      onManagerFailed,
     });
 
-    await flushMicrotasks(2);
-
-    army.resolveNext();
-    structure.rejectNext(new Error("structure failed"));
-    chest.resolveNext();
-
-    await expect(resultPromise).resolves.toMatchObject({
-      failedManagers: [{ label: "structure" }],
+    expect(result).toEqual({
+      failedManagers: [{ label: "structure", reason: failure }],
     });
-
-    const result = await resultPromise;
-    expect((result.failedManagers[0]?.reason as Error | undefined)?.message).toBe("structure failed");
+    expect(onManagerFailed).toHaveBeenCalledTimes(1);
+    expect(onManagerFailed).toHaveBeenCalledWith("structure", failure);
   });
 });

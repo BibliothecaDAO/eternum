@@ -17,6 +17,7 @@ export async function runWarpTravelManagerFanout(input: {
   chunkKey: string;
   options?: WarpTravelManagerFanoutOptions;
   managers: WarpTravelChunkManager[];
+  onManagerFailed?: (label: string, reason: unknown) => void;
 }): Promise<{ failedManagers: WarpTravelManagerFanoutFailure[] }> {
   const results = await Promise.allSettled(
     input.managers.map((manager) => manager.updateChunk(input.chunkKey, input.options)),
@@ -25,10 +26,12 @@ export async function runWarpTravelManagerFanout(input: {
   const failedManagers: WarpTravelManagerFanoutFailure[] = [];
   results.forEach((result, index) => {
     if (result.status === "rejected") {
+      const label = input.managers[index].label;
       failedManagers.push({
-        label: input.managers[index].label,
+        label,
         reason: result.reason,
       });
+      input.onManagerFailed?.(label, result.reason);
     }
   });
 

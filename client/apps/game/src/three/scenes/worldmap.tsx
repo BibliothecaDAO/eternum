@@ -4698,7 +4698,7 @@ export default class WorldmapScene extends WarpTravel {
     const managerStartedAt = performance.now();
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
 
-    const { failedManagers } = await runWarpTravelManagerFanout({
+    await runWarpTravelManagerFanout({
       chunkKey,
       options,
       managers: [
@@ -4709,10 +4709,10 @@ export default class WorldmapScene extends WarpTravel {
         },
         { label: "chest", updateChunk: (targetChunkKey, targetOptions) => this.chestManager.updateChunk(targetChunkKey, targetOptions) },
       ],
-    });
-    failedManagers.forEach((managerFailure) => {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
-      console.error(`[CHUNK SYNC] ${managerFailure.label} manager failed for chunk ${chunkKey}`, managerFailure.reason);
+      onManagerFailed: (label, reason) => {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
+        console.error(`[CHUNK SYNC] ${label} manager failed for chunk ${chunkKey}`, reason);
+      },
     });
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
       durationMs: performance.now() - managerStartedAt,
