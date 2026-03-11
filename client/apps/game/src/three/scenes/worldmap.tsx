@@ -181,6 +181,7 @@ import {
 } from "./worldmap-tile-fetch-volume-regression";
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
+import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
 interface CachedMatrixEntry {
@@ -4697,18 +4698,21 @@ export default class WorldmapScene extends WarpTravel {
     const managerStartedAt = performance.now();
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
 
-    const updateTasks = [
-      { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
-      { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
-      { label: "chest", promise: this.chestManager.updateChunk(chunkKey, options) },
-    ];
-
-    const results = await Promise.allSettled(updateTasks.map((task) => task.promise));
-    results.forEach((result, index) => {
-      if (result.status === "rejected") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
-        console.error(`[CHUNK SYNC] ${updateTasks[index].label} manager failed for chunk ${chunkKey}`, result.reason);
-      }
+    const { failedManagers } = await runWarpTravelManagerFanout({
+      chunkKey,
+      options,
+      managers: [
+        { label: "army", updateChunk: (targetChunkKey, targetOptions) => this.armyManager.updateChunk(targetChunkKey, targetOptions) },
+        {
+          label: "structure",
+          updateChunk: (targetChunkKey, targetOptions) => this.structureManager.updateChunk(targetChunkKey, targetOptions),
+        },
+        { label: "chest", updateChunk: (targetChunkKey, targetOptions) => this.chestManager.updateChunk(targetChunkKey, targetOptions) },
+      ],
+    });
+    failedManagers.forEach((managerFailure) => {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
+      console.error(`[CHUNK SYNC] ${managerFailure.label} manager failed for chunk ${chunkKey}`, managerFailure.reason);
     });
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
       durationMs: performance.now() - managerStartedAt,
