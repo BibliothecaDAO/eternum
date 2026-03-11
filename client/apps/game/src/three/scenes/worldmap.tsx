@@ -17,7 +17,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
-import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { CameraView } from "@/three/scenes/hexagon-scene";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -179,6 +179,7 @@ import {
   evaluateTileFetchVolumeRegression,
   type TileFetchVolumeRegressionResult,
 } from "./worldmap-tile-fetch-volume-regression";
+import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -252,7 +253,7 @@ type DirectionalPrefetchAnchor = {
   movementSign: -1 | 1;
 };
 
-export default class WorldmapScene extends HexagonScene {
+export default class WorldmapScene extends WarpTravel {
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
   private readonly chunkGeometry = {
     size: WORLDMAP_CHUNK_POLICY.chunkSize,
@@ -311,7 +312,6 @@ export default class WorldmapScene extends HexagonScene {
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
   private toriiLoadingCounter = 0;
-  private isSwitchedOff = false;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
@@ -484,8 +484,6 @@ export default class WorldmapScene extends HexagonScene {
   private travelEffects: Map<string, () => void> = new Map();
   private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
     new Map();
-  private hasInitialized = false;
-  private initialSetupPromise: Promise<void> | null = null;
   private cancelHexGridComputation?: () => void;
 
   // Global chunk switching coordination
@@ -2249,8 +2247,54 @@ export default class WorldmapScene extends HexagonScene {
     return null;
   }
 
-  async setup() {
-    this.isSwitchedOff = false;
+  protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
+    return {
+      onSetupStart: () => {
+        this.configureWarpTravelSetupStart();
+      },
+      onInitialSetupStart: () => {
+        this.clearTileEntityCache();
+      },
+      moveCameraToSceneLocation: () => this.moveCameraToURLLocation(),
+      attachLabelGroupsToScene: () =>
+        this.attachWarpTravelLabelGroupsToScene([
+          this.armyLabelsGroup,
+          this.structureLabelsGroup,
+          this.chestLabelsGroup,
+        ]),
+      attachManagerLabels: () => {
+        this.armyManager.addLabelsToScene();
+        this.structureManager.showLabels();
+        this.chestManager.addLabelsToScene();
+      },
+      registerStoreSubscriptions: () => this.registerStoreSubscriptions(),
+      setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
+      refreshScene: async () => {
+        await this.updateVisibleChunks(true);
+      },
+      onInitialSetupComplete: () => {
+        this.preloadWorldmapCosmeticAssets();
+      },
+      reportSetupError: (error, phase) => {
+        this.reportWarpTravelRefreshError(error, phase);
+      },
+      disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
+      onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
+      detachLabelGroupsFromScene: () =>
+        this.detachWarpTravelLabelGroupsFromScene([
+          this.armyLabelsGroup,
+          this.structureLabelsGroup,
+          this.chestLabelsGroup,
+        ]),
+      detachManagerLabels: () => {
+        this.armyManager.removeLabelsFromScene();
+        this.structureManager.removeLabelsFromScene();
+        this.chestManager.removeLabelsFromScene();
+      },
+    };
+  }
+
+  private configureWarpTravelSetupStart(): void {
     this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = 40;
     this.camera.far = 65;
@@ -2272,46 +2316,9 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     useUIStore.getState().setLeftNavigationView(LeftView.None);
-
-    if (!this.hasInitialized) {
-      if (!this.initialSetupPromise) {
-        this.initialSetupPromise = this.performInitialSetup();
-      }
-      try {
-        await this.initialSetupPromise;
-        this.hasInitialized = true;
-      } finally {
-        this.initialSetupPromise = null;
-      }
-    } else {
-      await this.resumeWorldmapScene();
-    }
   }
 
-  private attachLabelGroupsToScene() {
-    const groups = [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup];
-    groups.forEach((group) => {
-      if (!group.parent) {
-        this.scene.add(group);
-      }
-    });
-  }
-
-  private async performInitialSetup() {
-    this.clearTileEntityCache();
-    this.moveCameraToURLLocation();
-    this.attachLabelGroupsToScene();
-    this.armyManager.addLabelsToScene();
-    this.structureManager.showLabels();
-    this.chestManager.addLabelsToScene();
-    this.registerStoreSubscriptions();
-    this.setupCameraZoomHandler();
-    try {
-      await this.updateVisibleChunks(true);
-    } catch (error) {
-      console.error("Failed to update visible chunks during initial setup:", error);
-    }
-
+  private preloadWorldmapCosmeticAssets(): void {
     // Fire-and-forget cosmetic asset preloading (non-blocking)
     preloadAllCosmeticAssets({
       onProgress: ({ loaded, total }) => {
@@ -2324,21 +2331,12 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  private async resumeWorldmapScene() {
-    this.moveCameraToURLLocation();
-    this.attachLabelGroupsToScene();
-    this.armyManager.addLabelsToScene();
-    this.structureManager.showLabels();
-    this.chestManager.addLabelsToScene();
-    this.registerStoreSubscriptions();
-    this.setupCameraZoomHandler();
-    try {
-      // Force chunk refresh when resuming to ensure proper re-initialization
-      // This fixes the bug where chunks don't load when switching back from Hexception view
-      await this.updateVisibleChunks(true);
-    } catch (error) {
-      console.error("Failed to update visible chunks while resuming worldmap scene:", error);
-    }
+  private reportWarpTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {
+    const message =
+      phase === "initial"
+        ? "Failed to update visible chunks during initial setup:"
+        : "Failed to update visible chunks while resuming worldmap scene:";
+    console.error(message, error);
   }
 
   private resetZoomHardeningRuntimeState(): void {
@@ -2390,18 +2388,7 @@ export default class WorldmapScene extends HexagonScene {
     this.toriiLoadingCounter = 0;
     this.state.setLoading(LoadingStateKey.Map, false);
 
-    this.disposeStoreSubscriptions();
-    this.disposeWorldUpdateSubscriptions();
-
-    // Remove label groups from scene
-    this.scene.remove(this.armyLabelsGroup);
-    this.scene.remove(this.structureLabelsGroup);
-    this.scene.remove(this.chestLabelsGroup);
-
-    // Clean up labels
-    this.armyManager.removeLabelsFromScene();
-    this.structureManager.removeLabelsFromScene();
-    this.chestManager.removeLabelsFromScene();
+    this.runWarpTravelSwitchOffLifecycle();
 
     // Clean up wheel event listener
     if (this.wheelHandler) {

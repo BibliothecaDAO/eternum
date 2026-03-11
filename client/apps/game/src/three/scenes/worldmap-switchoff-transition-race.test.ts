@@ -74,4 +74,11 @@ describe("worldmap switch-off transition race hardening", () => {
 
     expect(source).toMatch(/invalidateWorldmapSwitchOffTransitionState/);
   });
+
+  it("routes shared lifecycle cleanup through WarpTravel", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/extends WarpTravel/);
+    expect(source).toMatch(/runWarpTravelSwitchOffLifecycle\(\)/);
+  });
 });

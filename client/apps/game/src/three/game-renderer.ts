@@ -52,6 +52,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { env } from "../../env";
+import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
   resolveLabelRenderDecision,
@@ -220,7 +221,9 @@ export default class GameRenderer {
   private setupSceneSwitchingGUI() {
     const changeSceneFolder = GUIManager.addFolder("Switch scene");
     const changeSceneParams = { scene: SceneName.WorldMap };
-    changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
+    changeSceneFolder
+      .add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel])
+      .name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
   }
@@ -794,10 +797,7 @@ export default class GameRenderer {
     const url = new URL(window.location.href);
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const sceneSlug = pathSegments.pop();
-    const targetScene =
-      sceneSlug === SceneName.Hexception || sceneSlug === SceneName.WorldMap
-        ? (sceneSlug as SceneName)
-        : SceneName.WorldMap;
+    const targetScene = resolveSceneNameFromRouteSegment(sceneSlug);
 
     if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
       this.sceneManager.moveCameraForScene();
