@@ -297,7 +297,13 @@ export const MarketOdds = ({
           ].filter((address): address is string => Boolean(address)),
         ),
       ),
-    [outcomeAddresses, outcomeUsernames, controllerAddressByUsername, avatarProfilesByAddress, avatarProfilesByUsername],
+    [
+      outcomeAddresses,
+      outcomeUsernames,
+      controllerAddressByUsername,
+      avatarProfilesByAddress,
+      avatarProfilesByUsername,
+    ],
   );
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
 
@@ -327,8 +333,9 @@ export const MarketOdds = ({
         const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
         const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
         const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
-        const controllerAddress = normalizedName ? controllerAddressByUsername.get(normalizedName) ?? null : null;
-        const playerAddress = normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
+        const controllerAddress = normalizedName ? (controllerAddressByUsername.get(normalizedName) ?? null) : null;
+        const playerAddress =
+          normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
         const avatarSeed = playerAddress ?? normalizedName ?? rawName;
         const avatarUrl = showPlayerMeta ? getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl) : null;
         const mmrSnapshot = showPlayerMeta && playerAddress ? mmrByAddress[playerAddress] : undefined;

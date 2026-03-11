@@ -348,7 +348,13 @@ const MarketTerminalCard = ({
           ].filter((address): address is string => Boolean(address)),
         ),
       ),
-    [outcomeAddresses, outcomeUsernames, controllerAddressByUsername, avatarProfilesByAddress, avatarProfilesByUsername],
+    [
+      outcomeAddresses,
+      outcomeUsernames,
+      controllerAddressByUsername,
+      avatarProfilesByAddress,
+      avatarProfilesByUsername,
+    ],
   );
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
   const chainLabel = marketChainLabels[item.chain];
@@ -398,11 +404,14 @@ const MarketTerminalCard = ({
             const rawName = String(outcome.name ?? "");
             const normalizedAddress = normalizeOutcomeAddress(rawName);
             const normalizedName = normalizedAddress ? null : normalizeAvatarUsername(rawName);
-            const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
+            const avatarProfileByResolvedAddress = normalizedAddress
+              ? avatarProfileByAddress.get(normalizedAddress)
+              : null;
             const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
             const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
-            const controllerAddress = normalizedName ? controllerAddressByUsername.get(normalizedName) ?? null : null;
-            const playerAddress = normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
+            const controllerAddress = normalizedName ? (controllerAddressByUsername.get(normalizedName) ?? null) : null;
+            const playerAddress =
+              normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
             const avatarSeed = playerAddress ?? normalizedName ?? rawName;
             const avatarUrl = getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl);
             const mmrSnapshot = playerAddress ? mmrByAddress[playerAddress] : undefined;
