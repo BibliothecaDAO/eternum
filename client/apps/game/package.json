@@ -19,6 +19,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@cartridge/connector": "catalog:",
+    "@cartridge/controller": "catalog:",
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
