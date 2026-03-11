@@ -468,7 +468,7 @@ export const ScoreToBeatPanel = () => {
   const scoreToBeatRows = scoreToBeatEntries;
   const topScoreToBeat = scoreToBeatRows[0] ?? null;
   const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
-  const scoreToBeatAddresses = scoreToBeatTopTen.map((entry) => entry.address);
+  const scoreToBeatAddresses = scoreToBeatRows.map((entry) => entry.address);
   const { data: avatarProfiles } = useAvatarProfiles(scoreToBeatAddresses);
   const avatarMap = useMemo(() => {
     const map = new Map<string, string>();
