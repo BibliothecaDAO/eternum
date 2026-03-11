@@ -3,6 +3,7 @@ import {
   getAvatarUrl,
   normalizeAvatarAddress,
   normalizeAvatarUsername,
+  useAvatarProfiles,
   useAvatarProfilesByUsernames,
 } from "@/hooks/use-player-avatar";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -71,6 +72,17 @@ const uniqueNormalizedAddresses = (addresses: string[]): string[] =>
       addresses.map((address) => normalizeHexAddress(address)).filter((address): address is string => Boolean(address)),
     ),
   );
+
+const normalizeOutcomeAddress = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  const isAddressLike = /^0x[0-9a-f]+$/.test(lower) || /^[0-9]+$/.test(lower) || /^[0-9a-f]{40,}$/.test(lower);
+  if (!isAddressLike) return null;
+
+  const normalized = normalizeAvatarAddress(lower);
+  return normalized && normalized.startsWith("0x") ? normalized : null;
+};
 
 const usePlayersMmrSnapshots = (addresses: string[]) => {
   const normalizedAddresses = useMemo(() => uniqueNormalizedAddresses(addresses), [addresses]);
@@ -265,33 +277,63 @@ const MarketTerminalCard = ({
 
   const visibleOutcomes = outcomes.slice(0, 3);
   const hiddenCount = Math.max(0, outcomes.length - visibleOutcomes.length);
-  const playerUsernames = useMemo(
-    () =>
-      visibleOutcomes
-        .map((outcome) => normalizeAvatarUsername(String(outcome.name ?? "")))
-        .filter((name): name is string => Boolean(name)),
-    [visibleOutcomes],
-  );
-  const { data: avatarProfiles = [] } = useAvatarProfilesByUsernames(playerUsernames);
+  const { outcomeAddresses, outcomeUsernames } = useMemo(() => {
+    const addresses = new Set<string>();
+    const usernames = new Set<string>();
+
+    visibleOutcomes.forEach((outcome) => {
+      const rawName = String(outcome.name ?? "");
+      const normalizedAddress = normalizeOutcomeAddress(rawName);
+      if (normalizedAddress) {
+        addresses.add(normalizedAddress);
+        return;
+      }
+
+      const normalizedUsername = normalizeAvatarUsername(rawName);
+      if (normalizedUsername) usernames.add(normalizedUsername);
+    });
+
+    return {
+      outcomeAddresses: Array.from(addresses),
+      outcomeUsernames: Array.from(usernames),
+    };
+  }, [visibleOutcomes]);
+  const { data: avatarProfilesByAddress = [] } = useAvatarProfiles(outcomeAddresses);
+  const { data: avatarProfilesByUsername = [] } = useAvatarProfilesByUsernames(outcomeUsernames);
+  const avatarProfileByAddress = useMemo(() => {
+    const profileMap = new Map<string, (typeof avatarProfilesByAddress)[number]>();
+    avatarProfilesByAddress.forEach((profile) => {
+      const normalizedAddress = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalizedAddress) return;
+      profileMap.set(normalizedAddress, profile);
+    });
+    return profileMap;
+  }, [avatarProfilesByAddress]);
   const avatarProfileByUsername = useMemo(() => {
-    const profileMap = new Map<string, (typeof avatarProfiles)[number]>();
-    avatarProfiles.forEach((profile) => {
+    const profileMap = new Map<string, (typeof avatarProfilesByUsername)[number]>();
+    avatarProfilesByUsername.forEach((profile) => {
       const username = normalizeAvatarUsername(profile.cartridgeUsername ?? null);
       if (!username) return;
       profileMap.set(username, profile);
     });
     return profileMap;
-  }, [avatarProfiles]);
+  }, [avatarProfilesByUsername]);
   const playerAddresses = useMemo(
     () =>
       Array.from(
         new Set(
-          avatarProfiles
-            .map((profile) => normalizeAvatarAddress(profile.playerAddress))
-            .filter((address): address is string => Boolean(address)),
+          [
+            ...outcomeAddresses,
+            ...avatarProfilesByAddress
+              .map((profile) => normalizeAvatarAddress(profile.playerAddress))
+              .filter((address): address is string => Boolean(address)),
+            ...avatarProfilesByUsername
+              .map((profile) => normalizeAvatarAddress(profile.playerAddress))
+              .filter((address): address is string => Boolean(address)),
+          ].filter((address): address is string => Boolean(address)),
         ),
       ),
-    [avatarProfiles],
+    [outcomeAddresses, avatarProfilesByAddress, avatarProfilesByUsername],
   );
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
   const chainLabel = marketChainLabels[item.chain];
@@ -338,10 +380,14 @@ const MarketTerminalCard = ({
               item.market.isResolved() &&
               winningOutcomeOrdersSet.size > 0 &&
               winningOutcomeOrdersSet.has(outcome.resolutionIndex);
-            const normalizedName = normalizeAvatarUsername(String(outcome.name ?? ""));
-            const avatarProfile = normalizedName ? avatarProfileByUsername.get(normalizedName) : undefined;
-            const playerAddress = normalizeAvatarAddress(avatarProfile?.playerAddress);
-            const avatarSeed = playerAddress ?? normalizedName ?? String(outcome.name ?? "player");
+            const rawName = String(outcome.name ?? "");
+            const normalizedAddress = normalizeOutcomeAddress(rawName);
+            const normalizedName = normalizedAddress ? null : normalizeAvatarUsername(rawName);
+            const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
+            const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
+            const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
+            const playerAddress = normalizeAvatarAddress(avatarProfile?.playerAddress) ?? normalizedAddress;
+            const avatarSeed = playerAddress ?? normalizedName ?? rawName;
             const avatarUrl = getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl);
             const mmrSnapshot = playerAddress ? mmrByAddress[playerAddress] : undefined;
 

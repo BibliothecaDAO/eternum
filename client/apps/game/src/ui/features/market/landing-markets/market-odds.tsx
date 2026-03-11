@@ -3,6 +3,7 @@ import {
   getAvatarUrl,
   normalizeAvatarAddress,
   normalizeAvatarUsername,
+  useAvatarProfiles,
   useAvatarProfilesByUsernames,
 } from "@/hooks/use-player-avatar";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
@@ -39,6 +40,17 @@ const uniqueNormalizedAddresses = (addresses: string[]): string[] =>
       addresses.map((address) => normalizeHexAddress(address)).filter((address): address is string => Boolean(address)),
     ),
   );
+
+const normalizeOutcomeAddress = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  const isAddressLike = /^0x[0-9a-f]+$/.test(lower) || /^[0-9]+$/.test(lower) || /^[0-9a-f]{40,}$/.test(lower);
+  if (!isAddressLike) return null;
+
+  const normalized = normalizeAvatarAddress(lower);
+  return normalized && normalized.startsWith("0x") ? normalized : null;
+};
 
 const usePlayersMmrSnapshots = (addresses: string[]) => {
   const normalizedAddresses = useMemo(() => uniqueNormalizedAddresses(addresses), [addresses]);
@@ -212,35 +224,65 @@ export const MarketOdds = ({
   const shouldCollapse =
     collapsible && typeof maxVisible === "number" && maxVisible > 0 && sortedOutcomes.length > maxVisible;
   const visibleOutcomes = shouldCollapse && !isExpanded ? sortedOutcomes.slice(0, maxVisible) : sortedOutcomes;
-  const playerUsernames = useMemo(
-    () =>
-      showPlayerMeta
-        ? visibleOutcomes
-            .map(({ outcome }) => normalizeAvatarUsername(String(outcome.name ?? "")))
-            .filter((name): name is string => Boolean(name))
-        : [],
-    [showPlayerMeta, visibleOutcomes],
-  );
-  const { data: avatarProfiles = [] } = useAvatarProfilesByUsernames(playerUsernames);
+  const { outcomeAddresses, outcomeUsernames } = useMemo(() => {
+    if (!showPlayerMeta) return { outcomeAddresses: [] as string[], outcomeUsernames: [] as string[] };
+
+    const addresses = new Set<string>();
+    const usernames = new Set<string>();
+
+    visibleOutcomes.forEach(({ outcome }) => {
+      const rawName = String(outcome.name ?? "");
+      const normalizedAddress = normalizeOutcomeAddress(rawName);
+      if (normalizedAddress) {
+        addresses.add(normalizedAddress);
+        return;
+      }
+
+      const normalizedUsername = normalizeAvatarUsername(rawName);
+      if (normalizedUsername) usernames.add(normalizedUsername);
+    });
+
+    return {
+      outcomeAddresses: Array.from(addresses),
+      outcomeUsernames: Array.from(usernames),
+    };
+  }, [showPlayerMeta, visibleOutcomes]);
+  const { data: avatarProfilesByAddress = [] } = useAvatarProfiles(outcomeAddresses);
+  const { data: avatarProfilesByUsername = [] } = useAvatarProfilesByUsernames(outcomeUsernames);
+  const avatarProfileByAddress = useMemo(() => {
+    const map = new Map<string, (typeof avatarProfilesByAddress)[number]>();
+    avatarProfilesByAddress.forEach((profile) => {
+      const normalized = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalized) return;
+      map.set(normalized, profile);
+    });
+    return map;
+  }, [avatarProfilesByAddress]);
   const avatarProfileByUsername = useMemo(() => {
-    const map = new Map<string, (typeof avatarProfiles)[number]>();
-    avatarProfiles.forEach((profile) => {
+    const map = new Map<string, (typeof avatarProfilesByUsername)[number]>();
+    avatarProfilesByUsername.forEach((profile) => {
       const username = normalizeAvatarUsername(profile.cartridgeUsername ?? null);
       if (!username) return;
       map.set(username, profile);
     });
     return map;
-  }, [avatarProfiles]);
+  }, [avatarProfilesByUsername]);
   const playerAddresses = useMemo(
     () =>
       Array.from(
         new Set(
-          avatarProfiles
-            .map((profile) => normalizeAvatarAddress(profile.playerAddress))
-            .filter((address): address is string => Boolean(address)),
+          [
+            ...outcomeAddresses,
+            ...avatarProfilesByAddress
+              .map((profile) => normalizeAvatarAddress(profile.playerAddress))
+              .filter((address): address is string => Boolean(address)),
+            ...avatarProfilesByUsername
+              .map((profile) => normalizeAvatarAddress(profile.playerAddress))
+              .filter((address): address is string => Boolean(address)),
+          ].filter((address): address is string => Boolean(address)),
         ),
       ),
-    [avatarProfiles],
+    [outcomeAddresses, avatarProfilesByAddress, avatarProfilesByUsername],
   );
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
 
@@ -264,10 +306,14 @@ export const MarketOdds = ({
         const decimals = market.collateralToken?.decimals ?? 18;
         const poolAmount = formatUnits(poolAmountRaw, Number(decimals), 0);
 
-        const normalizedName = showPlayerMeta ? normalizeAvatarUsername(String(outcome.name ?? "")) : null;
-        const avatarProfile = normalizedName ? avatarProfileByUsername.get(normalizedName) : undefined;
-        const playerAddress = normalizeAvatarAddress(avatarProfile?.playerAddress);
-        const avatarSeed = playerAddress ?? normalizedName ?? String(outcome.name ?? "player");
+        const rawName = String(outcome.name ?? "");
+        const normalizedAddress = showPlayerMeta ? normalizeOutcomeAddress(rawName) : null;
+        const normalizedName = showPlayerMeta && !normalizedAddress ? normalizeAvatarUsername(rawName) : null;
+        const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
+        const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
+        const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
+        const playerAddress = normalizeAvatarAddress(avatarProfile?.playerAddress) ?? normalizedAddress;
+        const avatarSeed = playerAddress ?? normalizedName ?? rawName;
         const avatarUrl = showPlayerMeta ? getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl) : null;
         const mmrSnapshot = showPlayerMeta && playerAddress ? mmrByAddress[playerAddress] : undefined;
 
