@@ -65,7 +65,7 @@ describe("account portal theme", () => {
   });
 
   it("gives outline buttons an etched panel treatment", () => {
-    expect(buttonSource).toContain("border-[color:var(--realm-border-etched)]");
+    expect(buttonSource).toContain("border-realm-etched");
     expect(buttonSource).toContain("bg-card/80");
     expect(buttonSource).toContain(
       "hover:border-[color:var(--realm-accent-brass)]",

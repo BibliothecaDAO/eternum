@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground border-[color:var(--realm-border-etched)] shadow-[0_12px_24px_color-mix(in_oklab,var(--realm-accent-brass)_24%,transparent)] hover:-translate-y-0.5 hover:bg-[color:var(--realm-accent-ember)]",
+          "bg-primary text-primary-foreground border-realm-etched shadow-[0_12px_24px_color-mix(in_oklab,var(--realm-accent-brass)_24%,transparent)] hover:-translate-y-0.5 hover:bg-[color:var(--realm-accent-ember)]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs",
         outline:
-          "bg-card/80 text-foreground hover:bg-accent/70 hover:text-primary border-[color:var(--realm-border-etched)] shadow-[inset_0_1px_0_color-mix(in_oklab,white_8%,transparent),0_10px_24px_color-mix(in_oklab,black_24%,transparent)] hover:border-[color:var(--realm-accent-brass)]",
+          "bg-card/80 text-foreground hover:bg-accent/70 hover:text-primary border-realm-etched shadow-[inset_0_1px_0_color-mix(in_oklab,white_8%,transparent),0_10px_24px_color-mix(in_oklab,black_24%,transparent)] hover:border-[color:var(--realm-accent-brass)]",
         secondary:
-          "bg-secondary/80 text-secondary-foreground hover:bg-secondary border-[color:var(--realm-border-etched)] shadow-xs",
+          "bg-secondary/80 text-secondary-foreground hover:bg-secondary border-realm-etched shadow-xs",
         ghost:
-          "text-foreground hover:bg-accent/60 hover:text-primary border-transparent bg-transparent hover:border-[color:var(--realm-border-etched)]",
+          "text-foreground hover:bg-accent/60 hover:text-primary border-transparent bg-transparent hover:border-realm-etched",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

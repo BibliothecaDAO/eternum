@@ -72,7 +72,7 @@ export function Header() {
             />
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-between px-1.5 sm:px-4">
+        <div className="flex flex-1 items-center justify-between px-3 sm:px-4">
           <div className="flex items-center justify-between gap-2">
             <SidebarTrigger className="-ml-1" />
             <ModeToggle />

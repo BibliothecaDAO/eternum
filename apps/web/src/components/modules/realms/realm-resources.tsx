@@ -10,18 +10,24 @@ import {
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+/** Max visible resource icons on desktop */
+const VISIBLE_RESOURCES_DESKTOP = 4;
+/** Max visible resource icons on mobile */
+const VISIBLE_RESOURCES_MOBILE = 2;
+
 export default function RealmResources({
   traits,
 }: {
   traits: TokenMetadataAttribute[];
 }) {
   const resources = traits.filter((trait) => trait.trait_type === "Resource");
-  const hiddenCount = resources.length - 4;
   const isMobile = useIsMobile();
+  const visibleCount = isMobile ? VISIBLE_RESOURCES_MOBILE : VISIBLE_RESOURCES_DESKTOP;
+  const hiddenCount = resources.length - visibleCount;
 
   return (
     <div className="flex items-center gap-2">
-      {resources.slice(0, isMobile ? 2 : 4).map((resource, index) => (
+      {resources.slice(0, visibleCount).map((resource, index) => (
         <div
           key={index}
           className="bg-secondary flex items-center gap-2 rounded-lg p-2"
@@ -31,7 +37,7 @@ export default function RealmResources({
           )}
         </div>
       ))}
-      {resources.length > (isMobile ? 2 : 4) && (
+      {resources.length > visibleCount && (
         <>
           <TooltipProvider>
             <Tooltip>
@@ -47,7 +53,7 @@ export default function RealmResources({
                 side="top"
               >
                 <div className="flex items-center gap-2">
-                  {resources.slice(4).map((resource, index) => (
+                  {resources.slice(visibleCount).map((resource, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <div>
                         <span className="text-xs">{resource.value}</span>
