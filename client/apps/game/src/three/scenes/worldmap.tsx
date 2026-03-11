@@ -179,6 +179,7 @@ import {
   evaluateTileFetchVolumeRegression,
   type TileFetchVolumeRegressionResult,
 } from "./worldmap-tile-fetch-volume-regression";
+import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
 interface CachedMatrixEntry {
@@ -4404,23 +4405,31 @@ export default class WorldmapScene extends WarpTravel {
     );
 
     const focusPoint = this.getCameraGroundIntersection().clone();
+    const chunkDecision = resolveWarpTravelVisibleChunkDecision({
+      isSwitchedOff: this.isSwitchedOff,
+      focusPoint,
+      chunkSize: this.chunkSize,
+      hexSize: HEX_SIZE,
+      currentChunk: this.currentChunk,
+      force,
+      reason: options?.reason ?? "default",
+      shouldDelayChunkSwitch: this.shouldDelayChunkSwitch(focusPoint),
+    });
 
-    const { chunkX, chunkZ } = this.worldToChunkCoordinates(focusPoint.x, focusPoint.z);
-    const startCol = chunkX * this.chunkSize;
-    const startRow = chunkZ * this.chunkSize;
-    const chunkKey = `${startRow},${startCol}`;
-
-    const chunkChanged = this.currentChunk !== chunkKey;
-
-    const isShortcutNavigation = options?.reason === "shortcut";
-    if (!force && chunkChanged && !isShortcutNavigation && this.shouldDelayChunkSwitch(focusPoint)) {
+    if (chunkDecision.action === "noop" && !chunkDecision.shouldPrefetch) {
       return false;
     }
 
     // Proactively prefetch the forward chunk while staying in the current one to hide pop-in.
-    this.prefetchDirectionalChunks(focusPoint);
+    if (chunkDecision.shouldPrefetch) {
+      this.prefetchDirectionalChunks(focusPoint);
+    }
 
-    if (chunkChanged) {
+    if (chunkDecision.action === "switch_chunk") {
+      const { chunkKey, startCol, startRow } = chunkDecision;
+      if (chunkKey === null || startCol === null || startRow === null) {
+        return false;
+      }
       // Create and track the global chunk switch promise
       const transitionToken = ++this.chunkTransitionToken;
       const switchStartedAt = performance.now();
@@ -4449,7 +4458,11 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
 
-    if (force) {
+    if (chunkDecision.action === "refresh_current_chunk") {
+      const { chunkKey, startCol, startRow } = chunkDecision;
+      if (chunkKey === null || startCol === null || startRow === null) {
+        return false;
+      }
       const transitionToken = ++this.chunkTransitionToken;
       this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
         selectedEntityId: this.state.entityActions.selectedEntityId,
