@@ -8,6 +8,7 @@ import {
 } from "@/hooks/use-player-avatar";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { MarketClass } from "@/pm/class";
+import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -274,6 +275,17 @@ const MarketTerminalCard = ({
 
     return { outcomes: ordered, winningOutcomeOrdersSet: winningSet };
   }, [item.market]);
+  const controllers = useOptionalControllers();
+  const controllerAddressByUsername = useMemo(() => {
+    const map = new Map<string, string>();
+    controllers?.controllers?.forEach((controller) => {
+      const normalizedUsername = normalizeAvatarUsername(controller.username);
+      const normalizedAddress = normalizeAvatarAddress(controller.address);
+      if (!normalizedUsername || !normalizedAddress) return;
+      map.set(normalizedUsername, normalizedAddress);
+    });
+    return map;
+  }, [controllers?.controllers]);
 
   const visibleOutcomes = outcomes.slice(0, 3);
   const hiddenCount = Math.max(0, outcomes.length - visibleOutcomes.length);
@@ -324,6 +336,9 @@ const MarketTerminalCard = ({
         new Set(
           [
             ...outcomeAddresses,
+            ...outcomeUsernames
+              .map((username) => controllerAddressByUsername.get(username) ?? null)
+              .filter((address): address is string => Boolean(address)),
             ...avatarProfilesByAddress
               .map((profile) => normalizeAvatarAddress(profile.playerAddress))
               .filter((address): address is string => Boolean(address)),
@@ -333,7 +348,7 @@ const MarketTerminalCard = ({
           ].filter((address): address is string => Boolean(address)),
         ),
       ),
-    [outcomeAddresses, avatarProfilesByAddress, avatarProfilesByUsername],
+    [outcomeAddresses, outcomeUsernames, controllerAddressByUsername, avatarProfilesByAddress, avatarProfilesByUsername],
   );
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
   const chainLabel = marketChainLabels[item.chain];
@@ -386,7 +401,8 @@ const MarketTerminalCard = ({
             const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
             const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
             const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
-            const playerAddress = normalizeAvatarAddress(avatarProfile?.playerAddress) ?? normalizedAddress;
+            const controllerAddress = normalizedName ? controllerAddressByUsername.get(normalizedName) ?? null : null;
+            const playerAddress = normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
             const avatarSeed = playerAddress ?? normalizedName ?? rawName;
             const avatarUrl = getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl);
             const mmrSnapshot = playerAddress ? mmrByAddress[playerAddress] : undefined;

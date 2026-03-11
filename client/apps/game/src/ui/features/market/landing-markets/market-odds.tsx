@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { hash } from "starknet";
 
 import { MarketClass, MarketOutcome } from "@/pm/class";
+import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
 import { formatUnits } from "@/pm/utils";
 import { MaybeController } from "./maybe-controller";
 import { TokenIcon } from "./token-icon";
@@ -180,6 +181,17 @@ export const MarketOdds = ({
 }) => {
   const outcomes = useMemo(() => getOutcomes(market), [market]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const controllers = useOptionalControllers();
+  const controllerAddressByUsername = useMemo(() => {
+    const map = new Map<string, string>();
+    controllers?.controllers?.forEach((controller) => {
+      const normalizedUsername = normalizeAvatarUsername(controller.username);
+      const normalizedAddress = normalizeAvatarAddress(controller.address);
+      if (!normalizedUsername || !normalizedAddress) return;
+      map.set(normalizedUsername, normalizedAddress);
+    });
+    return map;
+  }, [controllers?.controllers]);
 
   const { sortedOutcomes, winningOutcomeOrdersSet } = useMemo(() => {
     const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
@@ -273,6 +285,9 @@ export const MarketOdds = ({
         new Set(
           [
             ...outcomeAddresses,
+            ...outcomeUsernames
+              .map((username) => controllerAddressByUsername.get(username) ?? null)
+              .filter((address): address is string => Boolean(address)),
             ...avatarProfilesByAddress
               .map((profile) => normalizeAvatarAddress(profile.playerAddress))
               .filter((address): address is string => Boolean(address)),
@@ -282,7 +297,7 @@ export const MarketOdds = ({
           ].filter((address): address is string => Boolean(address)),
         ),
       ),
-    [outcomeAddresses, avatarProfilesByAddress, avatarProfilesByUsername],
+    [outcomeAddresses, outcomeUsernames, controllerAddressByUsername, avatarProfilesByAddress, avatarProfilesByUsername],
   );
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
 
@@ -312,7 +327,8 @@ export const MarketOdds = ({
         const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
         const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
         const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
-        const playerAddress = normalizeAvatarAddress(avatarProfile?.playerAddress) ?? normalizedAddress;
+        const controllerAddress = normalizedName ? controllerAddressByUsername.get(normalizedName) ?? null : null;
+        const playerAddress = normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
         const avatarSeed = playerAddress ?? normalizedName ?? rawName;
         const avatarUrl = showPlayerMeta ? getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl) : null;
         const mmrSnapshot = showPlayerMeta && playerAddress ? mmrByAddress[playerAddress] : undefined;
