@@ -38,31 +38,51 @@ export function extractTxError(err: any): string {
   const paths = [
     err?.baseError?.data?.execution_error,
     err?.cause?.baseError?.data?.execution_error,
+    err?.cause?.data?.execution_error,
     err?.cause?.message,
     err?.data?.execution_error,
+    err?.message,
   ];
   for (const val of paths) {
-    if (typeof val === "string" && val.length > 30) {
+    if (typeof val === "string" && val.length > 10) {
+      // Try to extract the most useful error reason
       const reasonMatch = val.match(/Failure reason:\s*\([^)]*'([^']+)'\)/);
-      const quotedMatch = val.match(/"([^"]+)"/);
       if (reasonMatch) return reasonMatch[1];
+      const quotedMatch = val.match(/"([^"]{5,})"/);
       if (quotedMatch) return quotedMatch[1];
       return val.length > 300 ? val.slice(0, 300) + "..." : val;
     }
   }
 
-  // Last resort: stringify the whole error to find details
+  // Deep-search: stringify the whole error to find details
   const msg = err?.message ?? String(err);
   try {
     const full = JSON.stringify(err, null, 0);
-    const quotedMatch = full.match(/"execution_error":"([^"]+)"/);
-    if (quotedMatch) {
-      const decoded = quotedMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
-      const reason = decoded.match(/"([^"]{5,})"/);
-      return reason ? reason[1] : decoded.slice(0, 300);
+    // Search for execution_error field anywhere
+    const execMatch = full.match(/"execution_error":"([^"]+)"/);
+    if (execMatch) {
+      const decoded = execMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
+      const reason = decoded.match(/Failure reason:\s*\([^)]*'([^']+)'\)/);
+      if (reason) return reason[1];
+      const quoted = decoded.match(/"([^"]{5,})"/);
+      return quoted ? quoted[1] : decoded.slice(0, 300);
     }
+    // Search for revert_error or error_message
+    const revertMatch = full.match(/"(?:revert_error|error_message|revert_reason)":"([^"]+)"/);
+    if (revertMatch) return revertMatch[1];
+    // Search for any meaningful error string in the JSON
+    const anyReason = full.match(/Failure reason[^']*'([^']+)'/);
+    if (anyReason) return anyReason[1];
   } catch {
     /* circular ref */
+  }
+
+  // If we still have a generic message, try to log the full error for debugging
+  if (msg === "Transaction execution error" || msg.length < 20) {
+    try {
+      const detail = JSON.stringify(err, null, 2).slice(0, 500);
+      console.error(`[TX] Raw error detail: ${detail}`);
+    } catch {}
   }
 
   return msg;
