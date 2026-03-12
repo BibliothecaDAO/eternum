@@ -13,6 +13,7 @@ import { BiomeIdToType } from "@bibliothecadao/types";
 import type { MapContext } from "../map/context.js";
 import { isStructure, isExplorer, isChest } from "../world/occupier.js";
 import { calculateStrength, calculateGuardStrength } from "../world/strength.js";
+import { addressesEqual } from "./tx-context.js";
 
 // --- Biome lookup ---
 
@@ -41,10 +42,32 @@ function formatResources(resources: ResourceInfo[]): string {
   return resources.map((r) => `${r.amount.toLocaleString()} ${r.name}`).join(", ");
 }
 
-function formatStructure(info: StructureInfo, biome: number): string {
+function formatOwner(address: string | null, name: string | null, playerAddress?: string): string {
+  if (!address) return "Unknown";
+  if (playerAddress && addressesEqual(address, playerAddress)) return "You";
+  if (name) return name;
+  // Try to decode as a felt short string (Cartridge controller names are stored as felts)
+  try {
+    const n = BigInt(address);
+    if (n > 0n && n < 2n ** 248n) {
+      const bytes: number[] = [];
+      let val = n;
+      while (val > 0n) {
+        bytes.unshift(Number(val & 0xffn));
+        val >>= 8n;
+      }
+      const decoded = String.fromCharCode(...bytes);
+      if (/^[\x20-\x7e]+$/.test(decoded)) return decoded;
+    }
+  } catch {}
+  return address.slice(0, 10) + "...";
+}
+
+function formatStructure(info: StructureInfo, biome: number, playerAddress?: string): string {
   const lines: string[] = [];
 
-  const header = info.ownerAddress ? `${info.category} (Owner: ${info.ownerAddress})` : info.category;
+  const owner = formatOwner(info.ownerAddress, null, playerAddress);
+  const header = `${info.category} (Owner: ${owner})`;
   lines.push(header);
 
   if (info.category === "Realm" || info.category === "Village") {
@@ -61,10 +84,10 @@ function formatStructure(info: StructureInfo, biome: number): string {
   return lines.join("\n");
 }
 
-function formatExplorer(info: ExplorerInfo, biome: number): string {
+function formatExplorer(info: ExplorerInfo, biome: number, playerAddress?: string): string {
   const lines: string[] = [];
 
-  const owner = info.ownerName ?? info.ownerAddress ?? "Unknown";
+  const owner = formatOwner(info.ownerAddress, info.ownerName, playerAddress);
   lines.push(`${info.troopType} ${info.troopTier} (Owner: ${owner})`);
   lines.push(`Troops: ${info.troopCount.toLocaleString()} ${info.troopType} ${info.troopTier}`);
   const strength = calculateStrength(info.troopCount, info.troopTier, info.troopType, biome);
@@ -91,7 +114,7 @@ function formatChest(rewardExtracted: boolean): string {
  * @param ctx - Map context holding the current tile snapshot.
  * @returns An AgentTool that inspects a tile by row/col and returns a text summary.
  */
-export function createInspectTool(client: EternumClient, ctx: MapContext): AgentTool<any> {
+export function createInspectTool(client: EternumClient, ctx: MapContext, playerAddress?: string): AgentTool<any> {
   return {
     name: "inspect_tile",
     label: "Inspect Tile",
@@ -141,14 +164,14 @@ export function createInspectTool(client: EternumClient, ctx: MapContext): Agent
       } else if (isStructure(occupierType)) {
         const info = await client.view.structureAt(hexCoords.x, hexCoords.y);
         if (info) {
-          text = formatStructure(info, tile.biome);
+          text = formatStructure(info, tile.biome, playerAddress);
         } else {
           text = formatEmpty(tile.biome);
         }
       } else if (isExplorer(occupierType)) {
         const info = await client.view.explorerInfo(tile.occupierId);
         if (info) {
-          text = formatExplorer(info, tile.biome);
+          text = formatExplorer(info, tile.biome, playerAddress);
         } else {
           text = `Explorer (entity ${tile.occupierId}) — no data available`;
         }
