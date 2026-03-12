@@ -1,0 +1,440 @@
+/**
+ * Automation loop — periodic tick scheduler for multi-realm on-chain automation.
+ *
+ * Each tick discovers owned realms, fetches their state, plans buildings and
+ * production, executes transactions, offloads resource arrivals, and writes a
+ * status file. The loop runs on a fixed interval and silently retries failures.
+ */
+import { writeFileSync } from "fs";
+import { join } from "path";
+import type { EternumClient } from "@bibliothecadao/client";
+import type { EternumProvider } from "@bibliothecadao/provider";
+import type { GameConfig } from "@bibliothecadao/torii";
+import type { MapContext } from "../map/context.js";
+import { parseRealmSnapshot } from "./snapshot.js";
+import { resolvePlan } from "./runner.js";
+import { buildOrderForBiome, troopPathForBiome } from "./build-order.js";
+import { planProduction, type BuildingTarget } from "./production.js";
+import { findOpenSlots } from "./placement.js";
+import { executeRealmTick, type BuildAction, type UpgradeAction, type ProductionActions } from "./executor.js";
+import { formatStatus, type RealmStatus, type AutomationStatusMap } from "./status.js";
+import type { RealmState } from "./runner.js";
+
+/** Handle returned by {@link createAutomationLoop} to control the tick scheduler. */
+interface AutomationLoop {
+  /** Start the interval timer and immediately run the first tick. */
+  start(): void;
+  /** Stop the interval timer; the current tick (if any) completes naturally. */
+  stop(): void;
+  /** Manually trigger one tick outside the regular interval. */
+  refresh(): Promise<void>;
+  /** Whether the loop is currently scheduled to tick. */
+  readonly isRunning: boolean;
+}
+
+/**
+ * Compute the scaled building cost for a given building type.
+ *
+ * Formula (matches game client getBuildingCosts):
+ *   percentIncrease = buildingBaseCostPercentIncrease / 10000
+ *   totalCost = baseCost + (quantity - 1)² × baseCost × percentIncrease
+ *
+ * Returns an array of { resource, amount } with scaled amounts, or an empty
+ * array if no cost data is available for this building type.
+ */
+function scaledBuildingCost(
+  buildingType: number,
+  existingQuantity: number,
+  gameConfig: GameConfig,
+  useSimple: boolean,
+): { resource: number; amount: number }[] {
+  const config = gameConfig.buildingCosts[buildingType];
+  if (!config) return [];
+
+  const costs = useSimple ? config.simpleCosts : config.complexCosts;
+  if (costs.length === 0) return [];
+
+  const percentIncrease = gameConfig.buildingBaseCostPercentIncrease / 10000;
+  const scaleFactor = Math.max(0, existingQuantity - 1);
+
+  return costs.map((cost) => ({
+    resource: cost.resource,
+    amount: cost.amount + scaleFactor * scaleFactor * cost.amount * percentIncrease,
+  }));
+}
+
+/**
+ * Create an automation loop that periodically ticks all realms owned by the player.
+ *
+ * Each tick: discovers realms → fetches balances/buildings → plans builds and
+ * production → executes transactions → offloads arrivals → writes a status file.
+ * Errors within a tick are swallowed so the loop always continues.
+ *
+ * @param client - Eternum SDK client for querying on-chain state via SQL.
+ * @param provider - Eternum provider for submitting on-chain transactions.
+ * @param signer - Account signer passed to all provider calls.
+ * @param playerAddress - Hex address of the player whose realms to automate.
+ * @param dataDir - Directory where automation-status.txt is written.
+ * @param mapCtx - Map context snapshot for biome lookups by coordinate.
+ * @param gameConfig - On-chain game configuration (building costs, upgrade costs, recipes).
+ * @param intervalMs - Tick interval in milliseconds (default 60 000 ms / 1 minute).
+ * @returns An AutomationLoop handle with start/stop/refresh controls.
+ */
+export function createAutomationLoop(
+  client: EternumClient,
+  provider: EternumProvider,
+  signer: any,
+  playerAddress: string,
+  dataDir: string,
+  mapCtx: MapContext,
+  gameConfig: GameConfig,
+  intervalMs = 60_000,
+  automationStatus?: AutomationStatusMap,
+): AutomationLoop {
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let running = false;
+  let tickCount = 0;
+
+  async function tick() {
+    tickCount++;
+    try {
+      // Phase 1: Discover owned realms
+      const sql = client.sql as any;
+      if (typeof sql.fetchStructuresByOwner !== "function") return;
+
+      const allStructures: { entity_id: number; coord_x: number; coord_y: number; category: number; level: number }[] =
+        typeof sql.fetchPlayerStructures === "function"
+          ? await sql.fetchPlayerStructures(playerAddress)
+          : await sql.fetchStructuresByOwner(playerAddress);
+
+      // Only process Realms (1) and Villages (5)
+      const realmEntities = allStructures.filter(
+        (s) => Number(s.entity_id) > 0 && (s.category === 1 || s.category === 5),
+      );
+      if (realmEntities.length === 0) return;
+
+      // Build coordinate → biome lookup from map snapshot
+      const gridIndex = mapCtx.snapshot?.gridIndex;
+
+      // Phase 2: Fetch state in parallel
+      const snapshotRows = await Promise.all(
+        realmEntities.map(async (s) => {
+          const entityId = Number(s.entity_id);
+          const biome = gridIndex?.get(`${s.coord_x},${s.coord_y}`)?.biome ?? 11;
+          const level = s.level ?? 0;
+          try {
+            const rows =
+              typeof sql.fetchResourceBalancesWithProduction === "function"
+                ? await sql.fetchResourceBalancesWithProduction([entityId])
+                : await sql.fetchResourceBalancesAndProduction([entityId]);
+            return { entityId, biome, level, category: s.category, row: rows?.[0] ?? null };
+          } catch {
+            return { entityId, biome, level, category: s.category, row: null };
+          }
+        }),
+      );
+
+      // Fetch building positions for all realms
+      const entityIds = realmEntities.map((s) => Number(s.entity_id));
+      let buildingRows: { outer_entity_id: number; inner_col: number; inner_row: number; category: number }[] = [];
+      try {
+        if (typeof sql.fetchBuildingsByStructures === "function") {
+          buildingRows = await sql.fetchBuildingsByStructures(entityIds);
+        }
+      } catch {
+        // Continue without building data
+      }
+
+      // Group buildings by realm
+      // Filter out center hex (10,10) and castle/center building (category 25)
+      // — these are the realm structure itself, not player-built buildings.
+      const buildingsByRealm = new Map<number, Set<string>>();
+      const buildingCountsByRealm = new Map<number, Map<number, number>>();
+      for (const b of buildingRows) {
+        // Skip the center hex — it's the realm structure, not a building slot
+        if (b.inner_col === 10 && b.inner_row === 10) continue;
+        // Skip castle/center building type and empty/destroyed slots (None = 0)
+        if (b.category === 0 || b.category === 25) continue;
+
+        const key = b.outer_entity_id;
+        if (!buildingsByRealm.has(key)) buildingsByRealm.set(key, new Set());
+        buildingsByRealm.get(key)!.add(`${b.inner_col},${b.inner_row}`);
+
+        if (!buildingCountsByRealm.has(key)) buildingCountsByRealm.set(key, new Map());
+        const counts = buildingCountsByRealm.get(key)!;
+        counts.set(b.category, (counts.get(b.category) ?? 0) + 1);
+      }
+
+      // Phase 3 & 4: Plan and execute in parallel
+      const realmStatuses: RealmStatus[] = [];
+
+      const results = await Promise.allSettled(
+        snapshotRows.map(async ({ entityId, biome, level, category, row }) => {
+          // Pass timestamp so snapshot computes projectedBalances (for prioritisation).
+          // Budget/spending uses snapshot.balances (raw on-chain values) to avoid
+          // "Insufficient Balance" tx failures from overestimation.
+          const currentTimestamp = Math.floor(Date.now() / 1000);
+          const snapshot = parseRealmSnapshot(row, currentTimestamp);
+          const structureType = category === 5 ? "Village" : "Realm";
+          const realmName = `${structureType} ${entityId}`;
+
+          // Merge building counts: the SQL building query has ALL buildings
+          // (including non-resource ones like WorkersHut), while snapshot only
+          // has resource-producing buildings. Use the SQL data as the source of truth.
+          const buildingCounts = buildingCountsByRealm.get(entityId) ?? snapshot.buildingCounts;
+
+          const realmState: RealmState = {
+            biome,
+            level,
+            buildingCounts,
+          };
+
+          // Plan: building — collect ALL builds that fit this tick
+          const buildOrder = buildOrderForBiome(biome);
+          const plan = resolvePlan(buildOrder, realmState, gameConfig.buildingCosts);
+
+          // Compact log — one line per realm (build status only; production always runs)
+          const buildLabels = plan.builds.map((b) => b.step.label);
+          const buildSummary = plan.idle
+            ? `builds done`
+            : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}`;
+          console.log(`[AUTO] ${structureType} ${entityId} | lv${level} | ${buildSummary} | producing`);
+
+          // Upgrade as soon as slots are full — the executor runs builds first,
+          // then the upgrade, as separate sequential calls (not a multicall),
+          // so a failed upgrade won't affect prior builds.
+          let upgradeIntent: UpgradeAction | null = null;
+          if (plan.upgrade) {
+            const targetLevel = plan.upgrade.fromLevel + 1;
+            const upgradeCosts = gameConfig.realmUpgradeCosts[targetLevel];
+            const canAffordUpgrade =
+              upgradeCosts?.length > 0 &&
+              upgradeCosts.every(
+                (c: { resource: number; amount: number }) => (snapshot.balances.get(c.resource) ?? 0) >= c.amount,
+              );
+            if (canAffordUpgrade) {
+              upgradeIntent = plan.upgrade;
+            }
+          }
+
+          // Find open slots for all planned builds
+          const occupied = buildingsByRealm.get(entityId) ?? new Set();
+          const { slots } = findOpenSlots(occupied, level, plan.builds.length);
+
+          // Compute building targets with costs (planner handles affordability)
+          const runningCounts = new Map(buildingCounts);
+          const candidateBuilds: BuildingTarget[] = [];
+
+          let slotIdx = 0;
+          for (let bi = 0; bi < plan.builds.length && slotIdx < slots.length; bi++) {
+            const build = plan.builds[bi];
+            const { step } = build;
+            const slot = slots[slotIdx];
+            const existingQuantity = runningCounts.get(step.building) ?? 0;
+
+            const complexCosts = scaledBuildingCost(step.building, existingQuantity, gameConfig, false);
+            const simpleCosts = scaledBuildingCost(step.building, existingQuantity, gameConfig, true);
+
+            let costs: { resource: number; amount: number }[];
+            let useSimple: boolean;
+            if (complexCosts.length > 0) {
+              costs = complexCosts;
+              useSimple = false;
+            } else if (simpleCosts.length > 0) {
+              costs = simpleCosts;
+              useSimple = true;
+            } else {
+              continue;
+            }
+
+            candidateBuilds.push({
+              buildingType: step.building,
+              label: step.label,
+              costs,
+              useSimple,
+              slot,
+            });
+
+            runningCounts.set(step.building, existingQuantity + 1);
+            slotIdx++;
+          }
+
+          // Unified plan: buildings + production compete for the same budget
+          const troopPath = troopPathForBiome(biome);
+          const isVillage = realmEntities.find((r) => Number(r.entity_id) === entityId)?.category === 5;
+          const unifiedPlan = planProduction(
+            snapshot.balances,
+            buildingCounts,
+            troopPath,
+            gameConfig,
+            60,
+            isVillage,
+            candidateBuilds,
+          );
+
+          // Convert affordable builds to BuildActions for executor
+          const buildActions: BuildAction[] = unifiedPlan.affordableBuilds.map((bt) => ({
+            step: { building: bt.buildingType, label: bt.label, minLevel: 0 },
+            slot: bt.slot,
+            useSimple: bt.useSimple,
+          }));
+
+          if (buildActions.length > 0) {
+            console.log(
+              `[AUTO] ${structureType} ${entityId} | building ${buildActions.length}: ${buildActions.map((a) => a.step.label).join(", ")}`,
+            );
+          }
+
+          // Run both complex and simple production every tick
+          let productionCalls: ProductionActions | null = null;
+          if (unifiedPlan.calls.length > 0) {
+            const resourceToResource = unifiedPlan.calls
+              .filter((c) => c.method === "complex")
+              .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
+            const laborToResource = unifiedPlan.calls
+              .filter((c) => c.method === "simple")
+              .map((c) => ({ resource_id: c.resourceId, cycles: c.cycles }));
+
+            if (resourceToResource.length > 0 || laborToResource.length > 0) {
+              productionCalls = { resourceToResource, laborToResource };
+            }
+          }
+
+          // Execute
+          const tickResult = await executeRealmTick({
+            provider,
+            signer,
+            realmEntityId: entityId,
+            buildActions,
+            upgradeIntent,
+            productionCalls,
+          });
+
+          // Build order progress — use the last build's index or total if idle
+          const lastBuildIndex =
+            plan.builds.length > 0 ? plan.builds[plan.builds.length - 1].index : buildOrder.steps.length;
+          const progress = `${lastBuildIndex}/${buildOrder.steps.length}`;
+
+          return {
+            realmEntityId: entityId,
+            realmName,
+            biome,
+            level,
+            buildOrderProgress: progress,
+            tickResult,
+            essencePulse: {
+              balance: snapshot.balances.get(38) ?? 0,
+              sufficient: true,
+            },
+            wheatPulse: {
+              balance: snapshot.balances.get(35) ?? 0,
+              low: (snapshot.balances.get(35) ?? 0) < 200,
+            },
+          } as RealmStatus;
+        }),
+      );
+
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          realmStatuses.push(r.value);
+          if (automationStatus) {
+            const rs = r.value;
+            automationStatus.set(rs.realmEntityId, {
+              entityId: rs.realmEntityId,
+              name: rs.realmName,
+              level: rs.level,
+              buildOrderProgress: rs.buildOrderProgress,
+              lastBuilt: rs.tickResult.built,
+              lastUpgrade: rs.tickResult.upgraded,
+              produced: rs.tickResult.produced,
+              errors: rs.tickResult.errors,
+              wheatBalance: rs.wheatPulse.balance,
+              essenceBalance: rs.essencePulse.balance,
+            });
+          }
+        }
+      }
+
+      // Phase 5: Auto-offload resource arrivals
+      try {
+        const sql = client.sql as any;
+        if (typeof sql.fetchWithQuery === "function" || typeof sql.query === "function") {
+          // Try to query ResourceArrival for all owned structures
+          const structureIds = allStructures.map((s) => Number(s.entity_id));
+          for (const structureId of structureIds) {
+            try {
+              const query = `SELECT structure_id, day, slot_1, slot_2, slot_3, slot_4, slot_5, slot_6, slot_7, slot_8, total_amount FROM [s1_eternum-ResourceArrival] WHERE structure_id = ${structureId} AND total_amount > 0 LIMIT 10;`;
+              const baseUrl = (sql as any).baseUrl ?? (client as any).toriiUrl + "/sql";
+              const url = `${baseUrl}?query=${encodeURIComponent(query)}`;
+              const res = await fetch(url);
+              if (!res.ok) continue;
+              const rows = (await res.json()) as any[];
+              for (const row of rows) {
+                if (!row.total_amount || Number(row.total_amount) <= 0) continue;
+                // Count non-empty slots to determine resource_count
+                let resourceCount = 0;
+                for (let i = 1; i <= 8; i++) {
+                  const slotVal = row[`slot_${i}`];
+                  if (slotVal && slotVal !== "0x0" && slotVal !== "0" && slotVal !== "[]") resourceCount++;
+                }
+                if (resourceCount <= 0) resourceCount = 1; // at least 1
+                try {
+                  await provider.arrivals_offload({
+                    structureId,
+                    day: row.day,
+                    slot: 0, // offload from first slot
+                    resource_count: resourceCount,
+                    signer,
+                  });
+                  console.log(`[AUTO] Offloaded arrival for structure ${structureId}`);
+                } catch {
+                  // Arrival may not be ready yet — skip silently
+                }
+              }
+            } catch {
+              // Non-critical — skip this structure
+            }
+          }
+        }
+      } catch {
+        // Non-critical — offloading can retry next tick
+      }
+
+      // Phase 6: Write status file
+      const statusText = formatStatus({
+        timestamp: new Date(),
+        realms: realmStatuses,
+      });
+
+      try {
+        writeFileSync(join(dataDir, "automation-status.txt"), statusText);
+      } catch {
+        // Non-critical
+      }
+    } catch {
+      // Silently skip failed ticks — next cycle will retry
+    }
+  }
+
+  return {
+    start() {
+      if (running) return;
+      running = true;
+      tick();
+      timer = setInterval(tick, intervalMs);
+    },
+    stop() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      running = false;
+    },
+    async refresh() {
+      await tick();
+    },
+    get isRunning() {
+      return running;
+    },
+  };
+}

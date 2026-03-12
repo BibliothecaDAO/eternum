@@ -7,8 +7,8 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "paths": {
-		"@config": ["../../../config/utils/utils"],
-		"@contracts": ["../../../contracts/utils/utils"]  
+      "@config": ["../../../config/utils/utils"],
+      "@contracts": ["../../../contracts/utils/utils"]
     },
 
     /* Bundler mode */

@@ -367,6 +367,8 @@ export interface ExplorerData {
   coord_y: number;
   resource_id?: number;
   resource_amount?: string;
+  owner_address?: string;
+  owner_name?: string;
 }
 
 export interface StructureWithResources {

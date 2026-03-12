@@ -1,7 +1,7 @@
 export const STRUCTURE_QUERIES = {
   STRUCTURES_BY_OWNER: `
-    SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
-    FROM [s1_eternum-Structure] 
+    SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner
+    FROM [s1_eternum-Structure]
     WHERE owner = '{owner}';
   `,
 
@@ -17,6 +17,33 @@ export const STRUCTURE_QUERIES = {
     WHERE category == 1;
   `,
 
+  STRUCTURES_BY_ENTITY_IDS: `
+    SELECT
+        entity_id,
+        owner AS occupier_id,
+        \`base.category\` AS structure_category,
+        \`base.level\` AS structure_level,
+        \`base.coord_x\` AS coord_x,
+        \`base.coord_y\` AS coord_y,
+        \`metadata.realm_id\` AS realm_id,
+        \`base.troop_explorer_count\` AS troop_explorer_count,
+        \`base.troop_max_explorer_count\` AS troop_max_explorer_count,
+        \`troop_guards.delta.category\` as delta_category,
+        \`troop_guards.delta.tier\` as delta_tier,
+        \`troop_guards.delta.count\` as delta_count,
+        \`troop_guards.charlie.category\` as charlie_category,
+        \`troop_guards.charlie.tier\` as charlie_tier,
+        \`troop_guards.charlie.count\` as charlie_count,
+        \`troop_guards.bravo.category\` as bravo_category,
+        \`troop_guards.bravo.tier\` as bravo_tier,
+        \`troop_guards.bravo.count\` as bravo_count,
+        \`troop_guards.alpha.category\` as alpha_category,
+        \`troop_guards.alpha.tier\` as alpha_tier,
+        \`troop_guards.alpha.count\` as alpha_count
+    FROM \`s1_eternum-Structure\`
+    WHERE entity_id IN ({entityIds});
+  `,
+
   STRUCTURE_BY_COORD: `
     SELECT
         internal_id,
@@ -28,12 +55,14 @@ export const STRUCTURE_QUERIES = {
         \`base.coord_y\` AS coord_y,
         \`base.created_at\` AS created_tick,
         \`metadata.realm_id\` AS realm_id,
+        \`base.troop_explorer_count\` AS troop_explorer_count,
+        \`base.troop_max_explorer_count\` AS troop_max_explorer_count,
         category AS top_level_category,
         internal_created_at,
         internal_updated_at,
         resources_packed
     FROM \`s1_eternum-Structure\`
-    WHERE \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y};
+    WHERE \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y}
     LIMIT 1;
   `,
 
@@ -312,5 +341,12 @@ export const STRUCTURE_QUERIES = {
   LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
   
   ORDER BY et.explorer_id;
+  `,
+
+  EXPLORERS_BY_STRUCTURES: `
+    SELECT explorer_id
+    FROM [s1_eternum-ExplorerTroops]
+    WHERE owner IN ({structureIds})
+      AND \`troops.count\` != '0x0';
   `,
 } as const;

@@ -1,0 +1,12 @@
+[
+  {
+    "armies_tick_in_seconds": "0x000000000000003c",
+    "bonus_value": 10,
+    "crossbowman_max": 120,
+    "explore_cost": 30,
+    "gain_per_tick": 20,
+    "knight_max": 120,
+    "paladin_max": 120,
+    "travel_cost": 20
+  }
+]

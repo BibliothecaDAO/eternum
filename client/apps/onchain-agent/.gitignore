@@ -1,5 +1,5 @@
 session.json
-.env
+.env*
 axis
 dist-bun/
 release/
@@ -8,3 +8,4 @@ release/
 .skills/
 .claude
 .cartridge
+.DS_Store

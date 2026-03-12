@@ -1,80 +1,136 @@
-# Axis
+to run and develop(READ THE COMMON ISSUES AT BOTTOM TOO):
 
-Autonomous AI agent that plays Eternum on StarkNet. Discovers active game worlds, authenticates via Cartridge
-Controller, and runs an LLM-driven tick loop that executes on-chain actions.
-
-## Install
+from repo root `pnpm i`
 
 ```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
-```
-
-Pin a version with `VERSION=v0.1.0 bash`. See [INSTALL.md](INSTALL.md) for rollback/uninstall.
-
-## Quick Start (Interactive)
-
-```bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis
-```
-
-Discovers worlds, opens browser for auth, starts the agent. Everything auto-initializes on first run.
-
-## Quick Start (Headless)
-
-```bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis auth my-world --method=password --username=me --password=secret
-axis run --headless --world=my-world
-```
-
-Password auth creates a Cartridge Controller session with paymaster support. Sessions last 7 days.
-
-## Fleet Setup
-
-```bash
-axis auth --all --method=password --username=me --password=secret --json > /tmp/auth.json
-for world in $(jq -r '.[].world' /tmp/auth.json); do
-  axis run --headless --world="$world" --api-port=$((3000+RANDOM%1000)) &
-done
-```
-
-## Build from Source
-
-```bash
-git clone https://github.com/bibliothecadao/eternum.git && cd eternum
-pnpm install
-pnpm --dir packages/types build
-pnpm --dir packages/torii build
-pnpm --dir packages/provider build
+pnpm build:packages
 pnpm --dir packages/client build
 pnpm --dir packages/game-agent build
 cd client/apps/onchain-agent
-cp .env.example .env
+cp .env.example .env #update the world name and add your api key
+# REGISTER AND START THE GAME VIA THE GAME CLIENT YOURSELF FIRST.
+# ONCE YOU SETTLE YOUR REALMS, THEN START UP THE GAME
 pnpm dev
 ```
 
-Standalone binary (requires [Bun](https://bun.sh)):
+Variables: `.env` in the `client/apps/onchain-agent directory`, `cp .env.example .env`
+
+add your `ANTHROPIC_API_KEY`
+
+Mine looks exactly like this when testing:
 
 ```bash
-cd client/apps/onchain-agent
-bun run build.ts --compile    # produces ./axis
+CHAIN=slot
+MODEL_ID=claude-haiku-4-5-20251001
+ANTHROPIC_API_KEY=
+WORLD_NAME=xbt5
 ```
 
-Always use `build.ts` -- direct `bun build` skips plugins that embed WASM and manifests.
-
-## Documentation
-
-Full docs at the [Axis docs site](https://eternum-docs.realms.world/development/axis/overview):
-
-- [CLI Reference](https://eternum-docs.realms.world/development/axis/cli-reference)
-- [Worlds and Auth](https://eternum-docs.realms.world/development/axis/worlds-and-auth)
-- [Headless and API](https://eternum-docs.realms.world/development/axis/headless-and-api)
-- [Configuration](https://eternum-docs.realms.world/development/axis/configuration-and-operations)
-
-## Testing
+When running, the `.axis` directory will be created from your machine's home directory. The `.axis` data structure looks
+like this, and follows this format automatically according to the `WORLD_NAME` that you pass into your env:
 
 ```bash
-pnpm --dir client/apps/onchain-agent test
-pnpm --dir client/apps/onchain-agent test:watch
+~/.axis ❯ tree -L 5 -all
+.
+└── worlds
+    └── 0x03b060cd79fc792c601bc83648c56958c8c69e5f96511880dcf2ddbf48907688
+        ├── .cartridge
+        │   └── session.json
+        ├── automation-status.txt
+        ├── map.txt
+        ├── soul.md
+        └── tasks
+            ├── combat.md
+            ├── economy.md
+            ├── exploration.md
+            ├── priorities.md
+            └── reflection.md
+
+5 directories, 9 files
 ```
+
+**README - COMMON ISSUES:**
+
+1. the URL is annoyingly long and sometimes is displayed with a linebreak in it. My flow is copy it, google "whitespace
+   remover", paste url > remove whitespace.
+2. Paste the URL in an incognito tab. and do your login stuff from there. If you want to watch the agent from the game
+   client, clear all cookies and data or spectate from an incognito tab. Session stuff is finnicky.
+3. If you are restarting an agent previously run on the world, give it 1 full tick to catch up (60 seconds).
+4. REGISTRATION AND REALM SETTLING IS NOT BUILT YET. DO THIS MANUALLY YOURSELF IN THE CLIENT, AND ONCE YOU SETTLE
+   REALMS, THEN RUN PNPM DEV.
+
+---
+
+## Standalone Binary (bun --compile)
+
+The agent can be compiled into a single standalone binary (~77MB) that requires **zero external dependencies** — no
+Node.js, no `node_modules`, no monorepo. Just the binary + a `.env` file.
+
+### Building
+
+From the `client/apps/onchain-agent` directory:
+
+```bash
+bun run build.ts
+```
+
+This produces `dist/onchain-agent` — a single self-contained binary. The build script uses custom Bun plugins to:
+
+1. **Fix wasm-bindgen** — `@cartridge/controller-wasm` uses `import * as wasm from "*.wasm"` which Bun's bundler breaks.
+   The plugin embeds WASM bytes as base64 and manually wires up instantiation at build time.
+2. **Embed pi-agent config** — `pi-coding-agent` reads `package.json` at runtime for app name/version. The plugin
+   injects these values at build time so no `package.json` is needed at runtime.
+
+### What gets embedded
+
+- All TypeScript/JavaScript source code (bundled)
+- All workspace packages (`@bibliothecadao/client`, `torii`, `types`, `provider`)
+- All npm dependencies (`starknet`, `@cartridge/controller`, `@mariozechner/pi-*`, etc.)
+- Dojo manifests for all chains (`mainnet`, `sepolia`, `slot`, `slottest`, `local`)
+- Contract address files for all chains
+- WASM modules from `@cartridge/controller-wasm` (session + account)
+- A copy of the Bun runtime
+
+### Running
+
+```bash
+# Copy .env next to the binary (or anywhere you run it from)
+cp .env dist/.env
+cd dist
+./onchain-agent
+```
+
+That's it — just the binary and a `.env`. No `node_modules`, no `package.json`, no runtime dependencies.
+The binary reads `.env` from the current working directory, same as `pnpm dev`. All runtime data (sessions, soul, tasks,
+map) is written to `~/.axis/worlds/<worldAddress>/` as usual.
+
+### Cross-compilation
+
+Build for other platforms from your machine:
+
+```bash
+# Linux x64 (most servers/VPS)
+bun run build.ts  # then modify build.ts target, or use:
+# bun build --compile --target=bun-linux-x64 ./src/entry/index.ts --outfile dist/onchain-agent-linux
+
+# Note: cross-compiled builds need the build.ts plugin approach for WASM to work.
+# Modify the `compile.target` field in build.ts to cross-compile.
+```
+
+### How the WASM plugin works
+
+The `@cartridge/controller-wasm` package uses wasm-bindgen which generates:
+
+1. A `.wasm` binary (the compiled Rust code)
+2. A `*_bg.js` glue file (JS bindings that call into the WASM)
+3. An entry `*.js` file that does `import * as wasm from "./*_bg.wasm"` then `__wbg_set_wasm(wasm)`
+
+Bun's bundler breaks step 3 — the WASM namespace object loses its exported functions. The plugin in `build.ts` fixes
+this by:
+
+1. Intercepting `.wasm` file loads — reads the bytes and embeds them as base64
+2. Intercepting the entry JS files (`session_wasm.js`, `account_wasm.js`) — replaces the static WASM import with manual
+   `WebAssembly.Module` + `WebAssembly.Instance` instantiation, passing the JS glue as the import object
+3. Calling `__wbg_set_wasm(instance.exports)` to wire everything up
+
+This is transparent to the rest of the codebase — no source changes needed.
