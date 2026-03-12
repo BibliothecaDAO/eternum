@@ -231,7 +231,7 @@ Completion Notes:
 2. navigation helpers no longer pass `fastTravelEnabled: false` at each call site.
 3. `scene-navigation-boundary.test.ts` now locks both the dormant default and the absence of helper-owned fallback wiring.
 
-### C4: Prefetch Hot-Path Cleanup (0.5-1 day) [ ]
+### C4: Prefetch Hot-Path Cleanup (0.5-1 day) [x]
 
 Objective:
 
@@ -251,6 +251,12 @@ Deliverables:
 Exit Criteria:
 
 1. prefetch queue behavior remains green with simpler call-site code
+
+Completion Notes:
+
+1. prefetch helpers now accept a lightweight fetch-key lookup contract instead of requiring transient `Set` reconstruction.
+2. `WorldmapScene` now passes `pendingChunks` directly at enqueue/drain call sites, removing the repeated `new Set(this.pendingChunks.keys())` hot-path allocation.
+3. prefetch enqueue/drain behavior remains locked by the existing helper tests plus the new source-level guard on worldmap call sites.
 
 ### C5: Cleanup Closeout (0.5 day) [ ]
 

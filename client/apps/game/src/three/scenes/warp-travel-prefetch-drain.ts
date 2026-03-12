@@ -1,6 +1,7 @@
 import {
   resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
+  type PrefetchFetchKeyLookup,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
 
@@ -12,7 +13,7 @@ interface DrainWarpTravelPrefetchQueueInput {
   maxConcurrentPrefetches: number;
   desiredFetchKeys: Set<string>;
   fetchedFetchKeys: Set<string>;
-  pendingFetchKeys: Set<string>;
+  pendingFetchKeys: PrefetchFetchKeyLookup;
   pinnedAreaKeys: Set<string>;
 }
 

@@ -1,4 +1,8 @@
-import { insertPrefetchQueueItem, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
+import {
+  insertPrefetchQueueItem,
+  type PrefetchFetchKeyLookup,
+  type PrefetchQueueItem,
+} from "./worldmap-prefetch-queue";
 
 interface EnqueueWarpTravelPrefetchInput {
   chunkKey: string;
@@ -7,7 +11,7 @@ interface EnqueueWarpTravelPrefetchInput {
   queue: PrefetchQueueItem[];
   queuedFetchKeys: Set<string>;
   fetchedFetchKeys: Set<string>;
-  pendingFetchKeys: Set<string>;
+  pendingFetchKeys: PrefetchFetchKeyLookup;
 }
 
 export function enqueueWarpTravelPrefetch(

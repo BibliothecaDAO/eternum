@@ -3203,7 +3203,7 @@ export default class WorldmapScene extends WarpTravel {
       queue: this.prefetchQueue,
       queuedFetchKeys: this.queuedPrefetchAreaKeys,
       fetchedFetchKeys: this.fetchedChunks,
-      pendingFetchKeys: new Set(this.pendingChunks.keys()),
+      pendingFetchKeys: this.pendingChunks,
     });
     if (enqueueResult.skipped) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_skipped");
@@ -3223,7 +3223,7 @@ export default class WorldmapScene extends WarpTravel {
       maxConcurrentPrefetches: this.maxConcurrentPrefetches,
       desiredFetchKeys: this.directionalPrefetchAreaKeys,
       fetchedFetchKeys: this.fetchedChunks,
-      pendingFetchKeys: new Set(this.pendingChunks.keys()),
+      pendingFetchKeys: this.pendingChunks,
       pinnedAreaKeys: this.pinnedRenderAreas,
     });
 
