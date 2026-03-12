@@ -20,7 +20,10 @@ const TROOP_CATEGORY: Record<string, number> = { Knight: 0, Paladin: 1, Crossbow
 const TIER_VALUE: Record<number, number> = { 1: 0, 2: 1, 3: 2 };
 const TIER_SUFFIX: Record<number, string> = { 1: "T1", 2: "T2", 3: "T3" };
 const SLOT_NAMES = ["Alpha", "Bravo", "Charlie", "Delta"];
-const TARGET_TROOP_AMOUNT = 10_000 * RESOURCE_PRECISION;
+// Guard slots have a max capacity based on structure level and tier.
+// We don't query TroopLimitConfig, so use a conservative default.
+// The agent can override with the amount parameter.
+const DEFAULT_GUARD_AMOUNT = 1_500 * RESOURCE_PRECISION;
 
 export function createDefendStructureTool(
   client: EternumClient,
@@ -39,7 +42,7 @@ export function createDefendStructureTool(
       "(2) Omit from_army to use troops from the structure's own reserves — " +
       "requires troop_type and tier since the structure may have multiple troop types. " +
       "Fills the first empty guard slot (up to 4: Alpha, Bravo, Charlie, Delta). " +
-      "Specify amount to control how many troops (default: all from army, or up to 10K from reserves).",
+      "Guard slots have a max capacity (~1,500 for T1). Default: 1,500 troops. Specify amount to override.",
     parameters: Type.Object({
       row: Type.Number({ description: "Row of the structure to defend" }),
       col: Type.Number({ description: "Column of the structure to defend" }),
@@ -130,7 +133,8 @@ export function createDefendStructureTool(
         if (maxTransferRaw <= 0) {
           throw new Error(`Army only has ${explorer.troopCount} troops — need more than 1 to garrison (must leave at least 1).`);
         }
-        const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : maxTransferRaw;
+        // Guard slots have a max capacity (~1,500 for T1 at low levels). Cap to avoid rejection.
+        const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : DEFAULT_GUARD_AMOUNT;
         const transferAmount = Math.min(requestedRaw, maxTransferRaw);
         const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
 
@@ -195,7 +199,7 @@ export function createDefendStructureTool(
         throw new Error(`No ${troopResName} at this structure. Available: ${resSummary || "none"}`);
       }
 
-      const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : TARGET_TROOP_AMOUNT;
+      const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : DEFAULT_GUARD_AMOUNT;
       const troopAmount = Math.min(requestedRaw, availableRaw);
       const troopCount = Math.floor(troopAmount / RESOURCE_PRECISION);
       const troopTier = TIER_VALUE[tier] ?? 0;
