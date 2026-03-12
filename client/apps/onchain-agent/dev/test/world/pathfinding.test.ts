@@ -99,12 +99,36 @@ describe("findPath — obstacles", () => {
 });
 
 describe("findPath — unexplored tiles", () => {
-  it("cannot path through unexplored tiles", () => {
-    // Only a 3-wide corridor explored
+  it("can path through unexplored tiles using exploreCost", () => {
+    // Only a 3-wide corridor explored; target is outside explored area
     const explored = new Set(["0,0", "1,0", "2,0"]);
-    // Target is explored but not reachable without going off-corridor
-    const result = findPath({ x: 0, y: 0 }, { x: 0, y: 2 }, explored, new Set(), 20, uniformCost);
-    expect(result).toBeNull();
+    // Path from (0,0) to (0,2) requires traversing unexplored tiles — should succeed now
+    const result = findPath({ x: 0, y: 0 }, { x: 0, y: 2 }, explored, new Set(), 200, uniformCost);
+    expect(result).not.toBeNull();
+    expect(result!.distance).toBeGreaterThan(0);
+  });
+
+  it("unexplored tiles cost exploreCost (30) vs explored tiles cost tileCost (1)", () => {
+    // Two paths from (0,0) to (2,0):
+    //   - fully explored path (all tiles in explored set): cost = tileCost per step
+    //   - unexplored path (no tiles in explored set): cost = 30 per step
+    const fullyExplored = exploredRect(0, 0, 2, 0);
+    const noExplored = new Set<string>();
+    const tileCostFn = () => 1;
+
+    const exploredResult = findPath({ x: 0, y: 0 }, { x: 2, y: 0 }, fullyExplored, new Set(), 200, tileCostFn);
+    const unexploredResult = findPath({ x: 0, y: 0 }, { x: 2, y: 0 }, noExplored, new Set(), 200, tileCostFn, 30);
+
+    expect(exploredResult).not.toBeNull();
+    expect(unexploredResult).not.toBeNull();
+
+    // Explored path: each step costs 1 (via tileCostFn)
+    expect(exploredResult!.staminaCost).toBe(exploredResult!.distance * 1);
+    // Unexplored path: each step costs 30 (exploreCost)
+    expect(unexploredResult!.staminaCost).toBe(unexploredResult!.distance * 30);
+    // Same number of steps, but unexplored is more expensive
+    expect(unexploredResult!.distance).toBe(exploredResult!.distance);
+    expect(unexploredResult!.staminaCost).toBeGreaterThan(exploredResult!.staminaCost);
   });
 });
 

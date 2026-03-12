@@ -168,7 +168,7 @@ describe("create_army — prerequisites", () => {
 describe("create_army — army cap", () => {
   it("throws when army cap is reached", async () => {
     const { snapshot } = realmSetup();
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }], {
+    const structure = makeStructure(5, 5, [{ name: "Paladin T1", amount: 1500 }], {
       explorerCount: 3,
       maxExplorerCount: 3,
     });
@@ -180,7 +180,7 @@ describe("create_army — army cap", () => {
 
   it("allows creation when under cap", async () => {
     const { snapshot } = realmSetup();
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }], {
+    const structure = makeStructure(5, 5, [{ name: "Paladin T1", amount: 1500 }], {
       explorerCount: 1,
       maxExplorerCount: 3,
     });
@@ -196,7 +196,7 @@ describe("create_army — army cap", () => {
 describe("create_army — troop type from biome", () => {
   it("picks Paladin on Grassland", async () => {
     const { snapshot } = realmSetup(11);
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Paladin T1", amount: 1500 }]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
@@ -207,7 +207,7 @@ describe("create_army — troop type from biome", () => {
 
   it("picks Knight in Forest", async () => {
     const { snapshot } = realmSetup(12);
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Knight T1", amount: 1500 }]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
@@ -217,7 +217,7 @@ describe("create_army — troop type from biome", () => {
 
   it("picks Crossbowman on Ocean", async () => {
     const { snapshot } = realmSetup(2);
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Crossbowman T1", amount: 1500 }]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
@@ -227,7 +227,7 @@ describe("create_army — troop type from biome", () => {
 
   it("defaults to Knight for unknown biome", async () => {
     const { snapshot } = realmSetup(99);
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Knight T1", amount: 1500 }]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
@@ -239,7 +239,7 @@ describe("create_army — troop type from biome", () => {
 describe("create_army — spawn direction", () => {
   it("finds an open adjacent hex", async () => {
     const { snapshot } = realmSetup();
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Paladin T1", amount: 1500 }]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
@@ -259,7 +259,7 @@ describe("create_army — spawn direction", () => {
       makeTile(5, 4, 15, 14, 11),
       makeTile(6, 4, 15, 15, 11),
     ];
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Paladin T1", amount: 1500 }]);
     const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
@@ -272,14 +272,14 @@ describe("create_army — resources", () => {
   it("shows available resources in the plan", async () => {
     const { snapshot } = realmSetup();
     const structure = makeStructure(5, 5, [
-      { name: "Essence", amount: 5000 },
+      { name: "Paladin T1", amount: 5000 },
       { name: "Stone", amount: 1200 },
     ]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("5,000 Essence");
+    expect(result.content[0].text).toContain("5,000 Paladin T1");
   });
 
   it("throws when realm has no resources", async () => {
@@ -288,14 +288,14 @@ describe("create_army — resources", () => {
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
-    await expect(tool.execute("id", { row: 1, col: 1 })).rejects.toThrow("No resources");
+    await expect(tool.execute("id", { row: 1, col: 1 })).rejects.toThrow("No Paladin T1 troops available");
   });
 });
 
 describe("create_army — output", () => {
   it("returns plan with all parameters", async () => {
     const { snapshot } = realmSetup();
-    const structure = makeStructure(5, 5, [{ name: "Essence", amount: 5000 }]);
+    const structure = makeStructure(5, 5, [{ name: "Paladin T1", amount: 5000 }]);
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
