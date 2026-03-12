@@ -6,6 +6,7 @@ import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
 import { GUIManager } from "@/three/utils/";
 import {
+  incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,
   setWorldmapRenderGauge,
 } from "@/three/perf/worldmap-render-diagnostics";
@@ -55,6 +56,7 @@ import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
+import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import {
   addVisibleArmyOrderEntry,
   removeVisibleArmyOrderEntry,
@@ -1733,7 +1735,12 @@ export class ArmyManager {
     const minTravelCost = configManager.getMinTravelStaminaCost();
     const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
-    const workerPath = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
+    const shouldUseWorkerPath = shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
+    if (!shouldUseWorkerPath) {
+      incrementWorldmapRenderCounter("workerFindPathBypasses");
+    }
+
+    const workerPath = shouldUseWorkerPath ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex) : null;
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
 
     // Convert path to world positions
