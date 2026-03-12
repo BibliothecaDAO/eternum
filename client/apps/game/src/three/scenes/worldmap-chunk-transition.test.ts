@@ -1178,6 +1178,16 @@ describe("shouldScheduleHydratedChunkRefreshForFetch", () => {
       }),
     ).toBe(false);
   });
+
+  it("skips hydrated refresh when the current refresh path already owns that area", () => {
+    expect(
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: "24,0",
+        currentAreaKey: "24,0",
+        suppressedAreaKeys: ["24,0"],
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("resolveHydratedChunkRefreshFlushPlan", () => {

@@ -1009,7 +1009,6 @@ export class StructureManager {
       }
 
       await this.updateVisibleStructures();
-      this.showLabels();
       await waitForVisualSettle();
     })();
 
@@ -1786,9 +1785,8 @@ export class StructureManager {
   }
 
   public showLabels() {
-    // Just update visible structures - this will handle labels appropriately
-    // without destroying existing labels and their live data
-    this.updateVisibleStructures();
+    this.frustumVisibilityDirty = true;
+    this.applyFrustumVisibilityToLabels();
   }
 
   public showLabel(entityId: ID): void {

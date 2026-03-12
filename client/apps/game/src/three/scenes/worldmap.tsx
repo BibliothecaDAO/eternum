@@ -318,6 +318,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
   private hydratedChunkRefreshes: Set<string> = new Set();
+  private hydratedRefreshSuppressionAreaKeys: Set<string> = new Set();
   private hydratedRefreshScheduled = false;
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
@@ -3846,6 +3847,7 @@ export default class WorldmapScene extends WarpTravel {
           shouldScheduleHydratedChunkRefreshForFetch({
             fetchAreaKey: fetchKey,
             currentAreaKey,
+            suppressedAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
           })
         ) {
           this.scheduleHydratedChunkRefresh(this.currentChunk);
@@ -4614,34 +4616,40 @@ export default class WorldmapScene extends WarpTravel {
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
+    const refreshAreaKey = this.getRenderAreaKeyForChunk(chunkKey);
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.removeCachedMatricesForChunk(startRow, startCol);
+    this.hydratedRefreshSuppressionAreaKeys.add(refreshAreaKey);
 
-    const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
-      chunkKey,
-      startRow,
-      startCol,
-      surroundingChunks,
-      transitionToken,
-      renderSize: this.renderChunkSize,
-      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
-      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
-        this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-      updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
-        this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
-      onChunkHydrated: (hydratedChunkKey) => {
-        this.hydratedChunkRefreshes.delete(hydratedChunkKey);
-      },
-    });
-    if (!tileFetchSucceeded) {
-      return;
+    try {
+      const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
+        chunkKey,
+        startRow,
+        startCol,
+        surroundingChunks,
+        transitionToken,
+        renderSize: this.renderChunkSize,
+        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+        updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+        updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
+          this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+        updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
+          this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
+        onChunkHydrated: (hydratedChunkKey) => {
+          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+        },
+      });
+      if (!tileFetchSucceeded) {
+        return;
+      }
+
+      await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
+    } finally {
+      this.hydratedRefreshSuppressionAreaKeys.delete(refreshAreaKey);
     }
-
-    await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
 
     if (memoryMonitor) {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);

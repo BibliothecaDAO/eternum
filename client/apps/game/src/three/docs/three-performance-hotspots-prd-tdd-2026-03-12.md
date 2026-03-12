@@ -38,7 +38,7 @@ This PRD defines a TDD-first hardening program that removes duplicate work befor
 ## Stage Tracker
 
 - [x] M0: Baseline and guardrails
-- [ ] M1: Remove duplicated chunk and structure work
+- [x] M1: Remove duplicated chunk and structure work
 - [ ] M2: Make structure and terrain updates incremental
 - [ ] M3: Restore true dirty-only frame behavior
 - [ ] M4: Replace remaining hot-path linear scans

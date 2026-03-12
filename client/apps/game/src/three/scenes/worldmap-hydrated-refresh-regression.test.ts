@@ -10,7 +10,7 @@ function readWorldmapSource(): string {
 }
 
 describe("worldmap hydrated refresh regression", () => {
-  it.fails("suppresses forced hydrated refreshes while the current chunk refresh is already incorporating the fetch", () => {
+  it("suppresses forced hydrated refreshes while the current chunk refresh is already incorporating the fetch", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(/hydratedRefreshSuppression/i);

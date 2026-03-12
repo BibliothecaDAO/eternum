@@ -319,7 +319,7 @@ const BASE_STRUCTURE_UPDATE = {
 };
 
 describe("StructureManager destroy lifecycle", () => {
-  it.fails("runs a single visible-structure rebuild during chunk switches", async () => {
+  it("runs a single visible-structure rebuild during chunk switches", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
 
     subject.currentChunk = "0,0";
