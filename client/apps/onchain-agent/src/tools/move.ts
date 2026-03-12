@@ -225,15 +225,28 @@ export function createMoveTool(
           }
         }
 
-        // Project stamina forward, then subtract any stamina already spent
-        // since the last on-chain update (before Torii indexes the new tx).
-        const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
-        const tracked = mapCtx.staminaSpent?.get(explorer.entityId);
-        // If Torii has indexed a newer tick, our tracked spend is stale — discard it.
-        const alreadySpent = tracked && tracked.atTick === explorer.staminaUpdatedTick ? tracked.spent : 0;
-        const projectedStamina = Math.max(0, baseProjected - alreadySpent);
+        // Use known actual stamina if we have it (from prior move results or chain errors),
+        // otherwise fall back to Torii projection. Known values expire after 120s.
+        const known = mapCtx.knownStamina?.get(explorer.entityId);
+        const knownValid = known && (Date.now() - known.time) < 120_000;
+        let projectedStamina: number;
 
-        console.error(`[MOVE] Stamina debug: entity=${explorer.entityId} torii.stamina=${explorer.stamina} torii.tick=${explorer.staminaUpdatedTick} projected=${baseProjected} tracked=${JSON.stringify(tracked)} alreadySpent=${alreadySpent} final=${projectedStamina}`);
+        if (knownValid) {
+          // We know the actual stamina from a recent move or chain error — trust it,
+          // but add regen since the known value was recorded.
+          const elapsedSec = (Date.now() - known.time) / 1000;
+          const armiesTickSec = gameConfig.stamina.armiesTickInSeconds || 1;
+          const elapsedTicks = Math.floor(elapsedSec / armiesTickSec);
+          const regen = elapsedTicks * gameConfig.stamina.gainPerTick;
+          const baseMax = gameConfig.stamina.knightMaxStamina; // conservative — use lowest
+          projectedStamina = Math.min(known.stamina + regen, baseMax + 40);
+        } else {
+          // Fall back to Torii projection + staminaSpent tracking
+          const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
+          const tracked = mapCtx.staminaSpent?.get(explorer.entityId);
+          const alreadySpent = tracked && tracked.atTick === explorer.staminaUpdatedTick ? tracked.spent : 0;
+          projectedStamina = Math.max(0, baseProjected - alreadySpent);
+        }
 
         if (projectedStamina <= 0) {
           throw new Error(`Cannot move — no stamina (${projectedStamina}). Wait for regeneration.`);
@@ -413,16 +426,12 @@ export function createMoveTool(
                   .map((m) => m[1])
                   .filter((r) => !r.startsWith("0x"));
                 if (reasons.length > 0) {
-                  // If stamina error, mark this army as fully spent so we don't retry
+                  // If stamina error, record actual stamina so we don't retry
                   const staminaMatch = reasons[0].match(/insufficient stamina.*have:\s*(\d+)/);
                   if (staminaMatch && explorer) {
                     const actualStamina = parseInt(staminaMatch[1], 10);
-                    // Set staminaSpent so projection matches chain reality
-                    if (!mapCtx.staminaSpent) mapCtx.staminaSpent = new Map();
-                    mapCtx.staminaSpent.set(explorer.entityId, {
-                      spent: baseProjected - actualStamina,
-                      atTick: explorer.staminaUpdatedTick,
-                    });
+                    if (!mapCtx.knownStamina) mapCtx.knownStamina = new Map();
+                    mapCtx.knownStamina.set(explorer.entityId, { stamina: actualStamina, time: Date.now() });
                   }
                   throw new Error(`Move failed: ${reasons[0]}`);
                 }
@@ -461,13 +470,11 @@ export function createMoveTool(
           mapCtx.recentlyExplored.add(`${ep.x},${ep.y}`);
         }
 
-        // Track stamina consumed so subsequent moves for this army see
-        // accurate remaining stamina (before Torii indexes the tx).
-        if (!mapCtx.staminaSpent) mapCtx.staminaSpent = new Map();
-        mapCtx.staminaSpent.set(explorer.entityId, {
-          spent: alreadySpent + staminaCost,
-          atTick: explorer.staminaUpdatedTick,
-        });
+        // Record actual remaining stamina after this move so subsequent
+        // moves see the correct value (instead of Torii's stale projection).
+        const staminaAfterMove = projectedStamina - staminaCost;
+        if (!mapCtx.knownStamina) mapCtx.knownStamina = new Map();
+        mapCtx.knownStamina.set(explorer.entityId, { stamina: Math.max(0, staminaAfterMove), time: Date.now() });
 
         // Don't refresh the map here — Torii hasn't indexed the move yet,
         // so a refresh would show the army at its OLD position and confuse
