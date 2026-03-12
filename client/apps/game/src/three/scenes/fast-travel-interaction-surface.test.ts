@@ -23,7 +23,7 @@ describe("FastTravelScene interaction surface", () => {
   it("renders the base field through outline geometry only", () => {
     const fastTravelSource = readSceneSource("fast-travel.ts");
 
-    expect(fastTravelSource).toMatch(/group\.add\(edgeMesh\)/);
+    expect(fastTravelSource).toMatch(/group\.add\(this\.renderAssets\.createHexEdgeMesh\(\)\)/);
     expect(fastTravelSource).not.toMatch(/group\.add\(fillMesh\)/);
   });
 });
