@@ -49,7 +49,9 @@ See the **Architecture overview** section in this README for a deeper map of sce
 - `HexceptionScene` (`scenes/hexception.tsx`): local/settlement view around a structure; radius-based, no world
   chunking.
 - `HUDScene` (`scenes/hud-scene.ts`): orthographic overlay (navigator, weather, ambience) rendered after the main scene.
-- `SceneName.FastTravel` exists as dormant bootstrap only. The concrete fast-travel scene is not registered yet.
+- `FastTravelScene` (`scenes/fast-travel.ts`): fast-travel traversal layer built on `WarpTravel`, currently using
+  hydrated stub armies/Spires plus a no-ground warp-space render path while the authoritative Spire/runtime data seam is
+  still follow-up work.
 
 **Managers & utilities**
 
@@ -64,7 +66,7 @@ See the **Architecture overview** section in this README for a deeper map of sce
   - chunk decision, hydration, switch finalization, and bounds prep
   - manager fanout
   - directional prefetch planning, enqueue, and drain
-  - scene navigation boundary plumbing, including the dormant fast-travel gate
+  - scene navigation boundary plumbing, including the active fast-travel gate
 
 **Data flow**
 

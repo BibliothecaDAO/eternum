@@ -18,6 +18,7 @@
 | U4     | 2026-03-12 00:00 | Codex  | Completed M1 by turning `FastTravelScene` into a named-hook `WarpTravel` lifecycle shell and locking the lifecycle seam with focused tests plus shared runtime regressions. |
 | U5     | 2026-03-12 00:00 | Codex  | Completed M2 and M3 by adding fast-travel chunk hydration/render-state adapters, stubbed Spire and army scene visuals, and a no-ground fully explored warp-space render path. |
 | U6     | 2026-03-12 00:00 | Codex  | Completed M4 by adding explicit Spire mapping/navigation policy modules plus world/travel navigation helpers that preserve non-Spire fallback behavior. |
+| U7     | 2026-03-12 00:00 | Codex  | Completed M5 by rerunning the targeted/shared suites, updating the Three.js architecture note for the live fast-travel scene, and documenting the remaining unrelated module-gate blockers. |
 
 ## Executive Summary
 
@@ -326,7 +327,7 @@ Completion Notes:
 2. `fast-travel-navigation-policy.ts` now resolves world-to-travel entry and travel-to-world exit transitions with explicit scene/coordinate outputs.
 3. `three/utils/navigation.ts` now exposes `navigateIntoFastTravelSpire()` and `navigateOutOfFastTravelSpire()` while preserving the default non-Spire map/hex navigation paths.
 
-### M5: Hardening and Closeout (0.5-1 day)
+### M5: Hardening and Closeout (0.5-1 day) [x]
 
 Objective:
 
@@ -344,6 +345,14 @@ Exit Criteria:
 1. Fast-travel scene is integrated without regressions in shared runtime behavior.
 2. Remaining interaction work is documented as the next explicit phase, not hidden debt.
 
+Completion Notes:
+
+1. The focused fast-travel plus shared-runtime regression cluster was rerun green across 56 tests covering the boundary, fast-travel adapters, `WarpTravel`, and `worldmap-shared-runtime`.
+2. The full `pnpm --dir client/apps/game test src/three` module gate was attempted and remains blocked by unrelated pre-existing issues outside this slice:
+   - `army-model.visibility.test.ts` fails on the `ResourcesIds` circular-import path inside `packages/types`
+   - several jsdom suites still trip the `html-encoding-sniffer` / `@exodus/bytes` ESM loader error
+3. `README.md` now reflects that `FastTravelScene` is registered and active rather than describing it as a dormant bootstrap.
+
 ## Prioritized Slice Backlog
 
 1. [x] S1 (P0): Add failing test proving `/travel` resolves to `SceneName.FastTravel` only when boundary activation is
@@ -359,7 +368,7 @@ Exit Criteria:
 10. [x] S10 (P1): Add failing test proving Spire mapping resolves world-map entry to fast-travel destination.
 11. [x] S11 (P1): Add failing test proving exit travel maps back to the correct world-map Spire.
 12. [x] S12 (P1): Add failing test proving non-Spire world-map navigation remains unchanged.
-13. S13 (P2): Document residual risks and the next interaction-focused backlog.
+13. [x] S13 (P2): Document residual risks and the next interaction-focused backlog.
 
 ## Test Strategy
 
@@ -406,10 +415,11 @@ Exit Criteria:
 ## Risks
 
 1. Concrete fast-travel requirements may still expose missing seams in `WarpTravel`.
-2. Spire mapping rules may be under-specified and cause churn.
+2. Spire mapping rules may be under-specified and cause churn until a real client-side Spire ECS/model layer lands.
 3. Scene registration could accidentally affect current map/hex rendering.
 4. Interaction parity could tempt copying worldmap selection logic too directly.
 5. Shader work could sprawl into a broader visual rewrite if not kept tightly scoped.
+6. The wider `src/three` module gate still has unrelated baseline failures, so a fully clean top-level Three suite is not yet restored by this feature work alone.
 
 ## Mitigations
 
@@ -426,6 +436,15 @@ Exit Criteria:
 3. Units are visible and traversable in the fast-travel layer.
 4. The map layer renders as the agreed pink glowing warp-space without terrain.
 5. Shared runtime and current scene behavior remain green.
+
+## Follow-Up Backlog
+
+1. Replace the scene-local demo Spire/army hydration source with an authoritative client-side Spire/runtime query layer.
+2. Reuse the existing `ArmyManager`/label managers for real fast-travel entities once the backing data contract exists.
+3. Add the interaction-focused phase: Spire click affordances, selection behavior, and exit confirmation flows on top of the current navigation policy.
+4. Clean the unrelated `src/three` module-gate blockers:
+   - break the `ResourcesIds` circular import path in `packages/types`
+   - resolve the jsdom `html-encoding-sniffer` / `@exodus/bytes` ESM loader failure
 
 ## Confirmed Product Decisions
 
