@@ -13,6 +13,7 @@ import type { StaminaConfig } from "@bibliothecadao/torii";
 import { renderMap } from "./renderer.js";
 import type { MapContext } from "./context.js";
 import { isExplorer } from "../world/occupier.js";
+import { detectThreats, type ThreatAlert } from "./threat-detection.js";
 
 interface MapLoop {
   start(): void;
@@ -47,11 +48,13 @@ export function createMapLoop(
   playerAddress?: string,
   intervalMs = 10_000,
   staminaConfig?: StaminaConfig,
+  onThreat?: (alerts: ThreatAlert[]) => void,
 ): MapLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
   let running = false;
   let lastTileCount = -1;
   let lastOwnedCount = -1;
+  const recentThreatAlerts = new Set<string>();
 
   async function update() {
     try {
@@ -134,6 +137,20 @@ export function createMapLoop(
         structureDetailMap,
       );
       ctx.snapshot = snapshot;
+
+      if (onThreat) {
+        const ownedStructureTiles = snapshot.tiles.filter(
+          (t: any) => t.occupierId > 0 && ownedEntityIds?.has(t.occupierId) && t.occupierIsStructure,
+        );
+        const alerts = detectThreats(ownedStructureTiles, snapshot.tiles, recentThreatAlerts);
+        if (alerts.length > 0) {
+          for (const a of alerts) {
+            recentThreatAlerts.add(`${a.enemyX},${a.enemyY}`);
+            setTimeout(() => recentThreatAlerts.delete(`${a.enemyX},${a.enemyY}`), 60_000);
+          }
+          onThreat(alerts);
+        }
+      }
 
       // Prune recentlyMoved — remove entries where Torii now shows the army
       // at the expected position. Keep entries where Torii hasn't caught up.
