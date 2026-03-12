@@ -398,6 +398,14 @@ export function createMoveTool(
             }
           }
         } catch (err: any) {
+          // Debug: log the full error shape so we can improve extraction
+          try {
+            const keys = Object.keys(err ?? {});
+            const causeKeys = Object.keys(err?.cause ?? {});
+            console.error(`[MOVE] Error keys: ${keys.join(",")} | cause keys: ${causeKeys.join(",")}`);
+            if (err?.cause) console.error(`[MOVE] cause.message: ${err.cause.message}`);
+            console.error(`[MOVE] Full: ${JSON.stringify(err, null, 2).slice(0, 800)}`);
+          } catch { /* */ }
           const errStr = extractTxError(err);
           if (errStr.includes("is occupied")) {
             try {
