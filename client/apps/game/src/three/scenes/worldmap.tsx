@@ -148,12 +148,7 @@ import {
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
 } from "./worldmap-chunk-bounds";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
-import {
-  prunePrefetchQueueByFetchKey,
-  resolvePrefetchQueueProcessingPlan,
-  shouldProcessPrefetchQueueItem,
-  type PrefetchQueueItem,
-} from "./worldmap-prefetch-queue";
+import { prunePrefetchQueueByFetchKey, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
 import {
@@ -179,6 +174,7 @@ import {
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
 import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
+import { drainWarpTravelPrefetchQueue } from "./warp-travel-prefetch-drain";
 import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
@@ -3184,49 +3180,27 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private processPrefetchQueue(): void {
-    const initialPlan = resolvePrefetchQueueProcessingPlan({
+    const drainResult = drainWarpTravelPrefetchQueue({
       isSwitchedOff: this.isSwitchedOff,
-      queueLength: this.prefetchQueue.length,
+      queue: this.prefetchQueue,
+      queuedFetchKeys: this.queuedPrefetchAreaKeys,
       activePrefetches: this.activePrefetches,
       maxConcurrentPrefetches: this.maxConcurrentPrefetches,
+      desiredFetchKeys: this.directionalPrefetchAreaKeys,
+      fetchedFetchKeys: this.fetchedChunks,
+      pendingFetchKeys: new Set(this.pendingChunks.keys()),
+      pinnedAreaKeys: this.pinnedRenderAreas,
     });
 
-    if (initialPlan.shouldClearQueuedPrefetchState) {
+    if (drainResult.shouldClearQueuedState) {
       this.clearQueuedPrefetchState();
       return;
     }
 
-    while (
-      resolvePrefetchQueueProcessingPlan({
-        isSwitchedOff: this.isSwitchedOff,
-        queueLength: this.prefetchQueue.length,
-        activePrefetches: this.activePrefetches,
-        maxConcurrentPrefetches: this.maxConcurrentPrefetches,
-      }).shouldProcessNextQueueItem
-    ) {
-      const item = this.prefetchQueue.shift();
-      if (!item) {
-        return;
-      }
-
-      if (item.fetchTiles) {
-        this.queuedPrefetchAreaKeys.delete(item.fetchKey);
-      }
-
-      if (
-        !shouldProcessPrefetchQueueItem({
-          item,
-          isSwitchedOff: this.isSwitchedOff,
-          desiredFetchKeys: this.directionalPrefetchAreaKeys,
-          fetchedFetchKeys: this.fetchedChunks,
-          pendingFetchKeys: new Set(this.pendingChunks.keys()),
-          pinnedAreaKeys: this.pinnedRenderAreas,
-        })
-      ) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_skipped");
-        continue;
-      }
-
+    drainResult.skippedItems.forEach(() => {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_skipped");
+    });
+    drainResult.startedItems.forEach((item) => {
       this.activePrefetches += 1;
       void (async () => {
         try {
@@ -3243,7 +3217,7 @@ export default class WorldmapScene extends WarpTravel {
           this.processPrefetchQueue();
         }
       })();
-    }
+    });
   }
 
   private unregisterTrackedVisibilityChunks(): void {
