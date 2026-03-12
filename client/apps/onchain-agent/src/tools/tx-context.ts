@@ -34,6 +34,47 @@ export function addressesEqual(a: string, b: string): boolean {
  * @returns A concise error string, truncated at 300 characters on some code paths.
  */
 export function extractTxError(err: any): string {
+  // WASM JsControllerError — has code(), data(), message() methods
+  if (err?.__wbg_ptr) {
+    try {
+      const data = typeof err.data === "function" ? err.data() : err.data;
+      const msg = typeof err.message === "function" ? err.message() : err.message;
+      const code = typeof err.code === "function" ? err.code() : err.code;
+
+      // data can be a JSON string like {"transaction_index":0,"execution_error":"..."}
+      // or a plain object
+      let execError: string | undefined;
+      if (typeof data === "string") {
+        try {
+          const parsed = JSON.parse(data);
+          execError = parsed?.execution_error;
+        } catch {
+          execError = data;
+        }
+      } else if (typeof data === "object" && data) {
+        execError = data.execution_error;
+      }
+
+      if (typeof execError === "string" && execError.length > 10) {
+        // Look for the human-readable reason in quotes: "insufficient stamina, you need: 30, and have: 10"
+        const quotedReasons = [...execError.matchAll(/"([^"]{10,})"/g)].map((m) => m[1]);
+        // Filter out hex strings and known noise
+        const useful = quotedReasons.filter(
+          (r) => !r.startsWith("0x") && !r.includes("class_hash") && !r.includes("contract_address"),
+        );
+        if (useful.length > 0) return useful[0];
+
+        // Fallback: Failure reason with felt-decoded string
+        const feltReason = execError.match(/\('([^']+)'\).*\('ENTRYPOINT_FAILED'\)/);
+        if (feltReason) return feltReason[1];
+
+        return execError.length > 300 ? execError.slice(0, 300) + "..." : execError;
+      }
+
+      if (msg && msg !== "Transaction execution error") return `${msg} (code ${code})`;
+    } catch { /* */ }
+  }
+
   // Walk common nested error shapes from starknet.js / provider
   const paths = [
     err?.baseError?.data?.execution_error,
