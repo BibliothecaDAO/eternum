@@ -1,12 +1,29 @@
+import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import {
+  getAvatarUrl,
+  normalizeAvatarAddress,
+  normalizeAvatarUsername,
+  useAvatarProfiles,
+  useAvatarProfilesByUsernames,
+} from "@/hooks/use-player-avatar";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { MarketClass } from "@/pm/class";
+import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
+import {
+  PM_CONTENT_PANEL_CLASS,
+  PM_PAGINATION_BUTTON_CLASS,
+  PM_SURFACE_CLASS,
+  PM_SURFACE_MUTED_CLASS,
+} from "@/ui/features/market/pm-theme";
 import { MarketImage } from "@/ui/features/market/landing-markets/market-image";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
+import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
+import { getMMRTierFromRaw, toMmrIntegerFromRaw, type MMRTier } from "@/ui/utils/mmr-tiers";
 import {
   getChainLabel,
   resolveConnectedTxChainFromRuntime,
@@ -14,6 +31,7 @@ import {
   type WalletChainControllerLike,
 } from "@/ui/utils/network-switch";
 import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import {
   marketChainLabels,
   useMultiChainMarketCounts,
@@ -25,6 +43,7 @@ import {
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { hash } from "starknet";
 import { MarketDetailsModal } from "./market-details-modal";
 
 interface MarketsViewProps {
@@ -32,6 +51,123 @@ interface MarketsViewProps {
 }
 
 type MarketDataChain = "slot" | "mainnet";
+type PlayerMmrSnapshot = { mmrRaw: bigint; mmr: number; tier: MMRTier; chain: MarketDataChain };
+
+const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
+const MMR_RPC_BY_CHAIN: Record<MarketDataChain, string> = {
+  mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
+  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+};
+
+const normalizeHexAddress = (value: string): string | null => {
+  try {
+    return `0x${BigInt(value).toString(16)}`;
+  } catch {
+    return null;
+  }
+};
+
+const uniqueNormalizedAddresses = (addresses: string[]): string[] =>
+  Array.from(
+    new Set(
+      addresses.map((address) => normalizeHexAddress(address)).filter((address): address is string => Boolean(address)),
+    ),
+  );
+
+const normalizeOutcomeAddress = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  const isAddressLike = /^0x[0-9a-f]+$/.test(lower) || /^[0-9]+$/.test(lower) || /^[0-9a-f]{40,}$/.test(lower);
+  if (!isAddressLike) return null;
+
+  const normalized = normalizeAvatarAddress(lower);
+  return normalized && normalized.startsWith("0x") ? normalized : null;
+};
+
+const usePlayersMmrSnapshots = (addresses: string[]) => {
+  const normalizedAddresses = useMemo(() => uniqueNormalizedAddresses(addresses), [addresses]);
+
+  return useQuery({
+    queryKey: ["markets-view", "players-mmr", normalizedAddresses],
+    queryFn: async (): Promise<Record<string, PlayerMmrSnapshot>> => {
+      if (normalizedAddresses.length === 0) {
+        return {};
+      }
+
+      const records: Record<string, PlayerMmrSnapshot> = {};
+      const mmrChains: MarketDataChain[] = ["mainnet", "slot"];
+
+      await Promise.all(
+        mmrChains.map(async (chain) => {
+          const tokenAddress = MMR_TOKEN_BY_CHAIN[chain];
+          const rpcUrl = MMR_RPC_BY_CHAIN[chain];
+          if (!tokenAddress || !rpcUrl) return;
+
+          const payload = normalizedAddresses.map((address, index) => ({
+            jsonrpc: "2.0",
+            id: index,
+            method: "starknet_call",
+            params: [
+              {
+                contract_address: tokenAddress,
+                entry_point_selector: GET_PLAYER_MMR_SELECTOR,
+                calldata: [address],
+              },
+              "pre_confirmed",
+            ],
+          }));
+
+          try {
+            const response = await fetch(rpcUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) return;
+            const raw = (await response.json()) as Array<{
+              id: number;
+              error?: unknown;
+              result?: [string, string] | string[];
+            }>;
+
+            raw.forEach((entry) => {
+              if (entry?.error || !Array.isArray(entry?.result)) return;
+              const address = normalizedAddresses[entry.id];
+              if (!address) return;
+
+              try {
+                const low = BigInt(entry.result[0] ?? "0");
+                const high = BigInt(entry.result[1] ?? "0");
+                const mmrRaw = low + (high << 128n);
+                const existing = records[address];
+
+                if (existing && existing.mmrRaw >= mmrRaw) return;
+
+                records[address] = {
+                  mmrRaw,
+                  mmr: toMmrIntegerFromRaw(mmrRaw),
+                  tier: getMMRTierFromRaw(mmrRaw),
+                  chain,
+                };
+              } catch {
+                // Ignore malformed entries.
+              }
+            });
+          } catch {
+            // Best-effort chain fetch. If one chain fails we keep the other.
+          }
+        }),
+      );
+
+      return records;
+    },
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+};
 
 const STATUS_OPTIONS: Array<{
   key: MarketStatusKey;
@@ -107,10 +243,20 @@ const MarketTerminalCard = ({
   onSwitchNetwork: (chain: MarketDataChain) => void;
   canTrade: boolean;
 }) => {
-  const outcomes = useMemo(() => {
+  const { outcomes, winningOutcomeOrdersSet } = useMemo(() => {
     const rows = item.market.getMarketOutcomes() ?? [];
-    return rows
-      .map((outcome) => ({ ...outcome, oddsNumeric: Number(outcome.odds) }))
+    const resolvedPayouts = item.market.isResolved() ? (item.market.conditionResolution?.payout_numerators ?? []) : [];
+    const winningOutcomeOrders = resolvedPayouts
+      .map((payout, idx) => (payout != null && Number(payout) > 0 ? idx : null))
+      .filter((idx): idx is number => idx !== null);
+    const winningSet = new Set(winningOutcomeOrders);
+
+    const sorted = rows
+      .map((outcome, arrayIndex) => ({
+        ...outcome,
+        oddsNumeric: Number(outcome.odds),
+        resolutionIndex: arrayIndex,
+      }))
       .toSorted((a, b) => {
         if (!Number.isFinite(a.oddsNumeric) && !Number.isFinite(b.oddsNumeric)) return a.index - b.index;
         if (!Number.isFinite(a.oddsNumeric)) return 1;
@@ -118,19 +264,108 @@ const MarketTerminalCard = ({
         if (a.oddsNumeric === b.oddsNumeric) return a.index - b.index;
         return b.oddsNumeric - a.oddsNumeric;
       });
+
+    const ordered =
+      item.market.isResolved() && winningSet.size > 0
+        ? [
+            ...sorted.filter((entry) => winningSet.has(entry.resolutionIndex)),
+            ...sorted.filter((entry) => !winningSet.has(entry.resolutionIndex)),
+          ]
+        : sorted;
+
+    return { outcomes: ordered, winningOutcomeOrdersSet: winningSet };
   }, [item.market]);
+  const controllers = useOptionalControllers();
+  const controllerAddressByUsername = useMemo(() => {
+    const map = new Map<string, string>();
+    controllers?.controllers?.forEach((controller) => {
+      const normalizedUsername = normalizeAvatarUsername(controller.username);
+      const normalizedAddress = normalizeAvatarAddress(controller.address);
+      if (!normalizedUsername || !normalizedAddress) return;
+      map.set(normalizedUsername, normalizedAddress);
+    });
+    return map;
+  }, [controllers?.controllers]);
 
   const visibleOutcomes = outcomes.slice(0, 3);
   const hiddenCount = Math.max(0, outcomes.length - visibleOutcomes.length);
+  const { outcomeAddresses, outcomeUsernames } = useMemo(() => {
+    const addresses = new Set<string>();
+    const usernames = new Set<string>();
+
+    visibleOutcomes.forEach((outcome) => {
+      const rawName = String(outcome.name ?? "");
+      const normalizedAddress = normalizeOutcomeAddress(rawName);
+      if (normalizedAddress) {
+        addresses.add(normalizedAddress);
+        return;
+      }
+
+      const normalizedUsername = normalizeAvatarUsername(rawName);
+      if (normalizedUsername) usernames.add(normalizedUsername);
+    });
+
+    return {
+      outcomeAddresses: Array.from(addresses),
+      outcomeUsernames: Array.from(usernames),
+    };
+  }, [visibleOutcomes]);
+  const { data: avatarProfilesByAddress = [] } = useAvatarProfiles(outcomeAddresses);
+  const { data: avatarProfilesByUsername = [] } = useAvatarProfilesByUsernames(outcomeUsernames);
+  const avatarProfileByAddress = useMemo(() => {
+    const profileMap = new Map<string, (typeof avatarProfilesByAddress)[number]>();
+    avatarProfilesByAddress.forEach((profile) => {
+      const normalizedAddress = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalizedAddress) return;
+      profileMap.set(normalizedAddress, profile);
+    });
+    return profileMap;
+  }, [avatarProfilesByAddress]);
+  const avatarProfileByUsername = useMemo(() => {
+    const profileMap = new Map<string, (typeof avatarProfilesByUsername)[number]>();
+    avatarProfilesByUsername.forEach((profile) => {
+      const username = normalizeAvatarUsername(profile.cartridgeUsername ?? null);
+      if (!username) return;
+      profileMap.set(username, profile);
+    });
+    return profileMap;
+  }, [avatarProfilesByUsername]);
+  const playerAddresses = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...outcomeAddresses,
+            ...outcomeUsernames
+              .map((username) => controllerAddressByUsername.get(username) ?? null)
+              .filter((address): address is string => Boolean(address)),
+            ...avatarProfilesByAddress
+              .map((profile) => normalizeAvatarAddress(profile.playerAddress))
+              .filter((address): address is string => Boolean(address)),
+            ...avatarProfilesByUsername
+              .map((profile) => normalizeAvatarAddress(profile.playerAddress))
+              .filter((address): address is string => Boolean(address)),
+          ].filter((address): address is string => Boolean(address)),
+        ),
+      ),
+    [
+      outcomeAddresses,
+      outcomeUsernames,
+      controllerAddressByUsername,
+      avatarProfilesByAddress,
+      avatarProfilesByUsername,
+    ],
+  );
+  const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
   const chainLabel = marketChainLabels[item.chain];
   const endLabel = formatTimeLeft(item.market.end_at ?? null);
 
   return (
-    <article className="group flex h-full flex-col rounded-2xl border border-white/10 bg-[#080b10]/90 p-4 shadow-[0_16px_40px_-24px_rgba(0,0,0,0.9)] transition-all duration-200 hover:border-orange/50 hover:bg-[#0b1017]">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-gold/15 bg-black/40 p-4 shadow-[0_16px_36px_-24px_rgba(0,0,0,0.95)] backdrop-blur-[2px] transition-all duration-200 hover:border-gold/45 hover:bg-black/50 hover:shadow-[0_18px_42px_-22px_rgba(223,170,84,0.22)]">
       <div className="flex items-start gap-3">
         <MarketImage
           market={item.market}
-          className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-white/10"
+          className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-gold/20"
         />
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
@@ -138,53 +373,113 @@ const MarketTerminalCard = ({
               className={cn(
                 "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
                 item.chain === "mainnet"
-                  ? "border-blue-400/40 bg-blue-500/10 text-blue-300"
-                  : "border-emerald-400/40 bg-emerald-500/10 text-emerald-300",
+                  ? "border-gold/35 bg-gold/10 text-gold/90"
+                  : "border-brilliance/45 bg-brilliance/10 text-brilliance/95",
               )}
             >
               {chainLabel}
             </span>
-            <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-gold/40">
               {shortMarketId(item.market.market_id)}
             </span>
           </div>
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white">
+          <h3 className="line-clamp-2 font-cinzel text-sm font-semibold leading-snug text-gold">
             {item.market.title || "Untitled market"}
           </h3>
         </div>
         <MarketStatusBadge market={item.market} />
       </div>
 
-      <div className="mt-4 flex-1 rounded-lg border border-white/10 bg-black/35 p-3">
+      <div className="mt-4 flex-1 rounded-lg border border-gold/15 bg-black/45 p-3">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-white/45">Top Outcomes</p>
-          <p className="text-[10px] uppercase tracking-[0.14em] text-white/35">Percent</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-gold/50">Top Outcomes</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-gold/40">Percent</p>
         </div>
         <div className="space-y-2">
-          {visibleOutcomes.map((outcome) => (
-            <div key={`${item.key}-${outcome.index}`} className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-xs text-white/80">
-                <MaybeController address={outcome.name} showAddress={false} />
-              </p>
-              <p className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-xs font-semibold text-emerald-300">
-                {formatOddsPercentage(outcome.odds)}
-              </p>
-            </div>
-          ))}
+          {visibleOutcomes.map((outcome) => {
+            const isWinner =
+              item.market.isResolved() &&
+              winningOutcomeOrdersSet.size > 0 &&
+              winningOutcomeOrdersSet.has(outcome.resolutionIndex);
+            const rawName = String(outcome.name ?? "");
+            const normalizedAddress = normalizeOutcomeAddress(rawName);
+            const normalizedName = normalizedAddress ? null : normalizeAvatarUsername(rawName);
+            const avatarProfileByResolvedAddress = normalizedAddress
+              ? avatarProfileByAddress.get(normalizedAddress)
+              : null;
+            const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
+            const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
+            const controllerAddress = normalizedName ? (controllerAddressByUsername.get(normalizedName) ?? null) : null;
+            const playerAddress =
+              normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
+            const avatarSeed = playerAddress ?? normalizedName ?? rawName;
+            const avatarUrl = getAvatarUrl(avatarSeed, avatarProfile?.avatarUrl);
+            const mmrSnapshot = playerAddress ? mmrByAddress[playerAddress] : undefined;
+
+            return (
+              <div
+                key={`${item.key}-${outcome.index}`}
+                className={cn(
+                  "flex items-start justify-between gap-2 rounded-md border px-2 py-1.5",
+                  isWinner ? "border-progress-bar-good/45 bg-progress-bar-good/10" : "border-gold/15 bg-black/20",
+                )}
+              >
+                <div className="flex min-w-0 items-start gap-2">
+                  <img
+                    src={avatarUrl}
+                    alt={`${String(outcome.name ?? "Player")} avatar`}
+                    className="h-6 w-6 shrink-0 rounded-full border border-gold/20 object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-lightest">
+                      <MaybeController address={outcome.name} showAddress={false} />
+                    </p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[10px] text-gold/70">
+                        <img src="/tokens/lords.png" alt="LORDS" className="h-3 w-3 rounded-full object-contain" />
+                        <span>{mmrSnapshot ? `${mmrSnapshot.mmr.toLocaleString()} MMR` : "MMR --"}</span>
+                      </span>
+                      {isWinner ? (
+                        <span className="rounded border border-progress-bar-good/50 bg-progress-bar-good/10 px-1.5 py-0.5 text-[10px] font-semibold text-progress-bar-good">
+                          Winner
+                        </span>
+                      ) : null}
+                      {mmrSnapshot ? <MMRTierBadge tier={mmrSnapshot.tier} /> : null}
+                    </div>
+                  </div>
+                </div>
+                <p
+                  className={cn(
+                    "rounded border px-2 py-0.5 text-xs font-semibold",
+                    isWinner
+                      ? "border-progress-bar-good/45 bg-progress-bar-good/15 text-progress-bar-good"
+                      : "border-gold/30 bg-gold/10 text-gold",
+                  )}
+                >
+                  {formatOddsPercentage(outcome.odds)}
+                </p>
+              </div>
+            );
+          })}
         </div>
         {hiddenCount > 0 ? (
-          <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/35">+{hiddenCount} more outcomes</p>
+          <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-gold/45">+{hiddenCount} more outcomes</p>
         ) : null}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-lg border border-orange/40 bg-orange/10 p-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-orange/80">All-time Volume</p>
-          <p className="mt-1 text-base font-semibold text-orange">{item.volumeDisplay}</p>
+        <div className="rounded-lg border border-gold/25 bg-gold/10 p-2">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-gold/75">All-time Volume</p>
+          <p className="mt-1 inline-flex items-center gap-1 text-base font-semibold text-gold">
+            <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+            <span>{item.volumeDisplay}</span>
+          </p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/5 p-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-white/40">Trading Ends</p>
-          <p className="mt-1 text-sm font-semibold text-white/80">{endLabel}</p>
+        <div className="rounded-lg border border-gold/20 bg-black/40 p-2">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-gold/45">Trading Ends</p>
+          <p className="mt-1 text-sm font-semibold text-gold/85">{endLabel}</p>
         </div>
       </div>
 
@@ -200,8 +495,8 @@ const MarketTerminalCard = ({
         className={cn(
           "mt-3 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
           canTrade
-            ? "border-orange/50 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25"
-            : "border-blue-400/40 bg-blue-500/10 text-blue-300 hover:border-blue-300/60 hover:bg-blue-500/20",
+            ? "border-gold/60 bg-gold/20 text-gold hover:border-gold hover:bg-gold/30"
+            : "border-brilliance/45 bg-brilliance/10 text-brilliance hover:border-brilliance/70 hover:bg-brilliance/15",
         )}
       >
         {canTrade ? "Open Market" : `Switch To ${chainLabel}`}
@@ -340,13 +635,18 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   }, [selectedStatus, handleStatusChange]);
 
   return (
-    <div className={cn("font-jetbrains flex h-full flex-col gap-5", className)}>
+    <div className={cn("flex h-full flex-col gap-5", className)}>
       <div className="space-y-3">
         <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">Prediction Markets</h2>
-        <p className="text-sm text-white/65">Track live odds and all-time volume across Slot and Mainnet markets.</p>
+        <p className="text-sm text-gold/70">Track live odds and all-time volume across Slot and Mainnet markets.</p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070a10]/85 p-3">
+      <div
+        className={cn(
+          PM_SURFACE_CLASS,
+          "flex flex-wrap items-center justify-between gap-3 border-gold/15 bg-black/35 p-3",
+        )}
+      >
         <div className="flex flex-wrap items-center gap-2">
           {STATUS_OPTIONS.map((option) => {
             const isActive = selectedStatus === option.key;
@@ -364,12 +664,12 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                   "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   showLiveGlow &&
                     (isActive
-                      ? "border-emerald-300 bg-emerald-500/25 text-emerald-200 shadow-[0_0_22px_rgba(16,185,129,0.45)]"
-                      : "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:border-emerald-300/80 hover:bg-emerald-500/20"),
+                      ? "border-brilliance/80 bg-brilliance/20 text-brilliance shadow-[0_0_20px_rgba(125,255,186,0.25)]"
+                      : "border-brilliance/45 bg-brilliance/10 text-brilliance/90 hover:border-brilliance/70 hover:bg-brilliance/15"),
                   !showLiveGlow &&
                     (isActive
-                      ? "border-orange/80 bg-orange/20 text-orange"
-                      : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"),
+                      ? "border-gold/80 bg-gold/20 text-gold"
+                      : "border-gold/25 bg-black/40 text-gold/75 hover:border-gold/45 hover:bg-gold/10"),
                 )}
               >
                 {option.label} ({countLabel})
@@ -389,8 +689,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   isActive
-                    ? "border-orange/80 bg-orange/20 text-orange"
-                    : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
+                    ? "border-gold/70 bg-gold/15 text-gold"
+                    : "border-gold/25 bg-black/40 text-gold/75 hover:border-gold/45 hover:bg-gold/10",
                 )}
               >
                 {option.label}
@@ -400,17 +700,22 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#070a10]/85 px-4 py-3 text-xs uppercase tracking-[0.12em] text-white/65">
+      <div
+        className={cn(
+          PM_SURFACE_MUTED_CLASS,
+          "flex flex-wrap items-center justify-between gap-3 border-gold/15 bg-black/30 px-4 py-3 text-xs uppercase tracking-[0.12em] text-gold/70",
+        )}
+      >
         <span>{totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount}` : "No markets found"}</span>
         <div className="flex items-center gap-3">
           <span>Sort: Creation Date (Newest)</span>
-          {isFetching ? <span className="text-white/40">Refreshing…</span> : null}
+          {isFetching ? <span className="text-gold/45">Refreshing…</span> : null}
           <RefreshButton aria-label="Refresh markets" isLoading={isFetching || isLoading} onClick={refresh} />
         </div>
       </div>
 
       {sourceWarnings.length > 0 ? (
-        <div className="rounded-xl border border-orange/40 bg-orange/10 px-3 py-2 text-xs text-orange/90">
+        <div className="rounded-xl border border-brilliance/45 bg-brilliance/10 px-3 py-2 text-xs text-brilliance">
           {sourceWarnings.join(" • ")}
         </div>
       ) : null}
@@ -421,16 +726,21 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
         </div>
       ) : null}
 
-      <div className="max-h-[calc(100vh-260px)] flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-[#05070d]/90 p-4 md:p-5">
+      <div
+        className={cn(
+          PM_CONTENT_PANEL_CLASS,
+          "max-h-[calc(100vh-260px)] flex-1 overflow-y-auto border-gold/15 bg-black/25 p-4 md:p-5",
+        )}
+      >
         {markets.length === 0 && !isFetching ? (
-          <div className="rounded-2xl border border-white/10 bg-black/35 p-6 text-center">
+          <div className="rounded-2xl border border-gold/20 bg-black/35 p-6 text-center">
             <p className="font-cinzel text-lg text-gold">{emptyState.title}</p>
-            {emptyState.description ? <p className="mt-2 text-sm text-white/65">{emptyState.description}</p> : null}
+            {emptyState.description ? <p className="mt-2 text-sm text-gold/70">{emptyState.description}</p> : null}
             {emptyState.actionLabel && emptyState.onAction ? (
               <button
                 type="button"
                 onClick={emptyState.onAction}
-                className="mt-4 rounded-lg border border-orange/70 bg-orange/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-orange transition-colors hover:bg-orange/25"
+                className="mt-4 rounded-lg border border-gold/65 bg-gold/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gold transition-colors hover:bg-gold/25"
               >
                 {emptyState.actionLabel}
               </button>
@@ -462,12 +772,12 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
               }))
             }
             disabled={currentPage === 1 || isFetching}
-            className="min-h-[40px] min-w-[40px] rounded-lg border border-white/15 bg-white/5 px-3 text-sm text-white/80 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className={PM_PAGINATION_BUTTON_CLASS}
             aria-label="Previous page"
           >
             ←
           </button>
-          <span className="text-xs uppercase tracking-[0.12em] text-white/60">
+          <span className="text-xs uppercase tracking-[0.12em] text-gold/60">
             Page {currentPage} / {totalPages}
           </span>
           <button
@@ -479,7 +789,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
               }))
             }
             disabled={currentPage === totalPages || isFetching}
-            className="min-h-[40px] min-w-[40px] rounded-lg border border-white/15 bg-white/5 px-3 text-sm text-white/80 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className={PM_PAGINATION_BUTTON_CLASS}
             aria-label="Next page"
           >
             →
