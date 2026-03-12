@@ -310,6 +310,10 @@ Objective:
 
 Stop listener accumulation through shared controls and singleton visibility ownership.
 
+Status:
+
+- [x] Complete
+
 Deliverables:
 
 1. `HexagonScene.destroy()` disposes `frustumManager`.
@@ -407,6 +411,10 @@ GREEN:
 
 1. Dispose `frustumManager` in `HexagonScene.destroy()`.
 2. Refactor `CentralizedVisibilityManager.initialize()` so it detaches any previous controls listener before reattach.
+
+Status:
+
+- [x] Complete
 
 ### S3 (P0): Window debug hooks are symmetric
 

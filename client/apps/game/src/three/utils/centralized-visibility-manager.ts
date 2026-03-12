@@ -137,6 +137,11 @@ export class CentralizedVisibilityManager {
    * Must be called before using visibility queries.
    */
   initialize(camera: PerspectiveCamera, controls: MapControls): void {
+    if (this.disposeControlsListener) {
+      this.disposeControlsListener();
+      this.disposeControlsListener = null;
+    }
+
     this.camera = camera;
     this.controls = controls;
 
