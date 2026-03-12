@@ -143,7 +143,9 @@ export function createDefendStructureTool(
             signer: tx.signer,
           });
         } catch (err: any) {
-          throw new Error(`Defend failed: ${extractTxError(err)}`);
+          throw new Error(
+            `Defend failed (${transferCount} ${explorer.troopType} ${explorer.troopTier} → ${structure.category} slot ${slotName}): ${extractTxError(err)}`,
+          );
         }
 
         const remaining = explorer.troopCount - transferCount;
@@ -207,7 +209,9 @@ export function createDefendStructureTool(
           signer: tx.signer,
         });
       } catch (err: any) {
-        throw new Error(`Defend failed: ${extractTxError(err)}`);
+        throw new Error(
+          `Defend failed (${troopCount} ${troopResName} from reserves → slot ${slotName}): ${extractTxError(err)}`,
+        );
       }
 
       const remainingDisplay = availableDisplay - troopCount;
