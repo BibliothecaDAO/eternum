@@ -62,6 +62,7 @@ import {
 import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
+import { destroyTrackedGuiFolders, trackGuiFolder } from "./utils/gui-folder-lifecycle";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
@@ -158,6 +159,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
+  private guiFolders: Array<{ destroy(): void }> = [];
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
@@ -219,7 +221,7 @@ export default class GameRenderer {
   }
 
   private setupSceneSwitchingGUI() {
-    const changeSceneFolder = GUIManager.addFolder("Switch scene");
+    const changeSceneFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Switch scene"));
     const changeSceneParams = { scene: SceneName.WorldMap };
     changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
@@ -227,7 +229,7 @@ export default class GameRenderer {
   }
 
   private setupCameraMovementGUI() {
-    const moveCameraFolder = GUIManager.addFolder("Move Camera");
+    const moveCameraFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Move Camera"));
     const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
 
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
@@ -268,7 +270,7 @@ export default class GameRenderer {
   }
 
   private setupRendererGUI() {
-    const rendererFolder = GUIManager.addFolder("Renderer");
+    const rendererFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Renderer"));
     rendererFolder
       .add(this.renderer, "toneMapping", {
         "No Tone Mapping": NoToneMapping,
@@ -281,7 +283,7 @@ export default class GameRenderer {
     rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
     rendererFolder.close();
 
-    const contactShadowFolder = GUIManager.addFolder("Contact Shadows");
+    const contactShadowFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Contact Shadows"));
     const { material } = getContactShadowResources();
     const params = { opacity: material.opacity };
     contactShadowFolder
@@ -858,7 +860,7 @@ export default class GameRenderer {
     mutableToneMapping.exposure = config.toneMapping.exposure;
     mutableToneMapping.whitePoint = config.toneMapping.whitePoint;
 
-    const folder = GUIManager.addFolder("Tone Mapping");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Tone Mapping"));
     folder
       .add(config.toneMapping, "mode", {
         ...ToneMappingMode,
@@ -901,7 +903,7 @@ export default class GameRenderer {
     }
     this.postProcessingGUIInitialized = true;
 
-    const folder = GUIManager.addFolder("Color Grade");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Color Grade"));
 
     folder
       .add(config, "saturation", -0.5, 0.5, 0.01)
@@ -952,7 +954,7 @@ export default class GameRenderer {
       offset: config.vignette.offset,
     });
 
-    const folder = GUIManager.addFolder("Vignette");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Vignette"));
     folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
       this.vignetteEffect!.darkness = value;
     });
@@ -1387,6 +1389,8 @@ export default class GameRenderer {
         }
         this.environmentTarget = undefined;
       }
+
+      destroyTrackedGuiFolders(this.guiFolders);
 
       // Remove event listeners
       window.removeEventListener("urlChanged", this.handleURLChange);

@@ -357,6 +357,10 @@ Objective:
 
 Close remaining retained roots from singleton render helpers and global GUI folders.
 
+Status:
+
+- [x] Complete
+
 Deliverables:
 
 1. `ArmyManager.destroy()` fully disposes `PathRenderer` or introduces explicit ownership transfer/ref counting.
@@ -465,6 +469,10 @@ GREEN:
 1. Replace `clearAll()`-only cleanup with `dispose()` or a new owner-safe teardown API.
 2. Keep idempotency guarantees.
 
+Status:
+
+- [x] Complete
+
 ### S6 (P1): GUI folder ownership is explicit
 
 RED:
@@ -476,6 +484,10 @@ GREEN:
 
 1. Store created folder handles as fields.
 2. Destroy them in the owning class teardown.
+
+Status:
+
+- [x] Complete
 
 ### S7 (P2): Points label textures are cleaned up
 
