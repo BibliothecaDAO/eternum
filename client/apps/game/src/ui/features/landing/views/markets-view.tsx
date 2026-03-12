@@ -173,10 +173,10 @@ const STATUS_OPTIONS: Array<{
   key: MarketStatusKey;
   label: string;
 }> = [
-  { key: "all", label: "All" },
   { key: "live", label: "Live" },
   { key: "awaiting", label: "Awaiting" },
   { key: "resolved", label: "Resolved" },
+  { key: "all", label: "All" },
 ];
 
 const CHAIN_OPTIONS: Array<{ key: MarketChainFilter; label: string }> = [
@@ -199,6 +199,7 @@ const getChainFromParam = (value: string | null): MarketChainFilter => {
 };
 
 const PAGE_SIZE = 9;
+const INITIAL_MARKETS_SKELETON_COUNT = 6;
 
 const formatOddsPercentage = (raw: string | number) => {
   const value = Number(raw);
@@ -276,16 +277,7 @@ const MarketTerminalCard = ({
     return { outcomes: ordered, winningOutcomeOrdersSet: winningSet };
   }, [item.market]);
   const controllers = useOptionalControllers();
-  const controllerAddressByUsername = useMemo(() => {
-    const map = new Map<string, string>();
-    controllers?.controllers?.forEach((controller) => {
-      const normalizedUsername = normalizeAvatarUsername(controller.username);
-      const normalizedAddress = normalizeAvatarAddress(controller.address);
-      if (!normalizedUsername || !normalizedAddress) return;
-      map.set(normalizedUsername, normalizedAddress);
-    });
-    return map;
-  }, [controllers?.controllers]);
+  const findControllerAddressByUsername = controllers?.findControllerAddressByUsername;
 
   const visibleOutcomes = outcomes.slice(0, 3);
   const hiddenCount = Math.max(0, outcomes.length - visibleOutcomes.length);
@@ -337,7 +329,7 @@ const MarketTerminalCard = ({
           [
             ...outcomeAddresses,
             ...outcomeUsernames
-              .map((username) => controllerAddressByUsername.get(username) ?? null)
+              .map((username) => findControllerAddressByUsername?.(username) ?? null)
               .filter((address): address is string => Boolean(address)),
             ...avatarProfilesByAddress
               .map((profile) => normalizeAvatarAddress(profile.playerAddress))
@@ -351,7 +343,7 @@ const MarketTerminalCard = ({
     [
       outcomeAddresses,
       outcomeUsernames,
-      controllerAddressByUsername,
+      findControllerAddressByUsername,
       avatarProfilesByAddress,
       avatarProfilesByUsername,
     ],
@@ -409,7 +401,9 @@ const MarketTerminalCard = ({
               : null;
             const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
             const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
-            const controllerAddress = normalizedName ? (controllerAddressByUsername.get(normalizedName) ?? null) : null;
+            const controllerAddress = normalizedName
+              ? (findControllerAddressByUsername?.(normalizedName) ?? null)
+              : null;
             const playerAddress =
               normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
             const avatarSeed = playerAddress ?? normalizedName ?? rawName;
@@ -505,6 +499,40 @@ const MarketTerminalCard = ({
   );
 };
 
+const MarketTerminalSkeletonCard = () => (
+  <article className="relative flex h-full flex-col overflow-hidden rounded-xl border border-gold/15 bg-black/40 p-4">
+    <div className="flex items-start gap-3">
+      <div className="h-12 w-12 animate-pulse rounded-lg border border-gold/20 bg-gold/10" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3 w-20 animate-pulse rounded bg-gold/10" />
+        <div className="h-4 w-3/4 animate-pulse rounded bg-gold/10" />
+      </div>
+      <div className="h-6 w-16 animate-pulse rounded-full border border-gold/20 bg-gold/10" />
+    </div>
+
+    <div className="mt-4 flex-1 rounded-lg border border-gold/15 bg-black/45 p-3">
+      <div className="space-y-2.5">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between gap-2 rounded-md border border-gold/15 bg-black/20 p-2"
+          >
+            <div className="h-3 w-1/2 animate-pulse rounded bg-gold/10" />
+            <div className="h-4 w-10 animate-pulse rounded bg-gold/10" />
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="h-14 animate-pulse rounded-lg border border-gold/25 bg-gold/10" />
+      <div className="h-14 animate-pulse rounded-lg border border-gold/20 bg-black/40" />
+    </div>
+
+    <div className="mt-3 h-9 animate-pulse rounded-lg border border-gold/30 bg-gold/10" />
+  </article>
+);
+
 /**
  * Unified prediction markets view with in-page status filters.
  */
@@ -589,6 +617,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const startIndex = totalCount > 0 ? offset + 1 : 0;
   const endIndex = Math.min(offset + markets.length, totalCount);
+  const isInitialLoad = (isLoading || isFetching) && markets.length === 0;
 
   const sourceWarnings = useMemo(() => {
     const selected = selectedChain === "all" ? (["slot", "mainnet"] as MarketDataChain[]) : [selectedChain];
@@ -708,7 +737,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
       >
         <span>{totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount}` : "No markets found"}</span>
         <div className="flex items-center gap-3">
-          <span>Sort: Creation Date (Newest)</span>
+          <span>Sort: Live First • Newest</span>
           {isFetching ? <span className="text-gold/45">Refreshing…</span> : null}
           <RefreshButton aria-label="Refresh markets" isLoading={isFetching || isLoading} onClick={refresh} />
         </div>
@@ -732,7 +761,18 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
           "max-h-[calc(100vh-260px)] flex-1 overflow-y-auto border-gold/15 bg-black/25 p-4 md:p-5",
         )}
       >
-        {markets.length === 0 && !isFetching ? (
+        {isInitialLoad ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-gold/20 bg-black/35 px-3 py-2 text-xs uppercase tracking-[0.12em] text-gold/65">
+              Loading live markets...
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: INITIAL_MARKETS_SKELETON_COUNT }).map((_, index) => (
+                <MarketTerminalSkeletonCard key={`market-skeleton-${index}`} />
+              ))}
+            </div>
+          </div>
+        ) : markets.length === 0 && !isFetching ? (
           <div className="rounded-2xl border border-gold/20 bg-black/35 p-6 text-center">
             <p className="font-cinzel text-lg text-gold">{emptyState.title}</p>
             {emptyState.description ? <p className="mt-2 text-sm text-gold/70">{emptyState.description}</p> : null}

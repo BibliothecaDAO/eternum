@@ -41,7 +41,15 @@ const MARKET_FILTERS_ALL: MarketFiltersParams = {
   oracle: "All",
 };
 
-export const MarketsProviders = ({ children, chain }: { children: ReactNode; chain?: PredictionMarketChain }) => {
+export const MarketsProviders = ({
+  children,
+  chain,
+  loadingFallback,
+}: {
+  children: ReactNode;
+  chain?: PredictionMarketChain;
+  loadingFallback?: ReactNode;
+}) => {
   const resolvedChain = chain ?? getPredictionMarketChain();
   const config = getPredictionMarketConfigForChain(resolvedChain);
   return (
@@ -50,6 +58,7 @@ export const MarketsProviders = ({ children, chain }: { children: ReactNode; cha
         chain={resolvedChain}
         toriiUrl={GLOBAL_TORII_BY_CHAIN[resolvedChain] ?? config.toriiUrl}
         worldAddress={config.worldAddress}
+        fallback={loadingFallback}
       >
         <UserProvider>
           <ControllersProvider>{children}</ControllersProvider>

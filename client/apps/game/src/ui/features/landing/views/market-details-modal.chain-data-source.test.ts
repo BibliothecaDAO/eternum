@@ -11,7 +11,8 @@ describe("MarketDetailsModal chain-aware data sources", () => {
     );
 
     expect(source).toContain("chain: MarketDataChain");
-    expect(source).toContain("<MarketsProviders chain={chain}>");
+    expect(source).toContain("<MarketsProviders chain={chain} loadingFallback={");
+    expect(source).toContain("MarketDetailsModalLoadingFallback");
     expect(source).toContain("getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain])");
     expect(source).toContain("fetchMarketBuyUniqueAccountsCountByMarket");
     expect(source).toContain("<MarketPositions market={market} chain={chain} address={address} />");
