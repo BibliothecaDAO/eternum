@@ -6,7 +6,7 @@ Date: 2026-03-13 Status: Draft Scope: `client/apps/game/src/three` render path a
 
 - [x] Phase 0: Measurement and Guardrails
 - [x] Phase 1: Worldmap Refresh Backpressure
-- [ ] Phase 2: Army Delta Pipeline
+- [x] Phase 2: Army Delta Pipeline
 - [ ] Phase 3: Foreign Trail Path Pipeline Optimization
 - [ ] Phase 4: Point Icon and Label Batching
 - [ ] Phase 5: Structure Incremental Refresh
