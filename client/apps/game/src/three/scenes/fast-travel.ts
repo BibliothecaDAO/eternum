@@ -41,9 +41,12 @@ import {
   type FastTravelMovementResolution,
 } from "./fast-travel-movement-policy";
 import { prepareFastTravelRenderState, type FastTravelRenderState } from "./fast-travel-rendering";
+import {
+  FAST_TRAVEL_CHUNK_POLICY,
+  resolveFastTravelChunkHydrationPlan,
+  resolveFastTravelVisibleChunkDecision,
+} from "./fast-travel-chunk-loading-runtime";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
-
-const FAST_TRAVEL_CHUNK_RADIUS = 4;
 
 export default class FastTravelScene extends WarpTravel {
   private readonly travelLabelGroup = new Group();
@@ -59,6 +62,17 @@ export default class FastTravelScene extends WarpTravel {
   private sceneSpires: FastTravelSpireHydrationInput[] = [];
   private selectedArmyEntityId: string | null = null;
   private previewTargetHexKey: string | null = null;
+  private currentChunk: string = "null";
+  private chunkRefreshTimeout: number | null = null;
+  private pendingChunkRefreshForce = false;
+  private readonly chunkRefreshDebounceMs = FAST_TRAVEL_CHUNK_POLICY.refreshDebounceMs;
+  private handleFastTravelControlsChange = (): void => {
+    if (this.isSwitchedOff || this.sceneManager.getCurrentScene() !== SceneName.FastTravel) {
+      return;
+    }
+
+    this.requestChunkRefresh();
+  };
 
   constructor(
     dojoContext: SetupResult,
@@ -128,32 +142,17 @@ export default class FastTravelScene extends WarpTravel {
 
   private registerFastTravelStoreSubscriptions(): void {}
 
-  private setupFastTravelCameraZoomHandler(): void {}
+  private setupFastTravelCameraZoomHandler(): void {
+    this.controls.removeEventListener("change", this.handleFastTravelControlsChange);
+    this.controls.addEventListener("change", this.handleFastTravelControlsChange);
+  }
 
   private async refreshFastTravelScene(): Promise<void> {
     if (this.isSwitchedOff) {
       return;
     }
 
-    const focusHex = this.resolveFastTravelFocusHex();
-    const startCol = focusHex.col - FAST_TRAVEL_CHUNK_RADIUS;
-    const startRow = focusHex.row - FAST_TRAVEL_CHUNK_RADIUS;
-
-    this.currentHydratedChunk = hydrateFastTravelChunkState({
-      chunkKey: `${startCol},${startRow}`,
-      startCol,
-      startRow,
-      width: FAST_TRAVEL_CHUNK_RADIUS * 2 + 1,
-      height: FAST_TRAVEL_CHUNK_RADIUS * 2 + 1,
-      armies: this.resolveSceneArmies(focusHex),
-      spires: this.resolveSceneSpires(focusHex),
-    });
-
-    this.currentRenderState = prepareFastTravelRenderState({
-      visibleHexWindow: this.currentHydratedChunk.visibleHexWindow,
-    });
-
-    this.syncFastTravelSceneVisuals();
+    await this.updateVisibleChunks(true);
   }
 
   private reportFastTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {
@@ -164,7 +163,14 @@ export default class FastTravelScene extends WarpTravel {
     console.error(message, error);
   }
 
-  private disposeFastTravelStoreSubscriptions(): void {}
+  private disposeFastTravelStoreSubscriptions(): void {
+    this.controls.removeEventListener("change", this.handleFastTravelControlsChange);
+    if (this.chunkRefreshTimeout !== null) {
+      window.clearTimeout(this.chunkRefreshTimeout);
+      this.chunkRefreshTimeout = null;
+    }
+    this.pendingChunkRefreshForce = false;
+  }
 
   private detachFastTravelLabelGroupsFromScene(): void {
     this.detachWarpTravelLabelGroupsFromScene([this.travelLabelGroup]);
@@ -254,7 +260,7 @@ export default class FastTravelScene extends WarpTravel {
       return;
     }
 
-    void this.refreshFastTravelScene();
+    void this.updateVisibleChunks(true);
   }
 
   public destroy(): void {
@@ -286,6 +292,22 @@ export default class FastTravelScene extends WarpTravel {
     return this.getCameraTargetHex();
   }
 
+  private resolveFastTravelFocusPoint(): { x: number; z: number } {
+    if (Number.isFinite(this.controls.target.x) && Number.isFinite(this.controls.target.z)) {
+      return {
+        x: this.controls.target.x,
+        z: this.controls.target.z,
+      };
+    }
+
+    const focusHex = this.resolveFastTravelFocusHex();
+    const worldPosition = getWorldPositionForHex(focusHex);
+    return {
+      x: worldPosition.x,
+      z: worldPosition.z,
+    };
+  }
+
   private buildDemoArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
     return [
       {
@@ -311,6 +333,73 @@ export default class FastTravelScene extends WarpTravel {
         travelHexCoords: { col: focusHex.col + 2, row: focusHex.row - 1 },
       },
     ];
+  }
+
+  private requestChunkRefresh(force: boolean = false): void {
+    if (this.isSwitchedOff) {
+      return;
+    }
+
+    if (force) {
+      this.pendingChunkRefreshForce = true;
+    }
+
+    if (this.chunkRefreshTimeout !== null) {
+      return;
+    }
+
+    this.chunkRefreshTimeout = window.setTimeout(() => {
+      const shouldForce = this.pendingChunkRefreshForce;
+      this.pendingChunkRefreshForce = false;
+      this.chunkRefreshTimeout = null;
+      void this.updateVisibleChunks(shouldForce).catch((error) => {
+        console.error("[FastTravelScene] Failed to refresh visible chunk:", error);
+      });
+    }, this.chunkRefreshDebounceMs);
+  }
+
+  private async updateVisibleChunks(force: boolean = false): Promise<boolean> {
+    const chunkDecision = resolveFastTravelVisibleChunkDecision({
+      isSwitchedOff: this.isSwitchedOff,
+      focusPoint: this.resolveFastTravelFocusPoint(),
+      currentChunk: this.currentChunk,
+      force,
+    });
+
+    if (chunkDecision.action === "noop") {
+      return false;
+    }
+
+    if (chunkDecision.chunkKey === null || chunkDecision.startCol === null || chunkDecision.startRow === null) {
+      return false;
+    }
+
+    this.applyFastTravelVisibleChunk(chunkDecision.chunkKey, chunkDecision.startCol, chunkDecision.startRow);
+    return true;
+  }
+
+  private applyFastTravelVisibleChunk(chunkKey: string, startCol: number, startRow: number): void {
+    const focusHex = this.resolveFastTravelFocusHex();
+    const chunkPlan = resolveFastTravelChunkHydrationPlan({
+      startCol,
+      startRow,
+    });
+
+    this.currentHydratedChunk = hydrateFastTravelChunkState({
+      chunkKey: chunkPlan.chunkKey,
+      startCol: chunkPlan.startCol,
+      startRow: chunkPlan.startRow,
+      width: chunkPlan.width,
+      height: chunkPlan.height,
+      armies: this.resolveSceneArmies(focusHex),
+      spires: this.resolveSceneSpires(focusHex),
+    });
+
+    this.currentRenderState = prepareFastTravelRenderState({
+      visibleHexWindow: this.currentHydratedChunk.visibleHexWindow,
+    });
+    this.currentChunk = chunkKey;
+    this.syncFastTravelSceneVisuals();
   }
 
   private syncFastTravelSceneVisuals(): void {
