@@ -9,7 +9,7 @@ function readHoverLabelManagerSource(): string {
 }
 
 describe("HoverLabelManager leave path", () => {
-  it("uses one teardown path when the cursor leaves the grid", () => {
+  it("tears down only active labels when the cursor leaves the grid", () => {
     const source = readHoverLabelManagerSource();
     const onHexLeaveStart = source.indexOf("onHexLeave()");
     const updateCameraViewStart = source.indexOf("updateCameraView(", onHexLeaveStart);
@@ -17,7 +17,7 @@ describe("HoverLabelManager leave path", () => {
       ? source.slice(onHexLeaveStart, updateCameraViewStart)
       : "";
 
-    expect(methodSource).not.toMatch(/controller\.hide\(activeId\)/);
-    expect(methodSource).toMatch(/hideAll\?\.\(\)/);
+    expect(methodSource).toMatch(/this\.controllers\[type\]\?\.hide\(activeId\)/);
+    expect(methodSource).not.toMatch(/hideAll\?\.\(\)/);
   });
 });

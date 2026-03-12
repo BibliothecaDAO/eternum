@@ -268,6 +268,17 @@ export class PointsLabelRenderer {
     }
   }
 
+  public setMany(configs: Iterable<PointLabelConfig>): void {
+    this.beginBatch();
+    try {
+      for (const config of configs) {
+        this.setPoint(config);
+      }
+    } finally {
+      this.endBatch();
+    }
+  }
+
   /**
    * Clear all points
    */

@@ -403,11 +403,20 @@ export class ChestManager {
     });
 
     if (this.pointsRenderer) {
-      this.pointsRenderer.getEntityIds().forEach((entityId) => {
-        if (!visibleChestIds.has(entityId)) {
-          this.pointsRenderer!.removePoint(entityId);
-        }
+      const nextPointConfigs = visibleChests.map((chest) => {
+        const iconPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+        iconPosition.y += 2;
+        return {
+          entityId: chest.entityId,
+          position: iconPosition,
+        };
       });
+      this.pointsRenderer.setMany(nextPointConfigs);
+
+      const stalePointIds = this.pointsRenderer
+        .getEntityIds()
+        .filter((entityId) => !visibleChestIds.has(entityId));
+      this.pointsRenderer.removeMany(stalePointIds);
     }
   }
 
@@ -418,7 +427,6 @@ export class ChestManager {
     this.entityIdMap.set(index, chest.entityId);
     this.writeChestInstance(chest, index);
     this.updateChestLabelPosition(chest);
-    this.updateChestPoint(chest);
   }
 
   private updateChestInstance(chest: ChestData) {
@@ -429,7 +437,6 @@ export class ChestManager {
     this.writeChestInstance(chest, index);
     this.entityIdMap.set(index, chest.entityId);
     this.updateChestLabelPosition(chest);
-    this.updateChestPoint(chest);
   }
 
   private removeChestInstance(entityId: ID) {
@@ -454,7 +461,6 @@ export class ChestManager {
     this.chestInstanceOrder.pop();
     this.chestInstanceIndices.delete(entityId);
     this.entityIdMap.delete(lastIndex);
-    this.removeChestPoint(entityId);
     this.removeEntityIdLabel(entityId);
   }
 
@@ -480,24 +486,6 @@ export class ChestManager {
     const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
     updatedPosition.y += 1.5;
     existingLabel.position.copy(updatedPosition);
-  }
-
-  private updateChestPoint(chest: ChestData) {
-    if (!this.pointsRenderer) {
-      return;
-    }
-    const iconPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
-    iconPosition.y += 2;
-    this.pointsRenderer.setPoint({
-      entityId: chest.entityId,
-      position: iconPosition,
-    });
-  }
-
-  private removeChestPoint(entityId: ID) {
-    if (this.pointsRenderer && this.pointsRenderer.hasPoint(entityId)) {
-      this.pointsRenderer.removePoint(entityId);
-    }
   }
 
   private removeEntityIdLabel(entityId: number) {
@@ -615,11 +603,6 @@ export class ChestManager {
     this.updateChestSpatialIndex(entityId, existingChest, null);
 
     this.removeEntityIdLabel(entityId);
-
-    // Remove point icon
-    if (this.pointsRenderer) {
-      this.pointsRenderer.removePoint(entityId);
-    }
 
     // Re-render visible chests
     if (isCommittedManagerChunk(this.currentChunkKey)) {
