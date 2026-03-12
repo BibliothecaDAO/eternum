@@ -40,10 +40,10 @@ export function createSetGuardsTool(
     name: "set_guards",
     label: "Set Guards",
     description:
-      "Assign troops to defend one of your structures (realm, village, mine, hyperstructure). " +
-      "Specify the structure position, troop type (Knight, Paladin, Crossbowman), and tier (1, 2, or 3). " +
-      "Uses troops from the structure's reserves. Fills the first available guard slot. " +
-      "Each structure has up to 4 guard slots (Alpha, Bravo, Charlie, Delta).",
+      "Assign guard troops to defend one of your structures (realm, village, mine, hyperstructure). " +
+      "Choose troop type, tier, and amount from the structure's reserves. " +
+      "Fills the first empty guard slot (up to 4 slots: Alpha, Bravo, Charlie, Delta). " +
+      "Guards protect against enemy attacks. Use after capturing a structure to hold it.",
     parameters: Type.Object({
       row: Type.Number({ description: "Line number of your structure on the map" }),
       col: Type.Number({ description: "Column of your structure on the map" }),

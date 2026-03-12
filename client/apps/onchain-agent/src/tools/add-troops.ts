@@ -32,10 +32,10 @@ export function createAddTroopsTool(
     name: "add_troops",
     label: "Add Troops",
     description:
-      "Reinforce an existing army with more troops from an adjacent realm or structure. " +
-      "The army must be next to one of your structures. " +
-      "Automatically uses the same troop type/tier as the army and adds up to 10K (or all available). " +
-      "Use this after creating an army to bulk it up before combat.",
+      "Reinforce an existing army with more troops from an adjacent owned structure. " +
+      "The army must be next to one of your realms/villages/mines. " +
+      "Automatically matches the army's troop type and tier. Adds up to 10K troops (or all available). " +
+      "Workflow: create_army → move next to structure → add_troops to max out before attacking.",
     parameters: Type.Object({
       row: Type.Number({ description: "Line number of your army on the map" }),
       col: Type.Number({ description: "Column of your army on the map" }),
