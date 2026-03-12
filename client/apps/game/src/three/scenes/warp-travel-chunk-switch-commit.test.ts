@@ -134,6 +134,9 @@ describe("finalizeWarpTravelChunkSwitch", () => {
 
   it("advances chunk authority before manager fanout on committed switches", async () => {
     let currentChunk = "0,0";
+    const setCurrentChunk = vi.fn((chunkKey: string) => {
+      currentChunk = chunkKey;
+    });
     const updateManagersForChunk = vi.fn(async (chunkKey: string) => {
       expect(currentChunk).toBe(chunkKey);
     });
@@ -151,9 +154,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 19,
-      setCurrentChunk: (chunkKey) => {
-        currentChunk = chunkKey;
-      },
+      setCurrentChunk,
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
@@ -168,5 +169,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       force: false,
       transitionToken: 19,
     });
+    expect(setCurrentChunk).toHaveBeenCalledTimes(1);
+    expect(setCurrentChunk).toHaveBeenCalledWith("24,24");
   });
 });

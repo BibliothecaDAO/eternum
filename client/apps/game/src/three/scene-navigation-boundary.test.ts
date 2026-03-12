@@ -67,4 +67,12 @@ describe("resolveNavigationSceneTarget", () => {
       }),
     ).toBe(SceneName.WorldMap);
   });
+
+  it("keeps fast travel dormant by default when travel routing is requested without an enablement override", () => {
+    expect(
+      resolveNavigationSceneTarget({
+        currentPath: "/play/travel?col=1&row=1",
+      }),
+    ).toBe(SceneName.WorldMap);
+  });
 });
