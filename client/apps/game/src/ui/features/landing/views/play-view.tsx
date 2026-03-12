@@ -38,7 +38,7 @@ interface PlayViewProps {
 }
 
 type PlayTab = "play" | "learn" | "news" | "factory";
-type LandingModeFilter = "all" | "blitz" | "season";
+type LandingModeFilter = "blitz" | "season";
 
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
 
@@ -293,13 +293,12 @@ const FactoryTabContent = () => (
 );
 
 const MODE_FILTER_OPTIONS: Array<{ id: LandingModeFilter; label: string }> = [
-  { id: "all", label: "All" },
   { id: "season", label: "Eternum Seasons" },
   { id: "blitz", label: "Blitz" },
 ];
 
 const MODE_VISUALS: Record<
-  Exclude<LandingModeFilter, "all">,
+  LandingModeFilter,
   {
     title: string;
     subtitle: string;
@@ -366,7 +365,7 @@ const ModeCoexistenceHero = ({
   modeFilter: LandingModeFilter;
   onModeFilterChange: (mode: LandingModeFilter) => void;
 }) => {
-  const [hoveredMode, setHoveredMode] = useState<Exclude<LandingModeFilter, "all"> | null>(null);
+  const [hoveredMode, setHoveredMode] = useState<LandingModeFilter | null>(null);
 
   return (
     <div className="rounded-3xl border border-gold/20 bg-black/60 p-4 md:p-6 backdrop-blur-xl overflow-hidden">
@@ -397,10 +396,10 @@ const ModeCoexistenceHero = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {(Object.keys(MODE_VISUALS) as Array<Exclude<LandingModeFilter, "all">>).map((mode) => {
+        {(Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).map((mode) => {
           const config = MODE_VISUALS[mode];
           const Icon = config.icon;
-          const isEmphasized = hoveredMode ? hoveredMode === mode : modeFilter === "all" || modeFilter === mode;
+          const isEmphasized = hoveredMode ? hoveredMode === mode : modeFilter === mode;
 
           return (
             <button
@@ -541,15 +540,15 @@ const PlayTabContent = ({
   disabled?: boolean;
   onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
-  const [modeFilter, setModeFilter] = useState<LandingModeFilter>("all");
+  const [modeFilter, setModeFilter] = useState<LandingModeFilter>("blitz");
 
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
       <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={setModeFilter} />
 
-      {(modeFilter === "all" || modeFilter === "season") && <SeasonMockupLane />}
+      {modeFilter === "season" && <SeasonMockupLane />}
 
-      {(modeFilter === "all" || modeFilter === "blitz") && (
+      {modeFilter === "blitz" && (
         <div className="flex flex-col gap-2">
           <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/80">Blitz Live Data</div>
 
