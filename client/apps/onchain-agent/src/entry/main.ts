@@ -13,12 +13,12 @@ import { getModel, completeSimple } from "@mariozechner/pi-ai";
 import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
 import { EternumClient } from "@bibliothecadao/client";
 import { EternumProvider } from "@bibliothecadao/provider";
-import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { loadConfig } from "./config.js";
+import { getManifest } from "../auth/embedded-data.js";
 
 // Suppress noisy provider logs (fee estimation failures, tx data warnings, wait spam)
 {
@@ -44,7 +44,6 @@ import { bootstrapDataDir } from "./bootstrap.js";
 import { buildSystemPrompt } from "./soul.js";
 import { evolve } from "./evolution.js";
 import { getAccount } from "../auth/session.js";
-import { manifestPath } from "../auth/policies.js";
 import { createMapLoop } from "../map/loop.js";
 import { createAutomationLoop } from "../automation/loop.js";
 import type { MapContext } from "../map/context.js";
@@ -262,7 +261,7 @@ export async function main() {
   // Load and patch manifest before auth so session policies use the correct
   // contract addresses for this world (factory-discovered addresses differ
   // from the base mainnet manifest).
-  let manifest = JSON.parse(readFileSync(manifestPath(config.chain), "utf-8"));
+  let manifest = getManifest(config.chain);
   if (contractsBySelector) {
     manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
   }

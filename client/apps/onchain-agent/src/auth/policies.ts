@@ -7,9 +7,7 @@
  * via the {@link Chain} discriminant.
  */
 
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { getManifest, getAddresses } from "./embedded-data.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,28 +57,8 @@ export interface TokenAddresses {
 }
 
 // ---------------------------------------------------------------------------
-// Paths – resolve relative to this file up to the monorepo root
-// ---------------------------------------------------------------------------
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// src/auth -> src -> onchain-agent -> apps -> client -> root
-const ROOT = resolve(__dirname, "..", "..", "..", "..", "..");
-
-export function manifestPath(chain: Chain): string {
-  return resolve(ROOT, "contracts", "game", `manifest_${chain}.json`);
-}
-
-function addressesPath(chain: Chain): string {
-  return resolve(ROOT, "contracts", "common", "addresses", `${chain}.json`);
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function loadJson(path: string): any {
-  return JSON.parse(readFileSync(path, "utf-8"));
-}
 
 /** Mirrors `getContractByName(manifest, "s1_eternum", systemName)` */
 function getContractAddress(manifest: { contracts: { tag: string; address: string }[] }, systemName: string): string {
@@ -130,8 +108,8 @@ const VRF_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9a
  * @throws {Error} If the manifest or addresses file cannot be read or contains invalid JSON.
  */
 export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOverride?: any): SessionPolicies {
-  const manifest = manifestOverride ?? loadJson(manifestPath(chain));
-  const addresses = loadJson(addressesPath(chain));
+  const manifest = manifestOverride ?? getManifest(chain);
+  const addresses = getAddresses(chain);
 
   const seasonPassAddress: string = addresses.seasonPass;
   const villagePassAddress: string = addresses.villagePass;
