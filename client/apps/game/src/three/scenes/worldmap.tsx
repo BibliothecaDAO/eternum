@@ -2981,7 +2981,11 @@ export default class WorldmapScene extends WarpTravel {
       hexMesh.setCount(currentCount + 1);
 
       // Cache the updated matrices for the chunk
-      this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol);
+      const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(
+        renderedChunkStartRow,
+        renderedChunkStartCol,
+      );
+      this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol, expectedExploredTerrainInstances);
     }
   }
 

@@ -2,17 +2,12 @@ import { ShapeGeometry } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { createFastTravelRenderAssets } from "./fast-travel-render-assets";
+import { createFastTravelSurfacePalette } from "./fast-travel-surface-material";
 
 describe("fast-travel render assets", () => {
   it("reuses shared geometries and materials across repeated mesh creation", () => {
     const assets = createFastTravelRenderAssets();
-    assets.syncPalette({
-      backgroundColor: "#000000",
-      edgeColor: "#ff4fd8",
-      edgeOpacity: 0.92,
-      accentColor: "#ffd6f7",
-      glowColor: "#ff92ea",
-    });
+    assets.syncPalette(createFastTravelSurfacePalette());
 
     const firstHexEdge = assets.createHexEdgeMesh();
     const secondHexEdge = assets.createHexEdgeMesh();

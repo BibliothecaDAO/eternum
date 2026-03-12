@@ -44,7 +44,7 @@ import {
 } from "../utils";
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { trackGuiFolder } from "../utils/gui-folder-lifecycle";
+import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
@@ -180,7 +180,7 @@ export class ArmyManager {
   // Path visualization
   private pathRenderer: PathRenderer;
   private selectedArmyForPath: ID | null = null;
-  private guiFolders: Array<{ destroy(): void }> = [];
+  private guiFolders: TrackableGuiFolder[] = [];
 
   // Player indicator dots
   private playerIndicatorManager: PlayerIndicatorManager;

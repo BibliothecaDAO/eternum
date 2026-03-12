@@ -1,10 +1,10 @@
-interface RendererDebugWindow {
+export interface RendererDebugWindow {
   __gameRenderer?: unknown;
   __memoryMonitorRenderer?: unknown;
 }
 
-export function registerGameRendererDebugGlobals(
-  debugWindow: RendererDebugWindow,
+export function registerGameRendererDebugGlobals<T extends object>(
+  debugWindow: T & RendererDebugWindow,
   gameRenderer: unknown,
   renderer: unknown,
 ): void {
@@ -12,7 +12,7 @@ export function registerGameRendererDebugGlobals(
   debugWindow.__memoryMonitorRenderer = renderer;
 }
 
-export function clearGameRendererDebugGlobals(debugWindow: RendererDebugWindow): void {
+export function clearGameRendererDebugGlobals<T extends object>(debugWindow: T & RendererDebugWindow): void {
   delete debugWindow.__gameRenderer;
   delete debugWindow.__memoryMonitorRenderer;
 }

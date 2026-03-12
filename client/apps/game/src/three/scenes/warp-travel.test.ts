@@ -94,16 +94,16 @@ class CountingWarpTravel extends WarpTravel {
 }
 
 function createCountingWarpTravel(): CountingWarpTravel {
-  const instance = Object.create(CountingWarpTravel.prototype) as CountingWarpTravel & WarpTravelLifecycleState;
+  const instance = Object.create(CountingWarpTravel.prototype) as CountingWarpTravel;
   instance.adapterCreations = 0;
   Object.defineProperty(instance, "events", {
     value: [],
     writable: true,
     configurable: true,
   });
-  instance.hasInitialized = false;
-  instance.initialSetupPromise = null;
-  instance.isSwitchedOff = true;
+  Reflect.set(instance as object, "hasInitialized", false);
+  Reflect.set(instance as object, "initialSetupPromise", null);
+  Reflect.set(instance as object, "isSwitchedOff", true);
 
   return instance;
 }

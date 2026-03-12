@@ -4,13 +4,12 @@ import { SelectedHexManager } from "./selected-hex-manager";
 
 describe("SelectedHexManager", () => {
   it("disposes particle resources deterministically", () => {
-    const subject = Object.create(SelectedHexManager.prototype) as SelectedHexManager & {
-      particles: { dispose: () => void };
-    };
-    subject.particles = { dispose: vi.fn() };
+    const subject = Object.create(SelectedHexManager.prototype) as SelectedHexManager;
+    const particles = { dispose: vi.fn() };
+    Reflect.set(subject as object, "particles", particles);
 
     subject.dispose();
 
-    expect(subject.particles.dispose).toHaveBeenCalledTimes(1);
+    expect(particles.dispose).toHaveBeenCalledTimes(1);
   });
 });

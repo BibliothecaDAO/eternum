@@ -1,8 +1,12 @@
-interface DestroyableGuiFolder {
+import type GUI from "lil-gui";
+
+export interface DestroyableGuiFolder {
   destroy(): void;
 }
 
-export function trackGuiFolder<T extends DestroyableGuiFolder>(folders: T[], folder: T): T {
+export type TrackableGuiFolder = DestroyableGuiFolder & Pick<GUI, "add" | "addFolder" | "close" | "open">;
+
+export function trackGuiFolder<T extends TrackableGuiFolder>(folders: T[], folder: T): T {
   folders.push(folder);
   return folder;
 }
