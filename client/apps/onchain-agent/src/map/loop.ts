@@ -138,11 +138,19 @@ export function createMapLoop(
       );
       ctx.snapshot = snapshot;
 
-      if (onThreat) {
-        const ownedStructureTiles = snapshot.tiles.filter(
-          (t: any) => t.occupierId > 0 && ownedEntityIds?.has(t.occupierId) && t.occupierIsStructure,
-        );
-        const alerts = detectThreats(ownedStructureTiles, snapshot.tiles, recentThreatAlerts);
+      if (onThreat && ownedEntityIds) {
+        const toInput = (t: any) => ({
+          x: t.position.x,
+          y: t.position.y,
+          occupierId: t.occupierId,
+          occupierType: t.occupierType,
+          isOwned: ownedEntityIds!.has(t.occupierId),
+        });
+        const ownedStructureTiles = snapshot.tiles
+          .filter((t) => t.occupierId > 0 && ownedEntityIds.has(t.occupierId) && t.occupierIsStructure)
+          .map(toInput);
+        const allTileInputs = snapshot.tiles.filter((t) => t.occupierId > 0).map(toInput);
+        const alerts = detectThreats(ownedStructureTiles, allTileInputs, recentThreatAlerts);
         if (alerts.length > 0) {
           for (const a of alerts) {
             recentThreatAlerts.add(`${a.enemyX},${a.enemyY}`);

@@ -357,16 +357,7 @@ export async function main() {
     },
   });
 
-  // 6a. Wire threat detection — agent.steer() pushes urgent defensive alerts
-  onThreatCallback = (alerts) => {
-    for (const alert of alerts) {
-      const msg = `DEFENSIVE ALERT: Enemy army detected at ${alert.enemyX}:${alert.enemyY}, adjacent to your structure at ${alert.structureX}:${alert.structureY}. Assess threat and respond.`;
-      console.log(`[THREAT] ${msg}`);
-      agent.steer({ role: "user", content: msg, timestamp: Date.now() } as AgentMessage);
-    }
-  };
-
-  // 6b. Log agent events so we can see what the LLM is doing
+  // 6a. Log agent events so we can see what the LLM is doing
   agent.subscribe((event) => {
     switch (event.type) {
       case "agent_start":
@@ -424,6 +415,15 @@ export async function main() {
   });
   mapLoop.start();
   mapCtx.refresh = () => mapLoop.refresh();
+
+  // Wire threat detection — agent.steer() pushes urgent defensive alerts
+  onThreatCallback = (alerts) => {
+    for (const alert of alerts) {
+      const msg = `DEFENSIVE ALERT: Enemy army detected at ${alert.enemyX}:${alert.enemyY}, adjacent to your structure at ${alert.structureX}:${alert.structureY}. Assess threat and respond.`;
+      console.log(`[THREAT] ${msg}`);
+      agent.steer({ role: "user", content: msg, timestamp: Date.now() } as AgentMessage);
+    }
+  };
 
   // Wait for first map load before starting the agent — otherwise the LLM
   // gets "Map not yet loaded" and wastes its first turn guessing coordinates.
