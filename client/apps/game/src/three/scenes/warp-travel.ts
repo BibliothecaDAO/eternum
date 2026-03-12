@@ -23,6 +23,7 @@ export abstract class WarpTravel extends HexagonScene {
   protected isSwitchedOff = false;
   protected hasInitialized = false;
   private initialSetupPromise: Promise<void> | null = null;
+  private lifecycleAdapter: WarpTravelLifecycleAdapter | null = null;
 
   constructor(
     sceneName: SceneName,
@@ -36,14 +37,17 @@ export abstract class WarpTravel extends HexagonScene {
   }
 
   public async setup(): Promise<void> {
-    const nextState = await runWarpTravelSetupLifecycle(this.getWarpTravelLifecycleState(), this.getWarpTravelLifecycleAdapter());
+    const nextState = await runWarpTravelSetupLifecycle(
+      this.getWarpTravelLifecycleState(),
+      this.resolveWarpTravelLifecycleAdapter(),
+    );
     this.applyWarpTravelLifecycleState(nextState);
   }
 
   protected runWarpTravelSwitchOffLifecycle(): void {
     const nextState = runWarpTravelSwitchOffLifecycle(
       this.getWarpTravelLifecycleState(),
-      this.getWarpTravelLifecycleAdapter(),
+      this.resolveWarpTravelLifecycleAdapter(),
     );
     this.applyWarpTravelLifecycleState(nextState);
   }
@@ -74,6 +78,14 @@ export abstract class WarpTravel extends HexagonScene {
     this.hasInitialized = state.hasInitialized;
     this.initialSetupPromise = state.initialSetupPromise;
     this.isSwitchedOff = state.isSwitchedOff;
+  }
+
+  private resolveWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
+    if (!this.lifecycleAdapter) {
+      this.lifecycleAdapter = this.getWarpTravelLifecycleAdapter();
+    }
+
+    return this.lifecycleAdapter;
   }
 
   protected abstract getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter;

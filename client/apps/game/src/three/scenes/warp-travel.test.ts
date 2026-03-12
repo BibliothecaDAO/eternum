@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("./hexagon-scene", () => ({
+  HexagonScene: class {},
+}));
+
+import { WarpTravel } from "./warp-travel";
 import {
   runWarpTravelSetupLifecycle,
   runWarpTravelSwitchOffLifecycle,
@@ -45,6 +50,62 @@ function createAdapter(overrides: Partial<WarpTravelLifecycleAdapter> = {}): {
       ...overrides,
     },
   };
+}
+
+class CountingWarpTravel extends WarpTravel {
+  public adapterCreations = 0;
+  public readonly events: string[] = [];
+
+  protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
+    this.adapterCreations += 1;
+
+    return {
+      moveCameraToSceneLocation: () => this.events.push("camera:move"),
+      attachLabelGroupsToScene: () => this.events.push("labels:groups:attach"),
+      attachManagerLabels: () => this.events.push("labels:managers:attach"),
+      registerStoreSubscriptions: () => this.events.push("subscriptions:register"),
+      setupCameraZoomHandler: () => this.events.push("zoom:setup"),
+      refreshScene: async () => {
+        this.events.push("scene:refresh");
+      },
+      disposeStoreSubscriptions: () => this.events.push("subscriptions:dispose"),
+      detachLabelGroupsFromScene: () => this.events.push("labels:groups:detach"),
+      detachManagerLabels: () => this.events.push("labels:managers:detach"),
+    };
+  }
+
+  public triggerSwitchOffLifecycle(): void {
+    this.runWarpTravelSwitchOffLifecycle();
+  }
+
+  protected onHexagonMouseMove(): void {}
+
+  protected onHexagonDoubleClick(): void {}
+
+  protected onHexagonClick(): void {}
+
+  protected onHexagonRightClick(): void {}
+
+  public moveCameraToURLLocation(): void {}
+
+  public onSwitchOff(): void {
+    this.triggerSwitchOffLifecycle();
+  }
+}
+
+function createCountingWarpTravel(): CountingWarpTravel {
+  const instance = Object.create(CountingWarpTravel.prototype) as CountingWarpTravel & WarpTravelLifecycleState;
+  instance.adapterCreations = 0;
+  Object.defineProperty(instance, "events", {
+    value: [],
+    writable: true,
+    configurable: true,
+  });
+  instance.hasInitialized = false;
+  instance.initialSetupPromise = null;
+  instance.isSwitchedOff = true;
+
+  return instance;
 }
 
 describe("runWarpTravelSetupLifecycle", () => {
@@ -167,5 +228,17 @@ describe("runWarpTravelSwitchOffLifecycle", () => {
       initialSetupPromise: null,
       isSwitchedOff: true,
     });
+  });
+});
+
+describe("WarpTravel", () => {
+  it("reuses one lifecycle adapter across setup and switch-off cycles", async () => {
+    const runtime = createCountingWarpTravel();
+
+    await runtime.setup();
+    runtime.triggerSwitchOffLifecycle();
+    await runtime.setup();
+
+    expect(runtime.adapterCreations).toBe(1);
   });
 });

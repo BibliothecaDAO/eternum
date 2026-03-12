@@ -2249,49 +2249,53 @@ export default class WorldmapScene extends WarpTravel {
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
     return {
-      onSetupStart: () => {
-        this.configureWarpTravelSetupStart();
-      },
-      onInitialSetupStart: () => {
-        this.clearTileEntityCache();
-      },
+      onSetupStart: () => this.configureWarpTravelSetupStart(),
+      onInitialSetupStart: () => this.prepareWarpTravelInitialSetup(),
       moveCameraToSceneLocation: () => this.moveCameraToURLLocation(),
-      attachLabelGroupsToScene: () =>
-        this.attachWarpTravelLabelGroupsToScene([
-          this.armyLabelsGroup,
-          this.structureLabelsGroup,
-          this.chestLabelsGroup,
-        ]),
-      attachManagerLabels: () => {
-        this.armyManager.addLabelsToScene();
-        this.structureManager.showLabels();
-        this.chestManager.addLabelsToScene();
-      },
+      attachLabelGroupsToScene: () => this.attachWorldmapLabelGroupsToScene(),
+      attachManagerLabels: () => this.attachWorldmapManagerLabels(),
       registerStoreSubscriptions: () => this.registerStoreSubscriptions(),
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
-      refreshScene: async () => {
-        await this.updateVisibleChunks(true);
-      },
-      onInitialSetupComplete: () => {
-        this.preloadWorldmapCosmeticAssets();
-      },
-      reportSetupError: (error, phase) => {
-        this.reportWarpTravelRefreshError(error, phase);
-      },
+      refreshScene: () => this.refreshWarpTravelScene(),
+      onInitialSetupComplete: () => this.preloadWorldmapCosmeticAssets(),
+      reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
       onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
-      detachLabelGroupsFromScene: () =>
-        this.detachWarpTravelLabelGroupsFromScene([
-          this.armyLabelsGroup,
-          this.structureLabelsGroup,
-          this.chestLabelsGroup,
-        ]),
-      detachManagerLabels: () => {
-        this.armyManager.removeLabelsFromScene();
-        this.structureManager.removeLabelsFromScene();
-        this.chestManager.removeLabelsFromScene();
-      },
+      detachLabelGroupsFromScene: () => this.detachWorldmapLabelGroupsFromScene(),
+      detachManagerLabels: () => this.detachWorldmapManagerLabels(),
     };
+  }
+
+  private prepareWarpTravelInitialSetup(): void {
+    this.clearTileEntityCache();
+  }
+
+  private getWorldmapLabelGroups(): Group[] {
+    return [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup];
+  }
+
+  private attachWorldmapLabelGroupsToScene(): void {
+    this.attachWarpTravelLabelGroupsToScene(this.getWorldmapLabelGroups());
+  }
+
+  private detachWorldmapLabelGroupsFromScene(): void {
+    this.detachWarpTravelLabelGroupsFromScene(this.getWorldmapLabelGroups());
+  }
+
+  private attachWorldmapManagerLabels(): void {
+    this.armyManager.addLabelsToScene();
+    this.structureManager.showLabels();
+    this.chestManager.addLabelsToScene();
+  }
+
+  private detachWorldmapManagerLabels(): void {
+    this.armyManager.removeLabelsFromScene();
+    this.structureManager.removeLabelsFromScene();
+    this.chestManager.removeLabelsFromScene();
+  }
+
+  private async refreshWarpTravelScene(): Promise<void> {
+    await this.updateVisibleChunks(true);
   }
 
   private configureWarpTravelSetupStart(): void {

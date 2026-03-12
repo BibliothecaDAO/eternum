@@ -150,7 +150,7 @@ Completion Notes:
 2. `scene-navigation-boundary.test.ts` now locks dormant fast-travel fallback when no enablement override is present.
 3. `warp-travel-prefetch-enqueue.test.ts` and `warp-travel-prefetch-drain.test.ts` remain the baseline guardrail for queue behavior during later cleanup.
 
-### C1: Lifecycle Adapter Simplification (0.5-1 day) [ ]
+### C1: Lifecycle Adapter Simplification (0.5-1 day) [x]
 
 Objective:
 
@@ -171,6 +171,12 @@ Deliverables:
 Exit Criteria:
 
 1. lifecycle cleanup reduces indirection without changing setup/resume/switch-off behavior
+
+Completion Notes:
+
+1. `WarpTravel` now caches a single lifecycle adapter instance instead of requesting a fresh object on each transition.
+2. `WorldmapScene` lifecycle wiring now routes the label-group, manager-label, initial-setup, and refresh hooks through named private methods.
+3. `warp-travel.test.ts` now verifies adapter construction stays stable across setup, switch-off, and resume cycles.
 
 ### C2: Chunk Ownership Cleanup (0.5 day) [ ]
 
