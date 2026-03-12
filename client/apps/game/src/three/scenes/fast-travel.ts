@@ -29,6 +29,10 @@ import {
   type FastTravelHexCoords,
   type FastTravelSpireHydrationInput,
 } from "./fast-travel-hydration";
+import {
+  buildFastTravelEntityAnchors,
+  type FastTravelEntityAnchor,
+} from "./fast-travel-entity-anchors";
 import { prepareFastTravelRenderState, type FastTravelRenderState } from "./fast-travel-rendering";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
@@ -40,6 +44,7 @@ export default class FastTravelScene extends WarpTravel {
   private readonly travelContentGroup = new Group();
   private currentHydratedChunk: FastTravelChunkHydrationResult | null = null;
   private currentRenderState: FastTravelRenderState | null = null;
+  private currentEntityAnchors: FastTravelEntityAnchor[] = [];
 
   constructor(
     dojoContext: SetupResult,
@@ -236,6 +241,7 @@ export default class FastTravelScene extends WarpTravel {
 
   private syncFastTravelSceneVisuals(): void {
     this.clearTravelVisualGroups();
+    this.currentEntityAnchors = [];
 
     if (!this.currentHydratedChunk || !this.currentRenderState) {
       return;
@@ -243,22 +249,51 @@ export default class FastTravelScene extends WarpTravel {
 
     this.scene.background = new Color(this.currentRenderState.surface.palette.backgroundColor);
     this.syncFastTravelSurfaceMeshes();
-
-    this.currentHydratedChunk.spireAnchors.forEach((spire) => {
-      const spireMesh = this.createSpireAnchorMesh(spire.travelHexCoords);
-      this.travelContentGroup.add(spireMesh);
+    this.syncFastTravelInteractiveHexes();
+    this.currentEntityAnchors = buildFastTravelEntityAnchors({
+      visibleHexWindow: this.currentHydratedChunk.visibleHexWindow,
+      armies: this.currentHydratedChunk.armies,
+      spireAnchors: this.currentHydratedChunk.spireAnchors,
     });
 
-    this.currentHydratedChunk.armies.forEach((army) => {
-      const armyMesh = this.createArmyMarkerMesh(army.hexCoords);
-      this.travelContentGroup.add(armyMesh);
-    });
+    this.currentEntityAnchors
+      .filter((anchor) => anchor.kind === "spire")
+      .forEach((anchor) => {
+        this.travelContentGroup.add(this.createSpireAnchorMesh(anchor));
+      });
+
+    this.currentEntityAnchors
+      .filter((anchor) => anchor.kind === "army")
+      .forEach((anchor) => {
+        this.travelContentGroup.add(this.createArmyMarkerMesh(anchor));
+      });
   }
 
   private syncFastTravelSurfaceMeshes(): void {
     this.currentRenderState?.surface.field.tiles.forEach((tile) => {
       this.travelSurfaceGroup.add(this.createFastTravelHexMesh(tile.hexCoords));
     });
+  }
+
+  private syncFastTravelInteractiveHexes(): void {
+    const field = this.currentRenderState?.surface.field;
+    if (!field) {
+      return;
+    }
+
+    this.interactiveHexManager.clearHexes();
+    field.tiles.forEach((tile) => {
+      this.interactiveHexManager.addHex(tile.hexCoords);
+    });
+
+    const centerCol = field.bounds.origin.col + Math.floor(field.bounds.size.cols / 2);
+    const centerRow = field.bounds.origin.row + Math.floor(field.bounds.size.rows / 2);
+    this.interactiveHexManager.updateVisibleHexes(
+      centerRow,
+      centerCol,
+      field.bounds.size.cols,
+      field.bounds.size.rows,
+    );
   }
 
   private clearTravelVisualGroups(): void {
@@ -324,20 +359,18 @@ export default class FastTravelScene extends WarpTravel {
     return group;
   }
 
-  private createArmyMarkerMesh(hexCoords: FastTravelHexCoords): Mesh {
-    const { x, y, z } = getWorldPositionForHex(hexCoords);
+  private createArmyMarkerMesh(anchor: FastTravelEntityAnchor): Mesh {
     const material = new MeshStandardMaterial({
       color: this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7",
       emissive: this.currentRenderState?.surface.palette.glowColor ?? "#ff92ea",
       emissiveIntensity: 0.8,
     });
     const mesh = new Mesh(new SphereGeometry(0.35, 18, 18), material);
-    mesh.position.set(x, y + 0.55, z);
+    mesh.position.set(anchor.worldPosition.x, anchor.worldPosition.y + 0.55, anchor.worldPosition.z);
     return mesh;
   }
 
-  private createSpireAnchorMesh(hexCoords: FastTravelHexCoords): Group {
-    const { x, y, z } = getWorldPositionForHex(hexCoords);
+  private createSpireAnchorMesh(anchor: FastTravelEntityAnchor): Group {
     const spireGroup = new Group();
     const column = new Mesh(
       new CylinderGeometry(0.18, 0.28, 1.6, 6),
@@ -358,7 +391,7 @@ export default class FastTravelScene extends WarpTravel {
 
     column.position.set(0, 0.8, 0);
     crown.position.set(0, 1.9, 0);
-    spireGroup.position.set(x, y, z);
+    spireGroup.position.set(anchor.worldPosition.x, anchor.worldPosition.y, anchor.worldPosition.z);
     spireGroup.add(column);
     spireGroup.add(crown);
 

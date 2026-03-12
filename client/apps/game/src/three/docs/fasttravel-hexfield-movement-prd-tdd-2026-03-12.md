@@ -14,11 +14,12 @@
 | ------ | ---------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | U1     | 2026-03-12 00:00 | Codex  | Created follow-up PRD/TDD for turning the current flat warp-space scene into a real hex field with movement parity scope. |
 | U2     | 2026-03-12 00:30 | Codex  | Completed `H0` hex-surface bootstrap with a dedicated field/material seam and stage-level tests.                            |
+| U3     | 2026-03-12 01:00 | Codex  | Completed `H1` with anchored entity descriptors and interactive visible-surface refresh wiring.                             |
 
 ## Delivery Tracker
 
 - [x] H0: Hex Surface Bootstrap
-- [ ] H1: Unit Anchoring On The Surface
+- [x] H1: Unit Anchoring On The Surface
 - [ ] H2: Movement Parity Slice
 - [ ] H3: Hardening And Closeout
 

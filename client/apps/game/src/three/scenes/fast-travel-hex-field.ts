@@ -2,7 +2,7 @@ import type { FastTravelHexCoords } from "./fast-travel-hydration";
 
 const FAST_TRAVEL_HEX_SIZE = 1;
 
-function getFastTravelWorldPositionForHex(hexCoords: FastTravelHexCoords): { x: number; y: number; z: number } {
+export function getFastTravelWorldPositionForHex(hexCoords: FastTravelHexCoords): { x: number; y: number; z: number } {
   const hexHeight = FAST_TRAVEL_HEX_SIZE * 2;
   const hexWidth = Math.sqrt(3) * FAST_TRAVEL_HEX_SIZE;
   const verticalDistance = hexHeight * 0.75;
