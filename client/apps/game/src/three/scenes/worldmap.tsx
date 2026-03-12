@@ -128,7 +128,6 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import { deriveDirectionalPrefetchChunkKeys } from "./worldmap-directional-prefetch-policy";
 import {
   createWorldmapZoomHardeningConfig,
   evaluateChunkVisibilityAnomaly,
@@ -180,6 +179,7 @@ import {
 } from "./worldmap-tile-fetch-volume-regression";
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
+import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
@@ -3129,52 +3129,23 @@ export default class WorldmapScene extends WarpTravel {
    * Prefetch the chunk in front of the camera to reduce pop-in.
    */
   private prefetchDirectionalChunks(focusPoint: Vector3) {
-    const directionalAnchor = this.getDirectionalPrefetchAnchor(focusPoint);
-    if (!directionalAnchor) {
-      this.directionalPrefetchAreaKeys.clear();
-      this.pruneQueuedDirectionalPrefetches();
-      return;
-    }
-
-    const prefetchTargets = new Set(
-      deriveDirectionalPrefetchChunkKeys({
-        forwardChunkKey: directionalAnchor.forwardChunkKey,
-        chunkSize: this.chunkSize,
-        forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
-        sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
-        movementAxis: directionalAnchor.movementAxis,
-        movementSign: directionalAnchor.movementSign,
-      }),
-    );
-    const desiredAreaKeys = new Set<string>();
-
-    prefetchTargets.forEach((chunkKey) => {
-      // Skip if it's already pinned or current
-      if (this.pinnedChunkKeys.has(chunkKey) || chunkKey === this.currentChunk) {
-        return;
-      }
-      desiredAreaKeys.add(this.getRenderAreaKeyForChunk(chunkKey));
+    const prefetchPlan = resolveWarpTravelDirectionalPrefetchPlan({
+      anchor: this.getDirectionalPrefetchAnchor(focusPoint),
+      chunkSize: this.chunkSize,
+      forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
+      sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
+      pinnedChunkKeys: this.pinnedChunkKeys,
+      currentChunk: this.currentChunk,
+      prefetchedAhead: this.prefetchedAhead,
+      maxPrefetchedAhead: this.maxPrefetchedAhead,
+      getRenderAreaKeyForChunk: (chunkKey) => this.getRenderAreaKeyForChunk(chunkKey),
     });
 
-    this.directionalPrefetchAreaKeys = desiredAreaKeys;
+    this.directionalPrefetchAreaKeys = new Set(prefetchPlan.desiredAreaKeys);
     this.pruneQueuedDirectionalPrefetches();
+    this.prefetchedAhead.splice(0, this.prefetchedAhead.length, ...prefetchPlan.nextPrefetchedAhead);
 
-    prefetchTargets.forEach((chunkKey) => {
-      if (this.pinnedChunkKeys.has(chunkKey) || chunkKey === this.currentChunk) {
-        return;
-      }
-
-      // Skip if already queued
-      if (this.prefetchedAhead.includes(chunkKey)) {
-        return;
-      }
-
-      this.prefetchedAhead.push(chunkKey);
-      // Cap the prefetch list to avoid unbounded growth
-      while (this.prefetchedAhead.length > this.maxPrefetchedAhead) {
-        this.prefetchedAhead.shift();
-      }
-
+    prefetchPlan.chunkKeysToEnqueue.forEach((chunkKey) => {
       // Directional prefetch is lowest priority compared to pinned neighborhood.
       this.enqueueChunkPrefetch(chunkKey, 2);
     });
