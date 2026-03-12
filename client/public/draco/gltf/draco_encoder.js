@@ -352,7 +352,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         HEAP32[ptr >> 2] = value;
         break;
       case "i64":
-        (tempI64 = [
+        ((tempI64 = [
           value >>> 0,
           ((tempDouble = value),
           +Math_abs(tempDouble) >= +1
@@ -362,7 +362,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             : 0),
         ]),
           (HEAP32[ptr >> 2] = tempI64[0]),
-          (HEAP32[(ptr + 4) >> 2] = tempI64[1]);
+          (HEAP32[(ptr + 4) >> 2] = tempI64[1]));
         break;
       case "float":
         HEAPF32[ptr >> 2] = value;
@@ -1845,7 +1845,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -1986,7 +1986,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -2127,7 +2127,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -2268,7 +2268,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -2409,7 +2409,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 20) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -2550,7 +2550,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 19) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 19) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -2691,7 +2691,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 18) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 18) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -2750,7 +2750,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           h = ((g & d) | 0) == 0;
           if (!h)
             if (c >>> 0 < d >>> 0) i = c;
-            else i = (c >>> 0) % (d >>> 0) | 0;
+            else i = ((c >>> 0) % (d >>> 0)) | 0;
           else i = g & c;
           j = f[((f[a >> 2] | 0) + (i << 2)) >> 2] | 0;
           if (!j) k = i;
@@ -2785,7 +2785,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               g = f[(h + 4) >> 2] | 0;
               if ((g | 0) != (c | 0)) {
                 if (g >>> 0 < d >>> 0) r = g;
-                else r = (g >>> 0) % (d >>> 0) | 0;
+                else r = ((g >>> 0) % (d >>> 0)) | 0;
                 if ((r | 0) != (i | 0)) {
                   k = i;
                   break a;
@@ -2827,7 +2827,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             w = c;
           } else {
             v = r;
-            w = (c >>> 0) % (r >>> 0) | 0;
+            w = ((c >>> 0) % (r >>> 0)) | 0;
           }
         } else {
           v = d;
@@ -2847,7 +2847,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           d = (v + -1) | 0;
           if (d & v)
             if (k >>> 0 < v >>> 0) x = k;
-            else x = (k >>> 0) % (v >>> 0) | 0;
+            else x = ((k >>> 0) % (v >>> 0)) | 0;
           else x = k & d;
           y = ((f[a >> 2] | 0) + (x << 2)) | 0;
           z = 30;
@@ -2980,7 +2980,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 16) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 16) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3121,7 +3121,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 15) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 15) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3262,7 +3262,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 13) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 13) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3403,7 +3403,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3544,7 +3544,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3685,7 +3685,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3826,7 +3826,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -3967,7 +3967,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -4108,7 +4108,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -4249,7 +4249,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -4390,7 +4390,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           }
           c =
-            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + ((s >>> 0) % (q >>> 0) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
+            (((((s >>> 0) / (q >>> 0)) | 0) << 12) + (((s >>> 0) % (q >>> 0)) | 0) + (f[(m + (p << 3) + 4) >> 2] | 0)) |
             0;
           f[n >> 2] = c;
         } while ((l | 0) > 1);
@@ -5285,7 +5285,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         f[c >> 2] = f[d >> 2];
         if (!(_j(m, c) | 0) ? ((g = f[e >> 2] | 0), (f[((f[(g + 12) >> 2] | 0) + (a << 2)) >> 2] | 0) == -1) : 0) {
           n = (a + 1) | 0;
-          o = ((n >>> 0) % 3 | 0 | 0) == 0 ? (a + -2) | 0 : n;
+          o = (((n >>> 0) % 3) | 0 | 0) == 0 ? (a + -2) | 0 : n;
           if ((o | 0) == -1) p = -1;
           else p = f[((f[g >> 2] | 0) + (o << 2)) >> 2] | 0;
           o = f[i >> 2] | 0;
@@ -5317,7 +5317,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 f[n >> 2] = g;
                 o = (r + 1) | 0;
                 a: do
-                  if ((r | 0) != -1 ? ((v = ((o >>> 0) % 3 | 0 | 0) == 0 ? (r + -2) | 0 : o), (v | 0) != -1) : 0) {
+                  if ((r | 0) != -1 ? ((v = (((o >>> 0) % 3) | 0 | 0) == 0 ? (r + -2) | 0 : o), (v | 0) != -1) : 0) {
                     w = f[e >> 2] | 0;
                     x = f[(w + 12) >> 2] | 0;
                     y = v;
@@ -5325,7 +5325,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       v = f[(x + (y << 2)) >> 2] | 0;
                       if ((v | 0) == -1) break;
                       z = (v + 1) | 0;
-                      A = ((z >>> 0) % 3 | 0 | 0) == 0 ? (v + -2) | 0 : z;
+                      A = (((z >>> 0) % 3) | 0 | 0) == 0 ? (v + -2) | 0 : z;
                       if ((A | 0) == -1) {
                         B = -1;
                         C = -1;
@@ -5333,7 +5333,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       } else y = A;
                     }
                     x = (y + 1) | 0;
-                    A = ((x >>> 0) % 3 | 0 | 0) == 0 ? (y + -2) | 0 : x;
+                    A = (((x >>> 0) % 3) | 0 | 0) == 0 ? (y + -2) | 0 : x;
                     if ((A | 0) == -1) {
                       B = y;
                       C = -1;
@@ -6082,8 +6082,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       e = (c + 1) | 0;
       do
         if (!d) {
-          g = ((e >>> 0) % 3 | 0 | 0) == 0 ? (c + -2) | 0 : e;
-          if (!((c >>> 0) % 3 | 0)) {
+          g = (((e >>> 0) % 3) | 0 | 0) == 0 ? (c + -2) | 0 : e;
+          if (!(((c >>> 0) % 3) | 0)) {
             h = g;
             i = (c + 2) | 0;
             break;
@@ -7086,7 +7086,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           h = -1;
           i = -1;
         } else {
-          j = (d + (((d >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+          j = (d + ((((d >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
           if ((j | 0) != -1) {
             k = f[((f[b >> 2] | 0) + 12) >> 2] | 0;
             l = j;
@@ -7098,7 +7098,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 break;
               }
               o = (j + 1) | 0;
-              l = ((o >>> 0) % 3 | 0 | 0) == 0 ? (j + -2) | 0 : o;
+              l = (((o >>> 0) % 3) | 0 | 0) == 0 ? (j + -2) | 0 : o;
               if ((l | 0) == -1) {
                 m = 1;
                 n = -1;
@@ -7132,7 +7132,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       q = ((f[(a + 140) >> 2] | 0) + ((c >>> 5) << 2)) | 0;
       f[q >> 2] = f[q >> 2] | (1 << (c & 31));
       if (!g) {
-        g = ((((i >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + i) | 0;
+        g = (((((i >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + i) | 0;
         if ((g | 0) == -1) {
           s = -1;
           t = i;
@@ -7158,7 +7158,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         t = (a + 1) | 0;
         g = (s + 1) | 0;
         a: do
-          if ((s | 0) != -1 ? ((c = ((g >>> 0) % 3 | 0 | 0) == 0 ? (s + -2) | 0 : g), (c | 0) != -1) : 0) {
+          if ((s | 0) != -1 ? ((c = (((g >>> 0) % 3) | 0 | 0) == 0 ? (s + -2) | 0 : g), (c | 0) != -1) : 0) {
             q = f[b >> 2] | 0;
             d = f[(q + 12) >> 2] | 0;
             p = c;
@@ -7166,14 +7166,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               c = f[(d + (p << 2)) >> 2] | 0;
               if ((c | 0) == -1) break;
               n = (c + 1) | 0;
-              m = ((n >>> 0) % 3 | 0 | 0) == 0 ? (c + -2) | 0 : n;
+              m = (((n >>> 0) % 3) | 0 | 0) == 0 ? (c + -2) | 0 : n;
               if ((m | 0) == -1) {
                 v = -1;
                 w = -1;
                 break a;
               } else p = m;
             }
-            d = ((((p >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + p) | 0;
+            d = (((((p >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + p) | 0;
             if ((d | 0) == -1) {
               v = -1;
               w = p;
@@ -9525,7 +9525,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & e) | 0) == 0;
       if (!i)
         if (g >>> 0 < e >>> 0) j = g;
-        else j = (g >>> 0) % (e >>> 0) | 0;
+        else j = ((g >>> 0) % (e >>> 0)) | 0;
       else j = h & g;
       g = ((f[a >> 2] | 0) + (j << 2)) | 0;
       k = f[g >> 2] | 0;
@@ -9538,7 +9538,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         l = f[(k + 4) >> 2] | 0;
         if (!i)
           if (l >>> 0 < e >>> 0) m = l;
-          else m = (l >>> 0) % (e >>> 0) | 0;
+          else m = ((l >>> 0) % (e >>> 0)) | 0;
         else m = l & h;
         if ((m | 0) == (j | 0)) {
           n = c;
@@ -9551,7 +9551,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             m = f[(c + 4) >> 2] | 0;
             if (!i)
               if (m >>> 0 < e >>> 0) p = m;
-              else p = (m >>> 0) % (e >>> 0) | 0;
+              else p = ((m >>> 0) % (e >>> 0)) | 0;
             else p = m & h;
             if ((p | 0) == (j | 0)) {
               q = c;
@@ -9578,7 +9578,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         o = f[(q + 4) >> 2] | 0;
         if (!i)
           if (o >>> 0 < e >>> 0) t = o;
-          else t = (o >>> 0) % (e >>> 0) | 0;
+          else t = ((o >>> 0) % (e >>> 0)) | 0;
         else t = o & h;
         if ((t | 0) == (j | 0)) s = r;
         else {
@@ -10692,7 +10692,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       k = ((j & i) | 0) == 0;
       if (!k)
         if (i >>> 0 > g >>> 0) l = g;
-        else l = (g >>> 0) % (i >>> 0) | 0;
+        else l = ((g >>> 0) % (i >>> 0)) | 0;
       else l = j & g;
       m = f[((f[(a + 120) >> 2] | 0) + (l << 2)) >> 2] | 0;
       if (!m) {
@@ -10739,7 +10739,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               }
             } else {
               if (p >>> 0 < i >>> 0) s = p;
-              else s = (p >>> 0) % (i >>> 0) | 0;
+              else s = ((p >>> 0) % (i >>> 0)) | 0;
               if ((s | 0) != (l | 0)) {
                 q = 24;
                 break;
@@ -10808,7 +10808,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       l = ((k & i) | 0) == 0;
       if (!l)
         if (b >>> 0 < i >>> 0) m = b;
-        else m = (b >>> 0) % (i >>> 0) | 0;
+        else m = ((b >>> 0) % (i >>> 0)) | 0;
       else m = b & k;
       n = f[((f[a >> 2] | 0) + (m << 2)) >> 2] | 0;
       if (!n) {
@@ -10875,7 +10875,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
         } else {
           if (a >>> 0 < i >>> 0) r = a;
-          else r = (a >>> 0) % (i >>> 0) | 0;
+          else r = ((a >>> 0) % (i >>> 0)) | 0;
           if ((r | 0) != (m | 0)) {
             j = 0;
             p = 25;
@@ -11320,7 +11320,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       l = ((k & i) | 0) == 0;
       if (!l)
         if (c >>> 0 < i >>> 0) m = c;
-        else m = (c >>> 0) % (i >>> 0) | 0;
+        else m = ((c >>> 0) % (i >>> 0)) | 0;
       else m = c & k;
       n = f[((f[a >> 2] | 0) + (m << 2)) >> 2] | 0;
       if (!n) {
@@ -11387,7 +11387,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
         } else {
           if (a >>> 0 < i >>> 0) r = a;
-          else r = (a >>> 0) % (i >>> 0) | 0;
+          else r = ((a >>> 0) % (i >>> 0)) | 0;
           if ((r | 0) != (m | 0)) {
             j = 0;
             p = 25;
@@ -12876,7 +12876,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       k = ((j & h) | 0) == 0;
       if (!k)
         if (b >>> 0 < h >>> 0) l = b;
-        else l = (b >>> 0) % (h >>> 0) | 0;
+        else l = ((b >>> 0) % (h >>> 0)) | 0;
       else l = b & j;
       m = f[((f[a >> 2] | 0) + (l << 2)) >> 2] | 0;
       if (!m) {
@@ -12938,7 +12938,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
         } else {
           if (a >>> 0 < h >>> 0) q = a;
-          else q = (a >>> 0) % (h >>> 0) | 0;
+          else q = ((a >>> 0) % (h >>> 0)) | 0;
           if ((q | 0) != (l | 0)) {
             i = 0;
             o = 25;
@@ -13803,7 +13803,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       k = ((j & h) | 0) == 0;
       if (!k)
         if (b >>> 0 < h >>> 0) l = b;
-        else l = (b >>> 0) % (h >>> 0) | 0;
+        else l = ((b >>> 0) % (h >>> 0)) | 0;
       else l = b & j;
       m = f[((f[a >> 2] | 0) + (l << 2)) >> 2] | 0;
       if (!m) {
@@ -13862,7 +13862,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
         } else {
           if (a >>> 0 < h >>> 0) q = a;
-          else q = (a >>> 0) % (h >>> 0) | 0;
+          else q = ((a >>> 0) % (h >>> 0)) | 0;
           if ((q | 0) != (l | 0)) {
             i = 0;
             o = 23;
@@ -14336,7 +14336,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       k = ((j & h) | 0) == 0;
       if (!k)
         if (c >>> 0 < h >>> 0) l = c;
-        else l = (c >>> 0) % (h >>> 0) | 0;
+        else l = ((c >>> 0) % (h >>> 0)) | 0;
       else l = c & j;
       m = f[((f[a >> 2] | 0) + (l << 2)) >> 2] | 0;
       if (!m) {
@@ -14395,7 +14395,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
         } else {
           if (a >>> 0 < h >>> 0) q = a;
-          else q = (a >>> 0) % (h >>> 0) | 0;
+          else q = ((a >>> 0) % (h >>> 0)) | 0;
           if ((q | 0) != (l | 0)) {
             i = 0;
             o = 23;
@@ -14953,7 +14953,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       j = ((i & g) | 0) == 0;
       if (!j)
         if (b >>> 0 < g >>> 0) k = b;
-        else k = (b >>> 0) % (g >>> 0) | 0;
+        else k = ((b >>> 0) % (g >>> 0)) | 0;
       else k = b & i;
       l = f[((f[a >> 2] | 0) + (k << 2)) >> 2] | 0;
       if (!l) {
@@ -15007,7 +15007,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
         } else {
           if (a >>> 0 < g >>> 0) p = a;
-          else p = (a >>> 0) % (g >>> 0) | 0;
+          else p = ((a >>> 0) % (g >>> 0)) | 0;
           if ((p | 0) != (k | 0)) {
             h = 0;
             n = 23;
@@ -15611,7 +15611,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       b = f[(a + 152) >> 2] | 0;
       if ((f[(b + (f[(i + (d << 2)) >> 2] << 2)) >> 2] | 0) == -1) {
         a = (d + 1) | 0;
-        j = ((a >>> 0) % 3 | 0 | 0) == 0 ? (d + -2) | 0 : a;
+        j = (((a >>> 0) % 3) | 0 | 0) == 0 ? (d + -2) | 0 : a;
         if ((j | 0) == -1) {
           e = 0;
           g = -1;
@@ -15626,7 +15626,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         }
         if ((f[(b + (f[(i + (j << 2)) >> 2] << 2)) >> 2] | 0) == -1) {
           a = (j + 1) | 0;
-          k = ((a >>> 0) % 3 | 0 | 0) == 0 ? (j + -2) | 0 : a;
+          k = (((a >>> 0) % 3) | 0 | 0) == 0 ? (j + -2) | 0 : a;
           if ((k | 0) == -1) {
             e = 0;
             g = -1;
@@ -15642,23 +15642,23 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           if ((f[(b + (f[(i + (k << 2)) >> 2] << 2)) >> 2] | 0) == -1) {
             i = (k + 1) | 0;
             e = 1;
-            g = ((i >>> 0) % 3 | 0 | 0) == 0 ? (k + -2) | 0 : i;
+            g = (((i >>> 0) % 3) | 0 | 0) == 0 ? (k + -2) | 0 : i;
             f[c >> 2] = g;
             return e | 0;
           } else l = k;
         } else l = j;
       } else l = d;
       while (1) {
-        d = ((((l >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + l) | 0;
+        d = (((((l >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + l) | 0;
         if ((d | 0) == -1) break;
         j = f[(h + (d << 2)) >> 2] | 0;
         if ((j | 0) == -1) break;
-        d = (j + (((j >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+        d = (j + ((((j >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
         if ((d | 0) == -1) break;
         else l = d;
       }
       e = 0;
-      g = ((((l >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + l) | 0;
+      g = (((((l >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + l) | 0;
       f[c >> 2] = g;
       return e | 0;
     }
@@ -16993,14 +16993,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         do
           if (
             (
-              (!h ? ((i = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0), (i | 0) != -1) : 0)
+              (!h ? ((i = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0), (i | 0) != -1) : 0)
                 ? ((f[((f[d >> 2] | 0) + ((i >>> 5) << 2)) >> 2] & (1 << (i & 31))) | 0) == 0
                 : 0
             )
               ? ((j = f[((f[((f[(d + 64) >> 2] | 0) + 12) >> 2] | 0) + (i << 2)) >> 2] | 0), (j | 0) != -1)
               : 0
           )
-            if (!((j >>> 0) % 3 | 0)) {
+            if (!(((j >>> 0) % 3) | 0)) {
               k = (j + 2) | 0;
               break;
             } else {
@@ -17015,7 +17015,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       k = (g + 1) | 0;
       if (
         (
-          (!h ? ((h = ((k >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : k), (h | 0) != -1) : 0)
+          (!h ? ((h = (((k >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : k), (h | 0) != -1) : 0)
             ? ((f[((f[d >> 2] | 0) + ((h >>> 5) << 2)) >> 2] & (1 << (h & 31))) | 0) == 0
             : 0
         )
@@ -17024,7 +17024,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             (k | 0) != -1)
           : 0
       ) {
-        g = ((h >>> 0) % 3 | 0 | 0) == 0 ? (k + -2) | 0 : h;
+        g = (((h >>> 0) % 3) | 0 | 0) == 0 ? (k + -2) | 0 : h;
         f[e >> 2] = g;
         if ((g | 0) != -1) {
           if ((g | 0) != (f[(a + 4) >> 2] | 0)) return;
@@ -17036,14 +17036,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       do
         if (
           (
-            ((g | 0) != -1 ? ((a = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0), (a | 0) != -1) : 0)
+            ((g | 0) != -1 ? ((a = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0), (a | 0) != -1) : 0)
               ? ((f[((f[d >> 2] | 0) + ((a >>> 5) << 2)) >> 2] & (1 << (a & 31))) | 0) == 0
               : 0
           )
             ? ((h = f[((f[((f[(d + 64) >> 2] | 0) + 12) >> 2] | 0) + (a << 2)) >> 2] | 0), (h | 0) != -1)
             : 0
         )
-          if (!((h >>> 0) % 3 | 0)) {
+          if (!(((h >>> 0) % 3) | 0)) {
             l = (h + 2) | 0;
             break;
           } else {
@@ -18322,7 +18322,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         b: do
           if (e) {
             h = (a + 1) | 0;
-            i = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0;
+            i = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0;
             if ((i | 0) == -1) {
               d = h;
               j = 15;
@@ -18334,7 +18334,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               j = 15;
               break a;
             }
-            if (!((k >>> 0) % 3 | 0)) {
+            if (!(((k >>> 0) % 3) | 0)) {
               l = (k + 2) | 0;
               m = h;
               break;
@@ -18349,7 +18349,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             while (1) {
               i = (h + 1) | 0;
               n = (k + 1) | 0;
-              o = ((n >>> 0) % 3 | 0 | 0) == 0 ? (k + -2) | 0 : n;
+              o = (((n >>> 0) % 3) | 0 | 0) == 0 ? (k + -2) | 0 : n;
               if ((o | 0) == -1) {
                 l = b;
                 m = i;
@@ -18362,7 +18362,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 m = i;
                 break b;
               }
-              k = ((o >>> 0) % 3 | 0 | 0) == 0 ? (n + -2) | 0 : o;
+              k = (((o >>> 0) % 3) | 0 | 0) == 0 ? (n + -2) | 0 : o;
               if ((k | 0) == -1) {
                 l = b;
                 m = i;
@@ -20039,11 +20039,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       if (!(b[c >> 0] | 0)) {
         do
           if (
-            (!h ? ((i = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0), (i | 0) != -1) : 0)
+            (!h ? ((i = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0), (i | 0) != -1) : 0)
               ? ((j = f[((f[(d + 12) >> 2] | 0) + (i << 2)) >> 2] | 0), (j | 0) != -1)
               : 0
           )
-            if (!((j >>> 0) % 3 | 0)) {
+            if (!(((j >>> 0) % 3) | 0)) {
               k = (j + 2) | 0;
               break;
             } else {
@@ -20057,11 +20057,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       }
       k = (g + 1) | 0;
       if (
-        (!h ? ((h = ((k >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : k), (h | 0) != -1) : 0)
+        (!h ? ((h = (((k >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : k), (h | 0) != -1) : 0)
           ? ((k = f[((f[(d + 12) >> 2] | 0) + (h << 2)) >> 2] | 0), (h = (k + 1) | 0), (k | 0) != -1)
           : 0
       ) {
-        g = ((h >>> 0) % 3 | 0 | 0) == 0 ? (k + -2) | 0 : h;
+        g = (((h >>> 0) % 3) | 0 | 0) == 0 ? (k + -2) | 0 : h;
         f[e >> 2] = g;
         if ((g | 0) != -1) {
           if ((g | 0) != (f[(a + 4) >> 2] | 0)) return;
@@ -20072,11 +20072,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       g = f[(a + 4) >> 2] | 0;
       do
         if (
-          ((g | 0) != -1 ? ((a = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0), (a | 0) != -1) : 0)
+          ((g | 0) != -1 ? ((a = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0), (a | 0) != -1) : 0)
             ? ((h = f[((f[(d + 12) >> 2] | 0) + (a << 2)) >> 2] | 0), (h | 0) != -1)
             : 0
         )
-          if (!((h >>> 0) % 3 | 0)) {
+          if (!(((h >>> 0) % 3) | 0)) {
             l = (h + 2) | 0;
             break;
           } else {
@@ -22574,8 +22574,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       o = f[c >> 2] | 0;
       c = (o + 1) | 0;
       if ((o | 0) != -1) {
-        p = ((c >>> 0) % 3 | 0 | 0) == 0 ? (o + -2) | 0 : c;
-        c = (o + (((o >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+        p = (((c >>> 0) % 3) | 0 | 0) == 0 ? (o + -2) | 0 : c;
+        c = (o + ((((o >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
         if ((p | 0) == -1) q = -1;
         else q = f[((f[f[m >> 2] >> 2] | 0) + (p << 2)) >> 2] | 0;
         if ((c | 0) == -1) {
@@ -22830,8 +22830,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       c = (o + 1) | 0;
       do
         if ((o | 0) != -1) {
-          p = ((c >>> 0) % 3 | 0 | 0) == 0 ? (o + -2) | 0 : c;
-          if (!((o >>> 0) % 3 | 0)) {
+          p = (((c >>> 0) % 3) | 0 | 0) == 0 ? (o + -2) | 0 : c;
+          if (!(((o >>> 0) % 3) | 0)) {
             q = (o + 2) | 0;
             r = p;
             break;
@@ -23089,8 +23089,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       o = f[c >> 2] | 0;
       c = (o + 1) | 0;
       if ((o | 0) != -1) {
-        p = ((c >>> 0) % 3 | 0 | 0) == 0 ? (o + -2) | 0 : c;
-        c = (o + (((o >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+        p = (((c >>> 0) % 3) | 0 | 0) == 0 ? (o + -2) | 0 : c;
+        c = (o + ((((o >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
         if ((p | 0) == -1) q = -1;
         else q = f[((f[f[m >> 2] >> 2] | 0) + (p << 2)) >> 2] | 0;
         if ((c | 0) == -1) {
@@ -23345,8 +23345,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       c = (o + 1) | 0;
       do
         if ((o | 0) != -1) {
-          p = ((c >>> 0) % 3 | 0 | 0) == 0 ? (o + -2) | 0 : c;
-          if (!((o >>> 0) % 3 | 0)) {
+          p = (((c >>> 0) % 3) | 0 | 0) == 0 ? (o + -2) | 0 : c;
+          if (!(((o >>> 0) % 3) | 0)) {
             q = (o + 2) | 0;
             r = p;
             break;
@@ -23647,7 +23647,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           l = ((o & r) | 0) == 0;
           if (!l)
             if (s >>> 0 < r >>> 0) t = s;
-            else t = (s >>> 0) % (r >>> 0) | 0;
+            else t = ((s >>> 0) % (r >>> 0)) | 0;
           else t = s & o;
           e = f[((f[a >> 2] | 0) + (t << 2)) >> 2] | 0;
           if ((e | 0) != 0 ? ((j = f[e >> 2] | 0), (j | 0) != 0) : 0) {
@@ -23728,7 +23728,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 y = f[(o + 4) >> 2] | 0;
                 if ((y | 0) != (s | 0)) {
                   if (y >>> 0 < r >>> 0) B = y;
-                  else B = (y >>> 0) % (r >>> 0) | 0;
+                  else B = ((y >>> 0) % (r >>> 0)) | 0;
                   if ((B | 0) != (t | 0)) {
                     u = t;
                     break a;
@@ -23752,7 +23752,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               o = f[(C + 4) >> 2] | 0;
               if ((o | 0) != (s | 0)) {
                 if (o >>> 0 < r >>> 0) D = o;
-                else D = (o >>> 0) % (r >>> 0) | 0;
+                else D = ((o >>> 0) % (r >>> 0)) | 0;
                 if ((D | 0) != (t | 0)) {
                   u = t;
                   break a;
@@ -23827,7 +23827,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             I = s;
           } else {
             H = C;
-            I = (s >>> 0) % (C >>> 0) | 0;
+            I = ((s >>> 0) % (C >>> 0)) | 0;
           }
         } else {
           H = r;
@@ -23847,7 +23847,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           r = (H + -1) | 0;
           if (r & H)
             if (u >>> 0 < H >>> 0) J = u;
-            else J = (u >>> 0) % (H >>> 0) | 0;
+            else J = ((u >>> 0) % (H >>> 0)) | 0;
           else J = u & r;
           K = ((f[a >> 2] | 0) + (J << 2)) | 0;
           q = 61;
@@ -24360,12 +24360,12 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 t = ((f[a >> 2] | 0) + ((q >>> 5) << 2)) | 0;
                 f[t >> 2] = f[t >> 2] | (1 << (q & 31));
                 t = (q + 1) | 0;
-                v = ((t >>> 0) % 3 | 0 | 0) == 0 ? (q + -2) | 0 : t;
+                v = (((t >>> 0) % 3) | 0 | 0) == 0 ? (q + -2) | 0 : t;
                 if ((v | 0) == -1) w = -1;
                 else w = f[((f[r >> 2] | 0) + (v << 2)) >> 2] | 0;
                 v = ((f[k >> 2] | 0) + ((w >>> 5) << 2)) | 0;
                 f[v >> 2] = f[v >> 2] | (1 << (w & 31));
-                v = ((((q >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + q) | 0;
+                v = (((((q >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + q) | 0;
                 if ((v | 0) == -1) x = -1;
                 else x = f[((f[r >> 2] | 0) + (v << 2)) >> 2] | 0;
                 v = ((f[k >> 2] | 0) + ((x >>> 5) << 2)) | 0;
@@ -24374,23 +24374,25 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               }
               if (s >>> 0 >= q >>> 0) {
                 v = (q + 1) | 0;
-                t = ((v >>> 0) % 3 | 0 | 0) == 0 ? (q + -2) | 0 : v;
-                y = (s + (((s >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+                t = (((v >>> 0) % 3) | 0 | 0) == 0 ? (q + -2) | 0 : v;
+                y = (s + ((((s >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
                 z = (t | 0) == -1;
                 if (!(b[m >> 0] | 0)) {
                   if (z) A = -1;
-                  else A = f[((f[o >> 2] | 0) + (((((t | 0) / 3) | 0) * 12) | 0) + (((t | 0) % 3 | 0) << 2)) >> 2] | 0;
+                  else
+                    A = f[((f[o >> 2] | 0) + (((((t | 0) / 3) | 0) * 12) | 0) + ((((t | 0) % 3) | 0) << 2)) >> 2] | 0;
                   B = (y | 0) == -1;
                   if (B) C = -1;
-                  else C = f[((f[o >> 2] | 0) + (((((y | 0) / 3) | 0) * 12) | 0) + (((y | 0) % 3 | 0) << 2)) >> 2] | 0;
+                  else
+                    C = f[((f[o >> 2] | 0) + (((((y | 0) / 3) | 0) * 12) | 0) + ((((y | 0) % 3) | 0) << 2)) >> 2] | 0;
                   D = f[n >> 2] | 0;
                   if ((f[(D + (A << 2)) >> 2] | 0) == (f[(D + (C << 2)) >> 2] | 0)) {
                     E = (t + 1) | 0;
                     if (z) F = -1;
-                    else F = ((E >>> 0) % 3 | 0 | 0) == 0 ? (t + -2) | 0 : E;
+                    else F = (((E >>> 0) % 3) | 0 | 0) == 0 ? (t + -2) | 0 : E;
                     do
                       if (!B)
-                        if (!((y >>> 0) % 3 | 0)) {
+                        if (!(((y >>> 0) % 3) | 0)) {
                           G = (y + 2) | 0;
                           break;
                         } else {
@@ -24401,25 +24403,27 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     while (0);
                     if ((F | 0) == -1) H = -1;
                     else
-                      H = f[((f[o >> 2] | 0) + (((((F | 0) / 3) | 0) * 12) | 0) + (((F | 0) % 3 | 0) << 2)) >> 2] | 0;
+                      H = f[((f[o >> 2] | 0) + (((((F | 0) / 3) | 0) * 12) | 0) + ((((F | 0) % 3) | 0) << 2)) >> 2] | 0;
                     if ((G | 0) == -1) I = -1;
                     else
-                      I = f[((f[o >> 2] | 0) + (((((G | 0) / 3) | 0) * 12) | 0) + (((G | 0) % 3 | 0) << 2)) >> 2] | 0;
+                      I = f[((f[o >> 2] | 0) + (((((G | 0) / 3) | 0) * 12) | 0) + ((((G | 0) % 3) | 0) << 2)) >> 2] | 0;
                     if ((f[(D + (H << 2)) >> 2] | 0) == (f[(D + (I << 2)) >> 2] | 0)) break;
                   }
                 } else {
                   if (z) J = -1;
-                  else J = f[((f[o >> 2] | 0) + (((((t | 0) / 3) | 0) * 12) | 0) + (((t | 0) % 3 | 0) << 2)) >> 2] | 0;
+                  else
+                    J = f[((f[o >> 2] | 0) + (((((t | 0) / 3) | 0) * 12) | 0) + ((((t | 0) % 3) | 0) << 2)) >> 2] | 0;
                   B = (y | 0) == -1;
                   if (B) K = -1;
-                  else K = f[((f[o >> 2] | 0) + (((((y | 0) / 3) | 0) * 12) | 0) + (((y | 0) % 3 | 0) << 2)) >> 2] | 0;
+                  else
+                    K = f[((f[o >> 2] | 0) + (((((y | 0) / 3) | 0) * 12) | 0) + ((((y | 0) % 3) | 0) << 2)) >> 2] | 0;
                   if ((J | 0) == (K | 0)) {
                     E = (t + 1) | 0;
                     if (z) L = -1;
-                    else L = ((E >>> 0) % 3 | 0 | 0) == 0 ? (t + -2) | 0 : E;
+                    else L = (((E >>> 0) % 3) | 0 | 0) == 0 ? (t + -2) | 0 : E;
                     do
                       if (!B)
-                        if (!((y >>> 0) % 3 | 0)) {
+                        if (!(((y >>> 0) % 3) | 0)) {
                           M = (y + 2) | 0;
                           break;
                         } else {
@@ -24430,10 +24434,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     while (0);
                     if ((L | 0) == -1) N = -1;
                     else
-                      N = f[((f[o >> 2] | 0) + (((((L | 0) / 3) | 0) * 12) | 0) + (((L | 0) % 3 | 0) << 2)) >> 2] | 0;
+                      N = f[((f[o >> 2] | 0) + (((((L | 0) / 3) | 0) * 12) | 0) + ((((L | 0) % 3) | 0) << 2)) >> 2] | 0;
                     if ((M | 0) == -1) O = -1;
                     else
-                      O = f[((f[o >> 2] | 0) + (((((M | 0) / 3) | 0) * 12) | 0) + (((M | 0) % 3 | 0) << 2)) >> 2] | 0;
+                      O = f[((f[o >> 2] | 0) + (((((M | 0) / 3) | 0) * 12) | 0) + ((((M | 0) % 3) | 0) << 2)) >> 2] | 0;
                     if ((N | 0) == (O | 0)) break;
                   }
                 }
@@ -24443,23 +24447,23 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 f[B >> 2] = f[B >> 2] | (1 << (q & 31));
                 B = (y + ((s >>> 5) << 2)) | 0;
                 f[B >> 2] = f[B >> 2] | (1 << (s & 31));
-                B = ((v >>> 0) % 3 | 0 | 0) == 0 ? (q + -2) | 0 : v;
+                B = (((v >>> 0) % 3) | 0 | 0) == 0 ? (q + -2) | 0 : v;
                 if ((B | 0) == -1) P = -1;
                 else P = f[((f[r >> 2] | 0) + (B << 2)) >> 2] | 0;
                 B = ((f[k >> 2] | 0) + ((P >>> 5) << 2)) | 0;
                 f[B >> 2] = f[B >> 2] | (1 << (P & 31));
-                B = ((((q >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + q) | 0;
+                B = (((((q >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + q) | 0;
                 if ((B | 0) == -1) Q = -1;
                 else Q = f[((f[r >> 2] | 0) + (B << 2)) >> 2] | 0;
                 B = ((f[k >> 2] | 0) + ((Q >>> 5) << 2)) | 0;
                 f[B >> 2] = f[B >> 2] | (1 << (Q & 31));
                 B = (s + 1) | 0;
-                y = ((B >>> 0) % 3 | 0 | 0) == 0 ? (s + -2) | 0 : B;
+                y = (((B >>> 0) % 3) | 0 | 0) == 0 ? (s + -2) | 0 : B;
                 if ((y | 0) == -1) R = -1;
                 else R = f[((f[r >> 2] | 0) + (y << 2)) >> 2] | 0;
                 y = ((f[k >> 2] | 0) + ((R >>> 5) << 2)) | 0;
                 f[y >> 2] = f[y >> 2] | (1 << (R & 31));
-                y = ((((s >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + s) | 0;
+                y = (((((s >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + s) | 0;
                 if ((y | 0) == -1) S = -1;
                 else S = f[((f[r >> 2] | 0) + (y << 2)) >> 2] | 0;
                 y = ((f[k >> 2] | 0) + ((S >>> 5) << 2)) | 0;
@@ -24906,11 +24910,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   O = f[k >> 2] | 0;
                   P = f[(O + (f[(N + (M << 2)) >> 2] << 2)) >> 2] | 0;
                   Q = (M + 1) | 0;
-                  R = ((Q >>> 0) % 3 | 0 | 0) == 0 ? (M + -2) | 0 : Q;
+                  R = (((Q >>> 0) % 3) | 0 | 0) == 0 ? (M + -2) | 0 : Q;
                   if ((R | 0) == -1) S = -1;
                   else S = f[(N + (R << 2)) >> 2] | 0;
                   R = f[(O + (S << 2)) >> 2] | 0;
-                  Q = ((((M >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + M) | 0;
+                  Q = (((((M >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + M) | 0;
                   if ((Q | 0) == -1) T = -1;
                   else T = f[(N + (Q << 2)) >> 2] | 0;
                   Q = f[(O + (T << 2)) >> 2] | 0;
@@ -24939,10 +24943,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     U = (K + 1) | 0;
                   } else U = K;
                 } else U = K;
-                Q = ((((L >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + L) | 0;
+                Q = (((((L >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + L) | 0;
                 do
                   if ((Q | 0) != -1 ? ((O = f[(s + (Q << 2)) >> 2] | 0), (O | 0) != -1) : 0)
-                    if (!((O >>> 0) % 3 | 0)) {
+                    if (!(((O >>> 0) % 3) | 0)) {
                       V = (O + 2) | 0;
                       break;
                     } else {
@@ -25149,11 +25153,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               B = f[m >> 2] | 0;
               C = f[(B + (f[(y + (A << 2)) >> 2] << 2)) >> 2] | 0;
               D = (A + 1) | 0;
-              E = ((D >>> 0) % 3 | 0 | 0) == 0 ? (A + -2) | 0 : D;
+              E = (((D >>> 0) % 3) | 0 | 0) == 0 ? (A + -2) | 0 : D;
               if ((E | 0) == -1) F = -1;
               else F = f[(y + (E << 2)) >> 2] | 0;
               E = f[(B + (F << 2)) >> 2] | 0;
-              D = ((((A >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + A) | 0;
+              D = (((((A >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + A) | 0;
               if ((D | 0) == -1) G = -1;
               else G = f[(y + (D << 2)) >> 2] | 0;
               D = f[(B + (G << 2)) >> 2] | 0;
@@ -25457,9 +25461,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       (Q = f[(P + (f[(O + (N << 2)) >> 2] << 2)) >> 2] | 0),
                       (R = (N + 1) | 0),
                       (S =
-                        f[(P + (f[(O + ((((R >>> 0) % 3 | 0 | 0) == 0 ? (N + -2) | 0 : R) << 2)) >> 2] << 2)) >> 2] |
+                        f[(P + (f[(O + (((((R >>> 0) % 3) | 0 | 0) == 0 ? (N + -2) | 0 : R) << 2)) >> 2] << 2)) >> 2] |
                         0),
-                      (R = f[(P + (f[(O + (((((N >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + N) << 2)) >> 2] << 2)) >> 2] | 0),
+                      (R =
+                        f[(P + (f[(O + ((((((N >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + N) << 2)) >> 2] << 2)) >> 2] | 0),
                       ((Q | 0) < (I | 0)) & ((S | 0) < (I | 0)) & ((R | 0) < (I | 0)))
                     : 0
                 ) {
@@ -25486,14 +25491,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   }
                   T = (L + 1) | 0;
                 } else T = L;
-                R = ((((M >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + M) | 0;
+                R = (((((M >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + M) | 0;
                 do
                   if (
                     ((R | 0) != -1 ? ((f[(s + ((R >>> 5) << 2)) >> 2] & (1 << (R & 31))) | 0) == 0 : 0)
                       ? ((N = f[((f[((f[D >> 2] | 0) + 12) >> 2] | 0) + (R << 2)) >> 2] | 0), (N | 0) != -1)
                       : 0
                   )
-                    if (!((N >>> 0) % 3 | 0)) {
+                    if (!(((N >>> 0) % 3) | 0)) {
                       U = (N + 2) | 0;
                       break;
                     } else {
@@ -25705,8 +25710,9 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   (C = f[m >> 2] | 0),
                   (D = f[(C + (f[(z + (B << 2)) >> 2] << 2)) >> 2] | 0),
                   (E = (B + 1) | 0),
-                  (F = f[(C + (f[(z + ((((E >>> 0) % 3 | 0 | 0) == 0 ? (B + -2) | 0 : E) << 2)) >> 2] << 2)) >> 2] | 0),
-                  (E = f[(C + (f[(z + (((((B >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + B) << 2)) >> 2] << 2)) >> 2] | 0),
+                  (F =
+                    f[(C + (f[(z + (((((E >>> 0) % 3) | 0 | 0) == 0 ? (B + -2) | 0 : E) << 2)) >> 2] << 2)) >> 2] | 0),
+                  (E = f[(C + (f[(z + ((((((B >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + B) << 2)) >> 2] << 2)) >> 2] | 0),
                   ((D | 0) < (x | 0)) & ((F | 0) < (x | 0)) & ((E | 0) < (x | 0)))
                 : 0
             ) {
@@ -27000,7 +27006,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           z = x;
         } else {
           A = (v + 1) | 0;
-          B = f[((f[l >> 2] | 0) + (((((k | 0) / 3) | 0) * 12) | 0) + (((k | 0) % 3 | 0) << 2)) >> 2] | 0;
+          B = f[((f[l >> 2] | 0) + (((((k | 0) / 3) | 0) * 12) | 0) + ((((k | 0) % 3) | 0) << 2)) >> 2] | 0;
           if (!(b[m >> 0] | 0)) C = f[((f[n >> 2] | 0) + (B << 2)) >> 2] | 0;
           else C = B;
           f[g >> 2] = C;
@@ -27015,7 +27021,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             if (!(f[((f[p >> 2] | 0) + ((w >>> 5) << 2)) >> 2] & (1 << (w & 31)))) D = k;
             else {
               B = (k + 1) | 0;
-              E = ((B >>> 0) % 3 | 0 | 0) == 0 ? (k + -2) | 0 : B;
+              E = (((B >>> 0) % 3) | 0 | 0) == 0 ? (k + -2) | 0 : B;
               if (
                 ((E | 0) != -1 ? ((f[((f[a >> 2] | 0) + ((E >>> 5) << 2)) >> 2] & (1 << (E & 31))) | 0) == 0 : 0)
                   ? ((B = f[((f[((f[j >> 2] | 0) + 12) >> 2] | 0) + (E << 2)) >> 2] | 0),
@@ -27023,7 +27029,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     (B | 0) != -1)
                   : 0
               ) {
-                F = ((E >>> 0) % 3 | 0 | 0) == 0 ? (B + -2) | 0 : E;
+                F = (((E >>> 0) % 3) | 0 | 0) == 0 ? (B + -2) | 0 : E;
                 f[h >> 2] = F;
                 if ((F | 0) == -1) {
                   D = k;
@@ -27032,13 +27038,13 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 while (1) {
                   f[g >> 2] = G;
                   F = (G + 1) | 0;
-                  E = ((F >>> 0) % 3 | 0 | 0) == 0 ? (G + -2) | 0 : F;
+                  E = (((F >>> 0) % 3) | 0 | 0) == 0 ? (G + -2) | 0 : F;
                   if ((E | 0) == -1) break;
                   if ((f[((f[a >> 2] | 0) + ((E >>> 5) << 2)) >> 2] & (1 << (E & 31))) | 0) break;
                   F = f[((f[((f[j >> 2] | 0) + 12) >> 2] | 0) + (E << 2)) >> 2] | 0;
                   E = (F + 1) | 0;
                   if ((F | 0) == -1) break;
-                  B = ((E >>> 0) % 3 | 0 | 0) == 0 ? (F + -2) | 0 : E;
+                  B = (((E >>> 0) % 3) | 0 | 0) == 0 ? (F + -2) | 0 : E;
                   f[h >> 2] = B;
                   if ((B | 0) == -1) {
                     D = G;
@@ -27064,11 +27070,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           B = f[g >> 2] | 0;
           b: do
             if (
-              ((B | 0) != -1 ? ((E = ((((B >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + B) | 0), (E | 0) != -1) : 0)
+              ((B | 0) != -1 ? ((E = (((((B >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + B) | 0), (E | 0) != -1) : 0)
                 ? ((F = f[((f[(k + 12) >> 2] | 0) + (E << 2)) >> 2] | 0), (F | 0) != -1)
                 : 0
             ) {
-              E = (F + (((F >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+              E = (F + ((((F >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
               f[h >> 2] = E;
               if (((E | 0) != -1) & ((E | 0) != (B | 0))) {
                 F = A;
@@ -27076,11 +27082,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 I = E;
                 while (1) {
                   E = (I + 1) | 0;
-                  J = ((E >>> 0) % 3 | 0 | 0) == 0 ? (I + -2) | 0 : E;
+                  J = (((E >>> 0) % 3) | 0 | 0) == 0 ? (I + -2) | 0 : E;
                   do
                     if (f[((f[a >> 2] | 0) + ((J >>> 5) << 2)) >> 2] & (1 << (J & 31))) {
                       E = (F + 1) | 0;
-                      K = f[((f[l >> 2] | 0) + (((((I | 0) / 3) | 0) * 12) | 0) + (((I | 0) % 3 | 0) << 2)) >> 2] | 0;
+                      K = f[((f[l >> 2] | 0) + (((((I | 0) / 3) | 0) * 12) | 0) + ((((I | 0) % 3) | 0) << 2)) >> 2] | 0;
                       if (!(b[m >> 0] | 0)) L = f[((f[n >> 2] | 0) + (K << 2)) >> 2] | 0;
                       else L = K;
                       f[i >> 2] = L;
@@ -27111,11 +27117,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   O = f[j >> 2] | 0;
                   J = f[h >> 2] | 0;
                   if ((J | 0) == -1) break;
-                  E = ((((J >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + J) | 0;
+                  E = (((((J >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + J) | 0;
                   if ((E | 0) == -1) break;
                   J = f[((f[(O + 12) >> 2] | 0) + (E << 2)) >> 2] | 0;
                   if ((J | 0) == -1) break;
-                  I = (J + (((J >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+                  I = (J + ((((J >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
                   f[h >> 2] = I;
                   if (!((I | 0) != -1 ? (I | 0) != (f[g >> 2] | 0) : 0)) {
                     P = M;
@@ -32863,11 +32869,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               J = f[r >> 2] | 0;
               K = f[(J + (f[(D + (I << 2)) >> 2] << 2)) >> 2] | 0;
               L = (I + 1) | 0;
-              M = ((L >>> 0) % 3 | 0 | 0) == 0 ? (I + -2) | 0 : L;
+              M = (((L >>> 0) % 3) | 0 | 0) == 0 ? (I + -2) | 0 : L;
               if ((M | 0) == -1) N = -1;
               else N = f[(D + (M << 2)) >> 2] | 0;
               M = f[(J + (N << 2)) >> 2] | 0;
-              L = ((((I >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + I) | 0;
+              L = (((((I >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + I) | 0;
               if ((L | 0) == -1) O = -1;
               else O = f[(D + (L << 2)) >> 2] | 0;
               L = f[(J + (O << 2)) >> 2] | 0;
@@ -33296,7 +33302,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             if (!(f[((f[l >> 2] | 0) + ((r >>> 5) << 2)) >> 2] & (1 << (r & 31)))) y = h;
             else {
               x = (h + 1) | 0;
-              z = ((x >>> 0) % 3 | 0 | 0) == 0 ? (h + -2) | 0 : x;
+              z = (((x >>> 0) % 3) | 0 | 0) == 0 ? (h + -2) | 0 : x;
               if (
                 ((z | 0) != -1 ? ((f[((f[a >> 2] | 0) + ((z >>> 5) << 2)) >> 2] & (1 << (z & 31))) | 0) == 0 : 0)
                   ? ((x = f[((f[((f[g >> 2] | 0) + 12) >> 2] | 0) + (z << 2)) >> 2] | 0),
@@ -33304,7 +33310,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     (x | 0) != -1)
                   : 0
               ) {
-                A = ((z >>> 0) % 3 | 0 | 0) == 0 ? (x + -2) | 0 : z;
+                A = (((z >>> 0) % 3) | 0 | 0) == 0 ? (x + -2) | 0 : z;
                 f[e >> 2] = A;
                 if ((A | 0) == -1) {
                   y = h;
@@ -33313,13 +33319,13 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 while (1) {
                   f[d >> 2] = B;
                   A = (B + 1) | 0;
-                  z = ((A >>> 0) % 3 | 0 | 0) == 0 ? (B + -2) | 0 : A;
+                  z = (((A >>> 0) % 3) | 0 | 0) == 0 ? (B + -2) | 0 : A;
                   if ((z | 0) == -1) break;
                   if ((f[((f[a >> 2] | 0) + ((z >>> 5) << 2)) >> 2] & (1 << (z & 31))) | 0) break;
                   A = f[((f[((f[g >> 2] | 0) + 12) >> 2] | 0) + (z << 2)) >> 2] | 0;
                   z = (A + 1) | 0;
                   if ((A | 0) == -1) break;
-                  x = ((z >>> 0) % 3 | 0 | 0) == 0 ? (A + -2) | 0 : z;
+                  x = (((z >>> 0) % 3) | 0 | 0) == 0 ? (A + -2) | 0 : z;
                   f[e >> 2] = x;
                   if ((x | 0) == -1) {
                     y = B;
@@ -33345,18 +33351,18 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           x = f[d >> 2] | 0;
           b: do
             if (
-              ((x | 0) != -1 ? ((z = ((((x >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + x) | 0), (z | 0) != -1) : 0)
+              ((x | 0) != -1 ? ((z = (((((x >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + x) | 0), (z | 0) != -1) : 0)
                 ? ((A = f[((f[(h + 12) >> 2] | 0) + (z << 2)) >> 2] | 0), (A | 0) != -1)
                 : 0
             ) {
-              z = (A + (((A >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+              z = (A + ((((A >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
               f[e >> 2] = z;
               if (((z | 0) != -1) & ((z | 0) != (x | 0))) {
                 A = w;
                 C = z;
                 while (1) {
                   z = (C + 1) | 0;
-                  D = ((z >>> 0) % 3 | 0 | 0) == 0 ? (C + -2) | 0 : z;
+                  D = (((z >>> 0) % 3) | 0 | 0) == 0 ? (C + -2) | 0 : z;
                   do
                     if (f[((f[a >> 2] | 0) + ((D >>> 5) << 2)) >> 2] & (1 << (D & 31))) {
                       z = (A + 1) | 0;
@@ -33384,11 +33390,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   G = f[g >> 2] | 0;
                   D = f[e >> 2] | 0;
                   if ((D | 0) == -1) break;
-                  z = ((((D >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + D) | 0;
+                  z = (((((D >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + D) | 0;
                   if ((z | 0) == -1) break;
                   D = f[((f[(G + 12) >> 2] | 0) + (z << 2)) >> 2] | 0;
                   if ((D | 0) == -1) break;
-                  C = (D + (((D >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+                  C = (D + ((((D >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
                   f[e >> 2] = C;
                   if (!((C | 0) != -1 ? (C | 0) != (f[d >> 2] | 0) : 0)) {
                     H = F;
@@ -33469,8 +33475,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       k = (j + 1) | 0;
       do
         if ((j | 0) != -1) {
-          l = ((k >>> 0) % 3 | 0 | 0) == 0 ? (j + -2) | 0 : k;
-          if (!((j >>> 0) % 3 | 0)) {
+          l = (((k >>> 0) % 3) | 0 | 0) == 0 ? (j + -2) | 0 : k;
+          if (!(((j >>> 0) % 3) | 0)) {
             m = (j + 2) | 0;
             n = l;
             break;
@@ -33514,7 +33520,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   break;
                 }
                 r = (w + 1) | 0;
-                x = ((r >>> 0) % 3 | 0 | 0) == 0 ? (w + -2) | 0 : r;
+                x = (((r >>> 0) % 3) | 0 | 0) == 0 ? (w + -2) | 0 : r;
                 if ((x | 0) == -1) {
                   z = 12;
                   break;
@@ -33556,8 +33562,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   break;
                 }
                 i = (v + 1) | 0;
-                f[((f[l >> 2] | 0) + ((((i >>> 0) % 3 | 0 | 0) == 0 ? (v + -2) | 0 : i) << 2)) >> 2] = C;
-                i = ((((v >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + v) | 0;
+                f[((f[l >> 2] | 0) + (((((i >>> 0) % 3) | 0 | 0) == 0 ? (v + -2) | 0 : i) << 2)) >> 2] = C;
+                i = (((((v >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + v) | 0;
                 if ((i | 0) == -1) {
                   z = 20;
                   break;
@@ -33744,8 +33750,9 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   (K = f[r >> 2] | 0),
                   (L = f[(K + (f[(E + (J << 2)) >> 2] << 2)) >> 2] | 0),
                   (M = (J + 1) | 0),
-                  (N = f[(K + (f[(E + ((((M >>> 0) % 3 | 0 | 0) == 0 ? (J + -2) | 0 : M) << 2)) >> 2] << 2)) >> 2] | 0),
-                  (M = f[(K + (f[(E + (((((J >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + J) << 2)) >> 2] << 2)) >> 2] | 0),
+                  (N =
+                    f[(K + (f[(E + (((((M >>> 0) % 3) | 0 | 0) == 0 ? (J + -2) | 0 : M) << 2)) >> 2] << 2)) >> 2] | 0),
+                  (M = f[(K + (f[(E + ((((((J >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + J) << 2)) >> 2] << 2)) >> 2] | 0),
                   ((L | 0) < (G | 0)) & ((N | 0) < (G | 0)) & ((M | 0) < (G | 0)))
                 : 0
             ) {
@@ -34253,7 +34260,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & b) | 0) == 0;
       if (!i)
         if (e >>> 0 < b >>> 0) j = e;
-        else j = (e >>> 0) % (b >>> 0) | 0;
+        else j = ((e >>> 0) % (b >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = c;
       c = f[g >> 2] | 0;
@@ -34340,7 +34347,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 w = f[(e + 4) >> 2] | 0;
                 if (w >>> 0 < b >>> 0) F = w;
-                else F = (w >>> 0) % (b >>> 0) | 0;
+                else F = ((w >>> 0) % (b >>> 0)) | 0;
                 if ((F | 0) == (k | 0)) {
                   p = e;
                   break c;
@@ -34490,7 +34497,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & c) | 0) == 0;
       if (!i)
         if (e >>> 0 < c >>> 0) j = e;
-        else j = (e >>> 0) % (c >>> 0) | 0;
+        else j = ((e >>> 0) % (c >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = d;
       d = f[g >> 2] | 0;
@@ -34577,7 +34584,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 w = f[(e + 4) >> 2] | 0;
                 if (w >>> 0 < c >>> 0) F = w;
-                else F = (w >>> 0) % (c >>> 0) | 0;
+                else F = ((w >>> 0) % (c >>> 0)) | 0;
                 if ((F | 0) == (k | 0)) {
                   p = e;
                   break c;
@@ -34786,7 +34793,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             D = f[e >> 2] | 0;
           }
           f[t >> 2] =
-            ((((C >>> 0) / (z >>> 0)) | 0) << 12) + ((C >>> 0) % (z >>> 0) | 0) + (f[(y + (x << 3) + 4) >> 2] | 0);
+            ((((C >>> 0) / (z >>> 0)) | 0) << 12) + (((C >>> 0) % (z >>> 0)) | 0) + (f[(y + (x << 3) + 4) >> 2] | 0);
           B = (p - v) | 0;
           E = f[(D + ((((B | 0) / (d | 0)) | 0) << 2)) >> 2] | 0;
           if (c & ((E | 0) > 0)) {
@@ -34914,7 +34921,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       h = ((g & b) | 0) == 0;
       if (!h)
         if (d >>> 0 < b >>> 0) i = d;
-        else i = (d >>> 0) % (b >>> 0) | 0;
+        else i = ((d >>> 0) % (b >>> 0)) | 0;
       else i = d & g;
       f[((f[a >> 2] | 0) + (i << 2)) >> 2] = c;
       c = f[e >> 2] | 0;
@@ -34999,7 +35006,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 u = f[(d + 4) >> 2] | 0;
                 if (u >>> 0 < b >>> 0) D = u;
-                else D = (u >>> 0) % (b >>> 0) | 0;
+                else D = ((u >>> 0) % (b >>> 0)) | 0;
                 if ((D | 0) == (j | 0)) {
                   o = d;
                   break c;
@@ -35146,7 +35153,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & b) | 0) == 0;
       if (!i)
         if (e >>> 0 < b >>> 0) j = e;
-        else j = (e >>> 0) % (b >>> 0) | 0;
+        else j = ((e >>> 0) % (b >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = c;
       c = f[g >> 2] | 0;
@@ -35228,7 +35235,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 u = f[(e + 4) >> 2] | 0;
                 if (u >>> 0 < b >>> 0) E = u;
-                else E = (u >>> 0) % (b >>> 0) | 0;
+                else E = ((u >>> 0) % (b >>> 0)) | 0;
                 if ((E | 0) == (k | 0)) {
                   p = e;
                   break c;
@@ -35372,7 +35379,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & c) | 0) == 0;
       if (!i)
         if (e >>> 0 < c >>> 0) j = e;
-        else j = (e >>> 0) % (c >>> 0) | 0;
+        else j = ((e >>> 0) % (c >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = d;
       d = f[g >> 2] | 0;
@@ -35454,7 +35461,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 v = f[(e + 4) >> 2] | 0;
                 if (v >>> 0 < c >>> 0) E = v;
-                else E = (v >>> 0) % (c >>> 0) | 0;
+                else E = ((v >>> 0) % (c >>> 0)) | 0;
                 if ((E | 0) == (k | 0)) {
                   p = e;
                   break c;
@@ -36019,7 +36026,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       h = ((g & b) | 0) == 0;
       if (!h)
         if (d >>> 0 < b >>> 0) i = d;
-        else i = (d >>> 0) % (b >>> 0) | 0;
+        else i = ((d >>> 0) % (b >>> 0)) | 0;
       else i = d & g;
       f[((f[a >> 2] | 0) + (i << 2)) >> 2] = c;
       c = f[e >> 2] | 0;
@@ -36099,7 +36106,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 t = f[(d + 4) >> 2] | 0;
                 if (t >>> 0 < b >>> 0) C = t;
-                else C = (t >>> 0) % (b >>> 0) | 0;
+                else C = ((t >>> 0) % (b >>> 0)) | 0;
                 if ((C | 0) == (j | 0)) {
                   o = d;
                   break c;
@@ -36410,7 +36417,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & c) | 0) == 0;
       if (!i)
         if (e >>> 0 < c >>> 0) j = e;
-        else j = (e >>> 0) % (c >>> 0) | 0;
+        else j = ((e >>> 0) % (c >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = d;
       d = f[g >> 2] | 0;
@@ -36431,7 +36438,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             e = f[(o + 4) >> 2] | 0;
             if (!i)
               if (e >>> 0 < c >>> 0) p = e;
-              else p = (e >>> 0) % (c >>> 0) | 0;
+              else p = ((e >>> 0) % (c >>> 0)) | 0;
             else p = e & h;
             if ((p | 0) == (k | 0)) break;
             q = ((f[a >> 2] | 0) + (p << 2)) | 0;
@@ -37046,7 +37053,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & b) | 0) == 0;
       if (!i)
         if (e >>> 0 < b >>> 0) j = e;
-        else j = (e >>> 0) % (b >>> 0) | 0;
+        else j = ((e >>> 0) % (b >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = c;
       c = f[g >> 2] | 0;
@@ -37123,7 +37130,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 u = f[(e + 4) >> 2] | 0;
                 if (u >>> 0 < b >>> 0) D = u;
-                else D = (u >>> 0) % (b >>> 0) | 0;
+                else D = ((u >>> 0) % (b >>> 0)) | 0;
                 if ((D | 0) == (k | 0)) {
                   p = e;
                   break c;
@@ -37261,7 +37268,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & c) | 0) == 0;
       if (!i)
         if (e >>> 0 < c >>> 0) j = e;
-        else j = (e >>> 0) % (c >>> 0) | 0;
+        else j = ((e >>> 0) % (c >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = d;
       d = f[g >> 2] | 0;
@@ -37338,7 +37345,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 u = f[(e + 4) >> 2] | 0;
                 if (u >>> 0 < c >>> 0) D = u;
-                else D = (u >>> 0) % (c >>> 0) | 0;
+                else D = ((u >>> 0) % (c >>> 0)) | 0;
                 if ((D | 0) == (k | 0)) {
                   p = e;
                   break c;
@@ -37698,7 +37705,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       n = ((p & l) | 0) == 0;
       if (!n)
         if (q >>> 0 < l >>> 0) s = q;
-        else s = (q >>> 0) % (l >>> 0) | 0;
+        else s = ((q >>> 0) % (l >>> 0)) | 0;
       else s = q & p;
       m = f[((f[a >> 2] | 0) + (s << 2)) >> 2] | 0;
       if (!m) {
@@ -37822,7 +37829,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             }
           } else {
             if (a >>> 0 < l >>> 0) v = a;
-            else v = (a >>> 0) % (l >>> 0) | 0;
+            else v = ((a >>> 0) % (l >>> 0)) | 0;
             if ((v | 0) != (s | 0)) {
               r = 0;
               o = 40;
@@ -37901,7 +37908,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       h = ((g & b) | 0) == 0;
       if (!h)
         if (d >>> 0 < b >>> 0) i = d;
-        else i = (d >>> 0) % (b >>> 0) | 0;
+        else i = ((d >>> 0) % (b >>> 0)) | 0;
       else i = d & g;
       f[((f[a >> 2] | 0) + (i << 2)) >> 2] = c;
       c = f[e >> 2] | 0;
@@ -37976,7 +37983,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 p = f[(d + 4) >> 2] | 0;
                 if (p >>> 0 < b >>> 0) B = p;
-                else B = (p >>> 0) % (b >>> 0) | 0;
+                else B = ((p >>> 0) % (b >>> 0)) | 0;
                 if ((B | 0) == (j | 0)) {
                   o = d;
                   break c;
@@ -39000,7 +39007,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & b) | 0) == 0;
       if (!i)
         if (e >>> 0 < b >>> 0) j = e;
-        else j = (e >>> 0) % (b >>> 0) | 0;
+        else j = ((e >>> 0) % (b >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = c;
       c = f[g >> 2] | 0;
@@ -39065,7 +39072,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 x = f[(p + 4) >> 2] | 0;
                 if (x >>> 0 < b >>> 0) y = x;
-                else y = (x >>> 0) % (b >>> 0) | 0;
+                else y = ((x >>> 0) % (b >>> 0)) | 0;
                 if ((y | 0) == (k | 0)) break;
                 x = ((f[a >> 2] | 0) + (y << 2)) | 0;
                 if (!(f[x >> 2] | 0)) {
@@ -39174,7 +39181,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & c) | 0) == 0;
       if (!i)
         if (e >>> 0 < c >>> 0) j = e;
-        else j = (e >>> 0) % (c >>> 0) | 0;
+        else j = ((e >>> 0) % (c >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = d;
       d = f[g >> 2] | 0;
@@ -39239,7 +39246,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 x = f[(p + 4) >> 2] | 0;
                 if (x >>> 0 < c >>> 0) y = x;
-                else y = (x >>> 0) % (c >>> 0) | 0;
+                else y = ((x >>> 0) % (c >>> 0)) | 0;
                 if ((y | 0) == (k | 0)) break;
                 x = ((f[a >> 2] | 0) + (y << 2)) | 0;
                 if (!(f[x >> 2] | 0)) {
@@ -39516,7 +39523,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       h = ((g & b) | 0) == 0;
       if (!h)
         if (d >>> 0 < b >>> 0) i = d;
-        else i = (d >>> 0) % (b >>> 0) | 0;
+        else i = ((d >>> 0) % (b >>> 0)) | 0;
       else i = d & g;
       f[((f[a >> 2] | 0) + (i << 2)) >> 2] = c;
       c = f[e >> 2] | 0;
@@ -39581,7 +39588,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (1) {
                 w = f[(o + 4) >> 2] | 0;
                 if (w >>> 0 < b >>> 0) x = w;
-                else x = (w >>> 0) % (b >>> 0) | 0;
+                else x = ((w >>> 0) % (b >>> 0)) | 0;
                 if ((x | 0) == (j | 0)) break;
                 w = ((f[a >> 2] | 0) + (x << 2)) | 0;
                 if (!(f[w >> 2] | 0)) {
@@ -39694,7 +39701,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       i = ((h & c) | 0) == 0;
       if (!i)
         if (e >>> 0 < c >>> 0) j = e;
-        else j = (e >>> 0) % (c >>> 0) | 0;
+        else j = ((e >>> 0) % (c >>> 0)) | 0;
       else j = e & h;
       f[((f[a >> 2] | 0) + (j << 2)) >> 2] = d;
       d = f[g >> 2] | 0;
@@ -39714,7 +39721,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             p = f[(o + 4) >> 2] | 0;
             if (!i)
               if (p >>> 0 < c >>> 0) q = p;
-              else q = (p >>> 0) % (c >>> 0) | 0;
+              else q = ((p >>> 0) % (c >>> 0)) | 0;
             else q = p & h;
             if ((q | 0) == (k | 0)) break;
             r = ((f[a >> 2] | 0) + (q << 2)) | 0;
@@ -42775,7 +42782,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
           b: while (1) {
             pa = f[(sa + (ra << 2)) >> 2] | 0;
-            Q = ((((pa >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + pa) | 0;
+            Q = (((((pa >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + pa) | 0;
             Ba = Q >>> 5;
             Ca = 1 << (Q & 31);
             Da = ((pa | 0) == -1) | ((Q | 0) == -1);
@@ -42804,10 +42811,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       (Qa = (Ma + 1) | 0),
                       (Ra =
                         f[
-                          (Oa + (f[(Na + ((((Qa >>> 0) % 3 | 0 | 0) == 0 ? (Ma + -2) | 0 : Qa) << 2)) >> 2] << 2)) >> 2
+                          (Oa + (f[(Na + (((((Qa >>> 0) % 3) | 0 | 0) == 0 ? (Ma + -2) | 0 : Qa) << 2)) >> 2] << 2)) >>
+                            2
                         ] | 0),
                       (Qa =
-                        f[(Oa + (f[(Na + (((((Ma >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ma) << 2)) >> 2] << 2)) >> 2] |
+                        f[(Oa + (f[(Na + ((((((Ma >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ma) << 2)) >> 2] << 2)) >> 2] |
                         0),
                       ((Pa | 0) < (ra | 0)) & ((Ra | 0) < (ra | 0)) & ((Qa | 0) < (ra | 0)))
                     : 0
@@ -42834,7 +42842,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 do
                   if (Ea) {
                     Qa = (Ja + 1) | 0;
-                    Ma = ((Qa >>> 0) % 3 | 0 | 0) == 0 ? (Ja + -2) | 0 : Qa;
+                    Ma = (((Qa >>> 0) % 3) | 0 | 0) == 0 ? (Ja + -2) | 0 : Qa;
                     if (
                       (
                         (Ma | 0) != -1
@@ -42846,10 +42854,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           (Qa | 0) != -1)
                         : 0
                     )
-                      Ta = ((Ma >>> 0) % 3 | 0 | 0) == 0 ? (Qa + -2) | 0 : Ma;
+                      Ta = (((Ma >>> 0) % 3) | 0 | 0) == 0 ? (Qa + -2) | 0 : Ma;
                     else Ta = -1;
                   } else {
-                    Ma = ((((Ja >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ja) | 0;
+                    Ma = (((((Ja >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ja) | 0;
                     if (
                       (
                         (Ma | 0) != -1
@@ -42859,7 +42867,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         ? ((Qa = f[((f[((f[R >> 2] | 0) + 12) >> 2] | 0) + (Ma << 2)) >> 2] | 0), (Qa | 0) != -1)
                         : 0
                     )
-                      if (!((Qa >>> 0) % 3 | 0)) {
+                      if (!(((Qa >>> 0) % 3) | 0)) {
                         Ta = (Qa + 2) | 0;
                         break;
                       } else {
@@ -42897,7 +42905,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Ga = -1;
                 continue;
               }
-              if (!((Ja >>> 0) % 3 | 0)) {
+              if (!(((Ja >>> 0) % 3) | 0)) {
                 Ea = 0;
                 Fa = Sa;
                 Ga = (Ja + 2) | 0;
@@ -43779,7 +43787,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
           b: while (1) {
             oa = f[(ra + (qa << 2)) >> 2] | 0;
-            Q = ((((oa >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + oa) | 0;
+            Q = (((((oa >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + oa) | 0;
             Aa = ((oa | 0) == -1) | ((Q | 0) == -1);
             Ba = 1;
             Ca = 0;
@@ -43801,11 +43809,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   Ma = f[A >> 2] | 0;
                   Na = f[(Ma + (f[(La + (Ka << 2)) >> 2] << 2)) >> 2] | 0;
                   Oa = (Ka + 1) | 0;
-                  Pa = ((Oa >>> 0) % 3 | 0 | 0) == 0 ? (Ka + -2) | 0 : Oa;
+                  Pa = (((Oa >>> 0) % 3) | 0 | 0) == 0 ? (Ka + -2) | 0 : Oa;
                   if ((Pa | 0) == -1) Qa = -1;
                   else Qa = f[(La + (Pa << 2)) >> 2] | 0;
                   Pa = f[(Ma + (Qa << 2)) >> 2] | 0;
-                  Oa = ((((Ka >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ka) | 0;
+                  Oa = (((((Ka >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ka) | 0;
                   if ((Oa | 0) == -1) Ra = -1;
                   else Ra = f[(La + (Oa << 2)) >> 2] | 0;
                   Oa = f[(Ma + (Ra << 2)) >> 2] | 0;
@@ -43833,14 +43841,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 do
                   if (Ba) {
                     Oa = (Ga + 1) | 0;
-                    Ma = ((Oa >>> 0) % 3 | 0 | 0) == 0 ? (Ga + -2) | 0 : Oa;
+                    Ma = (((Oa >>> 0) % 3) | 0 | 0) == 0 ? (Ga + -2) | 0 : Oa;
                     if ((Ma | 0) != -1 ? ((Oa = f[(Ja + (Ma << 2)) >> 2] | 0), (Ma = (Oa + 1) | 0), (Oa | 0) != -1) : 0)
-                      Ta = ((Ma >>> 0) % 3 | 0 | 0) == 0 ? (Oa + -2) | 0 : Ma;
+                      Ta = (((Ma >>> 0) % 3) | 0 | 0) == 0 ? (Oa + -2) | 0 : Ma;
                     else Ta = -1;
                   } else {
-                    Ma = ((((Ga >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ga) | 0;
+                    Ma = (((((Ga >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ga) | 0;
                     if ((Ma | 0) != -1 ? ((Oa = f[(Ja + (Ma << 2)) >> 2] | 0), (Oa | 0) != -1) : 0)
-                      if (!((Oa >>> 0) % 3 | 0)) {
+                      if (!(((Oa >>> 0) % 3) | 0)) {
                         Ta = (Oa + 2) | 0;
                         break;
                       } else {
@@ -43872,7 +43880,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Da = -1;
                 continue;
               }
-              if (!((Ga >>> 0) % 3 | 0)) {
+              if (!(((Ga >>> 0) % 3) | 0)) {
                 Ba = 0;
                 Ca = Sa;
                 Da = (Ga + 2) | 0;
@@ -45526,7 +45534,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
           b: while (1) {
             na = f[(qa + (pa << 2)) >> 2] | 0;
-            Q = ((((na >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + na) | 0;
+            Q = (((((na >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + na) | 0;
             za = Q >>> 5;
             Aa = 1 << (Q & 31);
             Ba = ((na | 0) == -1) | ((Q | 0) == -1);
@@ -45555,10 +45563,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       (Oa = (Ka + 1) | 0),
                       (Pa =
                         f[
-                          (Ma + (f[(La + ((((Oa >>> 0) % 3 | 0 | 0) == 0 ? (Ka + -2) | 0 : Oa) << 2)) >> 2] << 2)) >> 2
+                          (Ma + (f[(La + (((((Oa >>> 0) % 3) | 0 | 0) == 0 ? (Ka + -2) | 0 : Oa) << 2)) >> 2] << 2)) >>
+                            2
                         ] | 0),
                       (Oa =
-                        f[(Ma + (f[(La + (((((Ka >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ka) << 2)) >> 2] << 2)) >> 2] |
+                        f[(Ma + (f[(La + ((((((Ka >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ka) << 2)) >> 2] << 2)) >> 2] |
                         0),
                       ((Na | 0) < (pa | 0)) & ((Pa | 0) < (pa | 0)) & ((Oa | 0) < (pa | 0)))
                     : 0
@@ -45585,7 +45594,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 do
                   if (Ca) {
                     Oa = (Ha + 1) | 0;
-                    Ka = ((Oa >>> 0) % 3 | 0 | 0) == 0 ? (Ha + -2) | 0 : Oa;
+                    Ka = (((Oa >>> 0) % 3) | 0 | 0) == 0 ? (Ha + -2) | 0 : Oa;
                     if (
                       (
                         (Ka | 0) != -1
@@ -45597,10 +45606,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           (Oa | 0) != -1)
                         : 0
                     )
-                      Ra = ((Ka >>> 0) % 3 | 0 | 0) == 0 ? (Oa + -2) | 0 : Ka;
+                      Ra = (((Ka >>> 0) % 3) | 0 | 0) == 0 ? (Oa + -2) | 0 : Ka;
                     else Ra = -1;
                   } else {
-                    Ka = ((((Ha >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ha) | 0;
+                    Ka = (((((Ha >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ha) | 0;
                     if (
                       (
                         (Ka | 0) != -1
@@ -45610,7 +45619,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         ? ((Oa = f[((f[((f[R >> 2] | 0) + 12) >> 2] | 0) + (Ka << 2)) >> 2] | 0), (Oa | 0) != -1)
                         : 0
                     )
-                      if (!((Oa >>> 0) % 3 | 0)) {
+                      if (!(((Oa >>> 0) % 3) | 0)) {
                         Ra = (Oa + 2) | 0;
                         break;
                       } else {
@@ -45648,7 +45657,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Ea = -1;
                 continue;
               }
-              if (!((Ha >>> 0) % 3 | 0)) {
+              if (!(((Ha >>> 0) % 3) | 0)) {
                 Ca = 0;
                 Da = Qa;
                 Ea = (Ha + 2) | 0;
@@ -46369,10 +46378,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               if ((G | 0) != -1) {
                 H = f[(F + (G << 2)) >> 2] | 0;
                 I = (G + 1) | 0;
-                J = ((I >>> 0) % 3 | 0 | 0) == 0 ? (G + -2) | 0 : I;
+                J = (((I >>> 0) % 3) | 0 | 0) == 0 ? (G + -2) | 0 : I;
                 if ((J | 0) == -1) K = -1;
                 else K = f[(F + (J << 2)) >> 2] | 0;
-                J = ((((G >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + G) | 0;
+                J = (((((G >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + G) | 0;
                 if ((J | 0) == -1) L = -1;
                 else L = f[(F + (J << 2)) >> 2] | 0;
                 if ((H | 0) != (K | 0) ? !(((H | 0) == (L | 0)) | ((K | 0) == (L | 0))) : 0) {
@@ -46440,7 +46449,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                             f[((f[h >> 2] | 0) + (V << 2)) >> 2] = R;
                             f[((f[a >> 2] | 0) + (R << 2)) >> 2] = V;
                             V = (R + 1) | 0;
-                            W = ((V >>> 0) % 3 | 0 | 0) == 0 ? (R + -2) | 0 : V;
+                            W = (((V >>> 0) % 3) | 0 | 0) == 0 ? (R + -2) | 0 : V;
                             do
                               if ((W | 0) == -1) X = -1;
                               else {
@@ -46450,7 +46459,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                                   X = -1;
                                   break;
                                 }
-                                X = ((Y >>> 0) % 3 | 0 | 0) == 0 ? (V + -2) | 0 : Y;
+                                X = (((Y >>> 0) % 3) | 0 | 0) == 0 ? (V + -2) | 0 : Y;
                               }
                             while (0);
                             if ((X | 0) == (M | 0)) break;
@@ -46467,7 +46476,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                             f[W >> 2] = f[W >> 2] | (1 << (R & 31));
                             f[((f[h >> 2] | 0) + (f[g >> 2] << 2)) >> 2] = R;
                             W = (R + 1) | 0;
-                            Y = ((W >>> 0) % 3 | 0 | 0) == 0 ? (R + -2) | 0 : W;
+                            Y = (((W >>> 0) % 3) | 0 | 0) == 0 ? (R + -2) | 0 : W;
                             do
                               if ((Y | 0) == -1) Z = -1;
                               else {
@@ -46477,7 +46486,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                                   Z = -1;
                                   break;
                                 }
-                                Z = ((V >>> 0) % 3 | 0 | 0) == 0 ? (W + -2) | 0 : V;
+                                Z = (((V >>> 0) % 3) | 0 | 0) == 0 ? (W + -2) | 0 : V;
                               }
                             while (0);
                             if ((Z | 0) == (M | 0)) break;
@@ -46489,22 +46498,22 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         if ((S | 0) == 64) {
                           S = 0;
                           if ((M | 0) == -1) break;
-                          R = ((((M >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + M) | 0;
+                          R = (((((M >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + M) | 0;
                           if ((R | 0) == -1) break;
                           Y = f[((f[x >> 2] | 0) + (R << 2)) >> 2] | 0;
                           if ((Y | 0) == -1) break;
-                          R = (Y + (((Y >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+                          R = (Y + ((((Y >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
                           if ((R | 0) == -1) break;
                           if (!O) {
                             Y = R;
                             while (1) {
                               V = ((f[e >> 2] | 0) + ((Y >>> 5) << 2)) | 0;
                               f[V >> 2] = f[V >> 2] | (1 << (Y & 31));
-                              V = ((((Y >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Y) | 0;
+                              V = (((((Y >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Y) | 0;
                               if ((V | 0) == -1) break c;
                               W = f[((f[x >> 2] | 0) + (V << 2)) >> 2] | 0;
                               if ((W | 0) == -1) break c;
-                              Y = (W + (((W >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+                              Y = (W + ((((W >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
                               if ((Y | 0) == -1) break c;
                             }
                           }
@@ -46514,11 +46523,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                             V = ((f[e >> 2] | 0) + ((W >>> 5) << 2)) | 0;
                             f[V >> 2] = f[V >> 2] | (1 << (W & 31));
                             f[(Y + (W << 2)) >> 2] = f[g >> 2];
-                            V = ((((W >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + W) | 0;
+                            V = (((((W >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + W) | 0;
                             if ((V | 0) == -1) break c;
                             _ = f[((f[x >> 2] | 0) + (V << 2)) >> 2] | 0;
                             if ((_ | 0) == -1) break c;
-                            W = (_ + (((_ >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1)) | 0;
+                            W = (_ + ((((_ >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1)) | 0;
                           } while ((W | 0) != -1);
                         }
                       while (0);
@@ -47427,7 +47436,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           }
           b: while (1) {
             ma = f[(wa + (oa << 2)) >> 2] | 0;
-            Q = ((((ma >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + ma) | 0;
+            Q = (((((ma >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + ma) | 0;
             ya = ((ma | 0) == -1) | ((Q | 0) == -1);
             za = 1;
             Aa = 0;
@@ -47449,11 +47458,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   Ka = f[A >> 2] | 0;
                   La = f[(Ka + (f[(Ja + (Ia << 2)) >> 2] << 2)) >> 2] | 0;
                   Ma = (Ia + 1) | 0;
-                  Na = ((Ma >>> 0) % 3 | 0 | 0) == 0 ? (Ia + -2) | 0 : Ma;
+                  Na = (((Ma >>> 0) % 3) | 0 | 0) == 0 ? (Ia + -2) | 0 : Ma;
                   if ((Na | 0) == -1) Oa = -1;
                   else Oa = f[(Ja + (Na << 2)) >> 2] | 0;
                   Na = f[(Ka + (Oa << 2)) >> 2] | 0;
-                  Ma = ((((Ia >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ia) | 0;
+                  Ma = (((((Ia >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ia) | 0;
                   if ((Ma | 0) == -1) Pa = -1;
                   else Pa = f[(Ja + (Ma << 2)) >> 2] | 0;
                   Ma = f[(Ka + (Pa << 2)) >> 2] | 0;
@@ -47481,14 +47490,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 do
                   if (za) {
                     Ma = (Ea + 1) | 0;
-                    Ka = ((Ma >>> 0) % 3 | 0 | 0) == 0 ? (Ea + -2) | 0 : Ma;
+                    Ka = (((Ma >>> 0) % 3) | 0 | 0) == 0 ? (Ea + -2) | 0 : Ma;
                     if ((Ka | 0) != -1 ? ((Ma = f[(Ha + (Ka << 2)) >> 2] | 0), (Ka = (Ma + 1) | 0), (Ma | 0) != -1) : 0)
-                      Ra = ((Ka >>> 0) % 3 | 0 | 0) == 0 ? (Ma + -2) | 0 : Ka;
+                      Ra = (((Ka >>> 0) % 3) | 0 | 0) == 0 ? (Ma + -2) | 0 : Ka;
                     else Ra = -1;
                   } else {
-                    Ka = ((((Ea >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Ea) | 0;
+                    Ka = (((((Ea >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Ea) | 0;
                     if ((Ka | 0) != -1 ? ((Ma = f[(Ha + (Ka << 2)) >> 2] | 0), (Ma | 0) != -1) : 0)
-                      if (!((Ma >>> 0) % 3 | 0)) {
+                      if (!(((Ma >>> 0) % 3) | 0)) {
                         Ra = (Ma + 2) | 0;
                         break;
                       } else {
@@ -47520,7 +47529,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Ba = -1;
                 continue;
               }
-              if (!((Ea >>> 0) % 3 | 0)) {
+              if (!(((Ea >>> 0) % 3) | 0)) {
                 za = 0;
                 Aa = Qa;
                 Ba = (Ea + 2) | 0;
@@ -48968,7 +48977,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       j = f[t >> 2] | 0;
       h = ((f[l >> 2] | 0) + (f[v >> 2] | 0)) | 0;
       if ((f[o >> 2] | 0) == (j | 0)) z = 0;
-      else z = ((f[(j + ((((h >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((h >>> 0) % 113 | 0) * 36) | 0)) | 0;
+      else z = ((f[(j + ((((h >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((h >>> 0) % 113) | 0) * 36) | 0)) | 0;
       f[z >> 2] = w;
       h = (z + 4) | 0;
       f[h >> 2] = r;
@@ -49012,7 +49021,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           S = (R + z) | 0;
           T = f[t >> 2] | 0;
           U = f[(T + ((((S >>> 0) / 113) | 0) << 2)) >> 2] | 0;
-          V = (S >>> 0) % 113 | 0;
+          V = ((S >>> 0) % 113) | 0;
           S = f[(U + ((V * 36) | 0)) >> 2] | 0;
           W = f[(U + ((V * 36) | 0) + 12) >> 2] | 0;
           Y = f[(U + ((V * 36) | 0) + 24) >> 2] | 0;
@@ -49314,7 +49323,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 la = (Aa + za) | 0;
                 if ((Ba | 0) == (Ca | 0)) Da = 0;
                 else
-                  Da = ((f[(Ca + ((((la >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((la >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  Da =
+                    ((f[(Ca + ((((la >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((la >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[Da >> 2] = S;
                 la = (Da + 4) | 0;
                 f[la >> 2] = r;
@@ -49348,7 +49358,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 ba = (Fa + Ea) | 0;
                 if ((Ga | 0) == (Ha | 0)) Ia = 0;
                 else
-                  Ia = ((f[(Ha + ((((ba >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((ba >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  Ia =
+                    ((f[(Ha + ((((ba >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((ba >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[Ia >> 2] = na;
                 f[(Ia + 4) >> 2] = i;
                 f[(Ia + 8) >> 2] = aa;
@@ -49383,7 +49394,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         Ka = 0;
         La = 0;
       } else {
-        na = ((f[Ia >> 2] | 0) + ((((Q >>> 0) % 113 | 0) * 36) | 0)) | 0;
+        na = ((f[Ia >> 2] | 0) + (((((Q >>> 0) % 113) | 0) * 36) | 0)) | 0;
         Ka = na;
         La = na;
       }
@@ -49670,7 +49681,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       l = f[w >> 2] | 0;
       j = ((f[n >> 2] | 0) + (f[x >> 2] | 0)) | 0;
       if ((f[q >> 2] | 0) == (l | 0)) B = 0;
-      else B = ((f[(l + ((((j >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((j >>> 0) % 113 | 0) * 36) | 0)) | 0;
+      else B = ((f[(l + ((((j >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((j >>> 0) % 113) | 0) * 36) | 0)) | 0;
       f[B >> 2] = y;
       j = (B + 4) | 0;
       f[j >> 2] = t;
@@ -49709,7 +49720,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           P = (O + B) | 0;
           Q = f[w >> 2] | 0;
           R = f[(Q + ((((P >>> 0) / 113) | 0) << 2)) >> 2] | 0;
-          S = (P >>> 0) % 113 | 0;
+          S = ((P >>> 0) % 113) | 0;
           P = f[(R + ((S * 36) | 0)) >> 2] | 0;
           T = f[(R + ((S * 36) | 0) + 12) >> 2] | 0;
           U = f[(R + ((S * 36) | 0) + 24) >> 2] | 0;
@@ -49978,7 +49989,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Z = (wa + va) | 0;
                 if ((xa | 0) == (ya | 0)) za = 0;
                 else
-                  za = ((f[(ya + ((((Z >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((Z >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  za = ((f[(ya + ((((Z >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((Z >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[za >> 2] = P;
                 Z = (za + 4) | 0;
                 f[Z >> 2] = t;
@@ -50012,7 +50023,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 ia = (Ba + Aa) | 0;
                 if ((Ca | 0) == (Da | 0)) Ea = 0;
                 else
-                  Ea = ((f[(Da + ((((ia >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((ia >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  Ea =
+                    ((f[(Da + ((((ia >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((ia >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[Ea >> 2] = ma;
                 f[(Ea + 4) >> 2] = k;
                 f[(Ea + 8) >> 2] = $;
@@ -50047,7 +50059,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         Ga = 0;
         Ha = 0;
       } else {
-        ma = ((f[Ea >> 2] | 0) + ((((N >>> 0) % 113 | 0) * 36) | 0)) | 0;
+        ma = ((f[Ea >> 2] | 0) + (((((N >>> 0) % 113) | 0) * 36) | 0)) | 0;
         Ga = ma;
         Ha = ma;
       }
@@ -50961,7 +50973,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       j = f[t >> 2] | 0;
       h = ((f[l >> 2] | 0) + (f[v >> 2] | 0)) | 0;
       if ((f[o >> 2] | 0) == (j | 0)) z = 0;
-      else z = ((f[(j + ((((h >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((h >>> 0) % 113 | 0) * 36) | 0)) | 0;
+      else z = ((f[(j + ((((h >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((h >>> 0) % 113) | 0) * 36) | 0)) | 0;
       f[z >> 2] = w;
       h = (z + 4) | 0;
       f[h >> 2] = r;
@@ -51000,7 +51012,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           N = (M + z) | 0;
           O = f[t >> 2] | 0;
           P = f[(O + ((((N >>> 0) / 113) | 0) << 2)) >> 2] | 0;
-          Q = (N >>> 0) % 113 | 0;
+          Q = ((N >>> 0) % 113) | 0;
           N = f[(P + ((Q * 36) | 0)) >> 2] | 0;
           R = f[(P + ((Q * 36) | 0) + 12) >> 2] | 0;
           S = f[(P + ((Q * 36) | 0) + 24) >> 2] | 0;
@@ -51256,7 +51268,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 W = (sa + ra) | 0;
                 if ((ta | 0) == (ua | 0)) va = 0;
                 else
-                  va = ((f[(ua + ((((W >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((W >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  va = ((f[(ua + ((((W >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((W >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[va >> 2] = N;
                 W = (va + 4) | 0;
                 f[W >> 2] = r;
@@ -51290,7 +51302,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 fa = (xa + wa) | 0;
                 if ((ya | 0) == (za | 0)) Aa = 0;
                 else
-                  Aa = ((f[(za + ((((fa >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((fa >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  Aa =
+                    ((f[(za + ((((fa >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((fa >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[Aa >> 2] = ia;
                 f[(Aa + 4) >> 2] = i;
                 f[(Aa + 8) >> 2] = V;
@@ -51325,7 +51338,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         Ca = 0;
         Da = 0;
       } else {
-        ia = ((f[Aa >> 2] | 0) + ((((L >>> 0) % 113 | 0) * 36) | 0)) | 0;
+        ia = ((f[Aa >> 2] | 0) + (((((L >>> 0) % 113) | 0) * 36) | 0)) | 0;
         Ca = ia;
         Da = ia;
       }
@@ -51607,7 +51620,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       j = f[t >> 2] | 0;
       h = ((f[l >> 2] | 0) + (f[v >> 2] | 0)) | 0;
       if ((f[o >> 2] | 0) == (j | 0)) z = 0;
-      else z = ((f[(j + ((((h >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((h >>> 0) % 113 | 0) * 36) | 0)) | 0;
+      else z = ((f[(j + ((((h >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((h >>> 0) % 113) | 0) * 36) | 0)) | 0;
       f[z >> 2] = w;
       h = (z + 4) | 0;
       f[h >> 2] = r;
@@ -51647,7 +51660,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           O = (N + z) | 0;
           P = f[t >> 2] | 0;
           Q = f[(P + ((((O >>> 0) / 113) | 0) << 2)) >> 2] | 0;
-          R = (O >>> 0) % 113 | 0;
+          R = ((O >>> 0) % 113) | 0;
           O = f[(Q + ((R * 36) | 0)) >> 2] | 0;
           S = f[(Q + ((R * 36) | 0) + 12) >> 2] | 0;
           T = f[(Q + ((R * 36) | 0) + 24) >> 2] | 0;
@@ -51880,7 +51893,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Y = (ta + sa) | 0;
                 if ((ua | 0) == (va | 0)) wa = 0;
                 else
-                  wa = ((f[(va + ((((Y >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((Y >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  wa = ((f[(va + ((((Y >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((Y >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[wa >> 2] = O;
                 Y = (wa + 4) | 0;
                 f[Y >> 2] = r;
@@ -51914,7 +51927,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 Y = (ya + xa) | 0;
                 if ((za | 0) == (Aa | 0)) Ba = 0;
                 else
-                  Ba = ((f[(Aa + ((((Y >>> 0) / 113) | 0) << 2)) >> 2] | 0) + ((((Y >>> 0) % 113 | 0) * 36) | 0)) | 0;
+                  Ba = ((f[(Aa + ((((Y >>> 0) / 113) | 0) << 2)) >> 2] | 0) + (((((Y >>> 0) % 113) | 0) * 36) | 0)) | 0;
                 f[Ba >> 2] = ja;
                 f[(Ba + 4) >> 2] = i;
                 f[(Ba + 8) >> 2] = W;
@@ -51949,7 +51962,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         Da = 0;
         Ea = 0;
       } else {
-        ja = ((f[Ba >> 2] | 0) + ((((M >>> 0) % 113 | 0) * 36) | 0)) | 0;
+        ja = ((f[Ba >> 2] | 0) + (((((M >>> 0) % 113) | 0) * 36) | 0)) | 0;
         Da = ja;
         Ea = ja;
       }
@@ -53040,7 +53053,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               break;
             }
           }
-          A = (Ga | 0) % 9 | 0;
+          A = ((Ga | 0) % 9) | 0;
           if (!A) {
             La = 0;
             Ma = Ka;
@@ -53060,7 +53073,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 w = f[o >> 2] | 0;
                 ya = ((((w >>> 0) / (A >>> 0)) | 0) + F) | 0;
                 f[o >> 2] = ya;
-                F = X(G, (w >>> 0) % (A >>> 0) | 0) | 0;
+                F = X(G, ((w >>> 0) % (A >>> 0)) | 0) | 0;
                 w = ((z | 0) == (J | 0)) & ((ya | 0) == 0);
                 H = w ? (H + -9) | 0 : H;
                 J = w ? (J + 1) & 127 : J;
@@ -53646,7 +53659,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           if ((J | 0) < ((((((ca - x) >> 2) * 9) | 0) + -9) | 0)) {
             A = (J + 9216) | 0;
             J = (E + 4 + (((((A | 0) / 9) | 0) + -1024) << 2)) | 0;
-            C = (A | 0) % 9 | 0;
+            C = ((A | 0) % 9) | 0;
             if ((C | 0) < 8) {
               A = C;
               C = 10;
@@ -53662,7 +53675,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               }
             } else ea = 10;
             C = f[J >> 2] | 0;
-            A = (C >>> 0) % (ea >>> 0) | 0;
+            A = ((C >>> 0) % (ea >>> 0)) | 0;
             t = ((J + 4) | 0) == (ca | 0);
             if (!(t & ((A | 0) == 0))) {
               B = (((((C >>> 0) / (ea >>> 0)) | 0) & 1) | 0) == 0 ? 9007199254740992.0 : 9007199254740994.0;
@@ -53773,13 +53786,13 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               W = g & 8;
               if (!W) {
                 if (qa ? ((A = f[(C + -4) >> 2] | 0), (A | 0) != 0) : 0)
-                  if (!((A >>> 0) % 10 | 0)) {
+                  if (!(((A >>> 0) % 10) | 0)) {
                     t = 0;
                     Z = 10;
                     while (1) {
                       Z = (Z * 10) | 0;
                       Q = (t + 1) | 0;
-                      if ((A >>> 0) % (Z >>> 0) | 0 | 0) {
+                      if (((A >>> 0) % (Z >>> 0)) | 0 | 0) {
                         ta = Q;
                         break;
                       } else t = Q;
@@ -54110,7 +54123,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       if ((C | 0) != (A | 0)) f[B >> 2] = C + (~(((C + -4 - A) | 0) >>> 2) << 2);
       A = f[s >> 2] | 0;
       C = ((f[(A + 4) >> 2] | 0) - (f[A >> 2] | 0)) >> 2;
-      gk(z, (C - ((C >>> 0) % 3 | 0)) | 0);
+      gk(z, (C - (((C >>> 0) % 3) | 0)) | 0);
       C = (a + 84) | 0;
       z = f[s >> 2] | 0;
       A = ((f[(z + 28) >> 2] | 0) - (f[(z + 24) >> 2] | 0)) >> 2;
@@ -54231,10 +54244,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       V = f[f[s >> 2] >> 2] | 0;
                       W = f[(V + (Q << 2)) >> 2] | 0;
                       X = (Q + 1) | 0;
-                      Y = ((X >>> 0) % 3 | 0 | 0) == 0 ? (Q + -2) | 0 : X;
+                      Y = (((X >>> 0) % 3) | 0 | 0) == 0 ? (Q + -2) | 0 : X;
                       if ((Y | 0) == -1) Z = -1;
                       else Z = f[(V + (Y << 2)) >> 2] | 0;
-                      Y = ((((Q >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Q) | 0;
+                      Y = (((((Q >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Q) | 0;
                       if ((Y | 0) == -1) {
                         S = W;
                         T = -1;
@@ -54263,7 +54276,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   f[V >> 2] = f[V >> 2] | P;
                   V = (Q + 1) | 0;
                   if (R) _ = -1;
-                  else _ = ((V >>> 0) % 3 | 0 | 0) == 0 ? (Q + -2) | 0 : V;
+                  else _ = (((V >>> 0) % 3) | 0 | 0) == 0 ? (Q + -2) | 0 : V;
                   f[d >> 2] = _;
                   Y = f[H >> 2] | 0;
                   if (Y >>> 0 < (f[K >> 2] | 0) >>> 0) {
@@ -54271,7 +54284,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     f[H >> 2] = Y + 4;
                   } else Ri(i, d);
                   if (R) break;
-                  Y = ((V >>> 0) % 3 | 0 | 0) == 0 ? (Q + -2) | 0 : V;
+                  Y = (((V >>> 0) % 3) | 0 | 0) == 0 ? (Q + -2) | 0 : V;
                   if ((Y | 0) == -1) break;
                   V = f[((f[((f[s >> 2] | 0) + 12) >> 2] | 0) + (Y << 2)) >> 2] | 0;
                   Y = (V | 0) == -1;
@@ -54284,7 +54297,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 } else {
                   V = (Q + 1) | 0;
                   if (R) $ = -1;
-                  else $ = ((V >>> 0) % 3 | 0 | 0) == 0 ? (Q + -2) | 0 : V;
+                  else $ = (((V >>> 0) % 3) | 0 | 0) == 0 ? (Q + -2) | 0 : V;
                   f[m >> 2] = $;
                   f[d >> 2] = f[m >> 2];
                   Pe(a, d, 1) | 0;
@@ -55257,7 +55270,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       if ((C | 0) != (A | 0)) f[B >> 2] = C + (~(((C + -4 - A) | 0) >>> 2) << 2);
       A = f[s >> 2] | 0;
       C = ((f[(A + 4) >> 2] | 0) - (f[A >> 2] | 0)) >> 2;
-      gk(z, (C - ((C >>> 0) % 3 | 0)) | 0);
+      gk(z, (C - (((C >>> 0) % 3) | 0)) | 0);
       C = (a + 84) | 0;
       z = f[s >> 2] | 0;
       A = ((f[(z + 28) >> 2] | 0) - (f[(z + 24) >> 2] | 0)) >> 2;
@@ -55377,10 +55390,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       U = f[f[s >> 2] >> 2] | 0;
                       V = f[(U + (P << 2)) >> 2] | 0;
                       W = (P + 1) | 0;
-                      X = ((W >>> 0) % 3 | 0 | 0) == 0 ? (P + -2) | 0 : W;
+                      X = (((W >>> 0) % 3) | 0 | 0) == 0 ? (P + -2) | 0 : W;
                       if ((X | 0) == -1) Y = -1;
                       else Y = f[(U + (X << 2)) >> 2] | 0;
-                      X = ((((P >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + P) | 0;
+                      X = (((((P >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + P) | 0;
                       if ((X | 0) == -1) {
                         R = -1;
                         S = Y;
@@ -55409,7 +55422,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   f[X >> 2] = f[X >> 2] | O;
                   X = (P + 1) | 0;
                   if (Q) Z = -1;
-                  else Z = ((X >>> 0) % 3 | 0 | 0) == 0 ? (P + -2) | 0 : X;
+                  else Z = (((X >>> 0) % 3) | 0 | 0) == 0 ? (P + -2) | 0 : X;
                   f[d >> 2] = Z;
                   V = f[I >> 2] | 0;
                   if (V >>> 0 < (f[J >> 2] | 0) >>> 0) {
@@ -55417,7 +55430,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     f[I >> 2] = V + 4;
                   } else Ri(i, d);
                   if (Q) break;
-                  V = ((X >>> 0) % 3 | 0 | 0) == 0 ? (P + -2) | 0 : X;
+                  V = (((X >>> 0) % 3) | 0 | 0) == 0 ? (P + -2) | 0 : X;
                   if ((V | 0) == -1) break;
                   X = f[((f[((f[s >> 2] | 0) + 12) >> 2] | 0) + (V << 2)) >> 2] | 0;
                   V = (X | 0) == -1;
@@ -55430,7 +55443,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 } else {
                   X = (P + 1) | 0;
                   if (Q) _ = -1;
-                  else _ = ((X >>> 0) % 3 | 0 | 0) == 0 ? (P + -2) | 0 : X;
+                  else _ = (((X >>> 0) % 3) | 0 | 0) == 0 ? (P + -2) | 0 : X;
                   f[m >> 2] = _;
                   f[d >> 2] = f[m >> 2];
                   Pe(a, d, 1) | 0;
@@ -55667,7 +55680,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               C = ((A & B) | 0) == 0;
               if (!C)
                 if (E >>> 0 < B >>> 0) F = E;
-                else F = (E >>> 0) % (B >>> 0) | 0;
+                else F = ((E >>> 0) % (B >>> 0)) | 0;
               else F = A & E;
               G = f[((f[d >> 2] | 0) + (F << 2)) >> 2] | 0;
               if ((G | 0) != 0 ? ((H = f[G >> 2] | 0), (H | 0) != 0) : 0) {
@@ -55729,7 +55742,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       d: do
                         if ((L | 0) != (E | 0)) {
                           if (L >>> 0 < B >>> 0) X = L;
-                          else X = (L >>> 0) % (B >>> 0) | 0;
+                          else X = ((L >>> 0) % (B >>> 0)) | 0;
                           if ((X | 0) != (F | 0)) {
                             M = 44;
                             break a;
@@ -55810,7 +55823,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   J = ((H & B) | 0) == 0;
                   if (!J)
                     if (ba >>> 0 < B >>> 0) ca = ba;
-                    else ca = (ba >>> 0) % (B >>> 0) | 0;
+                    else ca = ((ba >>> 0) % (B >>> 0)) | 0;
                   else ca = H & ba;
                   I = f[((f[d >> 2] | 0) + (ca << 2)) >> 2] | 0;
                   if ((I | 0) != 0 ? ((A = f[I >> 2] | 0), (A | 0) != 0) : 0) {
@@ -55865,7 +55878,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       J = f[(ha + 4) >> 2] | 0;
                       if ((J | 0) != (ba | 0)) {
                         if (J >>> 0 < B >>> 0) ia = J;
-                        else ia = (J >>> 0) % (B >>> 0) | 0;
+                        else ia = ((J >>> 0) % (B >>> 0)) | 0;
                         if ((ia | 0) != (ca | 0)) {
                           da = ca;
                           M = 76;
@@ -55942,7 +55955,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       pa = ba;
                     } else {
                       oa = C;
-                      pa = (ba >>> 0) % (C >>> 0) | 0;
+                      pa = ((ba >>> 0) % (C >>> 0)) | 0;
                     }
                   } else {
                     oa = B;
@@ -55961,7 +55974,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     C = (oa + -1) | 0;
                     if (C & oa)
                       if (H >>> 0 < oa >>> 0) qa = H;
-                      else qa = (H >>> 0) % (oa >>> 0) | 0;
+                      else qa = ((H >>> 0) % (oa >>> 0)) | 0;
                     else qa = H & C;
                     ra = ((f[d >> 2] | 0) + (qa << 2)) | 0;
                     M = 89;
@@ -56107,8 +56120,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       n = f[c >> 2] | 0;
       c = (n + 1) | 0;
       if ((n | 0) != -1) {
-        o = ((c >>> 0) % 3 | 0 | 0) == 0 ? (n + -2) | 0 : c;
-        c = ((((n >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + n) | 0;
+        o = (((c >>> 0) % 3) | 0 | 0) == 0 ? (n + -2) | 0 : c;
+        c = (((((n >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + n) | 0;
         if ((o | 0) == -1) p = -1;
         else p = f[((f[f[m >> 2] >> 2] | 0) + (o << 2)) >> 2] | 0;
         if ((c | 0) == -1) {
@@ -56541,8 +56554,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       c = (n + 1) | 0;
       do
         if ((n | 0) != -1) {
-          o = ((c >>> 0) % 3 | 0 | 0) == 0 ? (n + -2) | 0 : c;
-          if (!((n >>> 0) % 3 | 0)) {
+          o = (((c >>> 0) % 3) | 0 | 0) == 0 ? (n + -2) | 0 : c;
+          if (!(((n >>> 0) % 3) | 0)) {
             p = (n + 2) | 0;
             q = o;
             break;
@@ -57385,10 +57398,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       g = f[i >> 2] | 0;
       j = (g + 1) | 0;
       if ((g | 0) != -1) {
-        k = ((j >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : j;
+        k = (((j >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : j;
         if ((k | 0) == -1) l = -1;
         else l = f[((f[h >> 2] | 0) + (k << 2)) >> 2] | 0;
-        k = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0;
+        k = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0;
         if ((k | 0) == -1) {
           m = l;
           n = -1;
@@ -57410,13 +57423,13 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         g = f[i >> 2] | 0;
         j = (g + 1) | 0;
         if ((g | 0) == -1) o = -1;
-        else o = ((j >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : j;
+        else o = (((j >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : j;
         f[e >> 2] = o;
         j =
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((o >>> 0) / 3) | 0) * 12) | 0) +
-              (((o >>> 0) % 3 | 0) << 2)) >>
+              ((((o >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         o = f[(a + 48) >> 2] | 0;
@@ -57454,7 +57467,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         q = f[i >> 2] | 0;
         do
           if ((q | 0) != -1)
-            if (!((q >>> 0) % 3 | 0)) {
+            if (!(((q >>> 0) % 3) | 0)) {
               r = (q + 2) | 0;
               break;
             } else {
@@ -57468,7 +57481,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((r >>> 0) / 3) | 0) * 12) | 0) +
-              (((r >>> 0) % 3 | 0) << 2)) >>
+              ((((r >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         r = f[(a + 48) >> 2] | 0;
@@ -57511,7 +57524,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((n >>> 0) / 3) | 0) * 12) | 0) +
-              (((n >>> 0) % 3 | 0) << 2)) >>
+              ((((n >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         n = f[(a + 48) >> 2] | 0;
@@ -57588,7 +57601,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       f[
                         ((f[((f[v >> 2] | 0) + 96) >> 2] | 0) +
                           (((((B >>> 0) / 3) | 0) * 12) | 0) +
-                          (((B >>> 0) % 3 | 0) << 2)) >>
+                          ((((B >>> 0) % 3) | 0) << 2)) >>
                           2
                       ] | 0;
                     B = f[r >> 2] | 0;
@@ -57623,10 +57636,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     break;
                   }
                   D = (F + 1) | 0;
-                  C = ((D >>> 0) % 3 | 0 | 0) == 0 ? (F + -2) | 0 : D;
+                  C = (((D >>> 0) % 3) | 0 | 0) == 0 ? (F + -2) | 0 : D;
                   if ((C | 0) == -1) H = -1;
                   else H = f[((f[(z + 12) >> 2] | 0) + (C << 2)) >> 2] | 0;
-                  C = ((((F >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + F) | 0;
+                  C = (((((F >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + F) | 0;
                   if ((C | 0) == -1) I = -1;
                   else I = f[((f[(z + 12) >> 2] | 0) + (C << 2)) >> 2] | 0;
                   C = (H | 0) == -1;
@@ -68728,7 +68741,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 G = ((F & w) | 0) == 0;
                 if (!G)
                   if (r >>> 0 < w >>> 0) H = r;
-                  else H = (r >>> 0) % (w >>> 0) | 0;
+                  else H = ((r >>> 0) % (w >>> 0)) | 0;
                 else H = r & F;
                 I = f[((f[a >> 2] | 0) + (H << 2)) >> 2] | 0;
                 if ((I | 0) != 0 ? ((J = f[I >> 2] | 0), (J | 0) != 0) : 0) {
@@ -68797,7 +68810,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       O = f[(F + 4) >> 2] | 0;
                       if ((O | 0) != (r | 0)) {
                         if (O >>> 0 < w >>> 0) R = O;
-                        else R = (O >>> 0) % (w >>> 0) | 0;
+                        else R = ((O >>> 0) % (w >>> 0)) | 0;
                         if ((R | 0) != (H | 0)) {
                           L = H;
                           C = 50;
@@ -68818,7 +68831,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     F = f[(S + 4) >> 2] | 0;
                     if ((F | 0) != (r | 0)) {
                       if (F >>> 0 < w >>> 0) T = F;
-                      else T = (F >>> 0) % (w >>> 0) | 0;
+                      else T = ((F >>> 0) % (w >>> 0)) | 0;
                       if ((T | 0) != (H | 0)) {
                         L = H;
                         C = 50;
@@ -68887,7 +68900,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     _ = r;
                   } else {
                     Z = t;
-                    _ = (r >>> 0) % (t >>> 0) | 0;
+                    _ = ((r >>> 0) % (t >>> 0)) | 0;
                   }
                 } else {
                   Z = w;
@@ -68906,7 +68919,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   x = (Z + -1) | 0;
                   if (x & Z)
                     if (q >>> 0 < Z >>> 0) aa = q;
-                    else aa = (q >>> 0) % (Z >>> 0) | 0;
+                    else aa = ((q >>> 0) % (Z >>> 0)) | 0;
                   else aa = q & x;
                   f[((f[a >> 2] | 0) + (aa << 2)) >> 2] = r;
                 }
@@ -69103,7 +69116,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               L = ((K & D) | 0) == 0;
               if (!L)
                 if (J >>> 0 < D >>> 0) M = J;
-                else M = (J >>> 0) % (D >>> 0) | 0;
+                else M = ((J >>> 0) % (D >>> 0)) | 0;
               else M = J & K;
               N = f[((f[i >> 2] | 0) + (M << 2)) >> 2] | 0;
               do
@@ -69146,7 +69159,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           }
                         } else {
                           if (R >>> 0 < D >>> 0) U = R;
-                          else U = (R >>> 0) % (D >>> 0) | 0;
+                          else U = ((R >>> 0) % (D >>> 0)) | 0;
                           if ((U | 0) != (M | 0)) {
                             S = 27;
                             break b;
@@ -69183,7 +69196,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               L = ((K & D) | 0) == 0;
               if (!L)
                 if (J >>> 0 < D >>> 0) ba = J;
-                else ba = (J >>> 0) % (D >>> 0) | 0;
+                else ba = ((J >>> 0) % (D >>> 0)) | 0;
               else ba = K & J;
               N = f[((f[i >> 2] | 0) + (ba << 2)) >> 2] | 0;
               if ((N | 0) != 0 ? ((O = f[N >> 2] | 0), (O | 0) != 0) : 0) {
@@ -69213,7 +69226,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   L = f[(ca + 4) >> 2] | 0;
                   if ((L | 0) != (J | 0)) {
                     if (L >>> 0 < D >>> 0) da = L;
-                    else da = (L >>> 0) % (D >>> 0) | 0;
+                    else da = ((L >>> 0) % (D >>> 0)) | 0;
                     if ((da | 0) != (ba | 0)) {
                       aa = ba;
                       S = 46;
@@ -69270,7 +69283,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   ia = J;
                 } else {
                   ha = G;
-                  ia = (J >>> 0) % (G >>> 0) | 0;
+                  ia = ((J >>> 0) % (G >>> 0)) | 0;
                 }
               } else {
                 ha = D;
@@ -69289,7 +69302,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 J = (ha + -1) | 0;
                 if (J & ha)
                   if (r >>> 0 < ha >>> 0) ja = r;
-                  else ja = (r >>> 0) % (ha >>> 0) | 0;
+                  else ja = ((r >>> 0) % (ha >>> 0)) | 0;
                 else ja = r & J;
                 ka = ((f[i >> 2] | 0) + (ja << 2)) | 0;
                 S = 59;
@@ -69534,7 +69547,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               J = ((H & q) | 0) == 0;
               if (!J)
                 if (D >>> 0 < q >>> 0) K = D;
-                else K = (D >>> 0) % (q >>> 0) | 0;
+                else K = ((D >>> 0) % (q >>> 0)) | 0;
               else K = D & H;
               L = f[((f[g >> 2] | 0) + (K << 2)) >> 2] | 0;
               do
@@ -69572,7 +69585,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           }
                         } else {
                           if (P >>> 0 < q >>> 0) S = P;
-                          else S = (P >>> 0) % (q >>> 0) | 0;
+                          else S = ((P >>> 0) % (q >>> 0)) | 0;
                           if ((S | 0) != (K | 0)) {
                             Q = 27;
                             break b;
@@ -69609,7 +69622,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               J = ((H & q) | 0) == 0;
               if (!J)
                 if (D >>> 0 < q >>> 0) _ = D;
-                else _ = (D >>> 0) % (q >>> 0) | 0;
+                else _ = ((D >>> 0) % (q >>> 0)) | 0;
               else _ = H & D;
               L = f[((f[g >> 2] | 0) + (_ << 2)) >> 2] | 0;
               if ((L | 0) != 0 ? ((M = f[L >> 2] | 0), (M | 0) != 0) : 0) {
@@ -69638,7 +69651,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   J = f[(aa + 4) >> 2] | 0;
                   if ((J | 0) != (D | 0)) {
                     if (J >>> 0 < q >>> 0) ba = J;
-                    else ba = (J >>> 0) % (q >>> 0) | 0;
+                    else ba = ((J >>> 0) % (q >>> 0)) | 0;
                     if ((ba | 0) != (_ | 0)) {
                       Z = _;
                       Q = 46;
@@ -69694,7 +69707,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   ga = D;
                 } else {
                   fa = J;
-                  ga = (D >>> 0) % (J >>> 0) | 0;
+                  ga = ((D >>> 0) % (J >>> 0)) | 0;
                 }
               } else {
                 fa = q;
@@ -69713,7 +69726,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 D = (fa + -1) | 0;
                 if (D & fa)
                   if (F >>> 0 < fa >>> 0) ha = F;
-                  else ha = (F >>> 0) % (fa >>> 0) | 0;
+                  else ha = ((F >>> 0) % (fa >>> 0)) | 0;
                 else ha = F & D;
                 ia = ((f[g >> 2] | 0) + (ha << 2)) | 0;
                 Q = 59;
@@ -69957,7 +69970,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               L = ((K & D) | 0) == 0;
               if (!L)
                 if (D >>> 0 > J >>> 0) M = J;
-                else M = (J >>> 0) % (D >>> 0) | 0;
+                else M = ((J >>> 0) % (D >>> 0)) | 0;
               else M = K & J;
               N = f[((f[i >> 2] | 0) + (M << 2)) >> 2] | 0;
               do
@@ -70000,7 +70013,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           }
                         } else {
                           if (R >>> 0 < D >>> 0) U = R;
-                          else U = (R >>> 0) % (D >>> 0) | 0;
+                          else U = ((R >>> 0) % (D >>> 0)) | 0;
                           if ((U | 0) != (M | 0)) {
                             S = 27;
                             break b;
@@ -70037,7 +70050,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               L = ((K & D) | 0) == 0;
               if (!L)
                 if (D >>> 0 > J >>> 0) ba = J;
-                else ba = (J >>> 0) % (D >>> 0) | 0;
+                else ba = ((J >>> 0) % (D >>> 0)) | 0;
               else ba = K & J;
               N = f[((f[i >> 2] | 0) + (ba << 2)) >> 2] | 0;
               if ((N | 0) != 0 ? ((O = f[N >> 2] | 0), (O | 0) != 0) : 0) {
@@ -70067,7 +70080,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   L = f[(ca + 4) >> 2] | 0;
                   if ((L | 0) != (J | 0)) {
                     if (L >>> 0 < D >>> 0) da = L;
-                    else da = (L >>> 0) % (D >>> 0) | 0;
+                    else da = ((L >>> 0) % (D >>> 0)) | 0;
                     if ((da | 0) != (ba | 0)) {
                       aa = ba;
                       S = 46;
@@ -70124,7 +70137,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   ia = J;
                 } else {
                   ha = G;
-                  ia = (J >>> 0) % (G >>> 0) | 0;
+                  ia = ((J >>> 0) % (G >>> 0)) | 0;
                 }
               } else {
                 ha = D;
@@ -70143,7 +70156,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 J = (ha + -1) | 0;
                 if (J & ha)
                   if (r >>> 0 < ha >>> 0) ja = r;
-                  else ja = (r >>> 0) % (ha >>> 0) | 0;
+                  else ja = ((r >>> 0) % (ha >>> 0)) | 0;
                 else ja = r & J;
                 ka = ((f[i >> 2] | 0) + (ja << 2)) | 0;
                 S = 59;
@@ -70428,8 +70441,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     W = (V + 1) | 0;
                     do
                       if ((V | 0) != -1) {
-                        X = ((W >>> 0) % 3 | 0 | 0) == 0 ? (V + -2) | 0 : W;
-                        if (!((V >>> 0) % 3 | 0)) {
+                        X = (((W >>> 0) % 3) | 0 | 0) == 0 ? (V + -2) | 0 : W;
+                        if (!(((V >>> 0) % 3) | 0)) {
                           Y = (V + 2) | 0;
                           Z = X;
                           break;
@@ -70472,7 +70485,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     f[B >> 2] = 0;
                     _ = f[b >> 2] | 0;
                     V = (_ + 1) | 0;
-                    if ((_ | 0) != -1 ? ((aa = ((V >>> 0) % 3 | 0 | 0) == 0 ? (_ + -2) | 0 : V), (aa | 0) != -1) : 0)
+                    if ((_ | 0) != -1 ? ((aa = (((V >>> 0) % 3) | 0 | 0) == 0 ? (_ + -2) | 0 : V), (aa | 0) != -1) : 0)
                       ba = f[((f[((f[p >> 2] | 0) + 12) >> 2] | 0) + (aa << 2)) >> 2] | 0;
                     else ba = -1;
                     f[b >> 2] = ba;
@@ -70488,18 +70501,18 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     U = 43;
                     break;
                   }
-                  R = ((M >>> 0) % 3 | 0 | 0) == 0 ? (T + -2) | 0 : M;
+                  R = (((M >>> 0) % 3) | 0 | 0) == 0 ? (T + -2) | 0 : M;
                   if ((R | 0) == -1) ca = -1;
                   else ca = f[((f[((f[p >> 2] | 0) + 12) >> 2] | 0) + (R << 2)) >> 2] | 0;
                   f[e >> 2] = ca;
-                  R = ((((T >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + T) | 0;
+                  R = (((((T >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + T) | 0;
                   if ((R | 0) == -1) da = -1;
                   else da = f[((f[((f[p >> 2] | 0) + 12) >> 2] | 0) + (R << 2)) >> 2] | 0;
                   R = (ca | 0) == -1;
                   S = R ? -1 : ((ca >>> 0) / 3) | 0;
                   ea = (da | 0) == -1;
                   fa = ea ? -1 : ((da >>> 0) / 3) | 0;
-                  Q = ((M >>> 0) % 3 | 0 | 0) == 0 ? (T + -2) | 0 : M;
+                  Q = (((M >>> 0) % 3) | 0 | 0) == 0 ? (T + -2) | 0 : M;
                   if (
                     (
                       (Q | 0) != -1
@@ -70511,7 +70524,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         ((f[(aa + ((Q >>> 5) << 2)) >> 2] & (1 << (Q & 31))) | 0) == 0)
                       : 0
                   ) {
-                    Q = ((((T >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + T) | 0;
+                    Q = (((((T >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + T) | 0;
                     do
                       if ((Q | 0) != -1) {
                         V = f[(M + (Q << 2)) >> 2] | 0;
@@ -70535,7 +70548,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         break;
                       } else ha = aa;
                     } else ha = T;
-                    aa = ((((ha >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + ha) | 0;
+                    aa = (((((ha >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + ha) | 0;
                     if ((aa | 0) == -1) {
                       U = 52;
                       break;
@@ -70698,8 +70711,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       do
         if ((g | 0) != -1) {
           l = f[(m + 28) >> 2] | 0;
-          o = f[(l + ((((j >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : j) << 2)) >> 2] | 0;
-          if (!((g >>> 0) % 3 | 0)) {
+          o = f[(l + (((((j >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : j) << 2)) >> 2] | 0;
+          if (!(((g >>> 0) % 3) | 0)) {
             p = o;
             q = (g + 2) | 0;
             r = l;
@@ -70728,13 +70741,13 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         j = f[b >> 2] | 0;
         l = (j + 1) | 0;
         if ((j | 0) == -1) s = -1;
-        else s = ((l >>> 0) % 3 | 0 | 0) == 0 ? (j + -2) | 0 : l;
+        else s = (((l >>> 0) % 3) | 0 | 0) == 0 ? (j + -2) | 0 : l;
         f[e >> 2] = s;
         l =
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((s >>> 0) / 3) | 0) * 12) | 0) +
-              (((s >>> 0) % 3 | 0) << 2)) >>
+              ((((s >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         s = f[(a + 48) >> 2] | 0;
@@ -70772,7 +70785,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         v = f[b >> 2] | 0;
         do
           if ((v | 0) != -1)
-            if (!((v >>> 0) % 3 | 0)) {
+            if (!(((v >>> 0) % 3) | 0)) {
               w = (v + 2) | 0;
               break;
             } else {
@@ -70786,7 +70799,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((w >>> 0) / 3) | 0) * 12) | 0) +
-              (((w >>> 0) % 3 | 0) << 2)) >>
+              ((((w >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         w = f[(a + 48) >> 2] | 0;
@@ -70856,7 +70869,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 f[
                   ((f[((f[x >> 2] | 0) + 96) >> 2] | 0) +
                     (((((o >>> 0) / 3) | 0) * 12) | 0) +
-                    (((o >>> 0) % 3 | 0) << 2)) >>
+                    ((((o >>> 0) % 3) | 0) << 2)) >>
                     2
                 ] | 0;
               o = f[s >> 2] | 0;
@@ -70894,7 +70907,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 do
                   if ((l | 0) == -1) G = -1;
                   else {
-                    o = ((y >>> 0) % 3 | 0 | 0) == 0 ? (l + -2) | 0 : y;
+                    o = (((y >>> 0) % 3) | 0 | 0) == 0 ? (l + -2) | 0 : y;
                     if ((o | 0) == -1) {
                       G = -1;
                       break;
@@ -70922,12 +70935,12 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 F = 58;
                 break;
               }
-              l = ((y >>> 0) % 3 | 0 | 0) == 0 ? (D + -2) | 0 : y;
+              l = (((y >>> 0) % 3) | 0 | 0) == 0 ? (D + -2) | 0 : y;
               if ((l | 0) != -1 ? ((f[((f[E >> 2] | 0) + ((l >>> 5) << 2)) >> 2] & (1 << (l & 31))) | 0) == 0 : 0)
                 J = f[((f[((f[(E + 64) >> 2] | 0) + 12) >> 2] | 0) + (l << 2)) >> 2] | 0;
               else J = -1;
               f[d >> 2] = J;
-              l = ((((D >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + D) | 0;
+              l = (((((D >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + D) | 0;
               if ((l | 0) != -1 ? ((f[((f[E >> 2] | 0) + ((l >>> 5) << 2)) >> 2] & (1 << (l & 31))) | 0) == 0 : 0)
                 K = f[((f[((f[(E + 64) >> 2] | 0) + 12) >> 2] | 0) + (l << 2)) >> 2] | 0;
               else K = -1;
@@ -71176,7 +71189,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           s = ((v & y) | 0) == 0;
           if (!s)
             if (z >>> 0 < y >>> 0) A = z;
-            else A = (z >>> 0) % (y >>> 0) | 0;
+            else A = ((z >>> 0) % (y >>> 0)) | 0;
           else A = z & v;
           r = f[((f[a >> 2] | 0) + (A << 2)) >> 2] | 0;
           if ((r | 0) != 0 ? ((m = f[r >> 2] | 0), (m | 0) != 0) : 0) {
@@ -71245,7 +71258,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 D = f[(v + 4) >> 2] | 0;
                 if ((D | 0) != (z | 0)) {
                   if (D >>> 0 < y >>> 0) G = D;
-                  else G = (D >>> 0) % (y >>> 0) | 0;
+                  else G = ((D >>> 0) % (y >>> 0)) | 0;
                   if ((G | 0) != (A | 0)) {
                     B = A;
                     x = 52;
@@ -71266,7 +71279,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               v = f[(H + 4) >> 2] | 0;
               if ((v | 0) != (z | 0)) {
                 if (v >>> 0 < y >>> 0) I = v;
-                else I = (v >>> 0) % (y >>> 0) | 0;
+                else I = ((v >>> 0) % (y >>> 0)) | 0;
                 if ((I | 0) != (A | 0)) {
                   B = A;
                   x = 52;
@@ -71335,7 +71348,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               N = z;
             } else {
               M = A;
-              N = (z >>> 0) % (A >>> 0) | 0;
+              N = ((z >>> 0) % (A >>> 0)) | 0;
             }
           } else {
             M = y;
@@ -71356,7 +71369,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             N = (M + -1) | 0;
             if (N & M)
               if (z >>> 0 < M >>> 0) P = z;
-              else P = (z >>> 0) % (M >>> 0) | 0;
+              else P = ((z >>> 0) % (M >>> 0)) | 0;
             else P = z & N;
             f[((f[a >> 2] | 0) + (P << 2)) >> 2] = y;
             O = g;
@@ -71532,9 +71545,9 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   P = -1;
                   break;
                 }
-                Q = ((L >>> 0) % 3 | 0 | 0) == 0 ? (K + -2) | 0 : L;
+                Q = (((L >>> 0) % 3) | 0 | 0) == 0 ? (K + -2) | 0 : L;
                 if ((A | 0) != -1)
-                  if (!((A >>> 0) % 3 | 0)) {
+                  if (!(((A >>> 0) % 3) | 0)) {
                     R = A;
                     S = (A + 2) | 0;
                     T = Q;
@@ -71558,8 +71571,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 }
               } else {
                 Q = (B + 1) | 0;
-                L = ((Q >>> 0) % 3 | 0 | 0) == 0 ? (B + -2) | 0 : Q;
-                if (!((B >>> 0) % 3 | 0)) {
+                L = (((Q >>> 0) % 3) | 0 | 0) == 0 ? (B + -2) | 0 : Q;
+                if (!(((B >>> 0) % 3) | 0)) {
                   R = A;
                   S = (B + 2) | 0;
                   T = L;
@@ -71938,7 +71951,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           y = ((A & D) | 0) == 0;
           if (!y)
             if (E >>> 0 < D >>> 0) F = E;
-            else F = (E >>> 0) % (D >>> 0) | 0;
+            else F = ((E >>> 0) % (D >>> 0)) | 0;
           else F = E & A;
           x = f[((f[a >> 2] | 0) + (F << 2)) >> 2] | 0;
           if ((x | 0) != 0 ? ((s = f[x >> 2] | 0), (s | 0) != 0) : 0) {
@@ -72007,7 +72020,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 t = f[(A + 4) >> 2] | 0;
                 if ((t | 0) != (E | 0)) {
                   if (t >>> 0 < D >>> 0) I = t;
-                  else I = (t >>> 0) % (D >>> 0) | 0;
+                  else I = ((t >>> 0) % (D >>> 0)) | 0;
                   if ((I | 0) != (F | 0)) {
                     G = F;
                     C = 54;
@@ -72028,7 +72041,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               A = f[(J + 4) >> 2] | 0;
               if ((A | 0) != (E | 0)) {
                 if (A >>> 0 < D >>> 0) K = A;
-                else K = (A >>> 0) % (D >>> 0) | 0;
+                else K = ((A >>> 0) % (D >>> 0)) | 0;
                 if ((K | 0) != (F | 0)) {
                   G = F;
                   C = 54;
@@ -72097,7 +72110,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               P = E;
             } else {
               O = F;
-              P = (E >>> 0) % (F >>> 0) | 0;
+              P = ((E >>> 0) % (F >>> 0)) | 0;
             }
           } else {
             O = D;
@@ -72118,7 +72131,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             P = (O + -1) | 0;
             if (P & O)
               if (E >>> 0 < O >>> 0) R = E;
-              else R = (E >>> 0) % (O >>> 0) | 0;
+              else R = ((E >>> 0) % (O >>> 0)) | 0;
             else R = E & P;
             f[((f[a >> 2] | 0) + (R << 2)) >> 2] = D;
             Q = g;
@@ -72874,10 +72887,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       g = f[b >> 2] | 0;
       j = (g + 1) | 0;
       if ((g | 0) != -1) {
-        l = ((j >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : j;
+        l = (((j >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : j;
         if ((l | 0) == -1) o = -1;
         else o = f[((f[m >> 2] | 0) + (l << 2)) >> 2] | 0;
-        l = ((((g >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + g) | 0;
+        l = (((((g >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + g) | 0;
         if ((l | 0) == -1) {
           p = o;
           q = -1;
@@ -72899,13 +72912,13 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         g = f[b >> 2] | 0;
         j = (g + 1) | 0;
         if ((g | 0) == -1) r = -1;
-        else r = ((j >>> 0) % 3 | 0 | 0) == 0 ? (g + -2) | 0 : j;
+        else r = (((j >>> 0) % 3) | 0 | 0) == 0 ? (g + -2) | 0 : j;
         f[e >> 2] = r;
         j =
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((r >>> 0) / 3) | 0) * 12) | 0) +
-              (((r >>> 0) % 3 | 0) << 2)) >>
+              ((((r >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         r = f[(a + 48) >> 2] | 0;
@@ -72943,7 +72956,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         t = f[b >> 2] | 0;
         do
           if ((t | 0) != -1)
-            if (!((t >>> 0) % 3 | 0)) {
+            if (!(((t >>> 0) % 3) | 0)) {
               v = (t + 2) | 0;
               break;
             } else {
@@ -72957,7 +72970,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           f[
             ((f[((f[(a + 44) >> 2] | 0) + 96) >> 2] | 0) +
               (((((v >>> 0) / 3) | 0) * 12) | 0) +
-              (((v >>> 0) % 3 | 0) << 2)) >>
+              ((((v >>> 0) % 3) | 0) << 2)) >>
               2
           ] | 0;
         v = f[(a + 48) >> 2] | 0;
@@ -73019,11 +73032,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 z = f[((f[(y + 24) >> 2] | 0) + (x << 2)) >> 2] | 0;
                 A = (z + 1) | 0;
                 if (
-                  ((z | 0) != -1 ? ((B = ((A >>> 0) % 3 | 0 | 0) == 0 ? (z + -2) | 0 : A), (B | 0) != -1) : 0)
+                  ((z | 0) != -1 ? ((B = (((A >>> 0) % 3) | 0 | 0) == 0 ? (z + -2) | 0 : A), (B | 0) != -1) : 0)
                     ? ((A = f[((f[(y + 12) >> 2] | 0) + (B << 2)) >> 2] | 0), (B = (A + 1) | 0), (A | 0) != -1)
                     : 0
                 )
-                  C = ((((B >>> 0) % 3 | 0 | 0) == 0 ? (A + -2) | 0 : B) | 0) == -1;
+                  C = (((((B >>> 0) % 3) | 0 | 0) == 0 ? (A + -2) | 0 : B) | 0) == -1;
                 else C = 1;
                 f[g >> 2] = o | j;
                 B = f[b >> 2] | 0;
@@ -73032,7 +73045,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   f[
                     ((f[((f[w >> 2] | 0) + 96) >> 2] | 0) +
                       (((((B >>> 0) / 3) | 0) * 12) | 0) +
-                      (((B >>> 0) % 3 | 0) << 2)) >>
+                      ((((B >>> 0) % 3) | 0) << 2)) >>
                       2
                   ] | 0;
                 B = f[r >> 2] | 0;
@@ -73070,7 +73083,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   if ((A | 0) == -1) G = -1;
                   else {
                     B = (A + 1) | 0;
-                    y = ((B >>> 0) % 3 | 0 | 0) == 0 ? (A + -2) | 0 : B;
+                    y = (((B >>> 0) % 3) | 0 | 0) == 0 ? (A + -2) | 0 : B;
                     if ((y | 0) == -1) {
                       G = -1;
                       break;
@@ -73093,11 +73106,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 break;
               }
               j = (E + 1) | 0;
-              o = ((j >>> 0) % 3 | 0 | 0) == 0 ? (E + -2) | 0 : j;
+              o = (((j >>> 0) % 3) | 0 | 0) == 0 ? (E + -2) | 0 : j;
               if ((o | 0) == -1) I = -1;
               else I = f[((f[(v + 12) >> 2] | 0) + (o << 2)) >> 2] | 0;
               f[d >> 2] = I;
-              o = ((((E >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + E) | 0;
+              o = (((((E >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + E) | 0;
               if ((o | 0) == -1) J = -1;
               else J = f[((f[(v + 12) >> 2] | 0) + (o << 2)) >> 2] | 0;
               o = (I | 0) == -1;
@@ -73312,7 +73325,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               H = ((F & e) | 0) == 0;
               if (!H)
                 if (e >>> 0 > G >>> 0) J = G;
-                else J = (G >>> 0) % (e >>> 0) | 0;
+                else J = ((G >>> 0) % (e >>> 0)) | 0;
               else J = F & G;
               K = f[i >> 2] | 0;
               L = f[(K + (J << 2)) >> 2] | 0;
@@ -73343,7 +73356,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           }
                         } else {
                           if (P >>> 0 < e >>> 0) R = P;
-                          else R = (P >>> 0) % (e >>> 0) | 0;
+                          else R = ((P >>> 0) % (e >>> 0)) | 0;
                           if ((R | 0) != (J | 0)) break b;
                         }
                         N = f[N >> 2] | 0;
@@ -73362,7 +73375,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (0);
               if (!H)
                 if (e >>> 0 > G >>> 0) Y = G;
-                else Y = (G >>> 0) % (e >>> 0) | 0;
+                else Y = ((G >>> 0) % (e >>> 0)) | 0;
               else Y = F & G;
               L = f[(K + (Y << 2)) >> 2] | 0;
               if (!L) {
@@ -73408,7 +73421,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   M = f[(ca + 4) >> 2] | 0;
                   if ((M | 0) != (G | 0)) {
                     if (M >>> 0 < e >>> 0) da = M;
-                    else da = (M >>> 0) % (e >>> 0) | 0;
+                    else da = ((M >>> 0) % (e >>> 0)) | 0;
                     if ((da | 0) != (Y | 0)) {
                       Z = Y;
                       _ = e;
@@ -73457,7 +73470,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   ia = G;
                 } else {
                   ha = M;
-                  ia = (G >>> 0) % (M >>> 0) | 0;
+                  ia = ((G >>> 0) % (M >>> 0)) | 0;
                 }
               } else {
                 ha = _;
@@ -73476,7 +73489,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 G = (ha + -1) | 0;
                 if (G & ha)
                   if (M >>> 0 < ha >>> 0) ja = M;
-                  else ja = (M >>> 0) % (ha >>> 0) | 0;
+                  else ja = ((M >>> 0) % (ha >>> 0)) | 0;
                 else ja = M & G;
                 ka = ((f[i >> 2] | 0) + (ja << 2)) | 0;
                 ba = 53;
@@ -73737,7 +73750,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
           s = ((v & y) | 0) == 0;
           if (!s)
             if (z >>> 0 < y >>> 0) A = z;
-            else A = (z >>> 0) % (y >>> 0) | 0;
+            else A = ((z >>> 0) % (y >>> 0)) | 0;
           else A = z & v;
           r = f[((f[a >> 2] | 0) + (A << 2)) >> 2] | 0;
           if ((r | 0) != 0 ? ((l = f[r >> 2] | 0), (l | 0) != 0) : 0) {
@@ -73806,7 +73819,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 D = f[(v + 4) >> 2] | 0;
                 if ((D | 0) != (z | 0)) {
                   if (D >>> 0 < y >>> 0) G = D;
-                  else G = (D >>> 0) % (y >>> 0) | 0;
+                  else G = ((D >>> 0) % (y >>> 0)) | 0;
                   if ((G | 0) != (A | 0)) {
                     B = A;
                     x = 52;
@@ -73827,7 +73840,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               v = f[(H + 4) >> 2] | 0;
               if ((v | 0) != (z | 0)) {
                 if (v >>> 0 < y >>> 0) I = v;
-                else I = (v >>> 0) % (y >>> 0) | 0;
+                else I = ((v >>> 0) % (y >>> 0)) | 0;
                 if ((I | 0) != (A | 0)) {
                   B = A;
                   x = 52;
@@ -73896,7 +73909,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               N = z;
             } else {
               M = A;
-              N = (z >>> 0) % (A >>> 0) | 0;
+              N = ((z >>> 0) % (A >>> 0)) | 0;
             }
           } else {
             M = y;
@@ -73917,7 +73930,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
             N = (M + -1) | 0;
             if (N & M)
               if (z >>> 0 < M >>> 0) P = z;
-              else P = (z >>> 0) % (M >>> 0) | 0;
+              else P = ((z >>> 0) % (M >>> 0)) | 0;
             else P = z & N;
             f[((f[a >> 2] | 0) + (P << 2)) >> 2] = y;
             O = g;
@@ -74065,7 +74078,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               F = ((D & d) | 0) == 0;
               if (!F)
                 if (p >>> 0 < d >>> 0) G = p;
-                else G = (p >>> 0) % (d >>> 0) | 0;
+                else G = ((p >>> 0) % (d >>> 0)) | 0;
               else G = D & p;
               H = f[g >> 2] | 0;
               J = f[(H + (G << 2)) >> 2] | 0;
@@ -74096,7 +74109,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           }
                         } else {
                           if (N >>> 0 < d >>> 0) P = N;
-                          else P = (N >>> 0) % (d >>> 0) | 0;
+                          else P = ((N >>> 0) % (d >>> 0)) | 0;
                           if ((P | 0) != (G | 0)) break b;
                         }
                         L = f[L >> 2] | 0;
@@ -74115,7 +74128,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (0);
               if (!F)
                 if (p >>> 0 < d >>> 0) V = p;
-                else V = (p >>> 0) % (d >>> 0) | 0;
+                else V = ((p >>> 0) % (d >>> 0)) | 0;
               else V = D & p;
               J = f[(H + (V << 2)) >> 2] | 0;
               if (!J) {
@@ -74161,7 +74174,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   K = f[(aa + 4) >> 2] | 0;
                   if ((K | 0) != (p | 0)) {
                     if (K >>> 0 < d >>> 0) ba = K;
-                    else ba = (K >>> 0) % (d >>> 0) | 0;
+                    else ba = ((K >>> 0) % (d >>> 0)) | 0;
                     if ((ba | 0) != (V | 0)) {
                       X = V;
                       Y = d;
@@ -74210,7 +74223,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   ga = p;
                 } else {
                   fa = K;
-                  ga = (p >>> 0) % (K >>> 0) | 0;
+                  ga = ((p >>> 0) % (K >>> 0)) | 0;
                 }
               } else {
                 fa = Y;
@@ -74229,7 +74242,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 p = (fa + -1) | 0;
                 if (p & fa)
                   if (K >>> 0 < fa >>> 0) ha = K;
-                  else ha = (K >>> 0) % (fa >>> 0) | 0;
+                  else ha = ((K >>> 0) % (fa >>> 0)) | 0;
                 else ha = K & p;
                 ia = ((f[g >> 2] | 0) + (ha << 2)) | 0;
                 _ = 53;
@@ -74469,7 +74482,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               G = ((E & d) | 0) == 0;
               if (!G)
                 if (F >>> 0 < d >>> 0) H = F;
-                else H = (F >>> 0) % (d >>> 0) | 0;
+                else H = ((F >>> 0) % (d >>> 0)) | 0;
               else H = E & F;
               J = f[g >> 2] | 0;
               K = f[(J + (H << 2)) >> 2] | 0;
@@ -74500,7 +74513,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                           }
                         } else {
                           if (O >>> 0 < d >>> 0) Q = O;
-                          else Q = (O >>> 0) % (d >>> 0) | 0;
+                          else Q = ((O >>> 0) % (d >>> 0)) | 0;
                           if ((Q | 0) != (H | 0)) break b;
                         }
                         M = f[M >> 2] | 0;
@@ -74519,7 +74532,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               while (0);
               if (!G)
                 if (F >>> 0 < d >>> 0) X = F;
-                else X = (F >>> 0) % (d >>> 0) | 0;
+                else X = ((F >>> 0) % (d >>> 0)) | 0;
               else X = E & F;
               K = f[(J + (X << 2)) >> 2] | 0;
               if (!K) {
@@ -74565,7 +74578,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   L = f[(ba + 4) >> 2] | 0;
                   if ((L | 0) != (F | 0)) {
                     if (L >>> 0 < d >>> 0) ca = L;
-                    else ca = (L >>> 0) % (d >>> 0) | 0;
+                    else ca = ((L >>> 0) % (d >>> 0)) | 0;
                     if ((ca | 0) != (X | 0)) {
                       Y = X;
                       Z = d;
@@ -74614,7 +74627,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   ha = F;
                 } else {
                   ga = L;
-                  ha = (F >>> 0) % (L >>> 0) | 0;
+                  ha = ((F >>> 0) % (L >>> 0)) | 0;
                 }
               } else {
                 ga = Z;
@@ -74633,7 +74646,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 F = (ga + -1) | 0;
                 if (F & ga)
                   if (L >>> 0 < ga >>> 0) ia = L;
-                  else ia = (L >>> 0) % (ga >>> 0) | 0;
+                  else ia = ((L >>> 0) % (ga >>> 0)) | 0;
                 else ia = L & F;
                 ja = ((f[g >> 2] | 0) + (ia << 2)) | 0;
                 aa = 53;
@@ -74886,9 +74899,9 @@ var DracoEncoderModule = function (DracoEncoderModule) {
               if (H) {
                 K = (J + 1) | 0;
                 if ((J | 0) != -1) {
-                  L = ((K >>> 0) % 3 | 0 | 0) == 0 ? (J + -2) | 0 : K;
+                  L = (((K >>> 0) % 3) | 0 | 0) == 0 ? (J + -2) | 0 : K;
                   if ((z | 0) != -1)
-                    if (!((z >>> 0) % 3 | 0)) {
+                    if (!(((z >>> 0) % 3) | 0)) {
                       M = z;
                       N = (z + 2) | 0;
                       O = L;
@@ -74915,8 +74928,8 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 }
               } else {
                 L = (A + 1) | 0;
-                K = ((L >>> 0) % 3 | 0 | 0) == 0 ? (A + -2) | 0 : L;
-                if (!((A >>> 0) % 3 | 0)) {
+                K = (((L >>> 0) % 3) | 0 | 0) == 0 ? (A + -2) | 0 : L;
+                if (!(((A >>> 0) % 3) | 0)) {
                   M = z;
                   N = (A + 2) | 0;
                   O = K;
@@ -75255,7 +75268,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 M = ((L & H) | 0) == 0;
                 if (!M)
                   if (K >>> 0 < H >>> 0) N = K;
-                  else N = (K >>> 0) % (H >>> 0) | 0;
+                  else N = ((K >>> 0) % (H >>> 0)) | 0;
                 else N = K & L;
                 O = f[((f[i >> 2] | 0) + (N << 2)) >> 2] | 0;
                 if ((O | 0) != 0 ? ((P = f[O >> 2] | 0), (P | 0) != 0) : 0) {
@@ -75291,7 +75304,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     M = f[(S + 4) >> 2] | 0;
                     if ((M | 0) != (K | 0)) {
                       if (M >>> 0 < H >>> 0) T = M;
-                      else T = (M >>> 0) % (H >>> 0) | 0;
+                      else T = ((M >>> 0) % (H >>> 0)) | 0;
                       if ((T | 0) != (N | 0)) {
                         Q = N;
                         R = 31;
@@ -75358,7 +75371,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     Z = K;
                   } else {
                     Y = F;
-                    Z = (K >>> 0) % (F >>> 0) | 0;
+                    Z = ((K >>> 0) % (F >>> 0)) | 0;
                   }
                 } else {
                   Y = H;
@@ -75377,7 +75390,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   H = (Y + -1) | 0;
                   if (H & Y)
                     if (E >>> 0 < Y >>> 0) _ = E;
-                    else _ = (E >>> 0) % (Y >>> 0) | 0;
+                    else _ = ((E >>> 0) % (Y >>> 0)) | 0;
                   else _ = E & H;
                   aa = ((f[i >> 2] | 0) + (_ << 2)) | 0;
                   R = 44;
@@ -75641,7 +75654,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     }
                     P = f[b >> 2] | 0;
                     Q = (P + 1) | 0;
-                    if ((P | 0) != -1 ? ((R = ((Q >>> 0) % 3 | 0 | 0) == 0 ? (P + -2) | 0 : Q), (R | 0) != -1) : 0)
+                    if ((P | 0) != -1 ? ((R = (((Q >>> 0) % 3) | 0 | 0) == 0 ? (P + -2) | 0 : Q), (R | 0) != -1) : 0)
                       S = f[((f[((f[p >> 2] | 0) + 12) >> 2] | 0) + (R << 2)) >> 2] | 0;
                     else S = -1;
                     f[b >> 2] = S;
@@ -75657,18 +75670,18 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     O = 35;
                     break;
                   }
-                  L = ((G >>> 0) % 3 | 0 | 0) == 0 ? (N + -2) | 0 : G;
+                  L = (((G >>> 0) % 3) | 0 | 0) == 0 ? (N + -2) | 0 : G;
                   if ((L | 0) == -1) T = -1;
                   else T = f[((f[((f[p >> 2] | 0) + 12) >> 2] | 0) + (L << 2)) >> 2] | 0;
                   f[e >> 2] = T;
-                  L = ((((N >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + N) | 0;
+                  L = (((((N >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + N) | 0;
                   if ((L | 0) == -1) U = -1;
                   else U = f[((f[((f[p >> 2] | 0) + 12) >> 2] | 0) + (L << 2)) >> 2] | 0;
                   L = (T | 0) == -1;
                   M = L ? -1 : ((T >>> 0) / 3) | 0;
                   V = (U | 0) == -1;
                   W = V ? -1 : ((U >>> 0) / 3) | 0;
-                  K = ((G >>> 0) % 3 | 0 | 0) == 0 ? (N + -2) | 0 : G;
+                  K = (((G >>> 0) % 3) | 0 | 0) == 0 ? (N + -2) | 0 : G;
                   if (
                     (
                       (K | 0) != -1
@@ -75680,7 +75693,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         ((f[(R + ((K >>> 5) << 2)) >> 2] & (1 << (K & 31))) | 0) == 0)
                       : 0
                   ) {
-                    K = ((((N >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + N) | 0;
+                    K = (((((N >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + N) | 0;
                     do
                       if ((K | 0) != -1) {
                         Q = f[(G + (K << 2)) >> 2] | 0;
@@ -75710,7 +75723,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                         break;
                       } else Y = R;
                     } else Y = N;
-                    R = ((((Y >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + Y) | 0;
+                    R = (((((Y >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + Y) | 0;
                     if ((R | 0) == -1) {
                       O = 44;
                       break;
@@ -75935,7 +75948,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 M = ((L & G) | 0) == 0;
                 if (!M)
                   if (E >>> 0 < G >>> 0) N = E;
-                  else N = (E >>> 0) % (G >>> 0) | 0;
+                  else N = ((E >>> 0) % (G >>> 0)) | 0;
                 else N = E & L;
                 O = f[((f[g >> 2] | 0) + (N << 2)) >> 2] | 0;
                 if ((O | 0) != 0 ? ((P = f[O >> 2] | 0), (P | 0) != 0) : 0) {
@@ -75971,7 +75984,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     M = f[(S + 4) >> 2] | 0;
                     if ((M | 0) != (E | 0)) {
                       if (M >>> 0 < G >>> 0) T = M;
-                      else T = (M >>> 0) % (G >>> 0) | 0;
+                      else T = ((M >>> 0) % (G >>> 0)) | 0;
                       if ((T | 0) != (N | 0)) {
                         Q = N;
                         R = 31;
@@ -76037,7 +76050,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     Z = E;
                   } else {
                     Y = D;
-                    Z = (E >>> 0) % (D >>> 0) | 0;
+                    Z = ((E >>> 0) % (D >>> 0)) | 0;
                   }
                 } else {
                   Y = G;
@@ -76056,7 +76069,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   G = (Y + -1) | 0;
                   if (G & Y)
                     if (K >>> 0 < Y >>> 0) _ = K;
-                    else _ = (K >>> 0) % (Y >>> 0) | 0;
+                    else _ = ((K >>> 0) % (Y >>> 0)) | 0;
                   else _ = K & G;
                   aa = ((f[g >> 2] | 0) + (_ << 2)) | 0;
                   R = 44;
@@ -76297,7 +76310,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 M = ((L & J) | 0) == 0;
                 if (!M)
                   if (H >>> 0 < J >>> 0) N = H;
-                  else N = (H >>> 0) % (J >>> 0) | 0;
+                  else N = ((H >>> 0) % (J >>> 0)) | 0;
                 else N = H & L;
                 O = f[((f[g >> 2] | 0) + (N << 2)) >> 2] | 0;
                 if ((O | 0) != 0 ? ((P = f[O >> 2] | 0), (P | 0) != 0) : 0) {
@@ -76332,7 +76345,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     M = f[(S + 4) >> 2] | 0;
                     if ((M | 0) != (H | 0)) {
                       if (M >>> 0 < J >>> 0) T = M;
-                      else T = (M >>> 0) % (J >>> 0) | 0;
+                      else T = ((M >>> 0) % (J >>> 0)) | 0;
                       if ((T | 0) != (N | 0)) {
                         Q = N;
                         R = 31;
@@ -76395,7 +76408,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     Z = H;
                   } else {
                     Y = P;
-                    Z = (H >>> 0) % (P >>> 0) | 0;
+                    Z = ((H >>> 0) % (P >>> 0)) | 0;
                   }
                 } else {
                   Y = J;
@@ -76414,7 +76427,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   J = (Y + -1) | 0;
                   if (J & Y)
                     if (K >>> 0 < Y >>> 0) _ = K;
-                    else _ = (K >>> 0) % (Y >>> 0) | 0;
+                    else _ = ((K >>> 0) % (Y >>> 0)) | 0;
                   else _ = K & J;
                   aa = ((f[g >> 2] | 0) + (_ << 2)) | 0;
                   R = 44;
@@ -76648,7 +76661,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 K = ((J & G) | 0) == 0;
                 if (!K)
                   if (F >>> 0 < G >>> 0) L = F;
-                  else L = (F >>> 0) % (G >>> 0) | 0;
+                  else L = ((F >>> 0) % (G >>> 0)) | 0;
                 else L = F & J;
                 M = f[((f[h >> 2] | 0) + (L << 2)) >> 2] | 0;
                 if ((M | 0) != 0 ? ((N = f[M >> 2] | 0), (N | 0) != 0) : 0) {
@@ -76680,7 +76693,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     K = f[(Q + 4) >> 2] | 0;
                     if ((K | 0) != (F | 0)) {
                       if (K >>> 0 < G >>> 0) R = K;
-                      else R = (K >>> 0) % (G >>> 0) | 0;
+                      else R = ((K >>> 0) % (G >>> 0)) | 0;
                       if ((R | 0) != (L | 0)) {
                         O = L;
                         P = 29;
@@ -76739,7 +76752,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     X = F;
                   } else {
                     V = K;
-                    X = (F >>> 0) % (K >>> 0) | 0;
+                    X = ((F >>> 0) % (K >>> 0)) | 0;
                   }
                 } else {
                   V = G;
@@ -76758,7 +76771,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   G = (V + -1) | 0;
                   if (G & V)
                     if (H >>> 0 < V >>> 0) Y = H;
-                    else Y = (H >>> 0) % (V >>> 0) | 0;
+                    else Y = ((H >>> 0) % (V >>> 0)) | 0;
                   else Y = H & G;
                   Z = ((f[h >> 2] | 0) + (Y << 2)) | 0;
                   P = 42;
@@ -76969,11 +76982,11 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   H = f[h >> 2] | 0;
                   I = f[(H + (f[(G + (F << 2)) >> 2] << 2)) >> 2] | 0;
                   J = (F + 1) | 0;
-                  K = ((J >>> 0) % 3 | 0 | 0) == 0 ? (F + -2) | 0 : J;
+                  K = (((J >>> 0) % 3) | 0 | 0) == 0 ? (F + -2) | 0 : J;
                   if ((K | 0) == -1) L = -1;
                   else L = f[(G + (K << 2)) >> 2] | 0;
                   K = f[(H + (L << 2)) >> 2] | 0;
-                  J = ((((F >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + F) | 0;
+                  J = (((((F >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + F) | 0;
                   if ((J | 0) == -1) M = -1;
                   else M = f[(G + (J << 2)) >> 2] | 0;
                   J = f[(H + (M << 2)) >> 2] | 0;
@@ -77002,10 +77015,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     N = (D + 1) | 0;
                   } else N = D;
                 } else N = D;
-                J = ((((E >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + E) | 0;
+                J = (((((E >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + E) | 0;
                 do
                   if ((J | 0) != -1 ? ((H = f[(p + (J << 2)) >> 2] | 0), (H | 0) != -1) : 0)
-                    if (!((H >>> 0) % 3 | 0)) {
+                    if (!(((H >>> 0) % 3) | 0)) {
                       O = (H + 2) | 0;
                       break;
                     } else {
@@ -77312,9 +77325,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                       (J = f[(I + (f[(H + (G << 2)) >> 2] << 2)) >> 2] | 0),
                       (K = (G + 1) | 0),
                       (L =
-                        f[(I + (f[(H + ((((K >>> 0) % 3 | 0 | 0) == 0 ? (G + -2) | 0 : K) << 2)) >> 2] << 2)) >> 2] |
+                        f[(I + (f[(H + (((((K >>> 0) % 3) | 0 | 0) == 0 ? (G + -2) | 0 : K) << 2)) >> 2] << 2)) >> 2] |
                         0),
-                      (K = f[(I + (f[(H + (((((G >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + G) << 2)) >> 2] << 2)) >> 2] | 0),
+                      (K =
+                        f[(I + (f[(H + ((((((G >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + G) << 2)) >> 2] << 2)) >> 2] | 0),
                       ((J | 0) < (C | 0)) & ((L | 0) < (C | 0)) & ((K | 0) < (C | 0)))
                     : 0
                 ) {
@@ -77341,14 +77355,14 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   }
                   M = (E + 1) | 0;
                 } else M = E;
-                K = ((((F >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + F) | 0;
+                K = (((((F >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + F) | 0;
                 do
                   if (
                     ((K | 0) != -1 ? ((f[(p + ((K >>> 5) << 2)) >> 2] & (1 << (K & 31))) | 0) == 0 : 0)
                       ? ((G = f[((f[((f[x >> 2] | 0) + 12) >> 2] | 0) + (K << 2)) >> 2] | 0), (G | 0) != -1)
                       : 0
                   )
-                    if (!((G >>> 0) % 3 | 0)) {
+                    if (!(((G >>> 0) % 3) | 0)) {
                       N = (G + 2) | 0;
                       break;
                     } else {
@@ -78176,10 +78190,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         while (1) {
           F = f[(y + (l << 2)) >> 2] | 0;
           G = (l + 1) | 0;
-          E = ((G >>> 0) % 3 | 0 | 0) == 0 ? (l + -2) | 0 : G;
+          E = (((G >>> 0) % 3) | 0 | 0) == 0 ? (l + -2) | 0 : G;
           if ((E | 0) == -1) M = -1;
           else M = f[(y + (E << 2)) >> 2] | 0;
-          E = ((l >>> 0) % 3 | 0 | 0) == 0;
+          E = (((l >>> 0) % 3) | 0 | 0) == 0;
           G = ((E ? 2 : -1) + l) | 0;
           if ((G | 0) == -1) N = -1;
           else N = f[(y + (G << 2)) >> 2] | 0;
@@ -78471,7 +78485,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 J = ((H & F) | 0) == 0;
                 if (!J)
                   if (E >>> 0 < F >>> 0) K = E;
-                  else K = (E >>> 0) % (F >>> 0) | 0;
+                  else K = ((E >>> 0) % (F >>> 0)) | 0;
                 else K = E & H;
                 L = f[((f[g >> 2] | 0) + (K << 2)) >> 2] | 0;
                 if ((L | 0) != 0 ? ((M = f[L >> 2] | 0), (M | 0) != 0) : 0) {
@@ -78503,7 +78517,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     J = f[(P + 4) >> 2] | 0;
                     if ((J | 0) != (E | 0)) {
                       if (J >>> 0 < F >>> 0) Q = J;
-                      else Q = (J >>> 0) % (F >>> 0) | 0;
+                      else Q = ((J >>> 0) % (F >>> 0)) | 0;
                       if ((Q | 0) != (K | 0)) {
                         N = K;
                         O = 29;
@@ -78562,7 +78576,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     V = E;
                   } else {
                     U = J;
-                    V = (E >>> 0) % (J >>> 0) | 0;
+                    V = ((E >>> 0) % (J >>> 0)) | 0;
                   }
                 } else {
                   U = F;
@@ -78581,7 +78595,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   F = (U + -1) | 0;
                   if (F & U)
                     if (G >>> 0 < U >>> 0) X = G;
-                    else X = (G >>> 0) % (U >>> 0) | 0;
+                    else X = ((G >>> 0) % (U >>> 0)) | 0;
                   else X = G & F;
                   Y = ((f[g >> 2] | 0) + (X << 2)) | 0;
                   O = 42;
@@ -79185,7 +79199,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                 K = ((J & G) | 0) == 0;
                 if (!K)
                   if (F >>> 0 < G >>> 0) L = F;
-                  else L = (F >>> 0) % (G >>> 0) | 0;
+                  else L = ((F >>> 0) % (G >>> 0)) | 0;
                 else L = F & J;
                 M = f[((f[g >> 2] | 0) + (L << 2)) >> 2] | 0;
                 if ((M | 0) != 0 ? ((N = f[M >> 2] | 0), (N | 0) != 0) : 0) {
@@ -79216,7 +79230,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     K = f[(Q + 4) >> 2] | 0;
                     if ((K | 0) != (F | 0)) {
                       if (K >>> 0 < G >>> 0) R = K;
-                      else R = (K >>> 0) % (G >>> 0) | 0;
+                      else R = ((K >>> 0) % (G >>> 0)) | 0;
                       if ((R | 0) != (L | 0)) {
                         O = L;
                         P = 29;
@@ -79274,7 +79288,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                     X = F;
                   } else {
                     V = N;
-                    X = (F >>> 0) % (N >>> 0) | 0;
+                    X = ((F >>> 0) % (N >>> 0)) | 0;
                   }
                 } else {
                   V = G;
@@ -79293,7 +79307,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
                   G = (V + -1) | 0;
                   if (G & V)
                     if (H >>> 0 < V >>> 0) Y = H;
-                    else Y = (H >>> 0) % (V >>> 0) | 0;
+                    else Y = ((H >>> 0) % (V >>> 0)) | 0;
                   else Y = H & G;
                   Z = ((f[g >> 2] | 0) + (Y << 2)) | 0;
                   P = 42;
@@ -83626,7 +83640,7 @@ var DracoEncoderModule = function (DracoEncoderModule) {
         h = i;
         while (1) {
           i = (h + -1) | 0;
-          b[i >> 0] = (d >>> 0) % 10 | 0 | 48;
+          b[i >> 0] = ((d >>> 0) % 10) | 0 | 48;
           if (d >>> 0 < 10) {
             j = i;
             break;
@@ -83886,10 +83900,10 @@ var DracoEncoderModule = function (DracoEncoderModule) {
       c = f[a >> 2] | 0;
       a = f[(c + (b << 2)) >> 2] | 0;
       d = (b + 1) | 0;
-      e = ((d >>> 0) % 3 | 0 | 0) == 0 ? (b + -2) | 0 : d;
+      e = (((d >>> 0) % 3) | 0 | 0) == 0 ? (b + -2) | 0 : d;
       if ((e | 0) == -1) g = -1;
       else g = f[(c + (e << 2)) >> 2] | 0;
-      e = ((((b >>> 0) % 3 | 0 | 0) == 0 ? 2 : -1) + b) | 0;
+      e = (((((b >>> 0) % 3) | 0 | 0) == 0 ? 2 : -1) + b) | 0;
       if ((e | 0) == -1) h = -1;
       else h = f[(c + (e << 2)) >> 2] | 0;
       if ((a | 0) == (g | 0)) return 1;
