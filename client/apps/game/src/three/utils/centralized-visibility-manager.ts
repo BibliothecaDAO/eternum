@@ -137,6 +137,11 @@ export class CentralizedVisibilityManager {
    * Must be called before using visibility queries.
    */
   initialize(camera: PerspectiveCamera, controls: MapControls): void {
+    if (this.disposeControlsListener) {
+      this.disposeControlsListener();
+      this.disposeControlsListener = null;
+    }
+
     this.camera = camera;
     this.controls = controls;
 
@@ -580,7 +585,7 @@ export function getVisibilityManager(config?: VisibilityManagerConfig): Centrali
 /**
  * Reset the singleton instance (useful for testing or hot reload).
  */
-function resetVisibilityManager(): void {
+export function resetVisibilityManager(): void {
   if (visibilityManagerInstance) {
     visibilityManagerInstance.dispose();
     visibilityManagerInstance = null;

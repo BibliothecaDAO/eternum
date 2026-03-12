@@ -54,6 +54,7 @@ import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 
 export enum CameraView {
   Close = 1,
@@ -1231,6 +1232,11 @@ export abstract class HexagonScene {
     if (this.inputManager) {
       this.inputManager.destroy();
     }
+
+    destroyHexagonSceneOwnedManagers({
+      frustumManager: this.frustumManager,
+      visibilityManager: this.visibilityManager,
+    });
 
     // Clean up shortcuts
     if (this.shortcutManager) {

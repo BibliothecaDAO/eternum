@@ -142,6 +142,8 @@ import {
   finalizePendingChunkFetchOwnership,
   invalidateWorldmapSwitchOffTransitionState,
 } from "./worldmap-runtime-lifecycle";
+import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
+import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
 import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
@@ -612,18 +614,16 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
     );
 
-    // Expose material sharing debug to global console
-    (window as { testMaterialSharing?: () => void }).testMaterialSharing = () =>
-      this.armyManager.logMaterialSharingStats();
-
-    // Expose troop diff FX test to global console
-    (window as { testTroopDiffFx?: (diff?: number) => void }).testTroopDiffFx = (diff?: number) => {
-      const targetHex = this.getCameraTargetHex();
-      const worldPos = getWorldPositionForHex(targetHex);
-      const testDiff = diff ?? (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 50 + 1);
-      console.log(`[TestTroopDiffFx] Spawning FX at camera target with diff: ${testDiff}`);
-      this.fxManager.playTroopDiffFx(testDiff, worldPos.x, worldPos.y + 3, worldPos.z);
-    };
+    installWorldmapDebugHooks(window, {
+      testMaterialSharing: () => this.armyManager.logMaterialSharingStats(),
+      testTroopDiffFx: (diff?: number) => {
+        const targetHex = this.getCameraTargetHex();
+        const worldPos = getWorldPositionForHex(targetHex);
+        const testDiff = diff ?? (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 50 + 1);
+        console.log(`[TestTroopDiffFx] Spawning FX at camera target with diff: ${testDiff}`);
+        this.fxManager.playTroopDiffFx(testDiff, worldPos.x, worldPos.y + 3, worldPos.z);
+      },
+    });
     this.installChunkDiagnosticsDebugHooks();
     this.structureManager = new StructureManager(
       this.scene,
@@ -5066,6 +5066,7 @@ export default class WorldmapScene extends WarpTravel {
     this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
+    uninstallWorldmapDebugHooks(window);
     if (this.hexGridFrameHandle !== null) {
       cancelAnimationFrame(this.hexGridFrameHandle);
       this.hexGridFrameHandle = null;
@@ -5080,7 +5081,13 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiStreamManager?.shutdown();
     this.toriiBoundsAreaKey = null;
 
-    this.resourceFXManager.destroy();
+    destroyWorldmapOwnedManagers({
+      armyManager: this.armyManager,
+      structureManager: this.structureManager,
+      chestManager: this.chestManager,
+      fxManager: this.fxManager,
+      resourceFXManager: this.resourceFXManager,
+    });
     this.updateCameraTargetHexThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);

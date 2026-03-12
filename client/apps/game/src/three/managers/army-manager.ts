@@ -39,11 +39,13 @@ import {
 } from "../utils";
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
+import { trackGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
@@ -166,6 +168,7 @@ export class ArmyManager {
   // Path visualization
   private pathRenderer: PathRenderer;
   private selectedArmyForPath: ID | null = null;
+  private guiFolders: Array<{ destroy(): void }> = [];
 
   // Player indicator dots
   private playerIndicatorManager: PlayerIndicatorManager;
@@ -248,7 +251,7 @@ export class ArmyManager {
     // Initialize player indicator manager
     this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
 
-    const createArmyFolder = GUIManager.addFolder("Create Army");
+    const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
 
     createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
@@ -288,7 +291,7 @@ export class ArmyManager {
       .name("Add army");
     createArmyFolder.close();
 
-    const deleteArmyFolder = GUIManager.addFolder("Delete Army");
+    const deleteArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Delete Army"));
     const deleteArmyParams = { entityId: 0 };
 
     deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
@@ -364,7 +367,7 @@ export class ArmyManager {
    * Setup debug GUI for spawning multiple armies for performance testing
    */
   private setupDebugArmySpawner(): void {
-    const debugFolder = GUIManager.addFolder("Debug Army Spawner");
+    const debugFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Debug Army Spawner"));
 
     const spawnParams = {
       count: 20,
@@ -2811,8 +2814,10 @@ ${
     this.chunkToArmies.clear();
     this.movementCompleteListeners.clear();
 
-    // Clear path visualization
-    this.pathRenderer.clearAll();
+    destroyArmyManagerOwnedResources({
+      pathRenderer: this.pathRenderer,
+      guiFolders: this.guiFolders,
+    });
     this.selectedArmyForPath = null;
 
     // Dispose army model resources including shared materials
