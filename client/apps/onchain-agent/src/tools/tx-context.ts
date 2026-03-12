@@ -26,12 +26,12 @@ export function addressesEqual(a: string, b: string): boolean {
 }
 
 /**
- * Extract a human-readable error string from nested RPC/provider errors.
+ * Extract a human-readable error string from a nested RPC/provider error.
  * Walks common error shapes from starknet.js and the Eternum provider, preferring
  * the `execution_error` field and falling back to `message` or a full JSON stringify.
  *
  * @param err - The raw error thrown by a provider transaction call.
- * @returns A concise, human-readable error string. Some code paths truncate at 300 characters.
+ * @returns A concise error string, truncated at 300 characters on some code paths.
  */
 export function extractTxError(err: any): string {
   // Walk common nested error shapes from starknet.js / provider
