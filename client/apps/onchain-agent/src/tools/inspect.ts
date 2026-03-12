@@ -81,8 +81,9 @@ export function createInspectTool(client: EternumClient, ctx: MapContext): Agent
     name: "inspect",
     label: "Inspect Tile",
     description:
-      "Inspect a tile to get detailed info (owner, guards, resources, troop strength, biome). " +
-      "Use line:col coordinates from the map (e.g. 9:2 means row 9, col 2).",
+      "Inspect any tile for detailed info: owner, guard composition and strength, resources, troop counts, biome. " +
+      "Use before attacking to assess enemy strength. Use on your own structures to check reserves. " +
+      "Coordinates are row:col from the map.",
     parameters: Type.Object({
       row: Type.Number({ description: "Line number from the map (left side)" }),
       col: Type.Number({ description: "Column number from the map" }),

@@ -24,9 +24,10 @@ export function createMergeArmiesTool(
     name: "merge_armies",
     label: "Merge Armies",
     description:
-      "Merge two adjacent armies into one. Transfers all troops from the source army " +
-      "into the target army, then deletes the empty source to free the army slot. " +
-      "Both armies must be yours, adjacent, and the same troop type and tier.",
+      "Merge two adjacent armies into one. Transfers all troops from the source into the target, " +
+      "then deletes the empty source to free the army slot. " +
+      "Both armies must be yours, adjacent, and the same troop type and tier. " +
+      "Use this to consolidate weak armies into one strong force before attacking.",
     parameters: Type.Object({
       source_row: Type.Number({ description: "Line number of the army to merge FROM (will be deleted)" }),
       source_col: Type.Number({ description: "Column of the army to merge FROM" }),
