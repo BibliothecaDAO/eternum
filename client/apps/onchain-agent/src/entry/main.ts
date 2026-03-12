@@ -491,7 +491,7 @@ export async function main() {
 
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
-      evolve(model, config.dataDir)
+      evolve(model, config.dataDir, (agent as any).state?.messages?.slice(-50))
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
         .finally(() => {
           evolving = false;
