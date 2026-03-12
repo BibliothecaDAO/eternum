@@ -100,6 +100,10 @@ interface UseWorldRegistrationReturn {
   isCheckingFeeBalance: boolean;
   /** Whether wallet has enough fee token balance for registration */
   hasSufficientFeeBalance: boolean;
+  /** Whether registration start timestamp has not been reached yet */
+  isWaitingForRegistrationStart: boolean;
+  /** Seconds remaining until registration opens */
+  secondsUntilRegistrationStart: number;
 }
 
 /**
@@ -162,6 +166,7 @@ export const useWorldRegistration = ({
   const [error, setError] = useState<string | null>(null);
   const [isCheckingFeeBalance, setIsCheckingFeeBalance] = useState(false);
   const [hasSufficientFeeBalance, setHasSufficientFeeBalance] = useState(true);
+  const [now, setNow] = useState<number>(() => Math.floor(Date.now() / 1000));
 
   // Cache resolved contracts
   const contractsCacheRef = useRef<Record<string, string> | null>(null);
@@ -172,10 +177,23 @@ export const useWorldRegistration = ({
   const requiresFeeBalanceForRegistration = chain === "mainnet";
   const needsFeeBalanceCheck = requiresFeeBalanceForRegistration && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+
   // Check if registration is open
-  const now = Date.now() / 1000;
   const registrationStartAt = config?.registrationStartAt ?? 0;
   const registrationEndAt = config?.registrationEndAt ?? 0;
+  const startSettlingAt = config?.startSettlingAt ?? 0;
+  const registrationUnlockAt = devModeOn ? registrationStartAt : Math.max(registrationStartAt, startSettlingAt);
+  const isWaitingForRegistrationStart = registrationUnlockAt > 0 && now < registrationUnlockAt;
+  const secondsUntilRegistrationStart = isWaitingForRegistrationStart ? Math.max(0, registrationUnlockAt - now) : 0;
   // Normal registration window check
   const isInRegistrationWindow =
     registrationStartAt > 0 &&
@@ -184,11 +202,14 @@ export const useWorldRegistration = ({
     now < registrationEndAt;
   // In dev mode, allow registration even after the window closes (during ongoing game)
   const isRegistrationOpen = isInRegistrationWindow || (devModeOn && now >= registrationStartAt);
+  // Contract-level gate from `SeasonConfig.assert_settling_started_and_not_over`.
+  const hasSettlingStarted = devModeOn || startSettlingAt <= 0 || now >= startSettlingAt;
 
   const canRegister =
     enabled &&
     !isRegistered &&
     isRegistrationOpen &&
+    hasSettlingStarted &&
     !!account &&
     !!address &&
     !usernameLoading &&
@@ -453,7 +474,6 @@ export const useWorldRegistration = ({
     account,
     address,
     config,
-    worldName,
     chain,
     feeAmount,
     requiresEntryToken,
@@ -474,5 +494,7 @@ export const useWorldRegistration = ({
     canRegister,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
+    isWaitingForRegistrationStart,
+    secondsUntilRegistrationStart,
   };
 };
