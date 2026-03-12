@@ -1,6 +1,8 @@
 import { Position } from "@bibliothecadao/eternum";
 
 import { Structure } from "@bibliothecadao/types";
+import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
+import { SceneName } from "../types";
 
 /**
  * Navigate to a structure by updating the URL and dispatching a URL change event
@@ -12,20 +14,17 @@ import { Structure } from "@bibliothecadao/types";
 export function navigateToStructure(col: number, row: number, scene?: "hex" | "map") {
   const url = new Position({ x: col, y: row });
 
-  // Determine which URL method to use based on scene parameter or current URL
+  const targetScene = resolveNavigationSceneTarget({
+    requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
+    currentPath: window.location.pathname,
+    fastTravelEnabled: false,
+  });
+
   let navigationUrl: string;
-  if (scene === "hex") {
+  if (targetScene === SceneName.Hexception) {
     navigationUrl = url.toHexLocationUrl();
-  } else if (scene === "map") {
-    navigationUrl = url.toMapLocationUrl();
   } else {
-    // If no scene specified, stay in the current scene
-    const currentPath = window.location.pathname;
-    if (currentPath.includes("/hex")) {
-      navigationUrl = url.toHexLocationUrl();
-    } else {
-      navigationUrl = url.toMapLocationUrl();
-    }
+    navigationUrl = url.toMapLocationUrl();
   }
 
   // Update browser URL
@@ -45,20 +44,17 @@ export function navigateToStructure(col: number, row: number, scene?: "hex" | "m
 function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
   const url = new Position({ x: col, y: row });
 
-  // Determine which URL method to use based on scene parameter or current URL
+  const targetScene = resolveNavigationSceneTarget({
+    requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
+    currentPath: window.location.pathname,
+    fastTravelEnabled: false,
+  });
+
   let navigationUrl: string;
-  if (scene === "hex") {
+  if (targetScene === SceneName.Hexception) {
     navigationUrl = url.toHexLocationUrl();
-  } else if (scene === "map") {
-    navigationUrl = url.toMapLocationUrl();
   } else {
-    // If no scene specified, stay in the current scene
-    const currentPath = window.location.pathname;
-    if (currentPath.includes("/hex")) {
-      navigationUrl = url.toHexLocationUrl();
-    } else {
-      navigationUrl = url.toMapLocationUrl();
-    }
+    navigationUrl = url.toMapLocationUrl();
   }
 
   // Update browser URL
