@@ -491,7 +491,18 @@ export async function main() {
 
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
-      evolve(model, config.dataDir, (agent as any).state?.messages?.slice(-50))
+      evolve(model, config.dataDir, {
+            structures: [...automationStatus.values()]
+              .map((s) => `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`)
+              .join("\n") || "No structures",
+            armies: mapCtx.snapshot?.explorerDetails
+              ? [...mapCtx.snapshot.explorerDetails.entries()]
+                  .map(([id, info]: [number, any]) => `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`)
+                  .join("\n")
+              : "No armies",
+            toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
+            timestamp: Date.now(),
+          })
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
         .finally(() => {
           evolving = false;
