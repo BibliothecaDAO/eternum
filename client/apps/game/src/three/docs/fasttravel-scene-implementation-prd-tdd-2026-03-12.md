@@ -16,6 +16,7 @@
 | U2     | 2026-03-12 00:00 | Codex  | Resolved product direction: no terrain, fully explored pink warp-space shader layer, visible stubbed Spires, and map-first scope with interactions deferred. |
 | U3     | 2026-03-12 00:00 | Codex  | Completed M0 by activating the fast-travel boundary, registering the concrete scene stub in `GameRenderer`, and locking renderer routing/update seams with fail-first tests. |
 | U4     | 2026-03-12 00:00 | Codex  | Completed M1 by turning `FastTravelScene` into a named-hook `WarpTravel` lifecycle shell and locking the lifecycle seam with focused tests plus shared runtime regressions. |
+| U5     | 2026-03-12 00:00 | Codex  | Completed M2 and M3 by adding fast-travel chunk hydration/render-state adapters, stubbed Spire and army scene visuals, and a no-ground fully explored warp-space render path. |
 
 ## Executive Summary
 
@@ -251,7 +252,7 @@ Completion Notes:
 2. `FastTravelScene` now has explicit setup, initial-setup, label attach/detach, refresh, error-report, and subscription lifecycle methods that match the shared `WarpTravelLifecycleAdapter` seam.
 3. `warp-travel.test.ts` and `worldmap-shared-runtime.test.ts` were rerun green to keep the scene shell aligned with the shared runtime contract.
 
-### M2: Fast-Travel Chunk Hydration and Entity Runtime (2-3 days)
+### M2: Fast-Travel Chunk Hydration and Entity Runtime (2-3 days) [x]
 
 Objective:
 
@@ -270,7 +271,13 @@ Exit Criteria:
 1. Units can appear and update correctly in the fast-travel layer.
 2. Shared `WarpTravel` runtime does not require further architectural churn.
 
-### M3: Warp-Space Map Rendering (1-2 days)
+Completion Notes:
+
+1. `fast-travel-hydration.ts` now hydrates visible armies and stubbed Spire anchors into a chunk-scoped entity lookup plus stable manager payloads.
+2. `FastTravelScene` now refreshes itself from the hydration adapter and exposes hydrated chunk/entity lookup state for follow-on interaction work.
+3. Stubbed army and Spire visuals are now rendered into the scene from hydrated chunk state, with controls-driven refresh support in `GameRenderer`.
+
+### M3: Warp-Space Map Rendering (1-2 days) [x]
 
 Objective:
 
@@ -287,6 +294,12 @@ Exit Criteria:
 
 1. The fast-travel layer is visually distinct from the world map.
 2. No terrain-specific world-map assumptions leak into the fast-travel scene.
+
+Completion Notes:
+
+1. `fast-travel-rendering.ts` now prepares a fully explored `terrainMode: "none"` render state plus explicit pink warp-space shader uniforms for the visible hex window.
+2. `HexagonScene` now exposes a `shouldCreateGroundMesh()` hook, and `FastTravelScene` opts out so the shared worldmap terrain mesh is not created.
+3. `FastTravelScene` uses the render-state palette to color the warp-space background plus the stubbed Spire and army markers.
 
 ### M4: Spire Navigation Boundary (1-2 days)
 
@@ -331,11 +344,11 @@ Exit Criteria:
 2. [x] S2 (P0): Add failing test proving `GameRenderer` registers a concrete fast-travel scene.
 3. [x] S3 (P0): Add failing test proving active-scene render/update path handles fast-travel the same way it handles map/hex.
 4. [x] S4 (P0): Add failing test proving `FastTravelScene` setup/resume/switch-off lifecycle delegates through `WarpTravel`.
-5. S5 (P1): Add failing test proving empty fast-travel chunks do not break manager fanout.
-6. S6 (P1): Add failing test proving fast-travel chunk hydration can populate armies into the scene.
-7. S7 (P1): Add failing test proving fast-travel scene prepares a fully explored no-terrain render state.
-8. S8 (P1): Add failing test proving warp-space shader inputs are prepared for the visible hex window.
-9. S9 (P1): Add failing test proving stubbed Spire anchors appear in fast-travel hydrated scene state.
+5. [x] S5 (P1): Add failing test proving empty fast-travel chunks do not break manager fanout.
+6. [x] S6 (P1): Add failing test proving fast-travel chunk hydration can populate armies into the scene.
+7. [x] S7 (P1): Add failing test proving fast-travel scene prepares a fully explored no-terrain render state.
+8. [x] S8 (P1): Add failing test proving warp-space shader inputs are prepared for the visible hex window.
+9. [x] S9 (P1): Add failing test proving stubbed Spire anchors appear in fast-travel hydrated scene state.
 10. S10 (P1): Add failing test proving Spire mapping resolves world-map entry to fast-travel destination.
 11. S11 (P1): Add failing test proving exit travel maps back to the correct world-map Spire.
 12. S12 (P1): Add failing test proving non-Spire world-map navigation remains unchanged.

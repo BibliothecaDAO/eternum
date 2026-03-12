@@ -146,7 +146,9 @@ export abstract class HexagonScene {
     this.setupLighting();
     this.setupInputHandlers();
     this.setupGUI();
-    this.createGroundMesh();
+    if (this.shouldCreateGroundMesh()) {
+      this.createGroundMesh();
+    }
   }
 
   private notifyControlsChanged(): void {
@@ -1166,6 +1168,10 @@ export abstract class HexagonScene {
 
   protected shouldEnableStormEffects(): boolean {
     // Override this method in child classes to control storm effects
+    return true;
+  }
+
+  protected shouldCreateGroundMesh(): boolean {
     return true;
   }
 

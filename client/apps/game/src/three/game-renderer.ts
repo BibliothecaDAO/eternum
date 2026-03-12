@@ -756,6 +756,8 @@ export default class GameRenderer {
       this.labelsDirty = true;
       if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
         this.worldmapScene.requestChunkRefresh();
+      } else if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel) {
+        this.fastTravelScene.requestSceneRefresh();
       }
     });
     this.controls.keys = {
