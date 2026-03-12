@@ -116,21 +116,26 @@ export function createMapLoop(
         }
       }
 
-      // Structure details still use individual requests (need guards + resources per structure)
-      // but with a concurrency limit
+      // Fetch structure details in a single batch SQL query
       let structureDetailMap: Map<number, StructureInfo> | undefined;
       if (ownedEntityIds && ownedEntityIds.size > 0) {
-        structureDetailMap = new Map();
         const ownedStructureTiles = area.tiles.filter(
           (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && t.occupierIsStructure,
         );
-        for (let i = 0; i < ownedStructureTiles.length; i += 5) {
-          const batch = ownedStructureTiles.slice(i, i + 5);
-          const results = await Promise.allSettled(
-            batch.map((t) => client.view.structureAt(t.position.x, t.position.y)),
-          );
-          for (const r of results) {
-            if (r.status === "fulfilled" && r.value) structureDetailMap.set(r.value.entityId, r.value);
+        const structureIds = ownedStructureTiles.map((t) => t.occupierId);
+        if (structureIds.length > 0 && typeof client.view.structureInfoBatch === "function") {
+          structureDetailMap = await client.view.structureInfoBatch(structureIds);
+        } else if (structureIds.length > 0) {
+          // Fallback: individual requests with concurrency limit
+          structureDetailMap = new Map();
+          for (let i = 0; i < ownedStructureTiles.length; i += 5) {
+            const batch = ownedStructureTiles.slice(i, i + 5);
+            const results = await Promise.allSettled(
+              batch.map((t) => client.view.structureAt(t.position.x, t.position.y)),
+            );
+            for (const r of results) {
+              if (r.status === "fulfilled" && r.value) structureDetailMap.set(r.value.entityId, r.value);
+            }
           }
         }
       }

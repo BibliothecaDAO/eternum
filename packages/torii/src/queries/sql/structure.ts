@@ -17,6 +17,33 @@ export const STRUCTURE_QUERIES = {
     WHERE category == 1;
   `,
 
+  STRUCTURES_BY_ENTITY_IDS: `
+    SELECT
+        entity_id,
+        owner AS occupier_id,
+        \`base.category\` AS structure_category,
+        \`base.level\` AS structure_level,
+        \`base.coord_x\` AS coord_x,
+        \`base.coord_y\` AS coord_y,
+        \`metadata.realm_id\` AS realm_id,
+        \`base.troop_explorer_count\` AS troop_explorer_count,
+        \`base.troop_max_explorer_count\` AS troop_max_explorer_count,
+        \`troop_guards.delta.category\` as delta_category,
+        \`troop_guards.delta.tier\` as delta_tier,
+        \`troop_guards.delta.count\` as delta_count,
+        \`troop_guards.charlie.category\` as charlie_category,
+        \`troop_guards.charlie.tier\` as charlie_tier,
+        \`troop_guards.charlie.count\` as charlie_count,
+        \`troop_guards.bravo.category\` as bravo_category,
+        \`troop_guards.bravo.tier\` as bravo_tier,
+        \`troop_guards.bravo.count\` as bravo_count,
+        \`troop_guards.alpha.category\` as alpha_category,
+        \`troop_guards.alpha.tier\` as alpha_tier,
+        \`troop_guards.alpha.count\` as alpha_count
+    FROM \`s1_eternum-Structure\`
+    WHERE entity_id IN ({entityIds});
+  `,
+
   STRUCTURE_BY_COORD: `
     SELECT
         internal_id,
