@@ -59,6 +59,7 @@ import {
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
+import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { MaterialPool } from "./utils/material-pool";
@@ -389,7 +390,7 @@ export default class GameRenderer {
 
     // Provide renderer reference for better resource tracking
     this.memoryMonitor.setRenderer(this.renderer);
-    (window as any).__gameRenderer = this;
+    registerGameRendererDebugGlobals(window, this, this.renderer);
 
     // Create memory stats display element
     this.createMemoryStatsDisplay();
@@ -1395,6 +1396,7 @@ export default class GameRenderer {
       document.removeEventListener("blur", this.handleDocumentBlur, true);
 
       // Clean up memory monitoring
+      clearGameRendererDebugGlobals(window);
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
       }

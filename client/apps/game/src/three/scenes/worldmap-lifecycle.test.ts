@@ -47,6 +47,20 @@ describe("Worldmap lifecycle baseline", () => {
     expect(fixture.destroyCalls.resourceFXManager).toBe(1);
   });
 
+  it("installs and removes worldmap debug hooks symmetrically", () => {
+    const fixture = createWorldmapLifecycleFixture();
+
+    fixture.setup();
+
+    expect(typeof fixture.debugWindow.testMaterialSharing).toBe("function");
+    expect(typeof fixture.debugWindow.testTroopDiffFx).toBe("function");
+
+    fixture.destroy();
+
+    expect("testMaterialSharing" in fixture.debugWindow).toBe(false);
+    expect("testTroopDiffFx" in fixture.debugWindow).toBe(false);
+  });
+
   it("detaches urlChanged listener when switching off to avoid inactive-scene callbacks", () => {
     const fixture = createWorldmapLifecycleFixture();
 

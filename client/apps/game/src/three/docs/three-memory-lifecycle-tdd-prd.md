@@ -333,6 +333,10 @@ Objective:
 
 Remove `window`-anchored leaks for debug and monitoring flows.
 
+Status:
+
+- [x] Complete
+
 Deliverables:
 
 1. Named registration helpers for worldmap debug hooks.
@@ -428,6 +432,10 @@ GREEN:
 1. Extract named install/uninstall helpers.
 2. Call uninstall from `WorldmapScene.destroy()`.
 
+Status:
+
+- [x] Complete
+
 ### S4 (P0): Memory monitor globals are removed on renderer destroy
 
 RED:
@@ -440,6 +448,10 @@ GREEN:
 
 1. Clear those globals during `GameRenderer.destroy()`.
 2. Ensure cleanup is safe when monitoring is disabled.
+
+Status:
+
+- [x] Complete
 
 ### S5 (P1): `ArmyManager.destroy()` disposes `PathRenderer`
 

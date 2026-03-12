@@ -1,4 +1,5 @@
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
+import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
 import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
 
 interface ListenerBinding {
@@ -7,6 +8,10 @@ interface ListenerBinding {
 }
 
 interface WorldmapLifecycleFixture {
+  debugWindow: {
+    testMaterialSharing?: () => void;
+    testTroopDiffFx?: (diff?: number) => void;
+  };
   listenerAdds: ListenerBinding[];
   listenerRemoves: ListenerBinding[];
   destroyCalls: {
@@ -29,6 +34,10 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   const listenerAdds: ListenerBinding[] = [];
   const listenerRemoves: ListenerBinding[] = [];
   const urlChangedHandler = () => {};
+  const debugWindow: {
+    testMaterialSharing?: () => void;
+    testTroopDiffFx?: (diff?: number) => void;
+  } = {};
 
   let isSwitchedOff = false;
   let isUrlChangedListenerAttached = false;
@@ -59,6 +68,7 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   };
 
   return {
+    debugWindow,
     listenerAdds,
     listenerRemoves,
     destroyCalls,
@@ -70,6 +80,10 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     },
     setup() {
       isSwitchedOff = false;
+      installWorldmapDebugHooks(debugWindow, {
+        testMaterialSharing: () => {},
+        testTroopDiffFx: () => {},
+      });
       syncUrlChangedListenerLifecycle("setup");
     },
     switchOff() {
@@ -79,6 +93,7 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     },
     destroy() {
       this.switchOff();
+      uninstallWorldmapDebugHooks(debugWindow);
       destroyWorldmapOwnedManagers({
         armyManager: {
           destroy: () => {
