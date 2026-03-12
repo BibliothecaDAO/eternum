@@ -2,7 +2,32 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
+import {
+  resolveEnterFastTravelTransition,
+  resolveExitFastTravelTransition,
+} from "../scenes/fast-travel-navigation-policy";
+import type { FastTravelHexCoords } from "../scenes/fast-travel-hydration";
+import type { FastTravelSpireMapping } from "../scenes/fast-travel-spire-mapping";
 import { SceneName } from "../types";
+
+function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
+  const url = new Position({ x: col, y: row });
+
+  if (targetScene === SceneName.Hexception) {
+    return url.toHexLocationUrl();
+  }
+
+  if (targetScene === SceneName.FastTravel) {
+    return `/${SceneName.FastTravel}?col=${col}&row=${row}`;
+  }
+
+  return url.toMapLocationUrl();
+}
+
+function dispatchSceneNavigation(navigationUrl: string): void {
+  window.history.pushState({}, "", navigationUrl);
+  window.dispatchEvent(new Event("urlChanged"));
+}
 
 /**
  * Navigate to a structure by updating the URL and dispatching a URL change event
@@ -11,26 +36,14 @@ import { SceneName } from "../types";
  * @param structure - The structure to navigate to
  * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
  */
-export function navigateToStructure(col: number, row: number, scene?: "hex" | "map") {
-  const url = new Position({ x: col, y: row });
-
+export function navigateToStructure(col: number, row: number, scene?: "hex" | "map" | "travel") {
   const targetScene = resolveNavigationSceneTarget({
-    requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
+    requestedScene:
+      scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : scene === "travel" ? SceneName.FastTravel : undefined,
     currentPath: window.location.pathname,
   });
 
-  let navigationUrl: string;
-  if (targetScene === SceneName.Hexception) {
-    navigationUrl = url.toHexLocationUrl();
-  } else {
-    navigationUrl = url.toMapLocationUrl();
-  }
-
-  // Update browser URL
-  window.history.pushState({}, "", navigationUrl);
-
-  // Dispatch URL changed event to trigger scene updates
-  window.dispatchEvent(new Event("urlChanged"));
+  dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
 }
 
 /**
@@ -40,26 +53,14 @@ export function navigateToStructure(col: number, row: number, scene?: "hex" | "m
  * @param row - Row coordinate
  * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
  */
-function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
-  const url = new Position({ x: col, y: row });
-
+function navigateToPosition(col: number, row: number, scene?: "hex" | "map" | "travel") {
   const targetScene = resolveNavigationSceneTarget({
-    requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
+    requestedScene:
+      scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : scene === "travel" ? SceneName.FastTravel : undefined,
     currentPath: window.location.pathname,
   });
 
-  let navigationUrl: string;
-  if (targetScene === SceneName.Hexception) {
-    navigationUrl = url.toHexLocationUrl();
-  } else {
-    navigationUrl = url.toMapLocationUrl();
-  }
-
-  // Update browser URL
-  window.history.pushState({}, "", navigationUrl);
-
-  // Dispatch URL changed event to trigger scene updates
-  window.dispatchEvent(new Event("urlChanged"));
+  dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
 }
 
 /**
@@ -73,7 +74,7 @@ function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
 export function selectNextStructure(
   playerStructures: Structure[],
   currentIndex: number,
-  scene?: "hex" | "map",
+  scene?: "hex" | "map" | "travel",
 ): number {
   if (playerStructures.length === 0) return currentIndex;
 
@@ -87,6 +88,40 @@ export function selectNextStructure(
   );
 
   return nextIndex;
+}
+
+export function navigateIntoFastTravelSpire(
+  worldHexCoords: FastTravelHexCoords,
+  spireMappings: readonly FastTravelSpireMapping[],
+): boolean {
+  const transition = resolveEnterFastTravelTransition({
+    worldHexCoords,
+    spireMappings,
+  });
+
+  if (!transition) {
+    return false;
+  }
+
+  navigateToPosition(transition.col, transition.row, "travel");
+  return true;
+}
+
+export function navigateOutOfFastTravelSpire(
+  travelHexCoords: FastTravelHexCoords,
+  spireMappings: readonly FastTravelSpireMapping[],
+): boolean {
+  const transition = resolveExitFastTravelTransition({
+    travelHexCoords,
+    spireMappings,
+  });
+
+  if (!transition) {
+    return false;
+  }
+
+  navigateToPosition(transition.col, transition.row, "map");
+  return true;
 }
 
 /**

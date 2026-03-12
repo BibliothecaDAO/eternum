@@ -17,6 +17,7 @@
 | U3     | 2026-03-12 00:00 | Codex  | Completed M0 by activating the fast-travel boundary, registering the concrete scene stub in `GameRenderer`, and locking renderer routing/update seams with fail-first tests. |
 | U4     | 2026-03-12 00:00 | Codex  | Completed M1 by turning `FastTravelScene` into a named-hook `WarpTravel` lifecycle shell and locking the lifecycle seam with focused tests plus shared runtime regressions. |
 | U5     | 2026-03-12 00:00 | Codex  | Completed M2 and M3 by adding fast-travel chunk hydration/render-state adapters, stubbed Spire and army scene visuals, and a no-ground fully explored warp-space render path. |
+| U6     | 2026-03-12 00:00 | Codex  | Completed M4 by adding explicit Spire mapping/navigation policy modules plus world/travel navigation helpers that preserve non-Spire fallback behavior. |
 
 ## Executive Summary
 
@@ -301,7 +302,7 @@ Completion Notes:
 2. `HexagonScene` now exposes a `shouldCreateGroundMesh()` hook, and `FastTravelScene` opts out so the shared worldmap terrain mesh is not created.
 3. `FastTravelScene` uses the render-state palette to color the warp-space background plus the stubbed Spire and army markers.
 
-### M4: Spire Navigation Boundary (1-2 days)
+### M4: Spire Navigation Boundary (1-2 days) [x]
 
 Objective:
 
@@ -318,6 +319,12 @@ Exit Criteria:
 
 1. Spire travel transitions are deterministic and test-protected.
 2. Non-Spire navigation remains unchanged.
+
+Completion Notes:
+
+1. `fast-travel-spire-mapping.ts` now owns deterministic lookup between world-map Spire coordinates and fast-travel entry/exit coordinates.
+2. `fast-travel-navigation-policy.ts` now resolves world-to-travel entry and travel-to-world exit transitions with explicit scene/coordinate outputs.
+3. `three/utils/navigation.ts` now exposes `navigateIntoFastTravelSpire()` and `navigateOutOfFastTravelSpire()` while preserving the default non-Spire map/hex navigation paths.
 
 ### M5: Hardening and Closeout (0.5-1 day)
 
@@ -349,9 +356,9 @@ Exit Criteria:
 7. [x] S7 (P1): Add failing test proving fast-travel scene prepares a fully explored no-terrain render state.
 8. [x] S8 (P1): Add failing test proving warp-space shader inputs are prepared for the visible hex window.
 9. [x] S9 (P1): Add failing test proving stubbed Spire anchors appear in fast-travel hydrated scene state.
-10. S10 (P1): Add failing test proving Spire mapping resolves world-map entry to fast-travel destination.
-11. S11 (P1): Add failing test proving exit travel maps back to the correct world-map Spire.
-12. S12 (P1): Add failing test proving non-Spire world-map navigation remains unchanged.
+10. [x] S10 (P1): Add failing test proving Spire mapping resolves world-map entry to fast-travel destination.
+11. [x] S11 (P1): Add failing test proving exit travel maps back to the correct world-map Spire.
+12. [x] S12 (P1): Add failing test proving non-Spire world-map navigation remains unchanged.
 13. S13 (P2): Document residual risks and the next interaction-focused backlog.
 
 ## Test Strategy
