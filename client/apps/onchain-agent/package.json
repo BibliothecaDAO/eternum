@@ -21,7 +21,8 @@
     "@mariozechner/pi-ai": "^0.52.7",
     "@mariozechner/pi-coding-agent": "^0.52.7",
     "starknet": "catalog:",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "viem": "^2.46.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
