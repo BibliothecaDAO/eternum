@@ -77,6 +77,12 @@ export function extractTxError(err: any): string {
     /* circular ref */
   }
 
+  // WASM session errors — the Cartridge WASM module throws opaque errors
+  // with only a __wbg_ptr field and no useful message
+  if (err?.__wbg_ptr && !err?.message) {
+    return "Session error (WASM) — session may have expired. Restart the agent to re-authenticate.";
+  }
+
   // If we still have a generic message, try to log the full error for debugging
   if (msg === "Transaction execution error" || msg.length < 20) {
     try {
