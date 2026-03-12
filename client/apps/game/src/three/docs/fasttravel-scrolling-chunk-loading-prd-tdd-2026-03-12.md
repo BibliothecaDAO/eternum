@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: make fast travel load new hex windows as the camera pans instead of staying pinned to one small center window
-- Status: In Progress
+- Status: Complete
 - Owner: Three.js Team
 - Created: 2026-03-12
 - Last Updated: 2026-03-12
@@ -15,14 +15,22 @@
 | U1     | 2026-03-12 00:00 | Codex  | Scoped the missing fast-travel chunk scrolling path and defined a clean implementation plan. |
 | U2     | 2026-03-12 06:15 | Codex  | Completed `O0` chunk policy and camera-refresh entry wiring with targeted runtime and controls tests green. |
 | U3     | 2026-03-12 06:25 | Codex  | Completed `O1` shared chunk-decision reuse with normalized fast-travel chunk keys and scene chunk tracking. |
+| U4     | 2026-03-12 06:35 | Codex  | Completed `O2` and `O3` with a single apply path plus movement coverage across the larger render window. |
+| U5     | 2026-03-12 06:40 | Codex  | Completed `O4` hardening with the fast-travel and shared warp-travel regression clusters green. |
 
 ## Delivery Tracker
 
 - [x] O0: Chunk Policy And Refresh Entry
 - [x] O1: Shared Chunk Decision Reuse
-- [ ] O2: Visible Window Rebuild On Scroll
-- [ ] O3: Movement/Interaction Compatibility
-- [ ] O4: Hardening
+- [x] O2: Visible Window Rebuild On Scroll
+- [x] O3: Movement/Interaction Compatibility
+- [x] O4: Hardening
+
+## Closeout Notes
+
+1. Fast travel now uses a scene-local chunk runtime that reuses the shared warp-travel decision seam without importing worldmap-only manager fanout or prefetch complexity.
+2. The render window intentionally remains larger than the logical chunk stride so movement and interaction stay usable after scroll-driven chunk changes.
+3. A generic warp-travel chunk controller extraction is not warranted yet; fast travel and worldmap still differ enough in hydration/runtime ownership that the helper seam is the right current boundary.
 
 ## Executive Summary
 
