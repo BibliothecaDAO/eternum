@@ -7,7 +7,7 @@
  * Output follows the "immediately actionable" principle:
  * - Did I win?
  * - What's left of my army?
- * - What did I gain?
+ * - Use inspect_tile to check the outcome afterwards.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -21,6 +21,16 @@ import { directionBetween } from "../world/pathfinding.js";
 import { calculateStrength, calculateGuardStrength } from "../world/strength.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 
+/**
+ * Create the attack_target agent tool.
+ *
+ * @param client - Eternum client used to fetch explorer and structure data.
+ * @param mapCtx - Map context holding the current tile snapshot and stamina tracking.
+ * @param playerAddress - Hex address of the player; used to verify army ownership.
+ * @param tx - Transaction context containing the provider and signer.
+ * @param gameConfig - Game configuration including stamina regeneration rules.
+ * @returns An AgentTool that attacks or claims an adjacent explorer or structure.
+ */
 export function createAttackTool(
   client: EternumClient,
   mapCtx: MapContext,

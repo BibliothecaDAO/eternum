@@ -1,3 +1,12 @@
+/**
+ * Cartridge Controller session policy builder for the Eternum on-chain game.
+ *
+ * Reads the Dojo deployment manifest and chain-specific address files to
+ * construct the full set of contract method policies required for an
+ * authenticated agent session. Supports mainnet, Sepolia, Slot, Slottest, and
+ * local deployments via the {@link Chain} discriminant.
+ */
+
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +15,7 @@ import { fileURLToPath } from "node:url";
 // Types
 // ---------------------------------------------------------------------------
 
+/** Supported deployment targets, each corresponding to a distinct manifest and address file. */
 export type Chain = "mainnet" | "sepolia" | "slot" | "slottest" | "local";
 
 interface Method {
@@ -35,6 +45,12 @@ interface SignMessagePolicy {
   domain: Record<string, string>;
 }
 
+/**
+ * Optional token contract addresses appended to the session policy.
+ *
+ * When provided, the corresponding method (`token_lock` or `approve`) is added
+ * to the policy for that contract so the agent can interact with entry and fee tokens.
+ */
 export interface TokenAddresses {
   /** Entry token contract address (for token_lock). Omit or "0x0" to skip. */
   entryToken?: string;
@@ -98,6 +114,21 @@ const VRF_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9a
 // buildPolicies
 // ---------------------------------------------------------------------------
 
+/**
+ * Build the full Cartridge Controller session policy for the given chain.
+ *
+ * Reads the Dojo manifest to resolve contract addresses, then constructs a
+ * {@link SessionPolicies} object covering every system contract the agent may
+ * call (troop management, resource transfers, hyperstructures, trading, etc.)
+ * plus a message-signing policy for Eternum chat messages.
+ *
+ * @param chain - Target deployment chain; selects the manifest and address files to load.
+ * @param tokens - Optional token contract addresses to include entry/fee token policies.
+ * @param manifestOverride - Pre-loaded manifest object; bypasses reading from disk when provided.
+ * @returns A {@link SessionPolicies} object ready to pass to the Cartridge SessionProvider.
+ * @throws {Error} If a required contract is not found in the manifest.
+ * @throws {Error} If the manifest or addresses file cannot be read or contains invalid JSON.
+ */
 export function buildPolicies(chain: Chain, tokens?: TokenAddresses, manifestOverride?: any): SessionPolicies {
   const manifest = manifestOverride ?? loadJson(manifestPath(chain));
   const addresses = loadJson(addressesPath(chain));

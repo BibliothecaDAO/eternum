@@ -1,21 +1,38 @@
+/**
+ * Realm tick executor — submits on-chain transactions for a single automation cycle.
+ *
+ * Handles buildings, upgrades, and production in a fixed priority order so that
+ * resource costs are not double-spent across concurrent operations.
+ */
 import type { EternumProvider } from "@bibliothecadao/provider";
 import type { SlotResult } from "./placement.js";
 import type { BuildStep } from "./build-order.js";
 
+/** A single building construction action to be submitted on-chain. */
 export interface BuildAction {
+  /** The build-order step describing which building to construct. */
   step: BuildStep;
+  /** The hex slot where the building will be placed. */
   slot: SlotResult;
+  /** Whether to use the simple (labor-only) recipe instead of the complex one. */
   useSimple: boolean;
 }
 
+/** Intent to upgrade a realm from one level to the next. */
 export interface UpgradeAction {
+  /** Current realm level (0-indexed). */
   fromLevel: number;
+  /** Human-readable name of the current level (e.g. "Settlement"). */
   fromName: string;
+  /** Human-readable name of the target level (e.g. "City"). */
   toName: string;
 }
 
+/** Batched production calls to submit in a single transaction. */
 export interface ProductionActions {
+  /** Complex (resource-to-resource) production cycles, keyed by resource ID. */
   resourceToResource: Array<{ resource_id: number; cycles: number }>;
+  /** Simple (labor-to-resource) production cycles, keyed by resource ID. */
   laborToResource: Array<{ resource_id: number; cycles: number }>;
 }
 
@@ -28,15 +45,31 @@ interface TickInput {
   productionCalls: ProductionActions | null;
 }
 
+/** Summary of all actions taken (or attempted) during a single realm tick. */
 export interface TickResult {
+  /** Entity ID of the realm that was ticked. */
   realmEntityId: number;
+  /** Labels of buildings successfully constructed this tick. */
   built: string[];
+  /** Human-readable upgrade string (e.g. "Settlement → City"), or null if no upgrade occurred. */
   upgraded: string | null;
+  /** Whether production was executed this tick. */
   produced: boolean;
+  /** True when no actions were taken (nothing to build, upgrade, or produce). */
   idle: boolean;
+  /** Error messages from any failed transactions. */
   errors: string[];
 }
 
+/**
+ * Execute all automation actions for a single realm in one tick.
+ *
+ * Buildings run first (sequentially), then the upgrade, then production.
+ * A failed build halts subsequent builds to avoid cascading resource errors.
+ *
+ * @param input - All context needed to execute the tick (provider, signer, planned actions).
+ * @returns A summary of what was built, upgraded, produced, and any errors encountered.
+ */
 export async function executeRealmTick(input: TickInput): Promise<TickResult> {
   const { provider, signer, realmEntityId } = input;
   const result: TickResult = {

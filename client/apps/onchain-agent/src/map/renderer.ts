@@ -1,3 +1,10 @@
+/**
+ * ASCII map renderer for the Eternum world map.
+ *
+ * Converts raw tile state into a human-readable ASCII grid with a legend,
+ * column ruler, and annotated sections for owned entities and points of interest.
+ */
+
 import type { TileState, ExplorerInfo, StructureInfo } from "@bibliothecadao/client";
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import { projectExplorerStamina } from "../world/stamina.js";
@@ -82,6 +89,12 @@ function isExplorerType(occupierType: number): boolean {
   return occupierType >= 15 && occupierType <= 32;
 }
 
+/**
+ * Immutable snapshot of the rendered ASCII map and associated lookup helpers.
+ *
+ * Returned by {@link renderMap} and stored in {@link MapContext} so that all tools
+ * share a consistent view of the world between map loop refreshes.
+ */
 export interface MapSnapshot {
   /** The full ASCII map text (legend + ruler + numbered rows). */
   text: string;
@@ -95,22 +108,60 @@ export interface MapSnapshot {
   tiles: TileState[];
   /** Fast lookup by world hex coordinate ("x,y" → TileState). */
   gridIndex: Map<string, TileState>;
-  /** Resolve a map row:col (1-indexed) back to hex coordinates. */
+  /**
+   * Resolve a 1-indexed map row and column back to world hex coordinates.
+   *
+   * @param row - 1-indexed map row (top = 1).
+   * @param col - 1-indexed map column (left = 1).
+   * @returns The world hex coordinates, or null if out of bounds.
+   */
   resolve(row: number, col: number): { x: number; y: number } | null;
-  /** Get tile data at a map row:col (1-indexed). Null if unexplored. */
+  /**
+   * Get the tile at a 1-indexed map row and column.
+   *
+   * @param row - 1-indexed map row (top = 1).
+   * @param col - 1-indexed map column (left = 1).
+   * @returns The TileState at that position, or null if unexplored or out of bounds.
+   */
   tileAt(row: number, col: number): TileState | null;
   /** Fixed coordinate anchor — pass to subsequent renders to keep row:col stable. */
   anchor: MapAnchor;
 }
 
-/** Fixed coordinate anchor — locks minX/minY so row:col positions are stable across renders. */
+/**
+ * Fixed coordinate anchor that locks the bounding box of the rendered map.
+ *
+ * Passing the anchor from a previous {@link MapSnapshot} to the next {@link renderMap}
+ * call ensures that row:col positions remain stable as new tiles are explored —
+ * the grid origin never shifts.
+ */
 export interface MapAnchor {
+  /** Minimum world X coordinate included in the rendered grid. */
   minX: number;
+  /** Minimum world Y coordinate included in the rendered grid. */
   minY: number;
+  /** Maximum world X coordinate included in the rendered grid. */
   maxX: number;
+  /** Maximum world Y coordinate included in the rendered grid. */
   maxY: number;
 }
 
+/**
+ * Render a set of explored tiles into an ASCII map snapshot.
+ *
+ * Builds a text grid where each cell displays the occupier type using a
+ * single character (or circled variant for agent-owned entities). The
+ * snapshot includes lookup helpers and a stable coordinate anchor so
+ * row:col references survive subsequent renders as the map expands.
+ *
+ * @param tiles - All explored tile states to include in the render.
+ * @param ownedEntityIds - Entity IDs owned by the agent; those tiles are highlighted with circled characters.
+ * @param explorerDetails - Per-explorer metadata (troop count, type, stamina) for owned armies.
+ * @param staminaConfig - Stamina configuration used to project current stamina from tick data.
+ * @param mapAnchor - Previous anchor to keep row:col coordinates stable across refreshes.
+ * @param structureDetails - Per-structure metadata (level, army slots, troop reserves) for owned structures.
+ * @returns A {@link MapSnapshot} containing the rendered text, lookup helpers, and the updated anchor.
+ */
 export function renderMap(
   tiles: TileState[],
   ownedEntityIds?: Set<number>,

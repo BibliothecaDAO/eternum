@@ -10,6 +10,12 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { MapContext } from "../map/context.js";
 
+/**
+ * Create the view_map agent tool.
+ *
+ * @param mapCtx - Map context holding the current tile snapshot and its ASCII text representation.
+ * @returns An AgentTool that returns the current ASCII map text, or a "not loaded" message if no snapshot exists.
+ */
 export function createViewMapTool(mapCtx: MapContext): AgentTool<any> {
   return {
     name: "view_map",

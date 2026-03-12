@@ -10,7 +10,13 @@ export interface TxContext {
   signer: AccountInterface;
 }
 
-/** Compare two hex addresses for equality, ignoring leading zero differences. */
+/**
+ * Compare two hex addresses for equality, ignoring leading zero differences.
+ *
+ * @param a - First hex address string (e.g. "0x0123...").
+ * @param b - Second hex address string to compare against.
+ * @returns `true` if both addresses represent the same numeric value, `false` otherwise.
+ */
 export function addressesEqual(a: string, b: string): boolean {
   try {
     return BigInt(a) === BigInt(b);
@@ -20,8 +26,12 @@ export function addressesEqual(a: string, b: string): boolean {
 }
 
 /**
- * Extract a searchable error string from nested RPC/provider errors.
- * Checks baseError.data.execution_error, then message, then stringifies the whole thing.
+ * Extract a human-readable error string from nested RPC/provider errors.
+ * Walks common error shapes from starknet.js and the Eternum provider, preferring
+ * the `execution_error` field and falling back to `message` or a full JSON stringify.
+ *
+ * @param err - The raw error thrown by a provider transaction call.
+ * @returns A concise, human-readable error string. Some code paths truncate at 300 characters.
  */
 export function extractTxError(err: any): string {
   // Walk common nested error shapes from starknet.js / provider

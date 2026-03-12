@@ -38,6 +38,13 @@ function hexDistance(a: Position, b: Position): number {
 
 // ── Direction between adjacent hexes ─────────────────────────────────
 
+/**
+ * Determine the hex `Direction` from one adjacent tile to another.
+ *
+ * @param from - The source hex position.
+ * @param to - The destination hex position, which must be directly adjacent to `from`.
+ * @returns The `Direction` enum value for the step, or `null` if the two positions are not adjacent.
+ */
 export function directionBetween(from: Position, to: Position): Direction | null {
   return getDirectionBetweenAdjacentHexes({ col: from.x, row: from.y }, { col: to.x, row: to.y });
 }
@@ -67,7 +74,8 @@ interface Node {
  * @param maxStamina   Maximum stamina budget
  * @param tileCost     Cost function: tile key → stamina to enter that tile (explored tiles)
  * @param exploreCost  Stamina cost to explore an unexplored tile (default 30)
- * @returns PathResult or null if truly unreachable
+ * @returns PathResult (with `reachedLimit: true` if cost exceeds budget), or null if truly unreachable.
+ * @throws {Error} If the reconstructed path contains non-adjacent hex pairs (indicates an internal bug).
  */
 export function findPath(
   start: Position,
@@ -169,14 +177,20 @@ function reconstructPath(endNode: Node): PathResult {
 
 // ── Build tile index from MapSnapshot tiles ──────────────────────────
 
+/**
+ * Pre-built lookup sets used by `findPath` to classify tiles without
+ * iterating the full tile array on every pathfinding call.
+ */
 interface TileIndex {
+  /** Set of tile keys ("x,y") for every tile that has been explored. */
   explored: Set<string>;
+  /** Set of tile keys ("x,y") for tiles that block movement (occupied by any entity). */
   blocked: Set<string>;
 }
 
 /**
  * Build pathfinding tile index from raw tile data.
- * Any occupied tile blocks movement (structures, explorers, chests, quests, spires).
+ * Any tile with a non-zero `occupierType` blocks movement.
  * The end position is never considered blocked by findPath (allows targeting).
  */
 export function buildTileIndex(tiles: TileState[]): TileIndex {

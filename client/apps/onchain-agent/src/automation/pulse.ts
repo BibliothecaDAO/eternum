@@ -54,7 +54,7 @@ interface PulseCheck {
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-/** Approximate wheat consumed per army move (from game config). */
+/** Approximate wheat consumed per army move (hardcoded estimate, not read from game config at runtime). */
 const WHEAT_PER_MOVE = 20;
 
 /** Below this many moves, warn the agent. */
@@ -65,9 +65,11 @@ const LOW_MOVES_THRESHOLD = 10;
 /**
  * Check essence and wheat status for a realm.
  *
- * @param essenceBalance  Current essence on hand
- * @param wheatBalance    Current wheat on hand
- * @param realmState      Current realm state (for build order progress)
+ * @param essenceBalance - Current essence balance on hand.
+ * @param wheatBalance - Current wheat balance on hand.
+ * @param realmState - Current realm state; only `biome` and `buildingCounts` are read
+ *                     to determine the next essence-gated build step.
+ * @returns A PulseCheck with essence sufficiency, wheat move estimates, and a formatted briefing string.
  */
 export function checkPulse(essenceBalance: number, wheatBalance: number, realmState: RealmState): PulseCheck {
   const essence = checkEssence(essenceBalance, realmState);

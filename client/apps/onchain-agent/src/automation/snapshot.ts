@@ -7,12 +7,15 @@
 import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
+/** Parsed resource and building state for a single realm at a point in time. */
 interface RealmSnapshot {
   /** Raw on-chain balances — safe for spending decisions and budget caps. */
   balances: Map<number, number>;
   /** Projected balances including unharvested production — use for prioritisation only. */
   projectedBalances: Map<number, number>;
+  /** Count of active resource-producing buildings, keyed by BuildingType. */
   buildingCounts: Map<number, number>;
+  /** Set of BuildingType values for buildings that are currently producing. */
   activeBuildings: Set<number>;
 }
 
@@ -48,6 +51,17 @@ function parseRawHex(value: string | number | null | undefined): bigint {
 
 const FOOD_RESOURCE_IDS = new Set([35, 36]); // Wheat, Fish
 
+/**
+ * Parse a raw SQL balance-and-production row into a typed RealmSnapshot.
+ *
+ * When `currentTimestamp` is provided, projected balances are calculated by
+ * extrapolating unharvested production forward from the last-updated timestamp.
+ * Food resources (Wheat, Fish) are not capped by output_amount_left.
+ *
+ * @param row - Raw SQL row containing balance and production columns, or null/undefined.
+ * @param currentTimestamp - Current Unix timestamp in seconds; omit to skip projection.
+ * @returns A snapshot with raw balances, projected balances, building counts, and active buildings.
+ */
 export function parseRealmSnapshot(
   row: Record<string, any> | null | undefined,
   currentTimestamp?: number,

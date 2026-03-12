@@ -1,3 +1,8 @@
+/**
+ * Evolution engine that asks a language model to analyse the agent's current
+ * soul and task lists, then applies the suggested improvements to disk.
+ */
+
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Model } from "@mariozechner/pi-ai";
@@ -8,6 +13,19 @@ import { loadSoul, loadTaskLists } from "./soul.js";
 // Types
 // ---------------------------------------------------------------------------
 
+/**
+ * A single improvement proposed by the evolution model.
+ *
+ * @property target   - The kind of artifact to modify: the agent's soul, a
+ *                      named task list, or a named skill.
+ * @property domain   - Must be provided when `target` is `"task_list"` or `"skill"`;
+ *                      identifies the file by its domain name. Suggestions missing
+ *                      this field for those targets are silently skipped.
+ * @property action   - Whether to overwrite an existing file (`"update"`) or
+ *                      create a new one (`"create"`).
+ * @property content  - The full replacement content for the target file.
+ * @property reasoning - Human-readable explanation of why the change helps.
+ */
 interface EvolutionSuggestion {
   target: "soul" | "task_list" | "skill";
   domain?: string;
@@ -16,6 +34,12 @@ interface EvolutionSuggestion {
   reasoning: string;
 }
 
+/**
+ * The structured output of a single evolution cycle.
+ *
+ * @property suggestions - Zero or more concrete file changes to apply.
+ * @property analysis    - Free-form text analysis preceding the suggestions.
+ */
 interface EvolutionResult {
   suggestions: EvolutionSuggestion[];
   analysis: string;
@@ -145,6 +169,16 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
 // Public: run a full evolution cycle
 // ---------------------------------------------------------------------------
 
+/**
+ * Run a full evolution cycle: build a prompt from the current soul and task
+ * lists, ask `model` for improvement suggestions, write accepted suggestions
+ * to disk, and return the structured result.
+ *
+ * @param model   - The language model used to generate suggestions.
+ * @param dataDir - Root path of the agent's world data directory.
+ * @returns The parsed {@link EvolutionResult} containing the analysis text and
+ *          all validated suggestions (a subset of which may have been written to disk).
+ */
 export async function evolve(model: Model<any>, dataDir: string): Promise<EvolutionResult> {
   const prompt = buildEvolutionPrompt(dataDir);
 

@@ -1,7 +1,9 @@
 /**
  * Entry point for the Eternum autonomous agent.
  *
- * Config → Auth → EternumClient → Tools → Agent → Tick loop.
+ * Wires together config loading, world discovery, Cartridge auth, the
+ * EternumClient/Provider, all game tools, the map loop, the automation loop,
+ * context pruning, and the tick-driven agent loop.
  * Uses pi-agent-core directly (no game-agent framework).
  */
 
@@ -66,6 +68,12 @@ import { createViewMapTool } from "../tools/view-map.js";
 const MAX_CONTEXT_CHARS = 400_000;
 const PRUNE_TARGET_CHARS = 200_000;
 
+/**
+ * Estimate the total character count across all messages in the context window.
+ *
+ * @param messages - The current agent message history.
+ * @returns Approximate total character count.
+ */
 function estimateChars(messages: AgentMessage[]): number {
   let total = 0;
   for (const m of messages) {
@@ -81,6 +89,15 @@ function estimateChars(messages: AgentMessage[]): number {
   return total;
 }
 
+/**
+ * Partition a message array into the oldest messages to discard and the most
+ * recent messages to retain, targeting at most `PRUNE_TARGET_CHARS` characters
+ * in the kept slice.
+ *
+ * @param messages - Full message history, oldest first.
+ * @returns An object with `dropped` (oldest messages) and `kept` (most recent
+ *          messages that fit within the target character budget).
+ */
 function splitMessages(messages: AgentMessage[]): { dropped: AgentMessage[]; kept: AgentMessage[] } {
   let kept = 0;
   let cutIndex = messages.length;
@@ -108,6 +125,18 @@ function splitMessages(messages: AgentMessage[]): { dropped: AgentMessage[]; kep
   };
 }
 
+/**
+ * Prune the message history when it exceeds `MAX_CONTEXT_CHARS`.
+ *
+ * Dropped messages are summarised by the agent's own model and prepended to
+ * the kept slice as a synthetic `"user"` message so the agent retains
+ * situational awareness. Falls back to a short placeholder if summarisation
+ * fails.
+ *
+ * @param messages - Current message history to potentially compact.
+ * @param model    - The language model used to generate the compaction summary.
+ * @returns The (possibly pruned and prepended) message array.
+ */
 async function pruneMessages(messages: AgentMessage[], model: Model<any>): Promise<AgentMessage[]> {
   if (estimateChars(messages) <= MAX_CONTEXT_CHARS) return messages;
 
@@ -170,6 +199,14 @@ async function pruneMessages(messages: AgentMessage[], model: Model<any>): Promi
 // Tick prompt builder
 // ---------------------------------------------------------------------------
 
+/**
+ * Build the per-tick user prompt that is sent to the agent at the start of
+ * each game turn, embedding the current map snapshot.
+ *
+ * @param mapCtx - Shared map context holding the latest tile snapshot.
+ * @returns The formatted tick prompt string, including the rendered map text
+ *          and strategic instructions for the turn.
+ */
 function buildTickPrompt(mapCtx: MapContext): string {
   const mapText = mapCtx.snapshot?.text ?? "Map not yet loaded.";
   return [
@@ -188,6 +225,23 @@ function buildTickPrompt(mapCtx: MapContext): string {
 // Main
 // ---------------------------------------------------------------------------
 
+/**
+ * Bootstrap and run the Eternum autonomous agent.
+ *
+ * Performs the full startup sequence: load config, optionally discover the
+ * world via the factory, authenticate with Cartridge, create the
+ * `EternumClient` and `EternumProvider`, wire up all game tools, start the
+ * background map and automation loops, then enter the tick loop that drives
+ * the agent on a fixed interval. Also opens an interactive stdin readline
+ * interface so an operator can send messages to the agent at runtime.
+ * Registers `SIGINT`/`SIGTERM` handlers for graceful shutdown.
+ *
+ * @throws If the configuration is invalid (e.g. missing `WORLD_NAME` and
+ *         explicit URL pair), if world discovery fails (network/factory error),
+ *         if the manifest file is missing for the chain, if Cartridge
+ *         authentication fails or times out, or if the Torii client/game
+ *         config cannot be initialised.
+ */
 export async function main() {
   const config = loadConfig();
 

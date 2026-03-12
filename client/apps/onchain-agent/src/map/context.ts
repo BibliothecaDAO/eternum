@@ -1,11 +1,24 @@
 import type { MapSnapshot } from "./renderer.js";
 
-/** Shared mutable ref so all tools and the map loop can access the latest map snapshot. */
+/**
+ * Shared mutable context object threaded through the map loop and all tools.
+ *
+ * The map loop writes to this object on every refresh; tools read from it to
+ * obtain the latest ASCII map snapshot and coordinate lookups without issuing
+ * additional network requests.
+ */
 export interface MapContext {
+  /** Latest rendered map snapshot, or null before the first refresh completes. */
   snapshot: MapSnapshot | null;
-  /** Path to write the ASCII map file (null in tests). */
+  /** Absolute path where the ASCII map is written after each refresh (typically `<dataDir>/map.txt`). Null in tests to skip disk writes. */
   filePath: string | null;
-  /** Force an immediate map refresh (set by main after map loop is created). */
+  /**
+   * Trigger an immediate out-of-band map refresh.
+   *
+   * Set by the application entry point once the map loop is created. Tools call
+   * this after a successful on-chain action so the snapshot reflects the new state
+   * without waiting for the next scheduled interval.
+   */
   refresh?: () => Promise<void>;
   /**
    * Positions known to be occupied by armies that moved recently.
@@ -17,8 +30,8 @@ export interface MapContext {
   recentlyMoved?: Map<string, number>;
   /**
    * Chests opened recently but not yet reflected in Torii's snapshot.
-   * Keyed by tile "x,y". Pruned when the tile's occupierType becomes 0
-   * (chest removed) in the snapshot.
+   * Keyed by tile "x,y". Pruned when the tile is absent from the snapshot
+   * or its occupierType is no longer 34 (chest).
    */
   recentlyOpenedChests?: Set<string>;
   /**
