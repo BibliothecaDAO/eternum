@@ -1,4 +1,5 @@
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
+import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
 
 interface ListenerBinding {
   event: string;
@@ -8,6 +9,13 @@ interface ListenerBinding {
 interface WorldmapLifecycleFixture {
   listenerAdds: ListenerBinding[];
   listenerRemoves: ListenerBinding[];
+  destroyCalls: {
+    armyManager: number;
+    structureManager: number;
+    chestManager: number;
+    fxManager: number;
+    resourceFXManager: number;
+  };
   switchOffCalls: number;
   refreshRequests: number;
   setup: () => void;
@@ -26,6 +34,13 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   let isUrlChangedListenerAttached = false;
   let switchOffCalls = 0;
   let refreshRequests = 0;
+  const destroyCalls = {
+    armyManager: 0,
+    structureManager: 0,
+    chestManager: 0,
+    fxManager: 0,
+    resourceFXManager: 0,
+  };
 
   const syncUrlChangedListenerLifecycle = (phase: "setup" | "switchOff" | "destroy") => {
     const decision = resolveUrlChangedListenerLifecycle({
@@ -46,6 +61,7 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   return {
     listenerAdds,
     listenerRemoves,
+    destroyCalls,
     get switchOffCalls() {
       return switchOffCalls;
     },
@@ -63,6 +79,33 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     },
     destroy() {
       this.switchOff();
+      destroyWorldmapOwnedManagers({
+        armyManager: {
+          destroy: () => {
+            destroyCalls.armyManager += 1;
+          },
+        },
+        structureManager: {
+          destroy: () => {
+            destroyCalls.structureManager += 1;
+          },
+        },
+        chestManager: {
+          destroy: () => {
+            destroyCalls.chestManager += 1;
+          },
+        },
+        fxManager: {
+          destroy: () => {
+            destroyCalls.fxManager += 1;
+          },
+        },
+        resourceFXManager: {
+          destroy: () => {
+            destroyCalls.resourceFXManager += 1;
+          },
+        },
+      });
     },
     updateVisibleChunks() {
       if (isSwitchedOff) {

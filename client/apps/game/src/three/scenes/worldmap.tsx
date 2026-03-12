@@ -144,6 +144,7 @@ import {
   finalizePendingChunkFetchOwnership,
   invalidateWorldmapSwitchOffTransitionState,
 } from "./worldmap-runtime-lifecycle";
+import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
 import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
@@ -5100,7 +5101,13 @@ export default class WorldmapScene extends HexagonScene {
     this.toriiStreamManager?.shutdown();
     this.toriiBoundsAreaKey = null;
 
-    this.resourceFXManager.destroy();
+    destroyWorldmapOwnedManagers({
+      armyManager: this.armyManager,
+      structureManager: this.structureManager,
+      chestManager: this.chestManager,
+      fxManager: this.fxManager,
+      resourceFXManager: this.resourceFXManager,
+    });
     this.updateCameraTargetHexThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleControlsChangeForMinimap);
