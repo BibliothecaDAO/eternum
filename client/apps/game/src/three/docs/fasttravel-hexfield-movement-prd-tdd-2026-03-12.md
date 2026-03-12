@@ -3,7 +3,7 @@
 ## Overview
 
 - Feature: render the fast-travel layer as a real hex map surface and restore worldmap-style unit movement on top of it
-- Status: In Progress
+- Status: Complete
 - Owner: Three.js Team
 - Created: 2026-03-12
 - Last Updated: 2026-03-12
@@ -16,13 +16,20 @@
 | U2     | 2026-03-12 00:30 | Codex  | Completed `H0` hex-surface bootstrap with a dedicated field/material seam and stage-level tests.                            |
 | U3     | 2026-03-12 01:00 | Codex  | Completed `H1` with anchored entity descriptors and interactive visible-surface refresh wiring.                             |
 | U4     | 2026-03-12 01:30 | Codex  | Completed `H2` with visible-window movement policy, selection feedback, and shared path rendering in fast travel.          |
+| U5     | 2026-03-12 02:00 | Codex  | Completed `H3` hardening with targeted fast-travel and shared runtime regression suites green plus explicit follow-up notes. |
 
 ## Delivery Tracker
 
 - [x] H0: Hex Surface Bootstrap
 - [x] H1: Unit Anchoring On The Surface
 - [x] H2: Movement Parity Slice
-- [ ] H3: Hardening And Closeout
+- [x] H3: Hardening And Closeout
+
+## Closeout Notes
+
+1. Fast-travel movement currently persists in scene-local `sceneArmies` / `sceneSpires` state so the interaction loop is isolated from authoritative runtime concerns.
+2. Shared runtime regression coverage is green for `warp-travel` lifecycle behavior and `worldmap` shared-runtime fanout.
+3. The remaining backend/data work is now explicitly limited to replacing scene-local fast-travel hydration with authoritative Spire/runtime sources.
 
 ## Executive Summary
 
@@ -366,3 +373,4 @@ Exit Criteria:
 1. replace scene-local demo data with authoritative Spire/runtime queries
 2. add deeper visual polish after movement parity lands
 3. evaluate whether a shared `WarpTravel` hex-surface helper should be extracted after the fast-travel implementation stabilizes
+4. decide whether committed fast-travel moves should animate through `ArmyManager` or remain scene-local until authoritative runtime wiring exists
