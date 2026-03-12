@@ -46,6 +46,7 @@ import {
   resolveFastTravelChunkHydrationPlan,
   resolveFastTravelVisibleChunkDecision,
 } from "./fast-travel-chunk-loading-runtime";
+import { resetFastTravelRuntimeState } from "./fast-travel-runtime-lifecycle";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
 export default class FastTravelScene extends WarpTravel {
@@ -65,6 +66,8 @@ export default class FastTravelScene extends WarpTravel {
   private currentChunk: string = "null";
   private chunkRefreshTimeout: number | null = null;
   private pendingChunkRefreshForce = false;
+  private hasCompletedSwitchOffCleanup = false;
+  private hasDisposedFastTravelOwnedResources = false;
   private readonly chunkRefreshDebounceMs = FAST_TRAVEL_CHUNK_POLICY.refreshDebounceMs;
   private handleFastTravelControlsChange = (): void => {
     if (this.isSwitchedOff || this.sceneManager.getCurrentScene() !== SceneName.FastTravel) {
@@ -119,6 +122,7 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   private configureFastTravelSetupStart(): void {
+    this.hasCompletedSwitchOffCleanup = false;
     this.controls.enablePan = true;
     this.controls.enableZoom = true;
     this.interactiveHexManager.setSurfaceVisibility(false);
@@ -236,7 +240,13 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   public onSwitchOff(): void {
+    if (this.hasCompletedSwitchOffCleanup) {
+      return;
+    }
+
     this.runWarpTravelSwitchOffLifecycle();
+    this.resetFastTravelRuntimeState();
+    this.hasCompletedSwitchOffCleanup = true;
   }
 
   public hasActiveLabelAnimations(): boolean {
@@ -264,9 +274,14 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   public destroy(): void {
-    this.clearTravelVisualGroups();
-    this.clearFastTravelMovementPreview();
-    this.selectionPulseManager.dispose();
+    this.onSwitchOff();
+
+    if (!this.hasDisposedFastTravelOwnedResources) {
+      this.selectedHexManager.dispose();
+      this.selectionPulseManager.dispose();
+      this.hasDisposedFastTravelOwnedResources = true;
+    }
+
     super.destroy();
   }
 
@@ -569,6 +584,38 @@ export default class FastTravelScene extends WarpTravel {
 
   private resolvePathEntityId(entityId: string): number {
     return entityId.split("").reduce((hash, character) => hash * 31 + character.charCodeAt(0), 17);
+  }
+
+  private resetFastTravelRuntimeState(): void {
+    const nextState = resetFastTravelRuntimeState({
+      currentHydratedChunk: this.currentHydratedChunk,
+      currentRenderState: this.currentRenderState,
+      currentEntityAnchors: this.currentEntityAnchors,
+      sceneArmies: this.sceneArmies,
+      sceneSpires: this.sceneSpires,
+      selectedArmyEntityId: this.selectedArmyEntityId,
+      previewTargetHexKey: this.previewTargetHexKey,
+      currentChunk: this.currentChunk,
+      chunkRefreshTimeout: this.chunkRefreshTimeout,
+      clearTravelVisualGroups: () => this.clearTravelVisualGroups(),
+      interactiveHexManager: this.interactiveHexManager,
+      selectionPulseManager: this.selectionPulseManager,
+      selectedHexManager: this.selectedHexManager,
+      pathRenderer: this.pathRenderer,
+      clearTimeout: (timeoutId) => window.clearTimeout(timeoutId),
+      resolvePathEntityId: (entityId) => this.resolvePathEntityId(entityId),
+    });
+
+    this.currentHydratedChunk = nextState.currentHydratedChunk;
+    this.currentRenderState = nextState.currentRenderState;
+    this.currentEntityAnchors = nextState.currentEntityAnchors;
+    this.sceneArmies = nextState.sceneArmies;
+    this.sceneSpires = nextState.sceneSpires;
+    this.selectedArmyEntityId = nextState.selectedArmyEntityId;
+    this.previewTargetHexKey = nextState.previewTargetHexKey;
+    this.currentChunk = nextState.currentChunk;
+    this.chunkRefreshTimeout = nextState.chunkRefreshTimeout;
+    this.pendingChunkRefreshForce = nextState.pendingChunkRefreshForce;
   }
 
   private clearTravelVisualGroups(): void {
