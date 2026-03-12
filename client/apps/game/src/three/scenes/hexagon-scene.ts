@@ -1299,7 +1299,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
   public abstract setup(): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
-  public abstract onSwitchOff(): void;
+  public abstract onSwitchOff(nextSceneName?: SceneName): void;
 
   public getCurrentCameraView(): CameraView {
     return this.currentCameraView;

@@ -225,7 +225,7 @@ export default class FastTravelScene extends WarpTravel {
     this.moveCameraToColRow(col, row, 0);
   }
 
-  public onSwitchOff(): void {
+  public onSwitchOff(_nextSceneName?: SceneName): void {
     if (this.hasCompletedSwitchOffCleanup) {
       return;
     }

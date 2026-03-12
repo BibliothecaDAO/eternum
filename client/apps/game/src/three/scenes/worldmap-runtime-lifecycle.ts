@@ -1,3 +1,5 @@
+import { SceneName } from "../types";
+
 interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk> {
   pendingArmyRemovals: Map<TEntityId, TTimeout>;
   pendingArmyRemovalMeta: Map<TEntityId, unknown>;
@@ -11,9 +13,14 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>
   pendingChunks: Map<string, TPendingChunk>;
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
+  hydratedChunkRefreshes: Set<string>;
+  hydratedRefreshSuppressionAreaKeys: Set<string>;
+  nextSceneName?: SceneName;
   clearTimeout: (timeoutId: TTimeout) => void;
   clearPendingArmyMovement: (entityId: TEntityId) => void;
   clearQueuedPrefetchState: () => void;
+  releaseInactiveResources: () => void;
+  invalidatePendingFetches: () => void;
 }
 
 interface WorldmapSwitchOffRuntimeStateResult {
@@ -41,6 +48,13 @@ interface FinalizePendingChunkFetchOwnershipInput<TPendingChunk> {
   fetchPromise: TPendingChunk;
 }
 
+interface ShouldApplyWorldmapFetchResultInput {
+  fetchGeneration: number;
+  activeFetchGeneration: number;
+  fetchKey: string;
+  pinnedRenderAreas: Set<string>;
+}
+
 export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPendingChunk>({
   pendingArmyRemovals,
   pendingArmyRemovalMeta,
@@ -54,9 +68,14 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingChunks,
   pinnedChunkKeys,
   pinnedRenderAreas,
+  hydratedChunkRefreshes,
+  hydratedRefreshSuppressionAreaKeys,
+  nextSceneName,
   clearTimeout,
   clearPendingArmyMovement,
   clearQueuedPrefetchState,
+  releaseInactiveResources,
+  invalidatePendingFetches,
 }: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>): WorldmapSwitchOffRuntimeStateResult => {
   pendingArmyRemovals.forEach((timeoutId) => clearTimeout(timeoutId));
   pendingArmyRemovals.clear();
@@ -70,10 +89,17 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   armyStructureOwners.clear();
 
   clearQueuedPrefetchState();
+  invalidatePendingFetches();
   fetchedChunks.clear();
   pendingChunks.clear();
   pinnedChunkKeys.clear();
   pinnedRenderAreas.clear();
+  hydratedChunkRefreshes.clear();
+  hydratedRefreshSuppressionAreaKeys.clear();
+
+  if (nextSceneName === SceneName.FastTravel) {
+    releaseInactiveResources();
+  }
 
   return {
     isSwitchedOff: true,
@@ -110,4 +136,15 @@ export const finalizePendingChunkFetchOwnership = <TPendingChunk>({
 
   pendingChunks.delete(fetchKey);
   return true;
+};
+
+export const invalidateWorldmapPendingFetchGeneration = (currentGeneration: number): number => currentGeneration + 1;
+
+export const shouldApplyWorldmapFetchResult = ({
+  fetchGeneration,
+  activeFetchGeneration,
+  fetchKey,
+  pinnedRenderAreas,
+}: ShouldApplyWorldmapFetchResultInput): boolean => {
+  return fetchGeneration === activeFetchGeneration && pinnedRenderAreas.has(fetchKey);
 };

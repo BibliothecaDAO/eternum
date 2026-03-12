@@ -140,7 +140,9 @@ import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-p
 import {
   applyWorldmapSwitchOffRuntimeState,
   finalizePendingChunkFetchOwnership,
+  invalidateWorldmapPendingFetchGeneration,
   invalidateWorldmapSwitchOffTransitionState,
+  shouldApplyWorldmapFetchResult,
 } from "./worldmap-runtime-lifecycle";
 import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
 import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
@@ -511,6 +513,7 @@ export default class WorldmapScene extends WarpTravel {
   // Render-area fetch bookkeeping (keys represent render-sized regions, not chunk stride)
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
+  private pendingChunkFetchGeneration = 0;
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<
@@ -2407,7 +2410,7 @@ export default class WorldmapScene extends WarpTravel {
     this.lastChunkSwitchMovement = null;
   }
 
-  onSwitchOff() {
+  onSwitchOff(nextSceneName?: SceneName) {
     this.isSwitchedOff = true;
     const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
       chunkTransitionToken: this.chunkTransitionToken,
@@ -2454,9 +2457,16 @@ export default class WorldmapScene extends WarpTravel {
       pendingChunks: this.pendingChunks,
       pinnedChunkKeys: this.pinnedChunkKeys,
       pinnedRenderAreas: this.pinnedRenderAreas,
+      hydratedChunkRefreshes: this.hydratedChunkRefreshes,
+      hydratedRefreshSuppressionAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
+      nextSceneName: nextSceneName,
       clearTimeout: (timeoutId) => clearTimeout(timeoutId),
       clearPendingArmyMovement: (entityId) => this.clearPendingArmyMovement(entityId),
       clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
+      releaseInactiveResources: () => this.clearCache(),
+      invalidatePendingFetches: () => {
+        this.pendingChunkFetchGeneration = invalidateWorldmapPendingFetchGeneration(this.pendingChunkFetchGeneration);
+      },
     });
 
     this.isSwitchedOff = runtimeState.isSwitchedOff;
@@ -3818,7 +3828,14 @@ export default class WorldmapScene extends WarpTravel {
       );
     }
 
-    const fetchPromise = this.executeTileEntitiesFetch(fetchKey, minCol, maxCol, minRow, maxRow);
+    const fetchPromise = this.executeTileEntitiesFetch(
+      fetchKey,
+      minCol,
+      maxCol,
+      minRow,
+      maxRow,
+      this.pendingChunkFetchGeneration,
+    );
     const ownedFetchPromise = fetchPromise.finally(() => {
       finalizePendingChunkFetchOwnership({
         pendingChunks: this.pendingChunks,
@@ -3838,6 +3855,7 @@ export default class WorldmapScene extends WarpTravel {
     maxCol: number,
     minRow: number,
     maxRow: number,
+    fetchGeneration: number,
   ): Promise<boolean> {
     this.beginToriiFetch();
     try {
@@ -3849,8 +3867,14 @@ export default class WorldmapScene extends WarpTravel {
         minRow + FELT_CENTER(),
         maxRow + FELT_CENTER(),
       );
-      // Only add to the fetched cache if the render area is still pinned (still relevant)
-      if (this.pinnedRenderAreas.has(fetchKey)) {
+      if (
+        shouldApplyWorldmapFetchResult({
+          fetchGeneration,
+          activeFetchGeneration: this.pendingChunkFetchGeneration,
+          fetchKey,
+          pinnedRenderAreas: this.pinnedRenderAreas,
+        })
+      ) {
         this.fetchedChunks.add(fetchKey);
         const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
         if (

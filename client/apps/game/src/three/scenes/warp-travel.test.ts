@@ -88,7 +88,7 @@ class CountingWarpTravel extends WarpTravel {
 
   public moveCameraToURLLocation(): void {}
 
-  public onSwitchOff(): void {
+  public onSwitchOff(_nextSceneName?: unknown): void {
     this.triggerSwitchOffLifecycle();
   }
 }
