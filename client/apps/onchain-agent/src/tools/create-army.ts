@@ -52,7 +52,7 @@ export function createCreateArmyTool(
       "Choose troop type (Knight, Paladin, Crossbowman), tier (1/2/3), and how many to deploy. " +
       "Biome bonuses: Knight +30% on forest/taiga, Paladin +30% on desert/grassland, Crossbowman +30% on ocean/snow. " +
       "Higher tiers are much stronger (T2 ~2.5x, T3 ~7x) but require T2/T3 barracks buildings. " +
-      "After creating, use add_troops to reinforce or merge_armies to combine armies. " +
+      "After creating, use reinforce_army to bulk up from structures or merge with other armies. " +
       "Spawns at the first open adjacent hex.",
     parameters: Type.Object({
       row: Type.Number({ description: "Line number of your realm on the map" }),

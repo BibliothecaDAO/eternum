@@ -78,7 +78,7 @@ function formatChest(rewardExtracted: boolean): string {
 
 export function createInspectTool(client: EternumClient, ctx: MapContext): AgentTool<any> {
   return {
-    name: "inspect",
+    name: "inspect_tile",
     label: "Inspect Tile",
     description:
       "Inspect any tile for detailed info: owner, guard composition and strength, resources, troop counts, biome. " +

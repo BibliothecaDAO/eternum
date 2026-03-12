@@ -29,8 +29,8 @@ export function createAttackTool(
   gameConfig: GameConfig,
 ): AgentTool<any> {
   return {
-    name: "attack",
-    label: "Attack",
+    name: "attack_target",
+    label: "Attack Target",
     description:
       "Attack OR CLAIM a target adjacent to one of your armies. " +
       "This is the ONLY way to capture hyperstructures, realms, villages, and mines — move adjacent then call this tool. " +
