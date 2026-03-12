@@ -103,7 +103,7 @@ export function createReinforceArmyTool(
             signer: tx.signer,
           });
         } catch (err: any) {
-          throw new Error(`Reinforce from structure failed: ${extractTxError(err)}`);
+          throw new Error(`Reinforce failed (${troopCount} ${troopResName} from structure): ${extractTxError(err)}`);
         }
 
         const newTotal = explorer.troopCount + troopCount;
@@ -154,7 +154,7 @@ export function createReinforceArmyTool(
             signer: tx.signer,
           });
         } catch (err: any) {
-          throw new Error(`Merge failed: ${extractTxError(err)}`);
+          throw new Error(`Merge failed (${sourceExplorer.troopCount} ${troopResName} from army): ${extractTxError(err)}`);
         }
 
         const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
