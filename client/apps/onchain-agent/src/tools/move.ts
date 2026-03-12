@@ -233,6 +233,8 @@ export function createMoveTool(
         const alreadySpent = tracked && tracked.atTick === explorer.staminaUpdatedTick ? tracked.spent : 0;
         const projectedStamina = Math.max(0, baseProjected - alreadySpent);
 
+        console.error(`[MOVE] Stamina debug: entity=${explorer.entityId} torii.stamina=${explorer.stamina} torii.tick=${explorer.staminaUpdatedTick} projected=${baseProjected} tracked=${JSON.stringify(tracked)} alreadySpent=${alreadySpent} final=${projectedStamina}`);
+
         if (projectedStamina <= 0) {
           throw new Error(`Cannot move — no stamina (${projectedStamina}). Wait for regeneration.`);
         }
@@ -401,23 +403,31 @@ export function createMoveTool(
           // Extract error details from WASM JsControllerError objects
           try {
             const errData = typeof err?.data === "function" ? err.data() : err?.data;
-            const errCode = typeof err?.code === "function" ? err.code() : err?.code;
             // Parse the execution_error for a clean message
             if (errData) {
               let parsed: any;
               try { parsed = typeof errData === "string" ? JSON.parse(errData) : errData; } catch { parsed = null; }
               const execErr = parsed?.execution_error ?? (typeof errData === "string" ? errData : "");
               if (typeof execErr === "string") {
-                // Extract quoted human-readable reasons
                 const reasons = [...execErr.matchAll(/"([^"]{10,})"/g)]
                   .map((m) => m[1])
                   .filter((r) => !r.startsWith("0x"));
                 if (reasons.length > 0) {
+                  // If stamina error, mark this army as fully spent so we don't retry
+                  const staminaMatch = reasons[0].match(/insufficient stamina.*have:\s*(\d+)/);
+                  if (staminaMatch && explorer) {
+                    const actualStamina = parseInt(staminaMatch[1], 10);
+                    // Set staminaSpent so projection matches chain reality
+                    if (!mapCtx.staminaSpent) mapCtx.staminaSpent = new Map();
+                    mapCtx.staminaSpent.set(explorer.entityId, {
+                      spent: baseProjected - actualStamina,
+                      atTick: explorer.staminaUpdatedTick,
+                    });
+                  }
                   throw new Error(`Move failed: ${reasons[0]}`);
                 }
               }
             }
-            console.error(`[MOVE] code=${errCode} data=${typeof errData === "string" ? errData.slice(0, 300) : JSON.stringify(errData).slice(0, 300)}`);
           } catch (extractErr: any) {
             if (extractErr?.message?.startsWith("Move failed:")) throw extractErr;
           }
