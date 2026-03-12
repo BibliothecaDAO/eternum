@@ -869,6 +869,35 @@ export const updateDirectionIndicators = (
     return null;
   }
 
-  existingIndicators?.remove();
+  if (existingIndicators instanceof HTMLElement) {
+    existingIndicators.className = newIndicators.className;
+    existingIndicators.replaceChildren(...Array.from(newIndicators.childNodes));
+    return existingIndicators;
+  }
+
   return newIndicators;
+};
+
+export const updateGuardArmyDisplay = (
+  container: HTMLElement,
+  guardArmies:
+    | Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>
+    | undefined,
+  inputView: CameraView,
+): void => {
+  const next = createGuardArmyDisplay(guardArmies, inputView);
+  container.className = next.className;
+  container.setAttribute("style", next.getAttribute("style") ?? "");
+  container.replaceChildren(...Array.from(next.childNodes));
+};
+
+export const updateProductionDisplay = (
+  container: HTMLElement,
+  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }> | undefined,
+  inputView: CameraView,
+): void => {
+  const next = createProductionDisplay(activeProductions, inputView);
+  container.className = next.className;
+  container.setAttribute("style", next.getAttribute("style") ?? "");
+  container.replaceChildren(...Array.from(next.childNodes));
 };

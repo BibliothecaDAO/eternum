@@ -42,7 +42,7 @@ This PRD defines a TDD-first hardening program that removes duplicate work befor
 - [x] M2: Make structure and terrain updates incremental
 - [x] M3: Restore true dirty-only frame behavior
 - [x] M4: Replace remaining hot-path linear scans
-- [ ] M5: Batch DOM and point updates
+- [x] M5: Batch DOM and point updates
 
 ## Problem Statement
 

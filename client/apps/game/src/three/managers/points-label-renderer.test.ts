@@ -35,4 +35,19 @@ describe("PointsLabelRenderer", () => {
     second.dispose();
     expect(textureDisposeSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("batches many removals behind one frustum refresh", () => {
+    const scene = new THREE.Scene();
+    const texture = new THREE.Texture();
+    const renderer = new PointsLabelRenderer(scene, texture);
+    const refreshSpy = vi.spyOn(renderer as any, "refreshFrustumVisibility");
+
+    renderer.setPoint({ entityId: 1, position: new THREE.Vector3(0, 0, 0) });
+    renderer.setPoint({ entityId: 2, position: new THREE.Vector3(1, 0, 0) });
+    refreshSpy.mockClear();
+
+    renderer.removeMany([1, 2]);
+
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
 });

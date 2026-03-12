@@ -255,7 +255,20 @@ export class PointsLabelRenderer {
     }
 
     this.boundsDirty = true;
-    this.refreshFrustumVisibility();
+    if (!this.batchMode) {
+      this.refreshFrustumVisibility();
+    }
+  }
+
+  public removeMany(entityIds: Iterable<ID>): void {
+    this.beginBatch();
+    try {
+      for (const entityId of entityIds) {
+        this.removePoint(entityId);
+      }
+    } finally {
+      this.endBatch();
+    }
   }
 
   /**

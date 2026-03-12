@@ -73,18 +73,10 @@ export class HoverLabelManager {
    * Handle mouse leaving the grid. All active labels are removed.
    */
   onHexLeave(): void {
+    Object.values(this.controllers).forEach((controller) => controller?.hideAll?.());
     (Object.keys(this.activeLabels) as HoverLabelType[]).forEach((type) => {
-      const activeId = this.activeLabels[type];
-      const controller = this.controllers[type];
-
-      if (controller && activeId !== undefined) {
-        controller.hide(activeId);
-      }
-
       delete this.activeLabels[type];
     });
-
-    Object.values(this.controllers).forEach((controller) => controller?.hideAll?.());
 
     this.currentHoveredHex = null;
   }
