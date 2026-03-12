@@ -13,6 +13,7 @@ interface FinalizeWarpTravelChunkSwitchInput {
   startCol: number;
   force: boolean;
   transitionToken: number;
+  setCurrentChunk: (chunkKey: string) => void;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   unregisterChunk: (chunkKey: string) => void;
   restorePreviousChunkVisuals: (
@@ -76,6 +77,7 @@ export async function finalizeWarpTravelChunkSwitch(
     };
   }
 
+  input.setCurrentChunk(input.targetChunk);
   input.updateCurrentChunkBounds(input.startRow, input.startCol);
   input.forceVisibilityUpdate();
   await input.updateManagersForChunk(input.targetChunk, {

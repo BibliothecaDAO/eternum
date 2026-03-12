@@ -4592,6 +4592,9 @@ export default class WorldmapScene extends WarpTravel {
       startCol,
       force: effectiveForce,
       transitionToken,
+      setCurrentChunk: (targetChunkKey) => {
+        this.currentChunk = targetChunkKey;
+      },
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
       unregisterChunk: (targetChunkKey) => this.visibilityManager?.unregisterChunk(targetChunkKey),
       restorePreviousChunkVisuals: async (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) => {

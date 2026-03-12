@@ -27,6 +27,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 11,
+      setCurrentChunk: vi.fn(),
       updatePinnedChunks,
       unregisterChunk,
       restorePreviousChunkVisuals: restorePreviousChunkVisuals.fn,
@@ -69,6 +70,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 13,
+      setCurrentChunk: vi.fn(),
       updatePinnedChunks: vi.fn(),
       unregisterChunk,
       restorePreviousChunkVisuals: async () => undefined,
@@ -106,6 +108,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: true,
       transitionToken: 17,
+      setCurrentChunk: vi.fn(),
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
@@ -127,5 +130,43 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       nextCurrentChunk: "24,24",
     });
     expect(unregisterPreviousChunkOnNextFrame).toHaveBeenCalledWith("0,0");
+  });
+
+  it("advances chunk authority before manager fanout on committed switches", async () => {
+    let currentChunk = "0,0";
+    const updateManagersForChunk = vi.fn(async (chunkKey: string) => {
+      expect(currentChunk).toBe(chunkKey);
+    });
+
+    await finalizeWarpTravelChunkSwitch({
+      fetchSucceeded: true,
+      isCurrentTransition: true,
+      targetChunk: "24,24",
+      previousChunk: "0,0",
+      currentChunk,
+      previousPinnedChunks: [],
+      hasFiniteOldChunkCoordinates: false,
+      oldChunkCoordinates: null,
+      startRow: 24,
+      startCol: 24,
+      force: false,
+      transitionToken: 19,
+      setCurrentChunk: (chunkKey) => {
+        currentChunk = chunkKey;
+      },
+      updatePinnedChunks: vi.fn(),
+      unregisterChunk: vi.fn(),
+      restorePreviousChunkVisuals: async () => undefined,
+      clearSceneChunkBounds: vi.fn(),
+      forceVisibilityUpdate: vi.fn(),
+      updateCurrentChunkBounds: vi.fn(),
+      updateManagersForChunk,
+      unregisterPreviousChunkOnNextFrame: vi.fn(),
+    });
+
+    expect(updateManagersForChunk).toHaveBeenCalledWith("24,24", {
+      force: false,
+      transitionToken: 19,
+    });
   });
 });
