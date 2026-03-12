@@ -667,7 +667,7 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
       this.visibilityManager?.forceUpdate();
-      void this.updateVisibleChunks(true);
+      this.requestChunkRefresh(true, "visibility_recovery");
     };
     document.addEventListener("visibilitychange", this.visibilityChangeHandler);
 
@@ -791,7 +791,7 @@ export default class WorldmapScene extends WarpTravel {
 
         // Remove from attacker-defender tracking
         this.removeEntityFromTracking(entityId);
-        this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
+        this.requestChunkRefresh(false, "army_dead");
       }),
     );
 
@@ -909,7 +909,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         if (structureTileActions.shouldRefreshVisibleChunks) {
-          this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
+          this.requestChunkRefresh(true, "structure_count_change");
         }
       }),
     );
@@ -2889,11 +2889,9 @@ export default class WorldmapScene extends WarpTravel {
       if (duplicateTilePlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
         if (duplicateTilePlan.refreshStrategy === "immediate") {
-          void this.updateVisibleChunks(true).catch((error) =>
-            console.error("Failed to reconcile duplicate tile:", error),
-          );
+          this.requestChunkRefresh(true, "duplicate_tile");
         } else {
-          this.requestChunkRefresh(true);
+          this.requestChunkRefresh(true, "duplicate_tile");
         }
       }
 
@@ -3339,7 +3337,8 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     try {
-      await this.updateVisibleChunks(true);
+      const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
+      await this.waitForRequestedChunkRefresh(refreshToken);
       this.retryDeferredChunkRemovals();
     } catch (error) {
       console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${this.currentChunk}`, error);
@@ -4319,12 +4318,13 @@ export default class WorldmapScene extends WarpTravel {
     return this.cameraGroundIntersectionScratch;
   }
 
-  public requestChunkRefresh(force: boolean = false, reason: WorldmapForceRefreshReason = "default") {
+  public requestChunkRefresh(force: boolean = false, reason: WorldmapForceRefreshReason = "default"): number {
     if (this.isSwitchedOff) {
-      return;
+      return this.chunkRefreshRequestToken;
     }
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
+    this.chunkRefreshRequestToken += 1;
     if (force) {
       this.pendingChunkRefreshForce = true;
       incrementWorldmapForceRefreshReason(reason);
@@ -4332,11 +4332,37 @@ export default class WorldmapScene extends WarpTravel {
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
       this.scheduleLegacyChunkRefresh();
-      return;
+      return this.chunkRefreshRequestToken;
     }
 
-    this.chunkRefreshRequestToken += 1;
     this.scheduleChunkRefreshExecution();
+    return this.chunkRefreshRequestToken;
+  }
+
+  private waitForRequestedChunkRefresh(requestToken: number): Promise<void> {
+    if (this.isSwitchedOff) {
+      return Promise.resolve();
+    }
+
+    if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
+      return new Promise((resolve) => window.setTimeout(resolve, this.chunkRefreshDebounceMs));
+    }
+
+    return new Promise((resolve) => {
+      const poll = () => {
+        if (
+          this.chunkRefreshAppliedToken >= requestToken &&
+          !this.chunkRefreshRunning &&
+          this.chunkRefreshTimeout === null
+        ) {
+          resolve();
+          return;
+        }
+        window.setTimeout(poll, 0);
+      };
+
+      poll();
+    });
   }
 
   private scheduleLegacyChunkRefresh(): void {
@@ -5022,7 +5048,8 @@ export default class WorldmapScene extends WarpTravel {
         offscreenChunkFrames: this.offscreenChunkFrames,
       });
 
-      void this.updateVisibleChunks(true)
+      const refreshToken = this.requestChunkRefresh(true, "offscreen_chunk");
+      void this.waitForRequestedChunkRefresh(refreshToken)
         .catch((error) => {
           console.error("[WorldMap] Offscreen chunk recovery failed:", error);
           this.emitZoomHardeningTelemetry("self_heal_failed", {
@@ -5100,7 +5127,8 @@ export default class WorldmapScene extends WarpTravel {
       lowTerrainFrames: this.lowTerrainFrames,
     });
 
-    void this.updateVisibleChunks(true)
+    const refreshToken = this.requestChunkRefresh(true, "terrain_self_heal");
+    void this.waitForRequestedChunkRefresh(refreshToken)
       .catch((error) => {
         console.error("[WorldMap] Terrain visibility recovery failed:", error);
         this.emitZoomHardeningTelemetry("self_heal_failed", {
