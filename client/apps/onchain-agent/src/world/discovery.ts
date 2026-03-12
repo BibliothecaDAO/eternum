@@ -80,6 +80,23 @@ function extractWorldAddress(row: Record<string, unknown>): string | null {
   return null;
 }
 
+/** Extract the RPC URL from a factory WorldDeployed row (mirrors game client's extractRpcUrlFromRow). */
+function extractRpcUrl(row: Record<string, unknown>): string | null {
+  const keys = ["rpc_url", "rpcUrl", "node_url", "nodeUrl", "rpc", "node"];
+  for (const key of keys) {
+    const v = row[key];
+    if (typeof v === "string" && v.length > 0) return v;
+  }
+  const data = asRecord(row.data);
+  if (data) {
+    for (const key of keys) {
+      const v = data[key];
+      if (typeof v === "string" && v.length > 0) return v;
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -147,8 +164,22 @@ export async function discoverWorld(chain: Chain, worldName: string): Promise<Wo
     contractsBySelector[key] = row.contract_address;
   }
 
-  // Default RPC based on chain
-  const rpcUrl = chain === "sepolia" ? `${CARTRIDGE_API}/x/starknet/sepolia` : `${CARTRIDGE_API}/x/starknet/mainnet`;
+  // Extract RPC URL from factory row, or fall back to chain defaults.
+  // Slot worlds share a single katana instance (mirrors game client's profile-builder.ts).
+  const factoryRpc = extractRpcUrl(deployedRows[0]);
+  const defaultRpc = (() => {
+    switch (chain) {
+      case "slot":
+        return `${CARTRIDGE_API}/x/eternum-blitz-slot-4/katana`;
+      case "slottest":
+        return `${CARTRIDGE_API}/x/eternum-blitz-slot-test/katana`;
+      case "sepolia":
+        return `${CARTRIDGE_API}/x/starknet/sepolia`;
+      default:
+        return `${CARTRIDGE_API}/x/starknet/mainnet`;
+    }
+  })();
+  const rpcUrl = factoryRpc ?? defaultRpc;
 
   return { toriiUrl, worldAddress, rpcUrl, contractsBySelector };
 }

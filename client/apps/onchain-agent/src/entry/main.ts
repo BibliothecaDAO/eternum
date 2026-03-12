@@ -179,6 +179,7 @@ export async function main() {
     // Re-resolve dataDir now that we have the world address
     config.dataDir = join(homedir(), ".axis", "worlds", info.worldAddress);
     console.log(`  Discovered: torii=${info.toriiUrl}, world=${info.worldAddress}`);
+    console.log(`  RPC: ${info.rpcUrl}`);
     console.log(`  Resolved ${Object.keys(info.contractsBySelector).length} contract addresses from factory`);
   }
 
@@ -212,6 +213,30 @@ export async function main() {
   // 2. Create headless client (reads) + provider (writes)
   const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
   const provider = new EternumProvider(manifest, config.rpcUrl, config.vrfProviderAddress);
+
+  // Diagnostic: verify a sample contract is reachable on the configured RPC
+  {
+    const sampleContract = manifest.contracts?.[0];
+    if (sampleContract) {
+      try {
+        const res = await fetch(config.rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "starknet_getClassHashAt",
+            params: { block_id: "latest", contract_address: sampleContract.address },
+            id: 1,
+          }),
+        });
+        const json = (await res.json()) as any;
+        const hash = json?.result ?? json?.error?.message ?? "unknown";
+        console.log(`  RPC probe: ${sampleContract.tag} @ ${sampleContract.address.slice(0, 14)}... → ${hash}`);
+      } catch (e: any) {
+        console.log(`  RPC probe failed: ${e.message}`);
+      }
+    }
+  }
 
   // 2b. Load game config from Torii (building costs, production recipes)
   const gameConfig = await (client.sql as any).fetchGameConfig();

@@ -94,74 +94,74 @@ function buildSteps(path: TroopPath): BuildStep[] {
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: troop.t1, label: troopLabel.t1 },
+    { building: B.Wheat, label: "WheatFarm" },
     // → upgrade to City (18 slots = 12 more)
 
     // ── City: fill 12 more slots ─────────────────────────────
+    // Wheat: 3 (was 2)
     { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
     { building: B.Wheat, label: "WheatFarm" },
+    { building: B.Wheat, label: "WheatFarm" },
     { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Coal, label: "CoalMine" },
     { building: troop.t1, label: troopLabel.t1 },
     { building: troop.t1, label: troopLabel.t1 },
     // → upgrade to Kingdom (36 slots = 18 more)
 
     // ── Kingdom: fill 18 more slots ──────────────────────────
-    // More base economy
+    // Wheat: 5 (was 4)
     { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
+    { building: B.Wheat, label: "WheatFarm" },
     { building: B.Wheat, label: "WheatFarm" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Wheat, label: "WheatFarm" },
     { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
-    // T2 resource + 2x T2 troop (gate: need 3x T1 first, satisfied above)
+    { building: B.Wheat, label: "WheatFarm" },
+    // T2 resource + 2x T2 troop
     { building: t2Res.building, label: t2Res.label },
     { building: troop.t2, label: troopLabel.t2 },
     { building: troop.t2, label: troopLabel.t2 },
     { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wheat, label: "WheatFarm" },
     { building: B.Wood, label: "WoodMill" },
     // → upgrade to Empire (60 slots = 24 more)
 
     // ── Empire: fill 24 more slots ───────────────────────────
-    // T3 resource + 1x T3 troop (gate: need 2x T2 first, satisfied above)
+    // Wheat: 8 (was 5)
+    // T3 resource + 1x T3 troop
     { building: t3Res.building, label: t3Res.label },
     { building: troop.t3, label: troopLabel.t3 },
     { building: B.WorkersHut, label: "WorkersHut" },
-    // Keep scaling base
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Copper, label: "CopperSmelter" },
     { building: B.Wheat, label: "WheatFarm" },
     { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
+    { building: B.Wheat, label: "WheatFarm" },
+    { building: B.Wheat, label: "WheatFarm" },
+    { building: B.WorkersHut, label: "WorkersHut" },
+    { building: B.Wood, label: "WoodMill" },
+    { building: B.Copper, label: "CopperSmelter" },
+    { building: B.Wheat, label: "WheatFarm" },
     { building: B.Wheat, label: "WheatFarm" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Copper, label: "CopperSmelter" },
     { building: B.Wheat, label: "WheatFarm" },
   ];
 }
