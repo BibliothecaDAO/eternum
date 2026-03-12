@@ -149,7 +149,6 @@ import {
 } from "./worldmap-chunk-bounds";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import {
-  insertPrefetchQueueItem,
   prunePrefetchQueueByFetchKey,
   resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
@@ -180,6 +179,7 @@ import {
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
 import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
+import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
@@ -3164,26 +3164,22 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private enqueueChunkPrefetch(chunkKey: string, priority: number): void {
-    if (!chunkKey) {
-      return;
-    }
-
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-    const tilesAlreadyHandled =
-      this.fetchedChunks.has(fetchKey) || this.pendingChunks.has(fetchKey) || this.queuedPrefetchAreaKeys.has(fetchKey);
-    if (tilesAlreadyHandled) {
+    const enqueueResult = enqueueWarpTravelPrefetch({
+      chunkKey,
+      fetchKey,
+      priority,
+      queue: this.prefetchQueue,
+      queuedFetchKeys: this.queuedPrefetchAreaKeys,
+      fetchedFetchKeys: this.fetchedChunks,
+      pendingFetchKeys: new Set(this.pendingChunks.keys()),
+    });
+    if (enqueueResult.skipped) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_skipped");
       return;
     }
 
-    this.queuedPrefetchAreaKeys.add(fetchKey);
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_queued");
-    insertPrefetchQueueItem(this.prefetchQueue, {
-      chunkKey,
-      fetchKey,
-      priority,
-      fetchTiles: true,
-    });
     this.processPrefetchQueue();
   }
 
