@@ -398,13 +398,15 @@ export function createMoveTool(
             }
           }
         } catch (err: any) {
-          // Debug: log the full error shape so we can improve extraction
+          // Debug: extract error from WASM objects and nested shapes
           try {
-            const keys = Object.keys(err ?? {});
-            const causeKeys = Object.keys(err?.cause ?? {});
-            console.error(`[MOVE] Error keys: ${keys.join(",")} | cause keys: ${causeKeys.join(",")}`);
-            if (err?.cause) console.error(`[MOVE] cause.message: ${err.cause.message}`);
-            console.error(`[MOVE] Full: ${JSON.stringify(err, null, 2).slice(0, 800)}`);
+            // WASM errors have methods like toString(), message(), code()
+            const errStr = typeof err?.toString === "function" ? err.toString() : "";
+            const errMsg = typeof err?.message === "function" ? err.message() : err?.message;
+            const errCode = typeof err?.code === "function" ? err.code() : err?.code;
+            console.error(`[MOVE] Error: str=${errStr} | msg=${errMsg} | code=${errCode}`);
+            console.error(`[MOVE] Proto: ${Object.getOwnPropertyNames(Object.getPrototypeOf(err) ?? {}).join(",")}`);
+            console.error(`[MOVE] Keys: ${Object.keys(err ?? {}).join(",")}`);
           } catch { /* */ }
           const errStr = extractTxError(err);
           if (errStr.includes("is occupied")) {
