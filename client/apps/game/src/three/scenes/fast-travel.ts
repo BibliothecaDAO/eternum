@@ -1,4 +1,7 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
+import { PathRenderer } from "../managers/path-renderer";
+import { SelectedHexManager } from "../managers/selected-hex-manager";
+import { SelectionPulseManager } from "../managers/selection-pulse-manager";
 import {
   Color,
   ConeGeometry,
@@ -14,6 +17,7 @@ import {
   ShapeGeometry,
   SphereGeometry,
   Vector2,
+  Vector3,
 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
@@ -33,6 +37,10 @@ import {
   buildFastTravelEntityAnchors,
   type FastTravelEntityAnchor,
 } from "./fast-travel-entity-anchors";
+import {
+  resolveFastTravelMovement,
+  type FastTravelMovementResolution,
+} from "./fast-travel-movement-policy";
 import { prepareFastTravelRenderState, type FastTravelRenderState } from "./fast-travel-rendering";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
@@ -42,9 +50,16 @@ export default class FastTravelScene extends WarpTravel {
   private readonly travelLabelGroup = new Group();
   private readonly travelSurfaceGroup = new Group();
   private readonly travelContentGroup = new Group();
+  private readonly selectedHexManager: SelectedHexManager;
+  private readonly selectionPulseManager: SelectionPulseManager;
+  private readonly pathRenderer: PathRenderer;
   private currentHydratedChunk: FastTravelChunkHydrationResult | null = null;
   private currentRenderState: FastTravelRenderState | null = null;
   private currentEntityAnchors: FastTravelEntityAnchor[] = [];
+  private sceneArmies: FastTravelArmyHydrationInput[] = [];
+  private sceneSpires: FastTravelSpireHydrationInput[] = [];
+  private selectedArmyEntityId: string | null = null;
+  private previewTargetHexKey: string | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -57,6 +72,10 @@ export default class FastTravelScene extends WarpTravel {
     this.travelLabelGroup.name = "FastTravelLabelsGroup";
     this.travelSurfaceGroup.name = "FastTravelSurfaceGroup";
     this.travelContentGroup.name = "FastTravelContentGroup";
+    this.selectedHexManager = new SelectedHexManager(this.scene);
+    this.selectionPulseManager = new SelectionPulseManager(this.scene);
+    this.pathRenderer = PathRenderer.getInstance();
+    this.pathRenderer.initialize(this.scene);
     this.scene.add(this.travelSurfaceGroup);
     this.scene.add(this.travelContentGroup);
   }
@@ -90,6 +109,7 @@ export default class FastTravelScene extends WarpTravel {
   private prepareFastTravelInitialSetup(): void {
     this.travelLabelGroup.clear();
     this.clearTravelVisualGroups();
+    this.clearFastTravelMovementPreview();
   }
 
   private attachFastTravelLabelGroupsToScene(): void {
@@ -117,8 +137,8 @@ export default class FastTravelScene extends WarpTravel {
       startRow,
       width: FAST_TRAVEL_CHUNK_RADIUS * 2 + 1,
       height: FAST_TRAVEL_CHUNK_RADIUS * 2 + 1,
-      armies: this.buildDemoArmies(focusHex),
-      spires: this.buildDemoSpires(focusHex),
+      armies: this.resolveSceneArmies(focusHex),
+      spires: this.resolveSceneSpires(focusHex),
     });
 
     this.currentRenderState = prepareFastTravelRenderState({
@@ -144,13 +164,50 @@ export default class FastTravelScene extends WarpTravel {
 
   private detachFastTravelManagerLabels(): void {}
 
-  protected onHexagonMouseMove(): void {}
+  protected onHexagonMouseMove(hex: { hexCoords: FastTravelHexCoords } | null): void {
+    if (!hex || !this.selectedArmyEntityId) {
+      this.clearFastTravelMovementPreview();
+      return;
+    }
+
+    this.previewFastTravelMovement(hex.hexCoords);
+  }
 
   protected onHexagonDoubleClick(): void {}
 
-  protected onHexagonClick(): void {}
+  protected onHexagonClick(hexCoords: FastTravelHexCoords | null): void {
+    if (!hexCoords) {
+      this.clearFastTravelMovementPreview();
+      return;
+    }
 
-  protected onHexagonRightClick(): void {}
+    const clickedArmy = this.currentEntityAnchors.find(
+      (anchor) =>
+        anchor.kind === "army" && anchor.hexCoords.col === hexCoords.col && anchor.hexCoords.row === hexCoords.row,
+    );
+
+    if (clickedArmy) {
+      this.selectedArmyEntityId = clickedArmy.entityId;
+      this.previewTargetHexKey = null;
+      this.clearFastTravelMovementPreview();
+      this.syncSelectedArmyFeedback();
+      return;
+    }
+
+    if (!this.selectedArmyEntityId) {
+      return;
+    }
+
+    this.commitFastTravelMovement(hexCoords);
+  }
+
+  protected onHexagonRightClick(): void {
+    this.clearFastTravelMovementPreview();
+    this.selectedArmyEntityId = null;
+    this.selectedHexManager.resetPosition();
+    this.selectionPulseManager.hideSelection();
+    this.pathRenderer.setSelectedPath(null);
+  }
 
   public moveCameraToURLLocation(): void {
     const url = new URL(window.location.href);
@@ -194,7 +251,16 @@ export default class FastTravelScene extends WarpTravel {
 
   public destroy(): void {
     this.clearTravelVisualGroups();
+    this.clearFastTravelMovementPreview();
+    this.selectionPulseManager.dispose();
     super.destroy();
+  }
+
+  public update(deltaTime: number): void {
+    super.update(deltaTime);
+    this.selectedHexManager.update(deltaTime);
+    this.selectionPulseManager.update(deltaTime);
+    this.pathRenderer.update(deltaTime);
   }
 
   private resolveFastTravelFocusHex(): FastTravelHexCoords {
@@ -267,6 +333,8 @@ export default class FastTravelScene extends WarpTravel {
       .forEach((anchor) => {
         this.travelContentGroup.add(this.createArmyMarkerMesh(anchor));
       });
+
+    this.syncSelectedArmyFeedback();
   }
 
   private syncFastTravelSurfaceMeshes(): void {
@@ -294,6 +362,123 @@ export default class FastTravelScene extends WarpTravel {
       field.bounds.size.cols,
       field.bounds.size.rows,
     );
+  }
+
+  private resolveSceneArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
+    if (this.sceneArmies.length === 0) {
+      this.sceneArmies = this.buildDemoArmies(focusHex);
+    }
+
+    return this.sceneArmies;
+  }
+
+  private resolveSceneSpires(focusHex: FastTravelHexCoords): FastTravelSpireHydrationInput[] {
+    if (this.sceneSpires.length === 0) {
+      this.sceneSpires = this.buildDemoSpires(focusHex);
+    }
+
+    return this.sceneSpires;
+  }
+
+  private previewFastTravelMovement(targetHexCoords: FastTravelHexCoords): void {
+    const movement = this.resolveFastTravelMovement(targetHexCoords);
+    if (!movement) {
+      this.clearFastTravelMovementPreview();
+      return;
+    }
+
+    const targetHexKey = `${targetHexCoords.col},${targetHexCoords.row}`;
+    if (this.previewTargetHexKey === targetHexKey) {
+      return;
+    }
+
+    this.previewTargetHexKey = targetHexKey;
+    this.pathRenderer.createPath(
+      this.resolvePathEntityId(movement.selectedArmyEntityId),
+      movement.worldPath.map((point) => new Vector3(point.x, point.y + 0.18, point.z)),
+      new Color(this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8"),
+      "hover",
+    );
+  }
+
+  private commitFastTravelMovement(targetHexCoords: FastTravelHexCoords): void {
+    const movement = this.resolveFastTravelMovement(targetHexCoords);
+    if (!movement) {
+      return;
+    }
+
+    this.sceneArmies = this.sceneArmies.map((army) =>
+      army.entityId === movement.selectedArmyEntityId ? { ...army, hexCoords: movement.targetHexCoords } : army,
+    );
+
+    const pathEntityId = this.resolvePathEntityId(movement.selectedArmyEntityId);
+    this.pathRenderer.createPath(
+      pathEntityId,
+      movement.worldPath.map((point) => new Vector3(point.x, point.y + 0.18, point.z)),
+      new Color(this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7"),
+      "selected",
+    );
+    this.pathRenderer.setSelectedPath(pathEntityId);
+    this.previewTargetHexKey = null;
+
+    const targetPoint = movement.worldPath[movement.worldPath.length - 1];
+    this.selectedHexManager.setPosition(targetPoint.x, targetPoint.z);
+    this.selectionPulseManager.showSelection(targetPoint.x, targetPoint.z, pathEntityId);
+    this.selectionPulseManager.setPulseColor(
+      new Color(this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8"),
+      new Color(this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7"),
+    );
+
+    void this.refreshFastTravelScene();
+  }
+
+  private clearFastTravelMovementPreview(): void {
+    if (!this.selectedArmyEntityId) {
+      this.previewTargetHexKey = null;
+      return;
+    }
+
+    this.pathRenderer.removePath(this.resolvePathEntityId(this.selectedArmyEntityId));
+    this.previewTargetHexKey = null;
+  }
+
+  private resolveFastTravelMovement(targetHexCoords: FastTravelHexCoords): FastTravelMovementResolution | null {
+    if (!this.selectedArmyEntityId || !this.currentHydratedChunk) {
+      return null;
+    }
+
+    return resolveFastTravelMovement({
+      selectedArmyEntityId: this.selectedArmyEntityId,
+      targetHexCoords,
+      visibleHexWindow: this.currentHydratedChunk.visibleHexWindow,
+      armies: this.sceneArmies,
+      spireAnchors: this.sceneSpires,
+    });
+  }
+
+  private syncSelectedArmyFeedback(): void {
+    if (!this.selectedArmyEntityId) {
+      return;
+    }
+
+    const selectedArmy = this.currentEntityAnchors.find(
+      (anchor) => anchor.kind === "army" && anchor.entityId === this.selectedArmyEntityId,
+    );
+    if (!selectedArmy) {
+      return;
+    }
+
+    const pathEntityId = this.resolvePathEntityId(selectedArmy.entityId);
+    this.selectedHexManager.setPosition(selectedArmy.worldPosition.x, selectedArmy.worldPosition.z);
+    this.selectionPulseManager.showSelection(selectedArmy.worldPosition.x, selectedArmy.worldPosition.z, pathEntityId);
+    this.selectionPulseManager.setPulseColor(
+      new Color(this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8"),
+      new Color(this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7"),
+    );
+  }
+
+  private resolvePathEntityId(entityId: string): number {
+    return entityId.split("").reduce((hash, character) => hash * 31 + character.charCodeAt(0), 17);
   }
 
   private clearTravelVisualGroups(): void {
