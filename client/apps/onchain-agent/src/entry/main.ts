@@ -325,6 +325,11 @@ export async function main() {
       ? createX402Model()
       : ((getModel as Function)(config.modelProvider, config.modelId) as Model<any>);
 
+  // Override config display values with actual model info (x402 resolves its own model ID)
+  if (config.modelProvider === "x402") {
+    config.modelId = model.id;
+  }
+
   const convertToLlm = (messages: AgentMessage[]): Message[] =>
     messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
 
