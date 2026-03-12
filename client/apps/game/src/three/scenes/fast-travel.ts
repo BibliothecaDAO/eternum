@@ -22,17 +22,57 @@ export default class FastTravelScene extends WarpTravel {
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
     return {
+      onSetupStart: () => this.configureFastTravelSetupStart(),
+      onInitialSetupStart: () => this.prepareFastTravelInitialSetup(),
       moveCameraToSceneLocation: () => this.moveCameraToURLLocation(),
-      attachLabelGroupsToScene: () => this.attachWarpTravelLabelGroupsToScene([this.travelLabelGroup]),
-      attachManagerLabels: () => undefined,
-      registerStoreSubscriptions: () => undefined,
-      setupCameraZoomHandler: () => undefined,
-      refreshScene: async () => undefined,
-      disposeStoreSubscriptions: () => undefined,
-      detachLabelGroupsFromScene: () => this.detachWarpTravelLabelGroupsFromScene([this.travelLabelGroup]),
-      detachManagerLabels: () => undefined,
+      attachLabelGroupsToScene: () => this.attachFastTravelLabelGroupsToScene(),
+      attachManagerLabels: () => this.attachFastTravelManagerLabels(),
+      registerStoreSubscriptions: () => this.registerFastTravelStoreSubscriptions(),
+      setupCameraZoomHandler: () => this.setupFastTravelCameraZoomHandler(),
+      refreshScene: () => this.refreshFastTravelScene(),
+      reportSetupError: (error, phase) => this.reportFastTravelRefreshError(error, phase),
+      disposeStoreSubscriptions: () => this.disposeFastTravelStoreSubscriptions(),
+      detachLabelGroupsFromScene: () => this.detachFastTravelLabelGroupsFromScene(),
+      detachManagerLabels: () => this.detachFastTravelManagerLabels(),
     };
   }
+
+  private configureFastTravelSetupStart(): void {
+    this.controls.enablePan = true;
+    this.controls.enableZoom = true;
+  }
+
+  private prepareFastTravelInitialSetup(): void {
+    this.travelLabelGroup.clear();
+  }
+
+  private attachFastTravelLabelGroupsToScene(): void {
+    this.attachWarpTravelLabelGroupsToScene([this.travelLabelGroup]);
+  }
+
+  private attachFastTravelManagerLabels(): void {}
+
+  private registerFastTravelStoreSubscriptions(): void {}
+
+  private setupFastTravelCameraZoomHandler(): void {}
+
+  private async refreshFastTravelScene(): Promise<void> {}
+
+  private reportFastTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {
+    const message =
+      phase === "initial"
+        ? "[FastTravelScene] Failed to refresh initial scene state"
+        : "[FastTravelScene] Failed to refresh resumed scene state";
+    console.error(message, error);
+  }
+
+  private disposeFastTravelStoreSubscriptions(): void {}
+
+  private detachFastTravelLabelGroupsFromScene(): void {
+    this.detachWarpTravelLabelGroupsFromScene([this.travelLabelGroup]);
+  }
+
+  private detachFastTravelManagerLabels(): void {}
 
   protected onHexagonMouseMove(): void {}
 

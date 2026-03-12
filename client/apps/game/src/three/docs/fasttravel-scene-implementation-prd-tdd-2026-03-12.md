@@ -15,6 +15,7 @@
 | U1     | 2026-03-12 00:00 | Codex  | Created TDD PRD for the concrete fast-travel scene after the shared `WarpTravel` refactor landed and dedicated seam tests were verified green. |
 | U2     | 2026-03-12 00:00 | Codex  | Resolved product direction: no terrain, fully explored pink warp-space shader layer, visible stubbed Spires, and map-first scope with interactions deferred. |
 | U3     | 2026-03-12 00:00 | Codex  | Completed M0 by activating the fast-travel boundary, registering the concrete scene stub in `GameRenderer`, and locking renderer routing/update seams with fail-first tests. |
+| U4     | 2026-03-12 00:00 | Codex  | Completed M1 by turning `FastTravelScene` into a named-hook `WarpTravel` lifecycle shell and locking the lifecycle seam with focused tests plus shared runtime regressions. |
 
 ## Executive Summary
 
@@ -226,7 +227,7 @@ Completion Notes:
 2. `game-renderer.fast-travel-registration.test.ts` locks renderer registration, boundary-aware URL handling, and active fast-travel update/render branching.
 3. `FastTravelScene` is now registered in `GameRenderer` and receives environment, weather, quality, update, and destroy lifecycle handling alongside the existing scenes.
 
-### M1: Scene Skeleton and Lifecycle Wiring (1 day)
+### M1: Scene Skeleton and Lifecycle Wiring (1 day) [x]
 
 Objective:
 
@@ -243,6 +244,12 @@ Exit Criteria:
 
 1. `FastTravelScene` participates in scene switching correctly.
 2. Shared runtime tests stay green.
+
+Completion Notes:
+
+1. `fast-travel.test.ts` now locks `FastTravelScene` as a concrete `WarpTravel` scene with named lifecycle hooks rather than anonymous inline adapter lambdas.
+2. `FastTravelScene` now has explicit setup, initial-setup, label attach/detach, refresh, error-report, and subscription lifecycle methods that match the shared `WarpTravelLifecycleAdapter` seam.
+3. `warp-travel.test.ts` and `worldmap-shared-runtime.test.ts` were rerun green to keep the scene shell aligned with the shared runtime contract.
 
 ### M2: Fast-Travel Chunk Hydration and Entity Runtime (2-3 days)
 
@@ -323,7 +330,7 @@ Exit Criteria:
    enabled.
 2. [x] S2 (P0): Add failing test proving `GameRenderer` registers a concrete fast-travel scene.
 3. [x] S3 (P0): Add failing test proving active-scene render/update path handles fast-travel the same way it handles map/hex.
-4. S4 (P0): Add failing test proving `FastTravelScene` setup/resume/switch-off lifecycle delegates through `WarpTravel`.
+4. [x] S4 (P0): Add failing test proving `FastTravelScene` setup/resume/switch-off lifecycle delegates through `WarpTravel`.
 5. S5 (P1): Add failing test proving empty fast-travel chunks do not break manager fanout.
 6. S6 (P1): Add failing test proving fast-travel chunk hydration can populate armies into the scene.
 7. S7 (P1): Add failing test proving fast-travel scene prepares a fully explored no-terrain render state.
