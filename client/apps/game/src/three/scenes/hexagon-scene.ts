@@ -159,7 +159,6 @@ export abstract class HexagonScene {
     this.updateFogForDistance(distance);
     this.updateOutlineOpacityForDistance(distance);
     this.controls.dispatchEvent({ type: "change" });
-    this.frustumManager?.forceUpdate();
     this.visibilityManager?.markDirty();
   }
 

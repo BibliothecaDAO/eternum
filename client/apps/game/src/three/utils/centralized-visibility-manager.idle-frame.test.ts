@@ -23,7 +23,7 @@ class MockControls {
 }
 
 describe("CentralizedVisibilityManager idle frames", () => {
-  it.fails("does not recompute or notify listeners across idle frames", () => {
+  it("does not recompute or notify listeners across idle frames", () => {
     const camera = new PerspectiveCamera(60, 1, 0.1, 1000);
     camera.position.set(0, 5, 12);
     camera.lookAt(0, 0, 0);
