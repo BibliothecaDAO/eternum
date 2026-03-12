@@ -57,6 +57,7 @@ export interface SqlApiLike {
   fetchGuardsByStructure(entityId: number): Promise<any[]>;
   fetchResourceBalances(entityIds: number[]): Promise<any[]>;
   fetchExplorerById(entityId: number): Promise<any | null>;
+  fetchExplorersByIds?(entityIds: number[]): Promise<any[]>;
 }
 
 /**
@@ -203,6 +204,35 @@ export class ViewClient {
       this.logger.warn(`[ViewClient] explorerInfo query failed`, { error, entityId });
       return null;
     }
+  }
+
+  /**
+   * Fetch multiple explorer details in a single SQL query.
+   */
+  async explorerInfoBatch(entityIds: number[]): Promise<Map<number, ExplorerInfo>> {
+    const result = new Map<number, ExplorerInfo>();
+    if (entityIds.length === 0) return result;
+    try {
+      if (!this.sql.fetchExplorersByIds) return result;
+      const rows = await this.sql.fetchExplorersByIds(entityIds);
+      for (const data of rows) {
+        const info: ExplorerInfo = {
+          entityId: Number(data.explorer_id),
+          ownerName: data.owner_name ?? null,
+          ownerAddress: data.owner_address ?? null,
+          troopType: TROOP_TYPE[parseEnumValue(data.troop_category)] ?? "Unknown",
+          troopTier: TROOP_TIER[parseEnumValue(data.troop_tier)] ?? "Unknown",
+          troopCount: parseBalance(data.troop_count),
+          stamina: Number(data.max_stamina ?? 0),
+          staminaUpdatedTick: Number(data.last_refill_tick ?? 0),
+          position: { x: Number(data.coord_x), y: Number(data.coord_y) },
+        };
+        result.set(info.entityId, info);
+      }
+    } catch (error) {
+      this.logger.warn(`[ViewClient] explorerInfoBatch query failed`, { error });
+    }
+    return result;
   }
 
   /** Parse raw guard array into clean GuardInfo[]. Only includes non-empty slots. */

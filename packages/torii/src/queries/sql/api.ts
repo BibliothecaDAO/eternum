@@ -395,6 +395,16 @@ export class SqlApi {
   }
 
   /**
+   * Fetch multiple explorers by entity IDs in a single query.
+   */
+  async fetchExplorersByIds(entityIds: number[]): Promise<ExplorerData[]> {
+    if (entityIds.length === 0) return [];
+    const query = BATTLE_QUERIES.EXPLORERS_BY_IDS.replace("{explorerIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ExplorerData>(url, "Failed to fetch explorers by IDs");
+  }
+
+  /**
    * Fetch battle logs from the SQL database.
    * SQL queries always return arrays.
    */

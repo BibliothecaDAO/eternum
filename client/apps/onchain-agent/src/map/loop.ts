@@ -94,39 +94,45 @@ export function createMapLoop(
         lastOwnedCount = ownedCount;
       }
 
-      // Fetch explorer and structure details with concurrency limit to avoid
-      // hammering Torii with 40+ parallel requests every 10 seconds.
-      const CONCURRENCY = 5;
-      async function batchFetch<T>(items: any[], fn: (item: any) => Promise<T>): Promise<T[]> {
-        const results: T[] = [];
-        for (let i = 0; i < items.length; i += CONCURRENCY) {
-          const batch = items.slice(i, i + CONCURRENCY);
-          const settled = await Promise.allSettled(batch.map(fn));
-          for (const r of settled) {
-            if (r.status === "fulfilled" && r.value) results.push(r.value);
-          }
-        }
-        return results;
-      }
-
+      // Fetch explorer details in a single batch SQL query (instead of N individual requests)
       let explorerDetails: Map<number, ExplorerInfo> | undefined;
       if (ownedEntityIds && ownedEntityIds.size > 0) {
-        explorerDetails = new Map();
         const ownedArmyTiles = area.tiles.filter(
           (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && isExplorer(t.occupierType),
         );
-        const explorers = await batchFetch(ownedArmyTiles, (t) => client.view.explorerInfo(t.occupierId));
-        for (const e of explorers) if (e) explorerDetails.set(e.entityId, e);
+        const armyIds = ownedArmyTiles.map((t) => t.occupierId);
+        if (armyIds.length > 0 && typeof client.view.explorerInfoBatch === "function") {
+          explorerDetails = await client.view.explorerInfoBatch(armyIds);
+        } else if (armyIds.length > 0) {
+          // Fallback: individual requests with concurrency limit
+          explorerDetails = new Map();
+          for (let i = 0; i < armyIds.length; i += 5) {
+            const batch = armyIds.slice(i, i + 5);
+            const results = await Promise.allSettled(batch.map((id) => client.view.explorerInfo(id)));
+            for (const r of results) {
+              if (r.status === "fulfilled" && r.value) explorerDetails.set(r.value.entityId, r.value);
+            }
+          }
+        }
       }
 
+      // Structure details still use individual requests (need guards + resources per structure)
+      // but with a concurrency limit
       let structureDetailMap: Map<number, StructureInfo> | undefined;
       if (ownedEntityIds && ownedEntityIds.size > 0) {
         structureDetailMap = new Map();
         const ownedStructureTiles = area.tiles.filter(
           (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && t.occupierIsStructure,
         );
-        const structures = await batchFetch(ownedStructureTiles, (t) => client.view.structureAt(t.position.x, t.position.y));
-        for (const s of structures) if (s) structureDetailMap.set(s.entityId, s);
+        for (let i = 0; i < ownedStructureTiles.length; i += 5) {
+          const batch = ownedStructureTiles.slice(i, i + 5);
+          const results = await Promise.allSettled(
+            batch.map((t) => client.view.structureAt(t.position.x, t.position.y)),
+          );
+          for (const r of results) {
+            if (r.status === "fulfilled" && r.value) structureDetailMap.set(r.value.entityId, r.value);
+          }
+        }
       }
 
       // Pass previous anchor to keep row:col coordinates stable across renders
