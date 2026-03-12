@@ -68,3 +68,20 @@ export function formatStatus(input: StatusInput): string {
 
   return lines.join("\n");
 }
+
+/** Live automation status for a single realm, updated each automation tick. */
+export interface AutomationRealmStatus {
+  entityId: number;
+  name: string;
+  level: number;
+  buildOrderProgress: string;
+  lastBuilt: string[];
+  lastUpgrade: string | null;
+  produced: boolean;
+  errors: string[];
+  wheatBalance: number;
+  essenceBalance: number;
+}
+
+/** Shared mutable map updated by the automation loop, read by transformContext. */
+export type AutomationStatusMap = Map<number, AutomationRealmStatus>;
