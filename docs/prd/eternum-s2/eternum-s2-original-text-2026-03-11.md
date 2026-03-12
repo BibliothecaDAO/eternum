@@ -136,11 +136,11 @@ Requirements: Give Villages a 48-hour raid immunity timer from the moment they a
 immediate access to starting troops, they can instead claim starting troops 24 hours after settling by pressing a button
 to ‘call militia’. Disable the ability to claim deposits until after the immunity timer ends. New system - Army
 Strength. This is a simple calculation that can be used in future mechanics while also giving players a simple visual
-indication of the strength of an army at a glance. Army_Strength = Troop_Amount _ Tier_Strength Tier_Strength: T1 = 1,
+indication of the strength of an army at a glance. Army*Strength = Troop_Amount * Tier*Strength Tier_Strength: T1 = 1,
 T2 = 3, T3 = 9. Limit the strength of deployable armies (including guard armies) based on Realm/Village level, each of
 which has a deployment cap: Settlement - 6k, City - 30k, Kingdom - 90k, Empire - 180k. The maximum size of an army is
 dependent on the deployment cap and the tier strength of the troops being deployed, such that: Max_Army_Size =
-(Deployment_Cap / Tier_Strength) _ Tier_Modifier Tier_Modifier: T1 = 0.5, T2 = 1.0, T3 = 1.5 Remove the previous 100k
+(Deployment_Cap / Tier_Strength) * Tier_Modifier Tier_Modifier: T1 = 0.5, T2 = 1.0, T3 = 1.5 Remove the previous 100k
 max army size cap in favour of the new strength caps. Remove the +1 additional army slot per military building and
 instead increase the number of army slots based on Realm/Village level: Settlement - 1 field, 1 guard City - 3 field, 2
 guard Kingdom - 5 field, 3 guard Empire - 8 field, 4 guard Add ‘buildings constructed’ requirement to Realm/Village

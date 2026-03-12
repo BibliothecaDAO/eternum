@@ -36,9 +36,7 @@ export interface WarpTravelVisibleChunkDecision {
   shouldPrefetch: boolean;
 }
 
-export function resolveWarpTravelChunkCoordinates(
-  input: WarpTravelChunkCoordinatesInput,
-): WarpTravelChunkCoordinates {
+export function resolveWarpTravelChunkCoordinates(input: WarpTravelChunkCoordinatesInput): WarpTravelChunkCoordinates {
   const chunkX = Math.floor(input.x / (input.chunkSize * input.hexSize * Math.sqrt(3)));
   const chunkZ = Math.floor(input.z / (input.chunkSize * input.hexSize * 1.5));
   const startCol = chunkX * input.chunkSize;

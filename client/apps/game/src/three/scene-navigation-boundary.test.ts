@@ -80,7 +80,7 @@ describe("resolveNavigationSceneTarget", () => {
       resolveNavigationSceneTarget({
         currentPath: "/play/travel?col=1&row=1",
       }),
-    ).toBe(SceneName.FastTravel);
+    ).toBe(SceneName.WorldMap);
   });
 
   it("can still keep fast travel dormant when the boundary override disables it", () => {

@@ -100,8 +100,7 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
   `warp-travel-directional-prefetch.ts`, `warp-travel-prefetch-enqueue.ts`, `warp-travel-prefetch-drain.ts`).
 - On chunk change `performChunkSwitch()`:
   1. prepares bounds, then commits `currentChunk` through one finalize-helper callback path before manager fanout while
-     registering/unregistering chunk bounds with the
-     `CentralizedVisibilityManager`.
+     registering/unregistering chunk bounds with the `CentralizedVisibilityManager`.
   2. Starts deterministic Torii fetches for tiles (`computeTileEntities`) and structures (`refreshStructuresForChunks`)
      for the new render window.
   3. Pins the 5×5 neighborhood and kicks background prefetch for those chunks.

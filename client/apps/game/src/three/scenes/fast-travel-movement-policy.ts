@@ -66,9 +66,7 @@ export function resolveFastTravelMovement(input: {
   }
 
   const blockedHexKeys = new Set(
-    input.armies
-      .filter((army) => army.entityId !== input.selectedArmyEntityId)
-      .map((army) => toHexKey(army.hexCoords)),
+    input.armies.filter((army) => army.entityId !== input.selectedArmyEntityId).map((army) => toHexKey(army.hexCoords)),
   );
 
   if (blockedHexKeys.has(targetHexKey)) {

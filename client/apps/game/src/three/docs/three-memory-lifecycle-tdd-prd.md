@@ -10,8 +10,8 @@
 
 ## Document Update Log
 
-| Update | Date (AEDT)      | Author | Change                                                                                                                  |
-| ------ | ---------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Update | Date (AEDT)      | Author | Change                                                                                                                |
+| ------ | ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------- |
 | U1     | 2026-03-12 19:05 | Codex  | Created PRD/TDD from deep memory leak review findings, with prioritized fixes, failing-test slices, and rollout plan. |
 
 ## Executive Summary
@@ -192,10 +192,10 @@ The post-fix runtime must obey these rules:
 
 ### Functional Requirements
 
-| ID   | Requirement                                                                                      | Priority |
-| ---- | ------------------------------------------------------------------------------------------------ | -------- |
-| FR-1 | Destroying `WorldmapScene` must destroy all scene-owned managers and FX systems exactly once.    | P0       |
-| FR-2 | Destroying any `HexagonScene` must detach all frustum and visibility listeners from `controls`.  | P0       |
+| ID   | Requirement                                                                                       | Priority |
+| ---- | ------------------------------------------------------------------------------------------------- | -------- |
+| FR-1 | Destroying `WorldmapScene` must destroy all scene-owned managers and FX systems exactly once.     | P0       |
+| FR-2 | Destroying any `HexagonScene` must detach all frustum and visibility listeners from `controls`.   | P0       |
 | FR-3 | Destroying `GameRenderer` must remove all `window` globals created by renderer memory/debug code. | P0       |
 | FR-4 | `ArmyManager.destroy()` must fully dispose path-renderer singleton state or transfer ownership.   | P1       |
 | FR-5 | GUI folders created by renderer/managers must be tracked and removed during teardown.             | P1       |
@@ -203,13 +203,13 @@ The post-fix runtime must obey these rules:
 
 ### Non-Functional Requirements
 
-| ID    | Requirement                                                                                           | Priority |
-| ----- | ----------------------------------------------------------------------------------------------------- | -------- |
-| NFR-1 | No production code lands in this effort without a failing test first.                                 | P0       |
-| NFR-2 | Destroy/recreate loops must show no net listener growth across the tested lifecycle surfaces.         | P0       |
-| NFR-3 | Teardown must be idempotent; repeat destroy calls may warn but must not re-register or rethrow.      | P0       |
-| NFR-4 | DEV diagnostics must not retain production scene/renderer graphs after destroy.                       | P1       |
-| NFR-5 | Memory/lifecycle fixes must not regress chunking correctness or visible rendering behavior.           | P1       |
+| ID    | Requirement                                                                                     | Priority |
+| ----- | ----------------------------------------------------------------------------------------------- | -------- |
+| NFR-1 | No production code lands in this effort without a failing test first.                           | P0       |
+| NFR-2 | Destroy/recreate loops must show no net listener growth across the tested lifecycle surfaces.   | P0       |
+| NFR-3 | Teardown must be idempotent; repeat destroy calls may warn but must not re-register or rethrow. | P0       |
+| NFR-4 | DEV diagnostics must not retain production scene/renderer graphs after destroy.                 | P1       |
+| NFR-5 | Memory/lifecycle fixes must not regress chunking correctness or visible rendering behavior.     | P1       |
 
 ## TDD Operating Model (Mandatory)
 
@@ -241,15 +241,15 @@ No production code without a failing test first.
 
 ## M0 RED Behavior Matrix
 
-| Slice | Target test file                           | Expected behavior                                                                 | Current outcome from review                                                            |
-| ----- | ------------------------------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| S1    | `src/three/scenes/worldmap-lifecycle.test.ts` | `WorldmapScene.destroy()` destroys `armyManager`, `structureManager`, `chestManager`, and `fxManager`. | Fails on current design: destroy omits those calls and only tears down partial scene state. |
-| S2    | `src/three/scenes/hexagon-scene.lifecycle.test.ts` | `HexagonScene.destroy()` removes frustum/visibility listeners from shared controls. | Fails on current design: `frustumManager` and `visibilityManager` are never disposed. |
-| S3    | `src/three/scenes/worldmap-lifecycle.test.ts` | Worldmap debug hooks are installed through named helpers and removed during destroy. | Fails on current design: globals are assigned directly on `window` and never removed. |
-| S4    | `src/three/game-renderer.lifecycle.test.ts` | Memory-monitor globals are cleared by `GameRenderer.destroy()` when monitoring is enabled. | Fails on current design: globals are installed but not cleaned up. |
-| S5    | `src/three/managers/army-manager.lifecycle.test.ts` | `ArmyManager.destroy()` fully disposes `PathRenderer`. | Fails on current design: owner only calls `clearAll()`. |
-| S6    | `src/three/managers/points-label-renderer.test.ts` | `PointsLabelRenderer.dispose()` frees geometry, material, and owned sprite texture. | Fails on current design: texture ownership is implicit and not disposed. |
-| S7    | `src/three/game-renderer.lifecycle.test.ts` or `src/three/managers/army-manager.lifecycle.test.ts` | GUI folder count is stable across create/destroy loops. | Fails on current design: folders are created on a global GUI singleton with no teardown. |
+| Slice | Target test file                                                                                   | Expected behavior                                                                                      | Current outcome from review                                                                 |
+| ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| S1    | `src/three/scenes/worldmap-lifecycle.test.ts`                                                      | `WorldmapScene.destroy()` destroys `armyManager`, `structureManager`, `chestManager`, and `fxManager`. | Fails on current design: destroy omits those calls and only tears down partial scene state. |
+| S2    | `src/three/scenes/hexagon-scene.lifecycle.test.ts`                                                 | `HexagonScene.destroy()` removes frustum/visibility listeners from shared controls.                    | Fails on current design: `frustumManager` and `visibilityManager` are never disposed.       |
+| S3    | `src/three/scenes/worldmap-lifecycle.test.ts`                                                      | Worldmap debug hooks are installed through named helpers and removed during destroy.                   | Fails on current design: globals are assigned directly on `window` and never removed.       |
+| S4    | `src/three/game-renderer.lifecycle.test.ts`                                                        | Memory-monitor globals are cleared by `GameRenderer.destroy()` when monitoring is enabled.             | Fails on current design: globals are installed but not cleaned up.                          |
+| S5    | `src/three/managers/army-manager.lifecycle.test.ts`                                                | `ArmyManager.destroy()` fully disposes `PathRenderer`.                                                 | Fails on current design: owner only calls `clearAll()`.                                     |
+| S6    | `src/three/managers/points-label-renderer.test.ts`                                                 | `PointsLabelRenderer.dispose()` frees geometry, material, and owned sprite texture.                    | Fails on current design: texture ownership is implicit and not disposed.                    |
+| S7    | `src/three/game-renderer.lifecycle.test.ts` or `src/three/managers/army-manager.lifecycle.test.ts` | GUI folder count is stable across create/destroy loops.                                                | Fails on current design: folders are created on a global GUI singleton with no teardown.    |
 
 ## Milestones
 
@@ -576,7 +576,8 @@ Status:
    - `src/three/game-renderer-gui-folders.test.ts`
    - `src/three/managers/army-manager.lifecycle.test.ts`
    - `src/three/managers/points-label-renderer.test.ts`
-2. `pnpm --dir client/apps/game exec vitest run src/three` still has unrelated baseline failures in the current workspace:
+2. `pnpm --dir client/apps/game exec vitest run src/three` still has unrelated baseline failures in the current
+   workspace:
    - `src/three/managers/army-model.visibility.test.ts` fails on `ResourcesIds.StaminaRelic1`
    - multiple `jsdom`-backed suites hit a workspace dependency/runtime error in `html-encoding-sniffer`
 3. `eslint` on touched files still reports pre-existing debt in:

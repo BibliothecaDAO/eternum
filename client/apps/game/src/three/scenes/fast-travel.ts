@@ -32,14 +32,8 @@ import {
   type FastTravelHexCoords,
   type FastTravelSpireHydrationInput,
 } from "./fast-travel-hydration";
-import {
-  buildFastTravelEntityAnchors,
-  type FastTravelEntityAnchor,
-} from "./fast-travel-entity-anchors";
-import {
-  resolveFastTravelMovement,
-  type FastTravelMovementResolution,
-} from "./fast-travel-movement-policy";
+import { buildFastTravelEntityAnchors, type FastTravelEntityAnchor } from "./fast-travel-entity-anchors";
+import { resolveFastTravelMovement, type FastTravelMovementResolution } from "./fast-travel-movement-policy";
 import { prepareFastTravelRenderState, type FastTravelRenderState } from "./fast-travel-rendering";
 import {
   FAST_TRAVEL_CHUNK_POLICY,
@@ -453,12 +447,7 @@ export default class FastTravelScene extends WarpTravel {
 
     const centerCol = field.bounds.origin.col + Math.floor(field.bounds.size.cols / 2);
     const centerRow = field.bounds.origin.row + Math.floor(field.bounds.size.rows / 2);
-    this.interactiveHexManager.updateVisibleHexes(
-      centerRow,
-      centerCol,
-      field.bounds.size.cols,
-      field.bounds.size.rows,
-    );
+    this.interactiveHexManager.updateVisibleHexes(centerRow, centerCol, field.bounds.size.cols, field.bounds.size.rows);
   }
 
   private resolveSceneArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {

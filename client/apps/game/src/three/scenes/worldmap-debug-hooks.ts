@@ -8,10 +8,7 @@ interface WorldmapDebugHooks {
   testTroopDiffFx: (diff?: number) => void;
 }
 
-export function installWorldmapDebugHooks(
-  debugWindow: WorldmapDebugWindow,
-  hooks: WorldmapDebugHooks,
-): void {
+export function installWorldmapDebugHooks(debugWindow: WorldmapDebugWindow, hooks: WorldmapDebugHooks): void {
   debugWindow.testMaterialSharing = hooks.testMaterialSharing;
   debugWindow.testTroopDiffFx = hooks.testTroopDiffFx;
 }

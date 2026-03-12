@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getGameModeId } from "@/config/game-modes";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -154,7 +155,7 @@ export default class GameRenderer {
 
   // Scenes
   private worldmapScene!: WorldmapScene;
-  private fastTravelScene!: FastTravelScene;
+  private fastTravelScene?: FastTravelScene;
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
@@ -224,12 +225,17 @@ export default class GameRenderer {
     this.setupRendererGUI();
   }
 
+  private isFastTravelEnabled(): boolean {
+    return getGameModeId() !== "blitz";
+  }
+
   private setupSceneSwitchingGUI() {
     const changeSceneFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Switch scene"));
     const changeSceneParams = { scene: SceneName.WorldMap };
-    changeSceneFolder
-      .add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel])
-      .name("Scene");
+    const sceneOptions = this.isFastTravelEnabled()
+      ? [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel]
+      : [SceneName.WorldMap, SceneName.Hexception];
+    changeSceneFolder.add(changeSceneParams, "scene", sceneOptions).name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
   }
@@ -759,7 +765,7 @@ export default class GameRenderer {
       this.labelsDirty = true;
       if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
         this.worldmapScene.requestChunkRefresh();
-      } else if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel) {
+      } else if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
         this.fastTravelScene.requestSceneRefresh();
       }
     });
@@ -805,14 +811,16 @@ export default class GameRenderer {
     const url = new URL(window.location.href);
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const sceneSlug = pathSegments.pop();
+    const fastTravelEnabled = this.isFastTravelEnabled();
     const targetScene = resolveNavigationSceneTarget({
       requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
       currentPath: url.pathname,
+      fastTravelEnabled,
     });
 
     if (
       targetScene === this.sceneManager.getCurrentScene() &&
-      (targetScene === SceneName.WorldMap || targetScene === SceneName.FastTravel)
+      (targetScene === SceneName.WorldMap || (targetScene === SceneName.FastTravel && this.fastTravelScene))
     ) {
       this.sceneManager.moveCameraForScene();
       this.transitionManager?.fadeIn();
@@ -847,9 +855,19 @@ export default class GameRenderer {
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
 
-    // Initialize FastTravel scene
-    this.fastTravelScene = new FastTravelScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
-    this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
+    if (this.isFastTravelEnabled()) {
+      // Initialize FastTravel scene for non-Blitz modes only.
+      this.fastTravelScene = new FastTravelScene(
+        this.dojo,
+        this.raycaster,
+        this.controls,
+        this.mouse,
+        this.sceneManager,
+      );
+      this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
+    } else {
+      this.fastTravelScene = undefined;
+    }
 
     // Set up render pass
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
@@ -1014,7 +1032,7 @@ export default class GameRenderer {
     const envMap = renderTarget.texture;
     this.hexceptionScene.setEnvironment(envMap, intensity);
     this.worldmapScene.setEnvironment(envMap, intensity);
-    this.fastTravelScene.setEnvironment(envMap, intensity);
+    this.fastTravelScene?.setEnvironment(envMap, intensity);
 
     if (
       this.environmentTarget &&
@@ -1218,7 +1236,7 @@ export default class GameRenderer {
     if (currentScene === SceneName.WorldMap) {
       view = this.worldmapScene.getCurrentCameraView();
       labelsActive = this.worldmapScene.hasActiveLabelAnimations();
-    } else if (currentScene === SceneName.FastTravel) {
+    } else if (currentScene === SceneName.FastTravel && this.fastTravelScene) {
       view = this.fastTravelScene.getCurrentCameraView();
       labelsActive = this.fastTravelScene.hasActiveLabelAnimations();
     } else if (currentScene === SceneName.Hexception) {
@@ -1305,15 +1323,15 @@ export default class GameRenderer {
     this.hudScene.update(deltaTime, cycleProgress);
     const weatherState = this.hudScene.getWeatherState();
     this.worldmapScene.setWeatherAtmosphereState(weatherState);
-    this.fastTravelScene.setWeatherAtmosphereState(weatherState);
+    this.fastTravelScene?.setWeatherAtmosphereState(weatherState);
     this.hexceptionScene.setWeatherAtmosphereState(weatherState);
 
     // Render the current game scene
     const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
-    const isFastTravel = this.sceneManager?.getCurrentScene() === SceneName.FastTravel;
+    const isFastTravel = this.sceneManager?.getCurrentScene() === SceneName.FastTravel && Boolean(this.fastTravelScene);
     if (isWorldMap) {
       this.worldmapScene.update(deltaTime);
-    } else if (isFastTravel) {
+    } else if (isFastTravel && this.fastTravelScene) {
       this.fastTravelScene.update(deltaTime);
     } else {
       this.hexceptionScene.update(deltaTime);
@@ -1321,7 +1339,7 @@ export default class GameRenderer {
     const activeScene = isWorldMap
       ? this.worldmapScene.getScene()
       : isFastTravel
-        ? this.fastTravelScene.getScene()
+        ? (this.fastTravelScene?.getScene() ?? this.worldmapScene.getScene())
         : this.hexceptionScene.getScene();
     (this.renderPass as unknown as { scene: unknown }).scene = activeScene;
 

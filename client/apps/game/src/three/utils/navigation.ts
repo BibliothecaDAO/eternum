@@ -1,4 +1,5 @@
 import { Position } from "@bibliothecadao/eternum";
+import { getGameModeId } from "@/config/game-modes";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
@@ -9,6 +10,8 @@ import {
 import type { FastTravelHexCoords } from "../scenes/fast-travel-hydration";
 import type { FastTravelSpireMapping } from "../scenes/fast-travel-spire-mapping";
 import { SceneName } from "../types";
+
+const isFastTravelEnabled = (): boolean => getGameModeId() !== "blitz";
 
 function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
   const url = new Position({ x: col, y: row });
@@ -39,8 +42,15 @@ function dispatchSceneNavigation(navigationUrl: string): void {
 export function navigateToStructure(col: number, row: number, scene?: "hex" | "map" | "travel") {
   const targetScene = resolveNavigationSceneTarget({
     requestedScene:
-      scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : scene === "travel" ? SceneName.FastTravel : undefined,
+      scene === "hex"
+        ? SceneName.Hexception
+        : scene === "map"
+          ? SceneName.WorldMap
+          : scene === "travel"
+            ? SceneName.FastTravel
+            : undefined,
     currentPath: window.location.pathname,
+    fastTravelEnabled: isFastTravelEnabled(),
   });
 
   dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
@@ -56,8 +66,15 @@ export function navigateToStructure(col: number, row: number, scene?: "hex" | "m
 function navigateToPosition(col: number, row: number, scene?: "hex" | "map" | "travel") {
   const targetScene = resolveNavigationSceneTarget({
     requestedScene:
-      scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : scene === "travel" ? SceneName.FastTravel : undefined,
+      scene === "hex"
+        ? SceneName.Hexception
+        : scene === "map"
+          ? SceneName.WorldMap
+          : scene === "travel"
+            ? SceneName.FastTravel
+            : undefined,
     currentPath: window.location.pathname,
+    fastTravelEnabled: isFastTravelEnabled(),
   });
 
   dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));

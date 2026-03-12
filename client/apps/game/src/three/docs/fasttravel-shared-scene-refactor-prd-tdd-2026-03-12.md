@@ -12,7 +12,7 @@
 
 | Update | Date (UTC)       | Author | Change                                                                                                                                                    |
 | ------ | ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| U1     | 2026-03-12 00:00 | Codex  | Created detailed TDD PRD for shared scene extraction ahead of fast-travel layer implementation, with milestones, fail-first slices, and open questions. |
+| U1     | 2026-03-12 00:00 | Codex  | Created detailed TDD PRD for shared scene extraction ahead of fast-travel layer implementation, with milestones, fail-first slices, and open questions.   |
 | U2     | 2026-03-12 00:00 | Codex  | Resolved scope decisions: shared abstraction named `WarpTravel`, future scene enum/bootstrap included now, and shared navigation boundary added in scope. |
 
 ## Executive Summary
@@ -373,7 +373,8 @@ Exit Criteria:
 2. No new flaky tests.
 3. No net-new lint debt in touched files.
 4. Shared base names and contracts must be explicit enough to support a second scene cleanly.
-5. Navigation boundary contracts must be explicit enough to support Spire travel without reworking scene ownership again.
+5. Navigation boundary contracts must be explicit enough to support Spire travel without reworking scene ownership
+   again.
 
 ## Risks
 
@@ -396,7 +397,8 @@ Exit Criteria:
 1. A new shared scene base exists and `WorldmapScene` uses it.
 2. Shared runtime behavior is protected by new tests.
 3. Existing `src/three` tests remain green.
-4. The follow-up fast-travel scene PR can focus on data adapters and Spire mapping instead of redoing scene architecture.
+4. The follow-up fast-travel scene PR can focus on data adapters and Spire mapping instead of redoing scene
+   architecture.
 
 ## Recommended Execution Order
 

@@ -10,13 +10,13 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change                                                                                   |
-| ------ | ---------------- | ------ | ---------------------------------------------------------------------------------------- |
-| U1     | 2026-03-12 00:00 | Codex  | Scoped the missing fast-travel chunk scrolling path and defined a clean implementation plan. |
+| Update | Date (UTC)       | Author | Change                                                                                                      |
+| ------ | ---------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| U1     | 2026-03-12 00:00 | Codex  | Scoped the missing fast-travel chunk scrolling path and defined a clean implementation plan.                |
 | U2     | 2026-03-12 06:15 | Codex  | Completed `O0` chunk policy and camera-refresh entry wiring with targeted runtime and controls tests green. |
 | U3     | 2026-03-12 06:25 | Codex  | Completed `O1` shared chunk-decision reuse with normalized fast-travel chunk keys and scene chunk tracking. |
-| U4     | 2026-03-12 06:35 | Codex  | Completed `O2` and `O3` with a single apply path plus movement coverage across the larger render window. |
-| U5     | 2026-03-12 06:40 | Codex  | Completed `O4` hardening with the fast-travel and shared warp-travel regression clusters green. |
+| U4     | 2026-03-12 06:35 | Codex  | Completed `O2` and `O3` with a single apply path plus movement coverage across the larger render window.    |
+| U5     | 2026-03-12 06:40 | Codex  | Completed `O4` hardening with the fast-travel and shared warp-travel regression clusters green.             |
 
 ## Delivery Tracker
 
@@ -28,14 +28,17 @@
 
 ## Closeout Notes
 
-1. Fast travel now uses a scene-local chunk runtime that reuses the shared warp-travel decision seam without importing worldmap-only manager fanout or prefetch complexity.
-2. The render window intentionally remains larger than the logical chunk stride so movement and interaction stay usable after scroll-driven chunk changes.
-3. A generic warp-travel chunk controller extraction is not warranted yet; fast travel and worldmap still differ enough in hydration/runtime ownership that the helper seam is the right current boundary.
+1. Fast travel now uses a scene-local chunk runtime that reuses the shared warp-travel decision seam without importing
+   worldmap-only manager fanout or prefetch complexity.
+2. The render window intentionally remains larger than the logical chunk stride so movement and interaction stay usable
+   after scroll-driven chunk changes.
+3. A generic warp-travel chunk controller extraction is not warranted yet; fast travel and worldmap still differ enough
+   in hydration/runtime ownership that the helper seam is the right current boundary.
 
 ## Executive Summary
 
-Fast travel currently renders only a small fixed cluster of hexes near the initial focus point and does not load new
-hex windows as the camera moves.
+Fast travel currently renders only a small fixed cluster of hexes near the initial focus point and does not load new hex
+windows as the camera moves.
 
 This is not a renderer bug. It is an incomplete runtime.
 
@@ -463,10 +466,12 @@ Exit Criteria:
 
 1. S1 (P0): Add failing test proving fast travel replaces the fixed radius-only window with a chunk policy.
 2. S2 (P0): Add failing test proving controls/camera movement requests a fast-travel chunk refresh.
-3. S3 (P0): Add failing test proving fast travel tracks `currentChunk` and uses `resolveWarpTravelVisibleChunkDecision()`.
+3. S3 (P0): Add failing test proving fast travel tracks `currentChunk` and uses
+   `resolveWarpTravelVisibleChunkDecision()`.
 4. S4 (P0): Add failing test proving chunk-key ordering is normalized to `"startRow,startCol"`.
 5. S5 (P1): Add failing test proving chunk switches rebuild the visible window and interactive surface.
-6. S6 (P1): Add failing test proving movement remains valid inside the loaded render window after scroll-driven chunk changes.
+6. S6 (P1): Add failing test proving movement remains valid inside the loaded render window after scroll-driven chunk
+   changes.
 7. S7 (P1): Run fast-travel and shared runtime regression suites.
 
 ## Test Strategy

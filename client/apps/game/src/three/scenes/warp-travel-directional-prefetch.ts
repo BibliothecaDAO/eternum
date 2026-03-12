@@ -18,9 +18,7 @@ interface ResolveWarpTravelDirectionalPrefetchPlanInput {
   getRenderAreaKeyForChunk: (chunkKey: string) => string;
 }
 
-export function resolveWarpTravelDirectionalPrefetchPlan(
-  input: ResolveWarpTravelDirectionalPrefetchPlanInput,
-): {
+export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTravelDirectionalPrefetchPlanInput): {
   desiredAreaKeys: string[];
   chunkKeysToEnqueue: string[];
   nextPrefetchedAhead: string[];
