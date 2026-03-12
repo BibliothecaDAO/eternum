@@ -6,7 +6,7 @@ interface ResolveNavigationSceneTargetInput {
   fastTravelEnabled?: boolean;
 }
 
-const FAST_TRAVEL_BOUNDARY_ENABLED = true;
+const FAST_TRAVEL_BOUNDARY_ENABLED = false;
 
 export function resolveNavigationSceneTarget(input: ResolveNavigationSceneTargetInput): SceneName {
   const fastTravelEnabled = input.fastTravelEnabled ?? FAST_TRAVEL_BOUNDARY_ENABLED;

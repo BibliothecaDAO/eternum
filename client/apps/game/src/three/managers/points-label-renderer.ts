@@ -63,10 +63,7 @@ export class PointsLabelRenderer {
   ) {
     this.maxPoints = maxPoints;
     this.spriteTexture = spriteTexture;
-    sharedSpriteTextureReferences.set(
-      spriteTexture,
-      (sharedSpriteTextureReferences.get(spriteTexture) ?? 0) + 1,
-    );
+    sharedSpriteTextureReferences.set(spriteTexture, (sharedSpriteTextureReferences.get(spriteTexture) ?? 0) + 1);
 
     // Initialize buffer arrays
     this.positionsArray = new Float32Array(maxPoints * 3);

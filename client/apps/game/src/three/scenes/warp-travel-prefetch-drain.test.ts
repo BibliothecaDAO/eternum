@@ -5,9 +5,7 @@ import type { PrefetchQueueItem } from "./worldmap-prefetch-queue";
 
 describe("drainWarpTravelPrefetchQueue", () => {
   it("requests queued-state clearing when the scene is switched off", () => {
-    const queue: PrefetchQueueItem[] = [
-      { chunkKey: "24,24", fetchKey: "24,24:area", priority: 2, fetchTiles: true },
-    ];
+    const queue: PrefetchQueueItem[] = [{ chunkKey: "24,24", fetchKey: "24,24:area", priority: 2, fetchTiles: true }];
     const queuedFetchKeys = new Set<string>(["24,24:area"]);
 
     const result = drainWarpTravelPrefetchQueue({

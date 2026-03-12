@@ -4619,7 +4619,8 @@ export default class WorldmapScene extends WarpTravel {
       forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
       updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
         this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
-      updateManagersForChunk: (targetChunkKey, managerOptions) => this.updateManagersForChunk(targetChunkKey, managerOptions),
+      updateManagersForChunk: (targetChunkKey, managerOptions) =>
+        this.updateManagersForChunk(targetChunkKey, managerOptions),
       unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
     });
 
@@ -4720,12 +4721,19 @@ export default class WorldmapScene extends WarpTravel {
       chunkKey,
       options,
       managers: [
-        { label: "army", updateChunk: (targetChunkKey, targetOptions) => this.armyManager.updateChunk(targetChunkKey, targetOptions) },
+        {
+          label: "army",
+          updateChunk: (targetChunkKey, targetOptions) => this.armyManager.updateChunk(targetChunkKey, targetOptions),
+        },
         {
           label: "structure",
-          updateChunk: (targetChunkKey, targetOptions) => this.structureManager.updateChunk(targetChunkKey, targetOptions),
+          updateChunk: (targetChunkKey, targetOptions) =>
+            this.structureManager.updateChunk(targetChunkKey, targetOptions),
         },
-        { label: "chest", updateChunk: (targetChunkKey, targetOptions) => this.chestManager.updateChunk(targetChunkKey, targetOptions) },
+        {
+          label: "chest",
+          updateChunk: (targetChunkKey, targetOptions) => this.chestManager.updateChunk(targetChunkKey, targetOptions),
+        },
       ],
       onManagerFailed: (label, reason) => {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");

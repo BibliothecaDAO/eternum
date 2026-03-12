@@ -17,9 +17,7 @@ interface DrainWarpTravelPrefetchQueueInput {
   pinnedAreaKeys: Set<string>;
 }
 
-export function drainWarpTravelPrefetchQueue(
-  input: DrainWarpTravelPrefetchQueueInput,
-): {
+export function drainWarpTravelPrefetchQueue(input: DrainWarpTravelPrefetchQueueInput): {
   shouldClearQueuedState: boolean;
   startedItems: PrefetchQueueItem[];
   skippedItems: PrefetchQueueItem[];

@@ -1046,7 +1046,7 @@ const InGameMarket = lazy(() =>
 );
 const HYPERSTRUCTURES_MENU_BY_VARIANT = {
   blitz: BlitzHyperstructuresMenu,
-  standard: EternumHyperstructuresMenu,
+  eternum: EternumHyperstructuresMenu,
 } as const;
 // const RelicsModule = lazy(() =>
 //   import("@/ui/features/relics").then((module) => ({

@@ -4,10 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { SceneName } from "../types";
-import {
-  resolveEnterFastTravelTransition,
-  resolveExitFastTravelTransition,
-} from "./fast-travel-navigation-policy";
+import { resolveEnterFastTravelTransition, resolveExitFastTravelTransition } from "./fast-travel-navigation-policy";
 import { resolveFastTravelSpireByTravelHex, resolveFastTravelSpireByWorldHex } from "./fast-travel-spire-mapping";
 
 function readNavigationSource(): string {
