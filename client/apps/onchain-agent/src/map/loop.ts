@@ -6,7 +6,7 @@
  */
 
 import { writeFileSync } from "fs";
-import type { EternumClient, ExplorerInfo } from "@bibliothecadao/client";
+import type { EternumClient, ExplorerInfo, StructureInfo } from "@bibliothecadao/client";
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import { renderMap } from "./renderer.js";
 import type { MapContext } from "./context.js";
@@ -85,9 +85,26 @@ export function createMapLoop(
         }
       }
 
+      // Fetch structure details for owned structures (resources, level, army slots)
+      let structureDetailMap: Map<number, StructureInfo> | undefined;
+      if (ownedEntityIds && ownedEntityIds.size > 0) {
+        structureDetailMap = new Map();
+        const ownedStructureTiles = area.tiles.filter(
+          (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && t.occupierIsStructure,
+        );
+        const structResults = await Promise.allSettled(
+          ownedStructureTiles.map((t) => client.view.structureAt(t.position.x, t.position.y)),
+        );
+        for (const r of structResults) {
+          if (r.status === "fulfilled" && r.value) {
+            structureDetailMap.set(r.value.entityId, r.value);
+          }
+        }
+      }
+
       // Pass previous anchor to keep row:col coordinates stable across renders
       const previousAnchor = ctx.snapshot?.anchor;
-      const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails, staminaConfig, previousAnchor);
+      const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails, staminaConfig, previousAnchor, structureDetailMap);
       ctx.snapshot = snapshot;
 
       // Prune recentlyMoved — remove entries where Torii now shows the army

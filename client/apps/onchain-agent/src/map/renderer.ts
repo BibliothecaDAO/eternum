@@ -1,4 +1,4 @@
-import type { TileState, ExplorerInfo } from "@bibliothecadao/client";
+import type { TileState, ExplorerInfo, StructureInfo } from "@bibliothecadao/client";
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import { projectExplorerStamina } from "../world/stamina.js";
 
@@ -117,6 +117,7 @@ export function renderMap(
   explorerDetails?: Map<number, ExplorerInfo>,
   staminaConfig?: StaminaConfig,
   mapAnchor?: MapAnchor,
+  structureDetails?: Map<number, StructureInfo>,
 ): MapSnapshot {
   if (tiles.length === 0) {
     return {
@@ -228,13 +229,26 @@ export function renderMap(
           if (detail) {
             const projected = staminaConfig ? projectExplorerStamina(detail, staminaConfig) : detail.stamina;
             armyItems.push(
-              `  ${ch} ${mapRow}:${col} (entity ${t.occupierId}) | ${detail.troopCount} ${detail.troopType} ${detail.troopTier} | stamina=${projected}`,
+              `  ${ch} ${mapRow}:${col} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | stamina=${projected}`,
             );
           } else {
-            armyItems.push(`  ${ch} ${mapRow}:${col} (entity ${t.occupierId})`);
+            armyItems.push(`  ${ch} ${mapRow}:${col}`);
           }
         } else {
-          structureItems.push(`  ${ch} ${mapRow}:${col} (entity ${t.occupierId})`);
+          const info = structureDetails?.get(t.occupierId);
+          if (info) {
+            // Show level, army slots, and troop reserves
+            const troops = info.resources
+              .filter((r) => /Knight|Paladin|Crossbowman/.test(r.name) && r.amount > 0)
+              .map((r) => `${r.amount.toLocaleString()} ${r.name}`)
+              .join(", ");
+            const troopStr = troops ? ` | troops: ${troops}` : "";
+            structureItems.push(
+              `  ${ch} ${mapRow}:${col} | ${info.category} lv${info.level} | armies ${info.explorerCount}/${info.maxExplorerCount}${troopStr}`,
+            );
+          } else {
+            structureItems.push(`  ${ch} ${mapRow}:${col}`);
+          }
         }
       }
     }
@@ -243,7 +257,7 @@ export function renderMap(
       lines.push("");
       lines.push("YOUR ENTITIES:");
       if (structureItems.length > 0) {
-        lines.push(`  Realms/Structures (${structureItems.length}):`);
+        lines.push(`  Structures (${structureItems.length}):`);
         lines.push(...structureItems);
       }
       if (armyItems.length > 0) {
