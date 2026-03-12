@@ -234,11 +234,11 @@ export function createMoveTool(
           if (pathResult.path.length <= 2) {
             // Path is [start, target] — already adjacent, no move needed
             const occupier = describeOccupier(targetTile.occupierType);
-            const actions = ["inspect"];
+            const actions = ["inspect_tile"];
             if (isStructure(targetTile.occupierType)) {
-              actions.push("attack (to capture)", "add_troops (if yours)", "set_guards (if yours)");
+              actions.push("attack_target (to capture)", "reinforce_army (if your army)", "defend_structure (if yours)");
             } else if (isExplorer(targetTile.occupierType)) {
-              actions.push("attack", "merge_armies (if yours, same type/tier)");
+              actions.push("attack_target", "reinforce_army (if yours, merges same type/tier)");
             } else if (isChest(targetTile.occupierType)) {
               actions.push("open_chest");
             }
@@ -421,9 +421,9 @@ export function createMoveTool(
         if (targetIsOccupied) {
           const occType = targetTile!.occupierType;
           const occName = describeOccupier(occType);
-          const nextActions = ["inspect"];
-          if (isStructure(occType)) nextActions.push("attack", "add_troops (if yours)", "set_guards (if yours)");
-          else if (isExplorer(occType)) nextActions.push("attack", "merge_armies (if yours)");
+          const nextActions = ["inspect_tile"];
+          if (isStructure(occType)) nextActions.push("attack_target", "reinforce_army (if your army)", "defend_structure (if yours)");
+          else if (isExplorer(occType)) nextActions.push("attack_target", "reinforce_army (if yours)");
           else if (isChest(occType)) nextActions.push("open_chest");
           statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${occName} at ${to_row}:${to_col}. You can: ${nextActions.join(", ")}.`;
         } else if (reachedTarget) {
