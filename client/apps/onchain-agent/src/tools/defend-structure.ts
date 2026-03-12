@@ -24,10 +24,10 @@ const SLOT_NAMES = ["Alpha", "Bravo", "Charlie", "Delta"];
 // Formula: deploymentCap * t1_modifier / (t1_strength * 100)
 // Values: settlement=3000, city=15000, kingdom=45000, empire=90000; t1_mod=50, t1_str=1
 const GUARD_CAP_BY_LEVEL: Record<number, number> = {
-  0: 1_500,   // Settlement
-  1: 7_500,   // City
-  2: 22_500,  // Kingdom
-  3: 45_000,  // Empire
+  0: 1_500, // Settlement
+  1: 7_500, // City
+  2: 22_500, // Kingdom
+  3: 45_000, // Empire
 };
 
 export function createDefendStructureTool(
@@ -55,9 +55,7 @@ export function createDefendStructureTool(
       from_army_row: Type.Optional(
         Type.Number({ description: "Row of your army to transfer troops from (must be adjacent)" }),
       ),
-      from_army_col: Type.Optional(
-        Type.Number({ description: "Column of your army to transfer troops from" }),
-      ),
+      from_army_col: Type.Optional(Type.Number({ description: "Column of your army to transfer troops from" })),
       troop_type: Type.Optional(
         Type.Union([Type.Literal("Knight"), Type.Literal("Paladin"), Type.Literal("Crossbowman")], {
           description: "Troop type (required when using reserves, auto-detected from army)",
@@ -100,10 +98,15 @@ export function createDefendStructureTool(
       const occupiedSlots = new Set(structure.guards.map((g) => g.slot));
       let slotIndex: number | null = null;
       for (let i = 0; i < SLOT_NAMES.length; i++) {
-        if (!occupiedSlots.has(SLOT_NAMES[i])) { slotIndex = i; break; }
+        if (!occupiedSlots.has(SLOT_NAMES[i])) {
+          slotIndex = i;
+          break;
+        }
       }
       if (slotIndex === null) {
-        const summary = structure.guards.map((g) => `${g.slot}: ${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`).join(", ");
+        const summary = structure.guards
+          .map((g) => `${g.slot}: ${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`)
+          .join(", ");
         throw new Error(`All 4 guard slots are full. Current guards: ${summary}`);
       }
       const slotName = SLOT_NAMES[slotIndex];
@@ -137,7 +140,9 @@ export function createDefendStructureTool(
         // Must leave at least 1 troop in the army
         const maxTransferRaw = totalRaw - RESOURCE_PRECISION;
         if (maxTransferRaw <= 0) {
-          throw new Error(`Army only has ${explorer.troopCount} troops — need more than 1 to garrison (must leave at least 1).`);
+          throw new Error(
+            `Army only has ${explorer.troopCount} troops — need more than 1 to garrison (must leave at least 1).`,
+          );
         }
         // Cap at guard slot capacity for this structure level
         const guardCap = (GUARD_CAP_BY_LEVEL[structure.level] ?? 1_500) * RESOURCE_PRECISION;
@@ -162,14 +167,18 @@ export function createDefendStructureTool(
 
         const remaining = explorer.troopCount - transferCount;
         return {
-          content: [{
-            type: "text" as const,
-            text: [
-              `Garrisoned ${transferCount.toLocaleString()} ${explorer.troopType} ${explorer.troopTier} into ${structure.category} slot ${slotName}`,
-              `Army remaining: ${Math.max(0, remaining).toLocaleString()} troops`,
-              remaining <= 0 ? "Army is now empty." : "",
-            ].filter(Boolean).join("\n"),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `Garrisoned ${transferCount.toLocaleString()} ${explorer.troopType} ${explorer.troopTier} into ${structure.category} slot ${slotName}`,
+                `Army remaining: ${Math.max(0, remaining).toLocaleString()} troops`,
+                remaining <= 0 ? "Army is now empty." : "",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            },
+          ],
           details: { mode: "army", slot: slotName, transferred: transferCount, armyRemaining: Math.max(0, remaining) },
         };
       }
@@ -229,14 +238,16 @@ export function createDefendStructureTool(
 
       const remainingDisplay = availableDisplay - troopCount;
       return {
-        content: [{
-          type: "text" as const,
-          text: [
-            `Assigned ${troopCount.toLocaleString()} ${troopResName} to guard slot ${slotName}`,
-            `Structure: ${structure.category} at ${row}:${col}`,
-            `Remaining ${troopResName}: ~${Math.max(0, remainingDisplay).toLocaleString()}`,
-          ].join("\n"),
-        }],
+        content: [
+          {
+            type: "text" as const,
+            text: [
+              `Assigned ${troopCount.toLocaleString()} ${troopResName} to guard slot ${slotName}`,
+              `Structure: ${structure.category} at ${row}:${col}`,
+              `Remaining ${troopResName}: ~${Math.max(0, remainingDisplay).toLocaleString()}`,
+            ].join("\n"),
+          },
+        ],
         details: { mode: "reserves", slot: slotName, troopType, tier: tierSuffix, assigned: troopCount },
       };
     },

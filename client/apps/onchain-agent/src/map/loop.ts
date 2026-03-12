@@ -104,7 +104,14 @@ export function createMapLoop(
 
       // Pass previous anchor to keep row:col coordinates stable across renders
       const previousAnchor = ctx.snapshot?.anchor;
-      const snapshot = renderMap(area.tiles, ownedEntityIds, explorerDetails, staminaConfig, previousAnchor, structureDetailMap);
+      const snapshot = renderMap(
+        area.tiles,
+        ownedEntityIds,
+        explorerDetails,
+        staminaConfig,
+        previousAnchor,
+        structureDetailMap,
+      );
       ctx.snapshot = snapshot;
 
       // Prune recentlyMoved — remove entries where Torii now shows the army

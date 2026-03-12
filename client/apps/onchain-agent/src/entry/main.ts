@@ -28,9 +28,15 @@ import { loadConfig } from "./config.js";
     msg.includes("[provider]") ||
     msg.includes("Failed to estimate invoke fee") ||
     msg.includes("Insufficient transaction data");
-  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) _warn.apply(console, a); };
-  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) _error.apply(console, a); };
-  console.info = (...a: any[]) => { if (!providerNoise(String(a[0]))) _info.apply(console, a); };
+  console.warn = (...a: any[]) => {
+    if (!providerNoise(String(a[0]))) _warn.apply(console, a);
+  };
+  console.error = (...a: any[]) => {
+    if (!providerNoise(String(a[0]))) _error.apply(console, a);
+  };
+  console.info = (...a: any[]) => {
+    if (!providerNoise(String(a[0]))) _info.apply(console, a);
+  };
 }
 import { discoverWorld, patchManifest } from "../world/discovery.js";
 import { bootstrapDataDir } from "./bootstrap.js";
@@ -399,14 +405,19 @@ export async function main() {
   // Kick off the first turn immediately
   runAgentTick();
 
-  console.log(`Agent running (tick every ${config.tickIntervalMs / 1000}s). Type a message to talk to the agent. Ctrl+C to stop.`);
+  console.log(
+    `Agent running (tick every ${config.tickIntervalMs / 1000}s). Type a message to talk to the agent. Ctrl+C to stop.`,
+  );
 
   // 9. Interactive stdin — send messages to the agent
   const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: "> " });
   rl.prompt();
   rl.on("line", (line) => {
     const text = line.trim();
-    if (!text) { rl.prompt(); return; }
+    if (!text) {
+      rl.prompt();
+      return;
+    }
     if (agentBusy) {
       console.log("[YOU → queued] (will deliver after current turn)");
       agent.followUp({ role: "user" as const, content: text, timestamp: Date.now() } as AgentMessage);
@@ -414,8 +425,15 @@ export async function main() {
       console.log("[YOU → prompt]");
       agentBusy = true;
       agent.prompt(text).then(
-        () => { agentBusy = false; rl.prompt(); },
-        (err) => { agentBusy = false; console.error("Agent error:", err instanceof Error ? err.message : err); rl.prompt(); },
+        () => {
+          agentBusy = false;
+          rl.prompt();
+        },
+        (err) => {
+          agentBusy = false;
+          console.error("Agent error:", err instanceof Error ? err.message : err);
+          rl.prompt();
+        },
       );
     }
     rl.prompt();

@@ -220,7 +220,15 @@ export function createMoveTool(
           return tileTravelCost(biome, explorer.troopType, gameConfig.stamina);
         };
 
-        let pathResult = findPath(start, target, explored, blocked, projectedStamina, tileCost, gameConfig.stamina.exploreCost);
+        let pathResult = findPath(
+          start,
+          target,
+          explored,
+          blocked,
+          projectedStamina,
+          tileCost,
+          gameConfig.stamina.exploreCost,
+        );
 
         if (!pathResult) {
           throw new Error(`No path to ${to_row}:${to_col}. Target may be blocked, unexplored, or unreachable.`);
@@ -236,15 +244,17 @@ export function createMoveTool(
             const occupier = describeOccupier(targetTile.occupierType);
             const actions = ["inspect_tile"];
             if (isStructure(targetTile.occupierType)) {
-              actions.push("attack_target (to capture)", "reinforce_army (if your army)", "defend_structure (if yours)");
+              actions.push(
+                "attack_target (to capture)",
+                "reinforce_army (if your army)",
+                "defend_structure (if yours)",
+              );
             } else if (isExplorer(targetTile.occupierType)) {
               actions.push("attack_target", "reinforce_army (if yours, merges same type/tier)");
             } else if (isChest(targetTile.occupierType)) {
               actions.push("open_chest");
             }
-            throw new Error(
-              `Already adjacent to ${occupier} at ${to_row}:${to_col}. You can: ${actions.join(", ")}.`,
-            );
+            throw new Error(`Already adjacent to ${occupier} at ${to_row}:${to_col}. You can: ${actions.join(", ")}.`);
           }
 
           // Trim the last step — stop adjacent to the target
@@ -366,7 +376,11 @@ export function createMoveTool(
         } catch (err: any) {
           const errStr = extractTxError(err);
           if (errStr.includes("is occupied")) {
-            try { await mapCtx.refresh?.(); } catch { /* non-fatal */ }
+            try {
+              await mapCtx.refresh?.();
+            } catch {
+              /* non-fatal */
+            }
             if (attempt < MAX_ATTEMPTS) continue; // retry with fresh map
             throw new Error(
               `Path to ${to_row}:${to_col} is blocked by an entity. Map refreshed — try a different destination.`,
@@ -421,7 +435,8 @@ export function createMoveTool(
           const occType = targetTile!.occupierType;
           const occName = describeOccupier(occType);
           const nextActions = ["inspect_tile"];
-          if (isStructure(occType)) nextActions.push("attack_target", "reinforce_army (if your army)", "defend_structure (if yours)");
+          if (isStructure(occType))
+            nextActions.push("attack_target", "reinforce_army (if your army)", "defend_structure (if yours)");
           else if (isExplorer(occType)) nextActions.push("attack_target", "reinforce_army (if yours)");
           else if (isChest(occType)) nextActions.push("open_chest");
           statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${occName} at ${to_row}:${to_col}. You can: ${nextActions.join(", ")}.`;
