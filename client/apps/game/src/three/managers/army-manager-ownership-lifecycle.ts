@@ -1,11 +1,7 @@
-import { destroyTrackedGuiFolders } from "../utils/gui-folder-lifecycle";
+import { destroyTrackedGuiFolders, type DestroyableGuiFolder } from "../utils/gui-folder-lifecycle";
 
 interface DisposablePathRenderer {
   dispose(): void;
-}
-
-interface DestroyableGuiFolder {
-  destroy(): void;
 }
 
 interface ArmyManagerOwnedResources {

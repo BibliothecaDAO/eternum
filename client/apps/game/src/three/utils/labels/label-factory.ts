@@ -13,6 +13,8 @@ import {
   createStaminaBar,
   createTroopCountDisplay,
   updateDirectionIndicators,
+  updateGuardArmyDisplay,
+  updateProductionDisplay,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -746,10 +748,10 @@ const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     const guardDisplay = element.querySelector('[data-component="guard-armies"]');
     if (Array.isArray(data.guardArmies)) {
-      const newGuardDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
       if (guardDisplay) {
-        guardDisplay.replaceWith(newGuardDisplay);
+        updateGuardArmyDisplay(guardDisplay as HTMLElement, data.guardArmies, cameraView);
       } else if (contentContainer) {
+        const newGuardDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
         const ownerNode = contentContainer.querySelector('[data-component="owner"]');
         if (ownerNode && ownerNode.parentElement === contentContainer) {
           contentContainer.insertBefore(newGuardDisplay, ownerNode.nextSibling);
@@ -776,8 +778,7 @@ const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     // Update active productions display
     const productionsDisplay = element.querySelector('[data-component="productions"]');
     if (productionsDisplay) {
-      const newProductionsDisplay = createProductionDisplay(data.activeProductions ?? [], cameraView);
-      productionsDisplay.replaceWith(newProductionsDisplay);
+      updateProductionDisplay(productionsDisplay as HTMLElement, data.activeProductions ?? [], cameraView);
     }
 
     // Update hyperstructure realm count

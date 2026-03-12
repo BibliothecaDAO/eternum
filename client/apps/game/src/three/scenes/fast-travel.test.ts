@@ -17,6 +17,12 @@ describe("FastTravelScene lifecycle shell", () => {
     expect(source).toMatch(/runWarpTravelSwitchOffLifecycle\(\)/);
   });
 
+  it("routes destroy through switch-off before base teardown", () => {
+    const source = readFastTravelSource();
+
+    expect(source).toMatch(/public destroy\(\): void \{\s*this\.onSwitchOff\(\);[\s\S]*super\.destroy\(\);/);
+  });
+
   it("defines named fast-travel lifecycle hooks instead of inline adapter lambdas", () => {
     const source = readFastTravelSource();
 

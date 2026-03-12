@@ -175,42 +175,34 @@ function createPathLineMaterial(): ShaderMaterial {
   });
 }
 
-/**
- * Shared material instance for all paths (singleton pattern)
- */
-let sharedMaterial: ShaderMaterial | null = null;
-
 export function getPathLineMaterial(): ShaderMaterial {
-  if (!sharedMaterial) {
-    sharedMaterial = createPathLineMaterial();
-  }
-  return sharedMaterial;
+  return createPathLineMaterial();
 }
 
 /**
  * Update time uniform for animation
  */
-export function updatePathLineMaterial(deltaTime: number): void {
-  if (sharedMaterial) {
-    sharedMaterial.uniforms.time.value += deltaTime;
+export function updatePathLineMaterial(material: ShaderMaterial | null, deltaTime: number): void {
+  if (material) {
+    material.uniforms.time.value += deltaTime;
   }
 }
 
 /**
  * Update resolution uniform (call on window resize)
  */
-export function updatePathLineResolution(width: number, height: number): void {
-  if (sharedMaterial) {
-    sharedMaterial.uniforms.resolution.value.set(width, height);
+export function updatePathLineResolution(material: ShaderMaterial | null, width: number, height: number): void {
+  if (material) {
+    material.uniforms.resolution.value.set(width, height);
   }
 }
 
 /**
  * Update army progress uniform (for highlighting current position)
  */
-export function updatePathLineProgress(progress: number): void {
-  if (sharedMaterial) {
-    sharedMaterial.uniforms.armyProgress.value = progress;
+export function updatePathLineProgress(material: ShaderMaterial | null, progress: number): void {
+  if (material) {
+    material.uniforms.armyProgress.value = progress;
   }
 }
 
@@ -218,18 +210,17 @@ export function updatePathLineProgress(progress: number): void {
  * Set line thickness
  */
 function setPathLineThickness(thickness: number): void {
-  if (sharedMaterial) {
-    sharedMaterial.uniforms.thickness.value = thickness;
+  if (thickness) {
+    // Reserved for future tuning.
   }
 }
 
 /**
- * Dispose of shared material
+ * Dispose of a path material owned by a single renderer instance.
  */
-export function disposePathLineMaterial(): void {
-  if (sharedMaterial) {
-    sharedMaterial.dispose();
-    sharedMaterial = null;
+export function disposePathLineMaterial(material: ShaderMaterial | null): void {
+  if (material) {
+    material.dispose();
   }
 }
 

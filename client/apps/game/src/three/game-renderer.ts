@@ -66,7 +66,7 @@ import {
 import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
-import { destroyTrackedGuiFolders, trackGuiFolder } from "./utils/gui-folder-lifecycle";
+import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
@@ -164,7 +164,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
-  private guiFolders: Array<{ destroy(): void }> = [];
+  private guiFolders: TrackableGuiFolder[] = [];
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;

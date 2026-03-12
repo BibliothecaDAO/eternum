@@ -2,26 +2,9 @@ import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
 import { SelectionPulseManager } from "../managers/selection-pulse-manager";
-import {
-  Color,
-  ConeGeometry,
-  CylinderGeometry,
-  EdgesGeometry,
-  Group,
-  LineBasicMaterial,
-  LineSegments,
-  Mesh,
-  MeshStandardMaterial,
-  Raycaster,
-  ShapeGeometry,
-  SphereGeometry,
-  Vector2,
-  Vector3,
-} from "three";
+import { Color, Group, Mesh, Raycaster, Vector2, Vector3 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
-import { HEX_SIZE } from "../constants";
-import { createHexagonShape } from "../geometry/hexagon-geometry";
 import type { SceneManager } from "../scene-manager";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
@@ -40,6 +23,8 @@ import {
   resolveFastTravelChunkHydrationPlan,
   resolveFastTravelVisibleChunkDecision,
 } from "./fast-travel-chunk-loading-runtime";
+import { createFastTravelRenderAssets, type FastTravelRenderAssets } from "./fast-travel-render-assets";
+import { resetFastTravelRuntimeState } from "./fast-travel-runtime-lifecycle";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
 export default class FastTravelScene extends WarpTravel {
@@ -49,6 +34,7 @@ export default class FastTravelScene extends WarpTravel {
   private readonly selectedHexManager: SelectedHexManager;
   private readonly selectionPulseManager: SelectionPulseManager;
   private readonly pathRenderer: PathRenderer;
+  private readonly renderAssets: FastTravelRenderAssets;
   private currentHydratedChunk: FastTravelChunkHydrationResult | null = null;
   private currentRenderState: FastTravelRenderState | null = null;
   private currentEntityAnchors: FastTravelEntityAnchor[] = [];
@@ -59,6 +45,8 @@ export default class FastTravelScene extends WarpTravel {
   private currentChunk: string = "null";
   private chunkRefreshTimeout: number | null = null;
   private pendingChunkRefreshForce = false;
+  private hasCompletedSwitchOffCleanup = false;
+  private hasDisposedFastTravelOwnedResources = false;
   private readonly chunkRefreshDebounceMs = FAST_TRAVEL_CHUNK_POLICY.refreshDebounceMs;
   private handleFastTravelControlsChange = (): void => {
     if (this.isSwitchedOff || this.sceneManager.getCurrentScene() !== SceneName.FastTravel) {
@@ -81,7 +69,8 @@ export default class FastTravelScene extends WarpTravel {
     this.travelContentGroup.name = "FastTravelContentGroup";
     this.selectedHexManager = new SelectedHexManager(this.scene);
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
-    this.pathRenderer = PathRenderer.getInstance();
+    this.pathRenderer = new PathRenderer();
+    this.renderAssets = createFastTravelRenderAssets();
     this.pathRenderer.initialize(this.scene);
     this.scene.add(this.travelSurfaceGroup);
     this.scene.add(this.travelContentGroup);
@@ -113,6 +102,7 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   private configureFastTravelSetupStart(): void {
+    this.hasCompletedSwitchOffCleanup = false;
     this.controls.enablePan = true;
     this.controls.enableZoom = true;
     this.interactiveHexManager.setSurfaceVisibility(false);
@@ -229,8 +219,14 @@ export default class FastTravelScene extends WarpTravel {
     this.moveCameraToColRow(col, row, 0);
   }
 
-  public onSwitchOff(): void {
+  public onSwitchOff(_nextSceneName?: SceneName): void {
+    if (this.hasCompletedSwitchOffCleanup) {
+      return;
+    }
+
     this.runWarpTravelSwitchOffLifecycle();
+    this.resetFastTravelRuntimeState();
+    this.hasCompletedSwitchOffCleanup = true;
   }
 
   public hasActiveLabelAnimations(): boolean {
@@ -258,9 +254,15 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   public destroy(): void {
-    this.clearTravelVisualGroups();
-    this.clearFastTravelMovementPreview();
-    this.selectionPulseManager.dispose();
+    this.onSwitchOff();
+
+    if (!this.hasDisposedFastTravelOwnedResources) {
+      this.renderAssets.dispose();
+      this.selectedHexManager.dispose();
+      this.selectionPulseManager.dispose();
+      this.hasDisposedFastTravelOwnedResources = true;
+    }
+
     super.destroy();
   }
 
@@ -405,6 +407,7 @@ export default class FastTravelScene extends WarpTravel {
     }
 
     this.scene.background = new Color(this.currentRenderState.surface.palette.backgroundColor);
+    this.renderAssets.syncPalette(this.currentRenderState.surface.palette);
     this.syncFastTravelSurfaceMeshes();
     this.syncFastTravelInteractiveHexes();
     this.currentEntityAnchors = buildFastTravelEntityAnchors({
@@ -560,88 +563,61 @@ export default class FastTravelScene extends WarpTravel {
     return entityId.split("").reduce((hash, character) => hash * 31 + character.charCodeAt(0), 17);
   }
 
-  private clearTravelVisualGroups(): void {
-    this.disposeGroupChildren(this.travelSurfaceGroup);
-    this.disposeGroupChildren(this.travelContentGroup);
+  private resetFastTravelRuntimeState(): void {
+    const nextState = resetFastTravelRuntimeState({
+      currentHydratedChunk: this.currentHydratedChunk,
+      currentRenderState: this.currentRenderState,
+      currentEntityAnchors: this.currentEntityAnchors,
+      sceneArmies: this.sceneArmies,
+      sceneSpires: this.sceneSpires,
+      selectedArmyEntityId: this.selectedArmyEntityId,
+      previewTargetHexKey: this.previewTargetHexKey,
+      currentChunk: this.currentChunk,
+      chunkRefreshTimeout: this.chunkRefreshTimeout,
+      clearTravelVisualGroups: () => this.clearTravelVisualGroups(),
+      interactiveHexManager: this.interactiveHexManager,
+      selectionPulseManager: this.selectionPulseManager,
+      selectedHexManager: this.selectedHexManager,
+      pathRenderer: this.pathRenderer,
+      clearTimeout: (timeoutId) => window.clearTimeout(timeoutId),
+      resolvePathEntityId: (entityId) => this.resolvePathEntityId(entityId),
+    });
+
+    this.currentHydratedChunk = nextState.currentHydratedChunk;
+    this.currentRenderState = nextState.currentRenderState;
+    this.currentEntityAnchors = nextState.currentEntityAnchors;
+    this.sceneArmies = nextState.sceneArmies;
+    this.sceneSpires = nextState.sceneSpires;
+    this.selectedArmyEntityId = nextState.selectedArmyEntityId;
+    this.previewTargetHexKey = nextState.previewTargetHexKey;
+    this.currentChunk = nextState.currentChunk;
+    this.chunkRefreshTimeout = nextState.chunkRefreshTimeout;
+    this.pendingChunkRefreshForce = nextState.pendingChunkRefreshForce;
   }
 
-  private disposeGroupChildren(group: Group): void {
-    group.children.slice().forEach((child) => {
-      group.remove(child);
-      if (child instanceof Mesh) {
-        child.geometry.dispose();
-        if (Array.isArray(child.material)) {
-          child.material.forEach((material) => material.dispose());
-        } else {
-          child.material.dispose();
-        }
-      } else {
-        child.traverse((node) => {
-          if (node instanceof Mesh) {
-            node.geometry.dispose();
-            if (Array.isArray(node.material)) {
-              node.material.forEach((material) => material.dispose());
-            } else {
-              node.material.dispose();
-            }
-          }
-        });
-      }
-    });
+  private clearTravelVisualGroups(): void {
+    this.travelSurfaceGroup.clear();
+    this.travelContentGroup.clear();
   }
 
   private createFastTravelHexMesh(hexCoords: FastTravelHexCoords): Group {
-    const palette = this.currentRenderState?.surface.palette;
-    const hexShape = createHexagonShape(HEX_SIZE * 0.96);
-    const fillGeometry = new ShapeGeometry(hexShape);
-
-    const edgeGeometry = new EdgesGeometry(fillGeometry);
-    const edgeMaterial = new LineBasicMaterial({
-      color: palette?.edgeColor ?? "#ff4fd8",
-      opacity: palette?.edgeOpacity ?? 0.92,
-      transparent: true,
-    });
-    const edgeMesh = new LineSegments(edgeGeometry, edgeMaterial);
-    edgeMesh.rotation.x = -Math.PI / 2;
-    edgeMesh.position.y = 0.03;
-    edgeMesh.renderOrder = 3;
-
     const { x, y, z } = getWorldPositionForHex(hexCoords);
     const group = new Group();
     group.position.set(x, y, z);
-    group.add(edgeMesh);
+    group.add(this.renderAssets.createHexEdgeMesh());
     return group;
   }
 
   private createArmyMarkerMesh(anchor: FastTravelEntityAnchor): Mesh {
-    const material = new MeshStandardMaterial({
-      color: this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7",
-      emissive: this.currentRenderState?.surface.palette.glowColor ?? "#ff92ea",
-      emissiveIntensity: 0.8,
-    });
-    const mesh = new Mesh(new SphereGeometry(0.35, 18, 18), material);
+    const mesh = this.renderAssets.createArmyMarkerMesh();
     mesh.position.set(anchor.worldPosition.x, anchor.worldPosition.y + 0.55, anchor.worldPosition.z);
     return mesh;
   }
 
   private createSpireAnchorMesh(anchor: FastTravelEntityAnchor): Group {
     const spireGroup = new Group();
-    const column = new Mesh(
-      new CylinderGeometry(0.18, 0.28, 1.6, 6),
-      new MeshStandardMaterial({
-        color: this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8",
-        emissive: this.currentRenderState?.surface.palette.glowColor ?? "#ff92ea",
-        emissiveIntensity: 1.2,
-      }),
-    );
-    const crown = new Mesh(
-      new ConeGeometry(0.42, 0.8, 6),
-      new MeshStandardMaterial({
-        color: this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7",
-        emissive: this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7",
-        emissiveIntensity: 1.3,
-      }),
-    );
+    const column = this.renderAssets.createSpireColumnMesh();
+    const crown = this.renderAssets.createSpireCrownMesh();
 
     column.position.set(0, 0.8, 0);
     crown.position.set(0, 1.9, 0);

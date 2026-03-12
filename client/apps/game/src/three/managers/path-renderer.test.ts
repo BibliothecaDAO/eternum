@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const disposePathLineMaterialMock = vi.fn();
@@ -45,12 +44,11 @@ function createPathRendererSubject() {
       dispose: geometryDispose,
     },
   };
+  subject.material = {};
   subject.buffers = {
     dispose: buffersDispose,
   };
   subject.scene = {} as any;
-
-  (PathRenderer as any).instance = subject;
 
   return {
     subject,
@@ -66,10 +64,14 @@ function createPathRendererSubject() {
 describe("PathRenderer lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("window", {
+      removeEventListener: vi.fn(),
+    });
   });
 
   it("disposes mesh/listeners/materials/buffers and resets singleton instance", () => {
     const fixture = createPathRendererSubject();
+    const ownedMaterial = fixture.subject.material;
 
     fixture.subject.dispose();
 
@@ -79,10 +81,10 @@ describe("PathRenderer lifecycle", () => {
     expect(fixture.parentRemove).toHaveBeenCalledTimes(1);
     expect(fixture.geometryDispose).toHaveBeenCalledTimes(1);
     expect(fixture.subject.mesh).toBeNull();
-    expect(disposePathLineMaterialMock).toHaveBeenCalledTimes(1);
+    expect(disposePathLineMaterialMock).toHaveBeenCalledWith(ownedMaterial);
+    expect(fixture.subject.material).toBeNull();
     expect(fixture.buffersDispose).toHaveBeenCalledTimes(1);
     expect(fixture.subject.scene).toBeNull();
-    expect((PathRenderer as any).instance).toBeNull();
   });
 
   it("is idempotent and skips duplicate dispose work", () => {

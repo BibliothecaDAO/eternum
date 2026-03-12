@@ -376,11 +376,26 @@ export function resolveRefreshCompletionActions(input: {
 export function shouldScheduleHydratedChunkRefreshForFetch(input: {
   fetchAreaKey: string;
   currentAreaKey: string | null;
+  suppressedAreaKeys?: Iterable<string>;
 }): boolean {
   if (!input.currentAreaKey) {
     return false;
   }
-  return input.fetchAreaKey === input.currentAreaKey;
+  if (input.fetchAreaKey !== input.currentAreaKey) {
+    return false;
+  }
+
+  if (!input.suppressedAreaKeys) {
+    return true;
+  }
+
+  for (const suppressedAreaKey of input.suppressedAreaKeys) {
+    if (suppressedAreaKey === input.fetchAreaKey) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
