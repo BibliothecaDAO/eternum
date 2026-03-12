@@ -1,11 +1,6 @@
 /**
- * Ensures the world data directory exists with default files.
- *
- * On first run for a new world, creates:
- *   <dataDir>/soul.md
- *   <dataDir>/tasks/{priorities,combat,economy,exploration,reflection}.md
- *
- * Existing files are never overwritten.
+ * Bootstrap utilities that seed a world data directory with default agent
+ * files on first run, without overwriting any files that already exist.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -190,6 +185,17 @@ function writeIfMissing(path: string, content: string): void {
   }
 }
 
+/**
+ * Ensure a world data directory exists and is populated with default files.
+ *
+ * On first run this creates `<dataDir>/soul.md` and
+ * `<dataDir>/tasks/{priorities,combat,economy,exploration,reflection}.md`
+ * using built-in templates. Existing files are never overwritten, so manual
+ * edits made by the operator are preserved across restarts.
+ *
+ * @param dataDir - Absolute path to the world's data directory (created
+ *                  recursively if it does not exist).
+ */
 export function bootstrapDataDir(dataDir: string): void {
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true });

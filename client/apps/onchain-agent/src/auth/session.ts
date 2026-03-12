@@ -1,8 +1,20 @@
+/**
+ * Cartridge Controller session management for the on-chain agent.
+ *
+ * Manages a singleton {@link SessionProvider} and exposes {@link getAccount} to
+ * obtain an authenticated Starknet WalletAccount. On first use the provider
+ * prints a browser-based auth URL; subsequent calls reuse the persisted session.
+ */
+
 import SessionProvider from "@cartridge/controller/session/node";
 import type { WalletAccount } from "starknet";
 import { shortString } from "starknet";
 import { buildPolicies, type Chain, type TokenAddresses } from "./policies.js";
 
+/**
+ * Configuration required to initialise the Cartridge SessionProvider and connect
+ * an authenticated agent wallet.
+ */
 interface SessionConfig {
   /** Chain name — determines manifest, season addresses, and signing domain. */
   chain: Chain;
@@ -52,8 +64,15 @@ const POLL_TIMEOUT_MS = 5 * 60 * 1_000; // 5 minutes
 /**
  * Connect and return an authenticated WalletAccount.
  *
- * If no valid session exists (first run or expired), the SDK prints an auth URL.
- * This function polls until the user completes the browser flow or the timeout is reached.
+ * Initialises the singleton {@link SessionProvider} on first call. If a valid
+ * persisted session is found it is returned immediately. Otherwise the SDK
+ * prints a browser auth URL and this function polls every 3 seconds until the
+ * user completes the authorisation flow or the 5-minute deadline is exceeded.
+ *
+ * @param config - Session configuration including chain, RPC URL, and optional token addresses.
+ * @returns A connected {@link WalletAccount} ready to sign and submit transactions.
+ * @throws {Error} If the browser authorisation flow is not completed within 5 minutes.
+ * @throws {Error} If `provider.connect()` rejects (network or SDK error).
  */
 export async function getAccount(config: SessionConfig): Promise<WalletAccount> {
   const p = getProvider(config);

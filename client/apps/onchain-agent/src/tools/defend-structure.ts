@@ -16,13 +16,22 @@ import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 import { isExplorer, isStructure } from "../world/occupier.js";
 
+/** Maps human-readable troop names to their on-chain category index (Knight=0, Paladin=1, Crossbowman=2). */
 const TROOP_CATEGORY: Record<string, number> = { Knight: 0, Paladin: 1, Crossbowman: 2 };
+
+/** Maps human-facing tier numbers (1/2/3) to on-chain tier values (0/1/2). */
 const TIER_VALUE: Record<number, number> = { 1: 0, 2: 1, 3: 2 };
+
+/** Maps tier numbers to the resource name suffix used in structure resource lists (e.g. "T1"). */
 const TIER_SUFFIX: Record<number, string> = { 1: "T1", 2: "T2", 3: "T3" };
+
+/** Ordered guard slot names matching on-chain slot indices 0–3. */
 const SLOT_NAMES = ["Alpha", "Bravo", "Charlie", "Delta"];
-// Guard slot max capacity per structure level (T1).
-// Formula: deploymentCap * t1_modifier / (t1_strength * 100)
-// Values: settlement=3000, city=15000, kingdom=45000, empire=90000; t1_mod=50, t1_str=1
+
+/**
+ * Maximum T1 troop count per guard slot, keyed by structure level.
+ * Derived from: deploymentCap * t1_modifier / (t1_strength * 100).
+ */
 const GUARD_CAP_BY_LEVEL: Record<number, number> = {
   0: 1_500, // Settlement
   1: 7_500, // City
@@ -30,6 +39,15 @@ const GUARD_CAP_BY_LEVEL: Record<number, number> = {
   3: 45_000, // Empire
 };
 
+/**
+ * Create the defend_structure agent tool.
+ *
+ * @param client - Eternum client used to fetch structure and explorer data.
+ * @param mapCtx - Map context holding the current tile snapshot.
+ * @param playerAddress - Hex address of the player; used to verify structure and army ownership.
+ * @param tx - Transaction context containing the provider and signer.
+ * @returns An AgentTool that assigns guard troops to a structure slot from either an adjacent army or the structure's own reserves.
+ */
 export function createDefendStructureTool(
   client: EternumClient,
   mapCtx: MapContext,

@@ -3,9 +3,10 @@
  *
  * Automatically detects the source:
  *   - Adjacent owned structure → transfers troops from reserves (explorer_add)
- *   - Adjacent owned army (same type/tier) → merges armies (explorer_explorer_swap + explorer_delete)
+ *   - Adjacent owned army (same type/tier) → transfers troops (explorer_explorer_swap), deleting
+ *     the source only when all available troops are transferred
  *
- * Prefers structures over armies. If merging, the source army is deleted to free its slot.
+ * Prefers structures over armies.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -19,6 +20,15 @@ import { isExplorer, isStructure } from "../world/occupier.js";
 const TARGET_TROOP_AMOUNT = 10_000 * RESOURCE_PRECISION;
 const TIER_SUFFIX: Record<string, string> = { T1: "T1", T2: "T2", T3: "T3" };
 
+/**
+ * Create the reinforce_army agent tool.
+ *
+ * @param client - Eternum client used to fetch explorer and structure data.
+ * @param mapCtx - Map context holding the current tile snapshot.
+ * @param playerAddress - Hex address of the player; used to verify ownership of the army and any source.
+ * @param tx - Transaction context containing the provider and signer.
+ * @returns An AgentTool that adds troops to an explorer from an adjacent structure or army (deleting the source army only on full transfer).
+ */
 export function createReinforceArmyTool(
   client: EternumClient,
   mapCtx: MapContext,

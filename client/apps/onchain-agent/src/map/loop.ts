@@ -2,7 +2,9 @@
  * Background map refresh loop.
  *
  * Fetches all tiles from Torii every `intervalMs` (default 10s),
- * re-renders the ASCII map, updates MapContext.snapshot, and writes map.txt.
+ * re-renders the ASCII map, updates MapContext.snapshot, and writes the
+ * result to `ctx.filePath` (typically `<dataDir>/map.txt`; skipped when
+ * `filePath` is null, e.g. in tests).
  */
 
 import { writeFileSync } from "fs";
@@ -20,6 +22,26 @@ interface MapLoop {
   readonly isRunning: boolean;
 }
 
+/**
+ * Create a background map refresh loop.
+ *
+ * On each tick the loop fetches all explored tiles from Torii, resolves owned
+ * entity IDs (structures and explorers) for the given player, fetches explorer
+ * and structure details, renders the ASCII map via {@link renderMap}, updates
+ * `ctx.snapshot`, and writes the result to `ctx.filePath` when set. Pending
+ * context entries (`recentlyMoved`, `recentlyExplored`, `recentlyOpenedChests`)
+ * are pruned whenever Torii confirms the expected state.
+ *
+ * @param client - Eternum client used to query tiles and entity details.
+ * @param ctx - Shared mutable map context updated on every refresh.
+ * @param playerAddress - Optional hex address of the controlling player. When set, enables
+ *                        ownership highlighting, explorer details (stamina, troops), and
+ *                        structure details (level, guard slots). Omitting it disables all
+ *                        entity annotations — not just highlighting.
+ * @param intervalMs - Refresh interval in milliseconds. Defaults to 10 000 ms.
+ * @param staminaConfig - Stamina configuration used to project current stamina values.
+ * @returns A {@link MapLoop} handle with `start`, `stop`, `refresh`, and `isRunning`.
+ */
 export function createMapLoop(
   client: EternumClient,
   ctx: MapContext,

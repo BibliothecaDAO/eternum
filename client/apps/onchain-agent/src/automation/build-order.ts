@@ -37,8 +37,10 @@ const B = {
 
 // ── Types ─────────────────────────────────────────────────────────────
 
+/** Which troop tier progression the realm is optimised for, determined by biome. */
 export type TroopPath = "Knight" | "Crossbowman" | "Paladin";
 
+/** A single step in the realm's build sequence. */
 export interface BuildStep {
   /** BuildingType enum value to construct. */
   building: number;
@@ -46,8 +48,11 @@ export interface BuildStep {
   label: string;
 }
 
+/** Complete biome-specific build plan pairing a troop path with an ordered step list. */
 export interface BuildOrder {
+  /** The troop specialisation chosen for this realm's biome. */
   troopPath: TroopPath;
+  /** Ordered list of buildings to construct, from first slot to Empire capacity. */
   steps: BuildStep[];
 }
 
@@ -194,14 +199,24 @@ const BIOME_TO_TROOP: Record<number, TroopPath> = {
 
 // ── Public API ────────────────────────────────────────────────────────
 
+/**
+ * Return the optimal troop path for a given biome, defaulting to Paladin for unknown biomes.
+ *
+ * @param biome - Numeric biome ID of the realm's home tile.
+ * @returns The troop path that receives a +30% damage bonus in this biome.
+ */
 export function troopPathForBiome(biome: number): TroopPath {
   return BIOME_TO_TROOP[biome] ?? "Paladin";
 }
 
 /**
  * Generate the full build order for a realm based on its biome.
+ *
  * Structured around realm level slot gates:
  *   Settlement (6) → City (18) → Kingdom (36) → Empire (60)
+ *
+ * @param biome - Numeric biome ID of the realm's home tile.
+ * @returns A BuildOrder containing the biome-optimal troop path and full step list.
  */
 export function buildOrderForBiome(biome: number): BuildOrder {
   const troopPath = troopPathForBiome(biome);

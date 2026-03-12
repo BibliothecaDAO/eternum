@@ -1,13 +1,28 @@
+/**
+ * Automation status formatter — converts per-realm tick results into a human-readable report.
+ *
+ * Returns a formatted string; the caller (automation loop) is responsible for
+ * writing it to disk.
+ */
 import type { TickResult } from "./executor.js";
 
+/** Aggregated status for a single realm after one automation tick. */
 export interface RealmStatus {
+  /** On-chain entity ID of the realm. */
   realmEntityId: number;
+  /** Display name used in status output (e.g. "Realm 42"). */
   realmName: string;
+  /** Biome numeric value of the realm's home tile. */
   biome: number;
+  /** Current realm level (0=Settlement … 3=Empire). */
   level: number;
+  /** Human-readable build order progress string (e.g. "5/44"). */
   buildOrderProgress: string;
+  /** Result of the on-chain tick execution for this realm. */
   tickResult: TickResult;
+  /** Essence balance and whether it covers the next milestone cost. */
   essencePulse: { balance: number; sufficient: boolean };
+  /** Wheat balance and whether it is critically low. */
   wheatPulse: { balance: number; low: boolean };
 }
 
@@ -16,6 +31,12 @@ interface StatusInput {
   realms: RealmStatus[];
 }
 
+/**
+ * Format a multi-realm automation status report as a plain-text string.
+ *
+ * @param input - Timestamp and per-realm status data to render.
+ * @returns A newline-separated status report suitable for writing to a file or logging.
+ */
 export function formatStatus(input: StatusInput): string {
   const lines: string[] = [];
   lines.push(`=== Automation Status ===`);

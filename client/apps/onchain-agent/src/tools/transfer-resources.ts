@@ -4,7 +4,8 @@
  * Resources are delivered by donkey caravan. Donkeys are consumed (burnt)
  * based on total weight. Travel time depends on distance.
  *
- * Weight tiers: standard resources ~1kg, troops ~5kg, wheat/essence ~0.1kg, donkeys 0kg.
+ * Weight tiers: standard resources ~1kg, troops ~5kg, wheat/fish/essence/ancient fragment ~0.1kg,
+ * donkeys and lords 0kg.
  * Donkey capacity: 50kg each.
  */
 
@@ -16,7 +17,10 @@ import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 import { isStructure } from "../world/occupier.js";
 
-// Resource weight in grams (from on-chain WeightConfig)
+/**
+ * Per-unit resource weight in grams, keyed by resource ID, derived from the on-chain WeightConfig.
+ * Standard resources are 1kg, troops are 5kg, Wheat/Fish/Essence/AncientFragment are 0.1kg, Donkeys and Lords are 0g.
+ */
 const RESOURCE_WEIGHT_GRAMS: Record<number, number> = {};
 // Standard resources (IDs 1-23): 1000g (1kg) each
 for (let i = 1; i <= 23; i++) RESOURCE_WEIGHT_GRAMS[i] = 1000;
@@ -34,11 +38,13 @@ RESOURCE_WEIGHT_GRAMS[37] = 0;
 // Essence=38: 100g (0.1kg)
 RESOURCE_WEIGHT_GRAMS[38] = 100;
 
-// Donkey capacity in grams (from WorldConfig)
+/** Maximum cargo weight a single donkey can carry, in grams (50kg per WorldConfig). */
 const DONKEY_CAPACITY_GRAMS = 50_000; // 50kg
 
-// Resource name → ID mapping for common resources
-// From ResourcesIds enum in @bibliothecadao/types
+/**
+ * Maps human-readable resource names to their on-chain resource IDs.
+ * Sourced from the ResourcesIds enum in @bibliothecadao/types.
+ */
 const RESOURCE_NAME_TO_ID: Record<string, number> = {
   Stone: 1,
   Coal: 2,
@@ -80,6 +86,15 @@ const RESOURCE_NAME_TO_ID: Record<string, number> = {
   Essence: 38,
 };
 
+/**
+ * Create the transfer_resources agent tool.
+ *
+ * @param client - Eternum client used to fetch structure data and resource balances.
+ * @param mapCtx - Map context holding the current tile snapshot for position resolution.
+ * @param playerAddress - Hex address of the player; used to verify ownership of both structures.
+ * @param tx - Transaction context containing the provider and signer.
+ * @returns An AgentTool that sends resources from one owned structure to another via donkey caravan.
+ */
 export function createTransferResourcesTool(
   client: EternumClient,
   mapCtx: MapContext,

@@ -68,16 +68,22 @@ function hexRings(maxRing: number): Array<{ col: number; row: number }> {
   return result;
 }
 
+/** A hex grid position plus the BFS direction path from the realm center to that position. */
 export interface SlotResult {
+  /** Column coordinate of the target hex. */
   col: number;
+  /** Row coordinate of the target hex. */
   row: number;
+  /** Ordered directions to walk from the center hex (10,10) to reach this slot. */
   directions: Direction[];
 }
 
 /**
- * Find the first open build slot on a realm.
- * @param occupied Set of "col,row" strings for already-built positions
- * @param level Realm level (1-4), determines how many rings are available
+ * Find the first open build slot on a realm, scanning outward ring by ring.
+ *
+ * @param occupied - Set of "col,row" strings for already-built positions.
+ * @param level - Realm level (0-indexed), determines how many hex rings are available.
+ * @returns The nearest unoccupied SlotResult with its direction path, or null if all slots are full.
  */
 export function findOpenSlot(occupied: Set<string>, level: number): SlotResult | null {
   const maxRing = LEVEL_TO_MAX_RING[level] ?? 1;
@@ -96,8 +102,12 @@ export function findOpenSlot(occupied: Set<string>, level: number): SlotResult |
 }
 
 /**
- * Find up to `count` open build slots on a realm.
- * Returns a mutable Set of occupied positions that includes the newly claimed slots.
+ * Find up to `count` open build slots on a realm, claiming each one before searching for the next.
+ *
+ * @param occupied - Set of "col,row" strings for already-built positions.
+ * @param level - Realm level (0-indexed), determines how many hex rings are available.
+ * @param count - Maximum number of slots to find.
+ * @returns The found SlotResults and an updated occupied set that includes the newly claimed slots.
  */
 export function findOpenSlots(
   occupied: Set<string>,

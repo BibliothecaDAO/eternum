@@ -1,3 +1,10 @@
+/**
+ * Automation loop — periodic tick scheduler for multi-realm on-chain automation.
+ *
+ * Each tick discovers owned realms, fetches their state, plans buildings and
+ * production, executes transactions, offloads resource arrivals, and writes a
+ * status file. The loop runs on a fixed interval and silently retries failures.
+ */
 import { writeFileSync } from "fs";
 import { join } from "path";
 import type { EternumClient } from "@bibliothecadao/client";
@@ -13,10 +20,15 @@ import { executeRealmTick, type BuildAction, type UpgradeAction, type Production
 import { formatStatus, type RealmStatus } from "./status.js";
 import type { RealmState } from "./runner.js";
 
+/** Handle returned by {@link createAutomationLoop} to control the tick scheduler. */
 interface AutomationLoop {
+  /** Start the interval timer and immediately run the first tick. */
   start(): void;
+  /** Stop the interval timer; the current tick (if any) completes naturally. */
   stop(): void;
+  /** Manually trigger one tick outside the regular interval. */
   refresh(): Promise<void>;
+  /** Whether the loop is currently scheduled to tick. */
   readonly isRunning: boolean;
 }
 
@@ -24,7 +36,8 @@ interface AutomationLoop {
  * Compute the scaled building cost for a given building type.
  *
  * Formula (matches game client getBuildingCosts):
- *   totalCost = baseCost + (quantity - 1)² × baseCost × (percentIncrease / 10000)
+ *   percentIncrease = buildingBaseCostPercentIncrease / 10000
+ *   totalCost = baseCost + (quantity - 1)² × baseCost × percentIncrease
  *
  * Returns an array of { resource, amount } with scaled amounts, or empty if
  * no cost data is available for this building type.
@@ -50,6 +63,23 @@ function scaledBuildingCost(
   }));
 }
 
+/**
+ * Create an automation loop that periodically ticks all realms owned by the player.
+ *
+ * Each tick: discovers realms → fetches balances/buildings → plans builds and
+ * production → executes transactions → offloads arrivals → writes a status file.
+ * Errors within a tick are swallowed so the loop always continues.
+ *
+ * @param client - Eternum SDK client used to query on-chain state via SQL.
+ * @param provider - Eternum provider used to submit on-chain transactions.
+ * @param signer - Account signer passed to all provider calls.
+ * @param playerAddress - Hex address of the player whose realms to automate.
+ * @param dataDir - Directory path where the automation-status.txt file is written.
+ * @param mapCtx - Map context snapshot used for biome lookups by coordinate.
+ * @param gameConfig - On-chain game configuration (building costs, upgrade costs, recipes).
+ * @param intervalMs - Tick interval in milliseconds (default 60 000 ms / 1 minute).
+ * @returns An AutomationLoop handle with start/stop/refresh controls.
+ */
 export function createAutomationLoop(
   client: EternumClient,
   provider: EternumProvider,

@@ -13,23 +13,23 @@ import { getNeighborHexes, Direction, BiomeIdToType, RESOURCE_PRECISION } from "
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 
-// On-chain troop category: Knight=0, Paladin=1, Crossbowman=2
+/** Maps human-readable troop names to their on-chain category index (Knight=0, Paladin=1, Crossbowman=2). */
 const TROOP_CATEGORY: Record<string, number> = {
   Knight: 0,
   Paladin: 1,
   Crossbowman: 2,
 };
 
-// On-chain tier values: T1=0, T2=1, T3=2
+/** Maps human-facing tier numbers (1/2/3) to on-chain tier values (0/1/2). */
 const TIER_VALUE: Record<number, number> = { 1: 0, 2: 1, 3: 2 };
 
-// Resource name suffix per tier
+/** Maps tier numbers to the resource name suffix used in structure resource lists (e.g. "T1"). */
 const TIER_SUFFIX: Record<number, string> = { 1: "T1", 2: "T2", 3: "T3" };
 
-// Target troop count — use up to 10K, or whatever is available
+/** Default maximum troop count to deploy when no explicit amount is provided (10,000 troops). */
 const TARGET_TROOP_AMOUNT = 10_000 * RESOURCE_PRECISION;
 
-// Biome → best troop type (from BIOME_COMBAT_BONUS in strength.ts)
+/** Maps biome IDs to the troop type that receives a +30% combat bonus in that biome. */
 const BIOME_BEST_TROOP: Record<number, string> = {
   1: "Crossbowman",
   2: "Crossbowman",
@@ -51,6 +51,15 @@ const BIOME_BEST_TROOP: Record<number, string> = {
 
 // ── Tool ─────────────────────────────────────────────────────────────
 
+/**
+ * Create the create_army agent tool.
+ *
+ * @param client - Eternum client used to fetch structure data and available resources.
+ * @param mapCtx - Map context holding the current tile snapshot for spawn-hex selection.
+ * @param playerAddress - Hex address of the player; used to verify realm ownership.
+ * @param tx - Transaction context containing the provider and signer.
+ * @returns An AgentTool that creates a new explorer army at an owned realm.
+ */
 export function createCreateArmyTool(
   client: EternumClient,
   mapCtx: MapContext,

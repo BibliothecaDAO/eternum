@@ -14,6 +14,15 @@ import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js"
 import { isExplorer, isChest } from "../world/occupier.js";
 import { directionBetween } from "../world/pathfinding.js";
 
+/**
+ * Create the open_chest agent tool.
+ *
+ * @param client - Eternum client used to fetch explorer data.
+ * @param mapCtx - Map context holding the current tile snapshot and recently-opened chest tracking.
+ * @param playerAddress - Hex address of the player; used to verify army ownership.
+ * @param tx - Transaction context containing the provider and signer.
+ * @returns An AgentTool that opens a relic chest adjacent to one of the player's armies.
+ */
 export function createOpenChestTool(
   client: EternumClient,
   mapCtx: MapContext,

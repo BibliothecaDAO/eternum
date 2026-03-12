@@ -101,21 +101,36 @@ function extractRpcUrl(row: Record<string, unknown>): string | null {
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * Full connection descriptor for a deployed Eternum world, resolved from
+ * the Cartridge factory and needed by the agent to connect to Torii and StarkNet.
+ */
 interface WorldInfo {
+  /** Base Torii GraphQL/SQL URL for the world (e.g. `https://api.cartridge.gg/x/<worldName>/torii`). */
   toriiUrl: string;
+  /** Normalized 64-hex-digit world contract address (0x-prefixed). */
   worldAddress: string;
+  /** StarkNet RPC endpoint for sending transactions; derived from the factory row or chain defaults. */
   rpcUrl: string;
   /** Normalized selector → contract address, from the factory's wf-WorldContract table. */
   contractsBySelector: Record<string, string>;
 }
 
 /**
- * Resolve a world name + chain into the full connection info the agent needs.
+ * Resolve a world name and chain into the full connection info the agent needs.
  *
- * 1. Torii URL derived from the world name
- * 2. World address from factory's wf-WorldDeployed table
- * 3. Contract addresses from factory's wf-WorldContract table
- * 4. RPC URL defaults based on chain
+ * 1. Derives the Torii URL from the world name and verifies it is reachable.
+ * 2. Fetches the world address from the factory's wf-WorldDeployed table.
+ * 3. Fetches all contract addresses from the factory's wf-WorldContract table.
+ * 4. Determines the RPC URL from the factory row, falling back to per-chain defaults.
+ *
+ * @param chain - Target chain identifier (e.g. "mainnet", "sepolia", "slot").
+ * @param worldName - Cartridge world slug (e.g. "eternum-blitz-slot-4").
+ * @returns Resolved {@link WorldInfo} with Torii URL, world address, RPC URL, and contract map.
+ * @throws {Error} If the Torii endpoint is unreachable or returns a non-OK response.
+ * @throws {Error} If the chain has no known factory endpoint.
+ * @throws {Error} If the world is not found in the factory registry.
+ * @throws {Error} If the world address cannot be extracted from the factory row.
  */
 export async function discoverWorld(chain: Chain, worldName: string): Promise<WorldInfo> {
   const toriiUrl = `${CARTRIDGE_API}/x/${worldName}/torii`;
@@ -189,9 +204,13 @@ export async function discoverWorld(chain: Chain, worldName: string): Promise<Wo
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a new manifest with contract addresses overwritten from the factory map
- * and the world address set. This is the same logic as the game client's
- * `patchManifestWithFactory`.
+ * Return a deep-cloned manifest with contract addresses overwritten from the factory map
+ * and the world address updated. Mirrors the game client's `patchManifestWithFactory`.
+ *
+ * @param baseManifest - The original Dojo manifest object to patch (not mutated).
+ * @param worldAddress - Normalized world contract address to set on `manifest.world.address`.
+ * @param contractsBySelector - Map of normalized selector → live contract address from the factory.
+ * @returns A new manifest object with addresses replaced wherever a factory entry exists.
  */
 export function patchManifest(
   baseManifest: any,

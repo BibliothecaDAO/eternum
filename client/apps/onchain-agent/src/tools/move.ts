@@ -99,6 +99,16 @@ function describeAdjacent(
   return parts.length > 0 ? `Adjacent: ${parts.join(", ")}` : "Adjacent: nothing visible";
 }
 
+/**
+ * Create the move_army agent tool.
+ *
+ * @param client - Eternum client used to fetch explorer data.
+ * @param mapCtx - Map context holding the tile snapshot, stamina tracking, and recently-moved state.
+ * @param playerAddress - Hex address of the player; used to verify army ownership.
+ * @param tx - Transaction context containing the provider and signer.
+ * @param gameConfig - Game configuration including stamina costs and explore cost.
+ * @returns An AgentTool that moves an explorer army along an A*-computed path, exploring new tiles as needed.
+ */
 export function createMoveTool(
   client: EternumClient,
   mapCtx: MapContext,

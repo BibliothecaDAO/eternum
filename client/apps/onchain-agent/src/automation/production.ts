@@ -38,11 +38,17 @@ interface ProductionPlan {
   skipped: Array<{ resourceId: number; reason: string }>;
 }
 
+/** A candidate building to construct, with pre-computed scaled costs for budget checking. */
 export interface BuildingTarget {
+  /** BuildingType numeric value of the building to construct. */
   buildingType: number;
+  /** Human-readable label used in logs and status output. */
   label: string;
+  /** Scaled resource costs for this specific instance (accounts for quantity-based price increases). */
   costs: { resource: number; amount: number }[];
+  /** Whether to use the simple (labor-only) recipe rather than the complex one. */
   useSimple: boolean;
+  /** Opaque SlotResult from placement — passed through to the executor unchanged. */
   slot: any; // SlotResult — opaque to the planner
 }
 
@@ -208,14 +214,19 @@ function resolveTargets(
 // ── Planner ───────────────────────────────────────────────────────────
 
 /**
- * Calculate production cycles for all producible resources this tick.
+ * Calculate production cycles for all producible resources this tick, unified with building affordability.
  *
- * @param balances  Current resource balances (resource ID → amount)
- * @param buildingCounts  Map of BuildingType → count on the realm
- * @param troopPath  Which troop path this realm follows
- * @param gameConfig  On-chain game configuration (recipes, costs, rates)
- * @param tickSeconds  Tick interval in seconds (default 60)
- * @param isVillage  Whether this is a village (lower rates) or realm
+ * Buildings are evaluated first and their costs are removed from the shared budget before
+ * production is planned, ensuring buildings always get priority on shared resources.
+ *
+ * @param balances - Current resource balances (resource ID → human-readable amount).
+ * @param buildingCounts - Map of BuildingType → count of that building on the realm.
+ * @param troopPath - Which troop path this realm follows (determines T2/T3 resource targets).
+ * @param gameConfig - On-chain game configuration containing resource recipes and factory data.
+ * @param tickSeconds - Tick interval in seconds; reserved for future rate calculations (default 60).
+ * @param isVillage - Whether this is a village structure (reserved for future rate scaling).
+ * @param buildingTargets - Candidate buildings to evaluate for affordability against the shared budget.
+ * @returns A UnifiedPlan listing production calls, affordable/skipped builds, and budget tracking maps.
  */
 export function planProduction(
   balances: Map<number, number>,

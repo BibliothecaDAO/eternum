@@ -31,8 +31,11 @@ const WORKERS_HUT = 1;
 
 // ── Input / Output types ──────────────────────────────────────────────
 
+/** Population impact of a single building instance. */
 export interface BuildingPopulationInfo {
+  /** How much population capacity this building consumes when placed. */
   populationCost: number;
+  /** How much additional population capacity this building provides (e.g. WorkersHut). */
   capacityGrant: number;
 }
 
@@ -70,12 +73,16 @@ interface AutomationPlan {
 // ── Runner ────────────────────────────────────────────────────────────
 
 /**
- * Determine ALL automation actions for a realm this tick.
+ * Determine all automation actions for a realm this tick.
  *
  * Cycles the build order, collecting every building that can be placed
  * given available slots and population capacity. Injects WorkersHuts
  * when population is the bottleneck. Returns an upgrade intent if
  * slots run out and more buildings are needed.
+ *
+ * @param state - Current realm state (biome, level, building counts).
+ * @param populationInfo - Population cost and capacity grant per BuildingType.
+ * @returns An AutomationPlan listing builds to execute, an optional upgrade intent, and an idle reason.
  */
 export function nextPlan(state: RealmState, populationInfo: Record<number, BuildingPopulationInfo>): AutomationPlan {
   const order = buildOrderForBiome(state.biome);
@@ -83,10 +90,17 @@ export function nextPlan(state: RealmState, populationInfo: Record<number, Build
 }
 
 /**
- * Pure logic — separated for testability with explicit build orders.
+ * Pure planning logic — separated from biome lookup for testability.
  *
- * Walks the build order in repeating cycles, collecting ALL builds
- * that fit in available slots with sufficient population capacity.
+ * Walks the build order in repeating cycles, collecting all builds that fit
+ * within available slots and population capacity. WorkersHuts are injected
+ * automatically when population is the bottleneck. Stops and signals an upgrade
+ * intent when slots are exhausted and more buildings are still needed.
+ *
+ * @param order - The explicit build order to walk (use {@link buildOrderForBiome} to derive it).
+ * @param state - Current realm state (level, building counts).
+ * @param populationInfo - Population cost and capacity grant keyed by BuildingType.
+ * @returns An AutomationPlan with the full list of builds, an optional upgrade intent, and an idle reason.
  */
 export function resolvePlan(
   order: BuildOrder,
