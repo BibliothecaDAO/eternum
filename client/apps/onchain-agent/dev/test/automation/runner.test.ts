@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nextPlan, resolvePlan, type RealmState, type BuildingPopulationInfo } from "../../../src/automation/runner.js";
+import { nextPlan, type RealmState, type BuildingPopulationInfo } from "../../../src/automation/runner.js";
 import { buildOrderForBiome } from "../../../src/automation/build-order.js";
 
 // Population info matching real game data
@@ -40,8 +40,8 @@ describe("nextPlan — empty realm", () => {
     const plan = nextPlan(makeState(), POP_INFO);
     // Empty Settlement: 6 slots. Should plan multiple builds.
     expect(plan.builds.length).toBeGreaterThan(1);
-    // First build should be WorkersHut (no pop capacity yet)
-    expect(plan.builds[0].step.label).toBe("WorkersHut");
+    // First build should be WoodMill (base pop capacity is 6)
+    expect(plan.builds[0].step.label).toBe("WoodMill");
   });
 });
 
@@ -125,17 +125,20 @@ describe("nextPlan — population bottleneck injects WorkersHut", () => {
       level: 1,
       buildingCounts: new Map([
         [37, 1], // Wheat — popCost=1
-        [1, 1], // WorkersHut — cap=6
         [4, 1], // Coal — popCost=2
         [6, 1], // Copper — popCost=2
         [5, 1], // Wood — popCost=2
-        // popUsed=7, popCap=6 → over capacity
+        // popUsed=7, popCap=6 (base, no WH) → next 2-cost build overflows
       ]),
     });
 
     const plan = nextPlan(state, POP_INFO);
-    // First build should be WorkersHut to provide population
-    expect(plan.builds[0].step.label).toBe("WorkersHut");
+    // The runner should inject a WorkersHut before the next resource building
+    const labels = plan.builds.map((b) => b.step.label);
+    expect(labels).toContain("WorkersHut");
+    // The first injected WH should come before any new resource building
+    const whIdx = labels.indexOf("WorkersHut");
+    expect(plan.builds[whIdx].injectedForPopulation).toBe(true);
   });
 });
 
