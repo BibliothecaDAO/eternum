@@ -318,10 +318,6 @@ export function createMoveTool(
         const staminaAfter = projectedStamina - staminaCost;
         const movesAfter = Math.floor(staminaAfter / gameConfig.stamina.travelCost);
 
-        console.warn(
-          `[MOVE] Food cost check not implemented — ensure realm has sufficient wheat/fish for ${pathResult.distance} steps.`,
-        );
-
         // Split path into segments: runs of explored tiles (travel) and
         // individual unexplored tiles (explore one at a time).
         // Also track which tiles we explored for context updates.

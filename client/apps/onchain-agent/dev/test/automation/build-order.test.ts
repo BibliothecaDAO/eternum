@@ -28,7 +28,7 @@ describe("troopPathForBiome", () => {
 
 describe("buildOrderForBiome", () => {
   it("starts with shared foundation for all paths", () => {
-    const foundation = ["WoodMill", "CopperSmelter", "CoalMine", "WheatFarm", "WoodMill"];
+    const foundation = ["WheatFarm", "WoodMill", "CopperSmelter", "CoalMine", "WheatFarm"];
 
     for (const biome of [11, 12, 2]) {
       const order = buildOrderForBiome(biome);
@@ -92,7 +92,7 @@ describe("buildOrderForBiome", () => {
     // All 6 Settlement slots are foundation buildings: no T1 troop
     const settlement = order.steps.slice(0, 6);
     expect(settlement.every((s) => !s.label.includes("T1"))).toBe(true);
-    // The 6th step is a second CopperSmelter
-    expect(order.steps[5].label).toBe("CopperSmelter");
+    // The 6th step is a second WoodMill
+    expect(order.steps[5].label).toBe("WoodMill");
   });
 });

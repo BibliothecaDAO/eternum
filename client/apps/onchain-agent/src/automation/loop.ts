@@ -198,12 +198,11 @@ export function createAutomationLoop(
             : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}`;
           console.log(`[AUTO] Realm ${entityId} | lv${level} | ${summary}`);
 
-          // Don't upgrade in the same tick as builds — the provider batches
-          // everything into one multicall, and a failed upgrade kills all builds.
-          // Only upgrade when all slots are full (plan.upgrade set by runner)
-          // AND we can afford the on-chain costs.
+          // Upgrade as soon as slots are full — the executor runs builds first,
+          // then the upgrade, as separate sequential calls (not a multicall),
+          // so a failed upgrade won't affect prior builds.
           let upgradeIntent: UpgradeAction | null = null;
-          if (plan.upgrade && plan.builds.length === 0) {
+          if (plan.upgrade) {
             const targetLevel = plan.upgrade.fromLevel + 1;
             const upgradeCosts = gameConfig.realmUpgradeCosts[targetLevel];
             const canAffordUpgrade =
@@ -273,7 +272,7 @@ export function createAutomationLoop(
 
           // Convert affordable builds to BuildActions for executor
           const buildActions: BuildAction[] = unifiedPlan.affordableBuilds.map((bt) => ({
-            step: { building: bt.buildingType, label: bt.label },
+            step: { building: bt.buildingType, label: bt.label, minLevel: 0 },
             slot: bt.slot,
             useSimple: bt.useSimple,
           }));

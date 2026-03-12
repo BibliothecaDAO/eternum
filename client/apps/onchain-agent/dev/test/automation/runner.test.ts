@@ -40,8 +40,8 @@ describe("nextPlan — empty realm", () => {
     const plan = nextPlan(makeState(), POP_INFO);
     // Empty Settlement: 6 slots. Should plan multiple builds.
     expect(plan.builds.length).toBeGreaterThan(1);
-    // First build should be WoodMill (base pop capacity is 6)
-    expect(plan.builds[0].step.label).toBe("WoodMill");
+    // First build should be WheatFarm (base pop capacity is 6)
+    expect(plan.builds[0].step.label).toBe("WheatFarm");
   });
 });
 
