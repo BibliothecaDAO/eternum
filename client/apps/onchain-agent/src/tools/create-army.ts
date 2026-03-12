@@ -31,9 +31,22 @@ const TARGET_TROOP_AMOUNT = 10_000 * RESOURCE_PRECISION;
 
 // Biome → best troop type (from BIOME_COMBAT_BONUS in strength.ts)
 const BIOME_BEST_TROOP: Record<number, string> = {
-  1: "Crossbowman", 2: "Crossbowman", 3: "Crossbowman", 4: "Crossbowman", 7: "Crossbowman",
-  5: "Paladin", 6: "Paladin", 8: "Paladin", 9: "Paladin", 11: "Paladin", 14: "Paladin",
-  10: "Knight", 12: "Knight", 13: "Knight", 15: "Knight", 16: "Knight",
+  1: "Crossbowman",
+  2: "Crossbowman",
+  3: "Crossbowman",
+  4: "Crossbowman",
+  7: "Crossbowman",
+  5: "Paladin",
+  6: "Paladin",
+  8: "Paladin",
+  9: "Paladin",
+  11: "Paladin",
+  14: "Paladin",
+  10: "Knight",
+  12: "Knight",
+  13: "Knight",
+  15: "Knight",
+  16: "Knight",
 };
 
 // ── Tool ─────────────────────────────────────────────────────────────
@@ -161,8 +174,7 @@ export function createCreateArmyTool(
 
       if (availableDisplay <= 0) {
         throw new Error(
-          `No ${troopResName} troops available at this realm. ` +
-            `Available: ${resourceSummary || "none"}`,
+          `No ${troopResName} troops available at this realm. ` + `Available: ${resourceSummary || "none"}`,
         );
       }
 

@@ -89,10 +89,7 @@ export function createReinforceArmyTool(
         const troopAmount = Math.min(requestedRaw, availableRaw);
         const troopCount = Math.floor(troopAmount / RESOURCE_PRECISION);
 
-        const homeDirection = getDirectionBetweenAdjacentHexes(
-          { col: x, row: y },
-          { col: n.col, row: n.row },
-        );
+        const homeDirection = getDirectionBetweenAdjacentHexes({ col: x, row: y }, { col: n.col, row: n.row });
         if (homeDirection === null) continue;
 
         try {
@@ -110,14 +107,16 @@ export function createReinforceArmyTool(
         const remaining = availableDisplay - troopCount;
 
         return {
-          content: [{
-            type: "text" as const,
-            text: [
-              `Reinforced with ${troopCount.toLocaleString()} ${troopResName} from ${structure.category} at ${structure_row_col(n, mapCtx)}`,
-              `Army total: ~${newTotal.toLocaleString()} ${troopResName}`,
-              `Remaining at structure: ~${Math.max(0, remaining).toLocaleString()} ${troopResName}`,
-            ].join("\n"),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `Reinforced with ${troopCount.toLocaleString()} ${troopResName} from ${structure.category} at ${structure_row_col(n, mapCtx)}`,
+                `Army total: ~${newTotal.toLocaleString()} ${troopResName}`,
+                `Remaining at structure: ~${Math.max(0, remaining).toLocaleString()} ${troopResName}`,
+              ].join("\n"),
+            },
+          ],
           details: { source: "structure", added: troopCount, newTotal },
         };
       }
@@ -135,10 +134,7 @@ export function createReinforceArmyTool(
         if (sourceExplorer.troopType !== troopType || sourceExplorer.troopTier !== troopTier) continue;
 
         // Found a matching army — merge it
-        const direction = getDirectionBetweenAdjacentHexes(
-          { col: n.col, row: n.row },
-          { col: x, row: y },
-        );
+        const direction = getDirectionBetweenAdjacentHexes({ col: n.col, row: n.row }, { col: x, row: y });
         if (direction === null) continue;
 
         const sourceTotalRaw = Math.floor(sourceExplorer.troopCount * RESOURCE_PRECISION);
@@ -161,7 +157,9 @@ export function createReinforceArmyTool(
             signer: tx.signer,
           });
         } catch (err: any) {
-          throw new Error(`Merge failed (${sourceExplorer.troopCount} ${troopResName} from army): ${extractTxError(err)}`);
+          throw new Error(
+            `Merge failed (${sourceExplorer.troopCount} ${troopResName} from army): ${extractTxError(err)}`,
+          );
         }
 
         const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
@@ -183,14 +181,18 @@ export function createReinforceArmyTool(
 
         const sourcePos = structure_row_col(n, mapCtx);
         return {
-          content: [{
-            type: "text" as const,
-            text: [
-              `Merged ${transferCount.toLocaleString()} ${troopResName} from army at ${sourcePos}`,
-              `Army total: ~${mergedTotal.toLocaleString()} ${troopResName}`,
-              slotFreed ? `Source army deleted — slot freed.` : "",
-            ].filter(Boolean).join("\n"),
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `Merged ${transferCount.toLocaleString()} ${troopResName} from army at ${sourcePos}`,
+                `Army total: ~${mergedTotal.toLocaleString()} ${troopResName}`,
+                slotFreed ? `Source army deleted — slot freed.` : "",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            },
+          ],
           details: { source: "army", added: transferCount, newTotal: mergedTotal, slotFreed },
         };
       }

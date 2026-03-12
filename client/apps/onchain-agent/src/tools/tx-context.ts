@@ -51,7 +51,9 @@ export function extractTxError(err: any): string {
       const reason = decoded.match(/"([^"]{5,})"/);
       return reason ? reason[1] : decoded.slice(0, 300);
     }
-  } catch { /* circular ref */ }
+  } catch {
+    /* circular ref */
+  }
 
   return msg;
 }

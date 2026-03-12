@@ -174,7 +174,10 @@ describe("transfer_resources — structure validation", () => {
 
   it("rejects when target tile is not a structure", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 50 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 500 },
+      { name: "Donkey", amount: 50 },
+    ]);
     const client = makeClient({ "5,5": source });
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
@@ -199,7 +202,10 @@ describe("transfer_resources — structure validation", () => {
 
   it("rejects when target structure is not found via client", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 50 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 500 },
+      { name: "Donkey", amount: 50 },
+    ]);
     const client = makeClient({ "5,5": source, "8,5": null });
     const mapCtx: MapContext = { snapshot, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
@@ -226,7 +232,10 @@ describe("transfer_resources — ownership validation", () => {
 
   it("rejects when target structure is not owned by player", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 50 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 500 },
+      { name: "Donkey", amount: 50 },
+    ]);
     const target = makeStructure(8, 5, [], { entityId: 200, ownerAddress: "0xENEMY" });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -241,7 +250,10 @@ describe("transfer_resources — ownership validation", () => {
 describe("transfer_resources — resource validation", () => {
   it("rejects when resource name is unknown", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 50 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 500 },
+      { name: "Donkey", amount: 50 },
+    ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -255,7 +267,10 @@ describe("transfer_resources — resource validation", () => {
   it("rejects when source has no balance of the requested resource", async () => {
     const { snapshot } = twoStructureSetup();
     // Source has Wood but not Stone
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 50 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 500 },
+      { name: "Donkey", amount: 50 },
+    ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -268,7 +283,10 @@ describe("transfer_resources — resource validation", () => {
 
   it("rejects when source balance is zero", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 0 }, { name: "Donkey", amount: 50 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 0 },
+      { name: "Donkey", amount: 50 },
+    ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -284,7 +302,10 @@ describe("transfer_resources — donkey cost", () => {
   it("rejects when there are not enough donkeys for standard resources (100 Wood = 100kg, need 2)", async () => {
     const { snapshot } = twoStructureSetup();
     // 100 Wood × 1000g = 100,000g = 100kg → ceil(100,000 / 50,000) = 2 donkeys
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 100 }, { name: "Donkey", amount: 1 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 100 },
+      { name: "Donkey", amount: 1 },
+    ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -311,7 +332,10 @@ describe("transfer_resources — donkey cost", () => {
   it("passes when donkeys are exactly enough (50 Wood = 50kg, need 1 donkey)", async () => {
     const { snapshot } = twoStructureSetup();
     // 50 Wood × 1000g = 50,000g = exactly 50kg → ceil(50,000 / 50,000) = 1 donkey
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 50 }, { name: "Donkey", amount: 1 }]);
+    const source = makeStructure(5, 5, [
+      { name: "Wood", amount: 50 },
+      { name: "Donkey", amount: 1 },
+    ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -359,9 +383,17 @@ describe("transfer_resources — free resources (zero weight)", () => {
 describe("transfer_resources — successful send", () => {
   it("calls provider.send_resources with correct entity IDs, resource ID, and raw amount", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 10 }], {
-      entityId: 100,
-    });
+    const source = makeStructure(
+      5,
+      5,
+      [
+        { name: "Wood", amount: 500 },
+        { name: "Donkey", amount: 10 },
+      ],
+      {
+        entityId: 100,
+      },
+    );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -387,9 +419,17 @@ describe("transfer_resources — successful send", () => {
   it("caps send amount to available balance when requested amount exceeds it", async () => {
     const { snapshot } = twoStructureSetup();
     // Only 80 Wood available, requesting 200
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 80 }, { name: "Donkey", amount: 10 }], {
-      entityId: 100,
-    });
+    const source = makeStructure(
+      5,
+      5,
+      [
+        { name: "Wood", amount: 80 },
+        { name: "Donkey", amount: 10 },
+      ],
+      {
+        entityId: 100,
+      },
+    );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -414,9 +454,17 @@ describe("transfer_resources — successful send", () => {
 describe("transfer_resources — output", () => {
   it("returns text with amount, donkeys burnt, and travel time estimate", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }, { name: "Donkey", amount: 10 }], {
-      entityId: 100,
-    });
+    const source = makeStructure(
+      5,
+      5,
+      [
+        { name: "Wood", amount: 500 },
+        { name: "Donkey", amount: 10 },
+      ],
+      {
+        entityId: 100,
+      },
+    );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
@@ -440,9 +488,17 @@ describe("transfer_resources — output", () => {
 
   it("returns correct details object", async () => {
     const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [{ name: "Stone", amount: 200 }, { name: "Donkey", amount: 10 }], {
-      entityId: 100,
-    });
+    const source = makeStructure(
+      5,
+      5,
+      [
+        { name: "Stone", amount: 200 },
+        { name: "Donkey", amount: 10 },
+      ],
+      {
+        entityId: 100,
+      },
+    );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
     const mapCtx: MapContext = { snapshot, filePath: null };
