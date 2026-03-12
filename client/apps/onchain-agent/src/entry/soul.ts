@@ -1,6 +1,6 @@
 /**
  * Utilities for loading the agent's soul and task lists from the data directory
- * and assembling them into a complete system prompt.
+ * and assembling them into a system prompt.
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -14,11 +14,11 @@ function stripFrontmatter(content: string): string {
 }
 
 /**
- * Read a soul Markdown file and return its content with YAML frontmatter stripped.
+ * Read a soul Markdown file and strip its YAML frontmatter.
  *
  * @param soulPath - Path to the `soul.md` file.
  * @returns The soul content as a plain string, without frontmatter.
- * @throws If the file cannot be read (e.g. missing or permission error).
+ * @throws If the file cannot be read (missing or permission error).
  */
 export function loadSoul(soulPath: string): string {
   return stripFrontmatter(readFileSync(soulPath, "utf-8"));
@@ -27,9 +27,8 @@ export function loadSoul(soulPath: string): string {
 /**
  * Load all auto-loadable task-list Markdown files from a directory.
  *
- * Files with `autoload: false` in their YAML frontmatter are skipped. Files are
- * returned keyed by their base name (without the `.md` extension), sorted
- * alphabetically.
+ * Skips files with `autoload: false` in their YAML frontmatter. Returns files
+ * keyed by base name (without the `.md` extension), sorted alphabetically.
  *
  * @param taskListDir - Path to the directory containing task-list `.md` files.
  * @returns A map from domain name to task-list content (frontmatter stripped).
@@ -50,12 +49,11 @@ export function loadTaskLists(taskListDir: string): Map<string, string> {
 }
 
 /**
- * Build the full system prompt for the agent by combining the soul definition
- * and all auto-loaded task lists found in `dataDir`.
+ * Build the full system prompt by combining the soul definition and all
+ * auto-loaded task lists found in `dataDir`.
  *
- * If `soul.md` is absent a minimal default soul is used. Task lists, when
- * present, are appended as an XML `<task_lists>` block with one `<domain>`
- * element per file.
+ * Falls back to a minimal default soul if `soul.md` is absent. Appends task
+ * lists as an XML `<task_lists>` block with one `<domain>` element per file.
  *
  * @param dataDir - Root path of the agent's world data directory.
  * @returns The assembled system prompt string.

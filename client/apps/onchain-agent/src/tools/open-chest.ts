@@ -1,8 +1,8 @@
 /**
  * open_chest tool — open a relic chest adjacent to one of your armies.
  *
- * The agent points at its army (army_row:army_col) and the chest (chest_row:chest_col).
- * The army must be adjacent to the chest (1 hex away).
+ * Point at your army (army_row:army_col) and the chest (chest_row:chest_col).
+ * The army must be 1 hex from the chest.
  * Opening grants relics and victory points.
  */
 
@@ -17,10 +17,10 @@ import { directionBetween } from "../world/pathfinding.js";
 /**
  * Create the open_chest agent tool.
  *
- * @param client - Eternum client used to fetch explorer data.
+ * @param client - Eternum client for fetching explorer data.
  * @param mapCtx - Map context holding the current tile snapshot and recently-opened chest tracking.
  * @param playerAddress - Hex address of the player; used to verify army ownership.
- * @param tx - Transaction context containing the provider and signer.
+ * @param tx - Transaction context with the provider and signer.
  * @returns An AgentTool that opens a relic chest adjacent to one of the player's armies.
  */
 export function createOpenChestTool(

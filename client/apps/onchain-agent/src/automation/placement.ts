@@ -6,7 +6,7 @@ const CENTER: [number, number] = [10, 10];
 const LEVEL_TO_MAX_RING: Record<number, number> = { 0: 1, 1: 2, 2: 3, 3: 4 };
 
 /**
- * BFS from start to end on the inner hex grid, returning Direction[] path.
+ * BFS from start to end on the inner hex grid and return the Direction[] path.
  */
 export function getDirectionsArray(start: [number, number], end: [number, number]): Direction[] {
   const [startCol, startRow] = start;
@@ -41,7 +41,7 @@ export function getDirectionsArray(start: [number, number], end: [number, number
 }
 
 /**
- * Generate all hex positions in concentric rings around center.
+ * Generate all hex positions in concentric rings around the center.
  */
 function hexRings(maxRing: number): Array<{ col: number; row: number }> {
   const result: Array<{ col: number; row: number }> = [];
@@ -81,8 +81,8 @@ export interface SlotResult {
 /**
  * Find the first open build slot on a realm, scanning outward ring by ring.
  *
- * @param occupied - Set of "col,row" strings for already-built positions.
- * @param level - Realm level (0-indexed), determines how many hex rings are available.
+ * @param occupied - Set of "col,row" strings marking already-built positions.
+ * @param level - Realm level (0-indexed); determines how many hex rings are available.
  * @returns The nearest unoccupied SlotResult with its direction path, or null if all slots are full.
  */
 export function findOpenSlot(occupied: Set<string>, level: number): SlotResult | null {
@@ -104,8 +104,8 @@ export function findOpenSlot(occupied: Set<string>, level: number): SlotResult |
 /**
  * Find up to `count` open build slots on a realm, claiming each one before searching for the next.
  *
- * @param occupied - Set of "col,row" strings for already-built positions.
- * @param level - Realm level (0-indexed), determines how many hex rings are available.
+ * @param occupied - Set of "col,row" strings marking already-built positions.
+ * @param level - Realm level (0-indexed); determines how many hex rings are available.
  * @param count - Maximum number of slots to find.
  * @returns The found SlotResults and an updated occupied set that includes the newly claimed slots.
  */

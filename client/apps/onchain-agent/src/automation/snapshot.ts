@@ -1,7 +1,7 @@
 /**
  * Snapshot parser — converts raw SQL balance+production rows into typed maps.
  *
- * Returns both raw on-chain balances (safe for spending/budget) and projected
+ * Produces both raw on-chain balances (safe for spending/budget) and projected
  * balances (includes unharvested production — useful for prioritisation).
  */
 import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
@@ -54,7 +54,7 @@ const FOOD_RESOURCE_IDS = new Set([35, 36]); // Wheat, Fish
 /**
  * Parse a raw SQL balance-and-production row into a typed RealmSnapshot.
  *
- * When `currentTimestamp` is provided, projected balances are calculated by
+ * If `currentTimestamp` is provided, projected balances are computed by
  * extrapolating unharvested production forward from the last-updated timestamp.
  * Food resources (Wheat, Fish) are not capped by output_amount_left.
  *

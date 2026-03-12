@@ -3,6 +3,7 @@
  *
  * Converts raw tile state into a human-readable ASCII grid with a legend,
  * column ruler, and annotated sections for owned entities and points of interest.
+ * Use {@link renderMap} to produce a {@link MapSnapshot} from explored tiles.
  */
 
 import type { TileState, ExplorerInfo, StructureInfo } from "@bibliothecadao/client";
@@ -92,11 +93,11 @@ function isExplorerType(occupierType: number): boolean {
 /**
  * Immutable snapshot of the rendered ASCII map and associated lookup helpers.
  *
- * Returned by {@link renderMap} and stored in {@link MapContext} so that all tools
- * share a consistent view of the world between map loop refreshes.
+ * Returned by {@link renderMap} and stored in {@link MapContext} so all tools
+ * share a consistent world view between map loop refreshes.
  */
 export interface MapSnapshot {
-  /** The full ASCII map text (legend + ruler + numbered rows). */
+  /** Full ASCII map text (legend + ruler + numbered rows). */
   text: string;
   /** Number of header lines before the first map row. */
   headerLines: number;
@@ -109,7 +110,7 @@ export interface MapSnapshot {
   /** Fast lookup by world hex coordinate ("x,y" → TileState). */
   gridIndex: Map<string, TileState>;
   /**
-   * Resolve a 1-indexed map row and column back to world hex coordinates.
+   * Resolve a 1-indexed map row and column to world hex coordinates.
    *
    * @param row - 1-indexed map row (top = 1).
    * @param col - 1-indexed map column (left = 1).
@@ -117,7 +118,7 @@ export interface MapSnapshot {
    */
   resolve(row: number, col: number): { x: number; y: number } | null;
   /**
-   * Get the tile at a 1-indexed map row and column.
+   * Return the tile at a 1-indexed map row and column.
    *
    * @param row - 1-indexed map row (top = 1).
    * @param col - 1-indexed map column (left = 1).
@@ -131,9 +132,9 @@ export interface MapSnapshot {
 /**
  * Fixed coordinate anchor that locks the bounding box of the rendered map.
  *
- * Passing the anchor from a previous {@link MapSnapshot} to the next {@link renderMap}
- * call ensures that row:col positions remain stable as new tiles are explored —
- * the grid origin never shifts.
+ * Pass the anchor from a previous {@link MapSnapshot} to the next {@link renderMap}
+ * call to keep row:col positions stable as new tiles are explored — the grid
+ * origin never shifts.
  */
 export interface MapAnchor {
   /** Minimum world X coordinate included in the rendered grid. */
@@ -147,20 +148,20 @@ export interface MapAnchor {
 }
 
 /**
- * Render a set of explored tiles into an ASCII map snapshot.
+ * Render explored tiles into an ASCII map snapshot.
  *
- * Builds a text grid where each cell displays the occupier type using a
- * single character (or circled variant for agent-owned entities). The
- * snapshot includes lookup helpers and a stable coordinate anchor so
- * row:col references survive subsequent renders as the map expands.
+ * Build a text grid where each cell shows the occupier type as a single
+ * character (circled variants for agent-owned entities). The snapshot
+ * includes lookup helpers and a stable coordinate anchor so row:col
+ * references survive subsequent renders as the map expands.
  *
  * @param tiles - All explored tile states to include in the render.
- * @param ownedEntityIds - Entity IDs owned by the agent; those tiles are highlighted with circled characters.
+ * @param ownedEntityIds - Entity IDs owned by the agent; their tiles are highlighted with circled characters.
  * @param explorerDetails - Per-explorer metadata (troop count, type, stamina) for owned armies.
- * @param staminaConfig - Stamina configuration used to project current stamina from tick data.
+ * @param staminaConfig - Stamina config used to project current stamina from tick data.
  * @param mapAnchor - Previous anchor to keep row:col coordinates stable across refreshes.
  * @param structureDetails - Per-structure metadata (level, army slots, troop reserves) for owned structures.
- * @returns A {@link MapSnapshot} containing the rendered text, lookup helpers, and the updated anchor.
+ * @returns A {@link MapSnapshot} with the rendered text, lookup helpers, and the updated anchor.
  */
 export function renderMap(
   tiles: TileState[],

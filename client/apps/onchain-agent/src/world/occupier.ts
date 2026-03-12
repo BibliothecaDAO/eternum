@@ -10,7 +10,7 @@
  */
 
 /**
- * Returns true if the occupier type represents a structure.
+ * Return true if the occupier type represents a structure.
  * Structures occupy type IDs 1 through 14 (inclusive).
  *
  * @param occupierType - Numeric occupier type ID from the tile state.
@@ -21,7 +21,7 @@ export function isStructure(occupierType: number): boolean {
 }
 
 /**
- * Returns true if the occupier type represents an explorer (army).
+ * Return true if the occupier type represents an explorer (army).
  * Explorers occupy type IDs 15 through 32 (inclusive).
  *
  * @param occupierType - Numeric occupier type ID from the tile state.
@@ -32,7 +32,7 @@ export function isExplorer(occupierType: number): boolean {
 }
 
 /**
- * Returns true if the occupier type represents a chest (loot drop).
+ * Return true if the occupier type represents a chest (loot drop).
  * Chests have the fixed type ID 34.
  *
  * @param occupierType - Numeric occupier type ID from the tile state.

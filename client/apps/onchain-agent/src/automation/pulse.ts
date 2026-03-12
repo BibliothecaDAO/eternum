@@ -65,8 +65,8 @@ const LOW_MOVES_THRESHOLD = 10;
 /**
  * Check essence and wheat status for a realm.
  *
- * @param essenceBalance - Current essence balance on hand.
- * @param wheatBalance - Current wheat balance on hand.
+ * @param essenceBalance - Current essence balance.
+ * @param wheatBalance - Current wheat balance.
  * @param realmState - Current realm state; only `biome` and `buildingCounts` are read
  *                     to determine the next essence-gated build step.
  * @returns A PulseCheck with essence sufficiency, wheat move estimates, and a formatted briefing string.

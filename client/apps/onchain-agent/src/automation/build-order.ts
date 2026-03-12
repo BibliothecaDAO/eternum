@@ -200,7 +200,9 @@ const BIOME_TO_TROOP: Record<number, TroopPath> = {
 // ── Public API ────────────────────────────────────────────────────────
 
 /**
- * Return the optimal troop path for a given biome, defaulting to Paladin for unknown biomes.
+ * Return the optimal troop path for a given biome.
+ *
+ * Defaults to Paladin for unknown biomes.
  *
  * @param biome - Numeric biome ID of the realm's home tile.
  * @returns The troop path that receives a +30% damage bonus in this biome.
@@ -213,10 +215,10 @@ export function troopPathForBiome(biome: number): TroopPath {
  * Generate the full build order for a realm based on its biome.
  *
  * Structured around realm level slot gates:
- *   Settlement (6) → City (18) → Kingdom (36) → Empire (60)
+ *   Settlement (6) → City (18) → Kingdom (36) → Empire (60).
  *
  * @param biome - Numeric biome ID of the realm's home tile.
- * @returns A BuildOrder containing the biome-optimal troop path and full step list.
+ * @returns A BuildOrder with the biome-optimal troop path and full step list.
  */
 export function buildOrderForBiome(biome: number): BuildOrder {
   const troopPath = troopPathForBiome(biome);

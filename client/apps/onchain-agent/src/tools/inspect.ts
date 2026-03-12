@@ -3,7 +3,7 @@
  *
  * Supports structures (guards, resources, level), explorers (troops, strength, stamina),
  * chests (open/unopened), quests, spires, and empty explored tiles. Returns a
- * human-readable summary ready for the agent to act on.
+ * human-readable summary the agent can act on immediately.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -16,7 +16,7 @@ import { calculateStrength, calculateGuardStrength } from "../world/strength.js"
 
 // --- Biome lookup ---
 
-/** Split PascalCase into human-readable words: "TemperateDeciduousForest" → "Temperate Deciduous Forest" */
+/** Split PascalCase into space-separated words: "TemperateDeciduousForest" → "Temperate Deciduous Forest" */
 function biomeName(biomeId: number): string {
   const type = BiomeIdToType[biomeId];
   if (!type) return "Unknown";
@@ -87,7 +87,7 @@ function formatChest(rewardExtracted: boolean): string {
 /**
  * Create the inspect_tile agent tool.
  *
- * @param client - Eternum client used to fetch structure and explorer data.
+ * @param client - Eternum client for fetching structure and explorer data.
  * @param ctx - Map context holding the current tile snapshot.
  * @returns An AgentTool that inspects a tile by row/col and returns a text summary.
  */

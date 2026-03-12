@@ -1,10 +1,10 @@
 import type { MapSnapshot } from "./renderer.js";
 
 /**
- * Shared mutable context object threaded through the map loop and all tools.
+ * Shared mutable context threaded through the map loop and all tools.
  *
  * The map loop writes to this object on every refresh; tools read from it to
- * obtain the latest ASCII map snapshot and coordinate lookups without issuing
+ * get the latest ASCII map snapshot and coordinate lookups without issuing
  * additional network requests.
  */
 export interface MapContext {
@@ -21,11 +21,10 @@ export interface MapContext {
    */
   refresh?: () => Promise<void>;
   /**
-   * Positions known to be occupied by armies that moved recently.
-   * Keyed by tile "x,y" → army entity ID. Entries are pruned when Torii's
-   * snapshot confirms the army at that position (occupierId matches).
-   * Used to patch the blocked set in pathfinding so sequential moves
-   * don't route through each other.
+   * Positions known to be occupied by recently moved armies.
+   * Keyed by tile "x,y" → army entity ID. Pruned when Torii confirms the army
+   * at that position (occupierId matches). Patches the blocked set in pathfinding
+   * so sequential moves don't route through each other.
    */
   recentlyMoved?: Map<string, number>;
   /**
@@ -35,17 +34,17 @@ export interface MapContext {
    */
   recentlyOpenedChests?: Set<string>;
   /**
-   * Tiles explored by our armies recently but not yet in Torii's snapshot.
-   * Added after a successful explore move. Merged into the explored set
-   * for pathfinding so subsequent moves treat these as travel, not explore.
-   * Pruned when Torii's snapshot includes the tile.
+   * Tiles our armies explored recently but not yet in Torii's snapshot.
+   * Added after a successful explore move. Merged into the explored set for
+   * pathfinding so subsequent moves treat these as passable. Pruned when
+   * Torii's snapshot includes the tile.
    */
   recentlyExplored?: Set<string>;
   /**
-   * Stamina consumed by each army since last on-chain update.
+   * Stamina consumed by each army since the last on-chain update.
    * Keyed by entity ID → { spent, atTick } where atTick is the
-   * staminaUpdatedTick when the spend was recorded. When explorerInfo
-   * returns a newer staminaUpdatedTick, the entry is stale and ignored.
+   * staminaUpdatedTick when the spend was recorded. Ignored when explorerInfo
+   * returns a newer staminaUpdatedTick.
    */
   staminaSpent?: Map<number, { spent: number; atTick: number }>;
 }

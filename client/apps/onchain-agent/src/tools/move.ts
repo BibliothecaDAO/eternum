@@ -1,11 +1,11 @@
 /**
  * move_army tool — move one of your explorers to a target tile.
  *
- * The agent points at its army (from_row:from_col) and the destination (to_row:to_col).
- * Uses A* pathfinding over explored tiles, converts to direction array,
+ * Point at your army (from_row:from_col) and the destination (to_row:to_col).
+ * Uses A* pathfinding over explored tiles, converts to a direction array,
  * and executes via the provider's explorer_travel.
  *
- * Output follows the "immediately actionable" principle:
+ * Output answers:
  * - Did the move succeed?
  * - Where am I now?
  * - How much stamina do I have left?
@@ -23,7 +23,7 @@ import { findPath, buildTileIndex } from "../world/pathfinding.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 
 /**
- * Get stamina cost to travel into a tile based on biome and troop type.
+ * Return the stamina cost to travel into a tile, based on biome and troop type.
  * Matches the game's configManager.getTravelStaminaCost logic.
  */
 function tileTravelCost(biomeId: number, troopType: string, stamina: StaminaConfig): number {
@@ -102,11 +102,11 @@ function describeAdjacent(
 /**
  * Create the move_army agent tool.
  *
- * @param client - Eternum client used to fetch explorer data.
+ * @param client - Eternum client for fetching explorer data.
  * @param mapCtx - Map context holding the tile snapshot, stamina tracking, and recently-moved state.
  * @param playerAddress - Hex address of the player; used to verify army ownership.
- * @param tx - Transaction context containing the provider and signer.
- * @param gameConfig - Game configuration including stamina costs and explore cost.
+ * @param tx - Transaction context with the provider and signer.
+ * @param gameConfig - Game config including stamina costs and explore cost.
  * @returns An AgentTool that moves an explorer army along an A*-computed path, exploring new tiles as needed.
  */
 export function createMoveTool(

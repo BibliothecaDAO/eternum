@@ -1,9 +1,9 @@
 /**
  * defend_structure — assign guard troops to one of your structures.
  *
- * Two modes, auto-detected:
- *   - If from_army_row/col specified → transfers troops from that adjacent army (explorer_guard_swap)
- *   - Otherwise → uses troops from the structure's own reserves (guard_add)
+ * Mode is auto-detected:
+ *   - from_army_row/col provided → transfer troops from that adjacent army (explorer_guard_swap)
+ *   - Omitted → draw troops from the structure's own reserves (guard_add)
  *
  * Fills the first available guard slot. Up to 4 slots per structure.
  */
@@ -16,13 +16,13 @@ import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 import { isExplorer, isStructure } from "../world/occupier.js";
 
-/** Maps human-readable troop names to their on-chain category index (Knight=0, Paladin=1, Crossbowman=2). */
+/** Maps troop names to their on-chain category index (Knight=0, Paladin=1, Crossbowman=2). */
 const TROOP_CATEGORY: Record<string, number> = { Knight: 0, Paladin: 1, Crossbowman: 2 };
 
-/** Maps human-facing tier numbers (1/2/3) to on-chain tier values (0/1/2). */
+/** Maps user-facing tier numbers (1/2/3) to on-chain tier values (0/1/2). */
 const TIER_VALUE: Record<number, number> = { 1: 0, 2: 1, 3: 2 };
 
-/** Maps tier numbers to the resource name suffix used in structure resource lists (e.g. "T1"). */
+/** Maps tier numbers to the resource name suffix in structure resource lists (e.g. "T1"). */
 const TIER_SUFFIX: Record<number, string> = { 1: "T1", 2: "T2", 3: "T3" };
 
 /** Ordered guard slot names matching on-chain slot indices 0–3. */
@@ -30,7 +30,7 @@ const SLOT_NAMES = ["Alpha", "Bravo", "Charlie", "Delta"];
 
 /**
  * Maximum T1 troop count per guard slot, keyed by structure level.
- * Derived from: deploymentCap * t1_modifier / (t1_strength * 100).
+ * Formula: deploymentCap * t1_modifier / (t1_strength * 100).
  */
 const GUARD_CAP_BY_LEVEL: Record<number, number> = {
   0: 1_500, // Settlement
@@ -42,11 +42,11 @@ const GUARD_CAP_BY_LEVEL: Record<number, number> = {
 /**
  * Create the defend_structure agent tool.
  *
- * @param client - Eternum client used to fetch structure and explorer data.
+ * @param client - Eternum client for fetching structure and explorer data.
  * @param mapCtx - Map context holding the current tile snapshot.
  * @param playerAddress - Hex address of the player; used to verify structure and army ownership.
- * @param tx - Transaction context containing the provider and signer.
- * @returns An AgentTool that assigns guard troops to a structure slot from either an adjacent army or the structure's own reserves.
+ * @param tx - Transaction context with the provider and signer.
+ * @returns An AgentTool that assigns guard troops to a structure slot from an adjacent army or the structure's own reserves.
  */
 export function createDefendStructureTool(
   client: EternumClient,

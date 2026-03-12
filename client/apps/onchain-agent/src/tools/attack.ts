@@ -1,13 +1,13 @@
 /**
  * attack tool — attack a target adjacent to one of your armies.
  *
- * The agent points at its army (army_row:army_col) and the target (target_row:target_col).
- * The army must be adjacent to the target (1 hex away).
+ * Point at your army (army_row:army_col) and the target (target_row:target_col).
+ * The army must be 1 hex from the target.
  *
- * Output follows the "immediately actionable" principle:
+ * Output answers:
  * - Did I win?
  * - What's left of my army?
- * - Use inspect_tile to check the outcome afterwards.
+ * - Use inspect_tile to check the outcome.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -24,11 +24,11 @@ import { projectExplorerStamina } from "../world/stamina.js";
 /**
  * Create the attack_target agent tool.
  *
- * @param client - Eternum client used to fetch explorer and structure data.
+ * @param client - Eternum client for fetching explorer and structure data.
  * @param mapCtx - Map context holding the current tile snapshot and stamina tracking.
  * @param playerAddress - Hex address of the player; used to verify army ownership.
- * @param tx - Transaction context containing the provider and signer.
- * @param gameConfig - Game configuration including stamina regeneration rules.
+ * @param tx - Transaction context with the provider and signer.
+ * @param gameConfig - Game config including stamina regeneration rules.
  * @returns An AgentTool that attacks or claims an adjacent explorer or structure.
  */
 export function createAttackTool(

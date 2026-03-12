@@ -3,9 +3,9 @@
  *
  * Each tick, the runner inspects the realm's current buildings and level,
  * walks the biome-driven build order in a repeating cycle, checks both
- * slot availability AND population capacity, and returns ALL actions
+ * slot availability and population capacity, and returns all actions
  * that can be taken this tick (not just one).
- * It does NOT execute transactions.
+ * Does not execute transactions.
  */
 
 import { type BuildOrder, type BuildStep, buildOrderForBiome } from "./build-order.js";
@@ -75,10 +75,10 @@ interface AutomationPlan {
 /**
  * Determine all automation actions for a realm this tick.
  *
- * Cycles the build order, collecting every building that can be placed
- * given available slots and population capacity. Injects WorkersHuts
- * when population is the bottleneck. Returns an upgrade intent if
- * slots run out and more buildings are needed.
+ * Cycles the build order, collecting every building that fits within
+ * available slots and population capacity. Injects WorkersHuts when
+ * population is the bottleneck. Returns an upgrade intent if slots
+ * run out and more buildings are needed.
  *
  * @param state - Current realm state (biome, level, building counts).
  * @param populationInfo - Population cost and capacity grant per BuildingType.
@@ -94,13 +94,13 @@ export function nextPlan(state: RealmState, populationInfo: Record<number, Build
  *
  * Walks the build order in repeating cycles, collecting all builds that fit
  * within available slots and population capacity. WorkersHuts are injected
- * automatically when population is the bottleneck. Stops and signals an upgrade
- * intent when slots are exhausted and more buildings are still needed.
+ * automatically when population is the bottleneck. Signals an upgrade intent
+ * when slots are exhausted and more buildings are still needed.
  *
  * @param order - The explicit build order to walk (use {@link buildOrderForBiome} to derive it).
  * @param state - Current realm state (level, building counts).
  * @param populationInfo - Population cost and capacity grant keyed by BuildingType.
- * @returns An AutomationPlan with the full list of builds, an optional upgrade intent, and an idle reason.
+ * @returns An AutomationPlan with the full build list, an optional upgrade intent, and an idle reason.
  */
 export function resolvePlan(
   order: BuildOrder,
