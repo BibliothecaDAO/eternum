@@ -48,6 +48,7 @@ import { createAttackTool } from "../tools/attack.js";
 import { createCreateArmyTool } from "../tools/create-army.js";
 import { createReinforceArmyTool } from "../tools/reinforce-army.js";
 import { createDefendStructureTool } from "../tools/defend-structure.js";
+import { createTransferResourcesTool } from "../tools/transfer-resources.js";
 import { createOpenChestTool } from "../tools/open-chest.js";
 import { createViewMapTool } from "../tools/view-map.js";
 
@@ -253,6 +254,7 @@ export async function main() {
     createCreateArmyTool(client, mapCtx, account.address, txCtx),
     createReinforceArmyTool(client, mapCtx, account.address, txCtx),
     createDefendStructureTool(client, mapCtx, account.address, txCtx),
+    createTransferResourcesTool(client, mapCtx, account.address, txCtx),
     createOpenChestTool(client, mapCtx, account.address, txCtx),
     createViewMapTool(mapCtx),
   ];
