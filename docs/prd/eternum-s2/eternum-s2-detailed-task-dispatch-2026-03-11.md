@@ -1,22 +1,26 @@
 # Eternum S2 Detailed Task Dispatch
 
-Date: 2026-03-11
-Scope: Frontend and config only (contracts assumed complete)
+Date: 2026-03-11 Scope: Frontend and config only (contracts assumed complete)
 
 ## Raschel (Frontend Systems + Lobby + Non-Map S2 Features)
 
 1. Refactor game mode system to support explicit `s2` mode in `client/apps/game/src/config/game-modes/index.ts`.
 2. Replace current Blitz boolean-only mode detection with a mode discriminator from world config/metadata.
 3. Add S2 labels/rules/assets config object in parallel to Blitz config.
-4. Update world availability logic in `client/apps/game/src/hooks/use-world-availability.ts` to be mode-aware instead of Blitz-only SQL fields.
+4. Update world availability logic in `client/apps/game/src/hooks/use-world-availability.ts` to be mode-aware instead of
+   Blitz-only SQL fields.
 5. Remove hard `s1_eternum-*` assumptions where possible in lobby queries.
 6. Split registration flow in `client/apps/game/src/hooks/use-world-registration.ts`: Blitz path vs S2 path.
-7. Split entry flow in `client/apps/game/src/ui/features/landing/components/game-entry-modal.tsx`: Blitz systems vs S2 systems.
+7. Split entry flow in `client/apps/game/src/ui/features/landing/components/game-entry-modal.tsx`: Blitz systems vs S2
+   systems.
 8. Ensure S2 entry path never calls `blitz_*` contracts/selectors.
 9. Add S2 preset to factory admin in `client/apps/game/src/ui/features/admin/pages/factory.tsx`.
-10. Extend world-config builder in `client/apps/game/src/ui/features/admin/services/world-config-builder.ts` for S2 defaults (duration, spacing, registration knobs, etc).
-11. Update deployer config writer in `config/deployer/config.ts` and provider call surface if S2 mode payload differs from Blitz bool.
-12. Extend structure type UI for S2 structures (Spire, Camp, Essence Rift, Holy Site, Bitcoin Mine) in minimap/panels/tooltips.
+10. Extend world-config builder in `client/apps/game/src/ui/features/admin/services/world-config-builder.ts` for S2
+    defaults (duration, spacing, registration knobs, etc).
+11. Update deployer config writer in `config/deployer/config.ts` and provider call surface if S2 mode payload differs
+    from Blitz bool.
+12. Extend structure type UI for S2 structures (Spire, Camp, Essence Rift, Holy Site, Bitcoin Mine) in
+    minimap/panels/tooltips.
 13. Build Faith UX surfaces: faith leaderboard, devotion actions, wonder detail view, FP wallet visibility.
 14. Build village and army UX surfaces: militia timer, raid immunity timer, army strength and deployment cap indicators.
 15. Build agent UX updates: agent type badges, local messaging UI, essence messaging cost preview.
@@ -26,13 +30,16 @@ Scope: Frontend and config only (contracts assumed complete)
 
 ## Loaf (Map Layer Owner)
 
-1. Introduce layer-aware coordinate types (`col,row,alt`) in `packages/types/src/types/common.ts` and dependent interfaces.
+1. Introduce layer-aware coordinate types (`col,row,alt`) in `packages/types/src/types/common.ts` and dependent
+   interfaces.
 2. Add layer parameter support to URLs in `packages/core/src/systems/position.ts`.
-3. Update navigation stack to preserve and switch layer in `client/apps/game/src/three/utils/navigation.ts` and `client/apps/game/src/three/utils/location-manager.ts`.
+3. Update navigation stack to preserve and switch layer in `client/apps/game/src/three/utils/navigation.ts` and
+   `client/apps/game/src/three/utils/location-manager.ts`.
 4. Update client map state stores for layer-awareness in `client/apps/game/src/hooks/store/use-three-store.ts`.
 5. Replace default `DEFAULT_COORD_ALT=false` assumptions in map-critical read and write paths.
 6. Make Torii map fetches layer-aware in `client/apps/game/src/dojo/queries.ts`.
-7. Ensure scene rendering in `client/apps/game/src/three/scenes/worldmap.tsx` correctly handles base layer vs Ethereal layer.
+7. Ensure scene rendering in `client/apps/game/src/three/scenes/worldmap.tsx` correctly handles base layer vs Ethereal
+   layer.
 8. Implement spire interaction transitions (base -> ethereal -> base) with proper camera and selection continuity.
 9. Implement cross-layer occupancy conflict UX hook when destination tile is occupied.
 10. Add layer state cues in map HUD and minimap and ensure selection and action paths are consistent per layer.
@@ -60,5 +67,6 @@ Scope: Frontend and config only (contracts assumed complete)
 
 ## Notes
 
-- Confirmed S2 rule included in planning: each realm can construct only resources from its NFT metadata (S0/S1 behavior).
+- Confirmed S2 rule included in planning: each realm can construct only resources from its NFT metadata (S0/S1
+  behavior).
 - Contracts are assumed complete; tasks above are for client integration, UX, visuals, and config/admin tooling.
