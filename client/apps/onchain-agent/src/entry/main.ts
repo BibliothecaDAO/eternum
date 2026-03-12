@@ -366,6 +366,9 @@ export async function main() {
       }
       case "message_end": {
         const msg = event.message as any;
+        if (msg.errorMessage) {
+          console.error(`[AGENT] model error: ${msg.errorMessage}`);
+        }
         if (msg.role === "assistant" && typeof msg.content === "string" && msg.content.length > 0) {
           console.log(`[AGENT] says: ${msg.content.slice(0, 300)}`);
         } else if (msg.role === "assistant" && Array.isArray(msg.content)) {
