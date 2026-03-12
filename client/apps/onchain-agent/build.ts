@@ -172,7 +172,7 @@ export { ${reExports} } from "./${bgJsFile}";
 const result = await Bun.build({
   entrypoints: ["./src/entry/index.ts"],
   compile: {
-    outfile: "./dist/onchain-agent",
+    outfile: "./dist/axis",
   },
   plugins: [piConfigPlugin, wasmPlugin],
 });
