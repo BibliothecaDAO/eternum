@@ -1,9 +1,11 @@
 /**
  * x402 model provider — OpenAI-compatible with on-chain USDC permit payments.
  *
- * Wraps pi-ai's OpenAI completions streaming with x402 payment signing.
- * When MODEL_PROVIDER=x402, creates a Model object that routes through
- * the x402 router (ai.xgate.run) with automatic ERC-2612 permit signing.
+ * Pre-signs ERC-2612 USDC permits and injects them as headers on the model
+ * object. The OpenAI SDK in pi-ai sends model.headers as defaultHeaders,
+ * so the x402 router receives the payment signature on every request.
+ *
+ * Permits are cached with a 5-minute TTL and refreshed automatically.
  *
  * Required env: X402_PRIVATE_KEY (or X402_PAYMENT_SIGNATURE for static auth)
  * Optional env: X402_ROUTER_URL, X402_MODEL_ID, X402_NETWORK, X402_PERMIT_CAP
@@ -22,7 +24,6 @@ import { PermitCache } from "./cache.js";
 import { loadX402Env, type EnvSource } from "./env.js";
 import { createRouterConfigResolver } from "./router-config-resolver.js";
 import { createViemSigner } from "./signer.js";
-import { buildX402StreamOptions } from "./stream-options.js";
 
 const X402_API = "x402-openai-completions";
 
@@ -34,7 +35,8 @@ function withV1Path(origin: string): string {
  * Create and register an x402 model.
  *
  * Registers a custom API provider in pi-ai's registry, then returns a Model
- * object ready to pass to the Agent. Handles permit signing automatically.
+ * object ready to pass to the Agent. Pre-signs permits and injects them as
+ * model headers so the OpenAI SDK sends them automatically.
  *
  * @param envSource - Environment variables (defaults to process.env).
  * @returns A pi-ai Model configured for x402 streaming.
@@ -50,7 +52,6 @@ export function createX402Model(envSource: EnvSource = process.env): Model<Api> 
     requirePrivateKey: !staticPaymentSignature,
   });
 
-  // Build the stream function
   const permitCache = new PermitCache();
   const resolveRouterConfig = createRouterConfigResolver({
     routerUrl: env.routerUrl,
@@ -59,62 +60,32 @@ export function createX402Model(envSource: EnvSource = process.env): Model<Api> 
   });
   const signer = createViemSigner();
 
-  const streamX402 = (
-    model: Model<Api>,
-    context: Context,
-    options?: SimpleStreamOptions,
-  ): AssistantMessageEventStream => {
-    const openAIModel = {
-      ...model,
-      api: "openai-completions",
-    } as Model<"openai-completions">;
+  // Pre-sign a permit and return the payment header value.
+  async function getPaymentHeader(): Promise<string> {
+    if (staticPaymentSignature) return staticPaymentSignature;
+    if (!env.privateKey) throw new Error("X402_PRIVATE_KEY is required");
 
-    // Clear the Authorization header — x402 uses payment permits, not bearer tokens
-    const headers = {
-      ...(options?.headers ?? {}),
-      Authorization: null,
-    } as Record<string, string | null>;
+    const routerConfig = await resolveRouterConfig();
+    const cached = permitCache.get(
+      routerConfig.network,
+      routerConfig.asset,
+      routerConfig.payTo,
+      env.permitCap,
+    );
+    if (cached) return cached.paymentSig;
 
-    const baseOptions = {
-      ...(options ?? {}),
-      headers,
-    };
+    console.log("[x402] Signing new USDC permit...");
+    const permit = await signer({
+      privateKey: env.privateKey,
+      routerConfig,
+      permitCap: env.permitCap,
+    });
+    permitCache.set(permit);
+    console.log(`[x402] Permit signed (expires ${new Date(permit.deadline * 1000).toISOString()})`);
+    return permit.paymentSig;
+  }
 
-    const x402Options = staticPaymentSignature
-      ? buildX402StreamOptions(baseOptions, {
-          routerUrl: env.routerUrl,
-          permitCap: env.permitCap,
-          staticPaymentSignature,
-          paymentHeader: env.paymentHeader,
-        })
-      : (() => {
-          if (!env.privateKey) {
-            throw new Error("X402_PRIVATE_KEY is required unless X402_PAYMENT_SIGNATURE is set");
-          }
-          return buildX402StreamOptions(baseOptions, {
-            routerUrl: env.routerUrl,
-            permitCap: env.permitCap,
-            privateKey: env.privateKey,
-            resolveRouterConfig,
-            permitCache,
-            signer,
-          });
-        })();
-
-    return streamSimpleOpenAICompletions(openAIModel, context, {
-      ...x402Options,
-      apiKey: options?.apiKey ?? "x402-placeholder",
-    } as SimpleStreamOptions);
-  };
-
-  // Register the x402 API provider so pi-ai can route to it
-  registerApiProvider({
-    api: X402_API,
-    stream: (model, context, options) => streamX402(model, context, options),
-    streamSimple: streamX402,
-  });
-
-  // Build the model object
+  // The model object — headers are mutated before each request
   const model: Model<Api> = {
     id: env.modelId,
     name: env.modelName,
@@ -123,22 +94,66 @@ export function createX402Model(envSource: EnvSource = process.env): Model<Api> 
     baseUrl: withV1Path(env.routerUrl),
     reasoning: true,
     input: ["text", "image"],
-    cost: {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-    },
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 200000,
     maxTokens: 32768,
-    compat: {
-      supportsDeveloperRole: false,
-    },
+    headers: {},
+    compat: { supportsDeveloperRole: false },
   };
 
-  if (staticPaymentSignature) {
-    model.headers = { [env.paymentHeader]: staticPaymentSignature };
+  const streamX402 = (
+    _model: Model<Api>,
+    context: Context,
+    options?: SimpleStreamOptions,
+  ): AssistantMessageEventStream => {
+    // Sign permit synchronously from cache, or kick off async signing.
+    // Since the OpenAI SDK needs headers at client creation time, we
+    // update model.headers before delegating to the OpenAI stream.
+    const openAIModel = {
+      ...model,
+      api: "openai-completions" as Api,
+    };
+
+    // Merge any existing options headers
+    const mergedHeaders = {
+      ...(model.headers ?? {}),
+      ...(options?.headers ?? {}),
+      Authorization: null, // x402 uses permits, not bearer tokens
+    } as Record<string, string | null>;
+
+    const mergedOptions = {
+      ...(options ?? {}),
+      headers: mergedHeaders,
+      apiKey: "x402-permit-auth",
+    } as SimpleStreamOptions;
+
+    return streamSimpleOpenAICompletions(openAIModel as any, context, mergedOptions);
+  };
+
+  // Register the API provider
+  registerApiProvider({
+    api: X402_API,
+    stream: (m, ctx, opts) => streamX402(m, ctx, opts),
+    streamSimple: streamX402,
+  });
+
+  // Eagerly sign the first permit so it's ready before the first agent tick.
+  // Also refreshes headers every time the permit cache refreshes.
+  async function refreshPermit() {
+    try {
+      const sig = await getPaymentHeader();
+      model.headers = {
+        ...(model.headers ?? {}),
+        [env.paymentHeader]: sig,
+      };
+    } catch (err) {
+      console.error("[x402] Failed to sign permit:", err instanceof Error ? err.message : err);
+    }
   }
+
+  // Sign first permit immediately, then refresh every 4 minutes (permits last 5 min)
+  refreshPermit();
+  setInterval(refreshPermit, 4 * 60 * 1000);
 
   return model;
 }
