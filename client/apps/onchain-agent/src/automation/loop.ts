@@ -17,7 +17,7 @@ import { buildOrderForBiome, troopPathForBiome } from "./build-order.js";
 import { planProduction, type BuildingTarget } from "./production.js";
 import { findOpenSlots } from "./placement.js";
 import { executeRealmTick, type BuildAction, type UpgradeAction, type ProductionActions } from "./executor.js";
-import { formatStatus, type RealmStatus } from "./status.js";
+import { formatStatus, type RealmStatus, type AutomationStatusMap } from "./status.js";
 import type { RealmState } from "./runner.js";
 
 /** Handle returned by {@link createAutomationLoop} to control the tick scheduler. */
@@ -89,6 +89,7 @@ export function createAutomationLoop(
   mapCtx: MapContext,
   gameConfig: GameConfig,
   intervalMs = 60_000,
+  automationStatus?: AutomationStatusMap,
 ): AutomationLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
   let running = false;
@@ -336,6 +337,21 @@ export function createAutomationLoop(
       for (const r of results) {
         if (r.status === "fulfilled") {
           realmStatuses.push(r.value);
+          if (automationStatus) {
+            const rs = r.value;
+            automationStatus.set(rs.realmEntityId, {
+              entityId: rs.realmEntityId,
+              name: rs.realmName,
+              level: rs.level,
+              buildOrderProgress: rs.buildOrderProgress,
+              lastBuilt: rs.tickResult.built,
+              lastUpgrade: rs.tickResult.upgraded,
+              produced: rs.tickResult.produced,
+              errors: rs.tickResult.errors,
+              wheatBalance: rs.wheatPulse.balance,
+              essenceBalance: rs.essencePulse.balance,
+            });
+          }
         }
       }
 
