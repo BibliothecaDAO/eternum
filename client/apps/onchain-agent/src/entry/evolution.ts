@@ -49,12 +49,24 @@ interface EvolutionResult {
 // Build prompt
 // ---------------------------------------------------------------------------
 
-function buildEvolutionPrompt(dataDir: string): string {
+function extractMessageText(msg: any): string {
+  if (typeof msg.content === "string") return msg.content;
+  if (Array.isArray(msg.content)) {
+    return msg.content
+      .filter((b: any) => b.type === "text")
+      .map((b: any) => b.text)
+      .join("\n");
+  }
+  return "";
+}
+
+function buildEvolutionPrompt(dataDir: string, recentMessages?: any[]): string {
   const soulPath = join(dataDir, "soul.md");
   const soul = existsSync(soulPath) ? loadSoul(soulPath) : "(no soul defined)";
   const taskLists = loadTaskLists(join(dataDir, "tasks"));
 
-  let prompt = `You are the evolution engine for a game-playing agent. Analyze its performance and suggest improvements.
+  let prompt = `You are the evolution engine for a game-playing agent in Eternum (an on-chain strategy game).
+Analyze the agent's ACTUAL recent gameplay and suggest improvements to its strategy files.
 
 ## Current Soul
 ${soul}
@@ -66,29 +78,60 @@ ${soul}
     prompt += `### ${domain}\n${content}\n\n`;
   }
 
+  // Include recent gameplay so evolution is grounded in reality
+  if (recentMessages && recentMessages.length > 0) {
+    prompt += `## Recent Gameplay (last ${recentMessages.length} messages)\n\n`;
+    for (const msg of recentMessages) {
+      const text = extractMessageText(msg).slice(0, 500);
+      if (!text) continue;
+      if (msg.role === "user") prompt += `[TICK] ${text}\n\n`;
+      else if (msg.role === "assistant") {
+        // Show tool calls inline
+        if (Array.isArray(msg.content)) {
+          for (const b of msg.content) {
+            if (b.type === "text" && b.text) prompt += `[AGENT] ${b.text.slice(0, 300)}\n`;
+            if (b.type === "toolCall") prompt += `[TOOL CALL] ${b.name}(${JSON.stringify(b.arguments).slice(0, 200)})\n`;
+          }
+          prompt += "\n";
+        } else {
+          prompt += `[AGENT] ${text}\n\n`;
+        }
+      } else if (msg.role === "toolResult") {
+        prompt += `[TOOL RESULT] ${text.slice(0, 300)}\n\n`;
+      }
+    }
+  } else {
+    prompt += `## Recent Gameplay\n(No messages yet — agent just started.)\n\n`;
+  }
+
   prompt += `## Instructions
 
-Analyze the agent's performance based on its decisions and current configuration.
-Suggest improvements as a JSON array of suggestions.
+Based on the ACTUAL gameplay above, suggest improvements. Focus on:
+- What went wrong? (failed moves, bad attacks, wasted stamina)
+- What went right? (successful captures, good positioning)
+- What should change in the strategy?
+
+Keep suggestions SHORT and CONCRETE. Don't add complex frameworks or military doctrine.
+The agent has these tools: inspect_tile, move_army, attack_target, create_army, reinforce_army,
+defend_structure, transfer_resources, open_chest, view_map.
 
 Each suggestion must have:
-- target: "soul" | "task_list" | "skill"
-- domain: (optional) domain name for task_list targets
-- action: "update" | "create"
-- content: the new/updated content
-- reasoning: why this change would help
+- target: "soul" | "task_list"
+- domain: (required for task_list) one of: combat, economy, exploration, priorities
+- action: "update"
+- content: the FULL new content (replaces the file entirely)
+- reasoning: one sentence explaining why
 
-Respond with:
-1. A brief analysis section
-2. A JSON code block with the suggestions array
+IMPORTANT: Keep content concise. Each file should be under 50 lines. No verbose military doctrine.
 
 \`\`\`json
 [
   {
-    "target": "soul",
+    "target": "task_list",
+    "domain": "combat",
     "action": "update",
-    "content": "updated soul content...",
-    "reasoning": "why this change..."
+    "content": "- Attack structures when strength ratio > 2x\\n- Retreat when ratio < 0.5x",
+    "reasoning": "Agent attacked at 0.7x ratio and lost — need clearer threshold."
   }
 ]
 \`\`\``;
@@ -179,8 +222,8 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
  * @returns The parsed {@link EvolutionResult} with the analysis text and all
  *          validated suggestions (a subset may have been written to disk).
  */
-export async function evolve(model: Model<any>, dataDir: string): Promise<EvolutionResult> {
-  const prompt = buildEvolutionPrompt(dataDir);
+export async function evolve(model: Model<any>, dataDir: string, recentMessages?: any[]): Promise<EvolutionResult> {
+  const prompt = buildEvolutionPrompt(dataDir, recentMessages);
 
   const response = await completeSimple(model, {
     systemPrompt:
