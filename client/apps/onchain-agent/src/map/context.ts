@@ -41,10 +41,17 @@ export interface MapContext {
    */
   recentlyExplored?: Set<string>;
   /**
-   * Stamina consumed by each army since the last on-chain update.
-   * Keyed by entity ID → { spent, atTick } where atTick is the
-   * staminaUpdatedTick when the spend was recorded. Ignored when explorerInfo
-   * returns a newer staminaUpdatedTick.
+   * Known actual stamina for armies that have moved recently.
+   * Keyed by entity ID → { stamina, atTime } where atTime is the
+   * wall-clock timestamp when the stamina was recorded. Expires after
+   * 120 seconds (enough for Torii to catch up). Takes priority over
+   * Torii's stale projection when present.
    */
   staminaSpent?: Map<number, { spent: number; atTick: number }>;
+  /**
+   * Overrides Torii stamina with known actual values from move results
+   * or chain error messages. Keyed by entity ID → remaining stamina.
+   * Cleared when the map loop confirms Torii has caught up.
+   */
+  knownStamina?: Map<number, { stamina: number; time: number }>;
 }
