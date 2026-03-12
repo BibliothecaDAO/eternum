@@ -15,6 +15,37 @@ import type { BunPlugin } from "bun";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+// Read our package.json at build time so we can inject values into pi-agent's config
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
+
+const piConfigPlugin: BunPlugin = {
+  name: "pi-config-fix",
+  setup(build) {
+    // Intercept pi-coding-agent's config.js which does:
+    //   const pkg = JSON.parse(readFileSync(getPackageJsonPath(), "utf-8"));
+    //   export const APP_NAME = pkg.piConfig?.name || "pi";
+    //   export const CONFIG_DIR_NAME = pkg.piConfig?.configDir || ".pi";
+    //   export const VERSION = pkg.version;
+    // Replace with hardcoded values so no package.json is needed at runtime.
+    build.onLoad({ filter: /pi-coding-agent\/dist\/config\.js$/ }, async (args) => {
+      let source = readFileSync(args.path, "utf-8");
+
+      // Replace the readFileSync line with a hardcoded object
+      const embeddedPkg = JSON.stringify({
+        name: pkg.name,
+        version: pkg.version,
+        piConfig: pkg.piConfig,
+      });
+      source = source.replace(
+        /const pkg\s*=\s*JSON\.parse\(readFileSync\(getPackageJsonPath\(\),\s*"utf-8"\)\);/,
+        `const pkg = ${embeddedPkg};`,
+      );
+
+      return { contents: source, loader: "js" };
+    });
+  },
+};
+
 const wasmPlugin: BunPlugin = {
   name: "wasm-bindgen-fix",
   setup(build) {
@@ -143,7 +174,7 @@ const result = await Bun.build({
   compile: {
     outfile: "./dist/onchain-agent",
   },
-  plugins: [wasmPlugin],
+  plugins: [piConfigPlugin, wasmPlugin],
 });
 
 if (!result.success) {
@@ -154,16 +185,4 @@ if (!result.success) {
   process.exit(1);
 }
 
-// Write a minimal package.json next to the binary so pi-coding-agent's
-// getPackageDir() finds it at runtime (reads name, version, piConfig).
-const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
-const minimalPkg = {
-  name: pkg.name,
-  version: pkg.version,
-  piConfig: pkg.piConfig,
-};
-const outDir = result.outputs[0]?.path.replace(/\/[^/]+$/, "") ?? "./dist";
-Bun.write(`${outDir}/package.json`, JSON.stringify(minimalPkg, null, 2) + "\n");
-
 console.log("Build succeeded:", result.outputs[0]?.path);
-console.log(`  Also wrote ${outDir}/package.json for pi-agent runtime config`);
