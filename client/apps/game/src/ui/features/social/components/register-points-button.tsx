@@ -1,21 +1,26 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
+import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSocialStore } from "./use-social-store";
 
 interface RegisterPointsButtonProps {
   className?: string;
 }
 
+const POINTS_SUMMARY_DEBUG = true;
+
 export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) => {
   const {
     account: { account },
+    network,
     setup: {
       components,
       systemCalls: { claim_share_points },
@@ -23,20 +28,17 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
   } = useDojo();
 
   const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
+  const [, setRefreshTick] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
 
   const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
+  const playerAddress = ContractAddress(account.address);
+  const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
 
-  const { registeredPoints, unregisteredShareholderPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
-    return {
-      registeredPoints: leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address)),
-      unregisteredShareholderPoints: leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-        ContractAddress(account.address),
-      ),
-    };
-  }, [components, account.address]);
+  const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(playerAddress);
+  const unregisteredShareholderPoints =
+    leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress);
 
   const hyperstructuresEntityIds = useMemo(() => {
     return hyperstructure_entities
@@ -44,33 +46,96 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
       .filter((hyperstructure) => hyperstructure?.completed)
       .map((hyperstructure) => hyperstructure?.hyperstructure_id)
       .filter((id) => id !== undefined);
-  }, [hyperstructure_entities]);
+  }, [components.Hyperstructure, hyperstructure_entities]);
 
   const hasUnregisteredPoints = unregisteredShareholderPoints > 0;
   const totalPoints = registeredPoints + unregisteredShareholderPoints;
+
+  const logPointsSummary = (...args: unknown[]) => {
+    if (!POINTS_SUMMARY_DEBUG) return;
+    console.log("[PointsSummary]", ...args);
+  };
+
+  useEffect(() => {
+    logPointsSummary("mounted", { playerAddress });
+    return () => {
+      logPointsSummary("unmounted", { playerAddress });
+    };
+  }, [playerAddress]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setRefreshTick((previous) => previous + 1);
+      logPointsSummary("refresh tick", {
+        registeredPoints,
+        unregisteredShareholderPoints,
+        totalPoints,
+      });
+    }, LEADERBOARD_UPDATE_INTERVAL);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [registeredPoints, totalPoints, unregisteredShareholderPoints]);
+
+  useEffect(() => {
+    logPointsSummary("computed values", {
+      registeredPoints,
+      unregisteredShareholderPoints,
+      totalPoints,
+      hasUnregisteredPoints,
+      isSharePointsLoading,
+    });
+  }, [registeredPoints, unregisteredShareholderPoints, totalPoints, hasUnregisteredPoints, isSharePointsLoading]);
 
   const claimSharePoints = async () => {
     if (!hasUnregisteredPoints) return;
 
     setIsSharePointsLoading(true);
+    let txHash: string | null = null;
     try {
-      await claim_share_points({
+      const claimedPointsAtSubmit = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+        playerAddress,
+        { ignorePendingClaimOverride: true },
+      );
+
+      const transactionResult = await claim_share_points({
         signer: account,
         hyperstructure_ids: hyperstructuresEntityIds,
       });
+      txHash = extractTransactionHash(transactionResult);
+      logPointsSummary("claim submitted", {
+        txHash,
+        claimedPointsAtSubmit,
+      });
 
-      // Hard refresh leaderboard after 3 seconds
-      console.log("Hard refreshing leaderboard data...");
-      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
-
-      // Force complete re-initialization
-      leaderboardManager.initialize();
-
-      // Update UI store
+      if (claimedPointsAtSubmit > 0) {
+        leaderboardManager.setPendingSharePointsClaim(playerAddress, claimedPointsAtSubmit, txHash ?? undefined);
+      }
+      leaderboardManager.updatePoints();
       setPlayersByRank(leaderboardManager.playersByRank);
+      logPointsSummary("pending override applied");
 
-      console.log("Leaderboard hard refresh complete");
+      if (txHash) {
+        await waitForTransactionConfirmation({
+          txHash,
+          provider: network.provider as { waitForTransactionWithCheck?: (hash: string) => Promise<unknown> },
+          account: account as { waitForTransaction?: (hash: string) => Promise<unknown> },
+          label: "register points",
+        });
+      }
+
+      leaderboardManager.confirmPendingSharePointsClaim(playerAddress, txHash ?? undefined);
+      leaderboardManager.forceRefresh();
+      leaderboardManager.updatePoints();
+
+      setPlayersByRank(leaderboardManager.playersByRank);
+      logPointsSummary("claim confirmed and refreshed", { txHash });
     } catch (error) {
+      leaderboardManager.clearPendingSharePointsClaim(playerAddress, txHash ?? undefined);
+      leaderboardManager.updatePoints();
+      setPlayersByRank(leaderboardManager.playersByRank);
+      logPointsSummary("claim failed or confirmation failed", { txHash, error });
       console.error(error);
     } finally {
       setIsSharePointsLoading(false);
