@@ -161,19 +161,12 @@ export function createAutomationLoop(
           const buildOrder = buildOrderForBiome(biome);
           const plan = resolvePlan(buildOrder, realmState, gameConfig.buildingCosts);
 
-          // DEBUG: log what automation sees
-          const countsObj: Record<string, number> = {};
-          for (const [k, v] of buildingCounts) countsObj[`type_${k}`] = v;
-          console.log(`[AUTO] Realm ${entityId} | biome=${biome} level=${level} | buildings:`, countsObj);
-          console.log(
-            `[AUTO] Realm ${entityId} | plan: ${plan.builds.length} builds, upgrade=${!!plan.upgrade}, idle=${plan.idle}`,
-          );
-          if (plan.builds.length > 0) {
-            console.log(
-              `[AUTO] Realm ${entityId} | planned:`,
-              plan.builds.map((b) => b.step.label),
-            );
-          }
+          // Compact log — one line per realm
+          const buildLabels = plan.builds.map((b) => b.step.label);
+          const summary = plan.idle
+            ? `idle (${plan.idle})`
+            : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}`;
+          console.log(`[AUTO] Realm ${entityId} | lv${level} | ${summary}`);
 
           // Don't upgrade in the same tick as builds — the provider batches
           // everything into one multicall, and a failed upgrade kills all builds.
@@ -190,16 +183,12 @@ export function createAutomationLoop(
               );
             if (canAffordUpgrade) {
               upgradeIntent = plan.upgrade;
-            } else {
-              console.log(`[AUTO] Realm ${entityId} | skipping upgrade to level ${targetLevel} — can't afford costs`);
             }
           }
 
           // Find open slots for all planned builds
           const occupied = buildingsByRealm.get(entityId) ?? new Set();
-          console.log(`[AUTO] Realm ${entityId} | occupied positions: ${occupied.size}`, [...occupied]);
           const { slots } = findOpenSlots(occupied, level, plan.builds.length);
-          console.log(`[AUTO] Realm ${entityId} | open slots found: ${slots.length}`);
 
           // Compute building targets with costs (planner handles affordability)
           const runningCounts = new Map(buildingCounts);
@@ -259,19 +248,9 @@ export function createAutomationLoop(
             useSimple: bt.useSimple,
           }));
 
-          console.log(
-            `[AUTO] Realm ${entityId} | candidates: ${candidateBuilds.length}, affordable: ${buildActions.length}`,
-          );
           if (buildActions.length > 0) {
             console.log(
-              `[AUTO] Realm ${entityId} | building:`,
-              buildActions.map((a) => a.step.label),
-            );
-          }
-          if (unifiedPlan.skippedBuilds.length > 0) {
-            console.log(
-              `[AUTO] Realm ${entityId} | skipped builds:`,
-              unifiedPlan.skippedBuilds.map((s) => s.label),
+              `[AUTO] Realm ${entityId} | building ${buildActions.length}: ${buildActions.map((a) => a.step.label).join(", ")}`,
             );
           }
 

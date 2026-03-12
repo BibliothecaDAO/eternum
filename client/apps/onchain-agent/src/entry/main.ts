@@ -13,10 +13,25 @@ import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
 import { EternumClient } from "@bibliothecadao/client";
 import { EternumProvider } from "@bibliothecadao/provider";
 import { readFileSync } from "node:fs";
+import { createInterface } from "node:readline";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { loadConfig } from "./config.js";
+
+// Suppress noisy provider logs (fee estimation failures, tx data warnings, wait spam)
+{
+  const _warn = console.warn;
+  const _error = console.error;
+  const _info = console.info;
+  const providerNoise = (msg: string) =>
+    msg.includes("[provider]") ||
+    msg.includes("Failed to estimate invoke fee") ||
+    msg.includes("Insufficient transaction data");
+  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) _warn.apply(console, a); };
+  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) _error.apply(console, a); };
+  console.info = (...a: any[]) => { if (!providerNoise(String(a[0]))) _info.apply(console, a); };
+}
 import { discoverWorld, patchManifest } from "../world/discovery.js";
 import { bootstrapDataDir } from "./bootstrap.js";
 import { buildSystemPrompt } from "./soul.js";
@@ -214,30 +229,6 @@ export async function main() {
   const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
   const provider = new EternumProvider(manifest, config.rpcUrl, config.vrfProviderAddress);
 
-  // Diagnostic: verify a sample contract is reachable on the configured RPC
-  {
-    const sampleContract = manifest.contracts?.[0];
-    if (sampleContract) {
-      try {
-        const res = await fetch(config.rpcUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "starknet_getClassHashAt",
-            params: { block_id: "latest", contract_address: sampleContract.address },
-            id: 1,
-          }),
-        });
-        const json = (await res.json()) as any;
-        const hash = json?.result ?? json?.error?.message ?? "unknown";
-        console.log(`  RPC probe: ${sampleContract.tag} @ ${sampleContract.address.slice(0, 14)}... → ${hash}`);
-      } catch (e: any) {
-        console.log(`  RPC probe failed: ${e.message}`);
-      }
-    }
-  }
-
   // 2b. Load game config from Torii (building costs, production recipes)
   const gameConfig = await (client.sql as any).fetchGameConfig();
   console.log(
@@ -402,9 +393,29 @@ export async function main() {
   // Kick off the first turn immediately
   runAgentTick();
 
-  console.log(`Agent running (tick every ${config.tickIntervalMs / 1000}s). Ctrl+C to stop.`);
+  console.log(`Agent running (tick every ${config.tickIntervalMs / 1000}s). Type a message to talk to the agent. Ctrl+C to stop.`);
 
-  // 9. Graceful shutdown
+  // 9. Interactive stdin — send messages to the agent
+  const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: "> " });
+  rl.prompt();
+  rl.on("line", (line) => {
+    const text = line.trim();
+    if (!text) { rl.prompt(); return; }
+    if (agentBusy) {
+      console.log("[YOU → queued] (will deliver after current turn)");
+      agent.followUp({ role: "user" as const, content: text, timestamp: Date.now() } as AgentMessage);
+    } else {
+      console.log("[YOU → prompt]");
+      agentBusy = true;
+      agent.prompt(text).then(
+        () => { agentBusy = false; rl.prompt(); },
+        (err) => { agentBusy = false; console.error("Agent error:", err instanceof Error ? err.message : err); rl.prompt(); },
+      );
+    }
+    rl.prompt();
+  });
+
+  // 10. Graceful shutdown
   const shutdown = () => {
     console.log("\nShutting down...");
     clearInterval(tickTimer);
