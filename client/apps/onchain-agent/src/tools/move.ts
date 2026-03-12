@@ -233,8 +233,17 @@ export function createMoveTool(
         if (targetIsOccupied) {
           if (pathResult.path.length <= 2) {
             // Path is [start, target] — already adjacent, no move needed
+            const occupier = describeOccupier(targetTile.occupierType);
+            const actions = ["inspect"];
+            if (isStructure(targetTile.occupierType)) {
+              actions.push("attack (to capture)", "add_troops (if yours)", "set_guards (if yours)");
+            } else if (isExplorer(targetTile.occupierType)) {
+              actions.push("attack", "merge_armies (if yours, same type/tier)");
+            } else if (isChest(targetTile.occupierType)) {
+              actions.push("open_chest");
+            }
             throw new Error(
-              `Already adjacent to ${describeOccupier(targetTile.occupierType)} at ${to_row}:${to_col}. Use attack or inspect.`,
+              `Already adjacent to ${occupier} at ${to_row}:${to_col}. You can: ${actions.join(", ")}.`,
             );
           }
 
@@ -410,7 +419,13 @@ export function createMoveTool(
         const action = isExploreMove ? "Explored" : "Moved";
         let statusLine: string;
         if (targetIsOccupied) {
-          statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${describeOccupier(targetTile!.occupierType)} at ${to_row}:${to_col}. You can now attack or inspect.`;
+          const occType = targetTile!.occupierType;
+          const occName = describeOccupier(occType);
+          const nextActions = ["inspect"];
+          if (isStructure(occType)) nextActions.push("attack", "add_troops (if yours)", "set_guards (if yours)");
+          else if (isExplorer(occType)) nextActions.push("attack", "merge_armies (if yours)");
+          else if (isChest(occType)) nextActions.push("open_chest");
+          statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${occName} at ${to_row}:${to_col}. You can: ${nextActions.join(", ")}.`;
         } else if (reachedTarget) {
           statusLine = `${action} ${pathResult.distance} steps to ${to_row}:${to_col}.`;
         } else {
