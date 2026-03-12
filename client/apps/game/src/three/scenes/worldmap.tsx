@@ -114,7 +114,6 @@ import {
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
-  resolveChunkSwitchActions,
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
@@ -181,6 +180,7 @@ import {
 } from "./worldmap-tile-fetch-volume-regression";
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
+import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
@@ -4569,59 +4569,49 @@ export default class WorldmapScene extends WarpTravel {
       },
     });
 
-    const isCurrentTransition = transitionToken === this.chunkTransitionToken;
-    const chunkSwitchActions = resolveChunkSwitchActions({
+    const finalizeResult = await finalizeWarpTravelChunkSwitch({
       fetchSucceeded: tileFetchSucceeded,
-      isCurrentTransition,
+      isCurrentTransition: transitionToken === this.chunkTransitionToken,
       targetChunk: chunkKey,
       previousChunk: oldChunk,
+      currentChunk: this.currentChunk,
+      previousPinnedChunks,
+      hasFiniteOldChunkCoordinates,
+      oldChunkCoordinates:
+        hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+          ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+          : null,
+      startRow,
+      startCol,
+      force: effectiveForce,
+      transitionToken,
+      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+      unregisterChunk: (targetChunkKey) => this.visibilityManager?.unregisterChunk(targetChunkKey),
+      restorePreviousChunkVisuals: async (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) => {
+        this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
+        await this.updateHexagonGrid(oldStartRow, oldStartCol, this.renderChunkSize.height, this.renderChunkSize.width);
+        await this.updateToriiBoundsSubscription(previousChunk, previousTransitionToken);
+      },
+      clearSceneChunkBounds: () => this.applySceneChunkBounds(undefined),
+      forceVisibilityUpdate: () => this.visibilityManager?.forceUpdate(),
+      updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
+        this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
+      updateManagersForChunk: (targetChunkKey, managerOptions) => this.updateManagersForChunk(targetChunkKey, managerOptions),
+      unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.unregisterChunkOnNextFrame(targetChunkKey),
     });
+    this.currentChunk = finalizeResult.nextCurrentChunk;
 
-    if (chunkSwitchActions.shouldRollback) {
+    if (finalizeResult.status === "rolled_back") {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
-      this.currentChunk = oldChunk ?? "null";
-      this.updatePinnedChunks(previousPinnedChunks);
-      this.visibilityManager?.unregisterChunk(chunkKey);
-      if (oldChunk && oldChunk !== "null") {
-        if (chunkSwitchActions.shouldRestorePreviousState && hasFiniteOldChunkCoordinates) {
-          const [oldStartRow, oldStartCol] = oldChunkCoordinates;
-          this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
-          await this.updateHexagonGrid(
-            oldStartRow,
-            oldStartCol,
-            this.renderChunkSize.height,
-            this.renderChunkSize.width,
-          );
-          await this.updateToriiBoundsSubscription(oldChunk, transitionToken);
-        }
-      } else {
-        this.applySceneChunkBounds(undefined);
-      }
-      this.visibilityManager?.forceUpdate();
       return;
     }
 
-    if (!chunkSwitchActions.shouldCommitManagers) {
+    if (finalizeResult.status === "stale_dropped") {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
-      if (this.currentChunk !== chunkKey) {
-        this.visibilityManager?.unregisterChunk(chunkKey);
-      }
       return;
     }
 
-    this.currentChunk = chunkKey;
-    this.updateCurrentChunkBounds(startRow, startCol);
-
-    // Ensure visibility state is fresh before manager renders
-    this.visibilityManager?.forceUpdate();
-
-    // Update all managers concurrently once shared prerequisites are ready
-    await this.updateManagersForChunk(chunkKey, { force: effectiveForce, transitionToken });
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
-
-    if (chunkSwitchActions.shouldUnregisterPreviousChunk && oldChunk) {
-      this.unregisterChunkOnNextFrame(oldChunk);
-    }
 
     // Track memory usage after chunk switch
     if (memoryMonitor) {
