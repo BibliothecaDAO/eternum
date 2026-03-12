@@ -30,7 +30,7 @@ describe("prepareFastTravelRenderState", () => {
     ]);
   });
 
-  it("prepares pink warp-space shader inputs for the visible hex window", () => {
+  it("prepares a black-space palette and bounded hex field for the visible hex window", () => {
     const result = prepareFastTravelRenderState({
       visibleHexWindow: [
         { col: 8, row: 8 },
@@ -38,12 +38,18 @@ describe("prepareFastTravelRenderState", () => {
       ],
     });
 
-    expect(result.shader.uniforms).toEqual({
+    expect(result.surface.palette).toEqual({
       accentColor: "#ffd6f7",
-      baseColor: "#ff4fd8",
+      backgroundColor: "#000000",
+      edgeColor: "#ff4fd8",
+      edgeOpacity: 0.92,
+      fillColor: "#05000a",
+      fillOpacity: 0.32,
       glowColor: "#ff92ea",
-      windowOrigin: { col: 8, row: 8 },
-      windowSize: { cols: 5, rows: 3 },
+    });
+    expect(result.surface.field.bounds).toEqual({
+      origin: { col: 8, row: 8 },
+      size: { cols: 5, rows: 3 },
     });
   });
 
