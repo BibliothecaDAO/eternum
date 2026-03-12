@@ -2,6 +2,10 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
+import {
+  recordWorldmapRenderDuration,
+  setWorldmapRenderGauge,
+} from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
@@ -1097,85 +1101,87 @@ export class StructureManager {
   }
 
   private async performVisibleStructuresUpdate(): Promise<void> {
+    const updateStartedAt = performance.now();
     if (!isCommittedManagerChunk(this.currentChunk)) {
       this.visibleStructureCount = 0;
+      setWorldmapRenderGauge("visibleStructures", 0);
       return;
     }
+    try {
+      const visibleStructureIds = new Set<ID>();
+      const attachmentRetain = new Set<number>();
 
-    const visibleStructureIds = new Set<ID>();
-    const attachmentRetain = new Set<number>();
+      // Get visible structures from spatial index
+      const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
+      const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+      this.visibleStructureCount = visibleStructures.length;
 
-    // Get visible structures from spatial index
-    const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
-    const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
-    this.visibleStructureCount = visibleStructures.length;
+      // Organize by type for model loading and rendering
+      const structuresByType = new Map<StructureType, StructureInfo[]>();
+      // Organize structures with cosmetic skins separately
+      const structuresByCosmeticId = new Map<string, StructureInfo[]>();
 
-    // Organize by type for model loading and rendering
-    const structuresByType = new Map<StructureType, StructureInfo[]>();
-    // Organize structures with cosmetic skins separately
-    const structuresByCosmeticId = new Map<string, StructureInfo[]>();
-
-    visibleStructures.forEach((structure) => {
-      if (this.hasCosmeticSkin(structure)) {
-        const cosmeticId = structure.cosmeticId!;
-        if (!structuresByCosmeticId.has(cosmeticId)) {
-          structuresByCosmeticId.set(cosmeticId, []);
+      visibleStructures.forEach((structure) => {
+        if (this.hasCosmeticSkin(structure)) {
+          const cosmeticId = structure.cosmeticId!;
+          if (!structuresByCosmeticId.has(cosmeticId)) {
+            structuresByCosmeticId.set(cosmeticId, []);
+          }
+          structuresByCosmeticId.get(cosmeticId)!.push(structure);
+        } else {
+          if (!structuresByType.has(structure.structureType)) {
+            structuresByType.set(structure.structureType, []);
+          }
+          structuresByType.get(structure.structureType)!.push(structure);
         }
-        structuresByCosmeticId.get(cosmeticId)!.push(structure);
-      } else {
-        if (!structuresByType.has(structure.structureType)) {
-          structuresByType.set(structure.structureType, []);
-        }
-        structuresByType.get(structure.structureType)!.push(structure);
-      }
-    });
+      });
 
-    const preloadPromises: Promise<unknown>[] = [];
+      const preloadPromises: Promise<unknown>[] = [];
 
-    for (const [structureType] of structuresByType) {
-      if (!this.structureModels.has(structureType)) {
-        preloadPromises.push(this.ensureStructureModels(structureType));
-      }
-    }
-
-    // Preload cosmetic models
-    for (const [cosmeticId, structures] of structuresByCosmeticId) {
-      if (!this.cosmeticStructureModels.has(cosmeticId)) {
-        const assetPaths = structures[0]?.cosmeticAssetPaths ?? [];
-        if (assetPaths.length > 0) {
-          preloadPromises.push(this.ensureCosmeticStructureModels(cosmeticId, assetPaths));
+      for (const [structureType] of structuresByType) {
+        if (!this.structureModels.has(structureType)) {
+          preloadPromises.push(this.ensureStructureModels(structureType));
         }
       }
-    }
 
-    if (preloadPromises.length > 0) {
-      try {
-        await Promise.all(preloadPromises);
-      } catch (error) {
-        console.error("Failed to preload structure models", error);
+      // Preload cosmetic models
+      for (const [cosmeticId, structures] of structuresByCosmeticId) {
+        if (!this.cosmeticStructureModels.has(cosmeticId)) {
+          const assetPaths = structures[0]?.cosmeticAssetPaths ?? [];
+          if (assetPaths.length > 0) {
+            preloadPromises.push(this.ensureCosmeticStructureModels(cosmeticId, assetPaths));
+          }
+        }
       }
-    }
 
-    this.wonderEntityIdMaps.clear();
+      if (preloadPromises.length > 0) {
+        try {
+          await Promise.all(preloadPromises);
+        } catch (error) {
+          console.error("Failed to preload structure models", error);
+        }
+      }
 
-    // Reset all model counts - use a batched approach to avoid repeated needsUpdate/computeBoundingSphere
-    // We'll track counts per model and call setCount once at the end
-    this.structureModels.forEach((models) => {
-      models.forEach((model) => model.setCount(0));
-    });
-    this.cosmeticStructureModels.forEach((models) => {
-      models.forEach((model) => model.setCount(0));
-    });
-    this.entityIdMaps.clear();
-    this.cosmeticEntityIdMaps.clear();
+      this.wonderEntityIdMaps.clear();
 
-    // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
-    const modelInstanceCounts = new Map<InstancedModel, number>();
+      // Reset all model counts - use a batched approach to avoid repeated needsUpdate/computeBoundingSphere
+      // We'll track counts per model and call setCount once at the end
+      this.structureModels.forEach((models) => {
+        models.forEach((model) => model.setCount(0));
+      });
+      this.cosmeticStructureModels.forEach((models) => {
+        models.forEach((model) => model.setCount(0));
+      });
+      this.entityIdMaps.clear();
+      this.cosmeticEntityIdMaps.clear();
 
-    // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
-    if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
-    }
+      // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
+      const modelInstanceCounts = new Map<InstancedModel, number>();
+
+      // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
+      if (this.pointsRenderers) {
+        Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
+      }
 
     for (const [structureType, structures] of structuresByType) {
       const models = this.structureModels.get(structureType);
@@ -1444,10 +1450,14 @@ export class StructureManager {
       }
     }
 
-    // Update tracking for next frame's diff
-    this.previousVisibleIds = visibleStructureIds;
+      // Update tracking for next frame's diff
+      this.previousVisibleIds = visibleStructureIds;
 
-    this.frustumVisibilityDirty = true;
+      this.frustumVisibilityDirty = true;
+    } finally {
+      recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
+      setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
+    }
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {

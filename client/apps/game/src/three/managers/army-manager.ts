@@ -5,6 +5,10 @@ import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-c
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
 import { GUIManager } from "@/three/utils/";
+import {
+  recordWorldmapRenderDuration,
+  setWorldmapRenderGauge,
+} from "@/three/perf/worldmap-render-diagnostics";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -1116,6 +1120,7 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
+    const renderStartedAt = performance.now();
     if (
       !shouldRunManagerChunkUpdate({
         chunkKey,
@@ -1127,99 +1132,105 @@ export class ArmyManager {
       return;
     }
 
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
+    try {
+      const [startRow, startCol] = chunkKey.split(",").map(Number);
+      const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
 
-    let visibleArmies = computeVisibleArmies();
-    let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
+      let visibleArmies = computeVisibleArmies();
+      let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
 
-    // Preload all required models once
-    if (requiredModelTypes.size > 0) {
-      await this.armyModel.preloadModels(requiredModelTypes);
-    }
-
-    if (
-      !shouldRunManagerChunkUpdate({
-        chunkKey,
-        currentChunk: this.currentChunkKey,
-        transitionToken: options?.transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-      })
-    ) {
-      return;
-    }
-
-    // Recompute after async work to capture any armies added during preload
-    visibleArmies = computeVisibleArmies();
-    const sortedVisibleArmies = visibleArmies.toSorted(
-      (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
-    );
-    ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-
-    let buffersDirty = false;
-
-    const desiredOrder = visibleArmies.map((army) => army.entityId);
-    const desiredIds = new Set(desiredOrder);
-    const toRemove = this.visibleArmyOrder
-      .filter((entityId) => !desiredIds.has(entityId))
-      .toSorted((a, b) => {
-        const aNum = this.toNumericId(a);
-        const bNum = this.toNumericId(b);
-        return aNum - bNum;
-      });
-
-    toRemove.forEach((entityId) => {
-      const removalResult = this.removeVisibleArmy(entityId);
-      if (removalResult !== null) {
-        buffersDirty = true;
+      // Preload all required models once
+      if (requiredModelTypes.size > 0) {
+        await this.armyModel.preloadModels(requiredModelTypes);
       }
-    });
 
-    visibleArmies
-      .filter((army) => !this.visibleArmyIndices.has(army.entityId))
-      .forEach((army) => {
-        const modelType = modelTypesByEntity.get(army.entityId);
-        if (!modelType) {
-          return;
-        }
-        this.addVisibleArmy(army, modelType);
-        buffersDirty = true;
-      });
+      if (
+        !shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunkKey,
+          transitionToken: options?.transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        })
+      ) {
+        return;
+      }
 
-    if (options?.force) {
-      visibleArmies.forEach((army) => {
-        const slot = this.visibleArmyIndices.get(army.entityId);
-        const modelType = modelTypesByEntity.get(army.entityId);
-        if (slot !== undefined && modelType) {
-          // Re-resolve cosmetics on force refresh to pick up debug override changes
-          this.refreshArmyInstance(army, slot, modelType, true);
+      // Recompute after async work to capture any armies added during preload
+      visibleArmies = computeVisibleArmies();
+      const sortedVisibleArmies = visibleArmies.toSorted(
+        (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
+      );
+      ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
+
+      let buffersDirty = false;
+
+      const desiredOrder = visibleArmies.map((army) => army.entityId);
+      const desiredIds = new Set(desiredOrder);
+      const toRemove = this.visibleArmyOrder
+        .filter((entityId) => !desiredIds.has(entityId))
+        .toSorted((a, b) => {
+          const aNum = this.toNumericId(a);
+          const bNum = this.toNumericId(b);
+          return aNum - bNum;
+        });
+
+      toRemove.forEach((entityId) => {
+        const removalResult = this.removeVisibleArmy(entityId);
+        if (removalResult !== null) {
           buffersDirty = true;
         }
       });
-    }
 
-    const visibleArmySet = new Set(this.visibleArmyOrder);
-    this.entityIdLabels.forEach((_, entityId) => {
-      if (!visibleArmySet.has(entityId)) {
-        this.removeEntityIdLabel(entityId);
+      visibleArmies
+        .filter((army) => !this.visibleArmyIndices.has(army.entityId))
+        .forEach((army) => {
+          const modelType = modelTypesByEntity.get(army.entityId);
+          if (!modelType) {
+            return;
+          }
+          this.addVisibleArmy(army, modelType);
+          buffersDirty = true;
+        });
+
+      if (options?.force) {
+        visibleArmies.forEach((army) => {
+          const slot = this.visibleArmyIndices.get(army.entityId);
+          const modelType = modelTypesByEntity.get(army.entityId);
+          if (slot !== undefined && modelType) {
+            // Re-resolve cosmetics on force refresh to pick up debug override changes
+            this.refreshArmyInstance(army, slot, modelType, true);
+            buffersDirty = true;
+          }
+        });
       }
-    });
 
-    this.visibleArmyOrder = desiredOrder.filter((id) => this.visibleArmyIndices.has(id));
-    this.visibleArmies = this.visibleArmyOrder
-      .map((entityId) => this.armies.get(entityId))
-      .filter((army): army is ArmyData => Boolean(army));
+      const visibleArmySet = new Set(this.visibleArmyOrder);
+      this.entityIdLabels.forEach((_, entityId) => {
+        if (!visibleArmySet.has(entityId)) {
+          this.removeEntityIdLabel(entityId);
+        }
+      });
 
-    this.syncVisibleArmyAttachments(this.visibleArmies);
-    this.updateArmyAttachmentTransforms();
+      this.visibleArmyOrder = desiredOrder.filter((id) => this.visibleArmyIndices.has(id));
+      this.visibleArmies = this.visibleArmyOrder
+        .map((entityId) => this.armies.get(entityId))
+        .filter((army): army is ArmyData => Boolean(army));
 
-    this.syncVisibleSlots();
+      this.syncVisibleArmyAttachments(this.visibleArmies);
+      this.updateArmyAttachmentTransforms();
 
-    if (buffersDirty) {
-      this.armyModel.updateAllInstances();
-      this.armyModel.computeBoundingSphere();
-      this.playerIndicatorManager.computeBoundingSphere();
-      this.frustumVisibilityDirty = true;
+      this.syncVisibleSlots();
+
+      if (buffersDirty) {
+        this.armyModel.updateAllInstances();
+        this.armyModel.computeBoundingSphere();
+        this.playerIndicatorManager.computeBoundingSphere();
+        this.frustumVisibilityDirty = true;
+      }
+    } finally {
+      recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
+      setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
+      setWorldmapRenderGauge("activePaths", this.getActivePathCount());
     }
   }
 
@@ -1853,6 +1864,10 @@ export class ArmyManager {
 
   public getVisibleCount(): number {
     return this.visibleArmyOrder.length;
+  }
+
+  public getActivePathCount(): number {
+    return this.pathRenderer.getStats().activePaths;
   }
 
   /**

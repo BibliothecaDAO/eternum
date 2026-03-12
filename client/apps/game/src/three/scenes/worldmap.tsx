@@ -160,6 +160,14 @@ import {
   recordChunkDiagnosticsEvent,
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
+import {
+  incrementWorldmapForceRefreshReason,
+  recordWorldmapRenderDuration,
+  resetWorldmapRenderDiagnostics,
+  setWorldmapRenderGauge,
+  snapshotWorldmapRenderDiagnostics,
+  type WorldmapForceRefreshReason,
+} from "../perf/worldmap-render-diagnostics";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
 import {
   captureChunkDiagnosticsBaseline,
@@ -231,6 +239,8 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     baselineLabel?: string,
     allowedIncreaseFraction?: number,
   ) => WorldmapTileFetchVolumeRegressionDebugResult;
+  getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
+  resetWorldmapRenderDiagnostics?: () => void;
 };
 
 const dummy = new Object3D();
@@ -4309,7 +4319,7 @@ export default class WorldmapScene extends WarpTravel {
     return this.cameraGroundIntersectionScratch;
   }
 
-  public requestChunkRefresh(force: boolean = false) {
+  public requestChunkRefresh(force: boolean = false, reason: WorldmapForceRefreshReason = "default") {
     if (this.isSwitchedOff) {
       return;
     }
@@ -4317,6 +4327,7 @@ export default class WorldmapScene extends WarpTravel {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     if (force) {
       this.pendingChunkRefreshForce = true;
+      incrementWorldmapForceRefreshReason(reason);
     }
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
@@ -4419,91 +4430,96 @@ export default class WorldmapScene extends WarpTravel {
     if (this.isSwitchedOff) {
       return false;
     }
+    const updateStartedAt = performance.now();
 
-    await waitForChunkTransitionToSettle(
-      () => this.globalChunkSwitchPromise,
-      (error) => console.warn(`Previous global chunk switch failed:`, error),
-    );
-
-    const focusPoint = this.getCameraGroundIntersection().clone();
-    const chunkDecision = resolveWarpTravelVisibleChunkDecision({
-      isSwitchedOff: this.isSwitchedOff,
-      focusPoint,
-      chunkSize: this.chunkSize,
-      hexSize: HEX_SIZE,
-      currentChunk: this.currentChunk,
-      force,
-      reason: options?.reason ?? "default",
-      shouldDelayChunkSwitch: this.shouldDelayChunkSwitch(focusPoint),
-    });
-
-    if (chunkDecision.action === "noop" && !chunkDecision.shouldPrefetch) {
-      return false;
-    }
-
-    // Proactively prefetch the forward chunk while staying in the current one to hide pop-in.
-    if (chunkDecision.shouldPrefetch) {
-      this.prefetchDirectionalChunks(focusPoint);
-    }
-
-    if (chunkDecision.action === "switch_chunk") {
-      const { chunkKey, startCol, startRow } = chunkDecision;
-      if (chunkKey === null || startCol === null || startRow === null) {
-        return false;
-      }
-      // Create and track the global chunk switch promise
-      const transitionToken = ++this.chunkTransitionToken;
-      const switchStartedAt = performance.now();
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
-      this.isChunkTransitioning = true;
-      this.globalChunkSwitchPromise = this.performChunkSwitch(
-        chunkKey,
-        startCol,
-        startRow,
-        force,
-        transitionToken,
-        options?.reason ?? "default",
-        focusPoint.clone(),
+    try {
+      await waitForChunkTransitionToSettle(
+        () => this.globalChunkSwitchPromise,
+        (error) => console.warn(`Previous global chunk switch failed:`, error),
       );
 
-      try {
-        await this.globalChunkSwitchPromise;
-        this.retryDeferredChunkRemovals();
-        return true;
-      } finally {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
-          durationMs: performance.now() - switchStartedAt,
-        });
-        this.globalChunkSwitchPromise = null;
-        this.isChunkTransitioning = false;
-      }
-    }
+      const focusPoint = this.getCameraGroundIntersection().clone();
+      const chunkDecision = resolveWarpTravelVisibleChunkDecision({
+        isSwitchedOff: this.isSwitchedOff,
+        focusPoint,
+        chunkSize: this.chunkSize,
+        hexSize: HEX_SIZE,
+        currentChunk: this.currentChunk,
+        force,
+        reason: options?.reason ?? "default",
+        shouldDelayChunkSwitch: this.shouldDelayChunkSwitch(focusPoint),
+      });
 
-    if (chunkDecision.action === "refresh_current_chunk") {
-      const { chunkKey, startCol, startRow } = chunkDecision;
-      if (chunkKey === null || startCol === null || startRow === null) {
+      if (chunkDecision.action === "noop" && !chunkDecision.shouldPrefetch) {
         return false;
       }
-      const transitionToken = ++this.chunkTransitionToken;
-      this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
-        selectedEntityId: this.state.entityActions.selectedEntityId,
-        actionPathCount: this.state.entityActions.actionPaths.size,
-        currentChunk: this.currentChunk,
-        targetChunk: chunkKey,
-        nextTransitionToken: transitionToken,
-        previousTransitionToken: this.actionPathsTransitionToken,
-      });
-      this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
-      try {
-        await this.globalChunkSwitchPromise;
-        this.retryDeferredChunkRemovals();
-        return true;
-      } finally {
-        this.globalChunkSwitchPromise = null;
-      }
-    }
 
-    return false;
+      // Proactively prefetch the forward chunk while staying in the current one to hide pop-in.
+      if (chunkDecision.shouldPrefetch) {
+        this.prefetchDirectionalChunks(focusPoint);
+      }
+
+      if (chunkDecision.action === "switch_chunk") {
+        const { chunkKey, startCol, startRow } = chunkDecision;
+        if (chunkKey === null || startCol === null || startRow === null) {
+          return false;
+        }
+        // Create and track the global chunk switch promise
+        const transitionToken = ++this.chunkTransitionToken;
+        const switchStartedAt = performance.now();
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
+        this.isChunkTransitioning = true;
+        this.globalChunkSwitchPromise = this.performChunkSwitch(
+          chunkKey,
+          startCol,
+          startRow,
+          force,
+          transitionToken,
+          options?.reason ?? "default",
+          focusPoint.clone(),
+        );
+
+        try {
+          await this.globalChunkSwitchPromise;
+          this.retryDeferredChunkRemovals();
+          return true;
+        } finally {
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
+            durationMs: performance.now() - switchStartedAt,
+          });
+          this.globalChunkSwitchPromise = null;
+          this.isChunkTransitioning = false;
+        }
+      }
+
+      if (chunkDecision.action === "refresh_current_chunk") {
+        const { chunkKey, startCol, startRow } = chunkDecision;
+        if (chunkKey === null || startCol === null || startRow === null) {
+          return false;
+        }
+        const transitionToken = ++this.chunkTransitionToken;
+        this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
+          selectedEntityId: this.state.entityActions.selectedEntityId,
+          actionPathCount: this.state.entityActions.actionPaths.size,
+          currentChunk: this.currentChunk,
+          targetChunk: chunkKey,
+          nextTransitionToken: transitionToken,
+          previousTransitionToken: this.actionPathsTransitionToken,
+        });
+        this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
+        try {
+          await this.globalChunkSwitchPromise;
+          this.retryDeferredChunkRemovals();
+          return true;
+        } finally {
+          this.globalChunkSwitchPromise = null;
+        }
+      }
+
+      return false;
+    } finally {
+      recordWorldmapRenderDuration("updateVisibleChunks", performance.now() - updateStartedAt);
+    }
   }
 
   private async performChunkSwitch(
@@ -4515,15 +4531,18 @@ export default class WorldmapScene extends WarpTravel {
     reason: "default" | "shortcut",
     switchPosition?: Vector3,
   ) {
+    const chunkSwitchStartedAt = performance.now();
     // Track memory usage during chunk switch
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
-    // Keep selection continuity during shortcut tabbing to avoid visible label/selection flashes.
-    if (reason !== "shortcut") {
-      this.clearEntitySelection();
-    }
+    try {
+
+      // Keep selection continuity during shortcut tabbing to avoid visible label/selection flashes.
+      if (reason !== "shortcut") {
+        this.clearEntitySelection();
+      }
 
     const oldChunk = this.currentChunk;
     const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
@@ -4646,10 +4665,13 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
 
-    if (switchPosition) {
-      this.lastChunkSwitchPosition = switchPosition;
-      this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
-      this.hasChunkSwitchAnchor = true;
+      if (switchPosition) {
+        this.lastChunkSwitchPosition = switchPosition;
+        this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
+        this.hasChunkSwitchAnchor = true;
+      }
+    } finally {
+      recordWorldmapRenderDuration("performChunkSwitch", performance.now() - chunkSwitchStartedAt);
     }
   }
 
@@ -4717,32 +4739,42 @@ export default class WorldmapScene extends WarpTravel {
     const managerStartedAt = performance.now();
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
 
-    await runWarpTravelManagerFanout({
-      chunkKey,
-      options,
-      managers: [
-        {
-          label: "army",
-          updateChunk: (targetChunkKey, targetOptions) => this.armyManager.updateChunk(targetChunkKey, targetOptions),
+    try {
+      await runWarpTravelManagerFanout({
+        chunkKey,
+        options,
+        managers: [
+          {
+            label: "army",
+            updateChunk: (targetChunkKey, targetOptions) => this.armyManager.updateChunk(targetChunkKey, targetOptions),
+          },
+          {
+            label: "structure",
+            updateChunk: (targetChunkKey, targetOptions) =>
+              this.structureManager.updateChunk(targetChunkKey, targetOptions),
+          },
+          {
+            label: "chest",
+            updateChunk: (targetChunkKey, targetOptions) =>
+              this.chestManager.updateChunk(targetChunkKey, targetOptions),
+          },
+        ],
+        onManagerFailed: (label, reason) => {
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
+          console.error(`[CHUNK SYNC] ${label} manager failed for chunk ${chunkKey}`, reason);
         },
-        {
-          label: "structure",
-          updateChunk: (targetChunkKey, targetOptions) =>
-            this.structureManager.updateChunk(targetChunkKey, targetOptions),
-        },
-        {
-          label: "chest",
-          updateChunk: (targetChunkKey, targetOptions) => this.chestManager.updateChunk(targetChunkKey, targetOptions),
-        },
-      ],
-      onManagerFailed: (label, reason) => {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
-        console.error(`[CHUNK SYNC] ${label} manager failed for chunk ${chunkKey}`, reason);
-      },
-    });
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
-      durationMs: performance.now() - managerStartedAt,
-    });
+      });
+    } finally {
+      const durationMs = performance.now() - managerStartedAt;
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
+        durationMs,
+      });
+      recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
+      setWorldmapRenderGauge("visibleArmies", this.armyManager.getVisibleCount());
+      setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
+      setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
+      setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+    }
 
     if (import.meta.env.DEV) {
       const debugFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
@@ -4770,6 +4802,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
     this.updateCameraTargetHexThrottled?.();
+    setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
     if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
       this.monitorTerrainVisibilityHealth();
     } else {
@@ -4808,6 +4841,7 @@ export default class WorldmapScene extends WarpTravel {
   private resetChunkDiagnostics(): void {
     this.chunkDiagnostics = createWorldmapChunkDiagnostics();
     this.chunkDiagnosticsBaselines = [];
+    resetWorldmapRenderDiagnostics();
   }
 
   private getChunkDiagnosticsSnapshot(): ReturnType<
@@ -4913,6 +4947,8 @@ export default class WorldmapScene extends WarpTravel {
     const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
     debugWindow.getWorldmapChunkDiagnostics = () => this.getChunkDiagnosticsSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
+    debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
+    debugWindow.resetWorldmapRenderDiagnostics = () => resetWorldmapRenderDiagnostics();
     debugWindow.captureWorldmapChunkBaseline = (label?: string) => this.captureChunkDiagnosticsBaseline(label);
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = (
       baselineLabel?: string,
@@ -4932,6 +4968,8 @@ export default class WorldmapScene extends WarpTravel {
     const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
     debugWindow.getWorldmapChunkDiagnostics = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
+    debugWindow.getWorldmapRenderDiagnostics = undefined;
+    debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
     debugWindow.evaluateWorldmapTileFetchVolumeRegression = undefined;

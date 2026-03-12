@@ -1,6 +1,11 @@
 import { Box3, Color, InstancedBufferGeometry, Mesh, Scene, ShaderMaterial, Vector3 } from "three";
 import { createPathInstancedGeometry, PathInstanceBuffers } from "../geometry/path-geometry";
 import {
+  incrementWorldmapRenderCounter,
+  recordWorldmapRenderDuration,
+  setWorldmapRenderGauge,
+} from "../perf/worldmap-render-diagnostics";
+import {
   getPathLineMaterial,
   updatePathLineMaterial,
   updatePathLineResolution,
@@ -117,6 +122,7 @@ export class PathRenderer {
     color: Color,
     displayState: PathDisplayState = "selected",
   ): void {
+    const createStartedAt = performance.now();
     // Remove existing path for this entity
     if (this.activePaths.has(entityId)) {
       this.removePath(entityId);
@@ -163,6 +169,9 @@ export class PathRenderer {
 
     // Update instance count
     this.updateInstanceCount();
+    incrementWorldmapRenderCounter("pathCreateCalls");
+    recordWorldmapRenderDuration("createPath", performance.now() - createStartedAt);
+    setWorldmapRenderGauge("activePaths", this.activePaths.size);
   }
 
   /**
@@ -247,6 +256,7 @@ export class PathRenderer {
     }
 
     this.updateInstanceCount();
+    setWorldmapRenderGauge("activePaths", this.activePaths.size);
 
     // Auto-compact if fragmentation is high
     if (this.shouldCompact()) {
@@ -331,6 +341,7 @@ export class PathRenderer {
     this.nextSegmentIndex = 0;
     this.freeSegmentRanges = [];
     this.culledPaths.clear();
+    setWorldmapRenderGauge("activePaths", 0);
   }
 
   /**

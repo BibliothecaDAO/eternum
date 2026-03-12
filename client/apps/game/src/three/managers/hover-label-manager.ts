@@ -93,6 +93,10 @@ export class HoverLabelManager {
     return this.currentHoveredHex !== null;
   }
 
+  public getActiveLabelCount(): number {
+    return Object.keys(this.activeLabels).length;
+  }
+
   private toggleLabel(type: HoverLabelType, entityId?: ID): void {
     const controller = this.controllers[type];
     if (!controller) {
