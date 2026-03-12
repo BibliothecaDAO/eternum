@@ -270,7 +270,7 @@ export async function main() {
   // Resolve model early so we can log the actual model ID
   const model =
     config.modelProvider === "x402"
-      ? createX402Model()
+      ? await createX402Model()
       : ((getModel as Function)(config.modelProvider, config.modelId) as Model<any>);
 
   console.log(`Eternum Agent starting...`);
