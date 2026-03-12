@@ -245,7 +245,7 @@ export class ArmyManager {
     this.initializePointsRenderers();
 
     // Initialize path renderer for movement visualization
-    this.pathRenderer = PathRenderer.getInstance();
+    this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(scene);
 
     // Initialize player indicator manager

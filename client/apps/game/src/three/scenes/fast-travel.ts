@@ -90,7 +90,7 @@ export default class FastTravelScene extends WarpTravel {
     this.travelContentGroup.name = "FastTravelContentGroup";
     this.selectedHexManager = new SelectedHexManager(this.scene);
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
-    this.pathRenderer = PathRenderer.getInstance();
+    this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(this.scene);
     this.scene.add(this.travelSurfaceGroup);
     this.scene.add(this.travelContentGroup);

@@ -476,7 +476,7 @@ Recommended harness:
 ## Implementation Progress
 
 - [x] M1: Fast-travel ownership cleanup
-- [ ] M2: Path-renderer de-singletonization
+- [x] M2: Path-renderer de-singletonization
 - [ ] M3: Fast-travel render-path stabilization
 - [ ] M4: Worldmap inactive-scene shedding
 

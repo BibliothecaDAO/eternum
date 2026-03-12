@@ -15,7 +15,8 @@ describe("FastTravelScene movement parity wiring", () => {
 
     expect(source).toMatch(/SelectedHexManager/);
     expect(source).toMatch(/SelectionPulseManager/);
-    expect(source).toMatch(/PathRenderer\.getInstance\(\)/);
+    expect(source).toMatch(/new PathRenderer\(/);
+    expect(source).not.toMatch(/PathRenderer\.getInstance\(\)/);
     expect(source).toMatch(/resolveFastTravelMovement/);
     expect(source).toMatch(/pathRenderer\.createPath\(/);
     expect(source).toMatch(/selectionPulseManager\.hideSelection\(/);
