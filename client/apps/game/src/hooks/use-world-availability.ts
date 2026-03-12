@@ -11,11 +11,19 @@ import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 
-// Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
+const HYPERSTRUCTURE_GLOBALS_TABLE = "s1_eternum-HyperstructureGlobals";
+
+const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+
+// Note: registration_end_at uses start_main_at because registration ends when the main game starts.
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+
+// Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
+const WORLD_CONFIG_ETERNUM_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "mmr_config.enabled" AS mmr_enabled, "settlement_config.base_distance" AS settlement_base_distance, "settlement_config.spires_layer_distance" AS spires_layer_distance FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
-const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
+const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "${HYPERSTRUCTURE_GLOBALS_TABLE}" LIMIT 1;`;
 const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
 const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
 const rpcProviderCache = new Map<string, RpcProvider>();
@@ -98,8 +106,13 @@ const fetchTokenBalance = async (
 };
 
 export interface WorldConfigMeta {
+  mode: "blitz" | "eternum" | "unknown";
   startMainAt: number | null;
   endAt: number | null;
+  seasonDurationSeconds: number | null;
+  // Eternum spacing config
+  settlementBaseDistance: number | null;
+  spiresLayerDistance: number | null;
   registrationCount: number | null;
   // Blitz registration config
   entryTokenAddress: string | null;
@@ -216,8 +229,12 @@ const fetchWorldConfigMeta = async (
   playerAddress?: string | null,
 ): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
+    mode: "unknown",
     startMainAt: null,
     endAt: null,
+    seasonDurationSeconds: null,
+    settlementBaseDistance: null,
+    spiresLayerDistance: null,
     registrationCount: null,
     entryTokenAddress: null,
     feeTokenAddress: null,
@@ -233,22 +250,28 @@ const fetchWorldConfigMeta = async (
   };
 
   try {
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
+    // Detect game mode first so we can run a mode-specific world-config query.
+    const modeUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_MODE_QUERY)}`;
+    const modeResponse = await fetch(modeUrl);
+    if (!modeResponse.ok) return meta;
+    const [modeRow] = (await modeResponse.json()) as Record<string, unknown>[];
+    const isBlitzMode = parseMaybeBool(modeRow?.blitz_mode_on);
+    if (isBlitzMode === true) meta.mode = "blitz";
+    if (isBlitzMode === false) meta.mode = "eternum";
+
+    const worldConfigQuery = meta.mode === "blitz" ? WORLD_CONFIG_BLITZ_QUERY : WORLD_CONFIG_ETERNUM_QUERY;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(worldConfigQuery)}`;
     const response = await fetch(url);
     if (!response.ok) return meta;
     const [row] = (await response.json()) as Record<string, unknown>[];
     if (row) {
       if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
       if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
-      if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
-      // Blitz registration config
-      if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
-      if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
-      if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
-      if (row.registration_start_at != null)
-        meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
-      if (row.registration_end_at != null)
-        meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
+
+      if (meta.startMainAt != null && meta.endAt != null && meta.endAt >= meta.startMainAt) {
+        meta.seasonDurationSeconds = meta.endAt - meta.startMainAt;
+      }
+
       if (row.mmr_enabled != null) {
         const mmrVal = parseMaybeHexToNumber(row.mmr_enabled);
         meta.mmrEnabled = mmrVal != null && mmrVal !== 0;
@@ -258,33 +281,53 @@ const fetchWorldConfigMeta = async (
         meta.devModeOn = devVal != null && devVal !== 0;
       }
 
-      const twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+      if (meta.mode === "blitz") {
+        if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
+        if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
+        if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
+        if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
+        if (row.registration_start_at != null)
+          meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
+        if (row.registration_end_at != null)
+          meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
 
-      // Calculate hyperstructures left from max_ring_count
-      const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
-      if (maxRingCount > 0) {
-        // Fetch created count from HyperstructureGlobals
-        try {
-          const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
-          const globalsResponse = await fetch(globalsUrl);
-          if (globalsResponse.ok) {
-            const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
-            const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
-          } else {
-            // If no globals exist yet, all hyperstructures are available
+        const twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+
+        // Calculate hyperstructures left from max_ring_count
+        const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
+        if (maxRingCount > 0) {
+          // Fetch created count from HyperstructureGlobals
+          try {
+            const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
+            const globalsResponse = await fetch(globalsUrl);
+            if (globalsResponse.ok) {
+              const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
+              const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
+            } else {
+              // If no globals exist yet, all hyperstructures are available
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+            }
+          } catch {
+            // If query fails, calculate based on zero created
             meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
           }
-        } catch {
-          // If query fails, calculate based on zero created
-          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+        }
+      }
+
+      if (meta.mode === "eternum") {
+        if (row.settlement_base_distance != null) {
+          meta.settlementBaseDistance = parseMaybeHexToNumber(row.settlement_base_distance);
+        }
+        if (row.spires_layer_distance != null) {
+          meta.spiresLayerDistance = parseMaybeHexToNumber(row.spires_layer_distance);
         }
       }
     }
 
     // Run optional side fetches in parallel.
     const sideFetches: Promise<void>[] = [];
-    if (playerAddress) {
+    if (playerAddress && meta.mode === "blitz") {
       sideFetches.push(
         fetchPlayerRegistration(toriiBaseUrl, playerAddress).then((isRegistered) => {
           meta.isPlayerRegistered = isRegistered;
