@@ -34,7 +34,7 @@ interface FinalizeWarpTravelChunkSwitchInput {
 
 export async function finalizeWarpTravelChunkSwitch(
   input: FinalizeWarpTravelChunkSwitchInput,
-): Promise<{ status: "rolled_back" | "stale_dropped" | "committed"; nextCurrentChunk: string }> {
+): Promise<{ status: "rolled_back" | "stale_dropped" | "committed" }> {
   const chunkSwitchActions = resolveChunkSwitchActions({
     fetchSucceeded: input.fetchSucceeded,
     isCurrentTransition: input.isCurrentTransition,
@@ -62,7 +62,6 @@ export async function finalizeWarpTravelChunkSwitch(
     input.forceVisibilityUpdate();
     return {
       status: "rolled_back",
-      nextCurrentChunk: input.previousChunk ?? "null",
     };
   }
 
@@ -73,7 +72,6 @@ export async function finalizeWarpTravelChunkSwitch(
 
     return {
       status: "stale_dropped",
-      nextCurrentChunk: input.currentChunk,
     };
   }
 
@@ -91,6 +89,5 @@ export async function finalizeWarpTravelChunkSwitch(
 
   return {
     status: "committed",
-    nextCurrentChunk: input.targetChunk,
   };
 }

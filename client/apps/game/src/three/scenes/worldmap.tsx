@@ -2298,6 +2298,37 @@ export default class WorldmapScene extends WarpTravel {
     await this.updateVisibleChunks(true);
   }
 
+  private commitCurrentChunkAuthority(chunkKey: string): void {
+    this.currentChunk = chunkKey;
+  }
+
+  private unregisterVisibilityChunk(chunkKey: string): void {
+    this.visibilityManager?.unregisterChunk(chunkKey);
+  }
+
+  private async restorePreviousChunkVisualsAfterRollback(
+    oldStartRow: number,
+    oldStartCol: number,
+    previousChunk: string,
+    transitionToken: number,
+  ): Promise<void> {
+    this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
+    await this.updateHexagonGrid(oldStartRow, oldStartCol, this.renderChunkSize.height, this.renderChunkSize.width);
+    await this.updateToriiBoundsSubscription(previousChunk, transitionToken);
+  }
+
+  private clearSceneChunkBounds(): void {
+    this.applySceneChunkBounds(undefined);
+  }
+
+  private forceVisibilityManagerUpdate(): void {
+    this.visibilityManager?.forceUpdate();
+  }
+
+  private queueChunkVisibilityUnregister(chunkKey: string): void {
+    this.unregisterChunkOnNextFrame(chunkKey);
+  }
+
   private configureWarpTravelSetupStart(): void {
     this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = 40;
@@ -4537,24 +4568,18 @@ export default class WorldmapScene extends WarpTravel {
       startCol,
       force: effectiveForce,
       transitionToken,
-      setCurrentChunk: (targetChunkKey) => {
-        this.currentChunk = targetChunkKey;
-      },
+      setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      unregisterChunk: (targetChunkKey) => this.visibilityManager?.unregisterChunk(targetChunkKey),
-      restorePreviousChunkVisuals: async (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) => {
-        this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
-        await this.updateHexagonGrid(oldStartRow, oldStartCol, this.renderChunkSize.height, this.renderChunkSize.width);
-        await this.updateToriiBoundsSubscription(previousChunk, previousTransitionToken);
-      },
-      clearSceneChunkBounds: () => this.applySceneChunkBounds(undefined),
-      forceVisibilityUpdate: () => this.visibilityManager?.forceUpdate(),
+      unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
+      restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
+        this.restorePreviousChunkVisualsAfterRollback(oldStartRow, oldStartCol, previousChunk, previousTransitionToken),
+      clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
+      forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
       updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
         this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
       updateManagersForChunk: (targetChunkKey, managerOptions) => this.updateManagersForChunk(targetChunkKey, managerOptions),
-      unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.unregisterChunkOnNextFrame(targetChunkKey),
+      unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
     });
-    this.currentChunk = finalizeResult.nextCurrentChunk;
 
     if (finalizeResult.status === "rolled_back") {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");

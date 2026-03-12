@@ -1,7 +1,16 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { createControlledAsyncCall } from "./worldmap-test-harness";
+
+function readWorldmapSource(): string {
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+  const worldmapPath = resolve(currentDir, "worldmap.tsx");
+  return readFileSync(worldmapPath, "utf8");
+}
 
 describe("finalizeWarpTravelChunkSwitch", () => {
   it("rolls back to the previous chunk authority and restores visuals when hydration failed", async () => {
@@ -46,7 +55,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const result = await resultPromise;
     expect(result).toEqual({
       status: "rolled_back",
-      nextCurrentChunk: "0,0",
     });
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
     expect(updateManagersForChunk.calls).toEqual([]);
@@ -83,7 +91,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
 
     expect(result).toEqual({
       status: "stale_dropped",
-      nextCurrentChunk: "0,0",
     });
     expect(unregisterChunk).toHaveBeenCalledWith("24,24");
     expect(updateManagersForChunk.calls).toEqual([]);
@@ -127,7 +134,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const result = await resultPromise;
     expect(result).toEqual({
       status: "committed",
-      nextCurrentChunk: "24,24",
     });
     expect(unregisterPreviousChunkOnNextFrame).toHaveBeenCalledWith("0,0");
   });
@@ -171,5 +177,11 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     });
     expect(setCurrentChunk).toHaveBeenCalledTimes(1);
     expect(setCurrentChunk).toHaveBeenCalledWith("24,24");
+  });
+
+  it("keeps committed chunk authority ownership inside the finalize callback path", () => {
+    const source = readWorldmapSource();
+
+    expect(source).not.toMatch(/this\.currentChunk = finalizeResult\.nextCurrentChunk/);
   });
 });

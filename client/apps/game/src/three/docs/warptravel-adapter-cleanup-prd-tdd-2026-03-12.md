@@ -178,7 +178,7 @@ Completion Notes:
 2. `WorldmapScene` lifecycle wiring now routes the label-group, manager-label, initial-setup, and refresh hooks through named private methods.
 3. `warp-travel.test.ts` now verifies adapter construction stays stable across setup, switch-off, and resume cycles.
 
-### C2: Chunk Ownership Cleanup (0.5 day) [ ]
+### C2: Chunk Ownership Cleanup (0.5 day) [x]
 
 Objective:
 
@@ -197,6 +197,12 @@ Deliverables:
 Exit Criteria:
 
 1. chunk authority mutation occurs in one place only
+
+Completion Notes:
+
+1. committed chunk authority now advances only through the finalize helper callback path.
+2. `finalizeWarpTravelChunkSwitch()` no longer returns a duplicate `nextCurrentChunk` assignment contract.
+3. `WorldmapScene.performChunkSwitch()` now routes rollback and visibility side effects through named private methods instead of a dense inline callback bundle.
 
 ### C3: Navigation Boundary Hardening (0.5 day) [ ]
 
