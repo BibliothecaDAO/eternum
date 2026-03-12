@@ -1,6 +1,6 @@
 # Eternum S2 Worldmap Mass-Exploration Rendering PRD
 
-Date: 2026-03-13 Status: Draft Scope: `client/apps/game/src/three` render path and adjacent movement/pathfinding hot paths
+Date: 2026-03-13 Status: Implemented Scope: `client/apps/game/src/three` render path and adjacent movement/pathfinding hot paths
 
 ## Implementation Tracking
 
@@ -9,7 +9,7 @@ Date: 2026-03-13 Status: Draft Scope: `client/apps/game/src/three` render path a
 - [x] Phase 2: Army Delta Pipeline
 - [x] Phase 3: Foreign Trail Path Pipeline Optimization
 - [x] Phase 4: Point Icon and Label Batching
-- [ ] Phase 5: Structure Incremental Refresh
+- [x] Phase 5: Structure Incremental Refresh
 
 ## 1. Objective
 

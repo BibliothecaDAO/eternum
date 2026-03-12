@@ -48,6 +48,7 @@ import {
 } from "./manager-update-convergence";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import {
+  resolveVisibleStructureUpdateMode,
   shouldRebuildVisibleStructuresForStructureUpdate,
   shouldRefreshVisibleStructures,
 } from "./structure-update-policy";
@@ -935,7 +936,7 @@ export class StructureManager {
     }
 
     const isCurrentlyVisible = this.isInCurrentChunk(normalizedCoord);
-    const shouldRebuildVisibleStructures = shouldRebuildVisibleStructuresForStructureUpdate({
+    const visibleUpdateInput = {
       previous:
         existingStructure && {
           hexCoords: existingStructure.hexCoords,
@@ -959,9 +960,18 @@ export class StructureManager {
       },
       wasVisible: existingWasVisible,
       isVisible: isCurrentlyVisible,
-    });
+    };
+    const visibleUpdateMode = resolveVisibleStructureUpdateMode(visibleUpdateInput);
 
-    if (shouldRebuildVisibleStructures) {
+    if (visibleUpdateMode === "patch" && existingStructure && structureRecord) {
+      this.patchVisibleStructure(existingStructure, structureRecord);
+      return;
+    }
+
+    if (
+      visibleUpdateMode === "rebuild" ||
+      shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput)
+    ) {
       this.updateVisibleStructures();
     }
   }
@@ -1098,6 +1108,127 @@ export class StructureManager {
     }
     // Default cosmetics end with ":base" and use the standard model paths
     return !structure.cosmeticId.endsWith(":base");
+  }
+
+  private getModelForStructure(structure: StructureInfo): InstancedModel | undefined {
+    if (this.hasCosmeticSkin(structure)) {
+      return this.cosmeticStructureModels.get(structure.cosmeticId ?? "")?.[0];
+    }
+
+    const models = this.structureModels.get(structure.structureType);
+    if (!models || models.length === 0) {
+      return undefined;
+    }
+
+    if (structure.structureType === StructureType.Realm) {
+      return models[structure.level];
+    }
+
+    return models[structure.stage];
+  }
+
+  private getCosmeticInstanceIdFromEntityId(cosmeticId: string, entityId: ID): number | undefined {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return undefined;
+    }
+
+    const map = this.cosmeticEntityIdMaps.get(cosmeticId);
+    if (!map) {
+      return undefined;
+    }
+
+    for (const [instanceId, id] of map.entries()) {
+      if (id === normalizedEntityId) {
+        return instanceId;
+      }
+    }
+
+    return undefined;
+  }
+
+  private patchVisibleStructure(previous: StructureInfo, next: StructureInfo): void {
+    const model = this.getModelForStructure(next);
+    const instanceId = this.hasCosmeticSkin(next)
+      ? this.getCosmeticInstanceIdFromEntityId(next.cosmeticId ?? "", next.entityId)
+      : this.getInstanceIdFromEntityId(next.structureType, next.entityId);
+
+    if (!model || instanceId === undefined) {
+      this.updateVisibleStructures();
+      return;
+    }
+
+    const { col, row } = next.hexCoords;
+    getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+    this.scratchPosition.y += 0.05;
+    this.dummy.position.copy(this.scratchPosition);
+
+    if (next.structureType === StructureType.Bank) {
+      this.dummy.rotation.y = (4 * Math.PI) / 6;
+    } else {
+      const rotationSeed = hashCoordinates(col, row);
+      const rotationIndex = Math.floor(rotationSeed * 6);
+      this.dummy.rotation.y = (rotationIndex * Math.PI) / 3;
+    }
+    this.dummy.updateMatrix();
+    model.setMatrixAt(instanceId, this.dummy.matrix);
+    model.needsUpdate();
+
+    const existingLabel = this.entityIdLabels.get(next.entityId);
+    if (existingLabel) {
+      this.updateStructureLabelData(next, existingLabel);
+      getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+      this.scratchLabelPosition.y += 2;
+      existingLabel.position.copy(this.scratchLabelPosition);
+    }
+
+    if (this.pointsRenderers) {
+      this.scratchIconPosition.copy(this.scratchPosition);
+      this.scratchIconPosition.y += 2;
+      const previousRenderer = this.getRendererForStructure(previous);
+      const nextRenderer = this.getRendererForStructure(next);
+      if (previousRenderer && previousRenderer !== nextRenderer && previousRenderer.hasPoint(next.entityId)) {
+        previousRenderer.removePoint(next.entityId);
+      }
+      nextRenderer?.setPoint({
+        entityId: next.entityId,
+        position: this.scratchIconPosition,
+      });
+    }
+
+    const entityNumericId = Number(next.entityId);
+    const templates = this.resolveStructureAttachmentsForRender(next);
+    if (templates.length > 0) {
+      const signature = this.getAttachmentSignature(templates);
+      if (
+        !this.activeStructureAttachmentEntities.has(entityNumericId) ||
+        this.structureAttachmentSignatures.get(entityNumericId) !== signature
+      ) {
+        this.attachmentManager.spawnAttachments(entityNumericId, templates);
+        this.activeStructureAttachmentEntities.add(entityNumericId);
+        this.structureAttachmentSignatures.set(entityNumericId, signature);
+      }
+
+      this.tempCosmeticPosition.copy(this.scratchPosition);
+      this.tempCosmeticRotation.copy(this.dummy.rotation);
+      const baseTransform = {
+        position: this.tempCosmeticPosition,
+        rotation: this.tempCosmeticRotation,
+        scale: this.dummy.scale,
+      };
+      const mountTransforms = resolveStructureMountTransforms(
+        next.structureType,
+        baseTransform,
+        this.structureAttachmentTransformScratch,
+      );
+      this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
+    } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
+      this.attachmentManager.removeAttachments(entityNumericId);
+      this.activeStructureAttachmentEntities.delete(entityNumericId);
+      this.structureAttachmentSignatures.delete(entityNumericId);
+    }
+
+    this.frustumVisibilityDirty = true;
   }
 
   private async performVisibleStructuresUpdate(): Promise<void> {
