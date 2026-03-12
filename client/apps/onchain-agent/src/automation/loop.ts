@@ -309,7 +309,52 @@ export function createAutomationLoop(
         }
       }
 
-      // Phase 5: Write status file
+      // Phase 5: Auto-offload resource arrivals
+      try {
+        const sql = client.sql as any;
+        if (typeof sql.fetchWithQuery === "function" || typeof sql.query === "function") {
+          // Try to query ResourceArrival for all owned structures
+          const structureIds = allStructures.map((s) => Number(s.entity_id));
+          for (const structureId of structureIds) {
+            try {
+              const query = `SELECT structure_id, day, slot_1, slot_2, slot_3, slot_4, slot_5, slot_6, slot_7, slot_8, total_amount FROM [s1_eternum-ResourceArrival] WHERE structure_id = ${structureId} AND total_amount > 0 LIMIT 10;`;
+              const baseUrl = (sql as any).baseUrl ?? (client as any).toriiUrl + "/sql";
+              const url = `${baseUrl}?query=${encodeURIComponent(query)}`;
+              const res = await fetch(url);
+              if (!res.ok) continue;
+              const rows = (await res.json()) as any[];
+              for (const row of rows) {
+                if (!row.total_amount || Number(row.total_amount) <= 0) continue;
+                // Count non-empty slots to determine resource_count
+                let resourceCount = 0;
+                for (let i = 1; i <= 8; i++) {
+                  const slotVal = row[`slot_${i}`];
+                  if (slotVal && slotVal !== "0x0" && slotVal !== "0" && slotVal !== "[]") resourceCount++;
+                }
+                if (resourceCount <= 0) resourceCount = 1; // at least 1
+                try {
+                  await provider.arrivals_offload({
+                    structureId,
+                    day: row.day,
+                    slot: 0, // offload from first slot
+                    resource_count: resourceCount,
+                    signer,
+                  });
+                  console.log(`[AUTO] Offloaded arrival for structure ${structureId}`);
+                } catch {
+                  // Arrival may not be ready yet — skip silently
+                }
+              }
+            } catch {
+              // Non-critical — skip this structure
+            }
+          }
+        }
+      } catch {
+        // Non-critical — offloading can retry next tick
+      }
+
+      // Phase 6: Write status file
       const statusText = formatStatus({
         timestamp: new Date(),
         realms: realmStatuses,
