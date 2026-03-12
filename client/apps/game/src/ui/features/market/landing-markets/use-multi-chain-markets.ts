@@ -285,8 +285,20 @@ const fetchChainMarkets = async ({
     .filter((item): item is EnrichedMarket => Boolean(item));
 };
 
-const mergeAndSortByNewest = (markets: EnrichedMarket[]) =>
+const getMarketStatusPriority = (market: MarketClass) => {
+  if (!market.isResolved() && !market.isEnded()) return 0; // Live / open trading.
+  if (!market.isResolved() && !market.isResolvable()) return 1; // Trading ended, awaiting resolve window.
+  if (!market.isResolved() && market.isResolvable()) return 2; // Awaiting resolution.
+  return 3; // Resolved.
+};
+
+const mergeAndSortMarkets = (markets: EnrichedMarket[], status: MarketStatusKey) =>
   markets.toSorted((a, b) => {
+    if (status === "all") {
+      const statusDifference = getMarketStatusPriority(a.market) - getMarketStatusPriority(b.market);
+      if (statusDifference !== 0) return statusDifference;
+    }
+
     const createdAtDifference = Number(b.market.created_at ?? 0) - Number(a.market.created_at ?? 0);
     if (createdAtDifference !== 0) return createdAtDifference;
     if (a.volumeRaw !== b.volumeRaw) return a.volumeRaw > b.volumeRaw ? -1 : 1;
@@ -418,7 +430,7 @@ export function useMultiChainMarkets({
       });
 
       return {
-        markets: mergeAndSortByNewest(merged),
+        markets: mergeAndSortMarkets(merged, status),
         sourceStatus,
       };
     },

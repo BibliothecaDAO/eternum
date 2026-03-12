@@ -15,17 +15,30 @@ export function MaybeController({
 }) {
   const controllers = useOptionalControllers();
 
-  const label = useMemo(() => {
-    const controller = controllers?.findController(address);
-    if (controller) {
-      return showAddress ? `${controller.username} (${shortAddress(address)})` : controller.username;
-    }
+  const fallbackLabel = useMemo(() => {
     try {
       return shortAddress(address);
     } catch {
       return address;
     }
-  }, [address, controllers, showAddress]);
+  }, [address]);
+
+  const label = useMemo(() => {
+    const controllerByAddress = controllers?.findController(address);
+    if (controllerByAddress) {
+      return showAddress ? `${controllerByAddress.username} (${shortAddress(address)})` : controllerByAddress.username;
+    }
+
+    const controllerByUsername = controllers?.findControllerByUsername(address);
+    if (controllerByUsername) {
+      const resolvedAddress = controllers?.findControllerAddressByUsername(address) ?? controllerByUsername.address;
+      return showAddress
+        ? `${controllerByUsername.username} (${shortAddress(resolvedAddress)})`
+        : controllerByUsername.username;
+    }
+
+    return fallbackLabel;
+  }, [address, controllers, fallbackLabel, showAddress]);
 
   return (
     <div className={className} {...props}>

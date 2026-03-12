@@ -154,6 +154,8 @@ const getOutcomes = (market: MarketClass): MarketOutcome[] => {
   return outcomes as MarketOutcome[];
 };
 
+type MarketOddsVariant = "default" | "list";
+
 const parseNumericOdds = (outcome: MarketOutcome) => {
   const oddsValue = getOddsValue(outcome);
   if (oddsValue == null) return null;
@@ -170,6 +172,7 @@ export const MarketOdds = ({
   maxVisible,
   collapsible = false,
   showPlayerMeta = false,
+  variant = "default",
 }: {
   market: MarketClass;
   selectable?: boolean;
@@ -178,20 +181,13 @@ export const MarketOdds = ({
   maxVisible?: number;
   collapsible?: boolean;
   showPlayerMeta?: boolean;
+  variant?: MarketOddsVariant;
 }) => {
   const outcomes = useMemo(() => getOutcomes(market), [market]);
   const [isExpanded, setIsExpanded] = useState(false);
   const controllers = useOptionalControllers();
-  const controllerAddressByUsername = useMemo(() => {
-    const map = new Map<string, string>();
-    controllers?.controllers?.forEach((controller) => {
-      const normalizedUsername = normalizeAvatarUsername(controller.username);
-      const normalizedAddress = normalizeAvatarAddress(controller.address);
-      if (!normalizedUsername || !normalizedAddress) return;
-      map.set(normalizedUsername, normalizedAddress);
-    });
-    return map;
-  }, [controllers?.controllers]);
+  const findControllerAddressByUsername = controllers?.findControllerAddressByUsername;
+  const isListVariant = variant === "list";
 
   const { sortedOutcomes, winningOutcomeOrdersSet } = useMemo(() => {
     const resolvedPayouts = market.isResolved() ? (market.conditionResolution?.payout_numerators ?? []) : [];
@@ -286,7 +282,7 @@ export const MarketOdds = ({
           [
             ...outcomeAddresses,
             ...outcomeUsernames
-              .map((username) => controllerAddressByUsername.get(username) ?? null)
+              .map((username) => findControllerAddressByUsername?.(username) ?? null)
               .filter((address): address is string => Boolean(address)),
             ...avatarProfilesByAddress
               .map((profile) => normalizeAvatarAddress(profile.playerAddress))
@@ -300,7 +296,7 @@ export const MarketOdds = ({
     [
       outcomeAddresses,
       outcomeUsernames,
-      controllerAddressByUsername,
+      findControllerAddressByUsername,
       avatarProfilesByAddress,
       avatarProfilesByUsername,
     ],
@@ -313,6 +309,12 @@ export const MarketOdds = ({
 
   return (
     <div className="flex flex-col gap-2">
+      {isListVariant ? (
+        <div className="mb-1 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-gold/50">Top Outcomes</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-gold/40">Percent</p>
+        </div>
+      ) : null}
       {visibleOutcomes.map(({ outcome, order, resolutionIndex }) => {
         const oddsRaw = getOddsValue(outcome);
         const odds = formatOdds(oddsRaw);
@@ -333,7 +335,7 @@ export const MarketOdds = ({
         const avatarProfileByResolvedAddress = normalizedAddress ? avatarProfileByAddress.get(normalizedAddress) : null;
         const avatarProfileByResolvedUsername = normalizedName ? avatarProfileByUsername.get(normalizedName) : null;
         const avatarProfile = avatarProfileByResolvedAddress ?? avatarProfileByResolvedUsername;
-        const controllerAddress = normalizedName ? (controllerAddressByUsername.get(normalizedName) ?? null) : null;
+        const controllerAddress = normalizedName ? (findControllerAddressByUsername?.(normalizedName) ?? null) : null;
         const playerAddress =
           normalizedAddress ?? normalizeAvatarAddress(avatarProfile?.playerAddress) ?? controllerAddress;
         const avatarSeed = playerAddress ?? normalizedName ?? rawName;
@@ -344,12 +346,21 @@ export const MarketOdds = ({
           <button
             key={`${outcome.index}-${resolutionIndex}-${order}`}
             className={cx(
-              "group relative flex min-h-[56px] justify-between overflow-hidden rounded-sm border px-3 py-2.5 text-left text-xs transition-all duration-200",
+              "group relative flex justify-between overflow-hidden border text-left text-xs font-sans normal-case transition-all duration-200",
+              isListVariant ? "rounded-md px-2 py-1.5" : "min-h-[56px] rounded-sm px-3 py-2.5",
               showPlayerMeta ? "items-start" : "items-center",
               isWinner ? "border-progress-bar-good/55 bg-progress-bar-good/10" : "border-gold/20 bg-brown/40",
               "text-lightest",
-              isSelectable ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10" : "cursor-default",
-              isSelected ? "border-gold/70 bg-gold/15 ring-1 ring-gold/40" : null,
+              isSelectable
+                ? isListVariant
+                  ? "cursor-pointer hover:border-gold/45 hover:bg-gold/10"
+                  : "cursor-pointer hover:border-gold/50 hover:bg-gold/10"
+                : "cursor-default",
+              isSelected
+                ? isListVariant
+                  ? "border-gold/70 bg-gold/15"
+                  : "border-gold/70 bg-gold/15 ring-1 ring-gold/40"
+                : null,
             )}
             type="button"
             onClick={
@@ -372,8 +383,8 @@ export const MarketOdds = ({
                 />
               ) : null}
               <div className="min-w-0 flex-1">
-                <span className="block min-w-0 truncate font-medium">
-                  <MaybeController address={outcome.name} />
+                <span className="block min-w-0 truncate text-xs font-medium tracking-normal text-lightest">
+                  <MaybeController address={outcome.name} showAddress={!isListVariant} />
                 </span>
                 {showPlayerMeta ? (
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -394,19 +405,24 @@ export const MarketOdds = ({
 
             {/* Pool amount & Odds */}
             <div className={cx("relative flex flex-shrink-0 items-center gap-2 pl-2", showPlayerMeta && "pt-0.5")}>
-              {/* Pool amount pill */}
-              <div className="flex items-center gap-1 rounded-full bg-brown/60 px-2 py-0.5 backdrop-blur-sm">
-                <span className="text-[10px] font-medium tabular-nums text-gold/80">{poolAmount}</span>
-                <TokenIcon token={market.collateralToken} size={11} />
-              </div>
+              {!isListVariant ? (
+                <div className="flex items-center gap-1 rounded-full bg-brown/60 px-2 py-0.5 backdrop-blur-sm">
+                  <span className="text-[10px] font-medium tabular-nums text-gold/80">{poolAmount}</span>
+                  <TokenIcon token={market.collateralToken} size={11} />
+                </div>
+              ) : null}
 
               {/* Odds badge */}
               <div
                 className={cx(
-                  "min-w-[48px] rounded px-2 py-1 text-center text-sm font-bold tabular-nums",
+                  isListVariant
+                    ? "rounded border px-2 py-0.5 text-xs font-semibold tabular-nums"
+                    : "min-w-[48px] rounded px-2 py-1 text-center text-sm font-bold tabular-nums",
                   isWinner
                     ? "border border-progress-bar-good/45 bg-progress-bar-good/15 text-progress-bar-good"
-                    : "bg-gold/10 text-gold group-hover:bg-gold/20",
+                    : isListVariant
+                      ? "border-gold/30 bg-gold/10 text-gold"
+                      : "bg-gold/10 text-gold group-hover:bg-gold/20",
                 )}
               >
                 {odds ?? "--"}

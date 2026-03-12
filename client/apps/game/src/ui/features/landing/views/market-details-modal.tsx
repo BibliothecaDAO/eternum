@@ -633,6 +633,7 @@ const MarketDetailsModalContent = ({
                   maxVisible={4}
                   collapsible
                   showPlayerMeta
+                  variant="list"
                 />
               </section>
 
@@ -663,12 +664,33 @@ const MarketDetailsModalContent = ({
   );
 };
 
+const MarketDetailsModalLoadingFallback = ({ onClose }: { onClose: () => void }) => (
+  <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-gold/15 bg-black/95 shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
+    <div className="flex items-center justify-end border-b border-gold/15 px-4 py-4 md:px-6 md:py-5">
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-lg p-2 text-gold/60 transition-colors hover:bg-gold/10 hover:text-gold"
+        aria-label="Close"
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+    <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-8">
+      <div className="flex items-center gap-3 rounded-xl border border-gold/25 bg-black/40 px-4 py-3 text-sm text-gold/85">
+        <Loader2 className="h-4 w-4 animate-spin text-gold" />
+        <span>Loading market data...</span>
+      </div>
+    </div>
+  </div>
+);
+
 /**
  * Modal wrapper that provides the necessary context providers
  */
 export const MarketDetailsModal = ({ market, chain, initialOutcomeIndex, onClose }: MarketDetailsModalProps) => {
   return (
-    <MarketsProviders chain={chain}>
+    <MarketsProviders chain={chain} loadingFallback={<MarketDetailsModalLoadingFallback onClose={onClose} />}>
       <MarketDetailsModalContent
         initialMarket={market}
         chain={chain}
