@@ -8,6 +8,8 @@ pnpm --dir packages/client build
 pnpm --dir packages/game-agent build
 cd client/apps/onchain-agent
 cp .env.example .env #update the world name and add your api key
+# REGISTER AND START THE GAME VIA THE GAME CLIENT YOURSELF FIRST.
+# ONCE YOU SETTLE YOUR REALMS, THEN START UP THE GAME
 pnpm dev
 ```
 
@@ -54,3 +56,5 @@ like this, and follows this format automatically according to the `WORLD_NAME` t
 2. Paste the URL in an incognito tab. and do your login stuff from there. If you want to watch the agent from the game
    client, clear all cookies and data or spectate from an incognito tab. Session stuff is finnicky.
 3. If you are restarting an agent previously run on the world, give it 1 full tick to catch up (60 seconds).
+4. REGISTRATION AND REALM SETTLING IS NOT BUILT YET. DO THIS MANUALLY YOURSELF IN THE CLIENT, AND ONCE YOU SETTLE
+   REALMS, THEN RUN PNPM DEV.
