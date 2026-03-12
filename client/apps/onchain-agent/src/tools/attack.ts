@@ -191,16 +191,31 @@ async function attackExplorer(
     throw new Error(`Attack failed: ${extractTxError(err)}`);
   }
 
+  // Re-inspect to determine outcome
+  const afterAttacker = await client.view.explorerInfo(attacker.entityId);
+  const afterDefender = await client.view.explorerInfo(defenderId);
+  const attackerSurvived = afterAttacker && afterAttacker.troopCount > 0;
+  const defenderSurvived = afterDefender && afterDefender.troopCount > 0;
+
+  let outcome: string;
+  if (attackerSurvived && !defenderSurvived) {
+    outcome = `VICTORY — enemy destroyed. You have ${afterAttacker!.troopCount.toLocaleString()} troops remaining.`;
+  } else if (!attackerSurvived && defenderSurvived) {
+    outcome = `DEFEAT — your army was destroyed. Enemy has ${afterDefender!.troopCount.toLocaleString()} troops remaining.`;
+  } else if (attackerSurvived && defenderSurvived) {
+    outcome = `DRAW — both survived. You: ${afterAttacker!.troopCount.toLocaleString()}, Enemy: ${afterDefender!.troopCount.toLocaleString()}.`;
+  } else {
+    outcome = `Both armies destroyed.`;
+  }
+
   return {
     content: [
       {
         type: "text" as const,
         text: [
-          `Attacked explorer: ${attacker.troopType} ${attacker.troopTier} vs ${defender.troopType} ${defender.troopTier}`,
-          `Your strength: ${attackerStrength.display}`,
-          `Their strength: ${defenderStrength.display}`,
-          `Ratio: ${ratio}x`,
-          `Transaction submitted. Use inspect to check the outcome.`,
+          `Attacked: ${attacker.troopType} ${attacker.troopTier} vs ${defender.troopType} ${defender.troopTier}`,
+          `Pre-battle: ${attackerStrength.display} vs ${defenderStrength.display} (${ratio}x)`,
+          outcome,
         ].join("\n"),
       },
     ],
@@ -210,6 +225,7 @@ async function attackExplorer(
       direction,
       attackerStrength: attackerStrength.base,
       defenderStrength: defenderStrength.base,
+      outcome,
     },
   };
 }
@@ -249,11 +265,7 @@ async function attackStructure(
       content: [
         {
           type: "text" as const,
-          text: [
-            `${structure.category} is unguarded — attacking to capture.`,
-            `Your strength: ${attackerStrength.display}`,
-            `Transaction submitted. Use inspect to check the outcome.`,
-          ].join("\n"),
+          text: `${structure.category} captured — it was unguarded.`,
         },
       ],
       details: {
@@ -261,6 +273,7 @@ async function attackStructure(
         structureId: structure.entityId,
         direction,
         unguarded: true,
+        outcome: "captured",
       },
     };
   }
@@ -276,16 +289,30 @@ async function attackStructure(
     signer: tx.signer,
   });
 
+  // Re-inspect to determine outcome
+  const afterAttacker = await client.view.explorerInfo(attacker.entityId);
+  const afterStructure = await client.view.structureAt(target.x, target.y);
+  const attackerSurvived = afterAttacker && afterAttacker.troopCount > 0;
+  const guardsRemain = afterStructure?.guards.some((g) => g.count > 0) ?? false;
+
+  let outcome: string;
+  if (attackerSurvived && !guardsRemain) {
+    outcome = `VICTORY — guards eliminated. You have ${afterAttacker!.troopCount.toLocaleString()} troops remaining. Attack again to capture.`;
+  } else if (!attackerSurvived) {
+    outcome = `DEFEAT — your army was destroyed.`;
+  } else {
+    const remainingGuards = afterStructure?.guards.filter((g) => g.count > 0).map((g) => `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`).join(", ") ?? "unknown";
+    outcome = `Guards weakened but still standing: ${remainingGuards}. You have ${afterAttacker!.troopCount.toLocaleString()} troops. Attack again or reinforce.`;
+  }
+
   return {
     content: [
       {
         type: "text" as const,
         text: [
           `Attacked ${structure.category} guards: ${attacker.troopType} ${attacker.troopTier} vs guards`,
-          `Your strength: ${attackerStrength.display}`,
-          `Guard strength: ${guardStrength.display}`,
-          `Ratio: ${ratio}x`,
-          `Transaction submitted. Use inspect to check the outcome.`,
+          `Pre-battle: ${attackerStrength.display} vs ${guardStrength.display} (${ratio}x)`,
+          outcome,
         ].join("\n"),
       },
     ],
@@ -295,6 +322,7 @@ async function attackStructure(
       direction,
       attackerStrength: attackerStrength.base,
       guardStrength: guardStrength.base,
+      outcome,
     },
   };
 }

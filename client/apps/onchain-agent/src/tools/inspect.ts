@@ -44,6 +44,7 @@ function formatResources(resources: ResourceInfo[]): string {
 
 function formatOwner(address: string | null, name: string | null, playerAddress?: string): string {
   if (!address) return "Unknown";
+  try { if (BigInt(address) === 0n) return "The Vanguard"; } catch {}
   if (playerAddress && addressesEqual(address, playerAddress)) return "You";
   if (name) return name;
   // Try to decode as a felt short string (Cartridge controller names are stored as felts)
