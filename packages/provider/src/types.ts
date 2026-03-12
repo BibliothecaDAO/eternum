@@ -121,6 +121,7 @@ export enum TransactionType {
   OBTAIN_ENTRY_TOKEN = "obtain_entry_token",
   REGISTER = "register",
   TOKEN_LOCK = "token_lock",
+  MAKE_SPIRES = "make_spires",
 
   // Lords & Approvals
   ATTACH_LORDS = "attach_lords",

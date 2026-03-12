@@ -670,6 +670,8 @@ export class ClientConfigManager {
       [StructureType.FragmentMine]: 1,
       [StructureType.Hyperstructure]: 4,
       [StructureType.Bank]: 4,
+      [StructureType.HolySite]: 1,
+      [StructureType.Camp]: 1,
     };
   }
 
@@ -846,6 +848,7 @@ export class ClientConfigManager {
         const blitzSettlementConfig = config.blitz_settlement_config;
         const blitzRegistrationConfig = config.blitz_registration_config;
         const blitzHypersSettlementConfig = config.blitz_hypers_settlement_config;
+        const settlementConfig = config.settlement_config;
         const twoPlayerMode = Boolean(blitzSettlementConfig.two_player_mode);
         const blitzHyperStructureCount =
           getComponentValue(this.components.HyperstructureGlobals, getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]))
@@ -859,6 +862,11 @@ export class ClientConfigManager {
           }
         }
         numHyperStructuresLeft -= blitzHyperStructureCount;
+
+        // get number of spires left to create
+        const spiresMaxCount = Number(settlementConfig?.spires_max_count ?? 0);
+        const spiresSettledCount = Number(settlementConfig?.spires_settled_count ?? 0);
+        const numSpiresLeft = Math.max(spiresMaxCount - spiresSettledCount, 0);
 
         return {
           blitz_mode_on: config?.blitz_mode_on ?? false,
@@ -889,6 +897,8 @@ export class ClientConfigManager {
             assigned_positions_count: Number(blitzRegistrationConfig.assigned_positions_count),
           },
           blitz_num_hyperstructures_left: Math.max(numHyperStructuresLeft, 0),
+          num_spires_left: numSpiresLeft,
+          spires_settled_count: spiresSettledCount,
         };
       },
       {
@@ -920,6 +930,8 @@ export class ClientConfigManager {
           assigned_positions_count: 0,
         },
         blitz_num_hyperstructures_left: 0,
+        num_spires_left: 0,
+        spires_settled_count: 0,
       },
     );
   }

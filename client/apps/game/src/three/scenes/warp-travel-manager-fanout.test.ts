@@ -1,0 +1,51 @@
+import { describe, expect, it, vi } from "vitest";
+
+import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
+
+describe("runWarpTravelManagerFanout", () => {
+  it("runs all manager updates concurrently and reports no failures when all succeed", async () => {
+    const calls: string[] = [];
+
+    const result = await runWarpTravelManagerFanout({
+      chunkKey: "24,24",
+      options: { force: true, transitionToken: 7 },
+      managers: [
+        { label: "army", updateChunk: async () => void calls.push("army") },
+        { label: "structure", updateChunk: async () => void calls.push("structure") },
+        { label: "chest", updateChunk: async () => void calls.push("chest") },
+      ],
+    });
+
+    expect(calls).toEqual(["army", "structure", "chest"]);
+    expect(result).toEqual({
+      failedManagers: [],
+    });
+  });
+
+  it("collects failed labels and reports the corresponding error reasons", async () => {
+    const failure = new Error("manager failed");
+    const onManagerFailed = vi.fn();
+
+    const result = await runWarpTravelManagerFanout({
+      chunkKey: "24,24",
+      options: { force: false, transitionToken: 8 },
+      managers: [
+        { label: "army", updateChunk: async () => undefined },
+        {
+          label: "structure",
+          updateChunk: async () => {
+            throw failure;
+          },
+        },
+        { label: "chest", updateChunk: async () => undefined },
+      ],
+      onManagerFailed,
+    });
+
+    expect(result).toEqual({
+      failedManagers: [{ label: "structure", reason: failure }],
+    });
+    expect(onManagerFailed).toHaveBeenCalledTimes(1);
+    expect(onManagerFailed).toHaveBeenCalledWith("structure", failure);
+  });
+});

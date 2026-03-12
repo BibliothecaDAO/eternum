@@ -172,6 +172,12 @@ export class GameConfigDeployer {
 
     await setSettlementConfig(config);
     await this.sleepNonLocal();
+
+    await setFaithConfig(config);
+    await this.sleepNonLocal();
+
+    await setArtificerConfig(config);
+    await this.sleepNonLocal();
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
@@ -936,8 +942,10 @@ export const setupGlobals = async (config: Config) => {
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
     agent_find_probability: config.config.exploration.agentFindProbability,
     agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
-    village_find_probability: config.config.exploration.villageFindProbability,
-    village_find_fail_probability: config.config.exploration.villageFindFailProbability,
+    camp_find_probability: config.config.exploration.campFindProbability,
+    camp_find_fail_probability: config.config.exploration.campFindFailProbability,
+    holysite_find_probability: config.config.exploration.holysiteFindProbability,
+    holysite_find_fail_probability: config.config.exploration.holysiteFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
@@ -951,9 +959,13 @@ export const setupGlobals = async (config: Config) => {
     (mapCalldata.shards_mines_fail_probability /
       (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
     100;
-  const villageFindFailRate =
-    (mapCalldata.village_find_fail_probability /
-      (mapCalldata.village_find_fail_probability + mapCalldata.village_find_probability)) *
+  const campFindFailRate =
+    (mapCalldata.camp_find_fail_probability /
+      (mapCalldata.camp_find_fail_probability + mapCalldata.camp_find_probability)) *
+    100;
+  const holysiteFindFailRate =
+    (mapCalldata.holysite_find_fail_probability /
+      (mapCalldata.holysite_find_fail_probability + mapCalldata.holysite_find_probability)) *
     100;
   const agentFindFailRate =
     (mapCalldata.agent_find_fail_probability /
@@ -969,7 +981,8 @@ export const setupGlobals = async (config: Config) => {
     ┌─ ${chalk.yellow("Map Parameters")}
     │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
     │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
-    │  ${chalk.gray("Village Find Fail Probability:")} ${chalk.white(villageFindFailRate) + "%"}
+    │  ${chalk.gray("Camp Find Fail Probability:")} ${chalk.white(campFindFailRate) + "%"}
+    │  ${chalk.gray("Holy Site Find Fail Probability:")} ${chalk.white(holysiteFindFailRate) + "%"}
     │  ${chalk.gray("Agent Find Fail Probability:")} ${chalk.white(agentFindFailRate) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
@@ -1066,6 +1079,8 @@ export const setCapacityConfig = async (config: Config) => {
     hyperstructure_capacity: config.config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
     fragment_mine_capacity: config.config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.config.carryCapacityGram[CapacityConfig.BankStructure],
+    holysite_capacity: config.config.carryCapacityGram[CapacityConfig.HolySiteStructure],
+    camp_capacity: config.config.carryCapacityGram[CapacityConfig.CampStructure],
     troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
     donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
     storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
@@ -1083,6 +1098,8 @@ export const setCapacityConfig = async (config: Config) => {
     { name: "Hyperstructure", value: calldata.hyperstructure_capacity },
     { name: "Fragment Mine", value: calldata.fragment_mine_capacity },
     { name: "Bank", value: calldata.bank_structure_capacity },
+    { name: "Holy Site", value: calldata.holysite_capacity },
+    { name: "Camp", value: calldata.camp_capacity },
     { name: "Troops", value: calldata.troop_capacity },
     { name: "Donkeys", value: calldata.donkey_capacity },
     {
@@ -1370,7 +1387,13 @@ export const setSettlementConfig = async (config: Config) => {
   const {
     center,
     base_distance,
-    subsequent_distance,
+    layers_skipped,
+    layer_max,
+    layer_capacity_increment,
+    layer_capacity_bps,
+    spires_layer_distance,
+    spires_max_count,
+    spires_settled_count,
     single_realm_mode,
     two_player_mode = false,
   } = config.config.settlement;
@@ -1379,7 +1402,13 @@ export const setSettlementConfig = async (config: Config) => {
     signer: config.account,
     center,
     base_distance,
-    subsequent_distance,
+    layers_skipped,
+    layer_max,
+    layer_capacity_increment,
+    layer_capacity_bps,
+    spires_layer_distance,
+    spires_max_count,
+    spires_settled_count,
     single_realm_mode,
     two_player_mode,
   };
@@ -1387,11 +1416,17 @@ export const setSettlementConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Layout Parameters")}
-    │  ${chalk.gray("Center:")}            ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
-    │  ${chalk.gray("Base Distance:")}     ${chalk.white(calldata.base_distance)}
-    │  ${chalk.gray("Subsequent Distance:")}   ${chalk.white(calldata.subsequent_distance)}
-    │  ${chalk.gray("Single Realm Mode:")}   ${chalk.white(calldata.single_realm_mode)}
-    │  ${chalk.gray("Two Realm Mode:")}      ${chalk.white(calldata.two_player_mode)}
+    │  ${chalk.gray("Center:")}                    ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
+    │  ${chalk.gray("Base Distance:")}             ${chalk.white(calldata.base_distance)}
+    │  ${chalk.gray("Layers Skipped:")}            ${chalk.white(calldata.layers_skipped)}
+    │  ${chalk.gray("Layer Max:")}                 ${chalk.white(calldata.layer_max)}
+    │  ${chalk.gray("Layer Capacity Increment:")} ${chalk.white(calldata.layer_capacity_increment)}
+    │  ${chalk.gray("Layer Capacity BPS:")}        ${chalk.white(calldata.layer_capacity_bps)} ${chalk.gray("(= " + calldata.layer_capacity_bps / 100 + "%)")}
+    │  ${chalk.gray("Spires Layer Distance:")}     ${chalk.white(calldata.spires_layer_distance)}
+    │  ${chalk.gray("Spires Max Count:")}          ${chalk.white(calldata.spires_max_count)}
+    │  ${chalk.gray("Spires Settled Count:")}      ${chalk.white(calldata.spires_settled_count)}
+    │  ${chalk.gray("Single Realm Mode:")}         ${chalk.white(calldata.single_realm_mode)}
+    │  ${chalk.gray("Two Player Mode:")}          ${chalk.white(calldata.two_player_mode)}
     │
     └────────────────────────────────`),
   );
@@ -1399,6 +1434,89 @@ export const setSettlementConfig = async (config: Config) => {
   const tx = await config.provider.set_settlement_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setFaithConfig = async (config: Config) => {
+  if (!config.config.faith) {
+    console.log(chalk.yellow(`\n  ⛪ Faith Configuration: Skipped (no config)\n`));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  ⛪ Faith Configuration
+  ═══════════════════════════`),
+  );
+
+  const {
+    enabled,
+    wonder_base_fp_per_sec,
+    holy_site_fp_per_sec,
+    realm_fp_per_sec,
+    village_fp_per_sec,
+    owner_share_percent,
+    reward_token,
+  } = config.config.faith;
+
+  const calldata = {
+    signer: config.account,
+    enabled,
+    wonder_base_fp_per_sec,
+    holy_site_fp_per_sec,
+    realm_fp_per_sec,
+    village_fp_per_sec,
+    owner_share_percent: owner_share_percent * 100, // Convert percentage to basis points
+    reward_token,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Faith Parameters")}
+    │  ${chalk.gray("Enabled:")}                 ${chalk.white(calldata.enabled)}
+    │  ${chalk.gray("Wonder FP/sec:")}           ${chalk.white(calldata.wonder_base_fp_per_sec)}
+    │  ${chalk.gray("Holy Site FP/sec:")}        ${chalk.white(calldata.holy_site_fp_per_sec)}
+    │  ${chalk.gray("Realm FP/sec:")}            ${chalk.white(calldata.realm_fp_per_sec)}
+    │  ${chalk.gray("Village FP/sec:")}          ${chalk.white(calldata.village_fp_per_sec)}
+    │  ${chalk.gray("Owner Share:")}             ${chalk.white(owner_share_percent + "%")}
+    │  ${chalk.gray("Reward Token:")}            ${chalk.white(calldata.reward_token)}
+    │
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_faith_config(calldata);
+
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setArtificerConfig = async (config: Config) => {
+  if (!config.config.artificer) {
+    console.log(chalk.yellow(`\n  🔬 Artificer Configuration: Skipped (no config)\n`));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  🔬 Artificer Configuration
+  ═══════════════════════════`),
+  );
+
+  const { research_cost_for_relic } = config.config.artificer;
+
+  // Apply resource precision to the cost (config stores human-readable value)
+  const calldata = {
+    signer: config.account,
+    research_cost_for_relic: research_cost_for_relic * config.config.resources.resourcePrecision,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Artificer Config")}
+    │  ${chalk.gray("Research Cost for Relic:")} ${chalk.white(research_cost_for_relic)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_artificer_config(calldata);
+  console.log(chalk.green(`\n    ✔ Artificer configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setGameModeConfig = async (config: Config) => {
@@ -1805,7 +1923,7 @@ export const createBanks = async (config: Config) => {
   const banks = [];
   const bank_coords = [];
   // Find coordinates x steps from center in each direction
-  const stepsFromCenter = 220;
+  const stepsFromCenter = 15 * 21;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
     bank_coords.push({ alt: false, x: coord.x, y: coord.y });

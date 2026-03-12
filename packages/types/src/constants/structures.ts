@@ -9,6 +9,8 @@ export enum StructureType {
   Bank = 3,
   FragmentMine = 4,
   Village = 5,
+  HolySite = 6,
+  Camp = 7,
 }
 
 export const EternumStructureTypeToNameMapping: Record<StructureType, string> = {
@@ -17,6 +19,8 @@ export const EternumStructureTypeToNameMapping: Record<StructureType, string> = 
   [StructureType.Bank]: "Bank",
   [StructureType.FragmentMine]: "Fragment Mine",
   [StructureType.Village]: "Village",
+  [StructureType.HolySite]: "Holy Site",
+  [StructureType.Camp]: "Camp",
 };
 
 export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
@@ -24,7 +28,9 @@ export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "Hyperstructure",
   [StructureType.Bank]: "Bank",
   [StructureType.FragmentMine]: "Essence Rift",
-  [StructureType.Village]: "Camp",
+  [StructureType.Village]: "Village",
+  [StructureType.HolySite]: "Holy Site",
+  [StructureType.Camp]: "Camp",
 };
 
 export enum BuildingType {
@@ -70,6 +76,7 @@ export enum BuildingType {
   ResourceWheat = 37,
   ResourceFish = 38,
   ResourceEssence = 39,
+  ResourceResearch = 40,
 }
 
 export const BuildingTypeToString: Record<BuildingType, string> = {
@@ -113,6 +120,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceFish]: "Fishing Village",
   [BuildingType.ResourceEssence]: "Essence Mine",
+  [BuildingType.ResourceResearch]: "Research Lab",
 };
 
 export function getBuildingCategory(category: BuildingType): CairoCustomEnum {
@@ -273,6 +281,8 @@ export function getProducedResource(category: BuildingType): ResourcesIds | unde
       return ResourcesIds.Wheat;
     case BuildingType.ResourceFish:
       return ResourcesIds.Fish;
+    case BuildingType.ResourceResearch:
+      return ResourcesIds.Research;
     default:
       return undefined;
   }
@@ -288,6 +298,8 @@ export enum CapacityConfig {
   HyperstructureStructure = 6,
   BankStructure = 7,
   FragmentMineStructure = 8,
+  HolySiteStructure = 9,
+  CampStructure = 10,
 }
 
 export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {
@@ -380,7 +392,8 @@ export const isEconomyBuilding = (buildingType: BuildingType) => {
     buildingType === BuildingType.ResourceFish ||
     buildingType === BuildingType.ResourceDonkey ||
     buildingType === BuildingType.WorkersHut ||
-    buildingType === BuildingType.Storehouse
+    buildingType === BuildingType.Storehouse ||
+    buildingType === BuildingType.ResourceResearch
   );
 };
 

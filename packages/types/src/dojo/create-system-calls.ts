@@ -50,6 +50,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_realm_make_hyperstructures(props);
   };
 
+  const spire_make_spires = async (props: SystemProps.SpireMakeSpiresProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.spire_make_spires(props);
+  };
+
   const blitz_realm_assign_realm_positions = async (
     props: SystemProps.BlitzRealmAssignRealmPositionsProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -496,6 +500,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     blitz_realm_obtain_entry_token: withAuth(blitz_realm_obtain_entry_token),
     blitz_realm_register: withAuth(blitz_realm_register),
     blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
+    spire_make_spires: withAuth(spire_make_spires),
     blitz_realm_assign_realm_positions: withAuth(blitz_realm_assign_realm_positions),
     blitz_realm_settle_realms: withAuth(blitz_realm_settle_realms),
     blitz_realm_assign_and_settle_realms: withAuth(blitz_realm_assign_and_settle_realms),

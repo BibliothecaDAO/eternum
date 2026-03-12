@@ -328,7 +328,21 @@
       "35": [],
       "36": [],
       "37": [],
-      "38": []
+      "38": [],
+      "57": [
+        {
+          "resource": 36,
+          "amount": 15
+        },
+        {
+          "resource": 37,
+          "amount": 0.001
+        },
+        {
+          "resource": 38,
+          "amount": 0.5
+        }
+      ]
     },
     "productionByComplexRecipeOutputs": {
       "1": 1,
@@ -355,7 +369,7 @@
       "22": 1,
       "23": 1,
       "24": 3,
-      "25": 3,
+      "25": 1,
       "26": 5,
       "27": 5,
       "28": 5,
@@ -368,7 +382,8 @@
       "35": 6,
       "36": 0,
       "37": 0,
-      "38": 10
+      "38": 10,
+      "57": 1
     },
     "productionBySimpleRecipe": {
       "1": [],
@@ -516,7 +531,8 @@
       "35": [],
       "36": [],
       "37": [],
-      "38": []
+      "38": [],
+      "57": []
     },
     "productionBySimpleRecipeOutputs": {
       "1": 1,
@@ -543,7 +559,7 @@
       "22": 1,
       "23": 1,
       "24": 3,
-      "25": 3,
+      "25": 1,
       "26": 5,
       "27": 5,
       "28": 5,
@@ -556,7 +572,8 @@
       "35": 6,
       "36": 0,
       "37": 0,
-      "38": 10
+      "38": 10,
+      "57": 1
     },
     "laborOutputPerResource": {
       "1": 0,
@@ -596,7 +613,8 @@
       "35": 0,
       "36": 0,
       "37": 0,
-      "38": 0
+      "38": 0,
+      "57": 0
     },
     "resourceWeightsGrams": {
       "1": 1000,
@@ -636,7 +654,8 @@
       "35": 100,
       "36": 100,
       "37": 0,
-      "38": 100
+      "38": 100,
+      "57": 0
     },
     "resourceRarity": {
       "1": 1.27,
@@ -718,8 +737,10 @@
     "shardsMinesWinProbability": 1000,
     "agentFindProbability": 0,
     "agentFindFailProbability": 100,
-    "villageFindProbability": 1500,
-    "villageFindFailProbability": 48500,
+    "campFindProbability": 1500,
+    "campFindFailProbability": 48500,
+    "holysiteFindProbability": 500,
+    "holysiteFindFailProbability": 49500,
     "hyperstructureWinProbAtCenter": 0,
     "hyperstructureFailProbAtCenter": 1,
     "hyperstructureFailProbIncreasePerHexDistance": 9820,
@@ -746,7 +767,9 @@
     "5": "18446744073709551615",
     "6": "18446744073709551615",
     "7": "18446744073709551615",
-    "8": "18446744073709551615"
+    "8": "18446744073709551615",
+    "9": "18446744073709551615",
+    "10": "18446744073709551615"
   },
   "speed": {
     "donkey": 9,
@@ -808,7 +831,13 @@
   "settlement": {
     "center": 2147483646,
     "base_distance": 8,
-    "subsequent_distance": 10,
+    "layers_skipped": 2,
+    "layer_max": 6,
+    "layer_capacity_increment": 6,
+    "layer_capacity_bps": 8000,
+    "spires_layer_distance": 6,
+    "spires_max_count": 1,
+    "spires_settled_count": 0,
     "single_realm_mode": false,
     "two_player_mode": false
   },
@@ -852,7 +881,8 @@
       "35": 0,
       "36": 0,
       "37": 0,
-      "38": 0
+      "38": 0,
+      "40": 0
     },
     "buildingPopulation": {
       "0": 0,
@@ -893,7 +923,8 @@
       "35": 3,
       "36": 3,
       "37": 1,
-      "38": 1
+      "38": 1,
+      "40": 2
     },
     "buildingResourceProduced": {
       "0": 0,
@@ -934,7 +965,8 @@
       "35": 33,
       "36": 34,
       "37": 35,
-      "38": 36
+      "38": 36,
+      "40": 57
     },
     "complexBuildingCosts": {
       "0": [],
@@ -1303,7 +1335,21 @@
           "amount": 10
         }
       ],
-      "38": []
+      "38": [],
+      "40": [
+        {
+          "resource": 23,
+          "amount": 120
+        },
+        {
+          "resource": 3,
+          "amount": 120
+        },
+        {
+          "resource": 4,
+          "amount": 60
+        }
+      ]
     },
     "simpleBuildingCost": {
       "0": [],
@@ -1403,7 +1449,13 @@
           "amount": 10
         }
       ],
-      "38": []
+      "38": [],
+      "40": [
+        {
+          "resource": 23,
+          "amount": 360
+        }
+      ]
     },
     "buildingFixedCostScalePercent": 1000
   },
@@ -1427,7 +1479,7 @@
     "startSettlingAt": 0,
     "startMainAfterSeconds": 60,
     "startMainAt": 0,
-    "durationSeconds": 5400,
+    "durationSeconds": 7200,
     "bridgeCloseAfterEndSeconds": 604800,
     "pointRegistrationCloseAfterEndSeconds": 600
   },
@@ -1488,20 +1540,7 @@
       "amount": 1500
     }
   ],
-  "villageStartingResources": [
-    {
-      "resource": 26,
-      "amount": 500
-    },
-    {
-      "resource": 29,
-      "amount": 500
-    },
-    {
-      "resource": 32,
-      "amount": 500
-    }
-  ],
+  "villageStartingResources": [],
   "discoverableVillageStartingResources": [
     {
       "resource": 35,
@@ -1628,15 +1667,15 @@
       "fee_token": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
       "fee_recipient": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
       "fee_amount": "10000000000000000000",
-      "registration_count_max": 24,
+      "registration_count_max": 30,
       "registration_delay_seconds": 1,
       "registration_period_seconds": 10800,
       "entry_token_class_hash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
       "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,
-      "collectible_cosmetics_address": "0x13b4e7d8dec474c0fcbb375e8d8c1e956f74ddb4dd028acc5958712549ec3d",
-      "collectible_timelock_address": "0x20d73f1959aaa8fa86056f9f052b0c4ffeca88db5c3a5775ae3452388afb89c",
-      "collectibles_lootchest_address": "0x30af57166fd563df026e27fe51759f514cad8a60293753d494c99eca7535b14",
+      "collectible_cosmetics_address": "0x594e0cd523a0765b9a5f609ff4d6d44f6b73f89261d798e1dad80c82935e048",
+      "collectible_timelock_address": "0x31af9461a53e801b0397e35b3b0d412a5e9188faa71dc636121a6e3d6c47e5f",
+      "collectibles_lootchest_address": "0x17213ff2db9cf2990a3f7b318d60e9380a44a7ca9b8b6f526f4a239db8be20d",
       "collectibles_elitenft_address": "0x545303d61b37e241d169e37f40ee08e0676665d123e65eac5756f4e0aaa6791"
     }
   },
@@ -1645,7 +1684,7 @@
   },
   "mmr": {
     "enabled": true,
-    "mmr_token_address": "0x662e47382b44f48f3a872d84f14c894b4cd2db32a9aa678da0f8f5114066857",
+    "mmr_token_address": "0x65804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef",
     "distribution_mean": 1500,
     "spread_factor": 450,
     "max_delta": 45,
@@ -1654,14 +1693,25 @@
     "mean_regression_scaled": 150,
     "min_players": 6
   },
+  "faith": {
+    "enabled": true,
+    "wonder_base_fp_per_sec": 500,
+    "holy_site_fp_per_sec": 300,
+    "realm_fp_per_sec": 100,
+    "village_fp_per_sec": 50,
+    "owner_share_percent": 30,
+    "reward_token": "0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa"
+  },
+  "artificer": {
+    "research_cost_for_relic": 50000
+  },
   "setup": {
     "chain": "slot",
     "addresses": {
-      "Collectibles: Realms: Blitz Elite Pass": "0x2b8b84edaa39beecb1d8216961534cb75c028c40aff07327aa4b9649631e269",
       "Collectibles: Realms: Elite Invite": "0x545303d61b37e241d169e37f40ee08e0676665d123e65eac5756f4e0aaa6791",
-      "Collectibles: Realms: Loot Chest": "0x30af57166fd563df026e27fe51759f514cad8a60293753d494c99eca7535b14",
-      "Collectibles: Realms: Cosmetic Items": "0x13b4e7d8dec474c0fcbb375e8d8c1e956f74ddb4dd028acc5958712549ec3d",
-      "Collectibles: Timelock Maker": "0x20d73f1959aaa8fa86056f9f052b0c4ffeca88db5c3a5775ae3452388afb89c",
+      "Collectibles: Realms: Loot Chest": "0x17213ff2db9cf2990a3f7b318d60e9380a44a7ca9b8b6f526f4a239db8be20d",
+      "Collectibles: Realms: Cosmetic Items": "0x594e0cd523a0765b9a5f609ff4d6d44f6b73f89261d798e1dad80c82935e048",
+      "Collectibles: Timelock Maker": "0x31af9461a53e801b0397e35b3b0d412a5e9188faa71dc636121a6e3d6c47e5f",
       "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
       "seasonPass": "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
       "realms": "0x56502f7cf5847c0a4d4d0d0a37fa02e104d637f278564ce2e85fcd9edd7d27a",
@@ -1672,7 +1722,7 @@
       "marketplace": "",
       "cosmetics": "",
       "cosmeticsClaim": "",
-      "mmrToken": "0x662e47382b44f48f3a872d84f14c894b4cd2db32a9aa678da0f8f5114066857",
+      "mmrToken": "0x65804c556e4d5f76ccefd389c83b017addac8358ff61e58247e1995385bef",
       "resources": {
         "STONE": [
           1,
@@ -1799,8 +1849,8 @@
     "manifest": {
       "world": {
         "class_hash": "0x613551abceb2b37073b1149bb862ea70cf029981ce1ca47e9dd7c7ab97cb65d",
-        "address": "0x3004c58d8b5ceb40fc41028c426494f7a66a5386f3edc8a9f5ef7b5199b1a52",
-        "seed": "s1_eternum_slot_509117",
+        "address": "0x6445d35e94d6c095f3a12e6d385dd59ffe113d2e2ded92d5ffb95db0ef485f5",
+        "seed": "s1_eternum_slot_brrr",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -3277,8 +3327,8 @@
       },
       "contracts": [
         {
-          "address": "0x31c819d2ec2aeffff346cb01eb009d5ecda10af8dc64f51f6891afbc60e8ca8",
-          "class_hash": "0x2fd576c044268afc9a4e0295ad1698eea47a2651d8b55ce08a373050a942ced",
+          "address": "0x3df09446a17ebecf7659667f5fced3faa127148c3353ec4705a48af3f0e3e8",
+          "class_hash": "0x6082b03c32e756e267f1ee3483a8fca08b533b1af84a034e5c31b55b2ab50bc",
           "init_calldata": [],
           "tag": "s1_eternum-agent_discovery_systems",
           "selector": "0x39779154845217b9230e347a39ab6e47e8f2d46c1fd80c6996d13988857d770",
@@ -3754,8 +3804,19 @@
           ]
         },
         {
-          "address": "0x5275c85f31840e11f5ac56a3bf55bc58ee0da80e6731187403e11ca49d02157",
-          "class_hash": "0x53b458cfc221488c46b3f98e9acddbdcea794f289cbe9901a02d4ad2f3cb26c",
+          "address": "0x72c5b5ec1edab6535ba78c6b009dfda70079936c13d519434be43c8a45a4478",
+          "class_hash": "0x62dd4df2df892432e44aa4ca6e781c937a9a000557d3d49138640dd2e7e8e66",
+          "init_calldata": [],
+          "tag": "s1_eternum-artificer_systems",
+          "selector": "0x37f3ae82119cf2a0d1967889127a7e08f36fa3de514b34d7e3985feb9a65644",
+          "systems": [
+            "burn_research_for_relic",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x6b2afcd86ddc6f22198d2c4a3d40bb85945672f3713aa5ecd2386a123aedb51",
+          "class_hash": "0x31e2fe49b7ed10496778d3a38b23af19eccde85e8b0a3a76dcc068e96617d01",
           "init_calldata": [],
           "tag": "s1_eternum-bank_systems",
           "selector": "0x44475a775d79049bbe99567b7c00a1e4d8d582cade61a8aec07ca3bb234f6e6",
@@ -4006,8 +4067,30 @@
           ]
         },
         {
-          "address": "0x416c1e30a7bc12adc03b83a0a93524c1cccea0487521779cb1662233a0da9a9",
-          "class_hash": "0xf28cf32194002540e77a0e5c8373fc7af4951badbb89f9a48d2fa25af2dd1e",
+          "address": "0xf75f3dcb3b6dbd56a65e615bbd0f7c56cd55e3cde46fe1d14551325bbacfba",
+          "class_hash": "0xf73e5914a6c50b6043e366efa3e728f19314e2527001b7bc7e5744e01db1cb",
+          "init_calldata": [],
+          "tag": "s1_eternum-bitcoin_mine_discovery_systems",
+          "selector": "0x58f9541b61b0dac28b8114ce07c1aec08e838cfd0e13a51d21e4581e8949727",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x45d2cc6606cc50716450475d9f68a8270c826cec7e96337f1fee4d45d6a5702",
+          "class_hash": "0x3adbd905b86a337d5ab447305b9f16049433d6571515757b3f387cdfb341004",
+          "init_calldata": [],
+          "tag": "s1_eternum-bitcoin_mine_systems",
+          "selector": "0x25de2a4f4398059c9d923493fef3f529b70b3e6efdefc7544861d45a0da48a8",
+          "systems": [
+            "contribute_labor",
+            "claim_phase_reward",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x7cab36e10b1bd7d63b755ac7918fbe746597905d949b8c078d01695b149d0dd",
+          "class_hash": "0x31da9d9de90ff2f241407621792ba1c1e910401188d869287535201d3cca8e",
           "init_calldata": [],
           "tag": "s1_eternum-blitz_realm_systems",
           "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",
@@ -4258,8 +4341,18 @@
           ]
         },
         {
-          "address": "0x1d20bda20f5a7da22d2e2e05bb3b33a54a5cf0ad51c058f004fd22941d23294",
-          "class_hash": "0x7dd40bd073b753752ecc1784f6e6e934a7ed8c6762dc5ca9ed7bc8b273b756c",
+          "address": "0x6a8a153344c5ac3fe5bec1e5001dd23f1cd9b53b40f6b0627ee68fb2211c922",
+          "class_hash": "0x2fd51043d742545428c3dbd5429b8e3fa3198f5a2cb39dade1e5de5f163c1ef",
+          "init_calldata": [],
+          "tag": "s1_eternum-camp_discovery_systems",
+          "selector": "0x7629a8235d3c0a8a2020de7ab1e79d29dc031713f400a9c71ac9a85fc1531da",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x51a67e8d5dca85c26c163787e9436262ef34ec8a7fee8d08df1d2bfe9029222",
+          "class_hash": "0x79a63e84c4578af32fe933045f3f0ea15beeb338bd2996f591b7ce8a5ee7964",
           "init_calldata": [],
           "tag": "s1_eternum-config_systems",
           "selector": "0x1cb4608b18b40cb6420be7cf67ff21abe727a2bf599f2727d8eed5e36099fc2",
@@ -4298,6 +4391,9 @@
             "set_village_found_resources_config",
             "set_victory_points_grant_config",
             "set_victory_points_win_config",
+            "set_faith_config",
+            "set_bitcoin_mine_config",
+            "set_artificer_config",
             "upgrade"
           ],
           "abi": [
@@ -6023,8 +6119,8 @@
           ]
         },
         {
-          "address": "0x76a715befe52f8b7675575a41bb851c865c34a333abcfafe0443bdea68d8100",
-          "class_hash": "0x5d85559ca0a741c04ef9cafb4eb64e8d9d695cf704262b4c1fe4e7b286522e1",
+          "address": "0xe11b82fc0deb1816e40e968a662b9ff66dce25317e77aa8214b62b9b7b3af7",
+          "class_hash": "0x7ce0e8d260ce6331affe33a16c0569115f491f11c143bee43bf55da8ffd6c0d",
           "init_calldata": [],
           "tag": "s1_eternum-dev_resource_systems",
           "selector": "0x4d5cfcb90997c42faaec636a440b73118f54d7e5321a8e6e134bdb0ac946333",
@@ -6237,8 +6333,38 @@
           ]
         },
         {
-          "address": "0x6287e5825c181470f4a4771458ac70dc3407c5df874acfad502007359470dc2",
-          "class_hash": "0x3e727dc41dd23316f20dd284efad9b536709fe738721a2c8705fd6c9ddd400d",
+          "address": "0x2be7c931431930d9343f8d1fa5bc895cdb7d22bbfb844e8c236ad9461482f6",
+          "class_hash": "0x6b19eedf8f8c46794f032a32ec851a7d7b28ad4068e4b201e8b5570afa3f52b",
+          "init_calldata": [],
+          "tag": "s1_eternum-faith_prize_systems",
+          "selector": "0x41bd05df0accf56467cdd8ac20af24bdb59e4a6d76e99a28c4bd37250e61764",
+          "systems": [
+            "distribute_wonder_prizes",
+            "claim_player_prize",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x243f6cd05ce415efa60efdc4066266ca923a768192a11b152db88c7b818e893",
+          "class_hash": "0x7e0d08c0bf28a9289bc2bc517e31c56e9551ba5063528a02053be166713aeda",
+          "init_calldata": [],
+          "tag": "s1_eternum-faith_systems",
+          "selector": "0x7efa8a7c35e3cd690e45bb793bbac045f589cc669984a23ffa119a71ab4ee89",
+          "systems": [
+            "pledge_faith",
+            "remove_faith",
+            "update_wonder_ownership",
+            "update_structure_ownership",
+            "claim_wonder_points",
+            "claim_player_points",
+            "blacklist",
+            "unblacklist",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x5bbed15df9fb86098f2a79bddf260ce5a24edf791ba249bb6597b3cabc22ae5",
+          "class_hash": "0x37350f2454da8d756609e8e816339c50c165332269795fa434845a912af9a14",
           "init_calldata": [],
           "tag": "s1_eternum-guild_systems",
           "selector": "0x15516acac71fbb80f953b9a8fac7d65ceff957f7f2d568fecbccba36bec6263",
@@ -6506,8 +6632,18 @@
           ]
         },
         {
-          "address": "0x67ad93efe6d2d7e287cce4ce50c9fde305bc1c2b91587c2a006063b4c0ef917",
-          "class_hash": "0x3aff77faad4ceebee33abe6938edfc0ac8cc6a5141ad6d057b240fc8d040cb6",
+          "address": "0x50b70b947e35cd7c3c7f9e39b30ef5964b4c636c0723c70ea387213333bb105",
+          "class_hash": "0x30ae2c7701efde91b6df4e6c723dfa09b076f622d4787ad74b6aa9b6047c522",
+          "init_calldata": [],
+          "tag": "s1_eternum-holysite_discovery_systems",
+          "selector": "0x30123a168d199493abadfbadb76685cc913143571e8a53371d1724df8b1cc76",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x231c9e034fbaf0d9ff82d4b2b8992224c637a0eaecc487f561a0c00f30fabf6",
+          "class_hash": "0x51d31eba1e2e9bca8a55c67909daace44a35d9f0736c3af5721bce914a57322",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_discovery_systems",
           "selector": "0x4de7ee78f9f01b8f7b98c172552cc0f7b81c8706ffc85e7b831021e820420d1",
@@ -6983,8 +7119,8 @@
           ]
         },
         {
-          "address": "0x21dba66b0eb5bea3532b3ccd55bc49bd14cdfc8a2efc05b780c8a4c7e349d3f",
-          "class_hash": "0x47d42ee421087c0d9a0fbe76ed9ec83aaa9f3b96f054031cbe8ae7a5880a5f8",
+          "address": "0x7e5a34899921b7088f00a16a4ca311df45608264282b52a7d8e30f4713741fb",
+          "class_hash": "0x405091108e38b12eedda3a3b3c0238c409d035a322b1437f1bad69f538f0d93",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_systems",
           "selector": "0x4bdd8bcbb935577aba3b974bd7e906698504fcb75e0c3aa34913c21342b4498",
@@ -7299,8 +7435,8 @@
           ]
         },
         {
-          "address": "0x1fdb4e0426d5dd27d8fa669c03cc0ea4a8ccb4b52d10b42fa281922463944d",
-          "class_hash": "0x623f753e8703d8ab52ce7e1068f620f613d461c087997375631e76edd51869d",
+          "address": "0x2691cd5dc36358d2b1ef0f84167e4d6ac8653cdd6656c20cf06f20c0f7ba7b3",
+          "class_hash": "0x2bf97600ad00d788898e65ad0f8e5161ebebf9be06dbb92bd1bcad05f28f47a",
           "init_calldata": [],
           "tag": "s1_eternum-liquidity_systems",
           "selector": "0xf480ba1a0c3e5b85a74ba14244a1653f886654d67c71b4dd0804d9eecf1cd9",
@@ -7540,8 +7676,8 @@
           ]
         },
         {
-          "address": "0x2f63d32697fc3148f1f447728c96c7428f9a568687866a10b31c1e139eeb13",
-          "class_hash": "0x2b6bdeb87223033da10a5f21dd6dd20c52305485b83afc5f1288be03b245e5d",
+          "address": "0x52f5935dace15e54a0809e0d6bd820caa7faee2e97fd81e0c8063733245f181",
+          "class_hash": "0x1c889871d1ab6aeadc03c776e3cdecc5e03e4917c4e5c6257f62090005ea76e",
           "init_calldata": [],
           "tag": "s1_eternum-mine_discovery_systems",
           "selector": "0x567d970e2796f641f9a9c23fa16378ddaee5c8a7d27ac4e3edbd4dfa25a1743",
@@ -8017,8 +8153,8 @@
           ]
         },
         {
-          "address": "0x254889b914564aed088ae93c8ea56b5dd586366e3dbe2124d4774be685815e1",
-          "class_hash": "0x17975f6c8e61ceafe51907e58b5f7c774a64f51387ee4498ba2ec3f8e2801a3",
+          "address": "0x4f00c61cdb539ac0320fa5566b3e627e1a118156d60f93a2cb8e7409982d1a9",
+          "class_hash": "0x19fecce29aebe32811908137ea3a130b5522b2217892bb09273b8d5cb3acb18",
           "init_calldata": [],
           "tag": "s1_eternum-mmr_systems",
           "selector": "0x628d6becd2c6fa1835109109b92cc642dfe69ab9194ca331cf7c510d9e2b5ce",
@@ -8029,7 +8165,7 @@
           ]
         },
         {
-          "address": "0x36c746443bf0fb1a29d6e40c91b74245951dc9af0c8f40d720e9170e189d9ff",
+          "address": "0x4b281133d44d96b768d733e1c4fc14798d014066f72bab3e3977a49163ae6fc",
           "class_hash": "0x68efc734b937fbfd29559e06d2abd71a8dfbce2e860cbf17d0ded265dc67626",
           "init_calldata": [],
           "tag": "s1_eternum-name_systems",
@@ -8229,8 +8365,8 @@
           ]
         },
         {
-          "address": "0xdabbbbd1d07da21f9d4baf7b52c1f55baa181ff4c6a471dc0f020b1763e5fd",
-          "class_hash": "0x1ad1c9c16e25552ecf5fa88d244003e290fd79e50a8730a6e6bfda432943bf5",
+          "address": "0xd2039842ac6632b28ce65c08282088f0a18f9da6b235c52bd26763d256e8fd",
+          "class_hash": "0x3e2bc31326217b2522ba1f415970a2070755a07d0a4c22193f9a95152d23263",
           "init_calldata": [],
           "tag": "s1_eternum-ownership_systems",
           "selector": "0x5045fbdb3ad9b695ea6f218e57a3ca2ce575a2964f30e15f2e710f691aa0622",
@@ -8450,7 +8586,7 @@
           ]
         },
         {
-          "address": "0x6e7e01aae49c48e062ae5318ad53ec12b11bd810b4d2e7600f8f0b9a599099e",
+          "address": "0x4c6a507d9faee9ff1b24bc727cc54bc5c75694c646ee65a65cedd8bab45d96c",
           "class_hash": "0x708c67ca62c1305467a1917eca69cca87d00d6e48518a3e5c0b9bb2b2631fef",
           "init_calldata": [],
           "tag": "s1_eternum-point_systems",
@@ -8460,8 +8596,8 @@
           ]
         },
         {
-          "address": "0x1028ed06d96696895ed4ddea3556ddcab927fc15ce3015d02f43cd6f3427cd8",
-          "class_hash": "0x29822ca8c3f92f827c93f14d77577e33a75aa5b046c8e2fd9eb3b1d2037452c",
+          "address": "0x168be97004dbb2bef971cca0e1d2189f719d0e15c68c5a7e53bf23c4edd934",
+          "class_hash": "0x2cd64ac886ca65eb8a38f36816d4c5cb3974a5a7436292e32f6aa1e59f1a3b5",
           "init_calldata": [],
           "tag": "s1_eternum-prize_distribution_systems",
           "selector": "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179",
@@ -8697,8 +8833,8 @@
           ]
         },
         {
-          "address": "0x2626c281617788622fb8fefb9cd28936d754be7041f939bde9c2f0a3afb81f6",
-          "class_hash": "0x234c7db66848202e486828a21c3a0a3317a2c9598891babed1217a43fb1822e",
+          "address": "0x51b494290fb6d43f4d73f5a5b27e187ff49186a5e1e9631998c92d78552358d",
+          "class_hash": "0x2e0252f364443720a91e1c20283eda07ea00fece6e852d2eda333cc8d71033e",
           "init_calldata": [],
           "tag": "s1_eternum-production_systems",
           "selector": "0x6d70095d0a6ca6efc41633bafa4ac5202f1f83c75afbba78987b58f495a4c0",
@@ -9293,8 +9429,8 @@
           ]
         },
         {
-          "address": "0x383a03ae0c8ba82ef6f62f4ce2a345c32ca5a93b7972e4ce55fb210fac1627d",
-          "class_hash": "0x59831a307c2ee394485a424ce8faf92917c9d43ae0b8f9d5dd68c1ed5cc988a",
+          "address": "0x62a67b424ce10a0d93dc92b7ef4352dd8410eb717b9f41bbd3c1bfa4c772544",
+          "class_hash": "0x23d42162542240583e0d7189327cb0d97a32bfee997bac8d8b9d4d3f791722a",
           "init_calldata": [],
           "tag": "s1_eternum-realm_internal_systems",
           "selector": "0x4bb1850a95a41d6b0c7992a0c75bb1212f0ea054dc04866d6a6392cccec58b3",
@@ -9549,8 +9685,8 @@
           ]
         },
         {
-          "address": "0x124acf96c3135dcb2f202a3869d8b1cc65b9d7d0518fb7b6d42c9e059f8850a",
-          "class_hash": "0x41b30a6fe16cf03b9cef042fc05e97055d878f65c2620e8b40f1bd91e981e60",
+          "address": "0x2af0625227b906cf92b0f6c5383af2c89129f6de287153d6a4b5ee32ff0e8cb",
+          "class_hash": "0x17e0198068c89ec68781a127adfab3545b50713b299a571a9f8eb80253f028c",
           "init_calldata": [],
           "tag": "s1_eternum-realm_systems",
           "selector": "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2",
@@ -9783,8 +9919,8 @@
           ]
         },
         {
-          "address": "0xeff313accfc595616d6cdc57ebb6300655b58ca89bdf92958dd22f7d97619c",
-          "class_hash": "0x5326de348c268bf189e2a53fadfad771d711fdcda8af7fcaef66cf71084d12e",
+          "address": "0x20ac69527b251a1a65c1d0e94a640908d86a5d44ca4767b9cc78e8a69e5fd3f",
+          "class_hash": "0x23105a3bfef1fc602a3a6651e2e037b64d9dafb855b51f37a3256438739824e",
           "init_calldata": [],
           "tag": "s1_eternum-relic_chest_discovery_systems",
           "selector": "0x6c7d7c49c05a128b5ef90b795f638288b11b478ce950a706f6c1db5356ef6a6",
@@ -10260,8 +10396,8 @@
           ]
         },
         {
-          "address": "0x10964383cb5d50972c0d4cd90bf97b4e84bb500100deb12b942eb16da077b18",
-          "class_hash": "0x426423ef85c6efd94428122f9b6cff6fd21904cf47bea228aa0e6ed1d17db56",
+          "address": "0x6143e17c245b536db791cb71c0277265ee61c32a9649b9778652cf43e22b06a",
+          "class_hash": "0x66cebf9975cfaf489eb4e9aee85a78e9ac2c645f21ba6b79e9a5913412bc309",
           "init_calldata": [],
           "tag": "s1_eternum-relic_systems",
           "selector": "0x632480e29dba9c95a8b4e4ba0c7ad48bd5abdd3906211ec6f8a5350249b9d0",
@@ -10517,8 +10653,8 @@
           ]
         },
         {
-          "address": "0x5099a01e273ca80791bc5c91b393cc8447a68dab7c5d05c6a3fe396f38dc822",
-          "class_hash": "0x490ba1cccd4d4bcb4a67f88f237c6fe64a72ae7f13cc941a427142ab7a20cab",
+          "address": "0x62f80591ed48ac567cfbe0dcdc51bdc1ed07e745696fce8e2e47c6024a33142",
+          "class_hash": "0x3837ee392123b8f06e598643d8b92cd90997c3066618b78b1b02c4789b92c70",
           "init_calldata": [],
           "tag": "s1_eternum-resource_bridge_systems",
           "selector": "0x4f94ba58902810acb653eeeb2a36e5f8f5a7096ceac7a2705c52732281e3cd2",
@@ -10805,8 +10941,8 @@
           ]
         },
         {
-          "address": "0x6e387d1f5affa0e1b5fcecd5bf5c0537a5e615a7e7624e3ed3d41f97a1410fa",
-          "class_hash": "0x7efb8db491cf82451a7340ccde0542cfbff4bcca38c359618180800ec675451",
+          "address": "0x2bd4df76f2d1e15799fd483b2626b67d9217fdf81d4f1bb38338609a22d6567",
+          "class_hash": "0x5202d9accd2deaf5a973fb97b3053ac1eb0fb359b66e9dc3fb288a76100e6c3",
           "init_calldata": [],
           "tag": "s1_eternum-resource_systems",
           "selector": "0x626970a749fd6b8230875061236c1a9446ae65287beb6107d5b88e5ca078019",
@@ -11200,8 +11336,8 @@
           ]
         },
         {
-          "address": "0x319306d257dc3dc79ed09f7d0095e7b4170f660e122b99e33f23893edcb2769",
-          "class_hash": "0x785fc82e6dd97cb71031c6e207f62212d4f9d8bf14dc8d2464bd4171bf91407",
+          "address": "0x30ace4f04745cf7aaa7535e9a2742a616da9388bec8612a1c1a395e2068b182",
+          "class_hash": "0x173dd4d5e88eb9cc0950a1cc4a02a728730a4b6829448fcb1f202967efa145c",
           "init_calldata": [],
           "tag": "s1_eternum-season_systems",
           "selector": "0x44e1edf9ca51b11a8c1d6ffc341d3248fdbeebc7e7d3ee6314fee33174860c4",
@@ -11395,8 +11531,8 @@
           ]
         },
         {
-          "address": "0x3593fc390a947b232ed1f89904ab0e9be9aebe24f3a364da74d8be2a451dbd1",
-          "class_hash": "0x37f5975c447436a5fdf5c5e93435402c66e5167224e6c7eeb5bb0697766f6bd",
+          "address": "0x213566a8e42fad71da5a552cef8279fe13e2398adf15824fd17b8857990a3c2",
+          "class_hash": "0x5336aea68f056fbbf60a921c91bfb20033d753a020c51709567496ba7d88ac2",
           "init_calldata": [],
           "tag": "s1_eternum-structure_systems",
           "selector": "0x15f0efd5ca9fd9dc6685e7555bc35ed59422d97e19589d4b218b5f7a36096fd",
@@ -11595,8 +11731,8 @@
           ]
         },
         {
-          "address": "0x68475063fa6d31842262ad9e9ef3298abe44af12a339c88996b0bbc2222af80",
-          "class_hash": "0x169c0b4dbce2b78cc56a4d96ae03f4f76b3c0263e3a30a32d5cc0ff8100db09",
+          "address": "0x39f77b8c410d8532535c0e4951514ccc2e36b6691463293ce202f7a1bba1a5b",
+          "class_hash": "0x5302e46c365f2b5d9472d9477f84dfc784bc613e0471325a97286071be83781",
           "init_calldata": [],
           "tag": "s1_eternum-swap_systems",
           "selector": "0x187f170f62cb2f89334e291ddc0d0f388a855abcdd2b911425fed8304d3fdc3",
@@ -11832,8 +11968,8 @@
           ]
         },
         {
-          "address": "0x2ad7b5e19e96b279369c86ec2000ce3d561ca2063c4e020f5740b580505ab0d",
-          "class_hash": "0x1aa18fb80b942ac8699d65b516be09f8c96c8107b9d4587961bc6eda9260bff",
+          "address": "0x63d8c74b1010723da4552082800736893bd9a5ed1422401dd3cbaf7ce73d498",
+          "class_hash": "0x690632e4d46aea4ada5604cadfd028557518b8a407936f5b7cfb61ae15ed72d",
           "init_calldata": [],
           "tag": "s1_eternum-trade_systems",
           "selector": "0x25205919a9c1be9b6b4c75d8435d21e748b4144575e3ed50d453ebd586f1467",
@@ -12098,8 +12234,8 @@
           ]
         },
         {
-          "address": "0x76317a47e912271698803ce37b13c5519915e2ad1cef180bebc28409960df77",
-          "class_hash": "0x188d9da967d0ab2e65f1c2efe6d08d6d5d35c4143f65bbce1fa086b013972f0",
+          "address": "0x33332a9ab238088cf6284635c6bca643e9a189e99dfd8598f5addf3b6231d0c",
+          "class_hash": "0x30b18d46b140e950394b82444fd41566dbd1fa771226dd59c62d974d96d4d17",
           "init_calldata": [],
           "tag": "s1_eternum-troop_battle_systems",
           "selector": "0x473dc1d8bca81e2a2d92011b4171ffe608d47dcde63f7d112f03bb767b57aea",
@@ -12418,8 +12554,8 @@
           ]
         },
         {
-          "address": "0x8821b9fe460e9a3543d63e3fc7ea596c457c879d8dbce4a636f815de62c01a",
-          "class_hash": "0x41e64d28c8382413c83a195d994f76ecedc6e48a3ec0ecd03ea2e21b1359ec9",
+          "address": "0x264db96a51b2b0bd65735f5152d0e889b42cce52bc7efa7d10fcb0f6a17b884",
+          "class_hash": "0x36f898c15203040a228a7ae0d1f0a0467ec30059e576c2c60e04229d3c8e97",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
           "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",
@@ -12889,8 +13025,8 @@
           ]
         },
         {
-          "address": "0x65fedcc1b7a2041559f67b0c7bf86964941b5c219289732d94cd08b80156150",
-          "class_hash": "0x62d4dfd644da6892c3e780ce9b07777e471b95e286e393b72352a93f5002fda",
+          "address": "0x6293dd70a97307980484b4ce65eddfa8ee157431c38171a542f1256fcb3f76a",
+          "class_hash": "0x1960dc66809bee89cd8930ad3f26f02e1b58cd145a4c97ce56e3709c85aecc2",
           "init_calldata": [],
           "tag": "s1_eternum-troop_movement_systems",
           "selector": "0x522c38540c126c2f193f496d4eb1882a63cdc02997f64c298d41622b26ded2b",
@@ -13196,8 +13332,8 @@
           ]
         },
         {
-          "address": "0x5100eceeba3a29e39cf193a23ed6147d38a266cad7d891a50885cc11ec0166b",
-          "class_hash": "0x73968fb044c09b98d295ddc1a5f429e6c5dc41cc4f29c6cab8dd77db76784e3",
+          "address": "0x606d9a9279ce18eb6f269906b0b78b5263fc74b7f125c5080181c8f509831d",
+          "class_hash": "0x82ad64f63adfc389f5d5c40cec7fb62b141624c6cfd80c0765fb13af19777e",
           "init_calldata": [],
           "tag": "s1_eternum-troop_movement_util_systems",
           "selector": "0x1a8cd271b73203df04608c15bc7be031b756ed2ffc25bab756cf9ff6c8731d0",
@@ -13673,8 +13809,8 @@
           ]
         },
         {
-          "address": "0x17d6984114bebd24e757296b1eac2e2a07c340c242fbe47c910c042646b3bfc",
-          "class_hash": "0x283dc84d3f210e121f15cf58427399f06182406c253f2923fb63bb207073526",
+          "address": "0x40f33e6b463b4f6115121dd92234684c129af324f81f94ca7cc13c74430940c",
+          "class_hash": "0x656ea3421f866d5a63b49bb6fd39f1c5792c27a1cb3b2a0e3736cbddcac113c",
           "init_calldata": [],
           "tag": "s1_eternum-troop_raid_systems",
           "selector": "0x2cba999742f3b0dad2f036c7ea44826e236555cf5d82930faadcf43260524",
@@ -13925,485 +14061,8 @@
           ]
         },
         {
-          "address": "0x6e9870b9ddf86c542486a51748a88c1419232409f33e1221ca2d348c17a68c4",
-          "class_hash": "0x7858a24fbac49562534f3b4a38d321fd63ac5f0a13bca1f49592dde054d8a20",
-          "init_calldata": [],
-          "tag": "s1_eternum-village_discovery_systems",
-          "selector": "0x52ecb1dffcd93e8b7f1379f426b123cc1de850735306874424bf8fe817f3862",
-          "systems": [
-            "upgrade"
-          ],
-          "abi": [
-            {
-              "type": "impl",
-              "name": "village_discovery_systems__ContractImpl",
-              "interface_name": "dojo::contract::interface::IContract"
-            },
-            {
-              "type": "interface",
-              "name": "dojo::contract::interface::IContract",
-              "items": []
-            },
-            {
-              "type": "impl",
-              "name": "DojoDeployedContractImpl",
-              "interface_name": "dojo::meta::interface::IDeployedResource"
-            },
-            {
-              "type": "struct",
-              "name": "core::byte_array::ByteArray",
-              "members": [
-                {
-                  "name": "data",
-                  "type": "core::array::Array::<core::bytes_31::bytes31>"
-                },
-                {
-                  "name": "pending_word",
-                  "type": "core::felt252"
-                },
-                {
-                  "name": "pending_word_len",
-                  "type": "core::integer::u32"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "dojo::meta::interface::IDeployedResource",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "dojo_name",
-                  "inputs": [],
-                  "outputs": [
-                    {
-                      "type": "core::byte_array::ByteArray"
-                    }
-                  ],
-                  "state_mutability": "view"
-                }
-              ]
-            },
-            {
-              "type": "impl",
-              "name": "VillageDiscoveryImpl",
-              "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
-            },
-            {
-              "type": "struct",
-              "name": "core::integer::u256",
-              "members": [
-                {
-                  "name": "low",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "high",
-                  "type": "core::integer::u128"
-                }
-              ]
-            },
-            {
-              "type": "enum",
-              "name": "core::bool",
-              "variants": [
-                {
-                  "name": "False",
-                  "type": "()"
-                },
-                {
-                  "name": "True",
-                  "type": "()"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::map::Tile",
-              "members": [
-                {
-                  "name": "col",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "row",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "biome",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "occupier_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "occupier_type",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "occupier_is_structure",
-                  "type": "core::bool"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::config::MapConfig",
-              "members": [
-                {
-                  "name": "reward_resource_amount",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "shards_mines_win_probability",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "shards_mines_fail_probability",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "agent_discovery_prob",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "agent_discovery_fail_prob",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "village_win_probability",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "village_fail_probability",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "hyps_win_prob",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "hyps_fail_prob",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "hyps_fail_prob_increase_p_hex",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "hyps_fail_prob_increase_p_fnd",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "relic_discovery_interval_sec",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "relic_hex_dist_from_center",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "relic_chest_relics_per_chest",
-                  "type": "core::integer::u8"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::config::TroopLimitConfig",
-              "members": [
-                {
-                  "name": "explorer_max_party_count",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "explorer_guard_max_troop_count",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "guard_resurrection_delay",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "mercenaries_troop_lower_bound",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "mercenaries_troop_upper_bound",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "agents_troop_lower_bound",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "agents_troop_upper_bound",
-                  "type": "core::integer::u32"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::config::TroopStaminaConfig",
-              "members": [
-                {
-                  "name": "stamina_gain_per_tick",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_initial",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_bonus_value",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_knight_max",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_paladin_max",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_crossbowman_max",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_attack_req",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_defense_req",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_explore_stamina_cost",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_travel_stamina_cost",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "stamina_explore_wheat_cost",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "stamina_explore_fish_cost",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "stamina_travel_wheat_cost",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "stamina_travel_fish_cost",
-                  "type": "core::integer::u32"
-                }
-              ]
-            },
-            {
-              "type": "enum",
-              "name": "s1_eternum::models::events::ExploreFind",
-              "variants": [
-                {
-                  "name": "None",
-                  "type": "()"
-                },
-                {
-                  "name": "Hyperstructure",
-                  "type": "()"
-                },
-                {
-                  "name": "Mine",
-                  "type": "()"
-                },
-                {
-                  "name": "Agent",
-                  "type": "()"
-                },
-                {
-                  "name": "Quest",
-                  "type": "()"
-                },
-                {
-                  "name": "Village",
-                  "type": "()"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "find_treasure",
-                  "inputs": [
-                    {
-                      "name": "vrf_seed",
-                      "type": "core::integer::u256"
-                    },
-                    {
-                      "name": "tile",
-                      "type": "s1_eternum::models::map::Tile"
-                    },
-                    {
-                      "name": "caller",
-                      "type": "core::starknet::contract_address::ContractAddress"
-                    },
-                    {
-                      "name": "map_config",
-                      "type": "s1_eternum::models::config::MapConfig"
-                    },
-                    {
-                      "name": "troop_limit_config",
-                      "type": "s1_eternum::models::config::TroopLimitConfig"
-                    },
-                    {
-                      "name": "troop_stamina_config",
-                      "type": "s1_eternum::models::config::TroopStaminaConfig"
-                    },
-                    {
-                      "name": "current_tick",
-                      "type": "core::integer::u64"
-                    },
-                    {
-                      "name": "season_mode_on",
-                      "type": "core::bool"
-                    }
-                  ],
-                  "outputs": [
-                    {
-                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
-                    }
-                  ],
-                  "state_mutability": "view"
-                }
-              ]
-            },
-            {
-              "type": "function",
-              "name": "dojo_init",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "view"
-            },
-            {
-              "type": "impl",
-              "name": "WorldProviderImpl",
-              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-            },
-            {
-              "type": "struct",
-              "name": "dojo::world::iworld::IWorldDispatcher",
-              "members": [
-                {
-                  "name": "contract_address",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "dojo::contract::components::world_provider::IWorldProvider",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "world_dispatcher",
-                  "inputs": [],
-                  "outputs": [
-                    {
-                      "type": "dojo::world::iworld::IWorldDispatcher"
-                    }
-                  ],
-                  "state_mutability": "view"
-                }
-              ]
-            },
-            {
-              "type": "impl",
-              "name": "UpgradeableImpl",
-              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-            },
-            {
-              "type": "interface",
-              "name": "dojo::contract::components::upgradeable::IUpgradeable",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "upgrade",
-                  "inputs": [
-                    {
-                      "name": "new_class_hash",
-                      "type": "core::starknet::class_hash::ClassHash"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                }
-              ]
-            },
-            {
-              "type": "constructor",
-              "name": "constructor",
-              "inputs": []
-            },
-            {
-              "type": "event",
-              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "struct",
-              "members": [
-                {
-                  "name": "class_hash",
-                  "type": "core::starknet::class_hash::ClassHash",
-                  "kind": "data"
-                }
-              ]
-            },
-            {
-              "type": "event",
-              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "enum",
-              "variants": [
-                {
-                  "name": "Upgraded",
-                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-                  "kind": "nested"
-                }
-              ]
-            },
-            {
-              "type": "event",
-              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "enum",
-              "variants": []
-            },
-            {
-              "type": "event",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::village_discovery_systems::Event",
-              "kind": "enum",
-              "variants": [
-                {
-                  "name": "UpgradeableEvent",
-                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-                  "kind": "nested"
-                },
-                {
-                  "name": "WorldProviderEvent",
-                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-                  "kind": "nested"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "address": "0x63e6e29aa02282412ceb2b6ac350efa9a305a135e74a115d4f6442eee40ef91",
-          "class_hash": "0x257246351c72374c9f8c4a2b902420c77e9d19d72339bb099802f5d51e23127",
+          "address": "0x271769832ac0d16c9045db9ffe431ffbf7def3c8a7c5b9453970272366f06d5",
+          "class_hash": "0x422ccce6484582fa2577eba7a6c0b0b37cb9d314b8ad4fff3e6563d4bad5c73",
           "init_calldata": [],
           "tag": "s1_eternum-village_systems",
           "selector": "0x7626c7e3f63dbae9658ee764d453a8dbdbc0df9797ba797fa6564759c444771",
@@ -14648,31 +14307,31 @@
       "libraries": [
         {
           "class_hash": "0x164e7764f2d85b3f4f26058f4b072f32d4425f47f371890088bbcd06f69807b",
-          "tag": "s1_eternum-biome_library_v0_1_12",
+          "tag": "s1_eternum-biome_library_v0_1_11",
           "selector": "0x17ea0292301ae3a0248f996d5cfb3e4ca37cc9bdcd1f88dc7c7977ed24f9c29",
           "systems": [],
-          "version": "0_1_12"
+          "version": "0_1_11"
         },
         {
           "class_hash": "0x60d02b1fe2c8456da0a76d89ce55731a1861913132b301574b647f090b272ce",
-          "tag": "s1_eternum-combat_library_v0_1_12",
+          "tag": "s1_eternum-combat_library_v0_1_11",
           "selector": "0x6a352fe85e5966806dfb50f4723a8e11a29bf0c5383a3f6facc68cdbc40850a",
           "systems": [],
-          "version": "0_1_12"
+          "version": "0_1_11"
         },
         {
-          "class_hash": "0x50a1d7bc2fc6fa78fd6220043fd74c341619c1826324a3a9d7d19de6ada5376",
-          "tag": "s1_eternum-rng_library_v0_1_14",
+          "class_hash": "0x1d3932bb59418c64bf6a2ac58e9e7c8a220bc23411ab872bb31a6d3df6115f0",
+          "tag": "s1_eternum-rng_library_v0_1_11",
           "selector": "0x706baa7e13795e75b18774b3068f4bfbf16c3c22692cd8ac1e329255380ab03",
           "systems": [],
-          "version": "0_1_14"
+          "version": "0_1_11"
         },
         {
-          "class_hash": "0x24a1a563c5b25df4ef2640fe0dc0fa7352f299cfd30684f95d2469433780c70",
-          "tag": "s1_eternum-structure_creation_library_v0_1_14",
+          "class_hash": "0x28c38520ef0ed0ae854ab945f6fb8a2e63f442803c0e49f9d5fd3f6706ceb7c",
+          "tag": "s1_eternum-structure_creation_library_v0_1_11",
           "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
           "systems": [],
-          "version": "0_1_14"
+          "version": "0_1_11"
         }
       ],
       "models": [
@@ -14836,6 +14495,70 @@
           "class_hash": "0x2c7f9e364f5986124fbb5b72dd97dd29654a20933d9c1b6ca995031238bec02",
           "tag": "s1_eternum-BiomeDiscovered",
           "selector": "0x30f7247a43bd9908a15927a45887898d2926a4b68fefe9ea339d6534a3ba8b"
+        },
+        {
+          "members": [
+            {
+              "name": "phase_id",
+              "type": "core::integer::u64",
+              "key": true
+            },
+            {
+              "name": "mine_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "labor_contributed",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "claimed",
+              "type": "core::bool",
+              "key": false
+            }
+          ],
+          "class_hash": "0x13979621adae383d0622d5e43e6e77179c4ee05e4cee7f6fa94e84d01c1d5ae",
+          "tag": "s1_eternum-BitcoinMinePhaseLabor",
+          "selector": "0x1a27c9f27f96a1584cbd298c07a867bc216a4348005a747adfdcde81d162dcf"
+        },
+        {
+          "members": [
+            {
+              "name": "phase_id",
+              "type": "core::integer::u64",
+              "key": true
+            },
+            {
+              "name": "prize_pool",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "total_labor",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "participant_count",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "claim_count",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "reward_receiver_phase",
+              "type": "core::integer::u64",
+              "key": false
+            }
+          ],
+          "class_hash": "0x4254345557f486d9201f6b6b0b6f2cb58fe246f7ac429f1fbf1f27e0e723730",
+          "tag": "s1_eternum-BitcoinPhaseLabor",
+          "selector": "0x24d45de20afc3e646ff9e7b32a8fb5a884f83fd6206ac799c5210da0a97cc1b"
         },
         {
           "members": [
@@ -15074,6 +14797,43 @@
           "class_hash": "0x7396fb9e7558406538b8b2dd2dcec2f47629b8ad95e698079fbe4243bcfc189",
           "tag": "s1_eternum-ExplorerTroops",
           "selector": "0x15b04275000fff7a4726d78e8083bfc8818a1b44138f368441ca8dd6fb0465f"
+        },
+        {
+          "members": [
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "faithful_since",
+              "type": "core::integer::u64",
+              "key": false
+            },
+            {
+              "name": "fp_to_wonder_owner_per_sec",
+              "type": "core::integer::u16",
+              "key": false
+            },
+            {
+              "name": "fp_to_struct_owner_per_sec",
+              "type": "core::integer::u16",
+              "key": false
+            },
+            {
+              "name": "last_recorded_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            }
+          ],
+          "class_hash": "0x40eab537cc8f64a78afbcbc45005bcf438cfbfc50622a2ce81809baca529ee7",
+          "tag": "s1_eternum-FaithfulStructure",
+          "selector": "0xc54f105c40f0e8c5b1d33850dd314a601df2a7409991ebdf9ccfeb5efee918"
         },
         {
           "members": [
@@ -15434,7 +15194,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u128",
+              "type": "core::integer::u32",
               "key": true
             },
             {
@@ -15443,7 +15203,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x7e86632b2773cf202696b4366153a027bf1bcde43d04206bc8b266e656a6e70",
+          "class_hash": "0x5ade4af21db03de3b9ad7fe359eb15138858ff0b73c7f280e91520249784708",
           "tag": "s1_eternum-MMRClaimed",
           "selector": "0x3910dd89bb26a13f55ce9c44d1a751447697b627c7fc8410cdfec26fb4ffe81"
         },
@@ -15451,7 +15211,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u128",
+              "type": "core::integer::u32",
               "key": true
             },
             {
@@ -15460,7 +15220,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x2fe528afefe00532209b9663a1905f3534d45cb07969477f596774a086a227a",
+          "class_hash": "0x67ec7a99f324d2969abe8785245a9832366f57fc9166df233e8868095f4a809",
           "tag": "s1_eternum-MMRGameMeta",
           "selector": "0xbd1c676dfb64e6ddb00b4468610fe069d774a528af26d0f40cf1363131f5b"
         },
@@ -15512,6 +15272,65 @@
           "class_hash": "0x4d3524ec39ec869f72df9943544741f522a6fa3c1a2716ed2d703d8c7e1e672",
           "tag": "s1_eternum-PlayerConstructionPoints",
           "selector": "0x49b727c54c7780c4f0e3f45284c2d13d4e192d53a70233720cb8145e552ca0c"
+        },
+        {
+          "members": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": true
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "points_claimed",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "points_per_sec_as_owner",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "points_per_sec_as_pledger",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "last_updated_at",
+              "type": "core::integer::u64",
+              "key": false
+            }
+          ],
+          "class_hash": "0x4569e186b72222b001dff2299cf8bd2060681c4cb493ac83c994bdbe151e0f8",
+          "tag": "s1_eternum-PlayerFaithPoints",
+          "selector": "0x3571cf95416a867c5ce744d13515276a17e3d02cea4145fadf9345a7cd43731"
+        },
+        {
+          "members": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": true
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "claimed",
+              "type": "core::bool",
+              "key": false
+            }
+          ],
+          "class_hash": "0x4484a567ab3d69947d911e04a1e301cd560b710624df79eb06f0502e1ae63b6",
+          "tag": "s1_eternum-PlayerFaithPrizeClaimed",
+          "selector": "0x1bdbfb34306e0b90bacbbdad6019c156e63c0efd310f8099cdf0fe6eda082c8"
         },
         {
           "members": [
@@ -16233,6 +16052,16 @@
               "key": false
             },
             {
+              "name": "RESEARCH_BALANCE",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "SATOSHI_BALANCE",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
               "name": "weight",
               "type": "eternum::models::weight::Weight",
               "key": false
@@ -16426,9 +16255,19 @@
               "name": "ESSENCE_PRODUCTION",
               "type": "eternum::models::resource::production::production::Production",
               "key": false
+            },
+            {
+              "name": "RESEARCH_PRODUCTION",
+              "type": "eternum::models::resource::production::production::Production",
+              "key": false
+            },
+            {
+              "name": "SATOSHI_PRODUCTION",
+              "type": "eternum::models::resource::production::production::Production",
+              "key": false
             }
           ],
-          "class_hash": "0x55481b42278a6a39b2f2c678efabcf749086c3eb9abc262ce25708dac336f48",
+          "class_hash": "0x8a3ed2ef99d7d273b520cde7416f196e0c82974362b8fa18dd0fb4df931a86",
           "tag": "s1_eternum-Resource",
           "selector": "0x6bd14dc16a7f05252fcf2fb66630b8f05d39d75b36f55013334a4b3bb8fec57"
         },
@@ -17294,6 +17133,109 @@
         {
           "members": [
             {
+              "name": "wonder_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "last_recorded_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            },
+            {
+              "name": "claimed_points",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "claim_per_sec",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "claim_last_at",
+              "type": "core::integer::u64",
+              "key": false
+            },
+            {
+              "name": "owner_claim_per_sec",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "num_structures_pledged",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x6a8ca0547d99f383fe0690a2f3090fd548936bcffa183a3a1c06dc2b92adfa1",
+          "tag": "s1_eternum-WonderFaith",
+          "selector": "0x3d12681cf53a3e6f939841862c75271ed3a61928ab8c299062ac5f0579d86c6"
+        },
+        {
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "blocked_id",
+              "type": "core::felt252",
+              "key": true
+            },
+            {
+              "name": "is_blocked",
+              "type": "core::bool",
+              "key": false
+            }
+          ],
+          "class_hash": "0x4688e1520668714dc3e43b3d1ab3fd31fddb74776988b381d6c4a4b057ea953",
+          "tag": "s1_eternum-WonderFaithBlacklist",
+          "selector": "0x4972365eea1059b63f6e3e4785e2eb3d568003551a2205c96daa20f86f7450d"
+        },
+        {
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "amount_won",
+              "type": "core::integer::u128",
+              "key": false
+            }
+          ],
+          "class_hash": "0x5cbbac5200a3d829025e4fed1eadea354c234d956f83cfec55265907c6bb575",
+          "tag": "s1_eternum-WonderFaithPrize",
+          "selector": "0x71dcd4da5db9e654f716ad65181fb7c67f2ab76b02c95ef2ec48db17da04cab"
+        },
+        {
+          "members": [
+            {
+              "name": "world_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "high_score",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "wonder_ids",
+              "type": "core::array::Array::<core::integer::u32>",
+              "key": false
+            }
+          ],
+          "class_hash": "0xf253dfbfb457fe0355d118729cd92c32526ff1edf04d8ba7d61b1883939076",
+          "tag": "s1_eternum-WonderFaithWinners",
+          "selector": "0x7c4fbf8399dc9975589bbbc21be0d94b767d1133cc37bd907f1fb4edb091763"
+        },
+        {
+          "members": [
+            {
               "name": "config_id",
               "type": "core::integer::u32",
               "key": true
@@ -17497,9 +17439,24 @@
               "name": "mmr_config",
               "type": "eternum::models::mmr::MMRConfig",
               "key": false
+            },
+            {
+              "name": "faith_config",
+              "type": "eternum::models::config::FaithConfig",
+              "key": false
+            },
+            {
+              "name": "artificer_config",
+              "type": "eternum::models::config::ArtificerConfig",
+              "key": false
+            },
+            {
+              "name": "bitcoin_mine_config",
+              "type": "eternum::models::config::BitcoinMineConfig",
+              "key": false
             }
           ],
-          "class_hash": "0x70157c99a2b9d4658e9de4bbdb1a2090a66cfe98ec43ff56fa8e9afa178bd18",
+          "class_hash": "0x7fb718795e59fea485f5a451c8d75189613386c3e1f201b74bb83f334ca608e",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         },
@@ -17685,6 +17642,28 @@
         {
           "members": [
             {
+              "name": "structure_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "relic_type",
+              "type": "core::integer::u8",
+              "key": false
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "key": false
+            }
+          ],
+          "class_hash": "0x561854f70131f6346e88b4bf5067cdb8d8c9c2d45618ffaff11b25fe92c5491",
+          "tag": "s1_eternum-BurnResearchForRelicEvent",
+          "selector": "0x272fe405767f7dd5b36bc8f912f2126dcf39c19d0bbc4b89bf772d694e8791"
+        },
+        {
+          "members": [
+            {
               "name": "taker_id",
               "type": "core::integer::u32",
               "key": true
@@ -17791,7 +17770,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x5a0b249bf82021c2dcae18d81ca2cdec4dc695209e5dd396a5c3592323c3b5e",
+          "class_hash": "0x14551287d66335b9ece0606de7e0f9d6b6904051b7766f04459de1565cd0f9",
           "tag": "s1_eternum-ExplorerMoveEvent",
           "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
         },
@@ -18094,7 +18073,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x37b7676af0e9c99aded7816b2ff90c023f617efec9575ef8c6aeaa688e5b8b3",
+          "class_hash": "0x68ce3125cbccb834e744cc4a7eee17e59ec793d09e12dccbba7291118ec4db6",
           "tag": "s1_eternum-StoryEvent",
           "selector": "0x6b9bb187e0946522eb890cc2148826a81a2030e8a34dbc5607ee6dfdda50dd8"
         },
@@ -20772,11 +20751,125 @@
         },
         {
           "type": "struct",
+          "name": "eternum::models::bitcoin_mine::BitcoinMinePhaseLabor",
+          "members": [
+            {
+              "name": "phase_id",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "mine_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "labor_contributed",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "claimed",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::bitcoin_mine::BitcoinMinePhaseLaborValue",
+          "members": [
+            {
+              "name": "labor_contributed",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "claimed",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::bitcoin_mine::BitcoinPhaseLabor",
+          "members": [
+            {
+              "name": "phase_id",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "prize_pool",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "total_labor",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "participant_count",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "claim_count",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "reward_receiver_phase",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::bitcoin_mine::BitcoinPhaseLaborValue",
+          "members": [
+            {
+              "name": "prize_pool",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "total_labor",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "participant_count",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "claim_count",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "reward_receiver_phase",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::bitcoin_mine::m_BitcoinMinePhaseLabor::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::bitcoin_mine::m_BitcoinPhaseLabor::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "struct",
           "name": "eternum::models::config::AgentControllerConfig",
           "members": [
             {
               "name": "address",
               "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::ArtificerConfig",
+          "members": [
+            {
+              "name": "research_cost_for_relic",
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -20817,6 +20910,24 @@
             {
               "name": "village_raid_immunity_ticks",
               "type": "core::integer::u8"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::BitcoinMineConfig",
+          "members": [
+            {
+              "name": "enabled",
+              "type": "core::bool"
+            },
+            {
+              "name": "prize_per_phase",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "min_labor_per_contribution",
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -21091,10 +21202,6 @@
             {
               "name": "single_realm_mode",
               "type": "core::bool"
-            },
-            {
-              "name": "two_player_mode",
-              "type": "core::bool"
             }
           ]
         },
@@ -21200,6 +21307,40 @@
         },
         {
           "type": "struct",
+          "name": "eternum::models::config::FaithConfig",
+          "members": [
+            {
+              "name": "enabled",
+              "type": "core::bool"
+            },
+            {
+              "name": "wonder_base_fp_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "holy_site_fp_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "realm_fp_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "village_fp_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "owner_share_percent",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "reward_token",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
           "name": "eternum::models::config::HyperstrtConstructConfig",
           "members": [
             {
@@ -21283,11 +21424,27 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "village_win_probability",
+              "name": "camp_win_probability",
               "type": "core::integer::u16"
             },
             {
-              "name": "village_fail_probability",
+              "name": "camp_fail_probability",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "holysite_win_probability",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "holysite_fail_probability",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "bitcoin_mine_win_probability",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "bitcoin_mine_fail_probability",
               "type": "core::integer::u16"
             },
             {
@@ -21598,11 +21755,35 @@
             },
             {
               "name": "base_distance",
-              "type": "core::integer::u32"
+              "type": "core::integer::u8"
             },
             {
-              "name": "subsequent_distance",
-              "type": "core::integer::u32"
+              "name": "layers_skipped",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "layer_max",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "layer_capacity_increment",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "layer_capacity_bps",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "spires_layer_distance",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "spires_max_count",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "spires_settled_count",
+              "type": "core::integer::u16"
             }
           ]
         },
@@ -21652,6 +21833,18 @@
             },
             {
               "name": "bank_structure_capacity",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "holysite_capacity",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "camp_capacity",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "bitcoin_mine_capacity",
               "type": "core::integer::u64"
             }
           ]
@@ -21712,6 +21905,10 @@
             },
             {
               "name": "delivery_tick_in_seconds",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "bitcoin_phase_in_seconds",
               "type": "core::integer::u64"
             }
           ]
@@ -22175,6 +22372,18 @@
             {
               "name": "mmr_config",
               "type": "eternum::models::mmr::MMRConfig"
+            },
+            {
+              "name": "faith_config",
+              "type": "eternum::models::config::FaithConfig"
+            },
+            {
+              "name": "artificer_config",
+              "type": "eternum::models::config::ArtificerConfig"
+            },
+            {
+              "name": "bitcoin_mine_config",
+              "type": "eternum::models::config::BitcoinMineConfig"
             }
           ]
         },
@@ -22341,6 +22550,18 @@
             {
               "name": "mmr_config",
               "type": "eternum::models::mmr::MMRConfig"
+            },
+            {
+              "name": "faith_config",
+              "type": "eternum::models::config::FaithConfig"
+            },
+            {
+              "name": "artificer_config",
+              "type": "eternum::models::config::ArtificerConfig"
+            },
+            {
+              "name": "bitcoin_mine_config",
+              "type": "eternum::models::config::BitcoinMineConfig"
             }
           ]
         },
@@ -22544,6 +22765,58 @@
         },
         {
           "type": "struct",
+          "name": "eternum::models::events::BitcoinMineProductionStory",
+          "members": [
+            {
+              "name": "mine_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "phase_id",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "labor_deposited",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::events::BitcoinPhaseLotteryStory",
+          "members": [
+            {
+              "name": "phase_id",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "total_labor",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "winner_mine_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "winner_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "winner_labor",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "prize_awarded",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
           "name": "eternum::models::events::BuildingPaymentStory",
           "members": [
             {
@@ -22616,6 +22889,18 @@
             },
             {
               "name": "Village",
+              "type": "()"
+            },
+            {
+              "name": "HolySite",
+              "type": "()"
+            },
+            {
+              "name": "Camp",
+              "type": "()"
+            },
+            {
+              "name": "BitcoinMine",
               "type": "()"
             }
           ]
@@ -22791,6 +23076,68 @@
             {
               "name": "explore_find",
               "type": "eternum::models::events::ExploreFind"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::events::FaithPledgedStory",
+          "members": [
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "structure_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "fp_to_owner",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "fp_to_pledger",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::events::FaithPointsClaimedStory",
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "new_points",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "total_points",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::events::FaithRemovedStory",
+          "members": [
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "previous_wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "structure_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
             }
           ]
         },
@@ -23109,6 +23456,26 @@
             {
               "name": "PrizeDistributedStory",
               "type": "eternum::models::events::PrizeDistributedStory"
+            },
+            {
+              "name": "FaithPledgedStory",
+              "type": "eternum::models::events::FaithPledgedStory"
+            },
+            {
+              "name": "FaithRemovedStory",
+              "type": "eternum::models::events::FaithRemovedStory"
+            },
+            {
+              "name": "FaithPointsClaimedStory",
+              "type": "eternum::models::events::FaithPointsClaimedStory"
+            },
+            {
+              "name": "BitcoinMineProductionStory",
+              "type": "eternum::models::events::BitcoinMineProductionStory"
+            },
+            {
+              "name": "BitcoinPhaseLotteryStory",
+              "type": "eternum::models::events::BitcoinPhaseLotteryStory"
             }
           ]
         },
@@ -23191,6 +23558,332 @@
         {
           "type": "event",
           "name": "eternum::models::events::e_StoryEvent::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::FaithfulStructure",
+          "members": [
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "faithful_since",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "fp_to_wonder_owner_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "fp_to_struct_owner_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "last_recorded_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::FaithfulStructureValue",
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "faithful_since",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "fp_to_wonder_owner_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "fp_to_struct_owner_per_sec",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "last_recorded_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::PlayerFaithPoints",
+          "members": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "points_claimed",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "points_per_sec_as_owner",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "points_per_sec_as_pledger",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "last_updated_at",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::PlayerFaithPointsValue",
+          "members": [
+            {
+              "name": "points_claimed",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "points_per_sec_as_owner",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "points_per_sec_as_pledger",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "last_updated_at",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::PlayerFaithPrizeClaimed",
+          "members": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "claimed",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::PlayerFaithPrizeClaimedValue",
+          "members": [
+            {
+              "name": "claimed",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaith",
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "last_recorded_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "claimed_points",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "claim_per_sec",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "claim_last_at",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "owner_claim_per_sec",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "num_structures_pledged",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithBlacklist",
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "blocked_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "is_blocked",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithBlacklistValue",
+          "members": [
+            {
+              "name": "is_blocked",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithPrize",
+          "members": [
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "amount_won",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithPrizeValue",
+          "members": [
+            {
+              "name": "amount_won",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithValue",
+          "members": [
+            {
+              "name": "last_recorded_owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "claimed_points",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "claim_per_sec",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "claim_last_at",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "owner_claim_per_sec",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "num_structures_pledged",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithWinners",
+          "members": [
+            {
+              "name": "world_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "high_score",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "wonder_ids",
+              "type": "core::array::Array::<core::integer::u32>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::WonderFaithWinnersValue",
+          "members": [
+            {
+              "name": "high_score",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "wonder_ids",
+              "type": "core::array::Array::<core::integer::u32>"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_FaithfulStructure::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_PlayerFaithPoints::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_PlayerFaithPrizeClaimed::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_WonderFaith::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_WonderFaithBlacklist::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_WonderFaithPrize::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_WonderFaithWinners::Event",
           "kind": "enum",
           "variants": []
         },
@@ -24005,6 +24698,18 @@
             {
               "name": "Spire",
               "type": "()"
+            },
+            {
+              "name": "HolySite",
+              "type": "()"
+            },
+            {
+              "name": "Camp",
+              "type": "()"
+            },
+            {
+              "name": "BitcoinMine",
+              "type": "()"
             }
           ]
         },
@@ -24020,7 +24725,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u128"
+              "type": "core::integer::u32"
             },
             {
               "name": "claimed_at",
@@ -24086,7 +24791,7 @@
           "members": [
             {
               "name": "world_id",
-              "type": "core::integer::u128"
+              "type": "core::integer::u32"
             },
             {
               "name": "game_median",
@@ -25471,6 +26176,10 @@
             {
               "name": "ResourceEssence",
               "type": "()"
+            },
+            {
+              "name": "ResourceResearch",
+              "type": "()"
             }
           ]
         },
@@ -25923,6 +26632,14 @@
               "type": "core::integer::u128"
             },
             {
+              "name": "RESEARCH_BALANCE",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "SATOSHI_BALANCE",
+              "type": "core::integer::u128"
+            },
+            {
               "name": "weight",
               "type": "eternum::models::weight::Weight"
             },
@@ -26076,6 +26793,14 @@
             },
             {
               "name": "ESSENCE_PRODUCTION",
+              "type": "eternum::models::resource::production::production::Production"
+            },
+            {
+              "name": "RESEARCH_PRODUCTION",
+              "type": "eternum::models::resource::production::production::Production"
+            },
+            {
+              "name": "SATOSHI_PRODUCTION",
               "type": "eternum::models::resource::production::production::Production"
             }
           ]
@@ -26421,6 +27146,14 @@
               "type": "core::integer::u128"
             },
             {
+              "name": "RESEARCH_BALANCE",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "SATOSHI_BALANCE",
+              "type": "core::integer::u128"
+            },
+            {
               "name": "weight",
               "type": "eternum::models::weight::Weight"
             },
@@ -26574,6 +27307,14 @@
             },
             {
               "name": "ESSENCE_PRODUCTION",
+              "type": "eternum::models::resource::production::production::Production"
+            },
+            {
+              "name": "RESEARCH_PRODUCTION",
+              "type": "eternum::models::resource::production::production::Production"
+            },
+            {
+              "name": "SATOSHI_PRODUCTION",
               "type": "eternum::models::resource::production::production::Production"
             }
           ]
@@ -26942,6 +27683,18 @@
             },
             {
               "name": "Village",
+              "type": "()"
+            },
+            {
+              "name": "HolySite",
+              "type": "()"
+            },
+            {
+              "name": "Camp",
+              "type": "()"
+            },
+            {
+              "name": "BitcoinMine",
               "type": "()"
             }
           ]
@@ -27673,8 +28426,8 @@
               "name": "get_random_number",
               "inputs": [
                 {
-                  "name": "source",
-                  "type": "eternum::utils::cartridge::vrf::Source"
+                  "name": "player",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
                   "name": "world",
@@ -28003,10 +28756,6 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "structure_category",
-                  "type": "eternum::models::structure::StructureCategory"
-                },
-                {
                   "name": "structure_coord",
                   "type": "eternum::models::position::Coord"
                 }
@@ -28025,10 +28774,6 @@
                 {
                   "name": "structure_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "structure_category",
-                  "type": "eternum::models::structure::StructureCategory"
                 },
                 {
                   "name": "structure_coord",
@@ -28051,10 +28796,6 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "structure_category",
-                  "type": "eternum::models::structure::StructureCategory"
-                },
-                {
                   "name": "structure_coord",
                   "type": "eternum::models::position::Coord"
                 }
@@ -28075,6 +28816,79 @@
               "kind": "flat"
             }
           ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::artificer::contracts::IArtificerSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "burn_research_for_relic",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::systems::artificer::contracts::artificer_systems::BurnResearchForRelicEvent",
+          "members": [
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "relic_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::systems::artificer::contracts::artificer_systems::BurnResearchForRelicEventValue",
+          "members": [
+            {
+              "name": "relic_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::artificer::contracts::artificer_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::artificer::contracts::artificer_systems::e_BurnResearchForRelicEvent::Event",
+          "kind": "enum",
+          "variants": []
         },
         {
           "type": "struct",
@@ -28442,6 +29256,163 @@
           "name": "eternum::systems::bank::contracts::swap::swap_systems::e_SwapEvent::Event",
           "kind": "enum",
           "variants": []
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bitcoin_mine::contracts::IBitcoinMineSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "contribute_labor",
+              "inputs": [
+                {
+                  "name": "mine_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "target_phase_id",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "labor_amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "claim_phase_reward",
+              "inputs": [
+                {
+                  "name": "phase_id",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "mine_ids",
+                  "type": "core::array::Array::<core::integer::u32>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "get_current_phase",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u64"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_mine_contribution",
+              "inputs": [
+                {
+                  "name": "mine_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "phase_id",
+                  "type": "core::integer::u64"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bitcoin_mine::contracts::bitcoin_mine_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bitcoin_mine::discovery_systems::IBitcoinMineDiscoverySystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "find_treasure",
+              "inputs": [
+                {
+                  "name": "vrf_seed",
+                  "type": "core::integer::u256"
+                },
+                {
+                  "name": "tile",
+                  "type": "eternum::models::map::Tile"
+                },
+                {
+                  "name": "caller",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "map_config",
+                  "type": "eternum::models::config::MapConfig"
+                },
+                {
+                  "name": "troop_limit_config",
+                  "type": "eternum::models::config::TroopLimitConfig"
+                },
+                {
+                  "name": "troop_stamina_config",
+                  "type": "eternum::models::config::TroopStaminaConfig"
+                },
+                {
+                  "name": "current_tick",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "season_mode_on",
+                  "type": "core::bool"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bitcoin_mine::discovery_systems::bitcoin_mine_discovery_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
         },
         {
           "type": "interface",
@@ -28922,6 +29893,40 @@
         },
         {
           "type": "event",
+          "name": "eternum::systems::combat::contracts::troop_movement::camp_discovery_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::combat::contracts::troop_movement::holysite_discovery_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::combat::contracts::troop_movement::hyperstructure_discovery_systems::Event",
           "kind": "enum",
           "variants": [
@@ -29130,23 +30135,6 @@
           ]
         },
         {
-          "type": "event",
-          "name": "eternum::systems::combat::contracts::troop_movement::village_discovery_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems",
           "items": [
@@ -29317,6 +30305,24 @@
         },
         {
           "type": "interface",
+          "name": "eternum::systems::config::contracts::IArtificerConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_artificer_config",
+              "inputs": [
+                {
+                  "name": "research_cost_for_relic",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "interface",
           "name": "eternum::systems::config::contracts::IBankConfig",
           "items": [
             {
@@ -29356,6 +30362,32 @@
                 {
                   "name": "battle_config",
                   "type": "eternum::models::config::BattleConfig"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::contracts::IBitcoinMineConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_bitcoin_mine_config",
+              "inputs": [
+                {
+                  "name": "enabled",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "prize_per_phase",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "min_labor_per_contribution",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -29445,6 +30477,48 @@
               "inputs": [
                 {
                   "name": "address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::contracts::IFaithConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_faith_config",
+              "inputs": [
+                {
+                  "name": "enabled",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "wonder_base_fp_per_sec",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "holy_site_fp_per_sec",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "realm_fp_per_sec",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fp_per_sec",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "owner_share_percent",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "reward_token",
                   "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
@@ -29744,23 +30818,11 @@
               "name": "set_settlement_config",
               "inputs": [
                 {
-                  "name": "center",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "base_distance",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "subsequent_distance",
-                  "type": "core::integer::u32"
+                  "name": "settlement_config",
+                  "type": "eternum::models::config::SettlementConfig"
                 },
                 {
                   "name": "single_realm_mode",
-                  "type": "core::bool"
-                },
-                {
-                  "name": "two_player_mode",
                   "type": "core::bool"
                 }
               ],
@@ -29903,6 +30965,10 @@
                 },
                 {
                   "name": "delivery_tick_in_seconds",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "bitcoin_phase_in_seconds",
                   "type": "core::integer::u64"
                 }
               ],
@@ -30139,6 +31205,187 @@
         {
           "type": "event",
           "name": "eternum::systems::dev::contracts::resource::dev_resource_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::faith::contracts::IFaithSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "pledge_faith",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "remove_faith",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "update_wonder_ownership",
+              "inputs": [
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "update_structure_ownership",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "claim_wonder_points",
+              "inputs": [
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "claim_player_points",
+              "inputs": [
+                {
+                  "name": "player",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "blacklist",
+              "inputs": [
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "blocked_id",
+                  "type": "core::felt252"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "unblacklist",
+              "inputs": [
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "blocked_id",
+                  "type": "core::felt252"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::faith::contracts::faith_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::faith::prize_contracts::IFaithPrizeSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "distribute_wonder_prizes",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "claim_player_prize",
+              "inputs": [
+                {
+                  "name": "player",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "wonder_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::faith::prize_contracts::faith_prize_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -32190,20 +33437,6 @@
               "name": "WorldProviderEvent",
               "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
               "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::utils::cartridge::vrf::Source",
-          "variants": [
-            {
-              "name": "Nonce",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "Salt",
-              "type": "core::felt252"
             }
           ]
         },
