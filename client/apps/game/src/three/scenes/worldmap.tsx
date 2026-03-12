@@ -82,7 +82,7 @@ import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
-  getChunkKeysContainingHexInRenderBounds,
+  getChunkKeysContainingHexInRenderBoundsAnalytically,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
 } from "../utils/chunk-geometry";
@@ -3092,12 +3092,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
-    const overlappingChunkKeys = getChunkKeysContainingHexInRenderBounds({
-      chunkKeys: this.cachedMatrices.keys(),
+    const overlappingChunkKeys = getChunkKeysContainingHexInRenderBoundsAnalytically({
       col,
       row,
       renderSize: this.renderChunkSize,
       chunkSize: this.chunkSize,
+      hasChunkKey: (chunkKey) => this.cachedMatrices.has(chunkKey),
     });
 
     if (overlappingChunkKeys.length > 0) {

@@ -65,6 +65,14 @@ interface ChunkKeyOverlapInput {
   chunkSize: number;
 }
 
+interface AnalyticalChunkKeyOverlapInput {
+  col: number;
+  row: number;
+  renderSize: ChunkRenderSize;
+  chunkSize: number;
+  hasChunkKey: (chunkKey: string) => boolean;
+}
+
 /**
  * Return cached chunk keys whose render windows include the provided hex.
  * This is used to invalidate every overlapping render cache, not just the
@@ -81,6 +89,31 @@ export function getChunkKeysContainingHexInRenderBounds(input: ChunkKeyOverlapIn
 
     if (isHexWithinRenderBounds(input.col, input.row, startRow, startCol, input.renderSize, input.chunkSize)) {
       matches.push(chunkKey);
+    }
+  }
+
+  return matches;
+}
+
+export function getChunkKeysContainingHexInRenderBoundsAnalytically(input: AnalyticalChunkKeyOverlapInput): string[] {
+  const referenceBounds = getRenderBounds(0, 0, input.renderSize, input.chunkSize);
+  const minStartCol = input.col - referenceBounds.maxCol;
+  const maxStartCol = input.col - referenceBounds.minCol;
+  const minStartRow = input.row - referenceBounds.maxRow;
+  const maxStartRow = input.row - referenceBounds.minRow;
+
+  const startColMinStep = Math.ceil(minStartCol / input.chunkSize);
+  const startColMaxStep = Math.floor(maxStartCol / input.chunkSize);
+  const startRowMinStep = Math.ceil(minStartRow / input.chunkSize);
+  const startRowMaxStep = Math.floor(maxStartRow / input.chunkSize);
+  const matches: string[] = [];
+
+  for (let rowStep = startRowMinStep; rowStep <= startRowMaxStep; rowStep++) {
+    for (let colStep = startColMinStep; colStep <= startColMaxStep; colStep++) {
+      const chunkKey = `${rowStep * input.chunkSize},${colStep * input.chunkSize}`;
+      if (input.hasChunkKey(chunkKey)) {
+        matches.push(chunkKey);
+      }
     }
   }
 

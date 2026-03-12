@@ -538,9 +538,9 @@ export class ArmyManager {
   }
 
   public onMouseMove(raycaster: Raycaster) {
-    const intersectResults = this.armyModel.raycastAll(raycaster);
-    if (intersectResults.length > 0) {
-      const { instanceId, mesh } = intersectResults[0];
+    const nearestHit = this.armyModel.raycastNearest(raycaster);
+    if (nearestHit) {
+      const { instanceId, mesh } = nearestHit;
       if (instanceId !== undefined && mesh.userData.entityIdMap) {
         return mesh.userData.entityIdMap.get(instanceId);
       }
@@ -549,10 +549,10 @@ export class ArmyManager {
   }
 
   public onRightClick(raycaster: Raycaster) {
-    const intersectResults = this.armyModel.raycastAll(raycaster);
-    if (intersectResults.length === 0) return;
+    const nearestHit = this.armyModel.raycastNearest(raycaster);
+    if (!nearestHit) return;
 
-    const { instanceId, mesh } = intersectResults[0];
+    const { instanceId, mesh } = nearestHit;
     if (instanceId === undefined || !mesh.userData.entityIdMap) return;
 
     const entityId = mesh.userData.entityIdMap.get(instanceId);

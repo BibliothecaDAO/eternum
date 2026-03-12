@@ -49,6 +49,7 @@ export class ChestManager {
   private latestTransitionToken = 0;
   private transitionChunkByToken: Map<number, string> = new Map();
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
+  private chunkToChests: Map<string, Set<ID>> = new Map();
 
   private pruneTransitionChunkHistory(): void {
     this.transitionChunkByToken.forEach((_, token) => {
@@ -207,6 +208,7 @@ export class ChestManager {
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     // Add the chest to the map
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const previousChest = this.chests.getChest(occupierId);
 
     if (!this.chestHexCoords.has(normalizedCoord.col)) {
       this.chestHexCoords.set(normalizedCoord.col, new Set());
@@ -216,6 +218,7 @@ export class ChestManager {
     }
 
     this.chests.addChest(occupierId, position);
+    this.updateChestSpatialIndex(occupierId, previousChest, this.chests.getChest(occupierId));
 
     // Re-render if we have a current chunk
     if (isCommittedManagerChunk(this.currentChunkKey)) {
@@ -329,14 +332,37 @@ export class ChestManager {
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {
-    const visibleChests = Array.from(chests.values())
-      .filter((chest) => {
-        return this.isChestVisible(chest, startRow, startCol);
-      })
-      .map((chest) => ({
-        entityId: chest.entityId,
-        hexCoords: chest.hexCoords,
-      }));
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const startBucketX = Math.floor(bounds.minCol / this.chunkSize);
+    const endBucketX = Math.floor(bounds.maxCol / this.chunkSize);
+    const startBucketY = Math.floor(bounds.minRow / this.chunkSize);
+    const endBucketY = Math.floor(bounds.maxRow / this.chunkSize);
+    const visibleChests: ChestData[] = [];
+    const seenChestIds = new Set<ID>();
+
+    for (let bx = startBucketX; bx <= endBucketX; bx++) {
+      for (let by = startBucketY; by <= endBucketY; by++) {
+        const chestIds = this.chunkToChests.get(`${bx},${by}`);
+        if (!chestIds) {
+          continue;
+        }
+
+        for (const chestId of chestIds) {
+          if (seenChestIds.has(chestId)) {
+            continue;
+          }
+          const chest = chests.get(chestId);
+          if (!chest || !this.isChestVisible(chest, startRow, startCol)) {
+            continue;
+          }
+          seenChestIds.add(chestId);
+          visibleChests.push({
+            entityId: chest.entityId,
+            hexCoords: chest.hexCoords,
+          });
+        }
+      }
+    }
 
     return visibleChests;
   }
@@ -579,12 +605,14 @@ export class ChestManager {
   }
 
   public async removeChest(entityId: ID) {
-    if (!this.chests.getChest(entityId)) {
+    const existingChest = this.chests.getChest(entityId);
+    if (!existingChest) {
       return;
     }
 
     // Remove chest from tracking
     this.chests.removeChest(entityId);
+    this.updateChestSpatialIndex(entityId, existingChest, null);
 
     this.removeEntityIdLabel(entityId);
 
@@ -604,6 +632,35 @@ export class ChestManager {
     this.animations.forEach((mixer) => {
       mixer.update(deltaTime);
     });
+  }
+
+  private getChestSpatialKey(col: number, row: number): string {
+    return `${Math.floor(col / this.chunkSize)},${Math.floor(row / this.chunkSize)}`;
+  }
+
+  private updateChestSpatialIndex(entityId: ID, previousChest: ChestData | null, nextChest: ChestData | null): void {
+    if (previousChest) {
+      const { x, y } = previousChest.hexCoords.getNormalized();
+      const previousKey = this.getChestSpatialKey(x, y);
+      const previousBucket = this.chunkToChests.get(previousKey);
+      previousBucket?.delete(entityId);
+      if (previousBucket && previousBucket.size === 0) {
+        this.chunkToChests.delete(previousKey);
+      }
+    }
+
+    if (!nextChest) {
+      return;
+    }
+
+    const { x, y } = nextChest.hexCoords.getNormalized();
+    const nextKey = this.getChestSpatialKey(x, y);
+    let nextBucket = this.chunkToChests.get(nextKey);
+    if (!nextBucket) {
+      nextBucket = new Set<ID>();
+      this.chunkToChests.set(nextKey, nextBucket);
+    }
+    nextBucket.add(entityId);
   }
 }
 

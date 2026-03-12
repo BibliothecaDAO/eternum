@@ -2199,6 +2199,7 @@ export class StructureManager {
 
 class Structures {
   private structures: Map<StructureType, Map<ID, StructureInfo>> = new Map();
+  private entityIdIndex: Map<ID, StructureInfo> = new Map();
 
   constructor(
     private readonly onRemove?: (structure: StructureInfo) => void,
@@ -2260,6 +2261,7 @@ class Structures {
       battleCooldownEnd,
       battleTimerLeft,
     });
+    this.entityIdIndex.set(normalizedEntityId, this.structures.get(structureType)!.get(normalizedEntityId)!);
   }
 
   updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
@@ -2281,6 +2283,7 @@ class Structures {
         if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
           removalQueue.push(entityId);
           this.onRemove?.(structure);
+          this.entityIdIndex.delete(entityId);
           removed = true;
         }
       });
@@ -2298,6 +2301,7 @@ class Structures {
       return;
     }
     this.structures.get(structure.structureType)?.set(normalizedEntityId, structure);
+    this.entityIdIndex.set(normalizedEntityId, structure);
   }
 
   removeStructure(entityId: ID): StructureInfo | null {
@@ -2313,6 +2317,7 @@ class Structures {
       if (structure) {
         this.onRemove?.(structure);
         structures.delete(normalizedEntityId);
+        this.entityIdIndex.delete(normalizedEntityId);
         removedStructure = structure;
       }
     });
@@ -2333,13 +2338,7 @@ class Structures {
     if (normalizedEntityId === undefined) {
       return undefined;
     }
-    for (const structures of this.structures.values()) {
-      const structure = structures.get(normalizedEntityId);
-      if (structure) {
-        return structure;
-      }
-    }
-    return undefined;
+    return this.entityIdIndex.get(normalizedEntityId);
   }
 
   recheckOwnership() {
