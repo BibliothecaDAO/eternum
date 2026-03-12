@@ -87,11 +87,12 @@ describe("buildOrderForBiome", () => {
     }
   });
 
-  it("foundation fills 5 of 6 Settlement slots (last slot for T1 troop)", () => {
+  it("Settlement fills all 6 slots with foundation buildings (no T1 troop)", () => {
     const order = buildOrderForBiome(11);
-    // First 5 steps are the foundation, 6th is the T1 troop building
-    const foundation = order.steps.slice(0, 5);
-    expect(foundation.every((s) => !s.label.includes("T1"))).toBe(true);
-    expect(order.steps[5].label).toContain("T1");
+    // All 6 Settlement slots are foundation buildings: no T1 troop
+    const settlement = order.steps.slice(0, 6);
+    expect(settlement.every((s) => !s.label.includes("T1"))).toBe(true);
+    // The 6th step is an extra WheatFarm, not a troop
+    expect(order.steps[5].label).toBe("WheatFarm");
   });
 });
