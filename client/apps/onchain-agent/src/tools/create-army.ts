@@ -1,13 +1,9 @@
 /**
  * create_army — create an army at a realm you own.
  *
- * The agent points at a realm on the map using row:col (same as other tools).
- * Everything else is automated:
- * - Troop type: chosen from the realm's biome (best combat bonus)
- * - Tier: T1 (upgradeable later when building queries exist)
- * - Spawn direction: first open adjacent hex
- *
- * Output: what was created, where it spawned, and available resources.
+ * The agent picks the realm (row:col), troop type, and tier.
+ * Troop amount uses all available troops of that type/tier (up to 10K).
+ * Spawn direction is auto-selected (first open adjacent hex).
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -17,46 +13,28 @@ import { getNeighborHexes, Direction, BiomeIdToType, RESOURCE_PRECISION } from "
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 
-// ── Biome → best troop type ──────────────────────────────────────────
-// From BIOME_COMBAT_BONUS in strength.ts:
-//   Paladin  +30%: biomes 5,6,8,9,11,14
-//   Knight   +30%: biomes 10,12,13,15,16
-//   Crossbow +30%: biomes 1,2,3,4,7
-
-const BIOME_BEST_TROOP: Record<number, string> = {
-  1: "Crossbowman",
-  2: "Crossbowman",
-  3: "Crossbowman",
-  4: "Crossbowman",
-  7: "Crossbowman",
-  5: "Paladin",
-  6: "Paladin",
-  8: "Paladin",
-  9: "Paladin",
-  11: "Paladin",
-  14: "Paladin",
-  10: "Knight",
-  12: "Knight",
-  13: "Knight",
-  15: "Knight",
-  16: "Knight",
-};
-
-function bestTroopForBiome(biome: number): { name: string; category: number } {
-  const name = BIOME_BEST_TROOP[biome] ?? "Knight";
-  return { name, category: TROOP_NAME_TO_CATEGORY[name] };
-}
-
 // On-chain troop category: Knight=0, Paladin=1, Crossbowman=2
-const TROOP_NAME_TO_CATEGORY: Record<string, number> = {
+const TROOP_CATEGORY: Record<string, number> = {
   Knight: 0,
   Paladin: 1,
   Crossbowman: 2,
 };
 
+// On-chain tier values: T1=0, T2=1, T3=2
+const TIER_VALUE: Record<number, number> = { 1: 0, 2: 1, 3: 2 };
+
+// Resource name suffix per tier
+const TIER_SUFFIX: Record<number, string> = { 1: "T1", 2: "T2", 3: "T3" };
+
 // Target troop count — use up to 10K, or whatever is available
 const TARGET_TROOP_AMOUNT = 10_000 * RESOURCE_PRECISION;
 
+// Biome → best troop type (from BIOME_COMBAT_BONUS in strength.ts)
+const BIOME_BEST_TROOP: Record<number, string> = {
+  1: "Crossbowman", 2: "Crossbowman", 3: "Crossbowman", 4: "Crossbowman", 7: "Crossbowman",
+  5: "Paladin", 6: "Paladin", 8: "Paladin", 9: "Paladin", 11: "Paladin", 14: "Paladin",
+  10: "Knight", 12: "Knight", 13: "Knight", 15: "Knight", 16: "Knight",
+};
 
 // ── Tool ─────────────────────────────────────────────────────────────
 
@@ -71,23 +49,35 @@ export function createCreateArmyTool(
     label: "Create Army",
     description:
       "Create a new army at one of your realms. " +
-      "Use the line:col of your realm from YOUR ENTITIES at the bottom of the map. " +
-      "Troop type is auto-chosen based on terrain advantage. Spawns at the first open adjacent hex.",
+      "Specify the realm position, troop type (Knight, Paladin, Crossbowman), and tier (1, 2, or 3). " +
+      "Uses all available troops of that type/tier (up to 10K). " +
+      "Biome combat bonuses: Knight +30% on forest/taiga, Paladin +30% on desert/grassland, Crossbowman +30% on ocean/snow. " +
+      "Higher tiers are stronger but require T2/T3 barracks. " +
+      "Spawns at the first open adjacent hex.",
     parameters: Type.Object({
       row: Type.Number({ description: "Line number of your realm on the map" }),
       col: Type.Number({ description: "Column of your realm on the map" }),
+      troop_type: Type.Optional(
+        Type.Union([Type.Literal("Knight"), Type.Literal("Paladin"), Type.Literal("Crossbowman")], {
+          description: "Troop type. If omitted, auto-selects best type for the realm's biome.",
+        }),
+      ),
+      tier: Type.Optional(
+        Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3)], {
+          description: "Troop tier (1, 2, or 3). Higher = stronger. Defaults to 1.",
+        }),
+      ),
     }),
     async execute(_toolCallId, params, signal) {
       const { row, col } = params;
+      const tier = params.tier ?? 1;
 
       if (signal?.aborted) throw new Error("Operation cancelled");
 
       // ── Validate map ──
 
       if (!mapCtx.snapshot) {
-        throw new Error(
-          "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
-        );
+        throw new Error("Map not loaded yet. Wait for the next tick.");
       }
 
       const hexCoords = mapCtx.snapshot.resolve(row, col);
@@ -96,8 +86,6 @@ export function createCreateArmyTool(
           `Invalid position ${row}:${col}. Map is ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols.`,
         );
       }
-
-      // ── Get tile from snapshot ──
 
       const tile = mapCtx.snapshot.tileAt(row, col);
       if (!tile) {
@@ -117,8 +105,6 @@ export function createCreateArmyTool(
         throw new Error(`${structure.category} at ${row}:${col} is not a realm. Only realms can create armies.`);
       }
 
-      // ── Verify ownership ──
-
       if (playerAddress && !addressesEqual(structure.ownerAddress, playerAddress)) {
         throw new Error(`Realm at ${row}:${col} is not yours (owner: ${structure.ownerAddress}).`);
       }
@@ -130,16 +116,21 @@ export function createCreateArmyTool(
         throw new Error(`Army cap reached at this realm (${explorerCount}/${maxExplorerCount}). Try another realm.`);
       }
 
-      // ── Determine troop type from biome ──
+      // ── Determine troop type ──
 
       const biome = tile.biome;
       const biomeName = BiomeIdToType[biome] ?? "Unknown";
-      const troop = bestTroopForBiome(biome);
+      const troopName = params.troop_type ?? BIOME_BEST_TROOP[biome] ?? "Knight";
+      const category = TROOP_CATEGORY[troopName];
+      if (category === undefined) {
+        throw new Error(`Unknown troop type: ${troopName}. Use Knight, Paladin, or Crossbowman.`);
+      }
+
+      const biomeBonus = BIOME_BEST_TROOP[biome] === troopName ? "+30%" : "no bonus";
 
       // ── Find open spawn hex ──
 
       const neighbors = getNeighborHexes(x, y);
-
       let spawnDirection: number | null = null;
       for (const n of neighbors) {
         const neighborTile = mapCtx.snapshot.gridIndex.get(`${n.col},${n.row}`);
@@ -153,40 +144,34 @@ export function createCreateArmyTool(
         throw new Error("No open hex adjacent to this realm for spawning. All 6 neighbors are occupied.");
       }
 
-      // ── Check resources ──
+      // ── Check resources & determine amount ──
 
       const resources = structure.resources;
-
-      if (resources.length === 0) {
-        throw new Error(
-          `No resources available at this realm to create army. Troop type would be: ${troop.name} (+30% on ${biomeName})`,
-        );
-      }
-
       const resourceSummary = resources.map((r) => `${r.amount.toLocaleString()} ${r.name}`).join(", ");
 
-      // ── Determine troop amount (up to 10K, capped by available balance) ──
-
-      const troopResName = `${troop.name} T1`;
+      const tierSuffix = TIER_SUFFIX[tier] ?? "T1";
+      const troopResName = `${troopName} ${tierSuffix}`;
       const availableDisplay = resources.find((r) => r.name === troopResName)?.amount ?? 0;
-      // resources[].amount is human-scaled (divided by RESOURCE_PRECISION), convert back to raw
       const availableRaw = availableDisplay > 0 ? Math.floor(availableDisplay * RESOURCE_PRECISION) : 0;
       const troopAmount = availableRaw > 0 ? Math.min(TARGET_TROOP_AMOUNT, availableRaw) : TARGET_TROOP_AMOUNT;
 
-      if (troopAmount <= 0) {
-        throw new Error(`No ${troop.name} T1 troops available at this realm. Build a ${troop.name} barracks first.`);
+      if (availableDisplay <= 0) {
+        throw new Error(
+          `No ${troopResName} troops available at this realm. ` +
+            `Available: ${resourceSummary || "none"}`,
+        );
       }
 
       // ── Create army ──
 
-      const troopTier = 0; // T1 on-chain
+      const troopTier = TIER_VALUE[tier] ?? 0;
       const directionName = Direction[spawnDirection] ?? String(spawnDirection);
       const troopCount = Math.floor(troopAmount / RESOURCE_PRECISION);
 
       try {
         await tx.provider.explorer_create({
           for_structure_id: structure.entityId,
-          category: troop.category,
+          category,
           tier: troopTier,
           amount: troopAmount,
           spawn_direction: spawnDirection,
@@ -201,7 +186,7 @@ export function createCreateArmyTool(
           {
             type: "text" as const,
             text: [
-              `Army created: ${troopCount.toLocaleString()} ${troop.name} T1 (+30% on ${biomeName})`,
+              `Army created: ${troopCount.toLocaleString()} ${troopResName} (${biomeBonus} on ${biomeName})`,
               `Armies: ${explorerCount + 1}/${maxExplorerCount}`,
               `Spawn: ${directionName} of realm`,
               `Resources: ${resourceSummary}`,
@@ -210,8 +195,9 @@ export function createCreateArmyTool(
         ],
         details: {
           realmEntityId: structure.entityId,
-          troopType: troop.name,
-          troopTier: "T1",
+          troopType: troopName,
+          troopTier: tierSuffix,
+          troopCount,
           spawnDirection,
           biome,
           resources,
