@@ -348,7 +348,7 @@ export function createMoveTool(
         // Compute total stamina cost (pathfinder already uses correct explore cost)
         const staminaCost = pathResult.staminaCost;
         const reachedTarget = endPos.x === target.x && endPos.y === target.y;
-        const staminaAfter = projectedStamina - staminaCost;
+        const staminaAfter = Math.max(0, projectedStamina - staminaCost);
         const movesAfter = Math.floor(staminaAfter / gameConfig.stamina.travelCost);
 
         // Split path into segments: runs of explored tiles (travel) and
