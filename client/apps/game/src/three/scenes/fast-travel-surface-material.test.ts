@@ -10,7 +10,7 @@ describe("createFastTravelSurfacePalette", () => {
       edgeColor: "#ff4fd8",
       edgeOpacity: 0.92,
       fillColor: "#05000a",
-      fillOpacity: 0.32,
+      fillOpacity: 0,
       glowColor: "#ff92ea",
     });
   });

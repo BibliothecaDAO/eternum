@@ -11,7 +11,6 @@ import {
   LineBasicMaterial,
   LineSegments,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   Raycaster,
   ShapeGeometry,
@@ -84,6 +83,10 @@ export default class FastTravelScene extends WarpTravel {
     return false;
   }
 
+  protected shouldEnableStormEffects(): boolean {
+    return false;
+  }
+
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
     return {
       onSetupStart: () => this.configureFastTravelSetupStart(),
@@ -104,12 +107,17 @@ export default class FastTravelScene extends WarpTravel {
   private configureFastTravelSetupStart(): void {
     this.controls.enablePan = true;
     this.controls.enableZoom = true;
+    this.interactiveHexManager.setSurfaceVisibility(false);
+    this.interactiveHexManager.setHoverVisualMode("outline");
+    this.scene.background = new Color("#000000");
+    this.scene.fog = null;
   }
 
   private prepareFastTravelInitialSetup(): void {
     this.travelLabelGroup.clear();
     this.clearTravelVisualGroups();
     this.clearFastTravelMovementPreview();
+    this.selectionPulseManager.hideSelection();
   }
 
   private attachFastTravelLabelGroupsToScene(): void {
@@ -423,11 +431,7 @@ export default class FastTravelScene extends WarpTravel {
 
     const targetPoint = movement.worldPath[movement.worldPath.length - 1];
     this.selectedHexManager.setPosition(targetPoint.x, targetPoint.z);
-    this.selectionPulseManager.showSelection(targetPoint.x, targetPoint.z, pathEntityId);
-    this.selectionPulseManager.setPulseColor(
-      new Color(this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8"),
-      new Color(this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7"),
-    );
+    this.selectionPulseManager.hideSelection();
 
     void this.refreshFastTravelScene();
   }
@@ -458,6 +462,7 @@ export default class FastTravelScene extends WarpTravel {
 
   private syncSelectedArmyFeedback(): void {
     if (!this.selectedArmyEntityId) {
+      this.selectionPulseManager.hideSelection();
       return;
     }
 
@@ -465,16 +470,12 @@ export default class FastTravelScene extends WarpTravel {
       (anchor) => anchor.kind === "army" && anchor.entityId === this.selectedArmyEntityId,
     );
     if (!selectedArmy) {
+      this.selectionPulseManager.hideSelection();
       return;
     }
 
-    const pathEntityId = this.resolvePathEntityId(selectedArmy.entityId);
     this.selectedHexManager.setPosition(selectedArmy.worldPosition.x, selectedArmy.worldPosition.z);
-    this.selectionPulseManager.showSelection(selectedArmy.worldPosition.x, selectedArmy.worldPosition.z, pathEntityId);
-    this.selectionPulseManager.setPulseColor(
-      new Color(this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8"),
-      new Color(this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7"),
-    );
+    this.selectionPulseManager.hideSelection();
   }
 
   private resolvePathEntityId(entityId: string): number {
@@ -515,15 +516,6 @@ export default class FastTravelScene extends WarpTravel {
     const palette = this.currentRenderState?.surface.palette;
     const hexShape = createHexagonShape(HEX_SIZE * 0.96);
     const fillGeometry = new ShapeGeometry(hexShape);
-    const fillMaterial = new MeshBasicMaterial({
-      color: palette?.fillColor ?? "#05000a",
-      opacity: palette?.fillOpacity ?? 0.32,
-      transparent: true,
-    });
-    const fillMesh = new Mesh(fillGeometry, fillMaterial);
-    fillMesh.rotation.x = -Math.PI / 2;
-    fillMesh.position.y = 0.01;
-    fillMesh.renderOrder = 2;
 
     const edgeGeometry = new EdgesGeometry(fillGeometry);
     const edgeMaterial = new LineBasicMaterial({
@@ -539,7 +531,6 @@ export default class FastTravelScene extends WarpTravel {
     const { x, y, z } = getWorldPositionForHex(hexCoords);
     const group = new Group();
     group.position.set(x, y, z);
-    group.add(fillMesh);
     group.add(edgeMesh);
     return group;
   }

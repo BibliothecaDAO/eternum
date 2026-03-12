@@ -1,7 +1,7 @@
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
-import { HoverHexManager } from "@/three/managers/hover-hex-manager";
+import { HoverHexManager, type HoverVisualMode } from "@/three/managers/hover-hex-manager";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
@@ -11,6 +11,8 @@ import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexC
 
 const INTERACTIVE_HEX_Y = 0.1;
 const RAY_PARALLEL_EPSILON = 1e-6;
+
+export type InteractiveHexHoverVisualMode = HoverVisualMode;
 
 export class InteractiveHexManager {
   private scene: THREE.Scene;
@@ -22,6 +24,7 @@ export class InteractiveHexManager {
   private instanceMesh: THREE.InstancedMesh | null = null;
   private hoverAura: Aura;
   private hoverHexManager: HoverHexManager;
+  private readonly instanceMaterial: THREE.MeshStandardMaterial;
   private position = new THREE.Vector3();
   private pickIntersection = new THREE.Vector3();
   private dummy = new THREE.Object3D();
@@ -45,14 +48,17 @@ export class InteractiveHexManager {
   private visibleHexCoordsCache: Int32Array = new Int32Array(0);
   private visibleHexCoordsCount: number = 0;
   private visibleHexCoordsCapacity: number = 0;
+  private surfaceVisible = true;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.hoverAura = new Aura();
     this.hoverHexManager = new HoverHexManager(scene);
+    this.instanceMaterial = interactiveHexMaterial.clone();
     this.hexGeometryPool = HexGeometryPool.getInstance();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onClick = this.onClick.bind(this);
+    this.applyInstanceMeshSurfaceVisibility();
   }
 
   public setAuraVisibility(visible: boolean) {
@@ -105,6 +111,15 @@ export class InteractiveHexManager {
    */
   public setHoverIntensity(intensity: number) {
     this.hoverHexManager.setHoverIntensity(intensity);
+  }
+
+  public setSurfaceVisibility(visible: boolean) {
+    this.surfaceVisible = visible;
+    this.applyInstanceMeshSurfaceVisibility();
+  }
+
+  public setHoverVisualMode(mode: InteractiveHexHoverVisualMode) {
+    this.hoverHexManager.setVisualMode(mode);
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -175,12 +190,13 @@ export class InteractiveHexManager {
     const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
     hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.ensureInstanceMeshCapacity");
 
-    const mesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, requiredCapacity);
+    const mesh = new THREE.InstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.count = 0;
 
     this.instanceMesh = mesh;
     this.instanceCapacity = requiredCapacity;
+    this.applyInstanceMeshSurfaceVisibility();
     this.scene.add(mesh);
   }
 
@@ -502,6 +518,7 @@ export class InteractiveHexManager {
       this.hoverAura.removeFromScene(this.scene);
     }
     this.hoverHexManager.dispose();
+    this.instanceMaterial.dispose();
 
     // Clear hex collections
     this.allHexes.clear();
@@ -518,5 +535,14 @@ export class InteractiveHexManager {
     this.visibleHexCoordsCapacity = 0;
 
     console.log("InteractiveHexManager: Destroyed and cleaned up");
+  }
+
+  private applyInstanceMeshSurfaceVisibility(): void {
+    const material = this.instanceMaterial;
+    material.transparent = true;
+    material.opacity = this.surfaceVisible ? interactiveHexMaterial.opacity : 0;
+    material.colorWrite = this.surfaceVisible;
+    material.depthWrite = this.surfaceVisible;
+    material.needsUpdate = true;
   }
 }
