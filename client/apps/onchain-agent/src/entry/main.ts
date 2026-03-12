@@ -518,8 +518,8 @@ export async function main() {
       return;
     }
     if (agentBusy) {
-      console.log("[YOU → queued] (will deliver after current turn)");
-      agent.followUp({ role: "user" as const, content: text, timestamp: Date.now() } as AgentMessage);
+      console.log("[YOU → steering] (interrupting current turn)");
+      agent.steer({ role: "user" as const, content: text, timestamp: Date.now() } as AgentMessage);
     } else {
       console.log("[YOU → prompt]");
       agentBusy = true;
