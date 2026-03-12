@@ -179,6 +179,7 @@ import {
   type TileFetchVolumeRegressionResult,
 } from "./worldmap-tile-fetch-volume-regression";
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
+import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
@@ -4531,14 +4532,20 @@ export default class WorldmapScene extends WarpTravel {
       oldChunkCoordinates !== null &&
       Number.isFinite(oldChunkCoordinates[0]) &&
       Number.isFinite(oldChunkCoordinates[1]);
-    const targetChunkBounds = this.computeChunkBounds(startRow, startCol);
-    this.visibilityManager?.registerChunk(chunkKey, targetChunkBounds);
-    if (hasFiniteOldChunkCoordinates) {
-      const previousChunkBounds = this.computeChunkBounds(oldChunkCoordinates[0], oldChunkCoordinates[1]);
-      this.applySceneChunkBounds(this.combineChunkBounds(previousChunkBounds, targetChunkBounds));
-    } else {
-      this.applySceneChunkBounds(targetChunkBounds);
-    }
+    prepareWarpTravelChunkBounds({
+      targetChunkKey: chunkKey,
+      startRow,
+      startCol,
+      hasFiniteOldChunkCoordinates,
+      oldChunkCoordinates:
+        hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+          ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+          : null,
+      computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
+      registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
+      combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
+      applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
+    });
 
     // Load surrounding pinned chunks for better UX.
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
