@@ -41,7 +41,7 @@ function withV1Path(origin: string): string {
  * @param envSource - Environment variables (defaults to process.env).
  * @returns A pi-ai Model configured for x402 streaming.
  */
-export function createX402Model(envSource: EnvSource = process.env): Model<Api> {
+export async function createX402Model(envSource: EnvSource = process.env): Promise<Model<Api>> {
   const staticPaymentSignatureRaw = envSource.X402_PAYMENT_SIGNATURE?.trim();
   const staticPaymentSignature =
     typeof staticPaymentSignatureRaw === "string" && staticPaymentSignatureRaw.length > 0
@@ -151,8 +151,8 @@ export function createX402Model(envSource: EnvSource = process.env): Model<Api> 
     }
   }
 
-  // Sign first permit immediately, then refresh every 4 minutes (permits last 5 min)
-  refreshPermit();
+  // Sign first permit and wait for it, then refresh every 4 minutes (permits last 5 min)
+  await refreshPermit();
   setInterval(refreshPermit, 4 * 60 * 1000);
 
   return model;
