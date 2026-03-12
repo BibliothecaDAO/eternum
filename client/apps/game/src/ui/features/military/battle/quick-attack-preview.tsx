@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  createPendingWorldmapFxKey,
+  dispatchPendingWorldmapFxStart,
+  dispatchPendingWorldmapFxStop,
+} from "@/utils/pending-worldmap-fx";
 import Button from "@/ui/design-system/atoms/button";
 import {
   Biome,
@@ -301,8 +306,19 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const handleAttack = async () => {
     if (!selectedHex || !targetData) return;
 
+    let pendingFxKey: string | null = null;
     try {
       setIsSubmitting(true);
+
+      pendingFxKey = createPendingWorldmapFxKey("attack");
+      dispatchPendingWorldmapFxStart({
+        key: pendingFxKey,
+        kind: "attack",
+        attackerId: attacker.id,
+        defenderId: targetData.id,
+        attackerHex: { col: selectedHex.col, row: selectedHex.row },
+        targetHex: { col: target.hex.x, row: target.hex.y },
+      });
 
       if (attackerType === AttackerType.Structure) {
         const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
@@ -342,6 +358,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       updateSelectedEntityId(null);
       toggleModal(null);
     } catch (error) {
+      if (pendingFxKey) {
+        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
+      }
       console.error("Quick attack failed", error);
     } finally {
       setIsSubmitting(false);
