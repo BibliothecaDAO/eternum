@@ -3,6 +3,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { getTxMessage as getBaseMessage, getTxIcon } from "@/ui/components/transaction-center/types";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 
 const getTxMessage = (type: TransactionType): string => {
   const icon = getTxIcon(type);
@@ -40,12 +41,11 @@ export function TransactionNotification() {
     };
 
     const handleTransactionFailed = (error: string | TransactionFailurePayload, meta?: TransactionFailurePayload) => {
-      const message =
-        typeof error === "string" ? error : typeof error?.message === "string" ? error.message : "Transaction failed.";
+      const message = extractReadableErrorMessage(error, extractReadableErrorMessage(meta, "Transaction failed."));
       const type =
         typeof error === "object" && error?.type ? error.type : typeof meta?.type !== "undefined" ? meta.type : null;
       const transactionCount =
-        typeof error === "object" && error?.transactionCount
+        typeof error === "object" && typeof error?.transactionCount === "number"
           ? error.transactionCount
           : typeof meta?.transactionCount === "number"
             ? meta.transactionCount
