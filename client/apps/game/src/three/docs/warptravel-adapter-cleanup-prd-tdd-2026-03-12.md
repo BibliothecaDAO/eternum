@@ -37,7 +37,8 @@ The current refactor is structurally sound, but several residual adapter pattern
 2. committed chunk switches still mutate `currentChunk` through two code paths.
 3. the dormant fast-travel navigation gate is hardcoded at call sites instead of owned by the boundary itself.
 4. prefetch helpers still allocate transient `Set`s on hot paths.
-5. helper extraction has reduced logic size, but the remaining scene code still reads as callback plumbing in a few areas.
+5. helper extraction has reduced logic size, but the remaining scene code still reads as callback plumbing in a few
+   areas.
 
 None of these are large architectural gaps.
 
@@ -146,9 +147,11 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `warp-travel-chunk-switch-commit.test.ts` now locks committed chunk authority timing and single commit callback usage.
+1. `warp-travel-chunk-switch-commit.test.ts` now locks committed chunk authority timing and single commit callback
+   usage.
 2. `scene-navigation-boundary.test.ts` now locks dormant fast-travel fallback when no enablement override is present.
-3. `warp-travel-prefetch-enqueue.test.ts` and `warp-travel-prefetch-drain.test.ts` remain the baseline guardrail for queue behavior during later cleanup.
+3. `warp-travel-prefetch-enqueue.test.ts` and `warp-travel-prefetch-drain.test.ts` remain the baseline guardrail for
+   queue behavior during later cleanup.
 
 ### C1: Lifecycle Adapter Simplification (0.5-1 day) [x]
 
@@ -175,7 +178,8 @@ Exit Criteria:
 Completion Notes:
 
 1. `WarpTravel` now caches a single lifecycle adapter instance instead of requesting a fresh object on each transition.
-2. `WorldmapScene` lifecycle wiring now routes the label-group, manager-label, initial-setup, and refresh hooks through named private methods.
+2. `WorldmapScene` lifecycle wiring now routes the label-group, manager-label, initial-setup, and refresh hooks through
+   named private methods.
 3. `warp-travel.test.ts` now verifies adapter construction stays stable across setup, switch-off, and resume cycles.
 
 ### C2: Chunk Ownership Cleanup (0.5 day) [x]
@@ -202,7 +206,8 @@ Completion Notes:
 
 1. committed chunk authority now advances only through the finalize helper callback path.
 2. `finalizeWarpTravelChunkSwitch()` no longer returns a duplicate `nextCurrentChunk` assignment contract.
-3. `WorldmapScene.performChunkSwitch()` now routes rollback and visibility side effects through named private methods instead of a dense inline callback bundle.
+3. `WorldmapScene.performChunkSwitch()` now routes rollback and visibility side effects through named private methods
+   instead of a dense inline callback bundle.
 
 ### C3: Navigation Boundary Hardening (0.5 day) [x]
 
@@ -229,7 +234,8 @@ Completion Notes:
 
 1. dormant fast-travel enablement now defaults from `scene-navigation-boundary.ts`.
 2. navigation helpers no longer pass `fastTravelEnabled: false` at each call site.
-3. `scene-navigation-boundary.test.ts` now locks both the dormant default and the absence of helper-owned fallback wiring.
+3. `scene-navigation-boundary.test.ts` now locks both the dormant default and the absence of helper-owned fallback
+   wiring.
 
 ### C4: Prefetch Hot-Path Cleanup (0.5-1 day) [x]
 
@@ -254,9 +260,12 @@ Exit Criteria:
 
 Completion Notes:
 
-1. prefetch helpers now accept a lightweight fetch-key lookup contract instead of requiring transient `Set` reconstruction.
-2. `WorldmapScene` now passes `pendingChunks` directly at enqueue/drain call sites, removing the repeated `new Set(this.pendingChunks.keys())` hot-path allocation.
-3. prefetch enqueue/drain behavior remains locked by the existing helper tests plus the new source-level guard on worldmap call sites.
+1. prefetch helpers now accept a lightweight fetch-key lookup contract instead of requiring transient `Set`
+   reconstruction.
+2. `WorldmapScene` now passes `pendingChunks` directly at enqueue/drain call sites, removing the repeated
+   `new Set(this.pendingChunks.keys())` hot-path allocation.
+3. prefetch enqueue/drain behavior remains locked by the existing helper tests plus the new source-level guard on
+   worldmap call sites.
 
 ### C5: Cleanup Closeout (0.5 day) [x]
 
@@ -276,20 +285,25 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `README.md` now documents the cached WarpTravel lifecycle adapter, single commit-path ownership, boundary-owned dormant fast-travel policy, and lookup-based prefetch plumbing.
+1. `README.md` now documents the cached WarpTravel lifecycle adapter, single commit-path ownership, boundary-owned
+   dormant fast-travel policy, and lookup-based prefetch plumbing.
 2. this PRD backlog is now closed against the shipped cleanup slices below.
 3. the remaining work is the concrete fast-travel scene itself, not another adapter-hardening pass.
 
 ## Prioritized Slice Backlog
 
-1. [x] S1 (P0): Add failing test proving committed chunk switches do not rely on duplicate `currentChunk` mutation sites.
-2. [x] S2 (P0): Add failing test proving lifecycle adapter construction is stable across repeated setup/switch-off calls.
-3. [x] S3 (P0): Add failing test proving navigation fallback for dormant fast travel is owned only by the boundary layer.
+1. [x] S1 (P0): Add failing test proving committed chunk switches do not rely on duplicate `currentChunk` mutation
+       sites.
+2. [x] S2 (P0): Add failing test proving lifecycle adapter construction is stable across repeated setup/switch-off
+       calls.
+3. [x] S3 (P0): Add failing test proving navigation fallback for dormant fast travel is owned only by the boundary
+       layer.
 4. [x] S4 (P1): Replace lifecycle adapter object reconstruction with a cached adapter or protected hook methods.
 5. [x] S5 (P1): Collapse chunk commit mutation to one owner.
 6. [x] S6 (P1): Centralize fast-travel enablement policy in `scene-navigation-boundary.ts`.
 7. [x] S7 (P1): Remove repeated `new Set(this.pendingChunks.keys())` creation from prefetch enqueue/drain call sites.
-8. [x] S8 (P2): Replace repeated one-line worldmap helper lambdas with named private adapter methods where clarity improves.
+8. [x] S8 (P2): Replace repeated one-line worldmap helper lambdas with named private adapter methods where clarity
+       improves.
 9. [x] S9 (P2): Update architecture docs with the final cleaned-up adapter shape.
 
 ## Test Strategy
@@ -350,15 +364,21 @@ Completion Notes:
 
 ## Residual Risks
 
-1. The dormant fast-travel boundary is centralized, but the concrete scene still needs its own registration and rollout guard when it lands.
-2. `WorldmapScene.performChunkSwitch()` is materially cleaner, but it remains a coordination-heavy method and should stay helper-driven as follow-up scene work arrives.
-3. Prefetch queue fairness under concrete fast-travel movement patterns still needs validation once that scene generates real navigation traffic.
+1. The dormant fast-travel boundary is centralized, but the concrete scene still needs its own registration and rollout
+   guard when it lands.
+2. `WorldmapScene.performChunkSwitch()` is materially cleaner, but it remains a coordination-heavy method and should
+   stay helper-driven as follow-up scene work arrives.
+3. Prefetch queue fairness under concrete fast-travel movement patterns still needs validation once that scene generates
+   real navigation traffic.
 
 ## Follow-Up Backlog
 
-1. Register the concrete `FastTravel` scene and flip the boundary-owned enablement in one place when the runtime is ready.
-2. Reuse the cleaned WarpTravel hook pattern for any new fast-travel-specific lifecycle or switch-finalization seams instead of reintroducing inline callback bundles.
-3. Re-evaluate prefetch priorities and cancellation behavior under concrete fast-travel traversal once that scene exists.
+1. Register the concrete `FastTravel` scene and flip the boundary-owned enablement in one place when the runtime is
+   ready.
+2. Reuse the cleaned WarpTravel hook pattern for any new fast-travel-specific lifecycle or switch-finalization seams
+   instead of reintroducing inline callback bundles.
+3. Re-evaluate prefetch priorities and cancellation behavior under concrete fast-travel traversal once that scene
+   exists.
 
 ## Recommended Execution Order
 

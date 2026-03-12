@@ -10,28 +10,33 @@ function readGameRendererSource(): string {
 }
 
 describe("GameRenderer fast-travel bootstrap", () => {
-  it("registers a concrete fast-travel scene with the scene manager", () => {
+  it("registers a concrete fast-travel scene with the scene manager only when enabled", () => {
     const source = readGameRendererSource();
 
     expect(source).toMatch(/import FastTravelScene from ["']@\/three\/scenes\/fast-travel["']/);
-    expect(source).toMatch(/private fastTravelScene!: FastTravelScene;/);
+    expect(source).toMatch(/private fastTravelScene\?: FastTravelScene;/);
+    expect(source).toMatch(/private isFastTravelEnabled\(\): boolean/);
+    expect(source).toMatch(/if \(this\.isFastTravelEnabled\(\)\)/);
     expect(source).toMatch(/this\.fastTravelScene = new FastTravelScene\(/);
     expect(source).toMatch(/this\.sceneManager\.addScene\(SceneName\.FastTravel, this\.fastTravelScene\)/);
   });
 
-  it("routes URL scene resolution through the navigation boundary", () => {
+  it("routes URL scene resolution through the navigation boundary with fast-travel gating", () => {
     const source = readGameRendererSource();
 
     expect(source).toMatch(/resolveNavigationSceneTarget/);
+    expect(source).toMatch(/const fastTravelEnabled = this\.isFastTravelEnabled\(\);/);
     expect(source).toMatch(/requestedScene:\s*resolveSceneNameFromRouteSegment\(sceneSlug\)/);
+    expect(source).toMatch(/fastTravelEnabled,/);
   });
 
-  it("updates and renders the fast-travel scene when it is active", () => {
+  it("updates and renders the fast-travel scene only when present and active", () => {
     const source = readGameRendererSource();
 
-    expect(source).toMatch(/this\.fastTravelScene\.setWeatherAtmosphereState\(weatherState\)/);
-    expect(source).toMatch(/const isFastTravel = this\.sceneManager\?\.getCurrentScene\(\) === SceneName\.FastTravel/);
-    expect(source).toMatch(/this\.fastTravelScene\.update\(deltaTime\)/);
-    expect(source).toMatch(/isFastTravel\s*\?\s*this\.fastTravelScene\.getScene\(\)/);
+    expect(source).toMatch(/this\.fastTravelScene\?\.setWeatherAtmosphereState\(weatherState\)/);
+    expect(source).toMatch(
+      /const isFastTravel = this\.sceneManager\?\.getCurrentScene\(\) === SceneName\.FastTravel && Boolean\(this\.fastTravelScene\)/,
+    );
+    expect(source).toMatch(/this\.fastTravelScene\?\.getScene\(\)/);
   });
 });

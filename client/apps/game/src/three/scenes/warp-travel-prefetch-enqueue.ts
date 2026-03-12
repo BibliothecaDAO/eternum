@@ -14,9 +14,10 @@ interface EnqueueWarpTravelPrefetchInput {
   pendingFetchKeys: PrefetchFetchKeyLookup;
 }
 
-export function enqueueWarpTravelPrefetch(
-  input: EnqueueWarpTravelPrefetchInput,
-): { enqueued: boolean; skipped: boolean } {
+export function enqueueWarpTravelPrefetch(input: EnqueueWarpTravelPrefetchInput): {
+  enqueued: boolean;
+  skipped: boolean;
+} {
   if (!input.chunkKey) {
     return { enqueued: false, skipped: true };
   }

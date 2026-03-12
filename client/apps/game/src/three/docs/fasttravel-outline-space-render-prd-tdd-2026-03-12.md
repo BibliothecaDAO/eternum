@@ -16,7 +16,8 @@
 
 ## Executive Summary
 
-The fast-travel scene now has a hex field and movement parity, but the rendered result still does not read as outlined pink hexes in black space.
+The fast-travel scene now has a hex field and movement parity, but the rendered result still does not read as outlined
+pink hexes in black space.
 
 Observed result from the latest screenshot:
 
@@ -91,7 +92,8 @@ File:
 Current behavior:
 
 1. `interactiveHexMaterial` is a translucent filled `MeshStandardMaterial`
-2. `FastTravelScene` currently uses `InteractiveHexManager` for input and therefore also inherits that visible surface unless explicitly hidden
+2. `FastTravelScene` currently uses `InteractiveHexManager` for input and therefore also inherits that visible surface
+   unless explicitly hidden
 
 ### R2: Shared Atmosphere Still Owns The Background
 
@@ -339,4 +341,5 @@ Exit Criteria:
 
 1. consider a general scene-level hook for opting out of shared background mutation
 2. evaluate whether `InteractiveHexManager` needs a formal visual-mode API for non-worldmap scenes
-3. decide whether hover/selection should share one outline-only feedback asset across fast travel and future abstract scenes
+3. decide whether hover/selection should share one outline-only feedback asset across fast travel and future abstract
+   scenes

@@ -17,7 +17,9 @@ describe("FastTravelScene chunk loading movement compatibility", () => {
   it("rebuilds chunk switches through a single apply path", () => {
     const source = readFastTravelSource();
 
-    expect(source).toMatch(/private applyFastTravelVisibleChunk\(chunkKey: string, startCol: number, startRow: number\)/);
+    expect(source).toMatch(
+      /private applyFastTravelVisibleChunk\(chunkKey: string, startCol: number, startRow: number\)/,
+    );
     expect(source).toMatch(/resolveFastTravelChunkHydrationPlan/);
     expect(source).toMatch(/hydrateFastTravelChunkState\(/);
     expect(source).toMatch(/prepareFastTravelRenderState\(/);

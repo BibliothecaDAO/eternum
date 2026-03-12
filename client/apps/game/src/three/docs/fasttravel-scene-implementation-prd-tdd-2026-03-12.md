@@ -10,14 +10,14 @@
 
 ## Document Update Log
 
-| Update | Date (UTC)       | Author | Change                                                                                                                                           |
-| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| U1     | 2026-03-12 00:00 | Codex  | Created TDD PRD for the concrete fast-travel scene after the shared `WarpTravel` refactor landed and dedicated seam tests were verified green. |
-| U2     | 2026-03-12 00:00 | Codex  | Resolved product direction: no terrain, fully explored pink warp-space shader layer, visible stubbed Spires, and map-first scope with interactions deferred. |
-| U3     | 2026-03-12 00:00 | Codex  | Completed M0 by activating the fast-travel boundary, registering the concrete scene stub in `GameRenderer`, and locking renderer routing/update seams with fail-first tests. |
-| U4     | 2026-03-12 00:00 | Codex  | Completed M1 by turning `FastTravelScene` into a named-hook `WarpTravel` lifecycle shell and locking the lifecycle seam with focused tests plus shared runtime regressions. |
-| U5     | 2026-03-12 00:00 | Codex  | Completed M2 and M3 by adding fast-travel chunk hydration/render-state adapters, stubbed Spire and army scene visuals, and a no-ground fully explored warp-space render path. |
-| U6     | 2026-03-12 00:00 | Codex  | Completed M4 by adding explicit Spire mapping/navigation policy modules plus world/travel navigation helpers that preserve non-Spire fallback behavior. |
+| Update | Date (UTC)       | Author | Change                                                                                                                                                                                      |
+| ------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1     | 2026-03-12 00:00 | Codex  | Created TDD PRD for the concrete fast-travel scene after the shared `WarpTravel` refactor landed and dedicated seam tests were verified green.                                              |
+| U2     | 2026-03-12 00:00 | Codex  | Resolved product direction: no terrain, fully explored pink warp-space shader layer, visible stubbed Spires, and map-first scope with interactions deferred.                                |
+| U3     | 2026-03-12 00:00 | Codex  | Completed M0 by activating the fast-travel boundary, registering the concrete scene stub in `GameRenderer`, and locking renderer routing/update seams with fail-first tests.                |
+| U4     | 2026-03-12 00:00 | Codex  | Completed M1 by turning `FastTravelScene` into a named-hook `WarpTravel` lifecycle shell and locking the lifecycle seam with focused tests plus shared runtime regressions.                 |
+| U5     | 2026-03-12 00:00 | Codex  | Completed M2 and M3 by adding fast-travel chunk hydration/render-state adapters, stubbed Spire and army scene visuals, and a no-ground fully explored warp-space render path.               |
+| U6     | 2026-03-12 00:00 | Codex  | Completed M4 by adding explicit Spire mapping/navigation policy modules plus world/travel navigation helpers that preserve non-Spire fallback behavior.                                     |
 | U7     | 2026-03-12 00:00 | Codex  | Completed M5 by rerunning the targeted/shared suites, updating the Three.js architecture note for the live fast-travel scene, and documenting the remaining unrelated module-gate blockers. |
 
 ## Executive Summary
@@ -226,9 +226,12 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `scene-navigation-boundary.test.ts` now locks the enabled-by-default fast-travel route while preserving the explicit disable override.
-2. `game-renderer.fast-travel-registration.test.ts` locks renderer registration, boundary-aware URL handling, and active fast-travel update/render branching.
-3. `FastTravelScene` is now registered in `GameRenderer` and receives environment, weather, quality, update, and destroy lifecycle handling alongside the existing scenes.
+1. `scene-navigation-boundary.test.ts` now locks the enabled-by-default fast-travel route while preserving the explicit
+   disable override.
+2. `game-renderer.fast-travel-registration.test.ts` locks renderer registration, boundary-aware URL handling, and active
+   fast-travel update/render branching.
+3. `FastTravelScene` is now registered in `GameRenderer` and receives environment, weather, quality, update, and destroy
+   lifecycle handling alongside the existing scenes.
 
 ### M1: Scene Skeleton and Lifecycle Wiring (1 day) [x]
 
@@ -250,9 +253,12 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `fast-travel.test.ts` now locks `FastTravelScene` as a concrete `WarpTravel` scene with named lifecycle hooks rather than anonymous inline adapter lambdas.
-2. `FastTravelScene` now has explicit setup, initial-setup, label attach/detach, refresh, error-report, and subscription lifecycle methods that match the shared `WarpTravelLifecycleAdapter` seam.
-3. `warp-travel.test.ts` and `worldmap-shared-runtime.test.ts` were rerun green to keep the scene shell aligned with the shared runtime contract.
+1. `fast-travel.test.ts` now locks `FastTravelScene` as a concrete `WarpTravel` scene with named lifecycle hooks rather
+   than anonymous inline adapter lambdas.
+2. `FastTravelScene` now has explicit setup, initial-setup, label attach/detach, refresh, error-report, and subscription
+   lifecycle methods that match the shared `WarpTravelLifecycleAdapter` seam.
+3. `warp-travel.test.ts` and `worldmap-shared-runtime.test.ts` were rerun green to keep the scene shell aligned with the
+   shared runtime contract.
 
 ### M2: Fast-Travel Chunk Hydration and Entity Runtime (2-3 days) [x]
 
@@ -275,9 +281,12 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `fast-travel-hydration.ts` now hydrates visible armies and stubbed Spire anchors into a chunk-scoped entity lookup plus stable manager payloads.
-2. `FastTravelScene` now refreshes itself from the hydration adapter and exposes hydrated chunk/entity lookup state for follow-on interaction work.
-3. Stubbed army and Spire visuals are now rendered into the scene from hydrated chunk state, with controls-driven refresh support in `GameRenderer`.
+1. `fast-travel-hydration.ts` now hydrates visible armies and stubbed Spire anchors into a chunk-scoped entity lookup
+   plus stable manager payloads.
+2. `FastTravelScene` now refreshes itself from the hydration adapter and exposes hydrated chunk/entity lookup state for
+   follow-on interaction work.
+3. Stubbed army and Spire visuals are now rendered into the scene from hydrated chunk state, with controls-driven
+   refresh support in `GameRenderer`.
 
 ### M3: Warp-Space Map Rendering (1-2 days) [x]
 
@@ -299,9 +308,12 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `fast-travel-rendering.ts` now prepares a fully explored `terrainMode: "none"` render state plus explicit pink warp-space shader uniforms for the visible hex window.
-2. `HexagonScene` now exposes a `shouldCreateGroundMesh()` hook, and `FastTravelScene` opts out so the shared worldmap terrain mesh is not created.
-3. `FastTravelScene` uses the render-state palette to color the warp-space background plus the stubbed Spire and army markers.
+1. `fast-travel-rendering.ts` now prepares a fully explored `terrainMode: "none"` render state plus explicit pink
+   warp-space shader uniforms for the visible hex window.
+2. `HexagonScene` now exposes a `shouldCreateGroundMesh()` hook, and `FastTravelScene` opts out so the shared worldmap
+   terrain mesh is not created.
+3. `FastTravelScene` uses the render-state palette to color the warp-space background plus the stubbed Spire and army
+   markers.
 
 ### M4: Spire Navigation Boundary (1-2 days) [x]
 
@@ -323,9 +335,12 @@ Exit Criteria:
 
 Completion Notes:
 
-1. `fast-travel-spire-mapping.ts` now owns deterministic lookup between world-map Spire coordinates and fast-travel entry/exit coordinates.
-2. `fast-travel-navigation-policy.ts` now resolves world-to-travel entry and travel-to-world exit transitions with explicit scene/coordinate outputs.
-3. `three/utils/navigation.ts` now exposes `navigateIntoFastTravelSpire()` and `navigateOutOfFastTravelSpire()` while preserving the default non-Spire map/hex navigation paths.
+1. `fast-travel-spire-mapping.ts` now owns deterministic lookup between world-map Spire coordinates and fast-travel
+   entry/exit coordinates.
+2. `fast-travel-navigation-policy.ts` now resolves world-to-travel entry and travel-to-world exit transitions with
+   explicit scene/coordinate outputs.
+3. `three/utils/navigation.ts` now exposes `navigateIntoFastTravelSpire()` and `navigateOutOfFastTravelSpire()` while
+   preserving the default non-Spire map/hex navigation paths.
 
 ### M5: Hardening and Closeout (0.5-1 day) [x]
 
@@ -347,19 +362,24 @@ Exit Criteria:
 
 Completion Notes:
 
-1. The focused fast-travel plus shared-runtime regression cluster was rerun green across 56 tests covering the boundary, fast-travel adapters, `WarpTravel`, and `worldmap-shared-runtime`.
-2. The full `pnpm --dir client/apps/game test src/three` module gate was attempted and remains blocked by unrelated pre-existing issues outside this slice:
+1. The focused fast-travel plus shared-runtime regression cluster was rerun green across 56 tests covering the boundary,
+   fast-travel adapters, `WarpTravel`, and `worldmap-shared-runtime`.
+2. The full `pnpm --dir client/apps/game test src/three` module gate was attempted and remains blocked by unrelated
+   pre-existing issues outside this slice:
    - `army-model.visibility.test.ts` fails on the `ResourcesIds` circular-import path inside `packages/types`
    - several jsdom suites still trip the `html-encoding-sniffer` / `@exodus/bytes` ESM loader error
-3. `README.md` now reflects that `FastTravelScene` is registered and active rather than describing it as a dormant bootstrap.
+3. `README.md` now reflects that `FastTravelScene` is registered and active rather than describing it as a dormant
+   bootstrap.
 
 ## Prioritized Slice Backlog
 
 1. [x] S1 (P0): Add failing test proving `/travel` resolves to `SceneName.FastTravel` only when boundary activation is
-   enabled.
+       enabled.
 2. [x] S2 (P0): Add failing test proving `GameRenderer` registers a concrete fast-travel scene.
-3. [x] S3 (P0): Add failing test proving active-scene render/update path handles fast-travel the same way it handles map/hex.
-4. [x] S4 (P0): Add failing test proving `FastTravelScene` setup/resume/switch-off lifecycle delegates through `WarpTravel`.
+3. [x] S3 (P0): Add failing test proving active-scene render/update path handles fast-travel the same way it handles
+       map/hex.
+4. [x] S4 (P0): Add failing test proving `FastTravelScene` setup/resume/switch-off lifecycle delegates through
+       `WarpTravel`.
 5. [x] S5 (P1): Add failing test proving empty fast-travel chunks do not break manager fanout.
 6. [x] S6 (P1): Add failing test proving fast-travel chunk hydration can populate armies into the scene.
 7. [x] S7 (P1): Add failing test proving fast-travel scene prepares a fully explored no-terrain render state.
@@ -419,7 +439,8 @@ Completion Notes:
 3. Scene registration could accidentally affect current map/hex rendering.
 4. Interaction parity could tempt copying worldmap selection logic too directly.
 5. Shader work could sprawl into a broader visual rewrite if not kept tightly scoped.
-6. The wider `src/three` module gate still has unrelated baseline failures, so a fully clean top-level Three suite is not yet restored by this feature work alone.
+6. The wider `src/three` module gate still has unrelated baseline failures, so a fully clean top-level Three suite is
+   not yet restored by this feature work alone.
 
 ## Mitigations
 
@@ -441,7 +462,8 @@ Completion Notes:
 
 1. Replace the scene-local demo Spire/army hydration source with an authoritative client-side Spire/runtime query layer.
 2. Reuse the existing `ArmyManager`/label managers for real fast-travel entities once the backing data contract exists.
-3. Add the interaction-focused phase: Spire click affordances, selection behavior, and exit confirmation flows on top of the current navigation policy.
+3. Add the interaction-focused phase: Spire click affordances, selection behavior, and exit confirmation flows on top of
+   the current navigation policy.
 4. Clean the unrelated `src/three` module-gate blockers:
    - break the `ResourcesIds` circular import path in `packages/types`
    - resolve the jsdom `html-encoding-sniffer` / `@exodus/bytes` ESM loader failure

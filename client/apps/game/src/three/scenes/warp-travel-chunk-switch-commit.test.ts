@@ -15,7 +15,10 @@ function readWorldmapSource(): string {
 describe("finalizeWarpTravelChunkSwitch", () => {
   it("rolls back to the previous chunk authority and restores visuals when hydration failed", async () => {
     const restorePreviousChunkVisuals = createControlledAsyncCall<[number, number, string, number], void>();
-    const updateManagersForChunk = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+    const updateManagersForChunk = createControlledAsyncCall<
+      [string, { force: boolean; transitionToken: number }],
+      void
+    >();
     const updatePinnedChunks = vi.fn();
     const unregisterChunk = vi.fn();
     const clearSceneChunkBounds = vi.fn();
@@ -62,7 +65,10 @@ describe("finalizeWarpTravelChunkSwitch", () => {
   });
 
   it("drops stale prepared chunks without committing manager updates", async () => {
-    const updateManagersForChunk = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+    const updateManagersForChunk = createControlledAsyncCall<
+      [string, { force: boolean; transitionToken: number }],
+      void
+    >();
     const unregisterChunk = vi.fn();
 
     const result = await finalizeWarpTravelChunkSwitch({
@@ -97,7 +103,10 @@ describe("finalizeWarpTravelChunkSwitch", () => {
   });
 
   it("commits the hydrated chunk, refreshes bounds, and fans out manager updates", async () => {
-    const updateManagersForChunk = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+    const updateManagersForChunk = createControlledAsyncCall<
+      [string, { force: boolean; transitionToken: number }],
+      void
+    >();
     const updateCurrentChunkBounds = vi.fn();
     const forceVisibilityUpdate = vi.fn();
     const unregisterPreviousChunkOnNextFrame = vi.fn();

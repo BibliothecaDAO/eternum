@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  resolveWarpTravelChunkCoordinates,
-  resolveWarpTravelVisibleChunkDecision,
-} from "./warp-travel-chunk-runtime";
+import { resolveWarpTravelChunkCoordinates, resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 
 describe("resolveWarpTravelChunkCoordinates", () => {
   it("derives stride chunk coordinates from world focus position", () => {
