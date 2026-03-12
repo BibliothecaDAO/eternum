@@ -1,5 +1,5 @@
 /**
- * Shared transaction context passed to all tools that execute on-chain writes.
+ * Shared transaction context for all tools that execute on-chain writes.
  */
 
 import type { EternumProvider } from "@bibliothecadao/provider";
@@ -11,10 +11,10 @@ export interface TxContext {
 }
 
 /**
- * Compare two hex addresses for equality, ignoring leading zero differences.
+ * Compare two hex addresses for equality, ignoring leading-zero differences.
  *
- * @param a - First hex address string (e.g. "0x0123...").
- * @param b - Second hex address string to compare against.
+ * @param a - First hex address (e.g. "0x0123...").
+ * @param b - Second hex address to compare against.
  * @returns `true` if both addresses represent the same numeric value, `false` otherwise.
  */
 export function addressesEqual(a: string, b: string): boolean {

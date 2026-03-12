@@ -1,9 +1,8 @@
 /**
- * view_map tool — returns the current ASCII map.
+ * view_map tool — return the current ASCII map.
  *
- * The map is already included in each tick prompt, but the agent can
- * use this tool to get a fresh view after moves/explores have changed
- * the map state mid-tick.
+ * The map is already included in each tick prompt. Use this tool to get a
+ * fresh view after moves or explores have changed the map state mid-tick.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -14,7 +13,7 @@ import type { MapContext } from "../map/context.js";
  * Create the view_map agent tool.
  *
  * @param mapCtx - Map context holding the current tile snapshot and its ASCII text representation.
- * @returns An AgentTool that returns the current ASCII map text, or a "not loaded" message if no snapshot exists.
+ * @returns An AgentTool that returns the current ASCII map text, or a "not loaded" message if no snapshot is available.
  */
 export function createViewMapTool(mapCtx: MapContext): AgentTool<any> {
   return {
