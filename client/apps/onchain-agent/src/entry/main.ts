@@ -267,11 +267,17 @@ export async function main() {
     manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
   }
 
+  // Resolve model early so we can log the actual model ID
+  const model =
+    config.modelProvider === "x402"
+      ? createX402Model()
+      : ((getModel as Function)(config.modelProvider, config.modelId) as Model<any>);
+
   console.log(`Eternum Agent starting...`);
   console.log(`  Chain: ${config.chain}`);
   console.log(`  World: ${config.worldAddress}`);
   console.log(`  Data: ${config.dataDir}`);
-  console.log(`  Model: ${config.modelProvider}/${config.modelId}`);
+  console.log(`  Model: ${config.modelProvider}/${model.id}`);
   console.log(`  VRF: ${config.vrfProviderAddress.slice(0, 10)}...`);
 
   // 1. Auth — get a signed account (session stored in world dataDir)
@@ -320,16 +326,6 @@ export async function main() {
 
   // 6. Agent — uses followUp with one-at-a-time mode so tick messages
   //    queue safely without interrupting in-progress tool calls.
-  const model =
-    config.modelProvider === "x402"
-      ? createX402Model()
-      : ((getModel as Function)(config.modelProvider, config.modelId) as Model<any>);
-
-  // Override config display values with actual model info (x402 resolves its own model ID)
-  if (config.modelProvider === "x402") {
-    config.modelId = model.id;
-  }
-
   const convertToLlm = (messages: AgentMessage[]): Message[] =>
     messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
 
