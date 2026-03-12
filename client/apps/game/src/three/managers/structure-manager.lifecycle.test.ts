@@ -449,4 +449,37 @@ describe("StructureManager destroy lifecycle", () => {
 
     expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
   });
+
+  it("skips full visible rebuilds for metadata-only updates to already-visible structures", async () => {
+    const { subject, structuresById } = createOnUpdateSubject();
+    subject.isInCurrentChunk = vi.fn(() => true);
+
+    structuresById.set(7, {
+      entityId: 7,
+      structureName: "Camp",
+      structureType: "Village",
+      hexCoords: { col: 10, row: 15 },
+      initialized: true,
+      stage: 0,
+      level: 1,
+      owner: { address: 5n, ownerName: "Alice", guildName: "" },
+      isMine: false,
+      isAlly: false,
+      guardArmies: [],
+      activeProductions: [],
+      cosmeticId: "default",
+      cosmeticAssetPaths: [],
+      attachments: [],
+      hyperstructureRealmCount: 0,
+    });
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 5n, ownerName: "Alice", guildName: "" },
+      guardArmies: [],
+      activeProductions: [],
+    });
+
+    expect(subject.updateVisibleStructures).not.toHaveBeenCalled();
+  });
 });

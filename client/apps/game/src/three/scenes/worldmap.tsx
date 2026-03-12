@@ -189,6 +189,7 @@ interface CachedMatrixEntry {
   landColors?: Float32Array | null;
   box?: Box3;
   sphere?: Sphere;
+  expectedExploredTerrainInstances?: number;
 }
 
 type ToriiBoundsCounterKey =
@@ -323,6 +324,7 @@ export default class WorldmapScene extends WarpTravel {
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
+  private interactiveHexWindowKey: string | null = null;
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
@@ -3331,12 +3333,18 @@ export default class WorldmapScene extends WarpTravel {
     const interactiveStartRow = chunkCenterRow - Math.floor(normalizedHeight / 2);
     const interactiveStartCol = chunkCenterCol - Math.floor(normalizedWidth / 2);
 
-    // Keep interaction state bounded to the active rendered window.
-    this.interactiveHexManager.clearHexes();
-    for (let row = interactiveStartRow; row < interactiveStartRow + normalizedHeight; row++) {
-      for (let col = interactiveStartCol; col < interactiveStartCol + normalizedWidth; col++) {
-        this.interactiveHexManager.addHex({ col, row });
+    const nextInteractiveHexWindowKey =
+      `${interactiveStartRow}:${interactiveStartCol}:${normalizedWidth}:${normalizedHeight}`;
+
+    if (this.interactiveHexWindowKey !== nextInteractiveHexWindowKey) {
+      // Keep interaction state bounded to the active rendered window.
+      this.interactiveHexManager.clearHexes();
+      for (let row = interactiveStartRow; row < interactiveStartRow + normalizedHeight; row++) {
+        for (let col = interactiveStartCol; col < interactiveStartCol + normalizedWidth; col++) {
+          this.interactiveHexManager.addHex({ col, row });
+        }
       }
+      this.interactiveHexWindowKey = nextInteractiveHexWindowKey;
     }
 
     this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, normalizedWidth, normalizedHeight);
@@ -3409,6 +3417,7 @@ export default class WorldmapScene extends WarpTravel {
 
       let currentIndex = 0;
       let resolved = false;
+      let expectedExploredTerrainInstances = 0;
 
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
@@ -3487,7 +3496,7 @@ export default class WorldmapScene extends WarpTravel {
           hexMesh.updateMeshVisibility(); // Show meshes that have instances
         }
 
-        this.cacheMatricesForChunk(startRow, startCol);
+        this.cacheMatricesForChunk(startRow, startCol, expectedExploredTerrainInstances);
         this.computeInteractiveHexes(startRow, startCol, cols, rows);
 
         releaseAllMatrices();
@@ -3531,6 +3540,7 @@ export default class WorldmapScene extends WarpTravel {
         const effectivelyExplored = isExplored || this.simulateAllExplored;
 
         if (effectivelyExplored) {
+          expectedExploredTerrainInstances += 1;
           // Use actual biome if explored, or generate deterministic biome for simulation
           const biome = isExplored
             ? (isExplored as BiomeType)
@@ -3966,7 +3976,7 @@ export default class WorldmapScene extends WarpTravel {
     return expectedExploredTerrainInstances;
   }
 
-  private cacheMatricesForChunk(startRow: number, startCol: number) {
+  private cacheMatricesForChunk(startRow: number, startCol: number, expectedExploredTerrainInstances: number) {
     const chunkKey = `${startRow},${startCol}`;
     if (!this.cachedMatrices.has(chunkKey)) {
       this.cachedMatrices.set(chunkKey, new Map());
@@ -4006,7 +4016,6 @@ export default class WorldmapScene extends WarpTravel {
       cachedChunk.set(biome, { matrices, count, landColors });
     }
 
-    const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
     if (
       this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
       this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
@@ -4037,6 +4046,11 @@ export default class WorldmapScene extends WarpTravel {
       box,
       sphere,
     });
+    cachedChunk.set("__meta__", {
+      matrices: null,
+      count: 0,
+      expectedExploredTerrainInstances,
+    });
 
     this.touchMatrixCache(chunkKey);
     this.ensureMatrixCacheLimit();
@@ -4059,7 +4073,7 @@ export default class WorldmapScene extends WarpTravel {
       let totalCachedTerrainInstances = 0;
       let cachedExploredTerrainInstances = 0;
       for (const [biome, entry] of cachedMatrices) {
-        if (biome === "__bounds__") {
+        if (biome === "__bounds__" || biome === "__meta__") {
           continue;
         }
         const count = Math.max(0, Math.floor(entry.count ?? 0));
@@ -4069,7 +4083,9 @@ export default class WorldmapScene extends WarpTravel {
         }
       }
 
-      const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(startRow, startCol);
+      const cachedMetadata = cachedMatrices.get("__meta__");
+      const expectedExploredTerrainInstances =
+        cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
       if (
         this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
         this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
@@ -4095,7 +4111,7 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.touchMatrixCache(chunkKey);
       for (const [biome, entry] of cachedMatrices) {
-        if (biome === "__bounds__") {
+        if (biome === "__bounds__" || biome === "__meta__") {
           continue;
         }
         const { matrices, count, landColors } = entry;

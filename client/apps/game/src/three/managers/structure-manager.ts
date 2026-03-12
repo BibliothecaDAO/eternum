@@ -43,7 +43,10 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { PointsLabelRenderer } from "./points-label-renderer";
-import { shouldRefreshVisibleStructures } from "./structure-update-policy";
+import {
+  shouldRebuildVisibleStructuresForStructureUpdate,
+  shouldRefreshVisibleStructures,
+} from "./structure-update-policy";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -737,6 +740,10 @@ export class StructureManager {
     // Check for pending label updates and apply them if they exist
     // Check if structure already exists with valid owner before overwriting
     const existingStructure = this.structures.getStructureByEntityId(entityId);
+    const existingWasVisible = existingStructure ? this.isInCurrentChunk(existingStructure.hexCoords) : false;
+    const existingAttachmentSignature = existingStructure
+      ? this.getAttachmentSignature(existingStructure.attachments ?? [])
+      : undefined;
 
     // Update spatial index
     this.updateSpatialIndex(entityId, existingStructure?.hexCoords, normalizedCoord);
@@ -923,8 +930,34 @@ export class StructureManager {
       this.updateStructureLabelData(structureRecord, existingLabel);
     }
 
-    // Update the visible structures if this structure is in the current chunk
-    if (this.isInCurrentChunk(normalizedCoord)) {
+    const isCurrentlyVisible = this.isInCurrentChunk(normalizedCoord);
+    const shouldRebuildVisibleStructures = shouldRebuildVisibleStructuresForStructureUpdate({
+      previous:
+        existingStructure && {
+          hexCoords: existingStructure.hexCoords,
+          structureType: existingStructure.structureType,
+          stage: existingStructure.stage,
+          level: existingStructure.level,
+          isMine: existingStructure.isMine,
+          isAlly: existingStructure.isAlly,
+          cosmeticId: existingStructure.cosmeticId,
+          attachmentSignature: existingAttachmentSignature,
+        },
+      next: {
+        hexCoords: normalizedCoord,
+        structureType: key,
+        stage,
+        level,
+        isMine: structureRecord?.isMine ?? false,
+        isAlly: structureRecord?.isAlly ?? false,
+        cosmeticId: cosmetic.cosmeticId,
+        attachmentSignature: this.getAttachmentSignature(cosmetic.attachments),
+      },
+      wasVisible: existingWasVisible,
+      isVisible: isCurrentlyVisible,
+    });
+
+    if (shouldRebuildVisibleStructures) {
       this.updateVisibleStructures();
     }
   }
