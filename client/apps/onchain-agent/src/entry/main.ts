@@ -492,6 +492,7 @@ export async function main() {
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
       evolve(model, config.dataDir, {
+            map: mapCtx.snapshot?.text ?? "Map not loaded",
             structures: [...automationStatus.values()]
               .map((s) => `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`)
               .join("\n") || "No structures",

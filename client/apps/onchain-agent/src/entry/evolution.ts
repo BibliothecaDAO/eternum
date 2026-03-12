@@ -51,6 +51,7 @@ interface EvolutionResult {
 
 /** Compact snapshot of game state for evolution before/after comparison. */
 export interface EvolutionSnapshot {
+  map: string;
   structures: string;
   armies: string;
   toolErrors: string;
@@ -78,6 +79,8 @@ ${soul}
 
   if (before) {
     prompt += `## BEFORE (${new Date(before.timestamp).toISOString()})
+Map:
+${before.map}
 Structures:
 ${before.structures}
 Armies:
@@ -86,6 +89,8 @@ Tool errors since last evolution:
 ${before.toolErrors || "None"}
 
 ## AFTER (${new Date(after.timestamp).toISOString()})
+Map:
+${after.map}
 Structures:
 ${after.structures}
 Armies:
@@ -96,6 +101,8 @@ ${after.toolErrors || "None"}
 `;
   } else {
     prompt += `## Current State (first evolution — no "before" snapshot)
+Map:
+${after.map}
 Structures:
 ${after.structures}
 Armies:
