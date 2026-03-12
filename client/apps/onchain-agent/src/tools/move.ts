@@ -163,14 +163,32 @@ export function createMoveTool(
 
         // ── Find explorer at from position ──
 
-        const fromTile = mapCtx.snapshot.tileAt(from_row, from_col);
-        if (!fromTile || !isExplorer(fromTile.occupierType)) {
+        let fromTile = mapCtx.snapshot.tileAt(from_row, from_col);
+        let explorerId: number | undefined;
+
+        // Check snapshot first
+        if (fromTile && isExplorer(fromTile.occupierType)) {
+          explorerId = fromTile.occupierId;
+        }
+
+        // Fallback: check recentlyMoved — the army may have been moved here
+        // but Torii hasn't indexed it yet, so the snapshot still shows the old position.
+        if (!explorerId && mapCtx.recentlyMoved) {
+          const worldCoords = mapCtx.snapshot.resolve(from_row, from_col);
+          if (worldCoords) {
+            const key = `${worldCoords.x},${worldCoords.y}`;
+            const movedEntityId = mapCtx.recentlyMoved.get(key);
+            if (movedEntityId) explorerId = movedEntityId;
+          }
+        }
+
+        if (!explorerId) {
           throw new Error(`No army at ${from_row}:${from_col}. Point at one of your armies on the map.`);
         }
 
-        const explorer = await client.view.explorerInfo(fromTile.occupierId);
+        const explorer = await client.view.explorerInfo(explorerId);
         if (!explorer) {
-          throw new Error(`Explorer ${fromTile.occupierId} not found.`);
+          throw new Error(`Explorer ${explorerId} not found.`);
         }
 
         // ── Verify ownership ──
@@ -418,13 +436,11 @@ export function createMoveTool(
           atTick: explorer.staminaUpdatedTick,
         });
 
-        // Refresh map so subsequent moves see the updated positions.
-        // Await refresh so the next tool call in this tick gets fresh data.
-        try {
-          await mapCtx.refresh?.();
-        } catch {
-          // Non-fatal — stale map is better than crashing
-        }
+        // Don't refresh the map here — Torii hasn't indexed the move yet,
+        // so a refresh would show the army at its OLD position and confuse
+        // subsequent tool calls. The recentlyMoved tracking patches pathfinding,
+        // and the background map loop (every 10s) will pick up the new position
+        // once Torii has caught up.
 
         // Describe what's adjacent to the new position
         const gridLookup = new Map<string, { occupierType: number; biome: number }>();
