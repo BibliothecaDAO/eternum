@@ -202,11 +202,11 @@ describe("move_army — successful move", () => {
 
     // Move from (0,0) col=1 to (3,0) col=4
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 4 });
-    expect(result.content[0].text).toContain("3 steps");
+    expect((result.content[0] as any).text).toContain("3 steps");
     // Paladin on Grassland (biome 11): cost = 20 - 10 = 10 per hex. 3 * 10 = 30. 100 - 30 = 70.
-    expect(result.content[0].text).toContain("100 → 70");
+    expect((result.content[0] as any).text).toContain("100 → 70");
     // movesAfter = floor(70 / 20) = 3
-    expect(result.content[0].text).toContain("3 moves remaining");
+    expect((result.content[0] as any).text).toContain("3 moves remaining");
   });
 
   it("moves as far as possible when target exceeds stamina", async () => {
@@ -217,9 +217,9 @@ describe("move_army — successful move", () => {
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 11 });
     // Should move 2 steps (20 stamina / 10 per hex) toward target, not throw
-    expect(result.content[0].text).toContain("2 steps toward");
-    expect(result.content[0].text).toContain("ran out of stamina");
-    expect(result.content[0].text).toContain("20 → 0");
+    expect((result.content[0] as any).text).toContain("2 steps toward");
+    expect((result.content[0] as any).text).toContain("ran out of stamina");
+    expect((result.content[0] as any).text).toContain("20 → 0");
   });
 });
 
@@ -244,7 +244,7 @@ describe("move_army — obstacle avoidance", () => {
     // (0,1) → maxY=2, y=1 → row=2. minX=0, x=0 → col=1
     // (4,1) → row=2, col=5
     const result = await tool.execute("id", { army_row: 2, army_col: 1, target_row: 2, target_col: 5 });
-    expect(result.content[0].text).toContain("steps");
+    expect((result.content[0] as any).text).toContain("steps");
     const details = result.details as any;
     expect(details.distance).toBeGreaterThanOrEqual(4);
   });

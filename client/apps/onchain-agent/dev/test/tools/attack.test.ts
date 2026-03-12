@@ -247,7 +247,7 @@ describe("attack — vs explorer", () => {
     const tool = createAttackTool(makeClient(attacker, defender), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
-    const text = result.content[0].text;
+    const text = (result.content[0] as any).text;
 
     // Attacker: 2000 * 250/100 = 5000, Paladin +30% on Grassland
     expect(text).toContain("Your strength: 5,000 (+30% on this tile)");
@@ -271,7 +271,7 @@ describe("attack — vs structure", () => {
     const tool = createAttackTool(makeClient(attacker, null, structure), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
-    const text = result.content[0].text;
+    const text = (result.content[0] as any).text;
 
     expect(text).toContain("Mine guards");
     expect(text).toContain("Your strength: 5,000");
@@ -288,7 +288,7 @@ describe("attack — vs structure", () => {
     const tool = createAttackTool(makeClient(attacker, null, structure), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
-    expect(result.content[0].text).toContain("unguarded");
-    expect(result.content[0].text).toContain("attacking to capture");
+    expect((result.content[0] as any).text).toContain("unguarded");
+    expect((result.content[0] as any).text).toContain("attacking to capture");
   });
 });

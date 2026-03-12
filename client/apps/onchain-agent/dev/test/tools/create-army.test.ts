@@ -188,8 +188,8 @@ describe("create_army — army cap", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("Army created");
-    expect(result.content[0].text).toContain("2/3");
+    expect((result.content[0] as any).text).toContain("Army created");
+    expect((result.content[0] as any).text).toContain("2/3");
   });
 });
 
@@ -201,8 +201,8 @@ describe("create_army — troop type from biome", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("Paladin");
-    expect(result.content[0].text).toContain("+30% on Grassland");
+    expect((result.content[0] as any).text).toContain("Paladin");
+    expect((result.content[0] as any).text).toContain("+30% on Grassland");
   });
 
   it("picks Knight in Forest", async () => {
@@ -212,7 +212,7 @@ describe("create_army — troop type from biome", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("Knight");
+    expect((result.content[0] as any).text).toContain("Knight");
   });
 
   it("picks Crossbowman on Ocean", async () => {
@@ -222,7 +222,7 @@ describe("create_army — troop type from biome", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("Crossbowman");
+    expect((result.content[0] as any).text).toContain("Crossbowman");
   });
 
   it("defaults to Knight for unknown biome", async () => {
@@ -232,7 +232,7 @@ describe("create_army — troop type from biome", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("Knight");
+    expect((result.content[0] as any).text).toContain("Knight");
   });
 });
 
@@ -244,7 +244,7 @@ describe("create_army — spawn direction", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).not.toContain("No open hex");
+    expect((result.content[0] as any).text).not.toContain("No open hex");
     expect(result.details).toHaveProperty("spawnDirection");
   });
 
@@ -279,7 +279,7 @@ describe("create_army — resources", () => {
     const tool = createCreateArmyTool(makeClient(structure), mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", { row: 1, col: 1 });
-    expect(result.content[0].text).toContain("5,000 Paladin T1");
+    expect((result.content[0] as any).text).toContain("5,000 Paladin T1");
   });
 
   it("throws when realm has no resources", async () => {
@@ -308,7 +308,7 @@ describe("create_army — output", () => {
       spawnDirection: expect.any(Number),
     });
 
-    const text = result.content[0].text;
+    const text = (result.content[0] as any).text;
     expect(text).toContain("Paladin T1");
   });
 

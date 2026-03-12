@@ -352,7 +352,7 @@ describe("transfer_resources — free resources (zero weight)", () => {
     });
 
     expect(result.details.donkeysBurnt).toBe(0);
-    expect(result.content[0].text).toContain("No donkeys needed");
+    expect((result.content[0] as any).text).toContain("No donkeys needed");
   });
 });
 
@@ -431,7 +431,7 @@ describe("transfer_resources — output", () => {
       amount: 100,
     });
 
-    const text = result.content[0].text;
+    const text = (result.content[0] as any).text;
     expect(text).toContain("Wood");
     expect(text).toContain("Donkeys burnt");
     expect(text).toContain("Estimated arrival");
