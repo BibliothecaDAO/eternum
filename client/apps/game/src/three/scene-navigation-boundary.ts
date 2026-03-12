@@ -6,8 +6,10 @@ interface ResolveNavigationSceneTargetInput {
   fastTravelEnabled?: boolean;
 }
 
+const FAST_TRAVEL_BOUNDARY_ENABLED = false;
+
 export function resolveNavigationSceneTarget(input: ResolveNavigationSceneTargetInput): SceneName {
-  const fastTravelEnabled = input.fastTravelEnabled === true;
+  const fastTravelEnabled = input.fastTravelEnabled ?? FAST_TRAVEL_BOUNDARY_ENABLED;
 
   if (input.requestedScene === SceneName.WorldMap || input.requestedScene === SceneName.Hexception) {
     return input.requestedScene;

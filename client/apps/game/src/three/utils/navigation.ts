@@ -17,7 +17,6 @@ export function navigateToStructure(col: number, row: number, scene?: "hex" | "m
   const targetScene = resolveNavigationSceneTarget({
     requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
     currentPath: window.location.pathname,
-    fastTravelEnabled: false,
   });
 
   let navigationUrl: string;
@@ -47,7 +46,6 @@ function navigateToPosition(col: number, row: number, scene?: "hex" | "map") {
   const targetScene = resolveNavigationSceneTarget({
     requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
     currentPath: window.location.pathname,
-    fastTravelEnabled: false,
   });
 
   let navigationUrl: string;

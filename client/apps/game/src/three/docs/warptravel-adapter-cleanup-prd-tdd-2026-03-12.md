@@ -204,7 +204,7 @@ Completion Notes:
 2. `finalizeWarpTravelChunkSwitch()` no longer returns a duplicate `nextCurrentChunk` assignment contract.
 3. `WorldmapScene.performChunkSwitch()` now routes rollback and visibility side effects through named private methods instead of a dense inline callback bundle.
 
-### C3: Navigation Boundary Hardening (0.5 day) [ ]
+### C3: Navigation Boundary Hardening (0.5 day) [x]
 
 Objective:
 
@@ -224,6 +224,12 @@ Deliverables:
 Exit Criteria:
 
 1. enabling the concrete fast-travel scene later requires changing one boundary source, not multiple helpers
+
+Completion Notes:
+
+1. dormant fast-travel enablement now defaults from `scene-navigation-boundary.ts`.
+2. navigation helpers no longer pass `fastTravelEnabled: false` at each call site.
+3. `scene-navigation-boundary.test.ts` now locks both the dormant default and the absence of helper-owned fallback wiring.
 
 ### C4: Prefetch Hot-Path Cleanup (0.5-1 day) [ ]
 
