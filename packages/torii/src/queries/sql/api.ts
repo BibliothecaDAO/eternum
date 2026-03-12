@@ -224,6 +224,16 @@ export class SqlApi {
    * Fetch structure details for a specific coordinate from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */
+  /**
+   * Fetch multiple structures by entity IDs in a single query (includes guard data).
+   */
+  async fetchStructuresByEntityIds(entityIds: number[]): Promise<any[]> {
+    if (entityIds.length === 0) return [];
+    const query = STRUCTURE_QUERIES.STRUCTURES_BY_ENTITY_IDS.replace("{entityIds}", entityIds.join(","));
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<any>(url, "Failed to fetch structures by entity IDs");
+  }
+
   async fetchStructureByCoord(coordX: number, coordY: number): Promise<StructureDetails | null> {
     const query = STRUCTURE_QUERIES.STRUCTURE_BY_COORD.replace("{coord_x}", coordX.toString()).replace(
       "{coord_y}",

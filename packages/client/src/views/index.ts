@@ -58,6 +58,7 @@ export interface SqlApiLike {
   fetchResourceBalances(entityIds: number[]): Promise<any[]>;
   fetchExplorerById(entityId: number): Promise<any | null>;
   fetchExplorersByIds?(entityIds: number[]): Promise<any[]>;
+  fetchStructuresByEntityIds?(entityIds: number[]): Promise<any[]>;
 }
 
 /**
@@ -231,6 +232,55 @@ export class ViewClient {
       }
     } catch (error) {
       this.logger.warn(`[ViewClient] explorerInfoBatch query failed`, { error });
+    }
+    return result;
+  }
+
+  /**
+   * Fetch multiple structure details in a single SQL query (includes guards, no resources).
+   * Resources are omitted since they require a separate per-structure balance query.
+   */
+  async structureInfoBatch(entityIds: number[]): Promise<Map<number, StructureInfo>> {
+    const result = new Map<number, StructureInfo>();
+    if (entityIds.length === 0) return result;
+    try {
+      if (!this.sql.fetchStructuresByEntityIds) return result;
+      const rows = await this.sql.fetchStructuresByEntityIds(entityIds);
+      for (const s of rows) {
+        const entityId = Number(s.entity_id);
+        const guards: GuardInfo[] = [];
+        const SLOTS = [
+          { prefix: "alpha", name: "Alpha" },
+          { prefix: "bravo", name: "Bravo" },
+          { prefix: "charlie", name: "Charlie" },
+          { prefix: "delta", name: "Delta" },
+        ];
+        for (const slot of SLOTS) {
+          const rawCount = s[`${slot.prefix}_count`];
+          const count = rawCount ? parseBalance(String(rawCount)) : 0;
+          if (count <= 0) continue;
+          guards.push({
+            slot: slot.name,
+            troopType: TROOP_TYPE[parseEnumValue(s[`${slot.prefix}_category`])] ?? "Unknown",
+            troopTier: TROOP_TIER[parseEnumValue(s[`${slot.prefix}_tier`])] ?? "Unknown",
+            count,
+          });
+        }
+        result.set(entityId, {
+          entityId,
+          category: STRUCTURE_CATEGORY[Number(s.structure_category)] ?? "Unknown",
+          level: Number(s.structure_level ?? 0),
+          realmId: Number(s.realm_id ?? 0),
+          ownerAddress: String(s.occupier_id ?? ""),
+          position: { x: Number(s.coord_x), y: Number(s.coord_y) },
+          guards,
+          resources: [], // Not fetched in batch — use inspect_tile for full details
+          explorerCount: Number(s.troop_explorer_count ?? 0),
+          maxExplorerCount: Number(s.troop_max_explorer_count ?? 0),
+        });
+      }
+    } catch (error) {
+      this.logger.warn(`[ViewClient] structureInfoBatch query failed`, { error });
     }
     return result;
   }
