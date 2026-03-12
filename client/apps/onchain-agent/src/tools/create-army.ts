@@ -54,8 +54,9 @@ const TROOP_NAME_TO_CATEGORY: Record<string, number> = {
   Crossbowman: 2,
 };
 
-// Default troop count for new armies (10 troops)
-const DEFAULT_TROOP_AMOUNT = 10 * RESOURCE_PRECISION;
+// Target troop count — use up to 10K, or whatever is available
+const TARGET_TROOP_AMOUNT = 10_000 * RESOURCE_PRECISION;
+
 
 // ── Tool ─────────────────────────────────────────────────────────────
 
@@ -164,17 +165,28 @@ export function createCreateArmyTool(
 
       const resourceSummary = resources.map((r) => `${r.amount.toLocaleString()} ${r.name}`).join(", ");
 
+      // ── Determine troop amount (up to 10K, capped by available balance) ──
+
+      const troopResName = `${troop.name} T1`;
+      const available = resources.find((r) => r.name === troopResName)?.amount ?? 0;
+      const troopAmount = Math.min(TARGET_TROOP_AMOUNT, available > 0 ? available : TARGET_TROOP_AMOUNT);
+
+      if (troopAmount <= 0) {
+        throw new Error(`No ${troop.name} T1 troops available at this realm. Build a ${troop.name} barracks first.`);
+      }
+
       // ── Create army ──
 
       const troopTier = 0; // T1 on-chain
       const directionName = Direction[spawnDirection] ?? String(spawnDirection);
+      const troopCount = Math.floor(troopAmount / RESOURCE_PRECISION);
 
       try {
         await tx.provider.explorer_create({
           for_structure_id: structure.entityId,
           category: troop.category,
           tier: troopTier,
-          amount: DEFAULT_TROOP_AMOUNT,
+          amount: troopAmount,
           spawn_direction: spawnDirection,
           signer: tx.signer,
         });
@@ -187,7 +199,7 @@ export function createCreateArmyTool(
           {
             type: "text" as const,
             text: [
-              `Army created: ${troop.name} T1 (+30% on ${biomeName})`,
+              `Army created: ${troopCount.toLocaleString()} ${troop.name} T1 (+30% on ${biomeName})`,
               `Armies: ${explorerCount + 1}/${maxExplorerCount}`,
               `Spawn: ${directionName} of realm`,
               `Resources: ${resourceSummary}`,

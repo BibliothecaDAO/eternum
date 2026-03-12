@@ -24,18 +24,16 @@ export function addressesEqual(a: string, b: string): boolean {
  * Checks baseError.data.execution_error, then message, then stringifies the whole thing.
  */
 export function extractTxError(err: any): string {
-  const deepMsg = err?.baseError?.data?.execution_error;
-  const primary = deepMsg ?? err?.message ?? String(err);
-  const errStr = typeof primary === "string" ? primary : JSON.stringify(primary);
-  // If the primary message is short/generic (e.g. "Transaction execution error"),
-  // also search the full stringified error for nested details.
-  if (errStr.length < 200) {
-    try {
-      const full = JSON.stringify(err);
-      if (full.length > errStr.length) return `${errStr} ${full}`;
-    } catch {
-      /* circular ref, ignore */
-    }
+  // Try to find the most useful error message from nested RPC errors
+  const executionError = err?.baseError?.data?.execution_error;
+  if (typeof executionError === "string") {
+    // Extract the human-readable failure reason from Cairo error strings
+    const reasonMatch = executionError.match(/Failure reason:\s*\([^)]*'([^']+)'\)/);
+    const quotedMatch = executionError.match(/"([^"]+)"/);
+    if (reasonMatch) return reasonMatch[1];
+    if (quotedMatch) return quotedMatch[1];
+    // Truncate long execution errors
+    return executionError.length > 300 ? executionError.slice(0, 300) + "..." : executionError;
   }
-  return errStr;
+  return err?.message ?? String(err);
 }
