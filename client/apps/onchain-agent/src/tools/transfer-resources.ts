@@ -17,34 +17,39 @@ import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js"
 import { isStructure } from "../world/occupier.js";
 
 // Resource weight in grams (from on-chain WeightConfig)
-// Standard resources = 1000g (1kg), troops = 5000g (5kg), wheat/essence/fragments = 100g (0.1kg), donkeys = 0
 const RESOURCE_WEIGHT_GRAMS: Record<number, number> = {};
-// Standard resources (IDs 1-23 except special ones)
+// Standard resources (IDs 1-23): 1000g (1kg) each
 for (let i = 1; i <= 23; i++) RESOURCE_WEIGHT_GRAMS[i] = 1000;
-// Lightweight: Dragonhide=24(100g), Essence=38(100g)
+// AncientFragment=24: 100g (0.1kg)
 RESOURCE_WEIGHT_GRAMS[24] = 100;
-RESOURCE_WEIGHT_GRAMS[38] = 100;
-// Free: Donkey=25(0g), Wheat=37(0g)
+// Donkey=25: 0g (free)
 RESOURCE_WEIGHT_GRAMS[25] = 0;
+// Troops: Knight/Crossbow/Paladin T1-T3 (IDs 26-34): 5000g (5kg) each
+for (let i = 26; i <= 34; i++) RESOURCE_WEIGHT_GRAMS[i] = 5000;
+// Wheat=35, Fish=36: 100g (0.1kg) each
+RESOURCE_WEIGHT_GRAMS[35] = 100;
+RESOURCE_WEIGHT_GRAMS[36] = 100;
+// Lords=37: 0g (free)
 RESOURCE_WEIGHT_GRAMS[37] = 0;
-// Troops: Knight/Paladin/Crossbowman T1-T3 (IDs 26-36) = 5000g (5kg)
-for (let i = 26; i <= 36; i++) RESOURCE_WEIGHT_GRAMS[i] = 5000;
+// Essence=38: 100g (0.1kg)
+RESOURCE_WEIGHT_GRAMS[38] = 100;
 
 // Donkey capacity in grams (from WorldConfig)
 const DONKEY_CAPACITY_GRAMS = 50_000; // 50kg
 
 // Resource name → ID mapping for common resources
+// From ResourcesIds enum in @bibliothecadao/types
 const RESOURCE_NAME_TO_ID: Record<string, number> = {
-  Wood: 1, Stone: 2, Coal: 3, Copper: 4, Obsidian: 5,
-  Silver: 6, Ironwood: 7, ColdIron: 8, Gold: 9, Hartwood: 10,
-  Diamonds: 11, Sapphire: 12, Ruby: 13, DeepCrystal: 14, Ignium: 15,
-  EtherealSilica: 16, TrueIce: 17, TwilightQuartz: 18, AlchemicalSilver: 19,
-  Adamantine: 20, Mithral: 21, Dragonhide: 22, Labor: 23,
+  Stone: 1, Coal: 2, Wood: 3, Copper: 4, Ironwood: 5,
+  Obsidian: 6, Gold: 7, Silver: 8, Mithral: 9, AlchemicalSilver: 10,
+  ColdIron: 11, DeepCrystal: 12, Ruby: 13, Diamonds: 14, Hartwood: 15,
+  Ignium: 16, TwilightQuartz: 17, TrueIce: 18, Adamantine: 19, Sapphire: 20,
+  EtherealSilica: 21, Dragonhide: 22, Labor: 23,
   AncientFragment: 24, Donkey: 25,
   "Knight T1": 26, "Knight T2": 27, "Knight T3": 28,
   "Crossbowman T1": 29, "Crossbowman T2": 30, "Crossbowman T3": 31,
   "Paladin T1": 32, "Paladin T2": 33, "Paladin T3": 34,
-  Wheat: 35, Fish: 36, Essence: 38,
+  Wheat: 35, Fish: 36, Lords: 37, Essence: 38,
 };
 
 export function createTransferResourcesTool(
