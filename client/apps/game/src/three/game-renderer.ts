@@ -9,6 +9,7 @@ import {
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/hexagon-scene";
+import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
@@ -52,6 +53,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { env } from "../../env";
+import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
 import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
@@ -150,6 +152,7 @@ export default class GameRenderer {
 
   // Scenes
   private worldmapScene!: WorldmapScene;
+  private fastTravelScene!: FastTravelScene;
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
@@ -797,9 +800,15 @@ export default class GameRenderer {
     const url = new URL(window.location.href);
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const sceneSlug = pathSegments.pop();
-    const targetScene = resolveSceneNameFromRouteSegment(sceneSlug);
+    const targetScene = resolveNavigationSceneTarget({
+      requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
+      currentPath: url.pathname,
+    });
 
-    if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
+    if (
+      targetScene === this.sceneManager.getCurrentScene() &&
+      (targetScene === SceneName.WorldMap || targetScene === SceneName.FastTravel)
+    ) {
       this.sceneManager.moveCameraForScene();
       this.transitionManager?.fadeIn();
     } else {
@@ -832,6 +841,10 @@ export default class GameRenderer {
     // Initialize WorldMap scene
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
+
+    // Initialize FastTravel scene
+    this.fastTravelScene = new FastTravelScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
+    this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
 
     // Set up render pass
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
@@ -996,6 +1009,7 @@ export default class GameRenderer {
     const envMap = renderTarget.texture;
     this.hexceptionScene.setEnvironment(envMap, intensity);
     this.worldmapScene.setEnvironment(envMap, intensity);
+    this.fastTravelScene.setEnvironment(envMap, intensity);
 
     if (
       this.environmentTarget &&
@@ -1199,6 +1213,9 @@ export default class GameRenderer {
     if (currentScene === SceneName.WorldMap) {
       view = this.worldmapScene.getCurrentCameraView();
       labelsActive = this.worldmapScene.hasActiveLabelAnimations();
+    } else if (currentScene === SceneName.FastTravel) {
+      view = this.fastTravelScene.getCurrentCameraView();
+      labelsActive = this.fastTravelScene.hasActiveLabelAnimations();
     } else if (currentScene === SceneName.Hexception) {
       view = this.hexceptionScene.getCurrentCameraView();
       labelsActive = this.hexceptionScene.hasActiveLabelAnimations();
@@ -1283,16 +1300,24 @@ export default class GameRenderer {
     this.hudScene.update(deltaTime, cycleProgress);
     const weatherState = this.hudScene.getWeatherState();
     this.worldmapScene.setWeatherAtmosphereState(weatherState);
+    this.fastTravelScene.setWeatherAtmosphereState(weatherState);
     this.hexceptionScene.setWeatherAtmosphereState(weatherState);
 
     // Render the current game scene
     const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
+    const isFastTravel = this.sceneManager?.getCurrentScene() === SceneName.FastTravel;
     if (isWorldMap) {
       this.worldmapScene.update(deltaTime);
+    } else if (isFastTravel) {
+      this.fastTravelScene.update(deltaTime);
     } else {
       this.hexceptionScene.update(deltaTime);
     }
-    const activeScene = isWorldMap ? this.worldmapScene.getScene() : this.hexceptionScene.getScene();
+    const activeScene = isWorldMap
+      ? this.worldmapScene.getScene()
+      : isFastTravel
+        ? this.fastTravelScene.getScene()
+        : this.hexceptionScene.getScene();
     (this.renderPass as unknown as { scene: unknown }).scene = activeScene;
 
     const shouldRenderLabels = this.shouldRenderLabels(currentTime);
@@ -1367,6 +1392,9 @@ export default class GameRenderer {
       // Clean up scenes
       if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
         this.worldmapScene.destroy();
+      }
+      if (this.fastTravelScene && typeof this.fastTravelScene.destroy === "function") {
+        this.fastTravelScene.destroy();
       }
       if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
         this.hexceptionScene.destroy();
@@ -1444,6 +1472,7 @@ export default class GameRenderer {
     }
 
     this.worldmapScene?.applyQualityFeatures(features);
+    this.fastTravelScene?.applyQualityFeatures(features);
     this.hexceptionScene?.applyQualityFeatures(features);
 
     if (this.composer) {
