@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createMapLoop } from "../../../src/map/loop.js";
 import type { MapContext } from "../../../src/map/context.js";
 import type { EternumClient, TileState } from "@bibliothecadao/client";
@@ -31,7 +31,7 @@ describe("map-loop", () => {
     const tiles = [makeTile(0, 0), makeTile(1, 0)];
     const client = makeClient(tiles);
     const ctx: MapContext = { snapshot: null, filePath: null };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     expect(ctx.snapshot).toBeNull();
     await loop.refresh();
@@ -45,7 +45,7 @@ describe("map-loop", () => {
     const tiles2 = [makeTile(0, 0), makeTile(1, 0), makeTile(2, 0)];
     const client = makeClient(tiles1);
     const ctx: MapContext = { snapshot: null, filePath: null };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
     expect(ctx.snapshot!.tiles).toHaveLength(1);
@@ -59,7 +59,7 @@ describe("map-loop", () => {
     const { writeFileSync } = await import("fs");
     const client = makeClient([makeTile(0, 0)]);
     const ctx: MapContext = { snapshot: null, filePath: "/tmp/map.txt" };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
     expect(writeFileSync).toHaveBeenCalledWith("/tmp/map.txt", expect.any(String));
@@ -70,7 +70,7 @@ describe("map-loop", () => {
     (writeFileSync as any).mockClear();
     const client = makeClient([makeTile(0, 0)]);
     const ctx: MapContext = { snapshot: null, filePath: null };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
     expect(writeFileSync).not.toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe("map-loop", () => {
   it("survives a failed fetch", async () => {
     const client = makeClient([makeTile(0, 0)]);
     const ctx: MapContext = { snapshot: null, filePath: null };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
     const firstSnapshot = ctx.snapshot;
@@ -96,7 +96,7 @@ describe("map-loop", () => {
   it("start/stop controls the interval", () => {
     const client = makeClient([makeTile(0, 0)]);
     const ctx: MapContext = { snapshot: null, filePath: null };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     expect(loop.isRunning).toBe(false);
     loop.start();
@@ -108,7 +108,7 @@ describe("map-loop", () => {
   it("fetches all tiles with large radius", async () => {
     const client = makeClient([makeTile(0, 0)]);
     const ctx: MapContext = { snapshot: null, filePath: null };
-    const loop = createMapLoop(client, ctx, 10_000);
+    const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
     expect(client.view.mapArea).toHaveBeenCalledWith({ x: 0, y: 0, radius: 999_999 });
