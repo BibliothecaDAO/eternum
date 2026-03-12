@@ -2,11 +2,14 @@
  * Hardcoded build orders driven by realm biome.
  *
  * Biome → best troop type → T2/T3 resource path → entire build order.
- * No runtime config needed. The automation walks the list each tick,
- * finds the first un-built step, and builds it.
+ * WorkersHuts are omitted — the runner auto-injects them when population
+ * capacity is the bottleneck (see runner.ts resolvePlan).
+ * The automation walks the list each tick, finds the first un-built step,
+ * and builds it.
  *
  * Build order is structured around realm level slot gates:
  *   Settlement (6 slots) → City (18 slots) → Kingdom (36 slots) → Empire (60 slots)
+ * Actual slot usage per tier will be higher due to auto-injected WorkersHuts.
  */
 
 // ── BuildingType numeric values (from @bibliothecadao/types) ──────────
@@ -92,82 +95,66 @@ function buildSteps(path: TroopPath): BuildStep[] {
   const t2Res = T2_RESOURCE[path];
   const t3Res = T3_RESOURCE[path];
 
+  // WorkersHuts are NOT listed here — the runner auto-injects them
+  // whenever population capacity is the bottleneck (see runner.ts resolvePlan).
+  // Totals at Empire: 10W, 10Cu, 7Co, 10Wh, 5T1, 1T2Res, 2T2, 1T3Res, 1T3 = 47
+  // ~16 slots filled by auto-injected WorkersHuts → fits within 60.
   return [
     // ── Settlement: 6 slots ──────────────────────────────────
-    { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
+    { building: B.Wood, label: "WoodMill" },
+    { building: B.Copper, label: "CopperSmelter" },
     // → upgrade to City (18 slots = 12 more)
 
     // ── City: fill 12 more slots ─────────────────────────────
-    // Wheat: 3 (was 2)
-    { building: B.WorkersHut, label: "WorkersHut" },
+    { building: B.Coal, label: "CoalMine" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
+    { building: B.Wheat, label: "WheatFarm" },
+    { building: troop.t1, label: troopLabel.t1 },
+    { building: troop.t1, label: troopLabel.t1 },
+    { building: B.Wood, label: "WoodMill" },
+    { building: B.Copper, label: "CopperSmelter" },
+    { building: troop.t1, label: troopLabel.t1 },
+    { building: troop.t1, label: troopLabel.t1 },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: troop.t1, label: troopLabel.t1 },
-    { building: troop.t1, label: troopLabel.t1 },
     // → upgrade to Kingdom (36 slots = 18 more)
 
     // ── Kingdom: fill 18 more slots ──────────────────────────
-    // Wheat: 5 (was 4)
-    { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wood, label: "WoodMill" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    // T2 resource + 2x T2 troop
     { building: t2Res.building, label: t2Res.label },
     { building: troop.t2, label: troopLabel.t2 },
     { building: troop.t2, label: troopLabel.t2 },
-    { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
+    { building: B.Copper, label: "CopperSmelter" },
+    { building: troop.t1, label: troopLabel.t1 },
+    { building: B.Wheat, label: "WheatFarm" },
+    { building: B.Wood, label: "WoodMill" },
+    { building: B.Copper, label: "CopperSmelter" },
+    { building: B.Coal, label: "CoalMine" },
+    { building: B.Wheat, label: "WheatFarm" },
+    { building: B.Wood, label: "WoodMill" },
+    { building: B.Copper, label: "CopperSmelter" },
     // → upgrade to Empire (60 slots = 24 more)
 
-    // ── Empire: fill 24 more slots ───────────────────────────
-    // Wheat: 8 (was 5)
-    // T3 resource + 1x T3 troop
+    // ── Empire: fill remaining slots ─────────────────────────
     { building: t3Res.building, label: t3Res.label },
     { building: troop.t3, label: troopLabel.t3 },
-    { building: B.WorkersHut, label: "WorkersHut" },
     { building: B.Wood, label: "WoodMill" },
     { building: B.Copper, label: "CopperSmelter" },
     { building: B.Coal, label: "CoalMine" },
     { building: B.Wheat, label: "WheatFarm" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
     { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
+    { building: troop.t2, label: troopLabel.t2 },
     { building: B.Coal, label: "CoalMine" },
-    { building: B.WorkersHut, label: "WorkersHut" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
   ];
 }
 

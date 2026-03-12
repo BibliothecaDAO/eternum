@@ -111,9 +111,10 @@ export function resolvePlan(
   const maxSlots = LEVEL_SLOTS[state.level] ?? 6;
   let slotsUsed = sumValues(state.buildingCounts);
 
-  // Compute current population used and capacity from ALL buildings
+  // Compute current population used and capacity from ALL buildings.
+  // Realms start with a base capacity of 6 before any WorkersHuts.
   let popUsed = 0;
-  let popCapacity = 0;
+  let popCapacity = 6;
   for (const [type, count] of state.buildingCounts) {
     const info = populationInfo[type];
     if (info) {
