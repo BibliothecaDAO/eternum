@@ -20,10 +20,15 @@ const TROOP_CATEGORY: Record<string, number> = { Knight: 0, Paladin: 1, Crossbow
 const TIER_VALUE: Record<number, number> = { 1: 0, 2: 1, 3: 2 };
 const TIER_SUFFIX: Record<number, string> = { 1: "T1", 2: "T2", 3: "T3" };
 const SLOT_NAMES = ["Alpha", "Bravo", "Charlie", "Delta"];
-// Guard slots have a max capacity based on structure level and tier.
-// We don't query TroopLimitConfig, so use a conservative default.
-// The agent can override with the amount parameter.
-const DEFAULT_GUARD_AMOUNT = 1_500 * RESOURCE_PRECISION;
+// Guard slot max capacity per structure level (T1).
+// Formula: deploymentCap * t1_modifier / (t1_strength * 100)
+// Values: settlement=3000, city=15000, kingdom=45000, empire=90000; t1_mod=50, t1_str=1
+const GUARD_CAP_BY_LEVEL: Record<number, number> = {
+  0: 1_500,   // Settlement
+  1: 7_500,   // City
+  2: 22_500,  // Kingdom
+  3: 45_000,  // Empire
+};
 
 export function createDefendStructureTool(
   client: EternumClient,
@@ -42,7 +47,8 @@ export function createDefendStructureTool(
       "(2) Omit from_army to use troops from the structure's own reserves — " +
       "requires troop_type and tier since the structure may have multiple troop types. " +
       "Fills the first empty guard slot (up to 4: Alpha, Bravo, Charlie, Delta). " +
-      "Guard slots have a max capacity (~1,500 for T1). Default: 1,500 troops. Specify amount to override.",
+      "Guard slot capacity scales with structure level: ~1,500 (lv0), ~7,500 (lv1), ~22,500 (lv2), ~45,000 (lv3). " +
+      "Defaults to max capacity for the structure's level.",
     parameters: Type.Object({
       row: Type.Number({ description: "Row of the structure to defend" }),
       col: Type.Number({ description: "Column of the structure to defend" }),
@@ -133,9 +139,10 @@ export function createDefendStructureTool(
         if (maxTransferRaw <= 0) {
           throw new Error(`Army only has ${explorer.troopCount} troops — need more than 1 to garrison (must leave at least 1).`);
         }
-        // Guard slots have a max capacity (~1,500 for T1 at low levels). Cap to avoid rejection.
-        const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : DEFAULT_GUARD_AMOUNT;
-        const transferAmount = Math.min(requestedRaw, maxTransferRaw);
+        // Cap at guard slot capacity for this structure level
+        const guardCap = (GUARD_CAP_BY_LEVEL[structure.level] ?? 1_500) * RESOURCE_PRECISION;
+        const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : guardCap;
+        const transferAmount = Math.min(requestedRaw, maxTransferRaw, guardCap);
         const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
 
         try {
@@ -199,8 +206,9 @@ export function createDefendStructureTool(
         throw new Error(`No ${troopResName} at this structure. Available: ${resSummary || "none"}`);
       }
 
-      const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : DEFAULT_GUARD_AMOUNT;
-      const troopAmount = Math.min(requestedRaw, availableRaw);
+      const guardCap = (GUARD_CAP_BY_LEVEL[structure.level] ?? 1_500) * RESOURCE_PRECISION;
+      const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : guardCap;
+      const troopAmount = Math.min(requestedRaw, availableRaw, guardCap);
       const troopCount = Math.floor(troopAmount / RESOURCE_PRECISION);
       const troopTier = TIER_VALUE[tier] ?? 0;
 
