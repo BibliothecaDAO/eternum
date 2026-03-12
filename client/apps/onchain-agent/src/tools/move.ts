@@ -401,11 +401,26 @@ export function createMoveTool(
           // Extract error details from WASM JsControllerError objects
           try {
             const errData = typeof err?.data === "function" ? err.data() : err?.data;
-            const errMsg = typeof err?.message === "function" ? err.message() : err?.message;
             const errCode = typeof err?.code === "function" ? err.code() : err?.code;
-            if (errData) console.error(`[MOVE] data: ${typeof errData === "string" ? errData : JSON.stringify(errData).slice(0, 500)}`);
-            console.error(`[MOVE] code=${errCode} msg=${errMsg}`);
-          } catch { /* */ }
+            // Parse the execution_error for a clean message
+            if (errData) {
+              let parsed: any;
+              try { parsed = typeof errData === "string" ? JSON.parse(errData) : errData; } catch { parsed = null; }
+              const execErr = parsed?.execution_error ?? (typeof errData === "string" ? errData : "");
+              if (typeof execErr === "string") {
+                // Extract quoted human-readable reasons
+                const reasons = [...execErr.matchAll(/"([^"]{10,})"/g)]
+                  .map((m) => m[1])
+                  .filter((r) => !r.startsWith("0x"));
+                if (reasons.length > 0) {
+                  throw new Error(`Move failed: ${reasons[0]}`);
+                }
+              }
+            }
+            console.error(`[MOVE] code=${errCode} data=${typeof errData === "string" ? errData.slice(0, 300) : JSON.stringify(errData).slice(0, 300)}`);
+          } catch (extractErr: any) {
+            if (extractErr?.message?.startsWith("Move failed:")) throw extractErr;
+          }
           const errStr = extractTxError(err);
           if (errStr.includes("is occupied")) {
             try {
