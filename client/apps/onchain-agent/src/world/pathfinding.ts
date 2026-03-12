@@ -80,8 +80,9 @@ export function findPath(
   }
 
   const endKey = `${end.x},${end.y}`;
-  // Use minimum possible cost for A* heuristic (admissible)
-  const minCost = 1;
+  // Use minimum possible travel cost for A* heuristic (admissible — never overestimates).
+  // Actual costs are ≥20 (explored) or ≥30 (unexplored), so 20 is safe.
+  const minCost = 20;
 
   const openSet: Node[] = [{ x: start.x, y: start.y, g: 0, f: hexDistance(start, end) * minCost, parent: null }];
   const closed = new Set<string>();
