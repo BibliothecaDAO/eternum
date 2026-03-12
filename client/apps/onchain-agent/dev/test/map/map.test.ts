@@ -147,7 +147,7 @@ describe("inspect tool — empty tiles", () => {
     }
 
     const result = await inspectTool.execute("call-2", { row, col });
-    expect(result.content[0].text).toContain("Empty tile");
+    expect((result.content[0] as any).text).toContain("Empty tile");
   });
 
   it("returns unexplored for positions outside explored area", async () => {
@@ -160,7 +160,7 @@ describe("inspect tool — empty tiles", () => {
       col = ctx.snapshot!.colCount;
     while (ctx.snapshot!.tileAt(row, col) && col > 1) col--;
     const result = await inspectTool.execute("call-2", { row, col });
-    expect(result.content[0].text).toContain("Unexplored");
+    expect((result.content[0] as any).text).toContain("Unexplored");
   });
 
   it("errors when no map is loaded", async () => {
@@ -222,7 +222,7 @@ describe("inspect tool — structures", () => {
     }
 
     const result = await inspectTool.execute("call-2", { row, col });
-    const text = result.content[0].text;
+    const text = (result.content[0] as any).text;
     expect(text).toContain("Realm");
     expect(text).toContain("Guards:");
     // category "1" = Paladin, tier "2" = T3
@@ -276,7 +276,7 @@ describe("inspect tool — explorers", () => {
     };
 
     const result = await inspectTool.execute("call-2", { row: 1, col: 1 });
-    const text = result.content[0].text;
+    const text = (result.content[0] as any).text;
     // troop_category 1 = Paladin, troop_tier 2 = T3
     expect(text).toContain("Paladin T3");
     expect(text).toContain("TestPlayer");
