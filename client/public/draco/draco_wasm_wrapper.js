@@ -238,7 +238,7 @@ $jscomp.polyfill(
             }
             var t = [],
               z = 0;
-            do t.push(void 0), z++, v(m.value).callWhenSettled_(l(t.length - 1), h), (m = f.next());
+            do (t.push(void 0), z++, v(m.value).callWhenSettled_(l(t.length - 1), h), (m = f.next()));
             while (!m.done);
           });
     };
@@ -606,7 +606,7 @@ var DracoDecoderModule = (function () {
         return "[Emscripten Module object]";
       };
     } else if (Ia)
-      "undefined" != typeof read &&
+      ("undefined" != typeof read &&
         (ra = function (a) {
           return read(a);
         }),
@@ -619,9 +619,9 @@ var DracoDecoderModule = (function () {
         "undefined" !== typeof print &&
           ("undefined" === typeof console && (console = {}),
           (console.log = print),
-          (console.warn = console.error = "undefined" !== typeof printErr ? printErr : print));
+          (console.warn = console.error = "undefined" !== typeof printErr ? printErr : print)));
     else if (ea || Z)
-      Z ? (M = self.location.href) : document.currentScript && (M = document.currentScript.src),
+      (Z ? (M = self.location.href) : document.currentScript && (M = document.currentScript.src),
         f && (M = f),
         (M = 0 !== M.indexOf("blob:") ? M.substr(0, M.lastIndexOf("/") + 1) : ""),
         (ra = function (a) {
@@ -637,7 +637,7 @@ var DracoDecoderModule = (function () {
             c.responseType = "arraybuffer";
             c.send(null);
             return new Uint8Array(c.response);
-          });
+          }));
     var ya = a.print || console.log.bind(console),
       Y = a.printErr || console.warn.bind(console);
     for (W in ha) ha.hasOwnProperty(W) && (a[W] = ha[W]);
@@ -769,7 +769,7 @@ var DracoDecoderModule = (function () {
             P[d >> 2] = e;
             return 0;
           } catch (ua) {
-            return ("undefined" !== typeof FS && ua instanceof FS.ErrnoError) || z(ua), ua.errno;
+            return (("undefined" !== typeof FS && ua instanceof FS.ErrnoError) || z(ua), ua.errno);
           }
         },
         memory: ia,
@@ -803,7 +803,7 @@ var DracoDecoderModule = (function () {
           try {
             return a.instantiateWasm(d, e);
           } catch (Na) {
-            return Y("Module.instantiateWasm callback failed with error: " + Na), !1;
+            return (Y("Module.instantiateWasm callback failed with error: " + Na), !1);
           }
         (function () {
           if (da || "function" !== typeof WebAssembly.instantiateStreaming || va(U) || "function" !== typeof fetch)
