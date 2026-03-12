@@ -59,11 +59,15 @@ const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf54
 const DEFAULT_RPC: Record<string, string> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
   sepolia: "https://api.cartridge.gg/x/starknet/sepolia",
+  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana",
+  slottest: "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana",
 };
 
 const DEFAULT_CHAIN_ID: Record<string, string> = {
   mainnet: "SN_MAIN",
   sepolia: "SN_SEPOLIA",
+  slot: "WP_ETERNUM_BLITZ_SLOT_4",
+  slottest: "WP_ETERNUM_BLITZ_SLOT_TEST",
 };
 
 /**

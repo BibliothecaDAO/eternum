@@ -90,7 +90,7 @@ export function createAutomationLoop(
         realmEntities.map(async (s) => {
           const entityId = Number(s.entity_id);
           const biome = gridIndex?.get(`${s.coord_x},${s.coord_y}`)?.biome ?? 11;
-          const level = s.level || 1;
+          const level = s.level ?? 0;
           try {
             const rows =
               typeof sql.fetchResourceBalancesWithProduction === "function"
