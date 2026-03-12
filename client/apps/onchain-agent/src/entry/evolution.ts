@@ -54,6 +54,7 @@ export interface EvolutionSnapshot {
   structures: string;
   armies: string;
   toolErrors: string;
+  recentMessages?: any[];
   timestamp: number;
 }
 
@@ -101,6 +102,25 @@ Armies:
 ${after.armies}
 
 `;
+  }
+
+  // Include key actions from recent messages (tool calls and results only, skip tick prompts)
+  const msgs = after.recentMessages ?? [];
+  if (msgs.length > 0) {
+    prompt += `## Key Actions (last ${msgs.length} messages)\n\n`;
+    for (const msg of msgs) {
+      if (msg.role === "assistant" && Array.isArray(msg.content)) {
+        for (const b of msg.content) {
+          if (b.type === "toolCall") prompt += `→ ${b.name}(${JSON.stringify(b.arguments).slice(0, 150)})\n`;
+        }
+      } else if (msg.role === "toolResult") {
+        const text = Array.isArray(msg.content)
+          ? msg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("").slice(0, 200)
+          : String(msg.content ?? "").slice(0, 200);
+        if (text) prompt += `  ${text}\n`;
+      }
+    }
+    prompt += "\n";
   }
 
   prompt += `## Instructions

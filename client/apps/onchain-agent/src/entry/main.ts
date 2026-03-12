@@ -501,6 +501,7 @@ export async function main() {
                   .join("\n")
               : "No armies",
             toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
+            recentMessages: (agent as any).state?.messages?.slice(-30),
             timestamp: Date.now(),
           })
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
