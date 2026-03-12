@@ -319,7 +319,7 @@ export async function main() {
   // 4. Tools — game-specific + read/grep/find/ls scoped to dataDir
   const tools: AgentTool[] = [
     ...createReadOnlyTools(config.dataDir),
-    createInspectTool(client, mapCtx),
+    createInspectTool(client, mapCtx, account.address),
     createMoveTool(client, mapCtx, account.address, txCtx, gameConfig),
     createAttackTool(client, mapCtx, account.address, txCtx, gameConfig),
     createCreateArmyTool(client, mapCtx, account.address, txCtx),
@@ -418,8 +418,14 @@ export async function main() {
 
   // Wire threat detection — agent.steer() pushes urgent defensive alerts
   onThreatCallback = (alerts) => {
+    const anchor = mapCtx.snapshot?.anchor;
+    if (!anchor) return;
     for (const alert of alerts) {
-      const msg = `DEFENSIVE ALERT: Enemy army detected at ${alert.enemyX}:${alert.enemyY}, adjacent to your structure at ${alert.structureX}:${alert.structureY}. Assess threat and respond.`;
+      const eRow = anchor.maxY - alert.enemyY + 1;
+      const eCol = alert.enemyX - anchor.minX + 1;
+      const sRow = anchor.maxY - alert.structureY + 1;
+      const sCol = alert.structureX - anchor.minX + 1;
+      const msg = `DEFENSIVE ALERT: Enemy army detected at ${eRow}:${eCol}, adjacent to your structure at ${sRow}:${sCol}. Assess threat and respond.`;
       console.log(`[THREAT] ${msg}`);
       agent.steer({ role: "user", content: msg, timestamp: Date.now() } as AgentMessage);
     }

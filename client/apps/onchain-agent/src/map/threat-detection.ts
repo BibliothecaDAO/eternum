@@ -1,4 +1,5 @@
 import { getNeighborHexes } from "@bibliothecadao/types";
+import { isExplorer } from "../world/occupier.js";
 
 export interface ThreatAlert {
   enemyX: number;
@@ -15,10 +16,6 @@ interface TileInput {
   occupierId: number;
   occupierType: number;
   isOwned?: boolean;
-}
-
-function isExplorerType(type: number): boolean {
-  return type >= 30 && type <= 35;
 }
 
 export function detectThreats(
@@ -43,7 +40,7 @@ export function detectThreats(
       if (!tile) continue;
       if (tile.occupierId <= 0) continue;
       if (tile.isOwned) continue;
-      if (!isExplorerType(tile.occupierType)) continue;
+      if (!isExplorer(tile.occupierType)) continue;
 
       alerts.push({
         enemyX: tile.x,

@@ -259,10 +259,14 @@ export function renderMap(
       if (!t) {
         row += "  ";
       } else {
+        // Hide opened chests — render as explored empty tile
+        const isOpenedChest = t.occupierType === 34 && t.rewardExtracted;
         const isOwned = ownedEntityIds && t.occupierId > 0 && ownedEntityIds.has(t.occupierId);
-        const ch = isOwned
-          ? (OWNED_ASCII[t.occupierType] ?? OCCUPIER_ASCII[t.occupierType] ?? "?")
-          : (OCCUPIER_ASCII[t.occupierType] ?? "?");
+        const ch = isOpenedChest
+          ? "."
+          : isOwned
+            ? (OWNED_ASCII[t.occupierType] ?? OCCUPIER_ASCII[t.occupierType] ?? "?")
+            : (OCCUPIER_ASCII[t.occupierType] ?? "?");
         row += ch + " ";
       }
     }
@@ -352,7 +356,7 @@ export function renderMap(
         else if (ot === 13) villages.push(`  V ${loc}`);
         else if (ot === 14) banks.push(`  B ${loc}`);
         else if (ot === 33) quests.push(`  Q ${loc}`);
-        else if (ot === 34) chests.push(`  C ${loc}`);
+        else if (ot === 34 && !t.rewardExtracted) chests.push(`  C ${loc}`);
       }
     }
 
