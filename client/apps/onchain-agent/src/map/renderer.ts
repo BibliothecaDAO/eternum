@@ -125,6 +125,10 @@ export interface MapSnapshot {
    * @returns The TileState at that position, or null if unexplored or out of bounds.
    */
   tileAt(row: number, col: number): TileState | null;
+  /** Per-explorer metadata passed to renderMap, stored for downstream consumers. */
+  explorerDetails: Map<number, any>;
+  /** Per-structure metadata passed to renderMap, stored for downstream consumers. */
+  structureDetails: Map<number, any>;
   /** Fixed coordinate anchor — pass to subsequent renders to keep row:col stable. */
   anchor: MapAnchor;
 }
@@ -181,6 +185,8 @@ export function renderMap(
       gridIndex: new Map(),
       resolve: () => null,
       tileAt: () => null,
+      explorerDetails: explorerDetails ?? new Map(),
+      structureDetails: structureDetails ?? new Map(),
       anchor: mapAnchor ?? { minX: 0, minY: 0, maxX: 0, maxY: 0 },
     };
   }
@@ -393,6 +399,8 @@ export function renderMap(
     gridIndex: grid,
     resolve,
     tileAt,
+    explorerDetails: explorerDetails ?? new Map(),
+    structureDetails: structureDetails ?? new Map(),
     anchor,
   };
 }
