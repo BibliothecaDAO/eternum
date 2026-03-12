@@ -13,7 +13,7 @@
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
-import type { EternumClient } from "@bibliothecadao/client";
+import type { EternumClient, Position } from "@bibliothecadao/client";
 import { packTileSeed, getNeighborOffsets } from "@bibliothecadao/types";
 import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
 import type { MapContext } from "../map/context.js";
@@ -220,7 +220,7 @@ export function createMoveTool(
           return tileTravelCost(biome, explorer.troopType, gameConfig.stamina);
         };
 
-        let pathResult = findPath(start, target, explored, blocked, projectedStamina, tileCost);
+        let pathResult = findPath(start, target, explored, blocked, projectedStamina, tileCost, gameConfig.stamina.exploreCost);
 
         if (!pathResult) {
           throw new Error(`No path to ${to_row}:${to_col}. Target may be blocked, unexplored, or unreachable.`);
@@ -292,19 +292,9 @@ export function createMoveTool(
         }
 
         const endPos = pathResult.path[pathResult.path.length - 1];
-        const endKey = `${endPos.x},${endPos.y}`;
-        let isExploreMove = !explored.has(endKey);
-
-        // Adjust stamina cost: A* used travel cost for the explore step,
-        // but actual explore cost may differ
-        let staminaCost = pathResult.staminaCost;
-        if (isExploreMove && pathResult.path.length > 1) {
-          const lastTravelCost = tileCost(endKey);
-          staminaCost = staminaCost - lastTravelCost + gameConfig.stamina.exploreCost;
-        }
-
+        // Compute total stamina cost (pathfinder already uses correct explore cost)
+        const staminaCost = pathResult.staminaCost;
         const reachedTarget = endPos.x === target.x && endPos.y === target.y;
-
         const staminaAfter = projectedStamina - staminaCost;
         const movesAfter = Math.floor(staminaAfter / gameConfig.stamina.travelCost);
 
@@ -312,71 +302,80 @@ export function createMoveTool(
           `[MOVE] Food cost check not implemented — ensure realm has sufficient wheat/fish for ${pathResult.distance} steps.`,
         );
 
+        // Split path into segments: runs of explored tiles (travel) and
+        // individual unexplored tiles (explore one at a time).
+        // Also track which tiles we explored for context updates.
+        const exploredTiles: Position[] = [];
+
         try {
-          if (isExploreMove) {
-            // explorer_explore only supports 1 direction (the final step into unexplored).
-            // If the path is longer than 1 step, travel first, then explore.
-            if (pathResult.directions.length > 1) {
-              const travelDirs = pathResult.directions.slice(0, -1);
+          let segStart = 0;
+          while (segStart < pathResult.directions.length) {
+            // Find the next unexplored step
+            const nextStepPos = pathResult.path[segStart + 1];
+            const nextStepKey = `${nextStepPos.x},${nextStepPos.y}`;
+            const nextIsUnexplored = !explored.has(nextStepKey) && !mapCtx.recentlyExplored?.has(nextStepKey);
+
+            if (!nextIsUnexplored) {
+              // Collect consecutive explored steps into one travel call
+              let segEnd = segStart + 1;
+              while (segEnd < pathResult.directions.length) {
+                const futurePos = pathResult.path[segEnd + 1];
+                const futureKey = `${futurePos.x},${futurePos.y}`;
+                if (!explored.has(futureKey) && !mapCtx.recentlyExplored?.has(futureKey)) break;
+                segEnd++;
+              }
+              const travelDirs = pathResult.directions.slice(segStart, segEnd);
               await tx.provider.explorer_travel({
                 explorer_id: explorer.entityId,
                 directions: travelDirs,
                 signer: tx.signer,
               });
+              segStart = segEnd;
+            } else {
+              // Single explore step
+              const exploreDir = pathResult.directions[segStart];
+              const explorePos = pathResult.path[segStart + 1];
+              const vrf_source_salt = packTileSeed({ alt: false, col: explorePos.x, row: explorePos.y });
+              try {
+                await tx.provider.explorer_explore({
+                  explorer_id: explorer.entityId,
+                  directions: [exploreDir],
+                  signer: tx.signer,
+                  vrf_source_salt,
+                });
+              } catch (err: any) {
+                const errStr = extractTxError(err);
+                if (errStr.includes("already explored")) {
+                  // Another player explored it — retry as travel
+                  await tx.provider.explorer_travel({
+                    explorer_id: explorer.entityId,
+                    directions: [exploreDir],
+                    signer: tx.signer,
+                  });
+                } else {
+                  throw err;
+                }
+              }
+              exploredTiles.push(explorePos);
+              // Mark as explored so subsequent segments treat it as travel
+              if (!mapCtx.recentlyExplored) mapCtx.recentlyExplored = new Set();
+              mapCtx.recentlyExplored.add(`${explorePos.x},${explorePos.y}`);
+              segStart++;
             }
-            const exploreDirs = [pathResult.directions[pathResult.directions.length - 1]];
-            const vrf_source_salt = packTileSeed({ alt: false, col: endPos.x, row: endPos.y });
-            await tx.provider.explorer_explore({
-              explorer_id: explorer.entityId,
-              directions: exploreDirs,
-              signer: tx.signer,
-              vrf_source_salt,
-            });
-          } else {
-            await tx.provider.explorer_travel({
-              explorer_id: explorer.entityId,
-              directions: pathResult.directions,
-              signer: tx.signer,
-            });
           }
         } catch (err: any) {
           const errStr = extractTxError(err);
-
-          if (errStr.includes("not explored")) {
-            throw new Error(
-              `Path to ${to_row}:${to_col} crosses unexplored tiles. Try a shorter move to an adjacent explored tile.`,
-            );
-          }
-          if (errStr.includes("already explored")) {
-            // Tile was explored by another player/army between our snapshot
-            // and execution. Retry the whole path as travel (it's safe now).
-            try {
-              await tx.provider.explorer_travel({
-                explorer_id: explorer.entityId,
-                directions: pathResult.directions,
-                signer: tx.signer,
-              });
-              // Mark as non-explore so tracking below is correct
-              isExploreMove = false;
-              break; // success — fall through to tracking/response
-            } catch (retryErr: any) {
-              throw new Error(`Move failed on retry as travel: ${extractTxError(retryErr)}`);
-            }
-          }
           if (errStr.includes("is occupied")) {
-            // Refresh map and retry once with fresh pathfinding
-            try {
-              await mapCtx.refresh?.();
-            } catch {
-              /* non-fatal */
-            }
+            try { await mapCtx.refresh?.(); } catch { /* non-fatal */ }
             if (attempt < MAX_ATTEMPTS) continue; // retry with fresh map
             throw new Error(
-              `Path to ${to_row}:${to_col} is blocked by another entity. The map has been refreshed — try a different destination.`,
+              `Path to ${to_row}:${to_col} is blocked by an entity. Map refreshed — try a different destination.`,
             );
           }
           throw new Error(`Move failed: ${errStr}`);
         }
+
+        const isExploreMove = exploredTiles.length > 0;
 
         // Track the new position so subsequent pathfinding knows this tile
         // is occupied (even before Torii indexes it). Also remove the old
@@ -385,10 +384,10 @@ export function createMoveTool(
         mapCtx.recentlyMoved.set(`${endPos.x},${endPos.y}`, explorer.entityId);
         mapCtx.recentlyMoved.delete(`${start.x},${start.y}`);
 
-        // Track explored tile so subsequent moves treat it as travel, not explore.
-        if (isExploreMove) {
+        // Track explored tiles so subsequent moves treat them as travel, not explore.
+        for (const ep of exploredTiles) {
           if (!mapCtx.recentlyExplored) mapCtx.recentlyExplored = new Set();
-          mapCtx.recentlyExplored.add(`${endPos.x},${endPos.y}`);
+          mapCtx.recentlyExplored.add(`${ep.x},${ep.y}`);
         }
 
         // Track stamina consumed so subsequent moves for this army see
