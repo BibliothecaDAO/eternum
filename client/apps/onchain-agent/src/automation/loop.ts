@@ -193,12 +193,12 @@ export function createAutomationLoop(
           const buildOrder = buildOrderForBiome(biome);
           const plan = resolvePlan(buildOrder, realmState, gameConfig.buildingCosts);
 
-          // Compact log — one line per realm
+          // Compact log — one line per realm (build status only; production always runs)
           const buildLabels = plan.builds.map((b) => b.step.label);
-          const summary = plan.idle
-            ? `idle (${plan.idle})`
+          const buildSummary = plan.idle
+            ? `builds done`
             : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}`;
-          console.log(`[AUTO] ${structureType} ${entityId} | lv${level} | ${summary}`);
+          console.log(`[AUTO] ${structureType} ${entityId} | lv${level} | ${buildSummary} | producing`);
 
           // Upgrade as soon as slots are full — the executor runs builds first,
           // then the upgrade, as separate sequential calls (not a multicall),
