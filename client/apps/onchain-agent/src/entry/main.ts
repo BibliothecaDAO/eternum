@@ -9,7 +9,7 @@
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
 import type { Message, Model } from "@mariozechner/pi-ai";
-import { getModel, completeSimple } from "@mariozechner/pi-ai";
+import { getModel } from "@mariozechner/pi-ai";
 import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
 import { EternumClient } from "@bibliothecadao/client";
 import { EternumProvider } from "@bibliothecadao/provider";
@@ -18,6 +18,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { loadConfig } from "./config.js";
+import { pruneMessages } from "./context-pruning.js";
 import { getManifest } from "../auth/embedded-data.js";
 
 // Suppress noisy provider logs (fee estimation failures, tx data warnings, wait spam)
@@ -47,6 +48,7 @@ import { getAccount } from "../auth/session.js";
 import { createX402Model } from "../providers/x402/index.js";
 import { createMapLoop } from "../map/loop.js";
 import { createAutomationLoop } from "../automation/loop.js";
+import { createMultiAgentSystem } from "../multi-agent/coordinator.js";
 import type { MapContext } from "../map/context.js";
 import type { TxContext } from "../tools/tx-context.js";
 import { createInspectTool } from "../tools/inspect.js";
@@ -60,145 +62,6 @@ import { createOpenChestTool } from "../tools/open-chest.js";
 import { createViewMapTool } from "../tools/view-map.js";
 import { buildGameStateBlock, type ToolError } from "./game-state.js";
 import type { AutomationStatusMap } from "../automation/status.js";
-
-// ---------------------------------------------------------------------------
-// Context pruning — when messages exceed a caller-provided threshold, drops
-// older messages and uses the agent's model to summarize what was lost.
-// ---------------------------------------------------------------------------
-
-/**
- * Estimate the total character count across all messages in the context window.
- *
- * @param messages - Current agent message history.
- * @returns Approximate total character count.
- */
-function estimateChars(messages: AgentMessage[]): number {
-  let total = 0;
-  for (const m of messages) {
-    const msg = m as Message;
-    if (typeof msg.content === "string") {
-      total += msg.content.length;
-    } else if (Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        if ("text" in block) total += block.text.length;
-      }
-    }
-  }
-  return total;
-}
-
-/**
- * Partition a message array into oldest messages to discard and most recent
- * messages to retain, targeting at most `PRUNE_TARGET_CHARS` characters in
- * the kept slice.
- *
- * @param messages - Full message history, oldest first.
- * @returns An object with `dropped` (oldest messages) and `kept` (most recent
- *          messages that fit within the target character budget).
- */
-function splitMessages(
-  messages: AgentMessage[],
-  target: number = 200_000,
-): { dropped: AgentMessage[]; kept: AgentMessage[] } {
-  let kept = 0;
-  let cutIndex = messages.length;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i] as Message;
-    let chars = 0;
-    if (typeof msg.content === "string") {
-      chars = msg.content.length;
-    } else if (Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        if ("text" in block) chars += block.text.length;
-      }
-    }
-    kept += chars;
-    if (kept > target) {
-      cutIndex = i + 1;
-      break;
-    }
-  }
-
-  if (cutIndex >= messages.length) cutIndex = messages.length - 1;
-  return {
-    dropped: messages.slice(0, cutIndex),
-    kept: messages.slice(cutIndex),
-  };
-}
-
-/**
- * Prune the message history when it exceeds `MAX_CONTEXT_CHARS`.
- *
- * Summarizes dropped messages using the agent's own model and prepends the
- * summary as a synthetic `"user"` message so the agent retains situational
- * awareness. Falls back to a short placeholder if summarization fails.
- *
- * @param messages - Current message history to potentially compact.
- * @param model    - Language model used to generate the compaction summary.
- * @returns The (possibly pruned and prepended) message array.
- */
-async function pruneMessages(
-  messages: AgentMessage[],
-  model: Model<any>,
-  maxChars: number = 400_000,
-  pruneTarget: number = 200_000,
-): Promise<AgentMessage[]> {
-  if (estimateChars(messages) <= maxChars) return messages;
-
-  const { dropped, kept } = splitMessages(messages, pruneTarget);
-  if (dropped.length === 0) return kept;
-
-  // Summarize dropped messages using the agent's model
-  const droppedLlm = dropped.filter(
-    (m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult",
-  );
-
-  let summary = `[Context compacted: ${dropped.length} older messages dropped.]`;
-  try {
-    const result = await completeSimple(model, {
-      systemPrompt:
-        "Summarize this conversation history in 2-3 paragraphs. Focus on: strategic decisions made, " +
-        "current military positions, resource state, ongoing plans, and any threats identified. " +
-        "Be specific about coordinates, entity names, and outcomes.",
-      messages: [
-        {
-          role: "user" as const,
-          content: droppedLlm
-            .map((m) => {
-              const text =
-                typeof m.content === "string"
-                  ? m.content
-                  : Array.isArray(m.content)
-                    ? m.content
-                        .filter((b): b is { type: "text"; text: string } => "text" in b)
-                        .map((b) => b.text)
-                        .join("\n")
-                    : "";
-              return `[${m.role}]: ${text}`;
-            })
-            .join("\n\n"),
-          timestamp: Date.now(),
-        },
-      ],
-    });
-
-    const text = result.content.find((b): b is { type: "text"; text: string } => b.type === "text");
-    if (text) {
-      summary = `[Context compacted: ${dropped.length} older messages summarized]\n\n${text.text}`;
-    }
-  } catch (err) {
-    console.error("Compaction summary failed, using fallback:", err instanceof Error ? err.message : err);
-    summary += " Use inspect and the map to re-orient.";
-  }
-
-  kept.unshift({
-    role: "user" as const,
-    content: summary,
-    timestamp: Date.now(),
-  } as AgentMessage);
-
-  return kept;
-}
 
 // ---------------------------------------------------------------------------
 // Tick prompt builder
@@ -446,7 +309,75 @@ export async function main() {
     console.log("  WARNING: Map failed to load within 30s, starting agent anyway");
   }
 
-  // 7b. Automation loop — builds, upgrades, and produces across all owned realms
+  // 7b. Multi-agent vs single-agent path
+  if (config.multiAgent) {
+    const productionModel =
+      config.productionModelProvider === "x402"
+        ? await createX402Model()
+        : ((getModel as Function)(config.productionModelProvider, config.productionModelId) as Model<any>);
+
+    console.log(`  Multi-agent mode: military=${model.id}, production=${productionModel.id}`);
+
+    const multiAgent = createMultiAgentSystem(
+      {
+        militaryModel: model,
+        productionModel,
+        tickIntervalMs: config.tickIntervalMs,
+        dataDir: config.dataDir,
+      },
+      client,
+      provider,
+      account,
+      mapCtx,
+      gameConfig,
+    );
+
+    onThreatCallback = (alerts) => {
+      const anchor = mapCtx.snapshot?.anchor;
+      if (!anchor) return;
+      for (const alert of alerts) {
+        const eRow = anchor.maxY - alert.enemyY + 1;
+        const eCol = alert.enemyX - anchor.minX + 1;
+        const sRow = anchor.maxY - alert.structureY + 1;
+        const sCol = alert.structureX - anchor.minX + 1;
+        const msg = `DEFENSIVE ALERT: Enemy army detected at ${eRow}:${eCol}, adjacent to your structure at ${sRow}:${sCol}. Assess threat and respond.`;
+        console.log(`[THREAT] ${msg}`);
+        multiAgent.militaryAgent.steer({ role: "user", content: msg, timestamp: Date.now() } as AgentMessage);
+      }
+    };
+
+    multiAgent.start();
+
+    console.log(
+      `Multi-agent system running (tick every ${config.tickIntervalMs / 1000}s). ` +
+        `Military handles combat/map, Production handles economy. Ctrl+C to stop.`,
+    );
+
+    const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: "> " });
+    rl.prompt();
+    rl.on("line", (line) => {
+      const text = line.trim();
+      if (!text) {
+        rl.prompt();
+        return;
+      }
+      console.log("[YOU → military agent]");
+      multiAgent.militaryAgent.steer({ role: "user" as const, content: text, timestamp: Date.now() } as AgentMessage);
+      rl.prompt();
+    });
+
+    const shutdown = () => {
+      console.log("\nShutting down multi-agent system...");
+      multiAgent.dispose();
+      mapLoop.stop();
+      process.exit(0);
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+    return;
+  }
+
+  // 7c. Single-agent mode — automation loop + single LLM agent
   const automationLoop = createAutomationLoop(
     client,
     provider,
@@ -461,16 +392,13 @@ export async function main() {
   automationLoop.start();
 
   // 8. Tick loop — prompt() when idle, steer() when busy (matches game-agent pattern).
-  const EVOLUTION_INTERVAL = 10; // evolve every N ticks
+  const EVOLUTION_INTERVAL = 10;
   let tickCount = 0;
   let evolving = false;
   let agentBusy = false;
 
   function runAgentTick() {
     if (agentBusy) {
-      // Let the agent finish its current turn — the next prompt() will
-      // include fresh map data. Steering mid-turn just kills in-flight
-      // tool calls ("Skipped due to queued user message") and wastes work.
       return;
     }
     const prompt = buildTickPrompt(mapCtx);
@@ -492,19 +420,26 @@ export async function main() {
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
       evolve(model, config.dataDir, {
-            map: mapCtx.snapshot?.text ?? "Map not loaded",
-            structures: [...automationStatus.values()]
-              .map((s) => `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`)
-              .join("\n") || "No structures",
-            armies: mapCtx.snapshot?.explorerDetails
-              ? [...mapCtx.snapshot.explorerDetails.entries()]
-                  .map(([id, info]: [number, any]) => `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`)
-                  .join("\n")
-              : "No armies",
-            toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
-            recentMessages: (agent as any).state?.messages?.slice(-30),
-            timestamp: Date.now(),
-          })
+        map: mapCtx.snapshot?.text ?? "Map not loaded",
+        structures:
+          [...automationStatus.values()]
+            .map(
+              (s) =>
+                `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`,
+            )
+            .join("\n") || "No structures",
+        armies: mapCtx.snapshot?.explorerDetails
+          ? [...mapCtx.snapshot.explorerDetails.entries()]
+              .map(
+                ([id, info]: [number, any]) =>
+                  `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`,
+              )
+              .join("\n")
+          : "No armies",
+        toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
+        recentMessages: (agent as any).state?.messages?.slice(-30),
+        timestamp: Date.now(),
+      })
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
         .finally(() => {
           evolving = false;
@@ -514,7 +449,6 @@ export async function main() {
     runAgentTick();
   }, config.tickIntervalMs);
 
-  // Kick off the first turn immediately
   runAgentTick();
 
   console.log(

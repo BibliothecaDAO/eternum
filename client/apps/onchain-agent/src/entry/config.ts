@@ -54,6 +54,9 @@ function loadDotenv() {
  *                                `~/.axis/worlds/_pending` before discovery resolves.
  * @property vrfProviderAddress - Starknet address of the VRF provider contract. Uses a
  *                                hardcoded default; override via `VRF_PROVIDER_ADDRESS` env var.
+ * @property multiAgent              - Enable 2-agent mode (military + production). `MULTI_AGENT=true`.
+ * @property productionModelProvider - LLM provider for production agent (default: same as `modelProvider`).
+ * @property productionModelId       - Model ID for production agent (default: same as `modelId`).
  */
 interface AgentConfig {
   // World connection
@@ -70,6 +73,10 @@ interface AgentConfig {
   dataDir: string;
   // VRF
   vrfProviderAddress: string;
+  // Multi-agent mode
+  multiAgent: boolean;
+  productionModelProvider: string;
+  productionModelId: string;
 }
 
 /** Normalize a hex address to 0x + 64 hex chars (zero-padded). */
@@ -144,5 +151,8 @@ export function loadConfig(): AgentConfig {
       ? join(homedir(), ".axis", "worlds", worldAddress)
       : join(homedir(), ".axis", "worlds", "_pending"),
     vrfProviderAddress: env.VRF_PROVIDER_ADDRESS ?? DEFAULT_VRF_PROVIDER_ADDRESS,
+    multiAgent: env.MULTI_AGENT === "true",
+    productionModelProvider: env.PRODUCTION_MODEL_PROVIDER ?? env.MODEL_PROVIDER ?? "anthropic",
+    productionModelId: env.PRODUCTION_MODEL_ID ?? env.MODEL_ID ?? "claude-sonnet-4-20250514",
   };
 }
