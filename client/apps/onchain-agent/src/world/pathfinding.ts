@@ -53,18 +53,20 @@ interface Node {
 }
 
 /**
- * Find cheapest stamina path between two hex positions over explored tiles.
+ * Find cheapest stamina path between two hex positions.
  *
- * Uses A* with stamina cost as edge weight (via tileCost function).
- * Finds the cheapest path, then marks `reachedLimit` if it exceeds maxStamina.
+ * Paths through explored tiles using tileCost, and through unexplored tiles
+ * using exploreCost. Blocked tiles (structures, armies) are avoided unless
+ * they are the target.
  *
- * @param start       Starting hex position
- * @param end         Target hex position
- * @param explored    Set of explored tile keys ("x,y")
- * @param blocked     Set of blocked tile keys (structures, other armies).
- *                    The end position is never considered blocked (allows targeting).
- * @param maxStamina  Maximum stamina budget
- * @param tileCost    Cost function: tile key → stamina to enter that tile
+ * @param start        Starting hex position
+ * @param end          Target hex position
+ * @param explored     Set of explored tile keys ("x,y")
+ * @param blocked      Set of blocked tile keys (structures, other armies).
+ *                     The end position is never considered blocked (allows targeting).
+ * @param maxStamina   Maximum stamina budget
+ * @param tileCost     Cost function: tile key → stamina to enter that tile (explored tiles)
+ * @param exploreCost  Stamina cost to explore an unexplored tile (default 30)
  * @returns PathResult or null if truly unreachable
  */
 export function findPath(
@@ -74,15 +76,15 @@ export function findPath(
   blocked: Set<string>,
   maxStamina: number,
   tileCost: TileCostFn,
+  exploreCost = 30,
 ): PathResult | null {
   if (start.x === end.x && start.y === end.y) {
     return { path: [start], directions: [], distance: 0, staminaCost: 0, reachedLimit: false };
   }
 
   const endKey = `${end.x},${end.y}`;
-  // Use minimum possible travel cost for A* heuristic (admissible — never overestimates).
-  // Actual costs are ≥20 (explored) or ≥30 (unexplored), so 20 is safe.
-  const minCost = 20;
+  // Use minimum possible cost for A* heuristic (admissible — never overestimates).
+  const minCost = Math.min(20, exploreCost);
 
   const openSet: Node[] = [{ x: start.x, y: start.y, g: 0, f: hexDistance(start, end) * minCost, parent: null }];
   const closed = new Set<string>();
@@ -116,13 +118,11 @@ export function findPath(
 
       if (closed.has(nKey)) continue;
 
-      // Must be explored (unless it's the target — explorer_explore can reach unexplored targets)
-      if (!explored.has(nKey) && nKey !== endKey) continue;
-
-      // Must not be blocked (target is never blocked)
+      // Blocked tiles are skipped (except the target itself)
       if (blocked.has(nKey) && nKey !== endKey) continue;
 
-      const stepCost = tileCost(nKey);
+      // Cost depends on whether the tile is explored or unexplored
+      const stepCost = explored.has(nKey) ? tileCost(nKey) : exploreCost;
       const g = current.g + stepCost;
       const f = g + hexDistance({ x: nx, y: ny }, end) * minCost;
 
