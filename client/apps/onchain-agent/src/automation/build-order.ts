@@ -49,6 +49,8 @@ export interface BuildStep {
   building: number;
   /** Human-readable label for logs / debugging. */
   label: string;
+  /** Minimum realm level required for this step (0=Settlement, 1=City, 2=Kingdom, 3=Empire). */
+  minLevel: number;
 }
 
 /** Complete biome-specific build plan pairing a troop path with an ordered step list. */
@@ -100,61 +102,58 @@ function buildSteps(path: TroopPath): BuildStep[] {
   // Totals at Empire: 10W, 10Cu, 7Co, 10Wh, 5T1, 1T2Res, 2T2, 1T3Res, 1T3 = 47
   // ~16 slots filled by auto-injected WorkersHuts → fits within 60.
   return [
-    // ── Settlement: 6 slots ──────────────────────────────────
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Coal, label: "CoalMine" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    // → upgrade to City (18 slots = 12 more)
+    // ── Settlement (level 0): 6 slots ─────────────────────────
+    { building: B.Wheat, label: "WheatFarm", minLevel: 0 },
+    { building: B.Wood, label: "WoodMill", minLevel: 0 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 0 },
+    { building: B.Coal, label: "CoalMine", minLevel: 0 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 0 },
+    { building: B.Wood, label: "WoodMill", minLevel: 0 },
 
-    // ── City: fill 12 more slots ─────────────────────────────
-    { building: B.Coal, label: "CoalMine" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: troop.t1, label: troopLabel.t1 },
-    { building: troop.t1, label: troopLabel.t1 },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: troop.t1, label: troopLabel.t1 },
-    { building: troop.t1, label: troopLabel.t1 },
-    { building: B.Coal, label: "CoalMine" },
-    { building: B.Wheat, label: "WheatFarm" },
-    // → upgrade to Kingdom (36 slots = 18 more)
+    // ── City (level 1): 12 more slots ────────────────────────
+    { building: B.Wheat, label: "WheatFarm", minLevel: 1 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 1 },
+    { building: B.Coal, label: "CoalMine", minLevel: 1 },
+    { building: B.Wood, label: "WoodMill", minLevel: 1 },
+    { building: troop.t1, label: troopLabel.t1, minLevel: 1 },
+    { building: troop.t1, label: troopLabel.t1, minLevel: 1 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 1 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 1 },
+    { building: B.Wood, label: "WoodMill", minLevel: 1 },
+    { building: troop.t1, label: troopLabel.t1, minLevel: 1 },
+    { building: troop.t1, label: troopLabel.t1, minLevel: 1 },
+    { building: B.Coal, label: "CoalMine", minLevel: 1 },
 
-    // ── Kingdom: fill 18 more slots ──────────────────────────
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Coal, label: "CoalMine" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: t2Res.building, label: t2Res.label },
-    { building: troop.t2, label: troopLabel.t2 },
-    { building: troop.t2, label: troopLabel.t2 },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: troop.t1, label: troopLabel.t1 },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Coal, label: "CoalMine" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    // → upgrade to Empire (60 slots = 24 more)
+    // ── Kingdom (level 2): 18 more slots ─────────────────────
+    { building: B.Wheat, label: "WheatFarm", minLevel: 2 },
+    { building: B.Wood, label: "WoodMill", minLevel: 2 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 2 },
+    { building: B.Coal, label: "CoalMine", minLevel: 2 },
+    { building: t2Res.building, label: t2Res.label, minLevel: 2 },
+    { building: troop.t2, label: troopLabel.t2, minLevel: 2 },
+    { building: troop.t2, label: troopLabel.t2, minLevel: 2 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 2 },
+    { building: B.Wood, label: "WoodMill", minLevel: 2 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 2 },
+    { building: troop.t1, label: troopLabel.t1, minLevel: 2 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 2 },
+    { building: B.Wood, label: "WoodMill", minLevel: 2 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 2 },
+    { building: B.Coal, label: "CoalMine", minLevel: 2 },
+    { building: B.Wood, label: "WoodMill", minLevel: 2 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 2 },
 
-    // ── Empire: fill remaining slots ─────────────────────────
-    { building: t3Res.building, label: t3Res.label },
-    { building: troop.t3, label: troopLabel.t3 },
-    { building: B.Wood, label: "WoodMill" },
-    { building: B.Copper, label: "CopperSmelter" },
-    { building: B.Coal, label: "CoalMine" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: B.Wheat, label: "WheatFarm" },
-    { building: troop.t2, label: troopLabel.t2 },
-    { building: B.Coal, label: "CoalMine" },
+    // ── Empire (level 3): fill remaining slots ───────────────
+    { building: t3Res.building, label: t3Res.label, minLevel: 3 },
+    { building: troop.t3, label: troopLabel.t3, minLevel: 3 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 3 },
+    { building: B.Wood, label: "WoodMill", minLevel: 3 },
+    { building: B.Copper, label: "CopperSmelter", minLevel: 3 },
+    { building: B.Coal, label: "CoalMine", minLevel: 3 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 3 },
+    { building: B.Wheat, label: "WheatFarm", minLevel: 3 },
+    { building: troop.t2, label: troopLabel.t2, minLevel: 3 },
+    { building: B.Coal, label: "CoalMine", minLevel: 3 },
   ];
 }
 

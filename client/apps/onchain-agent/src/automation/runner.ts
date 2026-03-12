@@ -146,7 +146,23 @@ export function resolvePlan(
       foundUnsatisfied = true;
       const globalIndex = pass * stepCount + i;
 
-      // 1. Do we have a slot?
+      // 1. Does this step require a higher realm level?
+      if (step.minLevel > state.level) {
+        if (state.level >= 3) {
+          return { builds, upgrade: null, idle: builds.length === 0 ? "Empire (max level)" : null };
+        }
+        return {
+          builds,
+          upgrade: {
+            fromLevel: state.level,
+            fromName: LEVEL_NAMES[state.level] ?? "Unknown",
+            toName: LEVEL_NAMES[state.level + 1] ?? "Unknown",
+          },
+          idle: null,
+        };
+      }
+
+      // 2. Do we have a slot?
       if (slotsUsed >= maxSlots) {
         if (state.level >= 3) {
           return { builds, upgrade: null, idle: builds.length === 0 ? "Empire (max level) — all slots full" : null };
@@ -187,7 +203,7 @@ export function resolvePlan(
         }
 
         builds.push({
-          step: { building: WORKERS_HUT, label: "WorkersHut" },
+          step: { building: WORKERS_HUT, label: "WorkersHut", minLevel: 0 },
           index: globalIndex,
           injectedForPopulation: true,
         });
