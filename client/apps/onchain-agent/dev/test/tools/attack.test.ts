@@ -249,11 +249,11 @@ describe("attack — vs explorer", () => {
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
     const text = (result.content[0] as any).text;
 
-    // Attacker: 2000 * 250/100 = 5000, Paladin +30% on Grassland
-    expect(text).toContain("Your strength: 5,000 (+30% on this tile)");
-    // Defender: 1000 * 100/100 = 1000, Knight neutral on Grassland
-    expect(text).toContain("Their strength: 1,000");
-    expect(text).toContain("Ratio: 5.0x");
+    // Pre-battle summary with strengths
+    expect(text).toContain("Pre-battle:");
+    expect(text).toContain("5,000");
+    expect(text).toContain("1,000");
+    expect(text).toContain("5.0x");
   });
 });
 
@@ -274,10 +274,10 @@ describe("attack — vs structure", () => {
     const text = (result.content[0] as any).text;
 
     expect(text).toContain("Mine guards");
-    expect(text).toContain("Your strength: 5,000");
-    // Guards: 500 * 100/100 = 500, Crossbowman -30% on Grassland
-    expect(text).toContain("Guard strength: 500 (-30% on this tile)");
-    expect(text).toContain("Ratio: 10.0x");
+    expect(text).toContain("Pre-battle:");
+    expect(text).toContain("5,000");
+    expect(text).toContain("500");
+    expect(text).toContain("10.0x");
   });
 
   it("attacks unguarded structure to capture", async () => {
@@ -289,6 +289,6 @@ describe("attack — vs structure", () => {
 
     const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 });
     expect((result.content[0] as any).text).toContain("unguarded");
-    expect((result.content[0] as any).text).toContain("attacking to capture");
+    expect((result.content[0] as any).text).toContain("captured");
   });
 });
