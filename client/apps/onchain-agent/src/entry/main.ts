@@ -58,14 +58,13 @@ import { createDefendStructureTool } from "../tools/defend-structure.js";
 import { createTransferResourcesTool } from "../tools/transfer-resources.js";
 import { createOpenChestTool } from "../tools/open-chest.js";
 import { createViewMapTool } from "../tools/view-map.js";
+import { buildGameStateBlock, type ToolError } from "./game-state.js";
+import type { AutomationStatusMap } from "../automation/status.js";
 
 // ---------------------------------------------------------------------------
-// Context pruning — when messages exceed MAX_CONTEXT_CHARS, drops older
-// messages and uses the agent's model to summarize what was lost.
+// Context pruning — when messages exceed a caller-provided threshold, drops
+// older messages and uses the agent's model to summarize what was lost.
 // ---------------------------------------------------------------------------
-
-const MAX_CONTEXT_CHARS = 400_000;
-const PRUNE_TARGET_CHARS = 200_000;
 
 /**
  * Estimate the total character count across all messages in the context window.
@@ -97,7 +96,10 @@ function estimateChars(messages: AgentMessage[]): number {
  * @returns An object with `dropped` (oldest messages) and `kept` (most recent
  *          messages that fit within the target character budget).
  */
-function splitMessages(messages: AgentMessage[]): { dropped: AgentMessage[]; kept: AgentMessage[] } {
+function splitMessages(
+  messages: AgentMessage[],
+  target: number = 200_000,
+): { dropped: AgentMessage[]; kept: AgentMessage[] } {
   let kept = 0;
   let cutIndex = messages.length;
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -111,7 +113,7 @@ function splitMessages(messages: AgentMessage[]): { dropped: AgentMessage[]; kep
       }
     }
     kept += chars;
-    if (kept > PRUNE_TARGET_CHARS) {
+    if (kept > target) {
       cutIndex = i + 1;
       break;
     }
@@ -135,10 +137,15 @@ function splitMessages(messages: AgentMessage[]): { dropped: AgentMessage[]; kep
  * @param model    - Language model used to generate the compaction summary.
  * @returns The (possibly pruned and prepended) message array.
  */
-async function pruneMessages(messages: AgentMessage[], model: Model<any>): Promise<AgentMessage[]> {
-  if (estimateChars(messages) <= MAX_CONTEXT_CHARS) return messages;
+async function pruneMessages(
+  messages: AgentMessage[],
+  model: Model<any>,
+  maxChars: number = 400_000,
+  pruneTarget: number = 200_000,
+): Promise<AgentMessage[]> {
+  if (estimateChars(messages) <= maxChars) return messages;
 
-  const { dropped, kept } = splitMessages(messages);
+  const { dropped, kept } = splitMessages(messages, pruneTarget);
   if (dropped.length === 0) return kept;
 
   // Summarize dropped messages using the agent's model
@@ -306,6 +313,8 @@ export async function main() {
   const mapFilePath = join(config.dataDir, "map.txt");
   const mapCtx: MapContext = { snapshot: null, filePath: mapFilePath };
   const txCtx: TxContext = { provider, signer: account };
+  const automationStatus: AutomationStatusMap = new Map();
+  const toolErrors: ToolError[] = [];
 
   // 4. Tools — game-specific + read/grep/find/ls scoped to dataDir
   const tools: AgentTool[] = [
@@ -340,10 +349,22 @@ export async function main() {
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages) => {
-      agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
-      return pruneMessages(messages, model);
+      const gameState = buildGameStateBlock(mapCtx, automationStatus, toolErrors);
+      agent.setSystemPrompt(buildSystemPrompt(config.dataDir) + "\n\n" + gameState);
+      const maxChars = (model.contextWindow ?? 200_000) * 3;
+      const pruneTarget = Math.floor(maxChars * 0.5);
+      return pruneMessages(messages, model, maxChars, pruneTarget);
     },
   });
+
+  // 6a. Wire threat detection — agent.steer() pushes urgent defensive alerts
+  onThreatCallback = (alerts) => {
+    for (const alert of alerts) {
+      const msg = `DEFENSIVE ALERT: Enemy army detected at ${alert.enemyX}:${alert.enemyY}, adjacent to your structure at ${alert.structureX}:${alert.structureY}. Assess threat and respond.`;
+      console.log(`[THREAT] ${msg}`);
+      agent.steer({ role: "user", content: msg, timestamp: Date.now() } as AgentMessage);
+    }
+  };
 
   // 6b. Log agent events so we can see what the LLM is doing
   agent.subscribe((event) => {
@@ -362,6 +383,16 @@ export async function main() {
             ?.join("")
             ?.slice(0, 300) ?? "";
         console.log(`[AGENT] tool result: ${event.toolName} ${event.isError ? "ERROR" : "ok"} — ${resultText}`);
+        if (event.isError) {
+          const errorText =
+            event.result?.content
+              ?.filter((b: any) => b.type === "text")
+              ?.map((b: any) => b.text)
+              ?.join("")
+              ?.slice(0, 100) ?? "unknown error";
+          toolErrors.push({ tool: event.toolName, error: errorText, tick: tickCount });
+          while (toolErrors.length > 20) toolErrors.shift();
+        }
         break;
       }
       case "message_end": {
@@ -387,7 +418,10 @@ export async function main() {
   });
 
   // 7. Map loop — refreshes tile data in the background
-  const mapLoop = createMapLoop(client, mapCtx, account.address, undefined, gameConfig.stamina);
+  let onThreatCallback: ((alerts: any[]) => void) | null = null;
+  const mapLoop = createMapLoop(client, mapCtx, account.address, undefined, gameConfig.stamina, (alerts) => {
+    if (onThreatCallback) onThreatCallback(alerts);
+  });
   mapLoop.start();
   mapCtx.refresh = () => mapLoop.refresh();
 
@@ -415,6 +449,8 @@ export async function main() {
     config.dataDir,
     mapCtx,
     gameConfig,
+    undefined,
+    automationStatus,
   );
   automationLoop.start();
 
