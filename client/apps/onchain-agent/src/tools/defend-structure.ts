@@ -124,14 +124,15 @@ export function createDefendStructureTool(
           throw new Error(`Army and structure are not adjacent. Move the army next to the structure first.`);
         }
 
-        const availableRaw = Math.floor(explorer.troopCount * RESOURCE_PRECISION);
-        const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : availableRaw;
-        const transferAmount = Math.min(requestedRaw, availableRaw);
-        const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
-
-        if (transferAmount <= 0) {
-          throw new Error(`Army has no troops to transfer.`);
+        const totalRaw = Math.floor(explorer.troopCount * RESOURCE_PRECISION);
+        // Must leave at least 1 troop in the army
+        const maxTransferRaw = totalRaw - RESOURCE_PRECISION;
+        if (maxTransferRaw <= 0) {
+          throw new Error(`Army only has ${explorer.troopCount} troops — need more than 1 to garrison (must leave at least 1).`);
         }
+        const requestedRaw = params.amount ? Math.floor(params.amount * RESOURCE_PRECISION) : maxTransferRaw;
+        const transferAmount = Math.min(requestedRaw, maxTransferRaw);
+        const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
 
         try {
           await tx.provider.explorer_guard_swap({

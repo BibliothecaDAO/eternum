@@ -141,9 +141,16 @@ export function createReinforceArmyTool(
         );
         if (direction === null) continue;
 
+        const sourceTotalRaw = Math.floor(sourceExplorer.troopCount * RESOURCE_PRECISION);
+        // explorer_explorer_swap requires at least 1 troop to remain in source.
+        // Transfer all-but-1, then delete the source army to free the slot.
+        const maxTransferRaw = sourceTotalRaw - RESOURCE_PRECISION;
+        if (maxTransferRaw <= 0) {
+          continue; // Skip — source has only 1 troop, nothing to transfer
+        }
         const transferAmount = params.amount
-          ? Math.min(Math.floor(params.amount * RESOURCE_PRECISION), Math.floor(sourceExplorer.troopCount * RESOURCE_PRECISION))
-          : Math.floor(sourceExplorer.troopCount * RESOURCE_PRECISION);
+          ? Math.min(Math.floor(params.amount * RESOURCE_PRECISION), maxTransferRaw)
+          : maxTransferRaw;
 
         try {
           await tx.provider.explorer_explorer_swap({
@@ -159,11 +166,10 @@ export function createReinforceArmyTool(
 
         const transferCount = Math.floor(transferAmount / RESOURCE_PRECISION);
         const mergedTotal = explorer.troopCount + transferCount;
-        const sourceRemaining = sourceExplorer.troopCount - transferCount;
 
-        // If all troops transferred, delete the empty army
+        // Only delete source if we transferred everything possible (all-but-1)
         let slotFreed = false;
-        if (sourceRemaining <= 0) {
+        if (transferAmount >= maxTransferRaw) {
           try {
             await tx.provider.explorer_delete({
               explorer_id: sourceExplorer.entityId,
