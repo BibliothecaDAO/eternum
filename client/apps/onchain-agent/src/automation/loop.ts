@@ -39,8 +39,8 @@ interface AutomationLoop {
  *   percentIncrease = buildingBaseCostPercentIncrease / 10000
  *   totalCost = baseCost + (quantity - 1)² × baseCost × percentIncrease
  *
- * Returns an array of { resource, amount } with scaled amounts, or empty if
- * no cost data is available for this building type.
+ * Returns an array of { resource, amount } with scaled amounts, or an empty
+ * array if no cost data is available for this building type.
  */
 function scaledBuildingCost(
   buildingType: number,
@@ -70,12 +70,12 @@ function scaledBuildingCost(
  * production → executes transactions → offloads arrivals → writes a status file.
  * Errors within a tick are swallowed so the loop always continues.
  *
- * @param client - Eternum SDK client used to query on-chain state via SQL.
- * @param provider - Eternum provider used to submit on-chain transactions.
+ * @param client - Eternum SDK client for querying on-chain state via SQL.
+ * @param provider - Eternum provider for submitting on-chain transactions.
  * @param signer - Account signer passed to all provider calls.
  * @param playerAddress - Hex address of the player whose realms to automate.
- * @param dataDir - Directory path where the automation-status.txt file is written.
- * @param mapCtx - Map context snapshot used for biome lookups by coordinate.
+ * @param dataDir - Directory where automation-status.txt is written.
+ * @param mapCtx - Map context snapshot for biome lookups by coordinate.
  * @param gameConfig - On-chain game configuration (building costs, upgrade costs, recipes).
  * @param intervalMs - Tick interval in milliseconds (default 60 000 ms / 1 minute).
  * @returns An AutomationLoop handle with start/stop/refresh controls.

@@ -14,13 +14,13 @@ const TIER_BONUS: Record<string, number> = {
 };
 
 /**
- * Get the maximum stamina for a troop given its type, tier, and config base value.
- * On-chain: base max (from config) + tier bonus (+20 for T2, +40 for T3).
+ * Return the maximum stamina for a troop given its tier and config base value.
+ * Mirrors on-chain logic: base max (from config) + tier bonus (+20 for T2, +40 for T3).
  *
- * @param troopType - Troop type string ("Knight", "Crossbowman", or "Paladin"). Not used by this function; the bonus is tier-based only.
- * @param troopTier - Troop tier string: "T1", "T2", or "T3".
- * @param baseMax - Base maximum stamina value sourced from the on-chain stamina config.
- * @returns The effective maximum stamina after applying the tier bonus.
+ * @param troopType - Troop type string ("Knight", "Crossbowman", or "Paladin"). Unused; the bonus is tier-based only.
+ * @param troopTier - Troop tier: "T1", "T2", or "T3".
+ * @param baseMax - Base maximum stamina from the on-chain stamina config.
+ * @returns Effective maximum stamina after applying the tier bonus.
  */
 export function getMaxStamina(troopType: string, troopTier: string, baseMax: number): number {
   return baseMax + (TIER_BONUS[troopTier] ?? 0);
@@ -44,10 +44,10 @@ interface ProjectStaminaArgs {
 
 /**
  * Project stamina forward from the last on-chain update tick to the current tick.
- * Returns the current on-chain amount unchanged if the tick has not advanced or gain is zero.
+ * Returns the stored amount unchanged if the tick has not advanced or gain is zero.
  *
  * @param args - Stamina projection arguments (see {@link ProjectStaminaArgs}).
- * @returns Projected stamina value capped at `maxStamina`.
+ * @returns Projected stamina capped at `maxStamina`.
  */
 export function projectStamina(args: ProjectStaminaArgs): number {
   const { currentAmount, updatedTick, currentTick, gainPerTick, maxStamina } = args;
@@ -62,7 +62,7 @@ export function projectStamina(args: ProjectStaminaArgs): number {
 }
 
 /**
- * Resolve the base max stamina from config for a given troop type.
+ * Resolve the base max stamina from config for the given troop type.
  */
 function baseMaxFromConfig(troopType: string, config: StaminaConfig): number {
   switch (troopType) {
@@ -78,14 +78,14 @@ function baseMaxFromConfig(troopType: string, config: StaminaConfig): number {
 }
 
 /**
- * Compute the projected stamina for an explorer at the current wall-clock time.
+ * Project stamina for an explorer at the current wall-clock time.
  * Convenience wrapper around {@link projectStamina} that derives the current tick
- * and max stamina from the on-chain stamina config automatically.
+ * and max stamina from the on-chain stamina config.
  *
- * @param explorer - Explorer snapshot containing current stamina, last updated tick, troop type, and tier.
- * @param staminaConfig - On-chain stamina configuration (tick interval, gain rate, per-type max values).
+ * @param explorer - Explorer snapshot with current stamina, last updated tick, troop type, and tier.
+ * @param staminaConfig - On-chain stamina config (tick interval, gain rate, per-type max values).
  * @param nowSeconds - Current UNIX timestamp in seconds. Defaults to `Date.now() / 1000`.
- * @returns Projected stamina value capped at the explorer's effective maximum.
+ * @returns Projected stamina capped at the explorer's effective maximum.
  */
 export function projectExplorerStamina(
   explorer: { stamina: number; staminaUpdatedTick: number; troopType: string; troopTier: string },

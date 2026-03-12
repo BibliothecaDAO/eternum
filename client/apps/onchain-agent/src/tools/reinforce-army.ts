@@ -1,12 +1,12 @@
 /**
  * reinforce_army — add troops to an existing army from an adjacent source.
  *
- * Automatically detects the source:
- *   - Adjacent owned structure → transfers troops from reserves (explorer_add)
- *   - Adjacent owned army (same type/tier) → transfers troops (explorer_explorer_swap), deleting
- *     the source only when all available troops are transferred
+ * Source is auto-detected:
+ *   - Adjacent owned structure → pull troops from reserves (explorer_add)
+ *   - Adjacent owned army (same type/tier) → merge troops (explorer_explorer_swap),
+ *     deleting the source only when all available troops are transferred
  *
- * Prefers structures over armies.
+ * Structures are preferred over armies.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -23,11 +23,11 @@ const TIER_SUFFIX: Record<string, string> = { T1: "T1", T2: "T2", T3: "T3" };
 /**
  * Create the reinforce_army agent tool.
  *
- * @param client - Eternum client used to fetch explorer and structure data.
+ * @param client - Eternum client for fetching explorer and structure data.
  * @param mapCtx - Map context holding the current tile snapshot.
  * @param playerAddress - Hex address of the player; used to verify ownership of the army and any source.
- * @param tx - Transaction context containing the provider and signer.
- * @returns An AgentTool that adds troops to an explorer from an adjacent structure or army (deleting the source army only on full transfer).
+ * @param tx - Transaction context with the provider and signer.
+ * @returns An AgentTool that adds troops to an explorer from an adjacent structure or army, deleting the source army only on a full transfer.
  */
 export function createReinforceArmyTool(
   client: EternumClient,
@@ -216,7 +216,7 @@ export function createReinforceArmyTool(
   };
 }
 
-/** Helper to convert hex coords back to map row:col for display. */
+/** Convert hex coords back to a map row:col string for display. */
 function structure_row_col(n: { col: number; row: number }, mapCtx: MapContext): string {
   if (!mapCtx.snapshot) return `${n.col},${n.row}`;
   const anchor = mapCtx.snapshot.anchor;

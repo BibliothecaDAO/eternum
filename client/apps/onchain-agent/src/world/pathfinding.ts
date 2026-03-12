@@ -39,11 +39,11 @@ function hexDistance(a: Position, b: Position): number {
 // ── Direction between adjacent hexes ─────────────────────────────────
 
 /**
- * Determine the hex `Direction` from one adjacent tile to another.
+ * Return the hex `Direction` from one adjacent tile to another.
  *
- * @param from - The source hex position.
- * @param to - The destination hex position, which must be directly adjacent to `from`.
- * @returns The `Direction` enum value for the step, or `null` if the two positions are not adjacent.
+ * @param from - Source hex position.
+ * @param to - Destination hex position; must be directly adjacent to `from`.
+ * @returns The `Direction` enum value for the step, or `null` if the positions are not adjacent.
  */
 export function directionBetween(from: Position, to: Position): Direction | null {
   return getDirectionBetweenAdjacentHexes({ col: from.x, row: from.y }, { col: to.x, row: to.y });
@@ -60,22 +60,21 @@ interface Node {
 }
 
 /**
- * Find cheapest stamina path between two hex positions.
+ * Find the cheapest-stamina path between two hex positions.
  *
- * Paths through explored tiles using tileCost, and through unexplored tiles
- * using exploreCost. Blocked tiles (structures, armies) are avoided unless
- * they are the target.
+ * Traverses explored tiles using `tileCost` and unexplored tiles using `exploreCost`.
+ * Blocked tiles (structures, armies) are skipped unless they are the target.
  *
- * @param start        Starting hex position
- * @param end          Target hex position
- * @param explored     Set of explored tile keys ("x,y")
+ * @param start        Starting hex position.
+ * @param end          Target hex position.
+ * @param explored     Set of explored tile keys ("x,y").
  * @param blocked      Set of blocked tile keys (structures, other armies).
- *                     The end position is never considered blocked (allows targeting).
- * @param maxStamina   Maximum stamina budget
- * @param tileCost     Cost function: tile key → stamina to enter that tile (explored tiles)
- * @param exploreCost  Stamina cost to explore an unexplored tile (default 30)
- * @returns PathResult (with `reachedLimit: true` if cost exceeds budget), or null if truly unreachable.
- * @throws {Error} If the reconstructed path contains non-adjacent hex pairs (indicates an internal bug).
+ *                     The end position is never treated as blocked, allowing targeting.
+ * @param maxStamina   Maximum stamina budget.
+ * @param tileCost     Cost function: tile key → stamina to enter that explored tile.
+ * @param exploreCost  Stamina cost to enter an unexplored tile (default 30).
+ * @returns PathResult with `reachedLimit: true` if cost exceeds budget, or `null` if unreachable.
+ * @throws {Error} If the reconstructed path contains non-adjacent hex pairs (internal bug).
  */
 export function findPath(
   start: Position,
@@ -189,9 +188,9 @@ interface TileIndex {
 }
 
 /**
- * Build pathfinding tile index from raw tile data.
- * Any tile with a non-zero `occupierType` blocks movement.
- * The end position is never considered blocked by findPath (allows targeting).
+ * Build a pathfinding tile index from raw tile data.
+ * Any tile with a non-zero `occupierType` is marked as blocked.
+ * The end position is never treated as blocked by `findPath`, allowing targeting.
  */
 export function buildTileIndex(tiles: TileState[]): TileIndex {
   const explored = new Set<string>();

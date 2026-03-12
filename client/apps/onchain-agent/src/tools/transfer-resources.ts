@@ -1,12 +1,11 @@
 /**
  * transfer_resources — send resources from one of your structures to another.
  *
- * Resources are delivered by donkey caravan. Donkeys are consumed (burnt)
- * based on total weight. Travel time depends on distance.
+ * Delivers resources by donkey caravan. Donkeys are consumed based on total weight.
+ * Travel time scales with distance.
  *
- * Weight tiers: standard resources ~1kg, troops ~5kg, wheat/fish/essence/ancient fragment ~0.1kg,
- * donkeys and lords 0kg.
- * Donkey capacity: 50kg each.
+ * Weights: standard resources ~1kg, troops ~5kg, wheat/fish/essence/ancient fragment ~0.1kg,
+ * donkeys and lords 0kg. Each donkey carries 50kg.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -18,8 +17,8 @@ import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js"
 import { isStructure } from "../world/occupier.js";
 
 /**
- * Per-unit resource weight in grams, keyed by resource ID, derived from the on-chain WeightConfig.
- * Standard resources are 1kg, troops are 5kg, Wheat/Fish/Essence/AncientFragment are 0.1kg, Donkeys and Lords are 0g.
+ * Per-unit resource weight in grams, keyed by resource ID. Derived from the on-chain WeightConfig.
+ * Standard resources: 1kg. Troops: 5kg. Wheat/Fish/Essence/AncientFragment: 0.1kg. Donkeys/Lords: 0g.
  */
 const RESOURCE_WEIGHT_GRAMS: Record<number, number> = {};
 // Standard resources (IDs 1-23): 1000g (1kg) each
@@ -38,11 +37,11 @@ RESOURCE_WEIGHT_GRAMS[37] = 0;
 // Essence=38: 100g (0.1kg)
 RESOURCE_WEIGHT_GRAMS[38] = 100;
 
-/** Maximum cargo weight a single donkey can carry, in grams (50kg per WorldConfig). */
+/** Maximum cargo weight per donkey, in grams (50kg per WorldConfig). */
 const DONKEY_CAPACITY_GRAMS = 50_000; // 50kg
 
 /**
- * Maps human-readable resource names to their on-chain resource IDs.
+ * Maps resource names to their on-chain resource IDs.
  * Sourced from the ResourcesIds enum in @bibliothecadao/types.
  */
 const RESOURCE_NAME_TO_ID: Record<string, number> = {
@@ -89,10 +88,10 @@ const RESOURCE_NAME_TO_ID: Record<string, number> = {
 /**
  * Create the transfer_resources agent tool.
  *
- * @param client - Eternum client used to fetch structure data and resource balances.
+ * @param client - Eternum client for fetching structure data and resource balances.
  * @param mapCtx - Map context holding the current tile snapshot for position resolution.
  * @param playerAddress - Hex address of the player; used to verify ownership of both structures.
- * @param tx - Transaction context containing the provider and signer.
+ * @param tx - Transaction context with the provider and signer.
  * @returns An AgentTool that sends resources from one owned structure to another via donkey caravan.
  */
 export function createTransferResourcesTool(

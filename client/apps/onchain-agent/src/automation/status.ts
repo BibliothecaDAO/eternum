@@ -1,7 +1,7 @@
 /**
  * Automation status formatter — converts per-realm tick results into a human-readable report.
  *
- * Returns a formatted string; the caller (automation loop) is responsible for
+ * Returns a formatted string. The caller (automation loop) is responsible for
  * writing it to disk.
  */
 import type { TickResult } from "./executor.js";
@@ -35,7 +35,7 @@ interface StatusInput {
  * Format a multi-realm automation status report as a plain-text string.
  *
  * @param input - Timestamp and per-realm status data to render.
- * @returns A newline-separated status report suitable for writing to a file or logging.
+ * @returns A newline-separated status report ready for writing to a file or logging.
  */
 export function formatStatus(input: StatusInput): string {
   const lines: string[] = [];

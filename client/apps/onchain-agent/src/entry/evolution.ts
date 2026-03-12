@@ -1,6 +1,6 @@
 /**
- * Evolution engine that asks a language model to analyse the agent's current
- * soul and task lists, then applies the suggested improvements to disk.
+ * Evolution engine: asks a language model to analyze the agent's current soul
+ * and task lists, then writes the suggested improvements to disk.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -16,14 +16,14 @@ import { loadSoul, loadTaskLists } from "./soul.js";
 /**
  * A single improvement proposed by the evolution model.
  *
- * @property target   - The kind of artifact to modify: the agent's soul, a
- *                      named task list, or a named skill.
- * @property domain   - Must be provided when `target` is `"task_list"` or `"skill"`;
- *                      identifies the file by its domain name. Suggestions missing
- *                      this field for those targets are silently skipped.
- * @property action   - Whether to overwrite an existing file (`"update"`) or
- *                      create a new one (`"create"`).
- * @property content  - The full replacement content for the target file.
+ * @property target    - Artifact to modify: the agent's soul, a named task list,
+ *                       or a named skill.
+ * @property domain    - Required when `target` is `"task_list"` or `"skill"`;
+ *                       identifies the file by domain name. Suggestions missing
+ *                       this field for those targets are silently skipped.
+ * @property action    - Whether to overwrite an existing file (`"update"`) or
+ *                       create a new one (`"create"`).
+ * @property content   - Full replacement content for the target file.
  * @property reasoning - Human-readable explanation of why the change helps.
  */
 interface EvolutionSuggestion {
@@ -35,10 +35,10 @@ interface EvolutionSuggestion {
 }
 
 /**
- * The structured output of a single evolution cycle.
+ * Structured output of a single evolution cycle.
  *
- * @property suggestions - Zero or more concrete file changes to apply.
- * @property analysis    - Free-form text analysis preceding the suggestions.
+ * @property suggestions - Concrete file changes to apply (may be empty).
+ * @property analysis    - Free-form analysis text preceding the suggestions.
  */
 interface EvolutionResult {
   suggestions: EvolutionSuggestion[];
@@ -174,10 +174,10 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
  * lists, ask `model` for improvement suggestions, write accepted suggestions
  * to disk, and return the structured result.
  *
- * @param model   - The language model used to generate suggestions.
+ * @param model   - Language model used to generate suggestions.
  * @param dataDir - Root path of the agent's world data directory.
- * @returns The parsed {@link EvolutionResult} containing the analysis text and
- *          all validated suggestions (a subset of which may have been written to disk).
+ * @returns The parsed {@link EvolutionResult} with the analysis text and all
+ *          validated suggestions (a subset may have been written to disk).
  */
 export async function evolve(model: Model<any>, dataDir: string): Promise<EvolutionResult> {
   const prompt = buildEvolutionPrompt(dataDir);

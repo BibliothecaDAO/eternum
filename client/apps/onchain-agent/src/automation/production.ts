@@ -152,9 +152,9 @@ interface ProductionTarget {
 /**
  * Build the ordered list of what to produce this tick.
  *
- * Only includes resources the realm can actually produce
- * (has the corresponding building). Ordered by dependency level
- * so upstream resources are produced before downstream consumers.
+ * Only includes resources the realm can actually produce (has the corresponding
+ * building). Ordered by dependency level so upstream resources are produced
+ * before downstream consumers.
  */
 function resolveTargets(
   troopPath: TroopPath,
@@ -216,15 +216,15 @@ function resolveTargets(
 /**
  * Calculate production cycles for all producible resources this tick, unified with building affordability.
  *
- * Buildings are evaluated first and their costs are removed from the shared budget before
+ * Buildings are evaluated first and their costs deducted from the shared budget before
  * production is planned, ensuring buildings always get priority on shared resources.
  *
  * @param balances - Current resource balances (resource ID → human-readable amount).
- * @param buildingCounts - Map of BuildingType → count of that building on the realm.
- * @param troopPath - Which troop path this realm follows (determines T2/T3 resource targets).
- * @param gameConfig - On-chain game configuration containing resource recipes and factory data.
+ * @param buildingCounts - Map of BuildingType → count on the realm.
+ * @param troopPath - Troop path this realm follows; determines T2/T3 resource targets.
+ * @param gameConfig - On-chain game configuration with resource recipes and factory data.
  * @param tickSeconds - Tick interval in seconds; reserved for future rate calculations (default 60).
- * @param isVillage - Whether this is a village structure (reserved for future rate scaling).
+ * @param isVillage - Whether this is a village structure; reserved for future rate scaling.
  * @param buildingTargets - Candidate buildings to evaluate for affordability against the shared budget.
  * @returns A UnifiedPlan listing production calls, affordable/skipped builds, and budget tracking maps.
  */
@@ -365,12 +365,12 @@ const DONKEY_BUILDING = R.Donkey + RESOURCE_TO_BUILDING_OFFSET; // 27
 /**
  * Compute smart production weights based on the realm's development stage.
  *
- * Weights determine what percentage of each resource's balance should be
- * allocated to production. The stage is inferred from which buildings exist.
+ * Weights determine what percentage of each resource's balance to allocate
+ * to production. Stage is inferred from which buildings exist.
  *
- * @param buildingCounts  Map of BuildingType → count on the realm
- * @param troopPath       Which troop path this realm follows
- * @returns Map of resource ID → SmartWeight
+ * @param buildingCounts - Map of BuildingType → count on the realm.
+ * @param troopPath - Troop path this realm follows.
+ * @returns Map of resource ID → SmartWeight.
  */
 export function computeSmartWeights(
   buildingCounts: Map<number, number>,

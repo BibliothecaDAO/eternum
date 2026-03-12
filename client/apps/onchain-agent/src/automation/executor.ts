@@ -1,8 +1,8 @@
 /**
  * Realm tick executor — submits on-chain transactions for a single automation cycle.
  *
- * Handles buildings, upgrades, and production in a fixed priority order so that
- * resource costs are not double-spent across concurrent operations.
+ * Handles buildings, upgrades, and production in a fixed priority order to prevent
+ * resource costs from being double-spent across concurrent operations.
  */
 import type { EternumProvider } from "@bibliothecadao/provider";
 import type { SlotResult } from "./placement.js";
@@ -65,10 +65,10 @@ export interface TickResult {
  * Execute all automation actions for a single realm in one tick.
  *
  * Buildings run first (sequentially), then the upgrade, then production.
- * A failed build halts subsequent builds to avoid cascading resource errors.
+ * A failed build halts subsequent builds to prevent cascading resource errors.
  *
- * @param input - All context needed to execute the tick (provider, signer, planned actions).
- * @returns A summary of what was built, upgraded, produced, and any errors encountered.
+ * @param input - Tick context: provider, signer, and all planned actions.
+ * @returns A summary of what was built, upgraded, produced, and any errors.
  */
 export async function executeRealmTick(input: TickInput): Promise<TickResult> {
   const { provider, signer, realmEntityId } = input;

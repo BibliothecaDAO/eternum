@@ -102,8 +102,9 @@ function extractRpcUrl(row: Record<string, unknown>): string | null {
 // ---------------------------------------------------------------------------
 
 /**
- * Full connection descriptor for a deployed Eternum world, resolved from
- * the Cartridge factory and needed by the agent to connect to Torii and StarkNet.
+ * Full connection descriptor for a deployed Eternum world.
+ * Resolved from the Cartridge factory; provides everything the agent needs
+ * to connect to Torii and StarkNet.
  */
 interface WorldInfo {
   /** Base Torii GraphQL/SQL URL for the world (e.g. `https://api.cartridge.gg/x/<worldName>/torii`). */
@@ -117,7 +118,7 @@ interface WorldInfo {
 }
 
 /**
- * Resolve a world name and chain into the full connection info the agent needs.
+ * Resolve a world name and chain into full connection info.
  *
  * 1. Derives the Torii URL from the world name and verifies it is reachable.
  * 2. Fetches the world address from the factory's wf-WorldDeployed table.
@@ -207,10 +208,10 @@ export async function discoverWorld(chain: Chain, worldName: string): Promise<Wo
  * Return a deep-cloned manifest with contract addresses overwritten from the factory map
  * and the world address updated. Mirrors the game client's `patchManifestWithFactory`.
  *
- * @param baseManifest - The original Dojo manifest object to patch (not mutated).
+ * @param baseManifest - Original Dojo manifest to patch (not mutated).
  * @param worldAddress - Normalized world contract address to set on `manifest.world.address`.
  * @param contractsBySelector - Map of normalized selector → live contract address from the factory.
- * @returns A new manifest object with addresses replaced wherever a factory entry exists.
+ * @returns New manifest with addresses replaced wherever a factory entry exists.
  */
 export function patchManifest(
   baseManifest: any,
