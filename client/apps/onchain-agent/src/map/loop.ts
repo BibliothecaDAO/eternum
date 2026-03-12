@@ -94,36 +94,39 @@ export function createMapLoop(
         lastOwnedCount = ownedCount;
       }
 
-      // Fetch explorer details for owned armies so the map can show stamina/troops
+      // Fetch explorer and structure details with concurrency limit to avoid
+      // hammering Torii with 40+ parallel requests every 10 seconds.
+      const CONCURRENCY = 5;
+      async function batchFetch<T>(items: any[], fn: (item: any) => Promise<T>): Promise<T[]> {
+        const results: T[] = [];
+        for (let i = 0; i < items.length; i += CONCURRENCY) {
+          const batch = items.slice(i, i + CONCURRENCY);
+          const settled = await Promise.allSettled(batch.map(fn));
+          for (const r of settled) {
+            if (r.status === "fulfilled" && r.value) results.push(r.value);
+          }
+        }
+        return results;
+      }
+
       let explorerDetails: Map<number, ExplorerInfo> | undefined;
       if (ownedEntityIds && ownedEntityIds.size > 0) {
         explorerDetails = new Map();
         const ownedArmyTiles = area.tiles.filter(
           (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && isExplorer(t.occupierType),
         );
-        const results = await Promise.allSettled(ownedArmyTiles.map((t) => client.view.explorerInfo(t.occupierId)));
-        for (const r of results) {
-          if (r.status === "fulfilled" && r.value) {
-            explorerDetails.set(r.value.entityId, r.value);
-          }
-        }
+        const explorers = await batchFetch(ownedArmyTiles, (t) => client.view.explorerInfo(t.occupierId));
+        for (const e of explorers) if (e) explorerDetails.set(e.entityId, e);
       }
 
-      // Fetch structure details for owned structures (resources, level, army slots)
       let structureDetailMap: Map<number, StructureInfo> | undefined;
       if (ownedEntityIds && ownedEntityIds.size > 0) {
         structureDetailMap = new Map();
         const ownedStructureTiles = area.tiles.filter(
           (t) => t.occupierId > 0 && ownedEntityIds!.has(t.occupierId) && t.occupierIsStructure,
         );
-        const structResults = await Promise.allSettled(
-          ownedStructureTiles.map((t) => client.view.structureAt(t.position.x, t.position.y)),
-        );
-        for (const r of structResults) {
-          if (r.status === "fulfilled" && r.value) {
-            structureDetailMap.set(r.value.entityId, r.value);
-          }
-        }
+        const structures = await batchFetch(ownedStructureTiles, (t) => client.view.structureAt(t.position.x, t.position.y));
+        for (const s of structures) if (s) structureDetailMap.set(s.entityId, s);
       }
 
       // Pass previous anchor to keep row:col coordinates stable across renders
