@@ -24,16 +24,34 @@ export function addressesEqual(a: string, b: string): boolean {
  * Checks baseError.data.execution_error, then message, then stringifies the whole thing.
  */
 export function extractTxError(err: any): string {
-  // Try to find the most useful error message from nested RPC errors
-  const executionError = err?.baseError?.data?.execution_error;
-  if (typeof executionError === "string") {
-    // Extract the human-readable failure reason from Cairo error strings
-    const reasonMatch = executionError.match(/Failure reason:\s*\([^)]*'([^']+)'\)/);
-    const quotedMatch = executionError.match(/"([^"]+)"/);
-    if (reasonMatch) return reasonMatch[1];
-    if (quotedMatch) return quotedMatch[1];
-    // Truncate long execution errors
-    return executionError.length > 300 ? executionError.slice(0, 300) + "..." : executionError;
+  // Walk common nested error shapes from starknet.js / provider
+  const paths = [
+    err?.baseError?.data?.execution_error,
+    err?.cause?.baseError?.data?.execution_error,
+    err?.cause?.message,
+    err?.data?.execution_error,
+  ];
+  for (const val of paths) {
+    if (typeof val === "string" && val.length > 30) {
+      const reasonMatch = val.match(/Failure reason:\s*\([^)]*'([^']+)'\)/);
+      const quotedMatch = val.match(/"([^"]+)"/);
+      if (reasonMatch) return reasonMatch[1];
+      if (quotedMatch) return quotedMatch[1];
+      return val.length > 300 ? val.slice(0, 300) + "..." : val;
+    }
   }
-  return err?.message ?? String(err);
+
+  // Last resort: stringify the whole error to find details
+  const msg = err?.message ?? String(err);
+  try {
+    const full = JSON.stringify(err, null, 0);
+    const quotedMatch = full.match(/"execution_error":"([^"]+)"/);
+    if (quotedMatch) {
+      const decoded = quotedMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
+      const reason = decoded.match(/"([^"]{5,})"/);
+      return reason ? reason[1] : decoded.slice(0, 300);
+    }
+  } catch { /* circular ref */ }
+
+  return msg;
 }

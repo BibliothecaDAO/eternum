@@ -168,8 +168,10 @@ export function createCreateArmyTool(
       // ── Determine troop amount (up to 10K, capped by available balance) ──
 
       const troopResName = `${troop.name} T1`;
-      const available = resources.find((r) => r.name === troopResName)?.amount ?? 0;
-      const troopAmount = Math.min(TARGET_TROOP_AMOUNT, available > 0 ? available : TARGET_TROOP_AMOUNT);
+      const availableDisplay = resources.find((r) => r.name === troopResName)?.amount ?? 0;
+      // resources[].amount is human-scaled (divided by RESOURCE_PRECISION), convert back to raw
+      const availableRaw = availableDisplay > 0 ? Math.floor(availableDisplay * RESOURCE_PRECISION) : 0;
+      const troopAmount = availableRaw > 0 ? Math.min(TARGET_TROOP_AMOUNT, availableRaw) : TARGET_TROOP_AMOUNT;
 
       if (troopAmount <= 0) {
         throw new Error(`No ${troop.name} T1 troops available at this realm. Build a ${troop.name} barracks first.`);
