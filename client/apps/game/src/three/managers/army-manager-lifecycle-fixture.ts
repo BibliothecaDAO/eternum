@@ -10,7 +10,7 @@ interface ArmyManagerLifecycleFixture {
 }
 
 export function createArmyManagerLifecycleFixture(): ArmyManagerLifecycleFixture {
-  let clearAllCalls = 0;
+  const clearAllCalls = 0;
   const disposeCalls = {
     pathRenderer: 0,
   };

@@ -585,7 +585,7 @@ export function getVisibilityManager(config?: VisibilityManagerConfig): Centrali
 /**
  * Reset the singleton instance (useful for testing or hot reload).
  */
-function resetVisibilityManager(): void {
+export function resetVisibilityManager(): void {
   if (visibilityManagerInstance) {
     visibilityManagerInstance.dispose();
     visibilityManagerInstance = null;

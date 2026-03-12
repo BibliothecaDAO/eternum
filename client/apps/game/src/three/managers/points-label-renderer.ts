@@ -13,6 +13,8 @@ interface PointLabelConfig {
   colorIndex?: number; // Index for color palette (default: 0)
 }
 
+const sharedSpriteTextureReferences = new WeakMap<THREE.Texture, number>();
+
 /**
  * PointsLabelRenderer manages high-performance icon rendering using THREE.Points
  * - Single draw call for all icons
@@ -24,6 +26,7 @@ export class PointsLabelRenderer {
   private points: THREE.Points;
   private geometry: THREE.BufferGeometry;
   private material: THREE.ShaderMaterial;
+  private spriteTexture: THREE.Texture;
   private maxPoints: number;
   private currentCount: number = 0;
 
@@ -46,6 +49,7 @@ export class PointsLabelRenderer {
   private unsubscribeFrustum?: () => void;
   private boundsDirty = true;
   private batchMode = false; // When true, setPoint() skips refreshFrustumVisibility()
+  private isDisposed = false;
 
   constructor(
     scene: THREE.Scene,
@@ -58,6 +62,11 @@ export class PointsLabelRenderer {
     frustumManager?: FrustumManager,
   ) {
     this.maxPoints = maxPoints;
+    this.spriteTexture = spriteTexture;
+    sharedSpriteTextureReferences.set(
+      spriteTexture,
+      (sharedSpriteTextureReferences.get(spriteTexture) ?? 0) + 1,
+    );
 
     // Initialize buffer arrays
     this.positionsArray = new Float32Array(maxPoints * 3);
@@ -366,6 +375,11 @@ export class PointsLabelRenderer {
    * Dispose resources
    */
   public dispose(): void {
+    if (this.isDisposed) {
+      return;
+    }
+    this.isDisposed = true;
+
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
       this.unsubscribeFrustum = undefined;
@@ -373,5 +387,13 @@ export class PointsLabelRenderer {
     this.geometry.dispose();
     this.material.dispose();
     this.points.parent?.remove(this.points);
+
+    const remainingReferences = (sharedSpriteTextureReferences.get(this.spriteTexture) ?? 1) - 1;
+    if (remainingReferences <= 0) {
+      sharedSpriteTextureReferences.delete(this.spriteTexture);
+      this.spriteTexture.dispose();
+    } else {
+      sharedSpriteTextureReferences.set(this.spriteTexture, remainingReferences);
+    }
   }
 }

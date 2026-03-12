@@ -378,6 +378,10 @@ Objective:
 
 Fix residual GPU cleanup gaps and publish final verification.
 
+Status:
+
+- [x] Complete
+
 Deliverables:
 
 1. `PointsLabelRenderer` explicitly owns and disposes its sprite texture, or documents transferred ownership and removes
@@ -501,6 +505,10 @@ GREEN:
 1. Implement explicit texture ownership in `PointsLabelRenderer`.
 2. Update call sites if ownership must be transferred.
 
+Status:
+
+- [x] Complete
+
 ## Test Plan
 
 ### New or Expanded Tests
@@ -558,6 +566,23 @@ GREEN:
    - Mitigation: Treat GUI folders as tracked resources rather than removing GUI support.
 4. Risk: Visibility-manager changes regress worldmap chunk visibility behavior.
    - Mitigation: Keep current visibility behavior tests green and add listener-count tests alongside.
+
+## Verification Closeout
+
+1. Targeted lifecycle batch is green:
+   - `src/three/scenes/worldmap-lifecycle.test.ts`
+   - `src/three/scenes/hexagon-scene.lifecycle.test.ts`
+   - `src/three/game-renderer-memory-globals.test.ts`
+   - `src/three/game-renderer-gui-folders.test.ts`
+   - `src/three/managers/army-manager.lifecycle.test.ts`
+   - `src/three/managers/points-label-renderer.test.ts`
+2. `pnpm --dir client/apps/game exec vitest run src/three` still has unrelated baseline failures in the current workspace:
+   - `src/three/managers/army-model.visibility.test.ts` fails on `ResourcesIds.StaminaRelic1`
+   - multiple `jsdom`-backed suites hit a workspace dependency/runtime error in `html-encoding-sniffer`
+3. `eslint` on touched files still reports pre-existing debt in:
+   - `src/three/game-renderer.ts`
+   - `src/three/managers/army-manager.ts`
+   - `src/three/scenes/hexagon-scene.ts`
 
 ## Rollout Strategy
 
