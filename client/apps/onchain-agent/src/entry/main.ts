@@ -44,6 +44,7 @@ import { bootstrapDataDir } from "./bootstrap.js";
 import { buildSystemPrompt } from "./soul.js";
 import { evolve } from "./evolution.js";
 import { getAccount } from "../auth/session.js";
+import { createX402Model } from "../providers/x402/index.js";
 import { createMapLoop } from "../map/loop.js";
 import { createAutomationLoop } from "../automation/loop.js";
 import type { MapContext } from "../map/context.js";
@@ -319,7 +320,10 @@ export async function main() {
 
   // 6. Agent — uses followUp with one-at-a-time mode so tick messages
   //    queue safely without interrupting in-progress tool calls.
-  const model = (getModel as Function)(config.modelProvider, config.modelId) as Model<any>;
+  const model =
+    config.modelProvider === "x402"
+      ? createX402Model()
+      : ((getModel as Function)(config.modelProvider, config.modelId) as Model<any>);
 
   const convertToLlm = (messages: AgentMessage[]): Message[] =>
     messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");

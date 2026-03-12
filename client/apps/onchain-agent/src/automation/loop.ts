@@ -126,9 +126,9 @@ export function createAutomationLoop(
               typeof sql.fetchResourceBalancesWithProduction === "function"
                 ? await sql.fetchResourceBalancesWithProduction([entityId])
                 : await sql.fetchResourceBalancesAndProduction([entityId]);
-            return { entityId, biome, level, row: rows?.[0] ?? null };
+            return { entityId, biome, level, category: s.category, row: rows?.[0] ?? null };
           } catch {
-            return { entityId, biome, level, row: null };
+            return { entityId, biome, level, category: s.category, row: null };
           }
         }),
       );
@@ -168,13 +168,14 @@ export function createAutomationLoop(
       const realmStatuses: RealmStatus[] = [];
 
       const results = await Promise.allSettled(
-        snapshotRows.map(async ({ entityId, biome, level, row }) => {
+        snapshotRows.map(async ({ entityId, biome, level, category, row }) => {
           // Pass timestamp so snapshot computes projectedBalances (for prioritisation).
           // Budget/spending uses snapshot.balances (raw on-chain values) to avoid
           // "Insufficient Balance" tx failures from overestimation.
           const currentTimestamp = Math.floor(Date.now() / 1000);
           const snapshot = parseRealmSnapshot(row, currentTimestamp);
-          const realmName = `Realm ${entityId}`;
+          const structureType = category === 5 ? "Village" : "Realm";
+          const realmName = `${structureType} ${entityId}`;
 
           // Merge building counts: the SQL building query has ALL buildings
           // (including non-resource ones like WorkersHut), while snapshot only
@@ -196,7 +197,7 @@ export function createAutomationLoop(
           const summary = plan.idle
             ? `idle (${plan.idle})`
             : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}`;
-          console.log(`[AUTO] Realm ${entityId} | lv${level} | ${summary}`);
+          console.log(`[AUTO] ${structureType} ${entityId} | lv${level} | ${summary}`);
 
           // Upgrade as soon as slots are full — the executor runs builds first,
           // then the upgrade, as separate sequential calls (not a multicall),
@@ -279,7 +280,7 @@ export function createAutomationLoop(
 
           if (buildActions.length > 0) {
             console.log(
-              `[AUTO] Realm ${entityId} | building ${buildActions.length}: ${buildActions.map((a) => a.step.label).join(", ")}`,
+              `[AUTO] ${structureType} ${entityId} | building ${buildActions.length}: ${buildActions.map((a) => a.step.label).join(", ")}`,
             );
           }
 
