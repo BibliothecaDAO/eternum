@@ -187,6 +187,10 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
+    // Keep the initial local-view grid boot eager so the entry overlay receives
+    // the first hexception:grid-ready event during player handoff.
+    this.setup();
+
     this.inputManager.addListener("contextmenu", (raycaster) => {
       this.clearBuildingMode();
     });
