@@ -296,6 +296,7 @@ export default class InstancedModel {
         child.count = count;
       }
     });
+    this.updateMeshVisibility();
     this.needsUpdate();
   }
 

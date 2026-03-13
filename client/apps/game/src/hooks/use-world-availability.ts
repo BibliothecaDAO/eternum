@@ -3,21 +3,38 @@
  * This eliminates N+1 request patterns when checking multiple worlds
  * by caching results and sharing them across components.
  */
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { getFactorySqlBaseUrl } from "@/runtime/world";
+import { isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { normalizeSelector } from "@/runtime/world/normalize";
+import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
+import { RpcProvider } from "starknet";
 
-// Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
+const HYPERSTRUCTURE_GLOBALS_TABLE = "s1_eternum-HyperstructureGlobals";
+
+const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+
+// Note: registration_end_at uses start_main_at because registration ends when the main game starts.
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+
+// Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
+const WORLD_CONFIG_ETERNUM_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "mmr_config.enabled" AS mmr_enabled, "settlement_config.base_distance" AS settlement_base_distance, "settlement_config.spires_layer_distance" AS spires_layer_distance, "settlement_config.spires_settled_count" AS spires_settled_count, "settlement_config.layer_max" AS settlement_layer_max, "settlement_config.layers_skipped" AS settlement_layers_skipped, "season_addresses_config.season_pass_address" AS season_pass_address, "map_center_offset" AS map_center_offset FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
-const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
+const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "${HYPERSTRUCTURE_GLOBALS_TABLE}" LIMIT 1;`;
+const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
+const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
+const rpcProviderCache = new Map<string, RpcProvider>();
 
 /**
- * Calculate number of hyperstructures left to create based on max ring count and created count.
- * Formula: total = 1 + 6*1 + 6*2 + ... + 6*max_ring_count = 1 + 6*(1+2+...+max_ring_count) = 1 + 6*max_ring_count*(max_ring_count+1)/2
+ * Calculate number of hyperstructures left to create based on mode, max ring count, and created count.
+ * - 2-player mode: total = max_ring_count + 1 (rings 0..max_ring_count)
+ * - multi-player mode: total = 1 + 6*(1+2+...+max_ring_count)
  */
-const calculateHyperstructuresLeft = (maxRingCount: number, createdCount: number): number => {
-  const total = 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
+const calculateHyperstructuresLeft = (maxRingCount: number, createdCount: number, twoPlayerMode: boolean): number => {
+  const total = twoPlayerMode ? maxRingCount + 1 : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
   return Math.max(0, total - createdCount);
 };
 
@@ -59,9 +76,48 @@ const parseMaybeHexToAddress = (v: unknown): string | null => {
   return `0x${bigIntVal.toString(16)}`;
 };
 
+const getCachedRpcProvider = (rpcUrl: string): RpcProvider => {
+  const existingProvider = rpcProviderCache.get(rpcUrl);
+  if (existingProvider) return existingProvider;
+  const provider = new RpcProvider({ nodeUrl: rpcUrl });
+  rpcProviderCache.set(rpcUrl, provider);
+  return provider;
+};
+
+const fetchTokenBalance = async (
+  provider: RpcProvider,
+  tokenAddress: string,
+  accountAddress: string,
+): Promise<bigint> => {
+  try {
+    const result = await provider.callContract({
+      contractAddress: tokenAddress,
+      entrypoint: "balance_of",
+      calldata: [accountAddress],
+    });
+
+    if (result.length < 2) return 0n;
+    const low = BigInt(result[0] ?? 0);
+    const high = BigInt(result[1] ?? 0);
+    return low + (high << 128n);
+  } catch {
+    return 0n;
+  }
+};
+
 export interface WorldConfigMeta {
+  mode: "blitz" | "eternum" | "unknown";
   startMainAt: number | null;
   endAt: number | null;
+  seasonDurationSeconds: number | null;
+  // Eternum spacing config
+  settlementBaseDistance: number | null;
+  spiresLayerDistance: number | null;
+  spiresSettledCount: number | null;
+  settlementLayerMax: number | null;
+  settlementLayersSkipped: number | null;
+  mapCenterOffset: number | null;
+  seasonPassAddress: string | null;
   registrationCount: number | null;
   // Blitz registration config
   entryTokenAddress: string | null;
@@ -77,11 +133,15 @@ export interface WorldConfigMeta {
   isPlayerRegistered: boolean | null;
   // Number of hyperstructures left to create (for forging)
   numHyperstructuresLeft: number | null;
+  // Reward distribution contract for this world
+  prizeDistributionAddress: string | null;
+  // Current fee-token balance held by the reward distribution contract
+  winnerJackpotAmount: bigint;
 }
 
 interface WorldRef {
   name: string;
-  chain?: string;
+  chain?: Chain;
 }
 
 export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.chain}:${world.name}` : world.name);
@@ -89,7 +149,7 @@ export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.
 interface WorldAvailability {
   worldKey: string;
   worldName: string;
-  chain?: string;
+  chain?: Chain;
   isAvailable: boolean;
   meta: WorldConfigMeta | null;
   isLoading: boolean;
@@ -133,15 +193,58 @@ const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: stri
   return null;
 };
 
+const fetchPrizeDistributionAddress = async (worldName: string, chain: Chain): Promise<string | null> => {
+  try {
+    const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+    if (!factorySqlBaseUrl) return null;
+
+    const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+    return contracts[prizeDistributionSelector] ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchWinnerJackpotAmount = async (
+  worldName: string,
+  chain: Chain,
+  feeTokenAddress: string,
+): Promise<{ prizeDistributionAddress: string | null; winnerJackpotAmount: bigint }> => {
+  const prizeDistributionAddress = await fetchPrizeDistributionAddress(worldName, chain);
+  if (!prizeDistributionAddress) {
+    return { prizeDistributionAddress: null, winnerJackpotAmount: 0n };
+  }
+
+  const rpcUrl = getRpcUrlForChain(chain);
+  const provider = getCachedRpcProvider(rpcUrl);
+  const winnerJackpotAmount = await fetchTokenBalance(provider, feeTokenAddress, prizeDistributionAddress);
+
+  return { prizeDistributionAddress, winnerJackpotAmount };
+};
+
 /**
  * Fetch world config metadata from Torii SQL endpoint.
  * Optionally fetches player registration status if playerAddress is provided.
  * Cached by React Query.
  */
-const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string | null): Promise<WorldConfigMeta> => {
+const fetchWorldConfigMeta = async (
+  toriiBaseUrl: string,
+  worldName: string,
+  chain?: Chain,
+  playerAddress?: string | null,
+): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
+    mode: "unknown",
     startMainAt: null,
     endAt: null,
+    seasonDurationSeconds: null,
+    settlementBaseDistance: null,
+    spiresLayerDistance: null,
+    spiresSettledCount: null,
+    settlementLayerMax: null,
+    settlementLayersSkipped: null,
+    mapCenterOffset: null,
+    seasonPassAddress: null,
     registrationCount: null,
     entryTokenAddress: null,
     feeTokenAddress: null,
@@ -152,25 +255,33 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
     devModeOn: false,
     isPlayerRegistered: null,
     numHyperstructuresLeft: null,
+    prizeDistributionAddress: null,
+    winnerJackpotAmount: 0n,
   };
 
   try {
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
+    // Detect game mode first so we can run a mode-specific world-config query.
+    const modeUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_MODE_QUERY)}`;
+    const modeResponse = await fetch(modeUrl);
+    if (!modeResponse.ok) return meta;
+    const [modeRow] = (await modeResponse.json()) as Record<string, unknown>[];
+    const isBlitzMode = parseMaybeBool(modeRow?.blitz_mode_on);
+    if (isBlitzMode === true) meta.mode = "blitz";
+    if (isBlitzMode === false) meta.mode = "eternum";
+
+    const worldConfigQuery = meta.mode === "blitz" ? WORLD_CONFIG_BLITZ_QUERY : WORLD_CONFIG_ETERNUM_QUERY;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(worldConfigQuery)}`;
     const response = await fetch(url);
     if (!response.ok) return meta;
     const [row] = (await response.json()) as Record<string, unknown>[];
     if (row) {
       if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
       if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
-      if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
-      // Blitz registration config
-      if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
-      if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
-      if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
-      if (row.registration_start_at != null)
-        meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
-      if (row.registration_end_at != null)
-        meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
+
+      if (meta.startMainAt != null && meta.endAt != null && meta.endAt >= meta.startMainAt) {
+        meta.seasonDurationSeconds = meta.endAt - meta.startMainAt;
+      }
+
       if (row.mmr_enabled != null) {
         const mmrVal = parseMaybeHexToNumber(row.mmr_enabled);
         meta.mmrEnabled = mmrVal != null && mmrVal !== 0;
@@ -180,31 +291,87 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
         meta.devModeOn = devVal != null && devVal !== 0;
       }
 
-      // Calculate hyperstructures left from max_ring_count
-      const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
-      if (maxRingCount > 0) {
-        // Fetch created count from HyperstructureGlobals
-        try {
-          const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
-          const globalsResponse = await fetch(globalsUrl);
-          if (globalsResponse.ok) {
-            const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
-            const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount);
-          } else {
-            // If no globals exist yet, all hyperstructures are available
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+      if (meta.mode === "blitz") {
+        if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
+        if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
+        if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
+        if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
+        if (row.registration_start_at != null)
+          meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
+        if (row.registration_end_at != null)
+          meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
+
+        const twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+
+        // Calculate hyperstructures left from max_ring_count
+        const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
+        if (maxRingCount > 0) {
+          // Fetch created count from HyperstructureGlobals
+          try {
+            const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
+            const globalsResponse = await fetch(globalsUrl);
+            if (globalsResponse.ok) {
+              const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
+              const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
+            } else {
+              // If no globals exist yet, all hyperstructures are available
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+            }
+          } catch {
+            // If query fails, calculate based on zero created
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
           }
-        } catch {
-          // If query fails, calculate based on zero created
-          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0);
+        }
+      }
+
+      if (meta.mode === "eternum") {
+        if (row.settlement_base_distance != null) {
+          meta.settlementBaseDistance = parseMaybeHexToNumber(row.settlement_base_distance);
+        }
+        if (row.spires_layer_distance != null) {
+          meta.spiresLayerDistance = parseMaybeHexToNumber(row.spires_layer_distance);
+        }
+        if (row.spires_settled_count != null) {
+          meta.spiresSettledCount = parseMaybeHexToNumber(row.spires_settled_count);
+        }
+        if (row.settlement_layer_max != null) {
+          meta.settlementLayerMax = parseMaybeHexToNumber(row.settlement_layer_max);
+        }
+        if (row.settlement_layers_skipped != null) {
+          meta.settlementLayersSkipped = parseMaybeHexToNumber(row.settlement_layers_skipped);
+        }
+        if (row.season_pass_address != null) {
+          meta.seasonPassAddress = parseMaybeHexToAddress(row.season_pass_address);
+        }
+        if (row.map_center_offset != null) {
+          meta.mapCenterOffset = parseMaybeHexToNumber(row.map_center_offset);
         }
       }
     }
 
-    // Fetch player registration status if address provided
-    if (playerAddress) {
-      meta.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress);
+    // Run optional side fetches in parallel.
+    const sideFetches: Promise<void>[] = [];
+    if (playerAddress && meta.mode === "blitz") {
+      sideFetches.push(
+        fetchPlayerRegistration(toriiBaseUrl, playerAddress).then((isRegistered) => {
+          meta.isPlayerRegistered = isRegistered;
+        }),
+      );
+    }
+    if (chain && meta.feeTokenAddress) {
+      sideFetches.push(
+        fetchWinnerJackpotAmount(worldName, chain, meta.feeTokenAddress).then(
+          ({ prizeDistributionAddress, winnerJackpotAmount }) => {
+            meta.prizeDistributionAddress = prizeDistributionAddress;
+            meta.winnerJackpotAmount = winnerJackpotAmount;
+          },
+        ),
+      );
+    }
+
+    if (sideFetches.length > 0) {
+      await Promise.all(sideFetches);
     }
   } catch {
     // Silently fail - metadata fetch is best-effort
@@ -219,6 +386,7 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
  */
 const checkWorldAvailability = async (
   worldName: string,
+  chain?: Chain,
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
@@ -228,7 +396,7 @@ const checkWorldAvailability = async (
     return { isAvailable: false, meta: null };
   }
 
-  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress);
+  const meta = await fetchWorldConfigMeta(toriiBaseUrl, worldName, chain, playerAddress);
   return { isAvailable: true, meta };
 };
 
@@ -245,7 +413,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
       queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world.name, playerAddress),
+      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress),
       enabled: enabled && !!world.name,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes

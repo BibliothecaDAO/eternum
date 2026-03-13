@@ -1,0 +1,10 @@
+session.json
+.env
+axis
+dist-bun/
+release/
+*.wasm
+.agents/
+.skills/
+.claude
+.cartridge

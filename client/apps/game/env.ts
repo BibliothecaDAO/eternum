@@ -19,13 +19,13 @@ const envSchema = z.object({
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-3/torii"),
+  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-4/torii"),
   VITE_PUBLIC_GLOBAL_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/blitz-slot-global-1/torii"),
   VITE_PUBLIC_NODE_URL: z
     .string()
     .url()
     .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9"),
+    .default("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9"),
   VITE_PUBLIC_TORII_RELAY: z
     .string()
     .optional()
@@ -66,7 +66,8 @@ const envSchema = z.object({
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed
-  VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("eternum"),
+  VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("blitz"),
+  VITE_PUBLIC_FORCE_GAME_MODE_ID: z.enum(["eternum", "blitz"]).optional(),
   VITE_PUBLIC_FACTORY_DEPLOY_REPEATS: z.string().optional(),
 
   VITE_PUBLIC_CONSTRUCTION_FLAG: z

@@ -2,6 +2,7 @@ import type { SDK } from "@dojoengine/sdk";
 import { DojoSdkProvider, useDojoSDK } from "@dojoengine/sdk/react";
 import { type PropsWithChildren, useEffect, useState } from "react";
 import type { StarknetDomain } from "starknet";
+import type { PredictionMarketChain } from "../../manifest-loader";
 import { setupWorld, type SchemaType } from "../../bindings";
 import { DojoConfigProvider, useDojoConfig } from "./dojo-config";
 
@@ -68,13 +69,15 @@ export const DojoSdkProviderInitialized = ({
   domain = appDomain,
   toriiUrl = "",
   worldAddress = "",
+  chain,
 }: PropsWithChildren<{
   domain?: StarknetDomain;
   toriiUrl?: string;
   worldAddress?: string;
+  chain?: PredictionMarketChain;
 }>) => {
   return (
-    <DojoConfigProvider toriiUrl={toriiUrl} worldAddress={worldAddress}>
+    <DojoConfigProvider toriiUrl={toriiUrl} worldAddress={worldAddress} chain={chain}>
       <DojoSdkProviderInner domain={domain}>{children}</DojoSdkProviderInner>
     </DojoConfigProvider>
   );

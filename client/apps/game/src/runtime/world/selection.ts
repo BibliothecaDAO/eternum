@@ -6,6 +6,7 @@ import type { WorldProfile } from "./types";
 export interface WorldSelectionInput {
   name: string;
   chain?: Chain;
+  worldAddress?: string;
 }
 
 interface ApplyWorldSelectionResult {
@@ -23,9 +24,9 @@ export const applyWorldSelection = async (
   const targetChain = selection.chain ?? currentChain;
   const chainChanged = targetChain !== currentChain;
 
-  if (chainChanged) {
-    setSelectedChain(targetChain);
-  }
+  // Always persist the selected chain so later bootstrap reads the same network,
+  // even when current and target chains are already equal.
+  setSelectedChain(targetChain);
 
   const profile = await buildWorldProfile(targetChain, selection.name);
   setActiveWorldName(selection.name);

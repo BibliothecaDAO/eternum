@@ -291,7 +291,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   } = useFactorySeries(currentChain as Chain, account?.address ?? null);
 
   const [factoryAddress, setFactoryAddress] = useState<string>("");
-  const [version, setVersion] = useState<string>(getDefaultVersion(env.VITE_PUBLIC_GAME_TYPE ?? "eternum"));
+  const [version, setVersion] = useState<string>(getDefaultVersion(env.VITE_PUBLIC_FORCE_GAME_MODE_ID ?? "eternum"));
   const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
   const [worldName, setWorldName] = useState<string>("");
   const [seriesName, setSeriesName] = useState<string>("");
@@ -327,7 +327,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       const secs = Number(ETERNUM_CONFIG()?.season?.durationSeconds || 0);
       return Math.max(1, Math.round(secs / 3600));
     } catch {
-      return 24;
+      return 1;
     }
   });
   const [storedWorldNames, setStoredWorldNames] = useState<string[]>([]);
@@ -366,6 +366,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   );
   const [factoryAddressOverrides, setFactoryAddressOverrides] = useState<Record<string, string>>({});
   const [singleRealmModeOverrides, setSingleRealmModeOverrides] = useState<Record<string, boolean>>({});
+  const [twoPlayerModeOverrides, setTwoPlayerModeOverrides] = useState<Record<string, boolean>>({});
   const [seasonBridgeCloseAfterEndSecondsOverrides, setSeasonBridgeCloseAfterEndSecondsOverrides] = useState<
     Record<string, string>
   >({});
@@ -384,15 +385,26 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
   const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
   const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
-  const activeGameMode: GameMode = (env.VITE_PUBLIC_GAME_TYPE as GameMode) ?? "eternum";
+  const activeGameMode: GameMode = (env.VITE_PUBLIC_FORCE_GAME_MODE_ID as GameMode) ?? "eternum";
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
   const baseDurationMinutes = useMemo(() => {
     const secs = Number(eternumConfig?.season?.durationSeconds || 0);
-    if (!Number.isFinite(secs) || secs <= 0) return 0;
+    if (!Number.isFinite(secs) || secs <= 0) return 30;
     return Math.max(0, Math.round((secs % 3600) / 60));
   }, [eternumConfig]);
+  const configuredBlitzFeeRecipient = (eternumConfig as any)?.blitz?.registration?.fee_recipient || "";
+  const defaultBlitzFeeRecipient = account?.address || configuredBlitzFeeRecipient;
+  const getBlitzFeeRecipientForWorld = useCallback(
+    (name: string) => {
+      if (Object.prototype.hasOwnProperty.call(blitzFeeRecipientOverrides, name)) {
+        return blitzFeeRecipientOverrides[name] ?? "";
+      }
+      return defaultBlitzFeeRecipient;
+    },
+    [blitzFeeRecipientOverrides, defaultBlitzFeeRecipient],
+  );
 
   // Check indexer and deployment status for all stored worlds
   const checkAllWorldStatuses = useCallback(async () => {
@@ -423,12 +435,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       if (preset === "blitz-slot") {
         setDevModeOn(false);
         setMmrEnabledOn(true);
-        setDurationHours(2);
+        setDurationHours(1);
 
         setDevModeOverrides((prev) => ({ ...prev, ...(worldMap(false) as Record<string, boolean>) }));
         setMmrEnabledOverrides((prev) => ({ ...prev, ...(worldMap(true) as Record<string, boolean>) }));
-        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(2) as Record<string, number>) }));
-        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
+        setDurationHoursOverrides((prev) => ({ ...prev, ...(worldMap(1) as Record<string, number>) }));
+        setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(30) as Record<string, number>) }));
       }
     },
     [storedWorldNames],
@@ -436,15 +448,29 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
   // Auto-load manifest and factory address on mount
   useEffect(() => {
+    let cancelled = false;
+
     const defaultFactory = FACTORY_ADDRESSES[currentChain];
     if (defaultFactory) {
       setFactoryAddress(defaultFactory);
     }
 
-    const manifest = getManifestJsonString(currentChain);
-    if (manifest) {
-      setManifestJson(manifest);
-    }
+    const loadManifest = async () => {
+      try {
+        const manifest = await getManifestJsonString(currentChain);
+        if (!cancelled) {
+          // Always set the latest load result to avoid displaying stale manifests after chain switches.
+          setManifestJson(manifest);
+        }
+      } catch (error) {
+        console.error(`[factory] Failed to load manifest for chain '${currentChain}'`, error);
+        if (!cancelled) {
+          setManifestJson("");
+        }
+      }
+    };
+
+    void loadManifest();
 
     // Load stored world names
     setStoredWorldNames(getStoredWorldNames());
@@ -459,6 +485,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentChain]);
 
   // Generate world name when account name changes
@@ -1012,9 +1042,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                 : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
                             }`}
                           >
-                            <p className="text-sm font-semibold text-gold">BLITZ SLOT (2 hr game onslot)</p>
+                            <p className="text-sm font-semibold text-gold">BLITZ SLOT (1h 30m game onslot)</p>
                             <p className="mt-1 text-xs text-gold/60">
-                              Sets Dev Mode OFF, MMR ON, and game duration to 2 hours.
+                              Sets Dev Mode OFF, MMR ON, and game duration to 1 hour 30 minutes.
                             </p>
                           </button>
                         </div>
@@ -1620,96 +1650,19 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                               <div className="space-y-1">
                                                 <label className="text-xs font-semibold text-gold/70">
-                                                  Game Duration (hours)
-                                                </label>
-                                                <input
-                                                  type="number"
-                                                  min={0}
-                                                  value={
-                                                    Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
-                                                      ? Number(durationHoursOverrides[name] || 0)
-                                                      : Number(durationHours || 0)
-                                                  }
-                                                  onChange={(e) =>
-                                                    setDurationHoursOverrides((p) => ({
-                                                      ...p,
-                                                      [name]: Number(e.target.value || 0),
-                                                    }))
-                                                  }
-                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
-                                                />
-                                                <p className="text-[10px] text-gold/60">
-                                                  Applies to season.durationSeconds.
-                                                </p>
-                                              </div>
-                                              <div className="space-y-1">
-                                                <label className="text-xs font-semibold text-gold/70">
-                                                  Game Duration (minutes)
-                                                </label>
-                                                <input
-                                                  type="number"
-                                                  min={0}
-                                                  max={59}
-                                                  value={
-                                                    Object.prototype.hasOwnProperty.call(durationMinutesOverrides, name)
-                                                      ? Number(durationMinutesOverrides[name] || 0)
-                                                      : baseDurationMinutes
-                                                  }
-                                                  onChange={(e) =>
-                                                    setDurationMinutesOverrides((p) => ({
-                                                      ...p,
-                                                      [name]: Math.min(59, Math.max(0, Number(e.target.value || 0))),
-                                                    }))
-                                                  }
-                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md"
-                                                />
-                                                <p className="text-[10px] text-gold/60">
-                                                  0–59 minutes (added to hours).
-                                                </p>
-                                              </div>
-                                              <div className="space-y-1">
-                                                <label className="text-xs font-semibold text-gold/70">
-                                                  Factory Address Override
-                                                </label>
-                                                <input
-                                                  type="text"
-                                                  placeholder={
-                                                    factoryAddress || (eternumConfig as any)?.factory_address || "0x..."
-                                                  }
-                                                  value={
-                                                    factoryAddressOverrides[name] ??
-                                                    (factoryAddress || (eternumConfig as any)?.factory_address || "")
-                                                  }
-                                                  onChange={(e) =>
-                                                    setFactoryAddressOverrides((p) => ({
-                                                      ...p,
-                                                      [name]: e.target.value,
-                                                    }))
-                                                  }
-                                                  className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
-                                                />
-                                                <p className="text-[10px] text-gold/60">
-                                                  Used by set_factory_address when configuring this world.
-                                                </p>
-                                              </div>
-                                              <div className="space-y-1">
-                                                <label className="text-xs font-semibold text-gold/70">
-                                                  Single Realm Mode
+                                                  Two Player Mode
                                                 </label>
                                                 <div className="flex items-center gap-2">
                                                   <input
-                                                    id={`single-realm-mode-${name}`}
+                                                    id={`two-player-mode-${name}`}
                                                     type="checkbox"
                                                     checked={
-                                                      Object.prototype.hasOwnProperty.call(
-                                                        singleRealmModeOverrides,
-                                                        name,
-                                                      )
-                                                        ? !!singleRealmModeOverrides[name]
-                                                        : !!eternumConfig.settlement?.single_realm_mode
+                                                      Object.prototype.hasOwnProperty.call(twoPlayerModeOverrides, name)
+                                                        ? !!twoPlayerModeOverrides[name]
+                                                        : !!eternumConfig.settlement?.two_player_mode
                                                     }
                                                     onChange={(e) =>
-                                                      setSingleRealmModeOverrides((p) => ({
+                                                      setTwoPlayerModeOverrides((p) => ({
                                                         ...p,
                                                         [name]: e.target.checked,
                                                       }))
@@ -1717,14 +1670,14 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     className="h-4 w-4 accent-blue-600"
                                                   />
                                                   <label
-                                                    htmlFor={`single-realm-mode-${name}`}
+                                                    htmlFor={`two-player-mode-${name}`}
                                                     className="text-xs text-gold/90"
                                                   >
-                                                    Enable single realm mode for this world
+                                                    Enable two player mode for this world
                                                   </label>
                                                 </div>
                                                 <p className="text-[10px] text-gold/60">
-                                                  Controls settlement spawning behavior.
+                                                  Mutually exclusive with single realm mode.
                                                 </p>
                                               </div>
                                             </div>
@@ -1809,12 +1762,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   type="number"
                                                   min={0}
                                                   step={1}
-                                                  placeholder="30"
+                                                  placeholder="24"
                                                   value={
                                                     registrationCountMaxOverrides[name] ??
                                                     String(
                                                       (eternumConfig as any)?.blitz?.registration
-                                                        ?.registration_count_max ?? 30,
+                                                        ?.registration_count_max ?? 24,
                                                     )
                                                   }
                                                   onChange={(e) =>
@@ -1825,7 +1778,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   }
                                                   className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
                                                 />
-                                                <p className="text-[10px] text-gold/60">Default: 30.</p>
+                                                <p className="text-[10px] text-gold/60">Default: 24.</p>
                                               </div>
                                             </div>
 
@@ -1836,14 +1789,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                 </label>
                                                 <input
                                                   type="text"
-                                                  placeholder={
-                                                    (eternumConfig as any)?.blitz?.registration?.fee_recipient ||
-                                                    "0x..."
-                                                  }
-                                                  value={
-                                                    blitzFeeRecipientOverrides[name] ??
-                                                    ((eternumConfig as any)?.blitz?.registration?.fee_recipient || "")
-                                                  }
+                                                  placeholder={defaultBlitzFeeRecipient || "0x..."}
+                                                  value={getBlitzFeeRecipientForWorld(name)}
                                                   onChange={(e) =>
                                                     setBlitzFeeRecipientOverrides((p) => ({
                                                       ...p,
@@ -2247,6 +2194,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   singleRealmModeOverrides,
                                                   name,
                                                 );
+                                                const hasTwoPlayerOverride = Object.prototype.hasOwnProperty.call(
+                                                  twoPlayerModeOverrides,
+                                                  name,
+                                                );
                                                 const hasDurationHoursOverride = Object.prototype.hasOwnProperty.call(
                                                   durationHoursOverrides,
                                                   name,
@@ -2284,13 +2235,16 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     blitzFeeAmount: blitzFeeAmountOverrides[name],
                                                     blitzFeePrecision: blitzFeePrecisionOverrides[name],
                                                     blitzFeeToken: blitzFeeTokenOverrides[name],
-                                                    blitzFeeRecipient: blitzFeeRecipientOverrides[name],
+                                                    blitzFeeRecipient: getBlitzFeeRecipientForWorld(name),
                                                     registrationCountMax: registrationCountMaxOverrides[name],
                                                     registrationDelaySeconds: registrationDelaySecondsOverrides[name],
                                                     registrationPeriodSeconds: registrationPeriodSecondsOverrides[name],
                                                     factoryAddress: factoryAddressOverrides[name],
                                                     singleRealmMode: hasSingleRealmOverride
                                                       ? !!singleRealmModeOverrides[name]
+                                                      : undefined,
+                                                    twoPlayerMode: hasTwoPlayerOverride
+                                                      ? !!twoPlayerModeOverrides[name]
                                                       : undefined,
                                                     seasonBridgeCloseAfterEndSeconds:
                                                       seasonBridgeCloseAfterEndSecondsOverrides[name],

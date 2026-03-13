@@ -1,5 +1,6 @@
-import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
+import { resolveOwnerDisplayName } from "./owner-display-name";
 import { resolveCameraView } from "./label-view";
 
 /**
@@ -221,7 +222,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
   container.setAttribute("data-component", "owner");
 
   // Create name element with optional structure name
-  const displayName = cleanText(owner.ownerName);
+  const displayName = resolveOwnerDisplayName(owner.ownerName, owner.address, BANDITS_NAME);
   const nameSpan = document.createElement("span");
 
   let fullText = displayName;
@@ -868,6 +869,35 @@ export const updateDirectionIndicators = (
     return null;
   }
 
-  existingIndicators?.remove();
+  if (existingIndicators instanceof HTMLElement) {
+    existingIndicators.className = newIndicators.className;
+    existingIndicators.replaceChildren(...Array.from(newIndicators.childNodes));
+    return existingIndicators;
+  }
+
   return newIndicators;
+};
+
+export const updateGuardArmyDisplay = (
+  container: HTMLElement,
+  guardArmies:
+    | Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>
+    | undefined,
+  inputView: CameraView,
+): void => {
+  const next = createGuardArmyDisplay(guardArmies, inputView);
+  container.className = next.className;
+  container.setAttribute("style", next.getAttribute("style") ?? "");
+  container.replaceChildren(...Array.from(next.childNodes));
+};
+
+export const updateProductionDisplay = (
+  container: HTMLElement,
+  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }> | undefined,
+  inputView: CameraView,
+): void => {
+  const next = createProductionDisplay(activeProductions, inputView);
+  container.className = next.className;
+  container.setAttribute("style", next.getAttribute("style") ?? "");
+  container.replaceChildren(...Array.from(next.childNodes));
 };

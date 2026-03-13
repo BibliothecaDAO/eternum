@@ -764,6 +764,7 @@ export interface SetSettlementConfigProps extends SystemSigner {
   spires_max_count: BigNumberish;
   spires_settled_count: BigNumberish;
   single_realm_mode: boolean;
+  two_player_mode: boolean;
 }
 export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   fee_token: BigNumberish;
@@ -859,6 +860,8 @@ export interface ExplorerMoveProps extends SystemSigner {
   directions: number[];
   /** Whether to explore new tiles along the way */
   explore: boolean;
+  /** Optional VRF source salt (packed tile seed) required when explore=true and VRF is enabled */
+  vrf_source_salt?: BigNumberish;
 }
 
 /**
@@ -879,6 +882,8 @@ export interface ExplorerExploreProps extends SystemSigner {
   explorer_id: number;
   /** Array of directions to move in */
   directions: number[];
+  /** VRF source salt (packed tile seed for the destination tile) */
+  vrf_source_salt?: BigNumberish;
 }
 
 /**

@@ -1,0 +1,219 @@
+import { describe, expect, it, vi } from "vitest";
+import {
+  applyWorldmapSwitchOffRuntimeState,
+  finalizePendingChunkFetchOwnership,
+  invalidateWorldmapSwitchOffTransitionState,
+  invalidateWorldmapPendingFetchGeneration,
+  shouldApplyWorldmapFetchResult,
+} from "./worldmap-runtime-lifecycle";
+import { SceneName } from "../types";
+
+describe("worldmap runtime lifecycle", () => {
+  it("clears switch-off transient state and returns reset primitives", () => {
+    const pendingArmyRemovals = new Map<number, string>([
+      [101, "timeout-a"],
+      [202, "timeout-b"],
+    ]);
+    const pendingArmyRemovalMeta = new Map<number, { scheduledAt: number }>([[101, { scheduledAt: Date.now() }]]);
+    const deferredChunkRemovals = new Map<number, { reason: string }>([[101, { reason: "tile" }]]);
+    const armyLastUpdateAt = new Map<number, number>([[101, Date.now()]]);
+    const pendingArmyMovements = new Set<number>([101, 202]);
+    const pendingArmyMovementStartedAt = new Map<number, number>([[101, Date.now()]]);
+    const pendingArmyMovementFallbackTimeouts = new Map<number, string>([[101, "fallback-timeout"]]);
+    const armyStructureOwners = new Map<number, number>([[101, 88]]);
+    const fetchedChunks = new Set<string>(["8,8"]);
+    const pendingChunks = new Map<string, Promise<boolean>>([["8,8", Promise.resolve(true)]]);
+    const pinnedChunkKeys = new Set<string>(["8,8"]);
+    const pinnedRenderAreas = new Set<string>(["8,8:render"]);
+
+    const clearTimeoutSpy = vi.fn();
+    const clearPendingArmyMovementSpy = vi.fn();
+    const clearQueuedPrefetchStateSpy = vi.fn();
+    const invalidatePendingFetchesSpy = vi.fn();
+    const releaseInactiveResourcesSpy = vi.fn();
+
+    const result = applyWorldmapSwitchOffRuntimeState({
+      pendingArmyRemovals,
+      pendingArmyRemovalMeta,
+      deferredChunkRemovals,
+      armyLastUpdateAt,
+      pendingArmyMovements,
+      pendingArmyMovementStartedAt,
+      pendingArmyMovementFallbackTimeouts,
+      armyStructureOwners,
+      fetchedChunks,
+      pendingChunks,
+      pinnedChunkKeys,
+      pinnedRenderAreas,
+      hydratedChunkRefreshes: new Set(),
+      hydratedRefreshSuppressionAreaKeys: new Set(),
+      clearTimeout: clearTimeoutSpy,
+      clearPendingArmyMovement: clearPendingArmyMovementSpy,
+      clearQueuedPrefetchState: clearQueuedPrefetchStateSpy,
+      releaseInactiveResources: releaseInactiveResourcesSpy,
+      invalidatePendingFetches: invalidatePendingFetchesSpy,
+    });
+
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(2);
+    expect(clearPendingArmyMovementSpy).toHaveBeenCalledTimes(2);
+    expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(101);
+    expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(202);
+    expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
+    expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
+    expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
+
+    expect(pendingArmyRemovals.size).toBe(0);
+    expect(pendingArmyRemovalMeta.size).toBe(0);
+    expect(deferredChunkRemovals.size).toBe(0);
+    expect(armyLastUpdateAt.size).toBe(0);
+    expect(pendingArmyMovements.size).toBe(0);
+    expect(pendingArmyMovementStartedAt.size).toBe(0);
+    expect(pendingArmyMovementFallbackTimeouts.size).toBe(0);
+    expect(armyStructureOwners.size).toBe(0);
+    expect(fetchedChunks.size).toBe(0);
+    expect(pendingChunks.size).toBe(0);
+    expect(pinnedChunkKeys.size).toBe(0);
+    expect(pinnedRenderAreas.size).toBe(0);
+
+    expect(result).toEqual({
+      isSwitchedOff: true,
+      toriiLoadingCounter: 0,
+      currentChunk: "null",
+      lastControlsCameraDistance: null,
+    });
+  });
+
+  it("is idempotent with empty collections", () => {
+    const clearTimeoutSpy = vi.fn();
+    const clearPendingArmyMovementSpy = vi.fn();
+    const clearQueuedPrefetchStateSpy = vi.fn();
+    const invalidatePendingFetchesSpy = vi.fn();
+    const releaseInactiveResourcesSpy = vi.fn();
+
+    const result = applyWorldmapSwitchOffRuntimeState({
+      pendingArmyRemovals: new Map(),
+      pendingArmyRemovalMeta: new Map(),
+      deferredChunkRemovals: new Map(),
+      armyLastUpdateAt: new Map(),
+      pendingArmyMovements: new Set(),
+      pendingArmyMovementStartedAt: new Map(),
+      pendingArmyMovementFallbackTimeouts: new Map(),
+      armyStructureOwners: new Map(),
+      fetchedChunks: new Set(),
+      pendingChunks: new Map(),
+      pinnedChunkKeys: new Set(),
+      pinnedRenderAreas: new Set(),
+      hydratedChunkRefreshes: new Set(),
+      hydratedRefreshSuppressionAreaKeys: new Set(),
+      clearTimeout: clearTimeoutSpy,
+      clearPendingArmyMovement: clearPendingArmyMovementSpy,
+      clearQueuedPrefetchState: clearQueuedPrefetchStateSpy,
+      releaseInactiveResources: releaseInactiveResourcesSpy,
+      invalidatePendingFetches: invalidatePendingFetchesSpy,
+    });
+
+    expect(clearTimeoutSpy).not.toHaveBeenCalled();
+    expect(clearPendingArmyMovementSpy).not.toHaveBeenCalled();
+    expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
+    expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
+    expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
+    expect(result.currentChunk).toBe("null");
+    expect(result.isSwitchedOff).toBe(true);
+  });
+
+  it("invalidates chunk transition ownership when switching off", () => {
+    const inFlightSwitch = Promise.resolve();
+    const result = invalidateWorldmapSwitchOffTransitionState({
+      chunkTransitionToken: 4,
+      isChunkTransitioning: true,
+      globalChunkSwitchPromise: inFlightSwitch,
+    });
+
+    expect(result).toEqual({
+      chunkTransitionToken: 5,
+      isChunkTransitioning: false,
+      globalChunkSwitchPromise: null,
+    });
+  });
+
+  it("cleans up pending fetches by promise ownership identity", () => {
+    const fetchKey = "12,12:render";
+    const staleOwner = Promise.resolve(true);
+    const currentOwner = Promise.resolve(true);
+    const pendingChunks = new Map<string, Promise<boolean>>([[fetchKey, currentOwner]]);
+
+    const staleDeleteResult = finalizePendingChunkFetchOwnership({
+      pendingChunks,
+      fetchKey,
+      fetchPromise: staleOwner,
+    });
+    expect(staleDeleteResult).toBe(false);
+    expect(pendingChunks.get(fetchKey)).toBe(currentOwner);
+
+    const currentDeleteResult = finalizePendingChunkFetchOwnership({
+      pendingChunks,
+      fetchKey,
+      fetchPromise: currentOwner,
+    });
+    expect(currentDeleteResult).toBe(true);
+    expect(pendingChunks.size).toBe(0);
+  });
+
+  it("clears hydrated refresh queues and sheds cache when switching to fast travel", () => {
+    const hydratedChunkRefreshes = new Set<string>(["10,10"]);
+    const hydratedRefreshSuppressionAreaKeys = new Set<string>(["10,10:render"]);
+    const releaseInactiveResourcesSpy = vi.fn();
+    const invalidatePendingFetchesSpy = vi.fn();
+
+    applyWorldmapSwitchOffRuntimeState({
+      pendingArmyRemovals: new Map(),
+      pendingArmyRemovalMeta: new Map(),
+      deferredChunkRemovals: new Map(),
+      armyLastUpdateAt: new Map(),
+      pendingArmyMovements: new Set(),
+      pendingArmyMovementStartedAt: new Map(),
+      pendingArmyMovementFallbackTimeouts: new Map(),
+      armyStructureOwners: new Map(),
+      fetchedChunks: new Set(),
+      pendingChunks: new Map(),
+      pinnedChunkKeys: new Set(),
+      pinnedRenderAreas: new Set(),
+      hydratedChunkRefreshes,
+      hydratedRefreshSuppressionAreaKeys,
+      nextSceneName: SceneName.FastTravel,
+      clearTimeout: vi.fn(),
+      clearPendingArmyMovement: vi.fn(),
+      clearQueuedPrefetchState: vi.fn(),
+      releaseInactiveResources: releaseInactiveResourcesSpy,
+      invalidatePendingFetches: invalidatePendingFetchesSpy,
+    });
+
+    expect(hydratedChunkRefreshes.size).toBe(0);
+    expect(hydratedRefreshSuppressionAreaKeys.size).toBe(0);
+    expect(releaseInactiveResourcesSpy).toHaveBeenCalledTimes(1);
+    expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("invalidates stale fetch generations after switch-off", () => {
+    const currentGeneration = 4;
+    const nextGeneration = invalidateWorldmapPendingFetchGeneration(currentGeneration);
+
+    expect(
+      shouldApplyWorldmapFetchResult({
+        fetchGeneration: currentGeneration,
+        activeFetchGeneration: nextGeneration,
+        fetchKey: "12,12:render",
+        pinnedRenderAreas: new Set(["12,12:render"]),
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldApplyWorldmapFetchResult({
+        fetchGeneration: nextGeneration,
+        activeFetchGeneration: nextGeneration,
+        fetchKey: "12,12:render",
+        pinnedRenderAreas: new Set(["12,12:render"]),
+      }),
+    ).toBe(true);
+  });
+});

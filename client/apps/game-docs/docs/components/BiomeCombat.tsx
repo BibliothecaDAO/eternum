@@ -227,18 +227,18 @@ export const BiomeCombat = () => {
             <tr>
               <th style={table.headerCell}>Biome</th>
               <th style={table.headerCell}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <span style={icon.biome}>{getTroopIcon(TroopType.Knight)}</span> Knight
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={icon.wrapper}>{getTroopIcon(TroopType.Knight)}</span> Knight
                 </div>
               </th>
               <th style={table.headerCell}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <span style={icon.biome}>{getTroopIcon(TroopType.Crossbowman)}</span> Crossbowman
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={icon.wrapper}>{getTroopIcon(TroopType.Crossbowman)}</span> Crossbowman
                 </div>
               </th>
               <th style={table.headerCell}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <span style={icon.biome}>{getTroopIcon(TroopType.Paladin)}</span> Paladin
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={icon.wrapper}>{getTroopIcon(TroopType.Paladin)}</span> Paladin
                 </div>
               </th>
             </tr>

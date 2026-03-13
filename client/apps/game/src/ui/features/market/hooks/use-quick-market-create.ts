@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { CairoCustomEnum, Call, CallData, uint256, type Abi, type RawArgsObject, type Uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { getPmSqlApi } from "@/pm/hooks/queries";
-import { getPredictionMarketConfig } from "@/pm/prediction-market-config";
+import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
+import { getPredictionMarketChain, getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { normalizeHex } from "@/runtime/world/normalize";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import { LordsAbi } from "@bibliothecadao/eternum";
 
 import {
@@ -44,9 +45,16 @@ const MARKET_CHECK_POLL_INTERVAL = 10_000; // 10 seconds
 const checkMarketExists = async (oracleAddress: string): Promise<boolean> => {
   try {
     const normalizedAddress = normalizeHex(oracleAddress);
-    const api = getPmSqlApi();
-    const market = await api.fetchMarketByPrizeAddress(normalizedAddress);
-    return market !== null;
+    const preferredChain = getPredictionMarketChain();
+    const chainsToCheck =
+      preferredChain === "mainnet" ? (["mainnet", "slot"] as const) : (["slot", "mainnet"] as const);
+
+    for (const chain of chainsToCheck) {
+      const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]);
+      const market = await api.fetchMarketByPrizeAddress(normalizedAddress);
+      if (market) return true;
+    }
+    return false;
   } catch (e) {
     console.warn("[checkMarketExists] Error checking market:", e);
     // On error, return false to allow creation attempt (contract will reject if duplicate)

@@ -1,4 +1,5 @@
 import { AudioCategory, useAudio, useMusicPlayer, ScrollingTrackName } from "@/audio";
+import { GraphicsSettings } from "@/ui/config";
 import { useScreenOrientation } from "@bibliothecadao/react";
 import Button from "@/ui/design-system/atoms/button";
 import { RangeInput } from "@/ui/design-system/atoms";
@@ -31,6 +32,13 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
   const isMuted = audioState?.muted ?? false;
   const musicVolume = audioState?.categoryVolumes?.[AudioCategory.MUSIC] ?? 0.4;
   const uiVolume = audioState?.categoryVolumes?.[AudioCategory.UI] ?? 0.5;
+  const graphicsSetting = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
+
+  const handleGraphicsSettingChange = (setting: GraphicsSettings) => {
+    if (graphicsSetting === setting) return;
+    localStorage.setItem("GRAPHICS_SETTING", setting);
+    window.location.reload();
+  };
 
   return (
     <div
@@ -164,6 +172,44 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
             </>
           )}
         </Button>
+      </div>
+
+      {/* Divider */}
+      <div className="my-6 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+
+      {/* Graphics Section */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium uppercase tracking-wider text-gold/70">Graphics</h3>
+        <div className="flex gap-2">
+          <Button
+            variant={graphicsSetting === GraphicsSettings.LOW ? "success" : "outline"}
+            disabled={graphicsSetting === GraphicsSettings.LOW}
+            onClick={() => handleGraphicsSettingChange(GraphicsSettings.LOW)}
+            className="flex-1 justify-center"
+            forceUppercase={false}
+          >
+            Low
+          </Button>
+          <Button
+            variant={graphicsSetting === GraphicsSettings.MID ? "success" : "outline"}
+            disabled={graphicsSetting === GraphicsSettings.MID}
+            onClick={() => handleGraphicsSettingChange(GraphicsSettings.MID)}
+            className="flex-1 justify-center"
+            forceUppercase={false}
+          >
+            Medium
+          </Button>
+          <Button
+            variant={graphicsSetting === GraphicsSettings.HIGH ? "success" : "outline"}
+            disabled={graphicsSetting === GraphicsSettings.HIGH}
+            onClick={() => handleGraphicsSettingChange(GraphicsSettings.HIGH)}
+            className="flex-1 justify-center"
+            forceUppercase={false}
+          >
+            High
+          </Button>
+        </div>
+        <p className="text-xs text-gold/40">Changing graphics quality reloads the page.</p>
       </div>
 
       {/* Footer */}

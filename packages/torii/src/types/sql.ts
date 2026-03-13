@@ -316,6 +316,15 @@ export interface PlayerStructure {
   level: number;
 }
 
+/**
+ * Raw row from the `s1_eternum-Resource` table with only *_BALANCE columns selected.
+ * Balance values are hex strings (e.g. "0x0000000000000000000000746a528800").
+ */
+export interface ResourceBalanceRow {
+  entity_id: number;
+  [balanceColumn: string]: string | number;
+}
+
 export interface Resource {
   resourceId: number;
   amount: number;

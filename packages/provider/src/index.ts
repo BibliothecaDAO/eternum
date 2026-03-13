@@ -4,6 +4,7 @@
  * @param katana - The katana manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
+import type { Manifest } from "@bibliothecadao/types";
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import type { Span } from "@opentelemetry/api";
@@ -17,17 +18,54 @@ import {
   Call,
   CallData,
   GetTransactionReceiptResponse,
+  ResourceBoundsBN,
   uint256,
+  UniversalDetails,
 } from "starknet";
 import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
 import { BatchedTransactionDetail, TransactionType } from "./types";
+import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
 export const NAMESPACE = "s1_eternum";
 export { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
 export { BatchedTransactionDetail, TransactionType } from "./types";
+export type { VrfSource } from "./vrf";
+
+const MIN_V3_L2_GAS_MAX_AMOUNT = 1_500_000_000n;
+const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
+const HUNDRED_PERCENT = 100n;
+
+const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
+  if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
+    return resourceBounds;
+  }
+
+  const currentMaxAmount = resourceBounds.l2_gas.max_amount;
+  const paddedMaxAmount =
+    (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
+  const nextMaxAmount = paddedMaxAmount > MIN_V3_L2_GAS_MAX_AMOUNT ? paddedMaxAmount : MIN_V3_L2_GAS_MAX_AMOUNT;
+
+  if (nextMaxAmount === currentMaxAmount) {
+    return resourceBounds;
+  }
+
+  return {
+    ...resourceBounds,
+    l2_gas: {
+      ...resourceBounds.l2_gas,
+      max_amount: nextMaxAmount,
+    },
+  };
+};
+
 type TransactionFailureMeta = {
   type?: TransactionType;
   transactionCount?: number;
   transactionHash?: string;
+};
+
+type VrfExecutionLock = {
+  completed: Promise<void>;
+  resolve: () => void;
 };
 
 /**
@@ -38,8 +76,8 @@ type TransactionFailureMeta = {
  * @returns The contract address
  * @throws Error if contract not found
  */
-export const getContractByName = (manifest: any, name: string) => {
-  const contract = manifest.contracts.find((contract: any) => contract.tag === name);
+export const getContractByName = (manifest: Manifest, name: string) => {
+  const contract = manifest.contracts.find((item) => item.tag === name);
   if (!contract) {
     throw new Error(`Contract ${name} not found in manifest`);
   }
@@ -95,6 +133,10 @@ interface QueueItem {
   reject: (reason?: any) => void;
   transactionType?: TransactionType;
 }
+
+type ExecutionOptions = {
+  waitForConfirmation?: boolean;
+};
 
 /**
  * Promise queue that batches transactions by cost category.
@@ -186,10 +228,15 @@ class PromiseQueue {
     if (batch.length === 0) return;
 
     if (batch.length === 1) {
-      // Single transaction - execute directly
-      const { providerCall, resolve, reject } = batch[0];
+      // Single queued transaction should submit fast and confirm in background.
+      const { providerCall, resolve, reject, transactionType } = batch[0];
       try {
-        const result = await providerCall();
+        const signer = (providerCall as any)._signer;
+        const transactionDetails = (providerCall as any)._transactionDetails;
+        const result = await this.provider.executeAndCheckTransaction(signer, transactionDetails, undefined, {
+          waitForConfirmation: false,
+          transactionType,
+        });
         resolve(result);
       } catch (error) {
         reject(error);
@@ -227,7 +274,9 @@ class PromiseQueue {
         }));
 
         // Execute the batched transaction with batch details
-        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls, batchDetails);
+        const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls, batchDetails, {
+          waitForConfirmation: false,
+        });
 
         // Resolve all promises with the result
         batch.forEach((item) => item.resolve(result));
@@ -244,20 +293,22 @@ export const buildVrfCalls = async ({
   call,
   vrfProviderAddress,
   addressToCall,
+  source,
 }: {
   account: AccountInterface;
   call: Call;
   vrfProviderAddress: string | undefined;
   addressToCall: string;
+  source?: VrfSource;
 }): Promise<Call[]> => {
   if (!account) return [];
   if (!vrfProviderAddress) throw new Error("VRF provider address is not defined");
 
-  const requestRandomCall: Call = {
-    contractAddress: vrfProviderAddress,
-    entrypoint: "request_random",
-    calldata: [addressToCall, 0, account.address],
-  };
+  const requestRandomCall = createVrfRequestRandomCall({
+    vrfProviderAddress,
+    addressToCall,
+    source: source ?? { type: "nonce", value: account.address },
+  });
 
   let calls = [];
   calls.push(requestRandomCall);
@@ -278,6 +329,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   ) => Promise<GetTransactionReceiptResponse>;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private pendingTransactionSpans = new Map<string, Span>();
+  private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   /**
    * Create a new EternumProvider instance
    *
@@ -285,7 +337,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param url - Optional RPC URL
    */
   constructor(
-    katana: any,
+    katana: Manifest,
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
   ) {
@@ -297,6 +349,135 @@ export class EternumProvider extends EnhancedDojoProvider {
       return worldAddress;
     };
     this.promiseQueue = new PromiseQueue(this);
+  }
+
+  private normalizeAddress(address: BigNumberish | undefined | null): string | undefined {
+    if (address === undefined || address === null) {
+      return undefined;
+    }
+
+    try {
+      return `0x${BigInt(address).toString(16)}`;
+    } catch {
+      return String(address).toLowerCase();
+    }
+  }
+
+  private isVrfRequestRandomCall(call: Call): boolean {
+    return isVrfRequestRandomCall({
+      call,
+      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      normalizeAddress: (address) => this.normalizeAddress(address),
+    });
+  }
+
+  private getVrfSourceAddress(call: Call): string | undefined {
+    if (!Array.isArray(call.calldata) || call.calldata.length < 3) {
+      return undefined;
+    }
+
+    return this.normalizeAddress(call.calldata[2] as BigNumberish | undefined);
+  }
+
+  private getVrfSerializationKey(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    const vrfRequestCall = details.find((detail) => this.isVrfRequestRandomCall(detail));
+    if (!vrfRequestCall) {
+      return undefined;
+    }
+
+    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
+    if (!signerAddress) {
+      return undefined;
+    }
+
+    const sourceAddress = this.getVrfSourceAddress(vrfRequestCall) ?? signerAddress;
+    return `${signerAddress}:${sourceAddress}`;
+  }
+
+  private createVrfExecutionLock(): VrfExecutionLock {
+    let resolve!: () => void;
+    const completed = new Promise<void>((innerResolve) => {
+      resolve = innerResolve;
+    });
+
+    return { completed, resolve };
+  }
+
+  private async acquireVrfExecutionLock(key: string): Promise<() => void> {
+    while (true) {
+      const existingLock = this.pendingVrfExecutionLocks.get(key);
+      if (!existingLock) {
+        const lock = this.createVrfExecutionLock();
+        this.pendingVrfExecutionLocks.set(key, lock);
+
+        let released = false;
+        return () => {
+          if (released) {
+            return;
+          }
+          released = true;
+
+          const currentLock = this.pendingVrfExecutionLocks.get(key);
+          if (currentLock === lock) {
+            this.pendingVrfExecutionLocks.delete(key);
+          }
+          lock.resolve();
+        };
+      }
+
+      await existingLock.completed;
+    }
+  }
+
+  private dedupeVrfRequestCalls(transactionDetails: AllowArray<Call>): AllowArray<Call> {
+    if (!Array.isArray(transactionDetails)) {
+      return transactionDetails;
+    }
+
+    let foundVrfRequest = false;
+    return transactionDetails.filter((detail) => {
+      if (!this.isVrfRequestRandomCall(detail)) {
+        return true;
+      }
+      if (foundVrfRequest) {
+        return false;
+      }
+      foundVrfRequest = true;
+      return true;
+    });
+  }
+
+  private async getV3ExecutionDetails(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): Promise<UniversalDetails> {
+    const details: UniversalDetails = { version: 3 };
+    const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
+    if (typeof estimateInvokeFee !== "function") {
+      return details;
+    }
+
+    try {
+      const estimate = (await estimateInvokeFee.call(signer, transactionDetails, {
+        version: 3,
+      })) as { resourceBounds?: ResourceBoundsBN };
+      const resourceBounds = withL2GasHeadroom(estimate?.resourceBounds);
+      if (!resourceBounds) {
+        return details;
+      }
+
+      return {
+        ...details,
+        resourceBounds,
+      };
+    } catch (error) {
+      console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error);
+      return details;
+    }
   }
 
   private getTransactionSpanAttributes(
@@ -454,11 +635,20 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
     batchDetails?: BatchedTransactionDetail[],
+    options?: ExecutionOptions & { transactionType?: TransactionType },
   ) {
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
+    const sanitizedTransactionDetails = this.dedupeVrfRequestCalls(transactionDetails);
+    if (Array.isArray(transactionDetails) && Array.isArray(sanitizedTransactionDetails)) {
+      const removedVrfCalls = transactionDetails.length - sanitizedTransactionDetails.length;
+      if (removedVrfCalls > 0) {
+        console.warn(`[provider] Removed ${removedVrfCalls} duplicate VRF request_random call(s) from transaction`);
+      }
     }
-    const isMultipleTransactions = Array.isArray(transactionDetails);
+
+    if (typeof window !== "undefined") {
+      console.log({ signer, transactionDetails: sanitizedTransactionDetails });
+    }
+    const isMultipleTransactions = Array.isArray(sanitizedTransactionDetails);
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -467,27 +657,38 @@ export class EternumProvider extends EnhancedDojoProvider {
       // For multiple calls, use the first call's entrypoint
       txType =
         TransactionType[
-          transactionDetails
+          sanitizedTransactionDetails
             // remove VRF provider call from the list to define the transaction type
-            .filter((detail) => detail.contractAddress !== this.VRF_PROVIDER_ADDRESS)[0]
+            .filter((detail) => !this.isVrfRequestRandomCall(detail))[0]
             ?.entrypoint.toUpperCase() as keyof typeof TransactionType
         ];
     } else {
-      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
+      txType = TransactionType[sanitizedTransactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
+    txType = options?.transactionType ?? txType;
 
     const transactionMeta = {
       type: txType,
-      ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+      ...(isMultipleTransactions && { transactionCount: sanitizedTransactionDetails.length }),
       ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
     };
 
-    const span = this.startTransactionSpan(transactionDetails, transactionMeta);
+    const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
+
+    const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
+    const vrfSerializationKey =
+      txType === TransactionType.EXPLORE ? undefined : this.getVrfSerializationKey(signer, sanitizedTransactionDetails);
+    let releaseVrfExecutionLock: (() => void) | undefined;
+    if (vrfSerializationKey) {
+      releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
+    }
 
     let tx;
     try {
-      tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
+      tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
     } catch (error) {
+      releaseVrfExecutionLock?.();
+      releaseVrfExecutionLock = undefined;
       const message = error instanceof Error ? error.message : String(error);
       this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
       this.failTransactionSpan(span, undefined, error);
@@ -503,10 +704,48 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...transactionMeta,
     });
 
-    const waitPromise = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
+    const waitForConfirmation = options?.waitForConfirmation ?? true;
+    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
     });
+    const waitPromise = releaseVrfExecutionLock
+      ? waitPromiseWithoutLockRelease.finally(() => {
+          releaseVrfExecutionLock?.();
+          releaseVrfExecutionLock = undefined;
+        })
+      : waitPromiseWithoutLockRelease;
+
+    if (!waitForConfirmation) {
+      this.emit("transactionPending", {
+        transactionHash: tx.transaction_hash,
+        ...transactionMeta,
+      });
+      span.setAttribute("transaction.status", "pending");
+      span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
+      this.pendingTransactionSpans.set(tx.transaction_hash, span);
+      void waitPromise
+        .then((receipt) => {
+          this.emit("transactionComplete", {
+            details: receipt,
+            ...transactionMeta,
+          });
+          this.completeTransactionSpan(span, tx.transaction_hash, receipt);
+        })
+        .catch((error) => {
+          console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+          this.failTransactionSpan(span, tx.transaction_hash, error);
+        })
+        .finally(() => {
+          this.pendingTransactionSpans.delete(tx.transaction_hash);
+        });
+
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: tx.transaction_hash,
+      } as any;
+    }
+
     let waitResult: { status: "confirmed"; receipt: GetTransactionReceiptResponse } | { status: "pending" };
     try {
       waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
@@ -2296,42 +2535,42 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for exploring with an explorer
    * @param props.explorer_id - ID of the explorer to move
    * @param props.directions - Array of directions to move in
+   * @param props.vrf_source_salt - Packed destination tile seed (Source::Salt)
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
   public async explorer_explore(props: SystemProps.ExplorerExploreProps) {
-    const { explorer_id, directions, signer } = props;
+    const { explorer_id, directions, signer, vrf_source_salt } = props;
 
-    let callData: Call[] = [];
+    const troopMovementSystemsAddress = getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`);
+    const callData: Call[] = [];
 
-    // Pre-move VRF request
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      callData.push({
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      });
+    // explorer_move now consumes Source::Salt(tile.to_seed()).
+    if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
+      if (vrf_source_salt === undefined) {
+        throw new Error(
+          "explorer_explore requires vrf_source_salt when VRF is enabled. Use packTileSeed({ alt, col, row }) for the destination tile.",
+        );
+      }
+      callData.push(
+        createVrfRequestRandomCall({
+          vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+          addressToCall: troopMovementSystemsAddress,
+          source: { type: "salt", value: vrf_source_salt },
+        }),
+      );
     }
 
     // Explorer move with explore=1
     callData.push({
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      contractAddress: troopMovementSystemsAddress,
       entrypoint: "explorer_move",
       calldata: [explorer_id, directions, 1],
     });
 
-    // Post-move VRF request for reward extraction
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      callData.push({
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      });
-    }
-
     // Extract reward
     callData.push({
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      contractAddress: troopMovementSystemsAddress,
       entrypoint: "explorer_extract_reward",
       calldata: [explorer_id],
     });
@@ -2351,10 +2590,10 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    */
   public async explorer_move(props: SystemProps.ExplorerMoveProps) {
-    const { explorer_id, directions, explore, signer } = props;
+    const { explorer_id, directions, explore, signer, vrf_source_salt } = props;
 
     if (explore) {
-      return await this.explorer_explore({ explorer_id, directions, signer });
+      return await this.explorer_explore({ explorer_id, directions, signer, vrf_source_salt });
     } else {
       return await this.explorer_travel({ explorer_id, directions, signer });
     }
@@ -3351,6 +3590,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       spires_max_count,
       spires_settled_count,
       single_realm_mode,
+      two_player_mode,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -3367,6 +3607,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         spires_max_count,
         spires_settled_count,
         single_realm_mode,
+        two_player_mode,
       ],
     });
   }

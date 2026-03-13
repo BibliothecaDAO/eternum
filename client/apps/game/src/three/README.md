@@ -14,6 +14,7 @@ and HUD.
 - `game-renderer.ts`: renderer bootstrap, controls, post-processing, and the main animation loop.
 - `scene-manager.ts`: switches between scenes with fade transitions.
 - `scenes/hexagon-scene.ts`: base class that wires shared lighting, fog, ground plane, input, and visibility managers.
+- `scenes/warp-travel.ts`: shared world-map-like runtime seam between `HexagonScene` and `WorldmapScene`.
 - `scenes/worldmap.tsx` and `scenes/hexception.tsx`: concrete scenes for the map and settlement view.
 - `scenes/hud-scene.ts`: overlay scene for HUD elements, navigator, and ambience controls.
 
@@ -24,7 +25,7 @@ and HUD.
 - Managers are under `managers/`, utilities under `utils/`, effects under `effects/`.
 - Toggle graphics via `GraphicsSettings` in `ui/config.tsx`; low skips post-processing.
 
-See `ARCHITECTURE.md` for a deeper map of scenes, managers, and data flow.
+See the **Architecture overview** section in this README for a deeper map of scenes, managers, and data flow.
 
 ## Architecture overview
 
@@ -38,13 +39,19 @@ See `ARCHITECTURE.md` for a deeper map of scenes, managers, and data flow.
 - `HexagonScene` (`scenes/hexagon-scene.ts`): abstract base class for map scenes. Owns the Three `Scene`, uses the
   shared `PerspectiveCamera` from controls, sets up lighting/fog/ground, input routing, frustum tracking, and the
   singleton `CentralizedVisibilityManager`.
+- `WarpTravel` (`scenes/warp-travel.ts`): shared world-map runtime layer for chunked traversal scenes. It owns setup /
+  resume / switch-off lifecycle scaffolding, caches one lifecycle adapter instance, and delegates concrete scene
+  behavior through scene-owned hook methods.
 
 **Scenes**
 
-- `WorldmapScene` (`scenes/worldmap.tsx`): large-scale world view and the chunking + hydration system.
+- `WorldmapScene` (`scenes/worldmap.tsx`): large-scale world view built on top of `WarpTravel`.
 - `HexceptionScene` (`scenes/hexception.tsx`): local/settlement view around a structure; radius-based, no world
   chunking.
 - `HUDScene` (`scenes/hud-scene.ts`): orthographic overlay (navigator, weather, ambience) rendered after the main scene.
+- `FastTravelScene` (`scenes/fast-travel.ts`): fast-travel traversal layer built on `WarpTravel`, currently using
+  hydrated stub armies/Spires plus a no-ground warp-space render path while the authoritative Spire/runtime data seam is
+  still follow-up work.
 
 **Managers & utilities**
 
@@ -54,6 +61,12 @@ See `ARCHITECTURE.md` for a deeper map of scenes, managers, and data flow.
   - `chunk-geometry.ts`: single source of truth for chunk centers and render bounds.
   - `centralized-visibility-manager.ts`: per-frame frustum cache shared across all managers.
   - matrix/material pools to reduce allocations.
+- Shared `WarpTravel` runtime helpers live in `scenes/warp-travel-*` and currently cover:
+  - lifecycle setup / resume / switch-off
+  - chunk decision, hydration, switch finalization, and bounds prep
+  - manager fanout
+  - directional prefetch planning, enqueue, and drain
+  - scene navigation boundary plumbing, including the active fast-travel gate
 
 **Data flow**
 
@@ -66,7 +79,7 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 - **Stride chunk size:** `chunkSize = 24` hexes. Chunk keys are `"startRow,startCol"` in **normalized** hex coords,
   snapped to multiples of `chunkSize`.
-- **Render window:** `renderChunkSize = 64×64` hexes centered on the stride chunk. All fetch/visibility logic uses
+- **Render window:** `renderChunkSize = 48×48` hexes centered on the stride chunk. All fetch/visibility logic uses
   `utils/chunk-geometry.ts` to avoid edge drift.
 
 **Pinned neighborhood & prefetch**
@@ -74,16 +87,20 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 - **Pinned neighborhood is 5×5**, not 3×3: the scene keeps a 5×5 grid of stride chunks active around the current chunk
   (`chunkRowsAhead/Behind = 2`, `chunkColsEachSide = 2`). These pinned chunks drive background prefetching and cache
   retention.
-- **Directional prefetch:** a 2×3 band of chunks ahead of camera movement is prefetched to reduce pop‑in.
+- **Directional prefetch:** a movement-aligned `3×3` chunk band (forward depth `2`, side radius `1`) is prefetched to
+  reduce pop‑in.
 
 **Loading / unloading**
 
-- Camera movement triggers `WorldmapScene.requestChunkRefresh()` (50ms debounce).
+- Camera movement triggers `WorldmapScene.requestChunkRefresh()` (200ms debounce).
 - `updateVisibleChunks()` computes a ground focus point, derives the next chunk key, and uses a small padding
   (`chunkSwitchPadding`) to delay switching right at boundaries.
+- The worldmap-specific method now delegates most shared switch/prefetch orchestration through `WarpTravel` helper
+  modules (`warp-travel-chunk-runtime.ts`, `warp-travel-chunk-hydration.ts`, `warp-travel-chunk-switch-commit.ts`,
+  `warp-travel-directional-prefetch.ts`, `warp-travel-prefetch-enqueue.ts`, `warp-travel-prefetch-drain.ts`).
 - On chunk change `performChunkSwitch()`:
-  1. Sets `currentChunk`, updates bounds, and registers/unregisters chunk bounds with the
-     `CentralizedVisibilityManager`.
+  1. prepares bounds, then commits `currentChunk` through one finalize-helper callback path before manager fanout while
+     registering/unregistering chunk bounds with the `CentralizedVisibilityManager`.
   2. Starts deterministic Torii fetches for tiles (`computeTileEntities`) and structures (`refreshStructuresForChunks`)
      for the new render window.
   3. Pins the 5×5 neighborhood and kicks background prefetch for those chunks.
@@ -94,6 +111,8 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 - Tile fetches are deduped by `fetchedChunks` (completed) and `pendingChunks` (in‑flight), keyed by Torii super‑areas
   (`getRenderAreaKeyForChunk`), so multiple stride chunks share one fetch.
+- Prefetch enqueue/drain helpers now consume a lightweight fetch-key lookup, so the worldmap hot path no longer rebuilds
+  transient Sets from `pendingChunks`.
 - A completed fetch is only cached if its render area is still pinned when it finishes, preventing stale caching.
 
 ## Rendering pipeline
@@ -118,9 +137,9 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 
 - Tile hiding is coupled to structure/quest presence during grid builds. If structures/quests change without a tile
   update, a targeted grid refresh could be required to avoid tiles showing under them.
-- The 5×5 pinned set can exceed `maxMatrixCacheSize = 16`; consider increasing the cache or tying it to pinned count to
-  avoid retention warnings.
-- Torii tile fetches are coalesced by super‑areas (`toriiFetch.superAreaStrides`) so overlapping 64×64 render windows
+- Matrix cache capacity is policy-derived as pinned floor + slack (`25 + 8 = 33` by default), so pinned chunks do not
+  force persistent retention warnings during normal traversal.
+- Torii tile fetches are coalesced by super‑areas (`toriiFetch.superAreaStrides`) so overlapping 48×48 render windows
   don’t repeat queries. Tune `superAreaStrides` if Torii payload size or pop‑in behavior changes.
 - Keep `chunkSize`/`renderChunkSize` consistent across managers; `utils/chunk-geometry.ts` is the shared source of
   truth.
@@ -133,7 +152,7 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
      launching fetches.
 3. Fix correctness: trigger tile/biome refresh when structures/quests enter/ leave/move inside the current render bounds
    (not only on tile updates). This removes “tiles showing under late‑hydrated entities.”
-4. Centralize chunk geometry/policy constants (stride=24, render=64×64, pin radius=2 → 5×5, padding, prefetch band) into
+4. Centralize chunk geometry/policy constants (stride=24, render=48×48, pin radius=2 → 5×5, padding, prefetch band) into
    a shared config used by scene + managers. This stabilizes invariants before tuning.
 5. Resize/auto‑scale the biome matrix cache to cover the pinned set (≥25, preferably pinned+slack). Now you can tie it
    directly to the shared config.

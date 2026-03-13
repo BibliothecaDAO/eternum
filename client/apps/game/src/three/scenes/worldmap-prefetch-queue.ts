@@ -5,13 +5,29 @@ export interface PrefetchQueueItem {
   fetchTiles: boolean;
 }
 
+export interface PrefetchFetchKeyLookup {
+  has(fetchKey: string): boolean;
+}
+
 interface ShouldProcessPrefetchQueueItemInput {
   item: PrefetchQueueItem;
   isSwitchedOff: boolean;
   desiredFetchKeys: Set<string>;
   fetchedFetchKeys: Set<string>;
-  pendingFetchKeys: Set<string>;
+  pendingFetchKeys: PrefetchFetchKeyLookup;
   pinnedAreaKeys: Set<string>;
+}
+
+interface ResolvePrefetchQueueProcessingPlanInput {
+  isSwitchedOff: boolean;
+  queueLength: number;
+  activePrefetches: number;
+  maxConcurrentPrefetches: number;
+}
+
+interface PrefetchQueueProcessingPlan {
+  shouldClearQueuedPrefetchState: boolean;
+  shouldProcessNextQueueItem: boolean;
 }
 
 /**
@@ -73,4 +89,23 @@ export function shouldProcessPrefetchQueueItem(input: ShouldProcessPrefetchQueue
   }
 
   return true;
+}
+
+/**
+ * Decide whether prefetch queue processing should run for the current worldmap state.
+ */
+export function resolvePrefetchQueueProcessingPlan(
+  input: ResolvePrefetchQueueProcessingPlanInput,
+): PrefetchQueueProcessingPlan {
+  if (input.isSwitchedOff) {
+    return {
+      shouldClearQueuedPrefetchState: true,
+      shouldProcessNextQueueItem: false,
+    };
+  }
+
+  return {
+    shouldClearQueuedPrefetchState: false,
+    shouldProcessNextQueueItem: input.queueLength > 0 && input.activePrefetches < input.maxConcurrentPrefetches,
+  };
 }

@@ -27,6 +27,7 @@ const BASE_CONFIG = {
     base_distance: 70,
     subsequent_distance: 4,
     single_realm_mode: false,
+    two_player_mode: false,
   },
   mmr: {
     enabled: false,
@@ -70,6 +71,7 @@ describe("buildWorldConfigForFactory", () => {
         mmrEnabled: true,
         factoryAddress: "0xoverridefactory",
         singleRealmMode: true,
+        twoPlayerMode: false,
         blitzFeeAmount: "1.5",
         blitzFeePrecision: "18",
         blitzFeeToken: "0xfee",
@@ -119,6 +121,7 @@ describe("buildWorldConfigForFactory", () => {
     expect(blitzRegistration.registration_delay_seconds).toBe(90);
     expect(blitzRegistration.registration_period_seconds).toBe(1200);
     expect(settlement.single_realm_mode).toBe(true);
+    expect(settlement.two_player_mode).toBe(false);
     expect(settlement.center).toBe(10);
     expect(settlement.base_distance).toBe(55);
     expect(settlement.subsequent_distance).toBe(6);
@@ -207,5 +210,27 @@ describe("buildWorldConfigForFactory", () => {
         },
       }),
     ).toThrow("Registration count max must be a non-negative number");
+
+    expect(() =>
+      buildWorldConfigForFactory({
+        baseConfig: BASE_CONFIG,
+        defaults: {
+          factoryAddress: "0xfactory",
+          devModeOn: true,
+          mmrEnabledOn: false,
+          durationHours: 1,
+          baseDurationMinutes: 0,
+          defaultBlitzRegistration: {
+            amount: "1",
+            precision: 18,
+            token: "0xdefaulttoken",
+          },
+        },
+        overrides: {
+          singleRealmMode: true,
+          twoPlayerMode: true,
+        },
+      }),
+    ).toThrow("single_realm_mode and two_player_mode cannot both be enabled");
   });
 });

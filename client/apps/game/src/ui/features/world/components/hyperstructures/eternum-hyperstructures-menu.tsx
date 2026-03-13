@@ -18,7 +18,7 @@ import {
   LeaderboardManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures } from "@bibliothecadao/react";
-import { ContractAddress, HyperstructureInfo, MERCENARIES } from "@bibliothecadao/types";
+import { ContractAddress, HyperstructureInfo, BANDITS_NAME } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
@@ -427,7 +427,7 @@ const HyperstructureContentRow = ({
         {/* Owner info */}
         <div className="flex items-center gap-2">
           <span className="text-gold/80">Owner:</span>
-          <span className="font-medium">{guildName || ownerName || MERCENARIES}</span>
+          <span className="font-medium">{guildName || ownerName || BANDITS_NAME}</span>
         </div>
         {/* Status info */}
         <div className="flex items-center gap-2">

@@ -28,6 +28,7 @@
 deploy
 
 .conductor
+.context
 
 # ignore github actions
 .github/workflows/deploy-game-slot.yml

@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./utils", () => ({
   getWorldPositionForHex: ({ col, row }: { col: number; row: number }) => ({ x: col, y: 0, z: row }),
 }));
-import { getChunkKeysContainingHexInRenderBounds, getRenderBounds, isHexWithinRenderBounds } from "./chunk-geometry";
+import {
+  getChunkKeysContainingHexInRenderBounds,
+  getChunkKeysContainingHexInRenderBoundsAnalytically,
+  getRenderBounds,
+  isHexWithinRenderBounds,
+} from "./chunk-geometry";
 
 describe("getRenderBounds", () => {
   it("returns even-sized bounds with exact cell coverage", () => {
@@ -46,7 +51,7 @@ describe("getChunkKeysContainingHexInRenderBounds", () => {
       chunkSize: 24,
     });
 
-    expect(result.sort()).toEqual(["0,0", "0,24", "24,0", "24,24"].sort());
+    expect(result.toSorted()).toEqual(["0,0", "0,24", "24,0", "24,24"].toSorted());
   });
 
   it("skips malformed chunk keys", () => {
@@ -58,6 +63,20 @@ describe("getChunkKeysContainingHexInRenderBounds", () => {
       chunkSize: 24,
     });
 
-    expect(result.sort()).toEqual(["0,0", "24,24"].sort());
+    expect(result.toSorted()).toEqual(["0,0", "24,24"].toSorted());
+  });
+});
+
+describe("getChunkKeysContainingHexInRenderBoundsAnalytically", () => {
+  it("derives the bounded overlapping chunk keys without scanning the cache key list", () => {
+    const result = getChunkKeysContainingHexInRenderBoundsAnalytically({
+      col: 23,
+      row: 23,
+      renderSize: { width: 48, height: 48 },
+      chunkSize: 24,
+      hasChunkKey: (chunkKey) => new Set(["0,0", "0,24", "24,0", "24,24", "48,48"]).has(chunkKey),
+    });
+
+    expect(result.toSorted()).toEqual(["0,0", "0,24", "24,0", "24,24"].toSorted());
   });
 });

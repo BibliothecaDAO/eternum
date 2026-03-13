@@ -205,7 +205,7 @@ export const MAX_NUM_BANKS = 6;
 
 export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
 export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
-export const SEASON_DURATION_SECONDS = ONE_HOUR_IN_SECONDS * 2; // 2 hours
+export const SEASON_DURATION_SECONDS = ONE_HOUR_IN_SECONDS * 1.5; // 1 and half hour
 
 // probably best if both these values are the same
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7; // 7 days
@@ -234,7 +234,7 @@ export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.V
 const BLITZ_REGISTRATION_FEE_TOKEN = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.lords!;
 const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8";
 const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * 10n ** 18n; // 10 LORDS/STRK
-const BLITZ_REGISTRATION_COUNT_MAX = 30;
+const BLITZ_REGISTRATION_COUNT_MAX = 24;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
 const BLITZ_REGISTRATION_PERIOD_SECONDS = 3 * ONE_HOUR_IN_SECONDS;
 
@@ -431,6 +431,7 @@ export const EternumGlobalConfig: Config = {
     spires_max_count: SETTLEMENT_SPIRES_MAX_COUNT,
     spires_settled_count: SETTLEMENT_SPIRES_SETTLED_COUNT,
     single_realm_mode: false,
+    two_player_mode: false,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,

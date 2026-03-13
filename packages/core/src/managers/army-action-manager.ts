@@ -8,6 +8,7 @@ import {
   type HexEntityInfo,
   type HexPosition,
   type ID,
+  packTileSeed,
   ResourcesIds,
   type SystemCalls,
   type TroopType,
@@ -143,11 +144,12 @@ export class ArmyActionManager {
     currentDefaultTick: number,
     currentArmiesTick: number,
     playerAddress: ContractAddress,
+    startPositionOverride?: HexPosition,
   ): ActionPaths {
     const armyStamina = Number(this.staminaManager.getStamina(currentArmiesTick).amount);
 
     const troopType = this._getTroopType();
-    const startPos = this._getCurrentPosition();
+    const startPos = startPositionOverride ?? this._getCurrentPosition();
     // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
@@ -299,11 +301,18 @@ export class ArmyActionManager {
     if (direction === undefined || direction === null) {
       return Promise.reject(new Error("Invalid direction"));
     }
+    const destinationHex = path[path.length - 1]?.hex;
+    if (!destinationHex) {
+      return Promise.reject(new Error("Missing destination tile for explore"));
+    }
+
+    const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
 
     try {
       return await this.systemCalls.explorer_explore({
         explorer_id: this.entityId,
         directions: [direction],
+        vrf_source_salt: vrfSourceSalt,
         signer,
       });
     } catch (e) {

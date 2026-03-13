@@ -5,6 +5,7 @@ import {
   BuildingType,
   CapacityConfig,
   HexGrid,
+  MERCENARIES_NAME_FELT,
   RESOURCE_PRECISION,
   ResourcesIds,
   scaleResourceInputs,
@@ -302,7 +303,7 @@ export const setWorldConfig = async (config: Config) => {
   `),
   );
 
-  const mercenariesName = "0x5468652056616e6775617264";
+  const mercenariesName = MERCENARIES_NAME_FELT;
   const mercenariesTx = await config.provider.set_mercenaries_name_config({
     signer: config.account,
     name: mercenariesName, // The Vanguard
@@ -1405,6 +1406,7 @@ export const setSettlementConfig = async (config: Config) => {
     spires_max_count,
     spires_settled_count,
     single_realm_mode,
+    two_player_mode = false,
   } = config.config.settlement;
 
   const calldata = {
@@ -1419,6 +1421,7 @@ export const setSettlementConfig = async (config: Config) => {
     spires_max_count,
     spires_settled_count,
     single_realm_mode,
+    two_player_mode,
   };
 
   console.log(
@@ -1434,6 +1437,7 @@ export const setSettlementConfig = async (config: Config) => {
     │  ${chalk.gray("Spires Max Count:")}          ${chalk.white(calldata.spires_max_count)}
     │  ${chalk.gray("Spires Settled Count:")}      ${chalk.white(calldata.spires_settled_count)}
     │  ${chalk.gray("Single Realm Mode:")}         ${chalk.white(calldata.single_realm_mode)}
+    │  ${chalk.gray("Two Player Mode:")}          ${chalk.white(calldata.two_player_mode)}
     │
     └────────────────────────────────`),
   );

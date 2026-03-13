@@ -43,14 +43,13 @@ export const MainnetEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2, // 2 hours
+    durationSeconds: 60 * 60 * 1.5, // 1.5 hours
     pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
   },
   battle: {
     ...CommonEternumGlobalConfig.battle,
-    graceTickCount: 0,
-    graceTickCountHyp: 0,
-    delaySeconds: 0,
+    regularImmunityTicks: 0,
+    villageImmunityTicks: 0,
   },
   blitz: {
     ...CommonEternumGlobalConfig.blitz,

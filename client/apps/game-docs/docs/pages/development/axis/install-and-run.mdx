@@ -1,0 +1,70 @@
+---
+layout: docs
+title: Axis Install and Run
+---
+
+# Axis Install and Run
+
+## Prerequisites
+
+- One model provider API key (e.g. `ANTHROPIC_API_KEY`)
+- For source builds: Node.js 22+, pnpm, Bun
+
+## Install
+
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
+```
+
+Pin a version: `VERSION=v0.1.0 bash`. Verify: `axis --version`.
+
+## Quick Start (Interactive)
+
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis
+```
+
+Discovers worlds, opens browser for auth, starts the agent.
+
+## Quick Start (Headless)
+
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis auth my-world --method=password --username=me --password=secret
+axis run --headless --world=my-world
+```
+
+See [Worlds and Auth](/development/axis/worlds-and-auth) for alternative auth methods.
+
+## Run from Source
+
+```bash
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum && pnpm install
+
+pnpm --dir packages/types build
+pnpm --dir packages/torii build
+pnpm --dir packages/provider build
+pnpm --dir packages/client build
+pnpm --dir packages/game-agent build
+
+cd client/apps/onchain-agent
+cp .env.example .env
+pnpm dev
+```
+
+## Standalone Binary
+
+```bash
+cd client/apps/onchain-agent
+bun run build.ts --compile    # produces ./axis
+cp axis ~/.local/bin/
+```
+
+Always use `build.ts` — direct `bun build` skips plugins that embed WASM and manifests.
+
+## Uninstall
+
+- Roll back: reinstall with `VERSION=vX.Y.Z`
+- Remove: `~/.local/bin/axis`, `~/.local/share/eternum-agent`, and optionally `~/.eternum-agent`

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Copy, X, Loader2, Share2 } from "lucide-react";
 
@@ -12,6 +11,7 @@ import {
   type BlitzHighlightPlayer,
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
+import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
 import {
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
@@ -22,6 +22,14 @@ interface ScoreCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   worldName: string;
+}
+
+interface ScoreCardContentProps {
+  worldName: string;
+  playerEntry: LandingLeaderboardEntry | null;
+  isLoading?: boolean;
+  error?: string | null;
+  showActions?: boolean;
 }
 
 const buildToriiSqlUrl = (gameName: string) => `https://api.cartridge.gg/x/${gameName}/torii/sql`;
@@ -53,22 +61,177 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
   hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
 });
 
+export const ScoreCardContent = ({
+  worldName,
+  playerEntry,
+  isLoading = false,
+  error = null,
+  showActions = true,
+}: ScoreCardContentProps) => {
+  const [isCopyingImage, setIsCopyingImage] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
+    () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
+    [playerEntry],
+  );
+
+  const highlightRank = highlightPlayer?.rank ?? null;
+  const highlightPoints = highlightPlayer?.points ?? null;
+
+  const shareMessage = useMemo(
+    () =>
+      buildBlitzShareMessage({
+        rank: highlightRank,
+        points: highlightPoints,
+        eventLabel: `${worldName} on Realms Blitz`,
+        origin: typeof window !== "undefined" ? window.location.origin : BLITZ_DEFAULT_SHARE_ORIGIN,
+      }),
+    [highlightPoints, highlightRank, worldName],
+  );
+
+  const handleCopyImage = useCallback(async () => {
+    if (!highlightPlayer || !cardRef.current) {
+      toast.error("Your highlight card is still loading.");
+      return;
+    }
+
+    setIsCopyingImage(true);
+
+    try {
+      const cardNode = cardRef.current.querySelector(".blitz-card-root") as HTMLElement | null;
+
+      if (!cardNode) {
+        throw new Error("Unable to find the highlight card markup.");
+      }
+
+      const { width, height } = BLITZ_CARD_DIMENSIONS;
+      const result = await copyElementAsPng({
+        element: cardNode,
+        filename: `realms-highlight-${worldName}-${Date.now()}.png`,
+        backgroundColor: "#030d14",
+        pixelRatio: 2,
+        canvasWidth: width,
+        canvasHeight: height,
+        renderWidth: width,
+        renderHeight: height,
+      });
+
+      if (result === "copied") {
+        toast.success("Copied highlight image to clipboard!");
+      } else {
+        toast.info("Clipboard not available; downloaded image instead.");
+      }
+    } catch (caughtError) {
+      console.error("Failed to copy highlight image", caughtError);
+      toast.error("Copy failed. Please try again.");
+    } finally {
+      setIsCopyingImage(false);
+    }
+  }, [highlightPlayer, worldName]);
+
+  const handleShareOnX = useCallback(() => {
+    if (!highlightPlayer) {
+      toast.error("Final standings are still loading.");
+      return;
+    }
+
+    const didOpen = openShareOnX(shareMessage);
+    if (!didOpen) {
+      toast.error("Sharing is not supported in this environment.");
+    }
+  }, [highlightPlayer, shareMessage]);
+
+  const handleCopyMessage = useCallback(() => {
+    if (!shareMessage) return;
+
+    navigator.clipboard
+      .writeText(shareMessage)
+      .then(() => toast.success("Message copied to clipboard!"))
+      .catch(() => toast.error("Failed to copy message"));
+  }, [shareMessage]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+        <p className="mt-4 text-sm text-white/60">Loading your score...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-sm text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (!highlightPlayer) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-sm text-white/60">No score data found for this game</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex justify-center" ref={cardRef}>
+        <BlitzHighlightCardWithSelector title="Realms Blitz" subtitle="Blitz Leaderboard" highlight={highlightPlayer} />
+      </div>
+
+      {showActions && (
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <Button
+            onClick={handleCopyImage}
+            variant="gold"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+            isLoading={isCopyingImage}
+            disabled={isCopyingImage || !highlightPlayer}
+          >
+            <Copy className="h-4 w-4" />
+            <span>{isCopyingImage ? "Preparing image..." : "Copy highlight image"}</span>
+          </Button>
+          <Button
+            onClick={handleShareOnX}
+            variant="outline"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+            disabled={!highlightPlayer}
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share on X</span>
+          </Button>
+          <Button
+            onClick={handleCopyMessage}
+            variant="secondary"
+            className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
+            forceUppercase={false}
+          >
+            <Copy className="h-4 w-4" />
+            <span>Copy message</span>
+          </Button>
+        </div>
+      )}
+    </>
+  );
+};
+
 /**
  * Modal to display player's score card for an ended game
  * Features: BlitzHighlightCard display, copy image, share to X, copy message
  */
-export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
+const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
   const [playerEntry, setPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCopyingImage, setIsCopyingImage] = useState(false);
-
-  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
 
-  // Fetch player score data
   useEffect(() => {
     if (!isOpen || !playerAddress) {
       setPlayerEntry(null);
@@ -94,129 +257,14 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
     void fetchData();
   }, [isOpen, playerAddress, worldName]);
 
-  const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
-    () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
-    [playerEntry],
-  );
-
-  const highlightRank = highlightPlayer?.rank ?? null;
-  const highlightPoints = highlightPlayer?.points ?? null;
-
-  const shareMessage = useMemo(
-    () =>
-      buildBlitzShareMessage({
-        rank: highlightRank,
-        points: highlightPoints,
-        eventLabel: `${worldName} on Realms Blitz`,
-        origin: typeof window !== "undefined" ? window.location.origin : BLITZ_DEFAULT_SHARE_ORIGIN,
-      }),
-    [highlightPoints, highlightRank, worldName],
-  );
-
-  const handleCopyImage = useCallback(async () => {
-    if (typeof window === "undefined") {
-      toast.error("Copying the image is not supported in this environment.");
-      return;
-    }
-
-    if (!highlightPlayer || !cardRef.current) {
-      toast.error("Your highlight card is still loading.");
-      return;
-    }
-
-    if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
-      toast.error("Copying images is not supported in this browser.");
-      return;
-    }
-
-    setIsCopyingImage(true);
-
-    try {
-      const cardNode = cardRef.current.querySelector(".blitz-card-root") as HTMLElement | null;
-
-      if (!cardNode) {
-        throw new Error("Unable to find the highlight card markup.");
-      }
-
-      const { width, height } = BLITZ_CARD_DIMENSIONS;
-      const fontReady =
-        typeof document !== "undefined" && "fonts" in document ? document.fonts.ready.catch(() => undefined) : null;
-      const waiters = fontReady ? [fontReady] : [];
-      await Promise.all(waiters);
-
-      const dataUrl = await toPng(cardNode, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#030d14",
-        canvasWidth: width,
-        canvasHeight: height,
-        style: {
-          width: `${width}px`,
-          height: `${height}px`,
-        },
-      });
-
-      const blob = await fetch(dataUrl).then((response) => response.blob());
-      const clipboardItem = new ClipboardItem({ "image/png": blob });
-
-      try {
-        await navigator.clipboard.write([clipboardItem]);
-        toast.success("Copied highlight image to clipboard!");
-      } catch {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `realms-highlight-${worldName}-${Date.now()}.png`;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        toast.info("Clipboard not available; downloaded image instead.");
-      }
-    } catch (caughtError) {
-      console.error("Failed to copy highlight image", caughtError);
-      toast.error("Copy failed. Please try again.");
-    } finally {
-      setIsCopyingImage(false);
-    }
-  }, [highlightPlayer, worldName]);
-
-  const handleShareOnX = useCallback(() => {
-    if (!highlightPlayer) {
-      toast.error("Final standings are still loading.");
-      return;
-    }
-
-    const shareIntent = new URL("https://twitter.com/intent/tweet");
-    shareIntent.searchParams.set("text", shareMessage);
-
-    if (typeof window === "undefined") {
-      toast.error("Sharing is not supported in this environment.");
-      return;
-    }
-
-    window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
-  }, [highlightPlayer, shareMessage]);
-
-  const handleCopyMessage = useCallback(() => {
-    if (!shareMessage) return;
-
-    navigator.clipboard
-      .writeText(shareMessage)
-      .then(() => toast.success("Message copied to clipboard!"))
-      .catch(() => toast.error("Failed to copy message"));
-  }, [shareMessage]);
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative z-10 w-full max-w-[1000px]">
         <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0a0a0a] to-[#050505] backdrop-blur-xl overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gold/20">
             <h2 className="font-serif text-lg text-gold">Your Score - {worldName}</h2>
             <button
@@ -228,67 +276,8 @@ export const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalPro
             </button>
           </div>
 
-          {/* Content */}
           <div className="p-4 sm:p-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="w-10 h-10 text-gold animate-spin" />
-                <p className="mt-4 text-sm text-white/60">Loading your score...</p>
-              </div>
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-sm text-red-400">{error}</p>
-              </div>
-            ) : !highlightPlayer ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-sm text-white/60">No score data found for this game</p>
-              </div>
-            ) : (
-              <>
-                {/* Blitz Highlight Card */}
-                <div className="flex justify-center" ref={cardRef}>
-                  <BlitzHighlightCardWithSelector
-                    title="Realms Blitz"
-                    subtitle="Blitz Leaderboard"
-                    highlight={highlightPlayer}
-                  />
-                </div>
-
-                {/* Action buttons */}
-                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    onClick={handleCopyImage}
-                    variant="gold"
-                    className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-                    forceUppercase={false}
-                    isLoading={isCopyingImage}
-                    disabled={isCopyingImage || !highlightPlayer}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>{isCopyingImage ? "Preparing image..." : "Copy highlight image"}</span>
-                  </Button>
-                  <Button
-                    onClick={handleShareOnX}
-                    variant="outline"
-                    className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-                    forceUppercase={false}
-                    disabled={!highlightPlayer}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    <span>Share on X</span>
-                  </Button>
-                  <Button
-                    onClick={handleCopyMessage}
-                    variant="secondary"
-                    className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-                    forceUppercase={false}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>Copy message</span>
-                  </Button>
-                </div>
-              </>
-            )}
+            <ScoreCardContent worldName={worldName} playerEntry={playerEntry} isLoading={isLoading} error={error} />
           </div>
         </div>
       </div>

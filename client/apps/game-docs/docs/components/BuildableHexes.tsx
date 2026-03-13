@@ -10,15 +10,13 @@ export const BuildableHexes = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.accentedTitle}>
-        <span style={{ marginRight: "0.5rem" }}>🏗️</span>Buildable Hexes by Realm Level
-      </div>
+      <div style={section.accentedTitle}>Buildable Hexes by Realm Level</div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
               <th style={table.headerCell}>Realm Level</th>
-              <th style={table.headerCell}>Buildable Hexes</th>
+              <th style={{ ...table.headerCell, textAlign: "center" }}>Buildable Hexes</th>
               <th style={table.headerCell}>Description</th>
             </tr>
           </thead>
@@ -26,7 +24,9 @@ export const BuildableHexes = () => {
             {buildableHexes.map((item) => (
               <tr key={item.level}>
                 <td style={table.cell}>{item.level}</td>
-                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.hexes}</td>
+                <td style={{ ...table.cell, color: table.headerCell.color, fontWeight: "bold", textAlign: "center" }}>
+                  {item.hexes}
+                </td>
                 <td style={table.cell}>{item.description}</td>
               </tr>
             ))}

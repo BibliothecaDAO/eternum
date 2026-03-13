@@ -66,6 +66,7 @@ export class DayNightCycleManager {
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
+  private isDisposed = false;
 
   // Store original lighting values to restore when disabled
   private originalLightingState: {
@@ -93,11 +94,11 @@ export class DayNightCycleManager {
       sunColor: 0x7b5fd6,
       ambientColor: 0x38245d,
       fogColor: 0x271847,
-      hemisphereIntensity: 0.6,
-      sunIntensity: 1.4,
-      ambientIntensity: 0.28,
+      hemisphereIntensity: 0.85,
+      sunIntensity: 1.6,
+      ambientIntensity: 0.38,
       fogNear: 15,
-      fogFar: 45,
+      fogFar: 52,
     },
     dawn: {
       // 12.5
@@ -147,7 +148,7 @@ export class DayNightCycleManager {
       fogColor: 0x54357a,
       hemisphereIntensity: 0.8,
       sunIntensity: 1.8,
-      ambientIntensity: 0.3,
+      ambientIntensity: 0.4,
       fogNear: 20,
       fogFar: 48,
     },
@@ -530,6 +531,12 @@ export class DayNightCycleManager {
    * Dispose of resources
    */
   dispose(): void {
+    if (this.isDisposed) {
+      console.warn("DayNightCycleManager already disposed, skipping cleanup");
+      return;
+    }
+    this.isDisposed = true;
+
     this.restoreOriginalLighting();
   }
 

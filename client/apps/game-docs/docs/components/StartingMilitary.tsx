@@ -1,7 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { useState } from "react";
 import ResourceIcon from "./ResourceIcon";
-import { StructureType } from "./StartingResources";
+import { StructureType } from "./eternum-components/StartingResources";
 import { colors, formatNumber, resource, section } from "./styles";
 
 type Props = {

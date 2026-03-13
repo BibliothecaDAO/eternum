@@ -1,12 +1,11 @@
-import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
-import Shield from "lucide-react/dist/esm/icons/shield";
 import { useMemo } from "react";
 
+import { GuardStaminaBar } from "../guard-stamina-bar";
 import type { GuardSummary, SelectedTroopCombo } from "./types";
 
 interface DefenseSlotSelectionProps {
@@ -63,9 +62,9 @@ export const DefenseSlotSelection = ({
           const guardCategory = guardInfo?.troops?.category;
           const guardTier = guardInfo?.troops?.tier;
           const guardCount = guardInfo?.troops?.count;
+          const guardStaminaCurrent = guardInfo?.troops?.staminaCurrent;
+          const guardStaminaMax = guardInfo?.troops?.staminaMax;
           const guardCountLabel = guardCount !== undefined ? guardCount.toLocaleString() : null;
-          const guardLabel = [guardTier, guardCategory].filter(Boolean).join(" ");
-          const guardLabelText = guardLabel || "Unknown";
           const troopResourceTrait = guardCategory
             ? (resources.find(
                 (resource) => resource.id === getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1),
@@ -107,8 +106,11 @@ export const DefenseSlotSelection = ({
                   {slotName}
                 </div>
                 {hasGuard ? (
-                  <div className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
-                    {guardCountLabel}
+                  <div className="flex flex-col gap-0.5">
+                    <div className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
+                      {guardCountLabel}
+                    </div>
+                    <GuardStaminaBar current={guardStaminaCurrent} max={guardStaminaMax} />
                   </div>
                 ) : (
                   <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>Empty</div>

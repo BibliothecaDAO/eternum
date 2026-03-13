@@ -11,6 +11,7 @@ import {
   StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
+import type { Manifest } from "./manifest";
 
 export interface RelicEffect {
   end_tick: number;
@@ -570,6 +571,7 @@ export interface Config {
     spires_max_count: number;
     spires_settled_count: number;
     single_realm_mode: boolean;
+    two_player_mode: boolean;
   };
   season: {
     // we expect one or the other. The
@@ -694,7 +696,7 @@ export interface Config {
   setup?: {
     chain: string;
     addresses: SeasonAddresses;
-    manifest: any;
+    manifest: Manifest;
   };
 
   // Previous prize distribution systems address (carried between runs)

@@ -1,5 +1,10 @@
-import { Box3, Color, InstancedBufferGeometry, Mesh, Scene, Vector3 } from "three";
+import { Box3, Color, InstancedBufferGeometry, Mesh, Scene, ShaderMaterial, Vector3 } from "three";
 import { createPathInstancedGeometry, PathInstanceBuffers } from "../geometry/path-geometry";
+import {
+  incrementWorldmapRenderCounter,
+  recordWorldmapRenderDuration,
+  setWorldmapRenderGauge,
+} from "../perf/worldmap-render-diagnostics";
 import {
   getPathLineMaterial,
   updatePathLineMaterial,
@@ -20,16 +25,15 @@ import {
 import { getVisibilityManager } from "../utils/centralized-visibility-manager";
 
 /**
- * PathRenderer - Singleton manager for rendering army movement paths
+ * PathRenderer - scene-owned manager for rendering army movement paths
  *
  * Uses instanced rendering to draw all paths with a single draw call.
  * Paths are visualized as animated dashed lines showing movement direction.
  */
 export class PathRenderer {
-  private static instance: PathRenderer | null = null;
-
   private scene: Scene | null = null;
   private mesh: Mesh | null = null;
+  private material: ShaderMaterial | null = null;
   private buffers: PathInstanceBuffers;
   private config: PathRenderConfig;
 
@@ -59,38 +63,33 @@ export class PathRenderer {
   private fragmentationThreshold = 0.3; // Compact when 30%+ of buffer is fragmented
   private lastCompactTime = 0;
   private compactCooldown = 5000; // Min ms between compactions
+  private isDisposed = false;
 
-  private constructor(config: Partial<PathRenderConfig> = {}) {
+  constructor(config: Partial<PathRenderConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CONFIG, ...config };
     this.buffers = new PathInstanceBuffers(this.config.maxSegments);
-  }
-
-  /**
-   * Get the singleton instance
-   */
-  public static getInstance(): PathRenderer {
-    if (!PathRenderer.instance) {
-      PathRenderer.instance = new PathRenderer();
-    }
-    return PathRenderer.instance;
   }
 
   /**
    * Initialize the renderer with a scene
    */
   public initialize(scene: Scene): void {
-    if (this.scene === scene) return;
+    if (this.scene === scene && this.mesh) return;
+
+    if (this.scene && this.scene !== scene) {
+      throw new Error("[PathRenderer] Each instance can only be bound to one scene");
+    }
 
     this.scene = scene;
 
     // Create the instanced mesh
     const geometry = createPathInstancedGeometry(this.buffers);
-    const material = getPathLineMaterial();
+    this.material = getPathLineMaterial();
 
     // Set initial instance count to 0 to avoid drawing until we have data
     geometry.instanceCount = 0;
 
-    this.mesh = new Mesh(geometry, material);
+    this.mesh = new Mesh(geometry, this.material);
     this.mesh.frustumCulled = false; // We handle culling ourselves
     this.mesh.renderOrder = 10; // Render after terrain but before UI
     this.mesh.visible = false; // Hidden until we have paths
@@ -100,11 +99,11 @@ export class PathRenderer {
 
     // Set initial resolution and add resize listener
     if (typeof window !== "undefined") {
-      updatePathLineResolution(window.innerWidth, window.innerHeight);
+      updatePathLineResolution(this.material, window.innerWidth, window.innerHeight);
 
       // Add resize listener
       this.resizeHandler = () => {
-        updatePathLineResolution(window.innerWidth, window.innerHeight);
+        updatePathLineResolution(this.material, window.innerWidth, window.innerHeight);
       };
       window.addEventListener("resize", this.resizeHandler);
     }
@@ -123,6 +122,7 @@ export class PathRenderer {
     color: Color,
     displayState: PathDisplayState = "selected",
   ): void {
+    const createStartedAt = performance.now();
     // Remove existing path for this entity
     if (this.activePaths.has(entityId)) {
       this.removePath(entityId);
@@ -169,6 +169,9 @@ export class PathRenderer {
 
     // Update instance count
     this.updateInstanceCount();
+    incrementWorldmapRenderCounter("pathCreateCalls");
+    recordWorldmapRenderDuration("createPath", performance.now() - createStartedAt);
+    setWorldmapRenderGauge("activePaths", this.activePaths.size);
   }
 
   /**
@@ -182,7 +185,7 @@ export class PathRenderer {
 
     // Update the global progress uniform for the selected path
     if (entityId === this.selectedEntityId) {
-      updatePathLineProgress(path.progress);
+      updatePathLineProgress(this.material, path.progress);
     }
   }
 
@@ -205,10 +208,10 @@ export class PathRenderer {
       const path = this.activePaths.get(entityId);
       if (path) {
         this.setPathDisplayState(entityId, "selected");
-        updatePathLineProgress(path.progress);
+        updatePathLineProgress(this.material, path.progress);
       }
     } else {
-      updatePathLineProgress(0);
+      updatePathLineProgress(this.material, 0);
     }
   }
 
@@ -253,6 +256,7 @@ export class PathRenderer {
     }
 
     this.updateInstanceCount();
+    setWorldmapRenderGauge("activePaths", this.activePaths.size);
 
     // Auto-compact if fragmentation is high
     if (this.shouldCompact()) {
@@ -278,7 +282,7 @@ export class PathRenderer {
    * Update animation and frustum culling (call each frame)
    */
   public update(deltaTime: number): void {
-    updatePathLineMaterial(deltaTime);
+    updatePathLineMaterial(this.material, deltaTime);
 
     // Perform frustum culling periodically
     this.lastCullFrame++;
@@ -324,7 +328,7 @@ export class PathRenderer {
    * Handle window resize
    */
   public onResize(width: number, height: number): void {
-    updatePathLineResolution(width, height);
+    updatePathLineResolution(this.material, width, height);
   }
 
   /**
@@ -337,12 +341,19 @@ export class PathRenderer {
     this.nextSegmentIndex = 0;
     this.freeSegmentRanges = [];
     this.culledPaths.clear();
+    setWorldmapRenderGauge("activePaths", 0);
   }
 
   /**
    * Dispose of all resources
    */
   public dispose(): void {
+    if (this.isDisposed) {
+      console.warn("PathRenderer already disposed, skipping cleanup");
+      return;
+    }
+    this.isDisposed = true;
+
     this.clearAll();
 
     // Remove resize listener
@@ -359,11 +370,10 @@ export class PathRenderer {
       this.mesh = null;
     }
 
-    disposePathLineMaterial();
+    disposePathLineMaterial(this.material);
+    this.material = null;
     this.buffers.dispose();
     this.scene = null;
-
-    PathRenderer.instance = null;
   }
 
   // === Private Methods ===
@@ -635,6 +645,3 @@ export class PathRenderer {
     };
   }
 }
-
-// Singleton accessor
-const pathRenderer = PathRenderer.getInstance();

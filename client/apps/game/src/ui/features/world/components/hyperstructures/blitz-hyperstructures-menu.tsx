@@ -17,7 +17,7 @@ import {
   Position,
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
-import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
+import { ContractAddress, BANDITS_NAME } from "@bibliothecadao/types";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import MapPin from "lucide-react/dist/esm/icons/map-pin";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
@@ -57,8 +57,8 @@ export const BlitzHyperstructuresMenu = () => {
       const guild = getGuildFromPlayerAddress(ContractAddress(owner), components);
       const userGuild = getGuildFromPlayerAddress(userAddress, components);
       const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-      const addressName = owner ? getAddressName(owner, components) : MERCENARIES;
-      const isBanditOwned = !owner || owner === 0n || addressName === MERCENARIES;
+      const addressName = owner ? getAddressName(owner, components) : BANDITS_NAME;
+      const isBanditOwned = !owner || owner === 0n || addressName === BANDITS_NAME;
 
       // Get guards/defense info
       const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
@@ -129,7 +129,7 @@ export const BlitzHyperstructuresMenu = () => {
   const handleChatClick = (hyperstructure: any) => {
     if (hyperstructure.isMine) {
       setShellOpen(true);
-    } else if (hyperstructure.addressName && hyperstructure.addressName !== MERCENARIES) {
+    } else if (hyperstructure.addressName && hyperstructure.addressName !== BANDITS_NAME) {
       // Find player by display name from online players
       const player = Object.values(onlinePlayers).find((p) => p.displayName === hyperstructure.addressName);
       if (player) {
@@ -174,7 +174,7 @@ export const BlitzHyperstructuresMenu = () => {
 
     const displayName = addressName || displayAddress("0x0" + owner.toString(16) || "0x0");
     const relationTone = isBanditOwned ? "bandits" : isAlly ? "ally" : "enemy";
-    const relationLabel = isBanditOwned ? "Bandits" : isAlly ? "Ally" : "Enemy";
+    const relationLabel = isBanditOwned ? BANDITS_NAME : isAlly ? "Ally" : "Enemy";
 
     return (
       <HyperstructureCard
@@ -273,7 +273,7 @@ export const BlitzHyperstructuresMenu = () => {
                 activeTab === "bandits" ? "text-gold border-b-2 border-gold" : "text-gold/60 hover:text-gold/80"
               }`}
             >
-              Bandit-Owned ({banditOwnedCount})
+              Vanguard-Owned ({banditOwnedCount})
             </button>
           </div>
 
