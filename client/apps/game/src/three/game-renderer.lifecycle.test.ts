@@ -106,6 +106,11 @@ function createGameRendererSubject() {
   const rendererDispose = vi.fn();
   const composerDispose = vi.fn();
   const envDispose = vi.fn();
+  const backendDispose = vi.fn(() => {
+    rendererDispose();
+    composerDispose();
+    envDispose();
+  });
   const keyHandler = vi.fn();
 
   subject.isDestroyed = false;
@@ -115,6 +120,7 @@ function createGameRendererSubject() {
   subject.cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
   subject.renderer = { domElement: canvas, dispose: rendererDispose };
   subject.composer = { dispose: composerDispose };
+  subject.backend = { dispose: backendDispose };
   subject.worldmapScene = { destroy: worldmapDestroy };
   subject.hexceptionScene = { destroy: hexceptionDestroy };
   subject.hudScene = { destroy: hudDestroy };
@@ -143,6 +149,7 @@ function createGameRendererSubject() {
     rendererDispose,
     composerDispose,
     envDispose,
+    backendDispose,
     keyHandler,
   };
 }

@@ -1,13 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import * as THREE from "three";
 
 const FADE_DURATION = 300;
 
 export class TransitionManager {
   private fadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private isDestroyed = false;
-
-  constructor(private renderer: THREE.WebGLRenderer) {}
 
   fadeOut(onComplete: () => void) {
     if (this.isDestroyed) {

@@ -168,7 +168,7 @@ Tests first:
 ## Progress
 
 - [x] Stage 1. Lifecycle Hardening
-- [ ] Stage 2. Renderer Backend Extraction
+- [x] Stage 2. Renderer Backend Extraction
 - [ ] Stage 3. Scene Ownership Cleanup
 - [ ] Stage 4. Worldmap Decomposition
 - [ ] Stage 5. Shader and Material Portability
