@@ -25,7 +25,7 @@ import {
   Trophy,
   RefreshCw,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
@@ -358,6 +358,37 @@ const SEASON_MOCK_CARDS = [
   },
 ] as const;
 
+const MOCK_SEASON_PASSES = [
+  { id: "pass-faith", realm: "Realm #0142", resource: "Faith" },
+  { id: "pass-bitcoin", realm: "Realm #1188", resource: "Bitcoin Mines" },
+  { id: "pass-ethereal", realm: "Realm #4021", resource: "Ethereal Layer" },
+] as const;
+
+const MOCK_VILLAGE_REVEAL_RESOURCES = [
+  "Wheat",
+  "Fish",
+  "Stone",
+  "Wood",
+  "Iron",
+  "Coal",
+  "Faith",
+  "Ancient Fragments",
+] as const;
+
+type SeasonMockFlowStep = "preflight" | "pass" | "placement" | "settled" | "village" | "reveal";
+
+interface SeasonMockPlacement {
+  side: number;
+  layer: number;
+  point: number;
+}
+
+const DEFAULT_SEASON_MOCK_PLACEMENT: SeasonMockPlacement = {
+  side: 0,
+  layer: 1,
+  point: 0,
+};
+
 const ModeCoexistenceHero = ({
   modeFilter,
   onModeFilterChange,
@@ -467,49 +498,414 @@ const ModeCoexistenceHero = ({
   );
 };
 
-const SeasonMockupLane = () => (
-  <div className="rounded-2xl border border-emerald-400/30 bg-black/45 p-4 backdrop-blur-sm">
-    <div className="flex items-start justify-between gap-3 mb-3">
-      <div>
-        <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
-          <Castle className="h-3.5 w-3.5" />
-          Eternum Seasons Mockup
+const SeasonMockupLane = () => {
+  const [activeCardId, setActiveCardId] = useState<(typeof SEASON_MOCK_CARDS)[number]["id"] | null>(null);
+  const [flowStep, setFlowStep] = useState<SeasonMockFlowStep>("preflight");
+  const [seasonTimingValid, setSeasonTimingValid] = useState(true);
+  const [spiresSettled, setSpiresSettled] = useState(true);
+  const [seasonPassPresent, setSeasonPassPresent] = useState(true);
+  const [selectedPassId, setSelectedPassId] = useState<(typeof MOCK_SEASON_PASSES)[number]["id"]>(MOCK_SEASON_PASSES[0].id);
+  const [placement, setPlacement] = useState<SeasonMockPlacement>(DEFAULT_SEASON_MOCK_PLACEMENT);
+  const [isRevealRolling, setIsRevealRolling] = useState(false);
+  const [rollingResource, setRollingResource] = useState<string>(MOCK_VILLAGE_REVEAL_RESOURCES[0]);
+  const [targetRevealResource, setTargetRevealResource] = useState<string | null>(null);
+  const [revealedVillageResource, setRevealedVillageResource] = useState<string | null>(null);
+
+  const activeCard = useMemo(
+    () => SEASON_MOCK_CARDS.find((card) => card.id === activeCardId) ?? null,
+    [activeCardId],
+  );
+
+  const selectedPass = useMemo(
+    () => MOCK_SEASON_PASSES.find((pass) => pass.id === selectedPassId) ?? MOCK_SEASON_PASSES[0],
+    [selectedPassId],
+  );
+
+  const preflightReady = seasonTimingValid && spiresSettled && seasonPassPresent;
+
+  useEffect(() => {
+    if (!isRevealRolling || !targetRevealResource) return;
+
+    const interval = setInterval(() => {
+      const random = MOCK_VILLAGE_REVEAL_RESOURCES[Math.floor(Math.random() * MOCK_VILLAGE_REVEAL_RESOURCES.length)];
+      setRollingResource(random);
+    }, 90);
+
+    const timeout = setTimeout(() => {
+      setRollingResource(targetRevealResource);
+      setRevealedVillageResource(targetRevealResource);
+      setIsRevealRolling(false);
+    }, 1800);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isRevealRolling, targetRevealResource]);
+
+  const startMockFlow = (cardId: (typeof SEASON_MOCK_CARDS)[number]["id"]) => {
+    const card = SEASON_MOCK_CARDS.find((entry) => entry.id === cardId);
+    setActiveCardId(cardId);
+    setFlowStep("preflight");
+    setSeasonTimingValid(card?.status === "Live");
+    setSpiresSettled(true);
+    setSeasonPassPresent(true);
+    setSelectedPassId(MOCK_SEASON_PASSES[0].id);
+    setPlacement(DEFAULT_SEASON_MOCK_PLACEMENT);
+    setIsRevealRolling(false);
+    setRollingResource(MOCK_VILLAGE_REVEAL_RESOURCES[0]);
+    setTargetRevealResource(null);
+    setRevealedVillageResource(null);
+  };
+
+  const closeMockFlow = () => {
+    setActiveCardId(null);
+    setFlowStep("preflight");
+    setIsRevealRolling(false);
+  };
+
+  const triggerVillageReveal = () => {
+    const selected = MOCK_VILLAGE_REVEAL_RESOURCES[Math.floor(Math.random() * MOCK_VILLAGE_REVEAL_RESOURCES.length)];
+    setTargetRevealResource(selected);
+    setRevealedVillageResource(null);
+    setFlowStep("reveal");
+    setIsRevealRolling(true);
+  };
+
+  return (
+    <>
+      <div className="rounded-2xl border border-emerald-400/30 bg-black/45 p-4 backdrop-blur-sm">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
+              <Castle className="h-3.5 w-3.5" />
+              Eternum Seasons Mockup
+            </div>
+            <h2 className="font-cinzel text-lg text-emerald-100 mt-1">How Seasons Coexist on Landing</h2>
+          </div>
+          <span className="rounded-full border border-emerald-300/35 bg-emerald-500/15 px-2 py-1 text-[10px] text-emerald-200">
+            Mock Flow Enabled
+          </span>
         </div>
-        <h2 className="font-cinzel text-lg text-emerald-100 mt-1">How Seasons Coexist on Landing</h2>
-      </div>
-      <span className="rounded-full border border-emerald-300/35 bg-emerald-500/15 px-2 py-1 text-[10px] text-emerald-200">
-        Preview Only
-      </span>
-    </div>
 
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      {SEASON_MOCK_CARDS.map((card) => (
-        <article key={card.id} className="rounded-xl border border-emerald-200/20 bg-black/55 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-cinzel text-base text-gold">{card.title}</h3>
-            <span className={cn("rounded-full border px-2 py-0.5 text-[10px]", card.statusClass)}>{card.status}</span>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {SEASON_MOCK_CARDS.map((card) => (
+            <article key={card.id} className="rounded-xl border border-emerald-200/20 bg-black/55 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-cinzel text-base text-gold">{card.title}</h3>
+                <span className={cn("rounded-full border px-2 py-0.5 text-[10px]", card.statusClass)}>{card.status}</span>
+              </div>
 
-          <p className="text-sm text-gold/80 mt-1">{card.weekLabel}</p>
-          <p className="text-xs text-gold/60 mt-1">{card.players}</p>
+              <p className="text-sm text-gold/80 mt-1">{card.weekLabel}</p>
+              <p className="text-xs text-gold/60 mt-1">{card.players}</p>
 
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {card.features.map((feature) => (
-              <span
-                key={feature}
-                className="rounded border border-emerald-300/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-100/90"
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {card.features.map((feature) => (
+                  <span
+                    key={feature}
+                    className="rounded border border-emerald-300/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-100/90"
+                  >
+                    {feature}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-[11px] text-gold/50 mt-3">{card.note}</p>
+
+              <button
+                type="button"
+                onClick={() => startMockFlow(card.id)}
+                className="mt-3 inline-flex items-center gap-1 rounded-md border border-emerald-300/50 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30 transition-colors"
               >
-                {feature}
-              </span>
-            ))}
-          </div>
+                Try Mockup Flow
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </article>
+          ))}
+        </div>
+      </div>
 
-          <p className="text-[11px] text-gold/50 mt-3">{card.note}</p>
-        </article>
-      ))}
-    </div>
-  </div>
-);
+      {activeCard && (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-2xl rounded-2xl border border-emerald-300/35 bg-[#04090f]/95 shadow-[0_0_45px_rgba(16,185,129,0.2)] p-4 md:p-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">Eternum S2 Mockup Flow</div>
+                <h3 className="font-cinzel text-xl text-emerald-100 mt-1">{activeCard.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeMockFlow}
+                className="rounded-md border border-white/20 bg-white/5 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mb-4 text-[11px] text-emerald-100/75">
+              Step:{" "}
+              <span className="font-semibold">
+                {flowStep === "preflight"
+                  ? "Preflight"
+                  : flowStep === "pass"
+                    ? "Season Pass"
+                    : flowStep === "placement"
+                      ? "Placement"
+                      : flowStep === "settled"
+                        ? "Settled"
+                        : flowStep === "village"
+                          ? "Buy Village"
+                          : "Reveal"}
+              </span>
+            </div>
+
+            {flowStep === "preflight" && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-50">Mock preflight checks before settlement tx:</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSeasonTimingValid((prev) => !prev)}
+                    className={cn(
+                      "rounded border px-3 py-2 text-xs text-left",
+                      seasonTimingValid
+                        ? "border-emerald-400/45 bg-emerald-500/15 text-emerald-100"
+                        : "border-red-400/40 bg-red-500/10 text-red-200",
+                    )}
+                  >
+                    Season timing
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpiresSettled((prev) => !prev)}
+                    className={cn(
+                      "rounded border px-3 py-2 text-xs text-left",
+                      spiresSettled
+                        ? "border-emerald-400/45 bg-emerald-500/15 text-emerald-100"
+                        : "border-red-400/40 bg-red-500/10 text-red-200",
+                    )}
+                  >
+                    Spires settled
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSeasonPassPresent((prev) => !prev)}
+                    className={cn(
+                      "rounded border px-3 py-2 text-xs text-left",
+                      seasonPassPresent
+                        ? "border-emerald-400/45 bg-emerald-500/15 text-emerald-100"
+                        : "border-red-400/40 bg-red-500/10 text-red-200",
+                    )}
+                  >
+                    Season pass present
+                  </button>
+                </div>
+                <p className="text-xs text-gold/70">
+                  {preflightReady
+                    ? "All checks are passing. Continue to season pass selection."
+                    : "At least one check is failing. Toggle checks to proceed."}
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("pass")}
+                    disabled={!preflightReady}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-xs font-semibold",
+                      preflightReady
+                        ? "bg-emerald-500 text-black hover:bg-emerald-400"
+                        : "bg-white/10 text-white/40 cursor-not-allowed",
+                    )}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {flowStep === "pass" && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-50">Select which season pass to use for settlement:</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {MOCK_SEASON_PASSES.map((pass) => (
+                    <button
+                      key={pass.id}
+                      type="button"
+                      onClick={() => setSelectedPassId(pass.id)}
+                      className={cn(
+                        "rounded border px-3 py-2 text-left",
+                        selectedPassId === pass.id
+                          ? "border-gold/50 bg-gold/10 text-gold"
+                          : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10",
+                      )}
+                    >
+                      <div className="text-xs font-semibold">{pass.realm}</div>
+                      <div className="text-[11px] opacity-80">{pass.resource}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("preflight")}
+                    className="rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("placement")}
+                    className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {flowStep === "placement" && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-50">Choose placement coordinates for this pass:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <label className="text-xs text-emerald-100/80">
+                    Side
+                    <input
+                      type="number"
+                      min={0}
+                      value={placement.side}
+                      onChange={(event) =>
+                        setPlacement((prev) => ({ ...prev, side: Number(event.target.value || 0) }))
+                      }
+                      className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
+                    />
+                  </label>
+                  <label className="text-xs text-emerald-100/80">
+                    Layer
+                    <input
+                      type="number"
+                      min={0}
+                      value={placement.layer}
+                      onChange={(event) =>
+                        setPlacement((prev) => ({ ...prev, layer: Number(event.target.value || 0) }))
+                      }
+                      className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
+                    />
+                  </label>
+                  <label className="text-xs text-emerald-100/80">
+                    Point
+                    <input
+                      type="number"
+                      min={0}
+                      value={placement.point}
+                      onChange={(event) =>
+                        setPlacement((prev) => ({ ...prev, point: Number(event.target.value || 0) }))
+                      }
+                      className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
+                    />
+                  </label>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("pass")}
+                    className="rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("settled")}
+                    className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400"
+                  >
+                    Settle Realm
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {flowStep === "settled" && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-50">
+                  Settlement complete for <span className="text-gold">{selectedPass.realm}</span> on{" "}
+                  <span className="text-gold">{selectedPass.resource}</span>.
+                </p>
+                <p className="text-xs text-emerald-100/80">
+                  Position: side {placement.side}, layer {placement.layer}, point {placement.point}
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("village")}
+                    className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-400"
+                  >
+                    Buy Village
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeMockFlow}
+                    className="rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
+                  >
+                    Finish
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {flowStep === "village" && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-50">Village purchased next to your settled realm.</p>
+                <p className="text-xs text-emerald-100/80">
+                  Reveal the village resource with a mock casino-style roll.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={triggerVillageReveal}
+                    className="rounded-md bg-gold px-3 py-1.5 text-xs font-semibold text-black hover:bg-gold/90"
+                  >
+                    Reveal Resource
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {flowStep === "reveal" && (
+              <div className="space-y-3">
+                <p className="text-sm text-emerald-50">Village resource reveal:</p>
+                <div
+                  className={cn(
+                    "rounded-lg border px-4 py-6 text-center text-xl font-cinzel",
+                    isRevealRolling
+                      ? "border-gold/50 bg-gold/10 text-gold animate-pulse"
+                      : "border-emerald-400/45 bg-emerald-500/15 text-emerald-100",
+                  )}
+                >
+                  {isRevealRolling ? rollingResource : (revealedVillageResource ?? "Unknown")}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("village")}
+                    className="rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
+                  >
+                    Buy Another Village
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFlowStep("preflight")}
+                    className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400"
+                  >
+                    Restart Flow
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
 
 /**
  * Play tab content with centered hero + 3 columns layout:

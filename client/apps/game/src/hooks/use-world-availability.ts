@@ -20,7 +20,7 @@ const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_
 const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
-const WORLD_CONFIG_ETERNUM_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "mmr_config.enabled" AS mmr_enabled, "settlement_config.base_distance" AS settlement_base_distance, "settlement_config.spires_layer_distance" AS spires_layer_distance FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+const WORLD_CONFIG_ETERNUM_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "mmr_config.enabled" AS mmr_enabled, "settlement_config.base_distance" AS settlement_base_distance, "settlement_config.spires_layer_distance" AS spires_layer_distance, "settlement_config.spires_settled_count" AS spires_settled_count FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "${HYPERSTRUCTURE_GLOBALS_TABLE}" LIMIT 1;`;
@@ -113,6 +113,7 @@ export interface WorldConfigMeta {
   // Eternum spacing config
   settlementBaseDistance: number | null;
   spiresLayerDistance: number | null;
+  spiresSettledCount: number | null;
   registrationCount: number | null;
   // Blitz registration config
   entryTokenAddress: string | null;
@@ -235,6 +236,7 @@ const fetchWorldConfigMeta = async (
     seasonDurationSeconds: null,
     settlementBaseDistance: null,
     spiresLayerDistance: null,
+    spiresSettledCount: null,
     registrationCount: null,
     entryTokenAddress: null,
     feeTokenAddress: null,
@@ -321,6 +323,9 @@ const fetchWorldConfigMeta = async (
         }
         if (row.spires_layer_distance != null) {
           meta.spiresLayerDistance = parseMaybeHexToNumber(row.spires_layer_distance);
+        }
+        if (row.spires_settled_count != null) {
+          meta.spiresSettledCount = parseMaybeHexToNumber(row.spires_settled_count);
         }
       }
     }

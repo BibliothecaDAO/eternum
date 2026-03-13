@@ -9,7 +9,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Eye, Loader2, Check, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
+import {
+  X,
+  Play,
+  Eye,
+  Loader2,
+  Check,
+  Castle,
+  MapPin,
+  Pickaxe,
+  Sparkles,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
@@ -24,17 +36,18 @@ import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getWorldKey } from "@/hooks/use-world-availability";
+import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import {
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
-import type { Chain } from "@contracts";
-import type { Account } from "starknet";
+import { getSeasonAddresses, type Chain } from "@contracts";
+import { RpcProvider, type Account } from "starknet";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -62,10 +75,27 @@ const extractTransactionHash = (value: unknown): string | null => {
   return null;
 };
 
+const parseUint256 = (result: string[] | undefined): bigint => {
+  if (!result || result.length < 2) return 0n;
+  const low = BigInt(result[0] ?? 0);
+  const high = BigInt(result[1] ?? 0);
+  return low + (high << 128n);
+};
+
+const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
+
 // Types
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
-type ModalPhase = "loading" | "forge" | "hyperstructure" | "settlement" | "ready" | "error";
+type ModalPhase =
+  | "loading"
+  | "forge"
+  | "hyperstructure"
+  | "settlement"
+  | "season-pass-required"
+  | "season-placement"
+  | "ready"
+  | "error";
 
 // Hyperstructure info type
 type HyperstructureInfo = {
@@ -275,6 +305,134 @@ const SettlementPhase = ({
       {stage === "error" && (
         <p className="text-xs text-red-300 text-center mt-2">Settlement failed. Please try again.</p>
       )}
+    </div>
+  );
+};
+
+type SeasonPlacement = {
+  side: number;
+  layer: number;
+  point: number;
+};
+
+const DEFAULT_SEASON_PLACEMENT: SeasonPlacement = {
+  side: 0,
+  layer: 1,
+  point: 0,
+};
+
+const SeasonPassRequiredPhase = ({ onGetSeasonPass }: { onGetSeasonPass: () => void }) => {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
+        <AlertCircle className="w-8 h-8 text-red-300" />
+      </div>
+      <h2 className="text-lg font-semibold text-gold mb-2">Season Pass Required</h2>
+      <p className="text-xs text-gold/60 mb-4">
+        You need at least one Season Pass in your wallet before you can settle in Eternum Seasons.
+      </p>
+      <Button onClick={onGetSeasonPass} className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
+        <div className="flex items-center justify-center gap-2">
+          <ExternalLink className="w-4 h-4" />
+          <span>Get a Season Pass</span>
+        </div>
+      </Button>
+    </div>
+  );
+};
+
+const SeasonPlacementPhase = ({
+  placement,
+  onPlacementChange,
+  canSettle,
+  seasonTimingValid,
+  spiresSettled,
+  hasSeasonPass,
+}: {
+  placement: SeasonPlacement;
+  onPlacementChange: (next: SeasonPlacement) => void;
+  canSettle: boolean;
+  seasonTimingValid: boolean;
+  spiresSettled: boolean;
+  hasSeasonPass: boolean;
+}) => {
+  const checks = [
+    { id: "season", label: "Season timing valid", ok: seasonTimingValid },
+    { id: "spires", label: "Spires settled", ok: spiresSettled },
+    { id: "pass", label: "Season pass present", ok: hasSeasonPass },
+  ];
+
+  return (
+    <div className="flex flex-col">
+      <div className="text-center mb-4">
+        <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Season settlement" />
+        <h2 className="text-lg font-semibold text-gold">Choose Settlement Placement</h2>
+        <p className="text-xs text-gold/60 mt-1">Placement picker shell for side/layer/point (R21 wiring pending)</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <label className="text-xs text-gold/60">
+          Side
+          <input
+            type="number"
+            min={0}
+            value={placement.side}
+            onChange={(event) =>
+              onPlacementChange({
+                ...placement,
+                side: Number(event.target.value || 0),
+              })
+            }
+            className="mt-1 w-full rounded-md bg-black/20 border border-gold/20 px-2 py-1 text-sm text-gold"
+          />
+        </label>
+        <label className="text-xs text-gold/60">
+          Layer
+          <input
+            type="number"
+            min={0}
+            value={placement.layer}
+            onChange={(event) =>
+              onPlacementChange({
+                ...placement,
+                layer: Number(event.target.value || 0),
+              })
+            }
+            className="mt-1 w-full rounded-md bg-black/20 border border-gold/20 px-2 py-1 text-sm text-gold"
+          />
+        </label>
+        <label className="text-xs text-gold/60">
+          Point
+          <input
+            type="number"
+            min={0}
+            value={placement.point}
+            onChange={(event) =>
+              onPlacementChange({
+                ...placement,
+                point: Number(event.target.value || 0),
+              })
+            }
+            className="mt-1 w-full rounded-md bg-black/20 border border-gold/20 px-2 py-1 text-sm text-gold"
+          />
+        </label>
+      </div>
+
+      <div className="space-y-2 mb-4">
+        {checks.map((check) => (
+          <div key={check.id} className="flex items-center justify-between rounded-md border border-gold/20 bg-black/20 px-2 py-1.5">
+            <span className="text-xs text-gold/70">{check.label}</span>
+            {check.ok ? <Check className="w-4 h-4 text-emerald-400" /> : <X className="w-4 h-4 text-red-300" />}
+          </div>
+        ))}
+      </div>
+
+      <Button disabled className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
+        <div className="flex items-center justify-center gap-2">
+          <MapPin className="w-4 h-4" />
+          <span>{canSettle ? "Confirm Placement (Coming Soon)" : "Preflight Checks Required"}</span>
+        </div>
+      </Button>
     </div>
   );
 };
@@ -571,6 +729,26 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
+  const playerFeltAddress = useMemo(() => {
+    if (!account?.address) return null;
+    try {
+      return toPaddedFeltAddress(account.address);
+    } catch {
+      return null;
+    }
+  }, [account?.address]);
+
+  const worldAvailabilityInputs = useMemo(() => [{ name: worldName, chain }], [worldName, chain]);
+  const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailability } = useWorldsAvailability(
+    worldAvailabilityInputs,
+    isOpen && Boolean(worldName),
+    playerFeltAddress,
+  );
+  const worldAvailability = worldAvailabilityResults.get(getWorldKey({ name: worldName, chain }));
+  const worldMeta = worldAvailability?.meta ?? null;
+  const worldMode = worldMeta?.mode ?? "unknown";
+  const isBlitzMode = worldMode === "blitz";
+  const isEternumMode = worldMode === "eternum";
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -597,6 +775,9 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
+  const [seasonPassBalance, setSeasonPassBalance] = useState<bigint>(0n);
+  const [isCheckingSeasonPass, setIsCheckingSeasonPass] = useState(false);
+  const [seasonPlacement, setSeasonPlacement] = useState<SeasonPlacement>(DEFAULT_SEASON_PLACEMENT);
   const hasEnteredGameRef = useRef(false);
 
   useEffect(() => {
@@ -627,13 +808,72 @@ export const GameEntryModal = ({
     return Math.min(99, Math.round(completed));
   }, [bootstrapStatus, tasks, syncProgress]);
 
+  // Season pass ownership check (Eternum mode only)
+  useEffect(() => {
+    let cancelled = false;
+
+    const reset = () => {
+      setIsCheckingSeasonPass(false);
+      setSeasonPassBalance(0n);
+    };
+
+    if (!isOpen || !isEternumMode || !account?.address) {
+      reset();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const run = async () => {
+      setIsCheckingSeasonPass(true);
+      try {
+        const seasonPassAddress = getSeasonAddresses(chain).seasonPass;
+        const rpcProvider = new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) });
+        const result = await rpcProvider.callContract({
+          contractAddress: seasonPassAddress,
+          entrypoint: "balance_of",
+          calldata: [account.address],
+        });
+
+        if (!cancelled) {
+          setSeasonPassBalance(parseUint256(result as string[]));
+        }
+      } catch {
+        if (!cancelled) {
+          setSeasonPassBalance(0n);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingSeasonPass(false);
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, isEternumMode, account?.address, chain]);
+
+  const nowSeconds = Date.now() / 1000;
+  const seasonTimingValid =
+    worldMeta?.startMainAt != null &&
+    worldMeta?.endAt != null &&
+    worldMeta.startMainAt <= nowSeconds &&
+    nowSeconds <= worldMeta.endAt;
+  const spiresSettled = (worldMeta?.spiresSettledCount ?? 0) > 0;
+  const hasSeasonPass = seasonPassBalance > 0n;
+  const canAttemptSeasonSettle = seasonTimingValid && spiresSettled && hasSeasonPass;
+  const isLoadingEternumPrereqs = isCheckingWorldAvailability || isCheckingSeasonPass || !worldMeta;
+
   // Both checks must complete before we can determine the final phase
   const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
 
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
     let result: ModalPhase;
-    if (isForgeMode) {
+    if (isForgeMode && isBlitzMode) {
       // Forge mode does not require game bootstrap or settlement checks
       result = "forge";
     } else if (bootstrapError || bootstrapStatus === "error") {
@@ -642,6 +882,16 @@ export const GameEntryModal = ({
       result = "loading";
     } else if (isSpectateMode) {
       result = "ready";
+    } else if (worldMode === "unknown" || isCheckingWorldAvailability || !worldMeta) {
+      result = "loading";
+    } else if (isEternumMode) {
+      if (isLoadingEternumPrereqs) {
+        result = "loading";
+      } else if (!hasSeasonPass) {
+        result = "season-pass-required";
+      } else {
+        result = "season-placement";
+      }
     } else if (!checksComplete) {
       // Still checking settlement/hyperstructure status - stay in loading
       result = "loading";
@@ -658,12 +908,19 @@ export const GameEntryModal = ({
       bootstrapStatus,
       hasError: !!bootstrapError,
       isForgeMode,
+      isBlitzMode,
       isSpectateMode,
       checksComplete,
       settlementCheckComplete,
       hyperstructureCheckComplete,
       needsHyperstructureInit,
       needsSettlement,
+      worldMode,
+      startMainAt: worldMeta?.startMainAt,
+      endAt: worldMeta?.endAt,
+      spiresSettledCount: worldMeta?.spiresSettledCount,
+      hasSeasonPass,
+      canAttemptSeasonSettle,
     });
 
     return result;
@@ -671,12 +928,20 @@ export const GameEntryModal = ({
     bootstrapStatus,
     bootstrapError,
     isForgeMode,
+    isBlitzMode,
     isSpectateMode,
     checksComplete,
     settlementCheckComplete,
     hyperstructureCheckComplete,
     needsHyperstructureInit,
     needsSettlement,
+    isEternumMode,
+    isLoadingEternumPrereqs,
+    isCheckingWorldAvailability,
+    hasSeasonPass,
+    worldMode,
+    worldMeta,
+    canAttemptSeasonSettle,
     worldName,
   ]);
 
@@ -788,7 +1053,19 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || isForgeMode) {
+    if (isEternumMode) {
+      debugLog(worldName, "Skipping settlement check - Eternum mode");
+      setNeedsSettlement(false);
+      setSettlementCheckComplete(true);
+      return;
+    }
+
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping settlement check - world mode unresolved");
+      return;
+    }
+
+    if (isSpectateMode || (isForgeMode && isBlitzMode)) {
       debugLog(worldName, "Skipping settlement check - spectate or forge mode");
       setSettlementCheckComplete(true);
       return;
@@ -839,6 +1116,8 @@ export const GameEntryModal = ({
     bootstrapStatus,
     setupResult,
     account,
+    isBlitzMode,
+    isEternumMode,
     isSpectateMode,
     isForgeMode,
     worldName,
@@ -865,7 +1144,19 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || isForgeMode) {
+    if (isEternumMode) {
+      debugLog(worldName, "Skipping hyperstructure check - Eternum mode");
+      setNeedsHyperstructureInit(false);
+      setHyperstructureCheckComplete(true);
+      return;
+    }
+
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping hyperstructure check - world mode unresolved");
+      return;
+    }
+
+    if (isSpectateMode || (isForgeMode && isBlitzMode)) {
       debugLog(worldName, "Skipping hyperstructure check - spectate or forge mode");
       setHyperstructureCheckComplete(true);
       return;
@@ -930,7 +1221,7 @@ export const GameEntryModal = ({
     };
 
     checkHyperstructures();
-  }, [bootstrapStatus, setupResult, isSpectateMode, isForgeMode, worldName]);
+  }, [bootstrapStatus, setupResult, isBlitzMode, isEternumMode, isSpectateMode, isForgeMode, worldName]);
 
   // Start bootstrap when modal opens
   useEffect(() => {
@@ -938,7 +1229,7 @@ export const GameEntryModal = ({
       debugLog(worldName, "Modal not open, skipping bootstrap");
       return;
     }
-    if (isForgeMode) {
+    if (isForgeMode && isBlitzMode) {
       debugLog(worldName, "Forge mode active, skipping game bootstrap");
       return;
     }
@@ -956,6 +1247,7 @@ export const GameEntryModal = ({
         setHyperstructures([]);
         setNeedsHyperstructureInit(false);
         setHyperstructureCheckComplete(false);
+        setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
@@ -996,7 +1288,7 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [isOpen, isForgeMode, worldName, chain, updateTask]);
+  }, [isOpen, isForgeMode, isBlitzMode, worldName, chain, updateTask]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -1026,10 +1318,15 @@ export const GameEntryModal = ({
     setHyperstructureCheckComplete(false);
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
+    setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
     // Trigger re-bootstrap
     setTimeout(() => {
       setBootstrapStatus("loading");
     }, 100);
+  }, []);
+
+  const handleGetSeasonPass = useCallback(() => {
+    window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
   }, []);
 
   // Enter game handler - navigates to the game.
@@ -1057,6 +1354,10 @@ export const GameEntryModal = ({
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
     debugLog(worldName, "handleSettle called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping blitz settlement call outside blitz mode");
+      return;
+    }
     if (!setupResult || !account) return;
 
     setIsSettling(true);
@@ -1139,6 +1440,7 @@ export const GameEntryModal = ({
   }, [
     setupResult,
     account,
+    isBlitzMode,
     handleEnterGame,
     worldName,
     readSettlementSnapshot,
@@ -1150,6 +1452,10 @@ export const GameEntryModal = ({
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
     debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping blitz forge flow outside blitz mode");
+      return;
+    }
     if (!account) return;
 
     setIsForging(true);
@@ -1203,7 +1509,7 @@ export const GameEntryModal = ({
     } finally {
       setIsForging(false);
     }
-  }, [account, worldName, chain, queryClient, numHyperstructuresLeft]);
+  }, [account, isBlitzMode, worldName, chain, queryClient, numHyperstructuresLeft]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
@@ -1385,6 +1691,23 @@ export const GameEntryModal = ({
                   isSettling={isSettling}
                   onSettle={handleSettle}
                   onEnterGame={handleEnterGame}
+                />
+              </motion.div>
+            )}
+            {phase === "season-pass-required" && (
+              <motion.div key="season-pass-required" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <SeasonPassRequiredPhase onGetSeasonPass={handleGetSeasonPass} />
+              </motion.div>
+            )}
+            {phase === "season-placement" && (
+              <motion.div key="season-placement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <SeasonPlacementPhase
+                  placement={seasonPlacement}
+                  onPlacementChange={setSeasonPlacement}
+                  canSettle={canAttemptSeasonSettle}
+                  seasonTimingValid={seasonTimingValid}
+                  spiresSettled={spiresSettled}
+                  hasSeasonPass={hasSeasonPass}
                 />
               </motion.div>
             )}
