@@ -214,6 +214,41 @@ Every game tick:
 6. Update `entry/main.ts` — integrate coordinator, remove automation loop
 7. Test build
 
+## Blitz-Specific Tools (Phase 2)
+
+New tools added for complete Blitz mode coverage. All verified against on-chain contracts.
+
+### Military Agent — New Tools
+
+| Tool                                | File                   | Provider Method                                | Purpose                                               |
+| ----------------------------------- | ---------------------- | ---------------------------------------------- | ----------------------------------------------------- |
+| `guard_delete`                      | `guard-management.ts`  | `provider.guard_delete()`                      | Remove troops from a guard slot (returns to reserves) |
+| `guard_explorer_swap`               | `guard-management.ts`  | `provider.guard_explorer_swap()`               | Move troops from guard slot to adjacent explorer      |
+| `attack_guard_vs_explorer`          | `guard-management.ts`  | `provider.attack_guard_vs_explorer()`          | Guard attacks adjacent enemy explorer (defensive)     |
+| `apply_relic`                       | `relic.ts`             | `provider.apply_relic()`                       | Activate relic bonus on structure or explorer         |
+| `troop_troop_adjacent_transfer`     | `adjacent-transfer.ts` | `provider.troop_troop_adjacent_transfer()`     | Transfer resources between adjacent armies            |
+| `troop_structure_adjacent_transfer` | `adjacent-transfer.ts` | `provider.troop_structure_adjacent_transfer()` | Transfer resources from army to adjacent structure    |
+| `structure_troop_adjacent_transfer` | `adjacent-transfer.ts` | `provider.structure_troop_adjacent_transfer()` | Transfer resources from structure to adjacent army    |
+| `allocate_shares`                   | `hyperstructure.ts`    | `provider.allocate_shares()`                   | Allocate HS ownership (auto 100% after capture)       |
+
+### Production Agent — New Tools
+
+| Tool                | File                  | Provider Method                | Purpose                        |
+| ------------------- | --------------------- | ------------------------------ | ------------------------------ |
+| `pause_production`  | `production-tools.ts` | `provider.pause_production()`  | Pause building resource output |
+| `resume_production` | `production-tools.ts` | `provider.resume_production()` | Resume paused building         |
+
+### Confirmed NOT Blitz (excluded)
+
+| Action                          | Reason                                                      |
+| ------------------------------- | ----------------------------------------------------------- |
+| `raid_explorer_vs_guard`        | `assert!(!blitz_mode_on)` in troop_raid.cairo:89-90         |
+| `season_close` / `end_game`     | `assert!(blitz_mode_on == false)` in season/contracts.cairo |
+| `contribute_to_construction`    | Not applicable in Blitz                                     |
+| `claim_wonder_production_bonus` | Not applicable in Blitz                                     |
+| `claim_share_points`            | Blitz uses `blitz_prize_claim` post-game instead            |
+| `claim_construction_points`     | Blitz uses `blitz_prize_claim` post-game instead            |
+
 ## Migration Notes
 
 - The deterministic automation loop (`automation/`) is NOT deleted — it stays as fallback. The coordinator can be

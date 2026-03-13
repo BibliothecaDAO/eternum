@@ -23,6 +23,18 @@ import { createDefendStructureTool } from "../tools/defend-structure.js";
 import { createTransferResourcesTool } from "../tools/transfer-resources.js";
 import { createOpenChestTool } from "../tools/open-chest.js";
 import { createViewMapTool } from "../tools/view-map.js";
+import {
+  createGuardDeleteTool,
+  createGuardExplorerSwapTool,
+  createAttackGuardVsExplorerTool,
+} from "../tools/guard-management.js";
+import { createApplyRelicTool } from "../tools/relic.js";
+import {
+  createTroopTroopAdjacentTransferTool,
+  createTroopStructureAdjacentTransferTool,
+  createStructureTroopAdjacentTransferTool,
+} from "../tools/adjacent-transfer.js";
+import { createAllocateSharesTool } from "../tools/hyperstructure.js";
 
 import { TxQueue } from "./tx-queue.js";
 import { DirectiveQueue } from "./directives.js";
@@ -33,9 +45,10 @@ const MILITARY_SOUL = `You are the MILITARY commander of an Eternum Blitz game.
 
 Your responsibilities:
 - Map control: scouting, exploration, army positioning
-- Combat: attacking enemies, capturing structures, raiding for resources
-- Defense: guarding your structures, responding to threats
-- Relic chests: opening chests for victory points
+- Combat: attacking enemies, capturing structures, defending with guards
+- Defense: guarding structures, using guard_delete/guard_explorer_swap to reposition garrisons
+- Relic management: opening chests, transferring relics (adjacent transfers), applying relics
+- Hyperstructure control: capturing and allocating shares (allocate_shares) immediately after capture
 
 You DO NOT handle production, building, or economy. That's the production agent's job.
 When you need troops, use request_troops. When you need resources for your armies, use request_resources.
@@ -48,11 +61,19 @@ Combat tips:
 - Biome matters: check which troop type has advantage in the tile's biome
 - Stamina: 50 to attack, 30 to explore, 10 to travel. Regenerates 20/min.
 - Guard structures with at least one guard slot before leaving them undefended
+- Use attack_guard_vs_explorer to defend structures without moving armies
+- After capturing a hyperstructure, ALWAYS call allocate_shares to claim 100% ownership
+
+Relic workflow:
+1. Open relic chest (open_chest) — relic appears on your explorer
+2. Move explorer adjacent to target structure
+3. Transfer relic: troop_structure_adjacent_transfer to deposit relic on structure
+4. Apply relic: apply_relic on the structure to activate the bonus
 
 Strategy:
 - Explore aggressively early to find relic chests and enemy positions
-- Capture hyperstructures for points
-- Raid weaker enemies for resources instead of full assault if their guards are strong
+- Capture hyperstructures for points, allocate shares immediately
+- Use adjacent transfers to manage relics between armies and structures
 - Coordinate with production: request troops before you need them`;
 
 const PRODUCTION_SOUL = `You are the PRODUCTION quartermaster of an Eternum Blitz game.
@@ -64,6 +85,7 @@ Your responsibilities:
 - Transfer resources between realms
 - Upgrade realms to unlock more building slots
 - Offload resource arrivals from incoming transfers
+- Pause/resume production at buildings to manage resource flow
 
 You DO NOT move armies, fight, or explore. That's the military commander's job.
 
@@ -132,6 +154,14 @@ export function createMultiAgentSystem(
     createDefendStructureTool(client, mapCtx, account.address, txCtx),
     createOpenChestTool(client, mapCtx, account.address, txCtx),
     createViewMapTool(mapCtx),
+    createGuardDeleteTool(client, mapCtx, account.address, txCtx),
+    createGuardExplorerSwapTool(client, mapCtx, account.address, txCtx),
+    createAttackGuardVsExplorerTool(client, mapCtx, account.address, txCtx),
+    createApplyRelicTool(client, mapCtx, account.address, txCtx),
+    createTroopTroopAdjacentTransferTool(client, mapCtx, account.address, txCtx),
+    createTroopStructureAdjacentTransferTool(client, mapCtx, account.address, txCtx),
+    createStructureTroopAdjacentTransferTool(client, mapCtx, account.address, txCtx),
+    createAllocateSharesTool(client, mapCtx, account.address, txCtx),
     ...createAllMilitaryDelegationTools(directives),
   ];
 

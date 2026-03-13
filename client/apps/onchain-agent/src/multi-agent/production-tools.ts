@@ -212,6 +212,60 @@ export function createMarkRequestStatusTool(directives: DirectiveQueue): AgentTo
   };
 }
 
+export function createPauseProductionTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+  return {
+    name: "pause_production",
+    label: "Pause Production",
+    description: "Pause resource production at a building. Pass the realm entity ID and building coordinates.",
+    parameters: Type.Object({
+      realm_entity_id: Type.Number({ description: "Realm entity ID" }),
+      building_x: Type.Number({ description: "Building x coordinate" }),
+      building_y: Type.Number({ description: "Building y coordinate" }),
+    }),
+    async execute(_toolCallId: string, params: any) {
+      try {
+        await txQueue.enqueue("production", "pause_production", () =>
+          tx.provider.pause_production({
+            entity_id: params.realm_entity_id,
+            building_coord: { alt: false, x: params.building_x, y: params.building_y },
+            signer: tx.signer,
+          }),
+        );
+        return { content: [{ type: "text" as const, text: `Production paused.` }], details: {} };
+      } catch (err: any) {
+        return { content: [{ type: "text" as const, text: `Pause failed: ${extractTxError(err)}` }], details: {} };
+      }
+    },
+  };
+}
+
+export function createResumeProductionTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+  return {
+    name: "resume_production",
+    label: "Resume Production",
+    description: "Resume resource production at a paused building. Pass the realm entity ID and building coordinates.",
+    parameters: Type.Object({
+      realm_entity_id: Type.Number({ description: "Realm entity ID" }),
+      building_x: Type.Number({ description: "Building x coordinate" }),
+      building_y: Type.Number({ description: "Building y coordinate" }),
+    }),
+    async execute(_toolCallId: string, params: any) {
+      try {
+        await txQueue.enqueue("production", "resume_production", () =>
+          tx.provider.resume_production({
+            entity_id: params.realm_entity_id,
+            building_coord: { alt: false, x: params.building_x, y: params.building_y },
+            signer: tx.signer,
+          }),
+        );
+        return { content: [{ type: "text" as const, text: `Production resumed.` }], details: {} };
+      } catch (err: any) {
+        return { content: [{ type: "text" as const, text: `Resume failed: ${extractTxError(err)}` }], details: {} };
+      }
+    },
+  };
+}
+
 export function createAllProductionTools(
   tx: TxContext,
   txQueue: TxQueue,
@@ -223,6 +277,8 @@ export function createAllProductionTools(
     createUpgradeRealmTool(tx, txQueue),
     createProduceResourcesTool(tx, txQueue),
     createOffloadArrivalsTool(tx, txQueue),
+    createPauseProductionTool(tx, txQueue),
+    createResumeProductionTool(tx, txQueue),
     createMarkRequestStatusTool(directives),
   ];
 }
