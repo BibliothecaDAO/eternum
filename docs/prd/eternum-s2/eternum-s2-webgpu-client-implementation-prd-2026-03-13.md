@@ -8,7 +8,7 @@ Scope: `client/apps/game/src/three`, `client/apps/game/vite.config.ts`, renderer
 
 - [x] Phase 0: Contract and Build-Mode Design
 - [x] Phase 1: Experimental `three/webgpu` Build and Backend Boot
-- [ ] Phase 2: Backend Contract V2 and Frame Pipeline
+- [x] Phase 2: Backend Contract V2 and Frame Pipeline
 - [ ] Phase 3: Effect and Material Porting Foundation
 - [ ] Phase 4: Scene Rollout and Parity
 - [ ] Phase 5: Compatibility, Telemetry, and Ship Gates

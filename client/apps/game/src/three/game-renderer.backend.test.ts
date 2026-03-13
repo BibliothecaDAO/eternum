@@ -81,18 +81,21 @@ function createFakeBackend() {
         reset: vi.fn(),
       },
     },
-    composer: {},
+    initialize: vi.fn(async () => ({
+      activeMode: "legacy-webgl",
+      buildMode: "legacy-webgl",
+      fallbackReason: null,
+      initTimeMs: 0,
+      requestedMode: "legacy-webgl",
+    })),
     resize: vi.fn(),
     applyQuality: vi.fn(),
+    applyPostProcessPlan: vi.fn(() => ({
+      setColorGrade: vi.fn(),
+      setVignette: vi.fn(),
+    })),
     applyEnvironment: vi.fn(async () => {}),
-    clear: vi.fn(),
-    clearDepth: vi.fn(),
-    renderComposer: vi.fn(),
-    renderScene: vi.fn(),
-    createRenderPass: vi.fn(() => ({ scene: null })),
-    updateRenderPassScene: vi.fn(),
-    addPass: vi.fn(),
-    removePass: vi.fn(),
+    renderFrame: vi.fn(),
     dispose: vi.fn(),
   };
 }
@@ -114,7 +117,6 @@ describe("GameRenderer backend seam", () => {
 
     expect(subject.backend).toBe(backend);
     expect(subject.renderer).toBe(backend.renderer);
-    expect(subject.composer).toBe(backend.composer);
   });
 
   it("propagates resize through the backend surface", () => {
@@ -171,7 +173,7 @@ describe("GameRenderer backend seam", () => {
     });
   });
 
-  it("uses backend-owned frame primitives during animate", () => {
+  it("uses the backend-owned frame pipeline during animate", () => {
     const backend = createFakeBackend();
     const requestAnimationFrameSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
     const subject = Object.create(GameRenderer.prototype) as any;
@@ -206,7 +208,6 @@ describe("GameRenderer backend seam", () => {
     subject.sceneManager = {
       getCurrentScene: vi.fn(() => "map"),
     };
-    subject.renderPass = {};
     subject.camera = "camera";
     subject.shouldRenderLabels = vi.fn(() => false);
     subject.captureStatsSample = vi.fn();
@@ -216,11 +217,13 @@ describe("GameRenderer backend seam", () => {
 
     subject.animate();
 
-    expect(backend.clear).toHaveBeenCalledTimes(1);
-    expect(backend.updateRenderPassScene).toHaveBeenCalledWith(subject.renderPass, "world-scene");
-    expect(backend.renderComposer).toHaveBeenCalledTimes(1);
-    expect(backend.clearDepth).toHaveBeenCalledTimes(1);
-    expect(backend.renderScene).toHaveBeenCalledWith("hud-scene", "hud-camera");
+    expect(backend.renderFrame).toHaveBeenCalledWith({
+      mainCamera: "camera",
+      mainScene: "world-scene",
+      overlayCamera: "hud-camera",
+      overlayScene: "hud-scene",
+      sceneName: "map",
+    });
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
   });
 });

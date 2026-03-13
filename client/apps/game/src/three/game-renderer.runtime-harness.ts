@@ -41,18 +41,21 @@ export function createGameRendererRuntimeHarness() {
       toneMappingExposure: 0,
       autoClear: false,
     },
-    composer: {},
+    initialize: vi.fn(async () => ({
+      activeMode: "legacy-webgl",
+      buildMode: "legacy-webgl",
+      fallbackReason: null,
+      initTimeMs: 0,
+      requestedMode: "legacy-webgl",
+    })),
     resize: vi.fn(),
     applyQuality: vi.fn(),
+    applyPostProcessPlan: vi.fn(() => ({
+      setColorGrade: vi.fn(),
+      setVignette: vi.fn(),
+    })),
     applyEnvironment: vi.fn(async () => {}),
-    clear: vi.fn(),
-    clearDepth: vi.fn(),
-    renderComposer: vi.fn(),
-    renderScene: vi.fn(),
-    createRenderPass: vi.fn(() => ({ scene: null })),
-    updateRenderPassScene: vi.fn(),
-    addPass: vi.fn(),
-    removePass: vi.fn(),
+    renderFrame: vi.fn(),
     dispose: vi.fn(),
   };
 
@@ -81,9 +84,7 @@ export function createGameRendererRuntimeHarness() {
       return {
         backend,
         renderer: backend.renderer,
-        composer: backend.composer,
         camera: { aspect: 1, updateProjectionMatrix: vi.fn() },
-        renderPass: {},
         labelRenderer: { render: vi.fn(), setSize: vi.fn() },
         controls: { update: vi.fn(), dispose: vi.fn() },
         hudScene: {

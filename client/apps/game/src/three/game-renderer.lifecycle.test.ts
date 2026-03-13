@@ -104,11 +104,9 @@ function createGameRendererSubject() {
   const hudDestroy = vi.fn();
   const controlsDispose = vi.fn();
   const rendererDispose = vi.fn();
-  const composerDispose = vi.fn();
   const envDispose = vi.fn();
   const backendDispose = vi.fn(() => {
     rendererDispose();
-    composerDispose();
     envDispose();
   });
   const keyHandler = vi.fn();
@@ -119,7 +117,6 @@ function createGameRendererSubject() {
   subject.unsubscribeQualityController = unsubscribeQualityController;
   subject.cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
   subject.renderer = { domElement: canvas, dispose: rendererDispose };
-  subject.composer = { dispose: composerDispose };
   subject.backend = { dispose: backendDispose };
   subject.worldmapScene = { destroy: worldmapDestroy };
   subject.hexceptionScene = { destroy: hexceptionDestroy };
@@ -147,7 +144,6 @@ function createGameRendererSubject() {
     hudDestroy,
     controlsDispose,
     rendererDispose,
-    composerDispose,
     envDispose,
     backendDispose,
     keyHandler,
@@ -180,7 +176,6 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
     expect(fixture.subject.cleanupIntervals).toEqual([]);
     expect(fixture.rendererDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.composerDispose).toHaveBeenCalledTimes(1);
     expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);

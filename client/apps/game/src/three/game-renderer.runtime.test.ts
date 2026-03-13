@@ -84,9 +84,13 @@ describe("GameRenderer runtime harness", () => {
     subject.animate();
 
     expect(harness.worldmapScene.setup).toHaveBeenCalledTimes(1);
-    expect(harness.backend.updateRenderPassScene).toHaveBeenCalledWith(subject.renderPass, "worldmap-scene");
-    expect(harness.backend.renderComposer).toHaveBeenCalledTimes(1);
-    expect(harness.backend.renderScene).toHaveBeenCalledWith("hud-scene", "hud-camera");
+    expect(harness.backend.renderFrame).toHaveBeenCalledWith({
+      mainCamera: subject.camera,
+      mainScene: "worldmap-scene",
+      overlayCamera: "hud-camera",
+      overlayScene: "hud-scene",
+      sceneName: SceneName.WorldMap,
+    });
   });
 
   it("switches scenes through the shared scene manager", async () => {

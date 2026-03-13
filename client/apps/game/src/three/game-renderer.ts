@@ -17,18 +17,7 @@ import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
-import {
-  BloomEffect,
-  BrightnessContrastEffect,
-  ChromaticAberrationEffect,
-  Effect,
-  EffectPass,
-  FXAAEffect,
-  HueSaturationEffect,
-  ToneMappingEffect,
-  ToneMappingMode,
-  VignetteEffect,
-} from "postprocessing";
+import { ToneMappingMode } from "postprocessing";
 import {
   ACESFilmicToneMapping,
   CineonToneMapping,
@@ -63,10 +52,9 @@ import {
   createWebGLRendererBackend,
   type RendererBackend,
   type RendererBackendFactory,
-  type RendererComposerLike,
-  type RendererPassLike,
   type RendererSurfaceLike,
 } from "./renderer-backend";
+import type { RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
@@ -102,14 +90,8 @@ export default class GameRenderer {
   private raycaster!: Raycaster;
   private mouse!: Vector2;
   private controls!: MapControls;
-  private composer!: RendererComposerLike;
-  private renderPass!: RendererPassLike;
-  private effectPass?: EffectPass;
   private postProcessingConfig?: PostProcessingConfig;
-  private toneMappingEffect?: ToneMappingEffect;
-  private hueSaturationEffect?: HueSaturationEffect;
-  private brightnessContrastEffect?: BrightnessContrastEffect;
-  private vignetteEffect?: VignetteEffect;
+  private postProcessController?: RendererPostProcessController;
   private postProcessingGUIInitialized = false;
   private labelsDirty = true;
   private lastLabelRenderTime = 0;
@@ -345,7 +327,6 @@ export default class GameRenderer {
       pixelRatio: this.getTargetPixelRatio(),
     });
     this.renderer = this.backend.renderer;
-    this.composer = this.backend.composer;
   }
 
   initStats() {
@@ -854,10 +835,6 @@ export default class GameRenderer {
     } else {
       this.fastTravelScene = undefined;
     }
-
-    // Set up render pass
-    this.renderPass = this.backend.createRenderPass(this.hexceptionScene.getScene(), this.camera);
-    this.backend.addPass(this.renderPass);
   }
 
   private setupPostProcessingEffects() {
@@ -866,39 +843,26 @@ export default class GameRenderer {
       return; // Skip post-processing for low graphics settings
     }
     this.postProcessingConfig = effectsConfig;
-    this.toneMappingEffect = this.createToneMappingEffect(effectsConfig);
     this.rebuildPostProcessing(qualityController.getFeatures());
+    this.setupToneMappingGUI(effectsConfig);
     this.setupPostProcessingGUI(effectsConfig);
   }
 
-  private createToneMappingEffect(config: PostProcessingConfig) {
-    const effect = new ToneMappingEffect({
-      mode: config.toneMapping.mode,
-    });
-    const mutableToneMapping = effect as unknown as { exposure: number; whitePoint: number };
-    mutableToneMapping.exposure = config.toneMapping.exposure;
-    mutableToneMapping.whitePoint = config.toneMapping.whitePoint;
-
+  private setupToneMappingGUI(config: PostProcessingConfig): void {
     const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Tone Mapping"));
     folder
       .add(config.toneMapping, "mode", {
         ...ToneMappingMode,
       })
-      .onChange((value: ToneMappingMode) => {
-        effect.mode = value;
-      });
+      .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
-    folder.add(config.toneMapping, "exposure", 0.0, 2.0, 0.01).onChange((value: number) => {
-      mutableToneMapping.exposure = value;
-    });
+    folder.add(config.toneMapping, "exposure", 0.0, 2.0, 0.01).onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
-    folder.add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01).onChange((value: number) => {
-      mutableToneMapping.whitePoint = value;
-    });
+    folder
+      .add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01)
+      .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
     folder.close();
-
-    return effect;
   }
 
   private getPostProcessingConfig(): PostProcessingConfig | null {
@@ -929,9 +893,7 @@ export default class GameRenderer {
       .name("Saturation")
       .onChange((value: number) => {
         config.saturation = value;
-        if (this.hueSaturationEffect) {
-          (this.hueSaturationEffect as unknown as { saturation: number }).saturation = value;
-        }
+        this.postProcessController?.setColorGrade({ saturation: value });
       });
 
     folder
@@ -939,9 +901,7 @@ export default class GameRenderer {
       .name("Hue")
       .onChange((value: number) => {
         config.hue = value;
-        if (this.hueSaturationEffect) {
-          (this.hueSaturationEffect as unknown as { hue: number }).hue = value;
-        }
+        this.postProcessController?.setColorGrade({ hue: value });
       });
 
     folder
@@ -949,9 +909,7 @@ export default class GameRenderer {
       .name("Brightness")
       .onChange((value: number) => {
         config.brightness = value;
-        if (this.brightnessContrastEffect) {
-          (this.brightnessContrastEffect as unknown as { brightness: number }).brightness = value;
-        }
+        this.postProcessController?.setColorGrade({ brightness: value });
       });
 
     folder
@@ -959,40 +917,23 @@ export default class GameRenderer {
       .name("Contrast")
       .onChange((value: number) => {
         config.contrast = value;
-        if (this.brightnessContrastEffect) {
-          (this.brightnessContrastEffect as unknown as { contrast: number }).contrast = value;
-        }
+        this.postProcessController?.setColorGrade({ contrast: value });
       });
 
     folder.close();
-  }
 
-  private createVignetteEffect(config: PostProcessingConfig) {
-    this.vignetteEffect = new VignetteEffect({
-      darkness: config.vignette.darkness,
-      offset: config.vignette.offset,
+    const vignetteFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Vignette"));
+    vignetteFolder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
+      config.vignette.darkness = value;
+      this.postProcessController?.setVignette({ darkness: value });
     });
 
-    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Vignette"));
-    folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
-      this.vignetteEffect!.darkness = value;
+    vignetteFolder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
+      config.vignette.offset = value;
+      this.postProcessController?.setVignette({ offset: value });
     });
 
-    folder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
-      this.vignetteEffect!.offset = value;
-    });
-
-    folder.close();
-
-    return this.vignetteEffect;
-  }
-
-  private createBloomEffect(intensity: number) {
-    return new BloomEffect({
-      luminanceThreshold: 1.1,
-      mipmapBlur: true,
-      intensity,
-    });
+    vignetteFolder.close();
   }
 
   applyEnvironment() {
@@ -1055,7 +996,7 @@ export default class GameRenderer {
     }
   }
 
-  private resolvePixelRatio(pixelRatio: number): number {
+  public resolvePixelRatio(pixelRatio: number): number {
     const mobileCap = this.getMobilePixelRatioCap();
     return Math.min(pixelRatio, mobileCap);
   }
@@ -1141,19 +1082,14 @@ export default class GameRenderer {
     const vignetteIncrease = stormIntensity * 0.2; // Up to +0.2 during storms
     const targetVignette = this.basePostProcessingValues.vignetteDarkness + vignetteIncrease;
 
-    // Apply to effects (if they exist)
-    if (this.hueSaturationEffect) {
-      (this.hueSaturationEffect as unknown as { saturation: number }).saturation = targetSaturation;
-    }
-
-    if (this.brightnessContrastEffect) {
-      (this.brightnessContrastEffect as unknown as { contrast: number }).contrast = targetContrast;
-      (this.brightnessContrastEffect as unknown as { brightness: number }).brightness = targetBrightness;
-    }
-
-    if (this.vignetteEffect) {
-      (this.vignetteEffect as unknown as { darkness: number }).darkness = targetVignette;
-    }
+    this.postProcessController?.setColorGrade({
+      brightness: targetBrightness,
+      contrast: targetContrast,
+      saturation: targetSaturation,
+    });
+    this.postProcessController?.setVignette({
+      darkness: targetVignette,
+    });
   }
 
   private shouldRenderLabels(now: number): boolean {
@@ -1241,9 +1177,6 @@ export default class GameRenderer {
     if (this.controls) {
       this.controls.update();
     }
-    // Reset renderer stats at start of frame (since autoReset is disabled)
-    this.backend.clear();
-
     const cycleProgress = useUIStore.getState().cycleProgress || 0;
     this.hudScene.update(deltaTime, cycleProgress);
     const weatherState = this.hudScene.getWeatherState();
@@ -1266,23 +1199,24 @@ export default class GameRenderer {
       : isFastTravel
         ? (this.fastTravelScene?.getScene() ?? this.worldmapScene.getScene())
         : this.hexceptionScene.getScene();
-    this.backend.updateRenderPassScene(this.renderPass, activeScene);
 
     const shouldRenderLabels = this.shouldRenderLabels(currentTime);
     if (shouldRenderLabels) {
       this.labelRenderer.render(activeScene, this.camera);
     }
-    this.backend.renderComposer();
-
-    // Update post-processing based on weather state
-    this.updateWeatherPostProcessing();
-
-    // Render the HUD scene without clearing the buffer
-    this.backend.clearDepth();
-    this.backend.renderScene(this.hudScene.getScene(), this.hudScene.getCamera());
+    this.backend.renderFrame({
+      mainCamera: this.camera,
+      mainScene: activeScene,
+      overlayCamera: this.hudScene.getCamera(),
+      overlayScene: this.hudScene.getScene(),
+      sceneName: this.sceneManager?.getCurrentScene(),
+    });
     if (shouldRenderLabels) {
       this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     }
+
+    // Update post-processing based on weather state
+    this.updateWeatherPostProcessing();
 
     // Capture stats sample AFTER rendering (to get accurate draw call/triangle counts)
     this.captureStatsSample();
@@ -1416,7 +1350,7 @@ export default class GameRenderer {
       height: window.innerHeight,
     });
 
-    if (this.postProcessingConfig && this.toneMappingEffect) {
+    if (this.postProcessingConfig) {
       this.rebuildPostProcessing(features);
     }
 
@@ -1427,29 +1361,9 @@ export default class GameRenderer {
   }
 
   private rebuildPostProcessing(features: QualityFeatures): void {
-    if (!this.postProcessingConfig || !this.toneMappingEffect) {
+    if (!this.postProcessingConfig) {
       return;
     }
-
-    if (this.effectPass) {
-      this.backend.removePass(this.effectPass);
-      this.effectPass.dispose?.();
-      this.effectPass = undefined;
-    }
-
-    const effects: Effect[] = [this.toneMappingEffect];
-
-    this.hueSaturationEffect = new HueSaturationEffect({
-      hue: this.postProcessingConfig.hue,
-      saturation: this.postProcessingConfig.saturation,
-    });
-    effects.push(this.hueSaturationEffect);
-
-    this.brightnessContrastEffect = new BrightnessContrastEffect({
-      brightness: this.postProcessingConfig.brightness,
-      contrast: this.postProcessingConfig.contrast,
-    });
-    effects.push(this.brightnessContrastEffect);
 
     const effectPlan = resolvePostProcessingEffectPlan({
       fxaa: features.fxaa,
@@ -1457,32 +1371,52 @@ export default class GameRenderer {
       vignette: features.vignette,
     });
 
-    if (effectPlan.shouldEnableFXAA) {
-      effects.push(new FXAAEffect());
-    }
-    if (effectPlan.shouldEnableBloom) {
-      effects.push(this.createBloomEffect(features.bloomIntensity));
-    }
-    if (effectPlan.shouldEnableVignette) {
-      this.vignetteEffect = new VignetteEffect({
+    const rendererPlan: RendererPostProcessPlan = {
+      antiAlias: effectPlan.shouldEnableFXAA ? "fxaa" : "none",
+      bloom: {
+        enabled: effectPlan.shouldEnableBloom,
+        intensity: features.bloomIntensity,
+      },
+      chromaticAberration: {
+        enabled: effectPlan.shouldEnableChromaticAberration,
+      },
+      colorGrade: {
+        brightness: this.postProcessingConfig.brightness,
+        contrast: this.postProcessingConfig.contrast,
+        hue: this.postProcessingConfig.hue,
+        saturation: this.postProcessingConfig.saturation,
+      },
+      toneMapping: {
+        exposure: this.postProcessingConfig.toneMapping.exposure,
+        mode: this.resolveRendererToneMappingMode(this.postProcessingConfig.toneMapping.mode),
+        whitePoint: this.postProcessingConfig.toneMapping.whitePoint,
+      },
+      vignette: {
         darkness: this.postProcessingConfig.vignette.darkness,
+        enabled: effectPlan.shouldEnableVignette,
         offset: this.postProcessingConfig.vignette.offset,
-      });
-      effects.push(this.vignetteEffect);
-    }
+      },
+    };
 
-    // Subtle chromatic aberration for cinematic lens effect (HIGH quality only)
-    if (effectPlan.shouldEnableChromaticAberration) {
-      effects.push(
-        new ChromaticAberrationEffect({
-          offset: new Vector2(0.0008, 0.0008),
-          radialModulation: true,
-          modulationOffset: 0.3,
-        }),
-      );
-    }
+    this.postProcessController = this.backend.applyPostProcessPlan(rendererPlan);
+  }
 
-    this.effectPass = new EffectPass(this.camera, ...effects);
-    this.backend.addPass(this.effectPass);
+  private resolveRendererToneMappingMode(
+    mode: ToneMappingMode,
+  ): RendererPostProcessPlan["toneMapping"]["mode"] {
+    switch (mode) {
+      case ToneMappingMode.ACES_FILMIC:
+        return "aces-filmic";
+      case ToneMappingMode.LINEAR:
+        return "linear";
+      case ToneMappingMode.NEUTRAL:
+        return "neutral";
+      case ToneMappingMode.REINHARD:
+        return "reinhard";
+      case ToneMappingMode.CINEON:
+      case ToneMappingMode.OPTIMIZED_CINEON:
+      default:
+        return "cineon";
+    }
   }
 }

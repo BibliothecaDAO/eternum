@@ -1,4 +1,5 @@
 import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
+import type { Camera, Scene } from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
@@ -15,7 +16,52 @@ export interface RendererInitDiagnostics {
 
 export interface RendererBackendV2 {
   readonly renderer?: RendererSurfaceLike;
+  applyEnvironment?(targets: unknown): Promise<void>;
+  applyPostProcessPlan?(plan: RendererPostProcessPlan): RendererPostProcessController;
+  applyQuality?(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
   initialize(): Promise<RendererInitDiagnostics>;
+  renderFrame?(pipeline: RendererFramePipeline): void;
+  resize?(width: number, height: number): void;
+}
+
+export interface RendererFramePipeline {
+  mainCamera: Camera;
+  mainScene: Scene;
+  overlayCamera?: Camera;
+  overlayScene?: Scene;
+  sceneName?: string;
+}
+
+export interface RendererPostProcessPlan {
+  antiAlias: "fxaa" | "none";
+  bloom: {
+    enabled: boolean;
+    intensity: number;
+  };
+  chromaticAberration: {
+    enabled: boolean;
+  };
+  colorGrade: {
+    brightness: number;
+    contrast: number;
+    hue: number;
+    saturation: number;
+  };
+  toneMapping: {
+    exposure: number;
+    mode: "aces-filmic" | "cineon" | "linear" | "neutral" | "reinhard";
+    whitePoint: number;
+  };
+  vignette: {
+    darkness: number;
+    enabled: boolean;
+    offset: number;
+  };
+}
+
+export interface RendererPostProcessController {
+  setColorGrade(input: Partial<RendererPostProcessPlan["colorGrade"]>): void;
+  setVignette(input: Partial<Omit<RendererPostProcessPlan["vignette"], "enabled">>): void;
 }
 
 export type RendererBackendV2Factory = (options: {
