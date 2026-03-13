@@ -167,12 +167,26 @@ describe("resolveRendererEffectPlan", () => {
   it("maps quality toggles into a backend-neutral effect policy", () => {
     expect(
       resolveRendererEffectPlan({
-        bloom: true,
+        antiAlias: "fxaa",
+        bloomEnabled: true,
         bloomIntensity: 0.35,
-        chromaticAberration: false,
-        fxaa: true,
-        toneMapping: "aces-filmic",
-        vignette: false,
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0.92,
+          contrast: 1.08,
+          hue: 0.01,
+          saturation: 0.88,
+        },
+        toneMapping: {
+          exposure: 1.15,
+          mode: "aces-filmic",
+          whitePoint: 4.5,
+        },
+        vignette: {
+          darkness: 0.4,
+          enabled: false,
+          offset: 0.2,
+        },
       }),
     ).toEqual({
       antiAlias: "fxaa",
@@ -183,10 +197,21 @@ describe("resolveRendererEffectPlan", () => {
       chromaticAberration: {
         enabled: false,
       },
-      outputTransform: "tone-mapped",
-      toneMapping: "aces-filmic",
+      colorGrade: {
+        brightness: 0.92,
+        contrast: 1.08,
+        hue: 0.01,
+        saturation: 0.88,
+      },
+      toneMapping: {
+        exposure: 1.15,
+        mode: "aces-filmic",
+        whitePoint: 4.5,
+      },
       vignette: {
+        darkness: 0.4,
         enabled: false,
+        offset: 0.2,
       },
     });
   });
@@ -194,12 +219,26 @@ describe("resolveRendererEffectPlan", () => {
   it("disables optional effects cleanly", () => {
     expect(
       resolveRendererEffectPlan({
-        bloom: false,
+        antiAlias: "none",
+        bloomEnabled: false,
         bloomIntensity: 0.7,
-        chromaticAberration: true,
-        fxaa: false,
-        toneMapping: "reinhard",
-        vignette: true,
+        chromaticAberrationEnabled: true,
+        colorGrade: {
+          brightness: 1,
+          contrast: 1,
+          hue: 0,
+          saturation: 1,
+        },
+        toneMapping: {
+          exposure: 0.95,
+          mode: "reinhard",
+          whitePoint: 3,
+        },
+        vignette: {
+          darkness: 0.65,
+          enabled: true,
+          offset: 0.35,
+        },
       }),
     ).toEqual({
       antiAlias: "none",
@@ -210,10 +249,21 @@ describe("resolveRendererEffectPlan", () => {
       chromaticAberration: {
         enabled: true,
       },
-      outputTransform: "tone-mapped",
-      toneMapping: "reinhard",
+      colorGrade: {
+        brightness: 1,
+        contrast: 1,
+        hue: 0,
+        saturation: 1,
+      },
+      toneMapping: {
+        exposure: 0.95,
+        mode: "reinhard",
+        whitePoint: 3,
+      },
       vignette: {
+        darkness: 0.65,
         enabled: true,
+        offset: 0.35,
       },
     });
   });

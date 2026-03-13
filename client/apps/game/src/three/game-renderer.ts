@@ -38,6 +38,7 @@ import { SceneName } from "./types";
 import {
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
+  resolveRendererEffectPlan,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
@@ -1380,15 +1381,11 @@ export default class GameRenderer {
       vignette: features.vignette,
     });
 
-    const rendererPlan: RendererPostProcessPlan = {
+    const rendererPlan: RendererPostProcessPlan = resolveRendererEffectPlan({
       antiAlias: effectPlan.shouldEnableFXAA ? "fxaa" : "none",
-      bloom: {
-        enabled: effectPlan.shouldEnableBloom,
-        intensity: features.bloomIntensity,
-      },
-      chromaticAberration: {
-        enabled: effectPlan.shouldEnableChromaticAberration,
-      },
+      bloomEnabled: effectPlan.shouldEnableBloom,
+      bloomIntensity: features.bloomIntensity,
+      chromaticAberrationEnabled: effectPlan.shouldEnableChromaticAberration,
       colorGrade: {
         brightness: this.postProcessingConfig.brightness,
         contrast: this.postProcessingConfig.contrast,
@@ -1405,7 +1402,7 @@ export default class GameRenderer {
         enabled: effectPlan.shouldEnableVignette,
         offset: this.postProcessingConfig.vignette.offset,
       },
-    };
+    });
 
     this.postProcessController = this.backend.applyPostProcessPlan(rendererPlan);
     setRendererDiagnosticEffectPlan(rendererPlan);

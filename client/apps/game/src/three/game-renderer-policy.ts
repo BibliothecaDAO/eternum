@@ -1,3 +1,5 @@
+import type { RendererPostProcessPlan } from "./renderer-backend-v2";
+
 type LabelRenderView = "close" | "medium" | "far" | undefined;
 
 interface LabelRenderDecisionInput {
@@ -35,30 +37,42 @@ interface PostProcessingEffectPlan {
   shouldEnableChromaticAberration: boolean;
 }
 
-type RendererToneMappingMode = "aces-filmic" | "reinhard";
-
 interface RendererEffectPlanInput {
-  bloom: boolean;
+  antiAlias: RendererPostProcessPlan["antiAlias"];
+  bloomEnabled: boolean;
   bloomIntensity: number;
-  chromaticAberration: boolean;
-  fxaa: boolean;
-  toneMapping: RendererToneMappingMode;
-  vignette: boolean;
+  chromaticAberrationEnabled: boolean;
+  colorGrade: RendererPostProcessPlan["colorGrade"];
+  toneMapping: RendererPostProcessPlan["toneMapping"];
+  vignette: RendererPostProcessPlan["vignette"];
 }
 
-interface RendererEffectPlan {
-  antiAlias: "fxaa" | "none";
-  bloom: {
-    enabled: boolean;
-    intensity: number;
-  };
-  chromaticAberration: {
-    enabled: boolean;
-  };
-  outputTransform: "tone-mapped";
-  toneMapping: RendererToneMappingMode;
-  vignette: {
-    enabled: boolean;
+export function resolveRendererEffectPlan(input: RendererEffectPlanInput): RendererPostProcessPlan {
+  return {
+    antiAlias: input.antiAlias,
+    bloom: {
+      enabled: input.bloomEnabled,
+      intensity: input.bloomIntensity,
+    },
+    chromaticAberration: {
+      enabled: input.chromaticAberrationEnabled,
+    },
+    colorGrade: {
+      brightness: input.colorGrade.brightness,
+      contrast: input.colorGrade.contrast,
+      hue: input.colorGrade.hue,
+      saturation: input.colorGrade.saturation,
+    },
+    toneMapping: {
+      exposure: input.toneMapping.exposure,
+      mode: input.toneMapping.mode,
+      whitePoint: input.toneMapping.whitePoint,
+    },
+    vignette: {
+      darkness: input.vignette.darkness,
+      enabled: input.vignette.enabled,
+      offset: input.vignette.offset,
+    },
   };
 }
 
@@ -127,23 +141,5 @@ export function resolvePostProcessingEffectPlan(input: PostProcessingEffectPlanI
     shouldEnableBloom: input.bloom,
     shouldEnableVignette: input.vignette,
     shouldEnableChromaticAberration: input.vignette,
-  };
-}
-
-export function resolveRendererEffectPlan(input: RendererEffectPlanInput): RendererEffectPlan {
-  return {
-    antiAlias: input.fxaa ? "fxaa" : "none",
-    bloom: {
-      enabled: input.bloom,
-      intensity: input.bloomIntensity,
-    },
-    chromaticAberration: {
-      enabled: input.chromaticAberration,
-    },
-    outputTransform: "tone-mapped",
-    toneMapping: input.toneMapping,
-    vignette: {
-      enabled: input.vignette,
-    },
   };
 }
