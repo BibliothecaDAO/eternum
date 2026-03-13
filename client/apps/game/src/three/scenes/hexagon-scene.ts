@@ -116,6 +116,7 @@ export abstract class HexagonScene {
   private readonly animationVisibilityDistance = 140;
   protected shadowsEnabledByQuality = true;
   protected shadowMapSizeByQuality = 2048;
+  private sceneOwnershipBootstrapped = false;
   private lastClipNear = 0;
   private lastClipFar = 0;
   private fogEnabledByQuality = false;
@@ -137,8 +138,14 @@ export abstract class HexagonScene {
     protected sceneManager: SceneManager,
   ) {
     this.initializeScene();
+  }
+
+  protected bootstrapSceneOwnership(): void {
+    if (this.sceneOwnershipBootstrapped) {
+      return;
+    }
+
     this.frustumManager = new FrustumManager(this.camera, this.controls);
-    // Initialize centralized visibility manager (singleton)
     this.visibilityManager = getVisibilityManager({
       debug: false,
       animationMaxDistance: this.animationVisibilityDistance,
@@ -150,6 +157,8 @@ export abstract class HexagonScene {
     if (this.shouldCreateGroundMesh()) {
       this.createGroundMesh();
     }
+
+    this.sceneOwnershipBootstrapped = true;
   }
 
   private notifyControlsChanged(): void {
@@ -277,6 +286,18 @@ export abstract class HexagonScene {
     this.inputManager.addListener("dblclick", this.handleDoubleClick.bind(this));
     this.inputManager.addListener("click", this.handleClick.bind(this));
     this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
+  }
+
+  public setInputSurface(surface: HTMLElement): void {
+    this.inputManager.setSurface(surface);
+  }
+
+  public activateInputSurface(): void {
+    this.inputManager.activate();
+  }
+
+  public deactivateInputSurface(): void {
+    this.inputManager.deactivate();
   }
 
   private handleMouseMove(_event: MouseEvent, raycaster: Raycaster): void {

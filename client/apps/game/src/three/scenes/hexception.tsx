@@ -187,8 +187,6 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
-    this.setup();
-
     this.inputManager.addListener("contextmenu", (raycaster) => {
       this.clearBuildingMode();
     });
@@ -402,6 +400,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    this.bootstrapSceneOwnership();
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
     const contractPosition = new Position({ x: col, y: row }).getContract();

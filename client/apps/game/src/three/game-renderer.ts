@@ -832,10 +832,12 @@ export default class GameRenderer {
   private initializeScenes() {
     // Initialize Hexception scene
     this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
+    this.hexceptionScene.setInputSurface(this.renderer.domElement);
     this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
 
     // Initialize WorldMap scene
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
+    this.worldmapScene.setInputSurface(this.renderer.domElement);
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
 
     if (this.isFastTravelEnabled()) {
@@ -847,6 +849,7 @@ export default class GameRenderer {
         this.mouse,
         this.sceneManager,
       );
+      this.fastTravelScene.setInputSurface(this.renderer.domElement);
       this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
     } else {
       this.fastTravelScene = undefined;

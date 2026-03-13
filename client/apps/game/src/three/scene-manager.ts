@@ -66,6 +66,7 @@ export class SceneManager {
     }
 
     const previousScene = this.currentScene ? this.scenes.get(this.currentScene) : undefined;
+    previousScene?.deactivateInputSurface?.();
     previousScene?.onSwitchOff(sceneNameToTransition);
 
     this.transitionInProgress = true;
@@ -93,6 +94,7 @@ export class SceneManager {
       if (resolveFinalizePlan().isSuperseded) return;
 
       this._updateCurrentScene(sceneName);
+      scene.activateInputSurface?.();
       setupSucceeded = true;
     } catch (error) {
       console.error(`[SceneManager] Failed to set up scene ${sceneName}`, error);

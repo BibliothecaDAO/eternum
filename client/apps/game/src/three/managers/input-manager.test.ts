@@ -24,12 +24,21 @@ function createSubject(currentScene: SceneName = SceneName.WorldMap) {
   const camera = new THREE.PerspectiveCamera();
 
   const manager = new InputManager(SceneName.WorldMap, sceneManager as any, raycaster, mouse, camera);
+  const surface = document.createElement("div");
+  surface.getBoundingClientRect = () =>
+    ({
+      left: 100,
+      top: 200,
+      width: 400,
+      height: 300,
+    }) as DOMRect;
 
   return {
     manager,
     sceneManager,
     raycaster,
     mouse,
+    surface,
   };
 }
 
@@ -41,36 +50,57 @@ describe("InputManager lifecycle", () => {
   it("registers, pauses, restarts, and destroys listeners", () => {
     const addSpy = vi.spyOn(window, "addEventListener");
     const removeSpy = vi.spyOn(window, "removeEventListener");
+    const surfaceAddSpy = vi.spyOn(HTMLElement.prototype, "addEventListener");
+    const surfaceRemoveSpy = vi.spyOn(HTMLElement.prototype, "removeEventListener");
     const callback = vi.fn();
     const fixture = createSubject();
 
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
     fixture.manager.addListener("click", callback);
-    const clickEvent = new MouseEvent("click", { clientX: 10, clientY: 20 });
-    window.dispatchEvent(clickEvent);
+    const clickEvent = new MouseEvent("click", { clientX: 150, clientY: 260 });
+    fixture.surface.dispatchEvent(clickEvent);
     expect(callback).toHaveBeenCalledTimes(1);
     expect(fixture.raycaster.setFromCamera).toHaveBeenCalledTimes(1);
+    expect(fixture.mouse.x).toBeCloseTo(-0.75);
+    expect(fixture.mouse.y).toBeCloseTo(0.6);
 
     fixture.manager.pauseListeners();
-    window.dispatchEvent(new MouseEvent("click", { clientX: 10, clientY: 20 }));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
     expect(callback).toHaveBeenCalledTimes(1);
 
     fixture.manager.restartListeners();
-    window.dispatchEvent(new MouseEvent("click", { clientX: 15, clientY: 25 }));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 200, clientY: 300 }));
     expect(callback).toHaveBeenCalledTimes(2);
 
     fixture.manager.destroy();
-    window.dispatchEvent(new MouseEvent("click", { clientX: 20, clientY: 30 }));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 200, clientY: 300 }));
     expect(callback).toHaveBeenCalledTimes(2);
-    expect(addSpy).toHaveBeenCalledWith("mousedown", expect.any(Function));
-    expect(removeSpy).toHaveBeenCalledWith("mousedown", expect.any(Function));
+    expect(surfaceAddSpy).toHaveBeenCalledWith("mousedown", expect.any(Function));
+    expect(surfaceAddSpy).toHaveBeenCalledWith("click", expect.any(Function));
+    expect(surfaceRemoveSpy).toHaveBeenCalledWith("mousedown", expect.any(Function));
+    expect(surfaceRemoveSpy).toHaveBeenCalledWith("click", expect.any(Function));
+    expect(addSpy).not.toHaveBeenCalledWith("mousedown", expect.any(Function));
+    expect(removeSpy).not.toHaveBeenCalledWith("mousedown", expect.any(Function));
+  });
+
+  it("does not bind listeners before the input surface is activated", () => {
+    const addSpy = vi.spyOn(HTMLElement.prototype, "addEventListener");
+    const fixture = createSubject();
+
+    fixture.manager.addListener("click", vi.fn());
+
+    expect(addSpy).not.toHaveBeenCalledWith("click", expect.any(Function));
   });
 
   it("ignores callbacks when current scene does not match", () => {
     const callback = vi.fn();
     const fixture = createSubject(SceneName.Hexception);
 
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
     fixture.manager.addListener("click", callback);
-    window.dispatchEvent(new MouseEvent("click", { clientX: 5, clientY: 6 }));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
 
     expect(callback).not.toHaveBeenCalled();
     expect(fixture.raycaster.setFromCamera).not.toHaveBeenCalled();
@@ -80,11 +110,13 @@ describe("InputManager lifecycle", () => {
     const callback = vi.fn();
     const fixture = createSubject();
 
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
     fixture.manager.addListener("click", callback);
 
-    window.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
+    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
     window.dispatchEvent(new MouseEvent("mousemove", { clientX: 40, clientY: 40 }));
-    window.dispatchEvent(new MouseEvent("click", { clientX: 40, clientY: 40 }));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 40, clientY: 40 }));
 
     expect(callback).not.toHaveBeenCalled();
   });
@@ -94,13 +126,15 @@ describe("InputManager lifecycle", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fixture = createSubject();
 
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
     fixture.manager.addListener("mousemove", vi.fn());
 
     fixture.manager.destroy();
     fixture.manager.destroy();
 
     const mousedownRemovals = removeSpy.mock.calls.filter((call) => String(call[0]) === "mousedown");
-    expect(mousedownRemovals).toHaveLength(1);
+    expect(mousedownRemovals).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalledWith("InputManager already destroyed, skipping cleanup");
   });
 });

@@ -33,7 +33,7 @@ If you want worker/offscreen rendering, the CSS2D/DOM label stack becomes a sepa
 
 - [x] 1. Lifecycle Hardening
 - [x] 2. Renderer Backend Extraction
-- [ ] 3. Scene Ownership Cleanup
+- [x] 3. Scene Ownership Cleanup
 - [ ] 4. Worldmap Decomposition
 - [ ] 5. Shader and Material Portability
 - [ ] 6. Asset and Material Correctness
