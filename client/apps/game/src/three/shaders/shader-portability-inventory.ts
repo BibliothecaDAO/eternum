@@ -6,7 +6,7 @@ export const SHADER_PORTABILITY_INVENTORY = {
     strategy: "rewrite",
   },
   "hover-hex-material.ts": {
-    strategy: "rewrite",
+    strategy: "replace",
   },
   "label-stack.ts": {
     strategy: "keep",

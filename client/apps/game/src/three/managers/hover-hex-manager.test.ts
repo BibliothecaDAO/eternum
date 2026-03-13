@@ -23,14 +23,13 @@ describe("HoverHexManager material ownership", () => {
     first.setHoverIntensity(0.2);
     second.setHoverIntensity(0.8);
 
-    const firstMaterial = (first as any).hoverHex.material as THREE.ShaderMaterial;
-    const secondMaterial = (second as any).hoverHex.material as THREE.ShaderMaterial;
+    const firstMaterial = (first as any).hoverHex.material as THREE.MeshBasicMaterial;
+    const secondMaterial = (second as any).hoverHex.material as THREE.MeshBasicMaterial;
 
-    expect(firstMaterial.uniforms.color.value.getHex()).toBe(0xff0000);
-    expect(secondMaterial.uniforms.color.value.getHex()).toBe(0x00ff00);
-    expect(firstMaterial.uniforms.rimColor.value.getHex()).toBe(0xffffff);
-    expect(secondMaterial.uniforms.rimColor.value.getHex()).toBe(0x0000ff);
-    expect(firstMaterial.uniforms.opacity.value).toBe(0.2);
-    expect(secondMaterial.uniforms.opacity.value).toBe(0.8);
+    expect(firstMaterial).not.toBe(secondMaterial);
+    expect(firstMaterial.color.getHex()).toBe(0xff0000);
+    expect(secondMaterial.color.getHex()).toBe(0x00ff00);
+    expect(firstMaterial.opacity).toBeCloseTo(0.2);
+    expect(secondMaterial.opacity).toBeCloseTo(0.8);
   });
 });

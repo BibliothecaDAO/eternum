@@ -11,7 +11,7 @@ describe("shader portability inventory", () => {
         strategy: "rewrite",
       },
       "hover-hex-material.ts": {
-        strategy: "rewrite",
+        strategy: "replace",
       },
       "label-stack.ts": {
         strategy: "keep",
