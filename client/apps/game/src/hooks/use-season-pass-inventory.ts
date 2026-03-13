@@ -71,7 +71,9 @@ const decodeEncodedMetadata = (
   // Layout is [region, cities, harbors, rivers, ...resources, wonder, order]
   const resourceStartIndex = 4;
   const resourceEndIndex = Math.max(resourceStartIndex, attrs.length - 2);
-  const resourceIds = attrs.slice(resourceStartIndex, resourceEndIndex).filter((resourceId) => resourceId >= 1 && resourceId <= 22);
+  const resourceIds = attrs
+    .slice(resourceStartIndex, resourceEndIndex)
+    .filter((resourceId) => resourceId >= 1 && resourceId <= 22);
   const nameFelt = attrsLength > 0 ? realmNameAndAttrs >> (8n * BigInt(attrsLength)) : realmNameAndAttrs;
   const decodedName = decodeName(nameFelt, nameLength);
 

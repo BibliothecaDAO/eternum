@@ -806,7 +806,9 @@ const SeasonMockupLane = () => {
   const [seasonTimingValid, setSeasonTimingValid] = useState(true);
   const [spiresSettled, setSpiresSettled] = useState(true);
   const [seasonPassPresent, setSeasonPassPresent] = useState(true);
-  const [selectedPassId, setSelectedPassId] = useState<(typeof MOCK_SEASON_PASSES)[number]["id"]>(MOCK_SEASON_PASSES[0].id);
+  const [selectedPassId, setSelectedPassId] = useState<(typeof MOCK_SEASON_PASSES)[number]["id"]>(
+    MOCK_SEASON_PASSES[0].id,
+  );
   const [placement, setPlacement] = useState<SeasonMockPlacement>(DEFAULT_SEASON_MOCK_PLACEMENT);
   const [mockSettleOutcome, setMockSettleOutcome] = useState<SeasonMockSettleOutcome>("success");
   const [mockSettleError, setMockSettleError] = useState<string | null>(null);
@@ -815,10 +817,7 @@ const SeasonMockupLane = () => {
   const [targetRevealResource, setTargetRevealResource] = useState<string | null>(null);
   const [revealedVillageResource, setRevealedVillageResource] = useState<string | null>(null);
 
-  const activeCard = useMemo(
-    () => SEASON_MOCK_CARDS.find((card) => card.id === activeCardId) ?? null,
-    [activeCardId],
-  );
+  const activeCard = useMemo(() => SEASON_MOCK_CARDS.find((card) => card.id === activeCardId) ?? null, [activeCardId]);
 
   const selectedPass = useMemo(
     () => MOCK_SEASON_PASSES.find((pass) => pass.id === selectedPassId) ?? MOCK_SEASON_PASSES[0],
@@ -893,11 +892,7 @@ const SeasonMockupLane = () => {
     (event: React.WheelEvent<SVGSVGElement>) => {
       if (!mapCamera) return;
       event.preventDefault();
-      const worldPoint = getSeasonMockWorldPointFromClient(
-        event.currentTarget,
-        event.clientX,
-        event.clientY,
-      );
+      const worldPoint = getSeasonMockWorldPointFromClient(event.currentTarget, event.clientX, event.clientY);
       if (!worldPoint) return;
       const cursorRatioX = (worldPoint.x - mapCamera.x) / mapCamera.width;
       const cursorRatioY = (worldPoint.y - mapCamera.y) / mapCamera.height;
@@ -970,11 +965,7 @@ const SeasonMockupLane = () => {
       if (!drag || drag.pointerId !== event.pointerId) return;
 
       if (!drag.hasMoved) {
-        const worldPoint = getSeasonMockWorldPointFromClient(
-          event.currentTarget,
-          event.clientX,
-          event.clientY,
-        );
+        const worldPoint = getSeasonMockWorldPointFromClient(event.currentTarget, event.clientX, event.clientY);
         if (worldPoint) {
           const nearestSlot = findClosestSeasonMockSlot(placementSlots, worldPoint.x, worldPoint.y, true);
           if (nearestSlot) {
@@ -1025,13 +1016,7 @@ const SeasonMockupLane = () => {
 
     setMockSettleError(null);
     setFlowStep("settled");
-  }, [
-    mockSettleOutcome,
-    placementErrors,
-    seasonPassPresent,
-    seasonTimingValid,
-    spiresSettled,
-  ]);
+  }, [mockSettleOutcome, placementErrors, seasonPassPresent, seasonTimingValid, spiresSettled]);
 
   useEffect(() => {
     if (!isRevealRolling || !targetRevealResource) return;
@@ -1110,7 +1095,9 @@ const SeasonMockupLane = () => {
             <article key={card.id} className="rounded-xl border border-emerald-200/20 bg-black/55 p-4">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-cinzel text-base text-gold">{card.title}</h3>
-                <span className={cn("rounded-full border px-2 py-0.5 text-[10px]", card.statusClass)}>{card.status}</span>
+                <span className={cn("rounded-full border px-2 py-0.5 text-[10px]", card.statusClass)}>
+                  {card.status}
+                </span>
               </div>
 
               <p className="text-sm text-gold/80 mt-1">{card.weekLabel}</p>
@@ -1299,11 +1286,21 @@ const SeasonMockupLane = () => {
                 </p>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-emerald-100/85">Map slot picker (click a hex to populate side/layer/point)</p>
-                  <p className="text-[11px] text-emerald-100/65">Scroll to zoom. Drag to pan. Click reset to reframe.</p>
+                  <p className="text-xs text-emerald-100/85">
+                    Map slot picker (click a hex to populate side/layer/point)
+                  </p>
+                  <p className="text-[11px] text-emerald-100/65">
+                    Scroll to zoom. Drag to pan. Click reset to reframe.
+                  </p>
                   <div className="relative h-60 overflow-hidden rounded-lg border border-emerald-300/25 bg-black/40">
-                    <div className="absolute inset-0 bg-[url('/images/covers/blitz/07.png')] bg-cover bg-center opacity-20" aria-hidden />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-black/70" aria-hidden />
+                    <div
+                      className="absolute inset-0 bg-[url('/images/covers/blitz/07.png')] bg-cover bg-center opacity-20"
+                      aria-hidden
+                    />
+                    <div
+                      className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-black/70"
+                      aria-hidden
+                    />
                     <svg
                       viewBox={mapViewBox}
                       className="relative z-10 h-full w-full touch-none"
@@ -1416,7 +1413,9 @@ const SeasonMockupLane = () => {
                       max={5}
                       step={1}
                       value={placement.side}
-                      onChange={(event) => updatePlacement({ side: Number.parseInt(event.target.value || "0", 10) || 0 })}
+                      onChange={(event) =>
+                        updatePlacement({ side: Number.parseInt(event.target.value || "0", 10) || 0 })
+                      }
                       className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     />
                   </label>
@@ -1428,7 +1427,9 @@ const SeasonMockupLane = () => {
                       max={SEASON_MOCK_LAYER_MAX}
                       step={1}
                       value={placement.layer}
-                      onChange={(event) => updatePlacement({ layer: Number.parseInt(event.target.value || "0", 10) || 0 })}
+                      onChange={(event) =>
+                        updatePlacement({ layer: Number.parseInt(event.target.value || "0", 10) || 0 })
+                      }
                       className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     />
                   </label>
@@ -1440,7 +1441,9 @@ const SeasonMockupLane = () => {
                       max={Math.max(0, placement.layer - 1)}
                       step={1}
                       value={placement.point}
-                      onChange={(event) => updatePlacement({ point: Number.parseInt(event.target.value || "0", 10) || 0 })}
+                      onChange={(event) =>
+                        updatePlacement({ point: Number.parseInt(event.target.value || "0", 10) || 0 })
+                      }
                       className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     />
                   </label>
