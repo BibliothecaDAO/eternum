@@ -25,13 +25,14 @@ import {
   Trophy,
   RefreshCw,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
+import { Coord, Direction } from "@bibliothecadao/types";
 
 interface PlayViewProps {
   className?: string;
@@ -376,6 +377,7 @@ const MOCK_VILLAGE_REVEAL_RESOURCES = [
 ] as const;
 
 type SeasonMockFlowStep = "preflight" | "pass" | "placement" | "settled" | "village" | "reveal";
+type SeasonMockSettleOutcome = "success" | "occupied" | "timing" | "pass-used";
 
 interface SeasonMockPlacement {
   side: number;
@@ -383,10 +385,310 @@ interface SeasonMockPlacement {
   point: number;
 }
 
+interface SeasonMockMapSlot {
+  id: string;
+  side: number;
+  layer: number;
+  point: number;
+  x: number;
+  y: number;
+  pixelX: number;
+  pixelY: number;
+  occupied: boolean;
+}
+
 const DEFAULT_SEASON_MOCK_PLACEMENT: SeasonMockPlacement = {
   side: 0,
   layer: 1,
   point: 0,
+};
+
+const SEASON_MOCK_LAYER_MAX = 12;
+const SEASON_MOCK_LAYERS_SKIPPED = 0;
+const SEASON_MOCK_BASE_DISTANCE = 8;
+const SEASON_MOCK_MAP_CENTER = 2147483646;
+const SEASON_MOCK_MAP_CENTER_OFFSET = 0;
+const SEASON_MOCK_HEX_RADIUS = 8;
+const SEASON_MOCK_HEX_SQRT3 = Math.sqrt(3);
+const SEASON_MOCK_OCCUPIED_SLOT_IDS = new Set(["1:2:0", "2:3:1", "4:4:1", "5:6:2"]);
+
+const SEASON_MOCK_START_DIRECTIONS: ReadonlyArray<readonly [Direction, Direction]> = [
+  [Direction.EAST, Direction.SOUTH_WEST],
+  [Direction.SOUTH_EAST, Direction.WEST],
+  [Direction.SOUTH_WEST, Direction.NORTH_WEST],
+  [Direction.WEST, Direction.NORTH_EAST],
+  [Direction.NORTH_WEST, Direction.EAST],
+  [Direction.NORTH_EAST, Direction.SOUTH_EAST],
+];
+
+const validateSeasonMockPlacement = ({ side, layer, point }: SeasonMockPlacement): string[] => {
+  const errors: string[] = [];
+
+  if (!Number.isInteger(side) || side < 0 || side > 5) {
+    errors.push("Side must be an integer between 0 and 5.");
+  }
+
+  if (!Number.isInteger(layer) || layer <= 0) {
+    errors.push("Layer must be an integer greater than 0.");
+  }
+
+  if (layer > SEASON_MOCK_LAYER_MAX) {
+    errors.push(`Layer must be less than or equal to ${SEASON_MOCK_LAYER_MAX}.`);
+  }
+
+  if (layer <= SEASON_MOCK_LAYERS_SKIPPED) {
+    errors.push(`Layer must be greater than ${SEASON_MOCK_LAYERS_SKIPPED}.`);
+  }
+
+  if (!Number.isInteger(point) || point < 0) {
+    errors.push("Point must be an integer greater than or equal to 0.");
+  }
+
+  if (Number.isInteger(layer) && Number.isInteger(point) && layer > 0 && point > layer - 1) {
+    errors.push(`Point must be less than or equal to ${layer - 1} for layer ${layer}.`);
+  }
+
+  return errors;
+};
+
+const getSeasonMockPlacementPreview = ({ side, layer, point }: SeasonMockPlacement): { x: number; y: number } => {
+  const [startDirection, triangleDirection] = SEASON_MOCK_START_DIRECTIONS[side] ?? SEASON_MOCK_START_DIRECTIONS[0];
+  const center = SEASON_MOCK_MAP_CENTER - SEASON_MOCK_MAP_CENTER_OFFSET;
+  const mapCenter = new Coord(center, center);
+
+  const sideFirstLayerOne = mapCenter.travel(startDirection, SEASON_MOCK_BASE_DISTANCE);
+  const sideFirstLayerTarget = sideFirstLayerOne.travel(startDirection, SEASON_MOCK_BASE_DISTANCE * (layer - 1));
+  const destination = sideFirstLayerTarget.travel(triangleDirection, SEASON_MOCK_BASE_DISTANCE * point);
+
+  return { x: destination.x, y: destination.y };
+};
+
+const mapSeasonMockSettleError = (outcome: SeasonMockSettleOutcome): string | null => {
+  if (outcome === "occupied") {
+    return "Destination occupied. Choose another side/layer/point.";
+  }
+
+  if (outcome === "timing") {
+    return "Season timing invalid. Settlement is currently unavailable.";
+  }
+
+  if (outcome === "pass-used") {
+    return "Season Pass already used or unavailable in this wallet.";
+  }
+
+  return null;
+};
+
+const toSeasonMockSlotId = (side: number, layer: number, point: number): string => `${side}:${layer}:${point}`;
+
+const seasonMockOffsetToPixel = (col: number, row: number): { x: number; y: number } => {
+  const hexHeight = SEASON_MOCK_HEX_RADIUS * 2;
+  const hexWidth = SEASON_MOCK_HEX_SQRT3 * SEASON_MOCK_HEX_RADIUS;
+  const verticalDistance = hexHeight * 0.75;
+  const horizontalDistance = hexWidth;
+  const rowOffset = ((row % 2) * Math.sign(row) * horizontalDistance) / 2;
+
+  return {
+    x: col * horizontalDistance - rowOffset,
+    y: row * verticalDistance,
+  };
+};
+
+const buildSeasonMockHexPoints = (centerX: number, centerY: number): string => {
+  const points: string[] = [];
+  for (let index = 0; index < 6; index += 1) {
+    const angle = ((60 * index - 30) * Math.PI) / 180;
+    const x = centerX + SEASON_MOCK_HEX_RADIUS * Math.cos(angle);
+    const y = centerY + SEASON_MOCK_HEX_RADIUS * Math.sin(angle);
+    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  return points.join(" ");
+};
+
+const buildSeasonMockSlots = (): SeasonMockMapSlot[] => {
+  const center = SEASON_MOCK_MAP_CENTER - SEASON_MOCK_MAP_CENTER_OFFSET;
+  const minLayer = Math.max(1, SEASON_MOCK_LAYERS_SKIPPED + 1);
+  const slots: SeasonMockMapSlot[] = [];
+
+  for (let layer = minLayer; layer <= SEASON_MOCK_LAYER_MAX; layer += 1) {
+    for (let side = 0; side < 6; side += 1) {
+      for (let point = 0; point <= layer - 1; point += 1) {
+        const preview = getSeasonMockPlacementPreview({ side, layer, point });
+        const col = preview.x - center;
+        const row = preview.y - center;
+        const pixel = seasonMockOffsetToPixel(col, row);
+        const id = toSeasonMockSlotId(side, layer, point);
+
+        slots.push({
+          id,
+          side,
+          layer,
+          point,
+          x: preview.x,
+          y: preview.y,
+          pixelX: pixel.x,
+          pixelY: pixel.y,
+          occupied: SEASON_MOCK_OCCUPIED_SLOT_IDS.has(id),
+        });
+      }
+    }
+  }
+
+  return slots;
+};
+
+interface SeasonMockMapBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  width: number;
+  height: number;
+}
+
+interface SeasonMockMapCamera {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const SEASON_MOCK_SETTLED_REALM_SLOT_IDS = new Set(["0:2:1", "3:4:2", "5:5:3"]);
+const SEASON_MOCK_SPIRE_SLOT_IDS = new Set(["1:5:2", "4:7:3"]);
+const SEASON_MOCK_HYPERSTRUCTURE_SLOT_IDS = new Set(["2:6:2", "5:8:4"]);
+
+const getSeasonMockBounds = (slots: SeasonMockMapSlot[]): SeasonMockMapBounds => {
+  if (slots.length === 0) {
+    return {
+      minX: -120,
+      maxX: 120,
+      minY: -120,
+      maxY: 120,
+      width: 240,
+      height: 240,
+    };
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const slot of slots) {
+    minX = Math.min(minX, slot.pixelX - SEASON_MOCK_HEX_RADIUS);
+    maxX = Math.max(maxX, slot.pixelX + SEASON_MOCK_HEX_RADIUS);
+    minY = Math.min(minY, slot.pixelY - SEASON_MOCK_HEX_RADIUS);
+    maxY = Math.max(maxY, slot.pixelY + SEASON_MOCK_HEX_RADIUS);
+  }
+
+  const padding = 20;
+  const boundedMinX = minX - padding;
+  const boundedMaxX = maxX + padding;
+  const boundedMinY = minY - padding;
+  const boundedMaxY = maxY + padding;
+  return {
+    minX: boundedMinX,
+    maxX: boundedMaxX,
+    minY: boundedMinY,
+    maxY: boundedMaxY,
+    width: Math.max(1, boundedMaxX - boundedMinX),
+    height: Math.max(1, boundedMaxY - boundedMinY),
+  };
+};
+
+const getSeasonMockPanOverscan = (bounds: SeasonMockMapBounds): { x: number; y: number } => ({
+  x: Math.max(70, bounds.width * 0.2),
+  y: Math.max(70, bounds.height * 0.2),
+});
+
+const clampSeasonMockCamera = (camera: SeasonMockMapCamera, bounds: SeasonMockMapBounds): SeasonMockMapCamera => {
+  const maxWidth = bounds.width;
+  const maxHeight = bounds.height;
+  const overscan = getSeasonMockPanOverscan(bounds);
+  const minPanX = bounds.minX - overscan.x;
+  const maxPanX = bounds.maxX + overscan.x;
+  const minPanY = bounds.minY - overscan.y;
+  const maxPanY = bounds.maxY + overscan.y;
+  const minWidth = Math.max(90, maxWidth * 0.14);
+  const minHeight = Math.max(90, maxHeight * 0.14);
+  const width = Math.max(minWidth, Math.min(camera.width, maxWidth));
+  const height = Math.max(minHeight, Math.min(camera.height, maxHeight));
+  const x = Math.max(minPanX, Math.min(camera.x, maxPanX - width));
+  const y = Math.max(minPanY, Math.min(camera.y, maxPanY - height));
+
+  return { x, y, width, height };
+};
+
+const buildSeasonMockCamera = (
+  bounds: SeasonMockMapBounds,
+  selectedSlot: SeasonMockMapSlot | null,
+): SeasonMockMapCamera => {
+  if (!selectedSlot) {
+    return {
+      x: bounds.minX,
+      y: bounds.minY,
+      width: bounds.width,
+      height: bounds.height,
+    };
+  }
+
+  const focusWidth = Math.max(170, bounds.width * 0.78);
+  const focusHeight = Math.max(170, bounds.height * 0.78);
+  return clampSeasonMockCamera(
+    {
+      x: selectedSlot.pixelX - focusWidth / 2,
+      y: selectedSlot.pixelY - focusHeight / 2,
+      width: focusWidth,
+      height: focusHeight,
+    },
+    bounds,
+  );
+};
+
+const seasonMockCameraToViewBox = (camera: SeasonMockMapCamera): string =>
+  `${camera.x} ${camera.y} ${camera.width} ${camera.height}`;
+
+const buildSpireMarkerPoints = (x: number, y: number): string =>
+  `${x.toFixed(2)},${(y - 5).toFixed(2)} ${(x + 4).toFixed(2)},${(y + 4).toFixed(2)} ${(x - 4).toFixed(2)},${(y + 4).toFixed(2)}`;
+
+const buildHyperstructureMarkerPoints = (x: number, y: number): string =>
+  `${x.toFixed(2)},${(y - 4.5).toFixed(2)} ${(x + 4.5).toFixed(2)},${y.toFixed(2)} ${x.toFixed(2)},${(y + 4.5).toFixed(2)} ${(x - 4.5).toFixed(2)},${y.toFixed(2)}`;
+
+const getSeasonMockWorldPointFromClient = (
+  svg: SVGSVGElement,
+  clientX: number,
+  clientY: number,
+): { x: number; y: number } | null => {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return null;
+  const pointer = svg.createSVGPoint();
+  pointer.x = clientX;
+  pointer.y = clientY;
+  const world = pointer.matrixTransform(ctm.inverse());
+  return { x: world.x, y: world.y };
+};
+
+const findClosestSeasonMockSlot = (
+  slots: SeasonMockMapSlot[],
+  x: number,
+  y: number,
+  ignoreOccupied = true,
+): SeasonMockMapSlot | null => {
+  let closest: SeasonMockMapSlot | null = null;
+  let closestDistanceSq = Number.POSITIVE_INFINITY;
+
+  for (const slot of slots) {
+    if (ignoreOccupied && slot.occupied) continue;
+    const dx = slot.pixelX - x;
+    const dy = slot.pixelY - y;
+    const distanceSq = dx * dx + dy * dy;
+    if (distanceSq < closestDistanceSq) {
+      closestDistanceSq = distanceSq;
+      closest = slot;
+    }
+  }
+
+  return closest;
 };
 
 const ModeCoexistenceHero = ({
@@ -506,6 +808,8 @@ const SeasonMockupLane = () => {
   const [seasonPassPresent, setSeasonPassPresent] = useState(true);
   const [selectedPassId, setSelectedPassId] = useState<(typeof MOCK_SEASON_PASSES)[number]["id"]>(MOCK_SEASON_PASSES[0].id);
   const [placement, setPlacement] = useState<SeasonMockPlacement>(DEFAULT_SEASON_MOCK_PLACEMENT);
+  const [mockSettleOutcome, setMockSettleOutcome] = useState<SeasonMockSettleOutcome>("success");
+  const [mockSettleError, setMockSettleError] = useState<string | null>(null);
   const [isRevealRolling, setIsRevealRolling] = useState(false);
   const [rollingResource, setRollingResource] = useState<string>(MOCK_VILLAGE_REVEAL_RESOURCES[0]);
   const [targetRevealResource, setTargetRevealResource] = useState<string | null>(null);
@@ -522,6 +826,212 @@ const SeasonMockupLane = () => {
   );
 
   const preflightReady = seasonTimingValid && spiresSettled && seasonPassPresent;
+  const placementValidationErrors = useMemo(() => validateSeasonMockPlacement(placement), [placement]);
+  const placementPreview = useMemo(
+    () => (placementValidationErrors.length === 0 ? getSeasonMockPlacementPreview(placement) : null),
+    [placement, placementValidationErrors],
+  );
+  const placementSlots = useMemo(() => buildSeasonMockSlots(), []);
+  const selectedSlotId = toSeasonMockSlotId(placement.side, placement.layer, placement.point);
+  const selectedPlacementSlot = useMemo(
+    () => placementSlots.find((slot) => slot.id === selectedSlotId) ?? null,
+    [placementSlots, selectedSlotId],
+  );
+  const mapBounds = useMemo(() => getSeasonMockBounds(placementSlots), [placementSlots]);
+  const settledRealmSlots = useMemo(
+    () => placementSlots.filter((slot) => SEASON_MOCK_SETTLED_REALM_SLOT_IDS.has(slot.id)),
+    [placementSlots],
+  );
+  const spireSlots = useMemo(
+    () => placementSlots.filter((slot) => SEASON_MOCK_SPIRE_SLOT_IDS.has(slot.id)),
+    [placementSlots],
+  );
+  const hyperstructureSlots = useMemo(
+    () => placementSlots.filter((slot) => SEASON_MOCK_HYPERSTRUCTURE_SLOT_IDS.has(slot.id)),
+    [placementSlots],
+  );
+  const [mapCamera, setMapCamera] = useState<SeasonMockMapCamera | null>(null);
+  const mapDragStateRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startCamera: SeasonMockMapCamera;
+    hasMoved: boolean;
+  } | null>(null);
+  const mapViewBox = useMemo(
+    () => seasonMockCameraToViewBox(mapCamera ?? buildSeasonMockCamera(mapBounds, selectedPlacementSlot)),
+    [mapBounds, mapCamera, selectedPlacementSlot],
+  );
+  const occupiedSlotCount = useMemo(
+    () => placementSlots.reduce((count, slot) => (slot.occupied ? count + 1 : count), 0),
+    [placementSlots],
+  );
+  const placementErrors = useMemo(() => {
+    if (!selectedPlacementSlot?.occupied) return placementValidationErrors;
+    return [...placementValidationErrors, "Destination occupied. Choose another side/layer/point."];
+  }, [placementValidationErrors, selectedPlacementSlot?.occupied]);
+  const updatePlacement = useCallback((next: Partial<SeasonMockPlacement>) => {
+    setPlacement((prev) => ({ ...prev, ...next }));
+    setMockSettleError(null);
+  }, []);
+  const handleSlotSelect = useCallback(
+    (slot: SeasonMockMapSlot) => {
+      if (slot.occupied) return;
+      updatePlacement({
+        side: slot.side,
+        layer: slot.layer,
+        point: slot.point,
+      });
+    },
+    [updatePlacement],
+  );
+  const updateMockSettleOutcome = useCallback((outcome: SeasonMockSettleOutcome) => {
+    setMockSettleOutcome(outcome);
+    setMockSettleError(null);
+  }, []);
+  const handleMapWheel = useCallback(
+    (event: React.WheelEvent<SVGSVGElement>) => {
+      if (!mapCamera) return;
+      event.preventDefault();
+      const worldPoint = getSeasonMockWorldPointFromClient(
+        event.currentTarget,
+        event.clientX,
+        event.clientY,
+      );
+      if (!worldPoint) return;
+      const cursorRatioX = (worldPoint.x - mapCamera.x) / mapCamera.width;
+      const cursorRatioY = (worldPoint.y - mapCamera.y) / mapCamera.height;
+      const worldX = worldPoint.x;
+      const worldY = worldPoint.y;
+      const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
+      const nextWidth = mapCamera.width * zoomFactor;
+      const nextHeight = mapCamera.height * zoomFactor;
+
+      const nextCamera = clampSeasonMockCamera(
+        {
+          x: worldX - nextWidth * cursorRatioX,
+          y: worldY - nextHeight * cursorRatioY,
+          width: nextWidth,
+          height: nextHeight,
+        },
+        mapBounds,
+      );
+      setMapCamera(nextCamera);
+    },
+    [mapBounds, mapCamera],
+  );
+  const handleMapPointerDown = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (!mapCamera) return;
+      if (event.button !== 0) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      mapDragStateRef.current = {
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startCamera: mapCamera,
+        hasMoved: false,
+      };
+    },
+    [mapCamera],
+  );
+  const handleMapPointerMove = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      const drag = mapDragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      const pointerDeltaX = event.clientX - drag.startClientX;
+      const pointerDeltaY = event.clientY - drag.startClientY;
+      if (!drag.hasMoved && Math.abs(pointerDeltaX) < 4 && Math.abs(pointerDeltaY) < 4) {
+        return;
+      }
+      drag.hasMoved = true;
+      const panWidth = Math.max(drag.startCamera.width, mapBounds.width * 0.35);
+      const panHeight = Math.max(drag.startCamera.height, mapBounds.height * 0.35);
+      const deltaX = (pointerDeltaX / rect.width) * panWidth;
+      const deltaY = (pointerDeltaY / rect.height) * panHeight;
+      const nextCamera = clampSeasonMockCamera(
+        {
+          ...drag.startCamera,
+          x: drag.startCamera.x - deltaX,
+          y: drag.startCamera.y - deltaY,
+        },
+        mapBounds,
+      );
+      setMapCamera(nextCamera);
+    },
+    [mapBounds],
+  );
+  const handleMapPointerEnd = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      const drag = mapDragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      if (!drag.hasMoved) {
+        const worldPoint = getSeasonMockWorldPointFromClient(
+          event.currentTarget,
+          event.clientX,
+          event.clientY,
+        );
+        if (worldPoint) {
+          const nearestSlot = findClosestSeasonMockSlot(placementSlots, worldPoint.x, worldPoint.y, true);
+          if (nearestSlot) {
+            handleSlotSelect(nearestSlot);
+          }
+        }
+      }
+
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      mapDragStateRef.current = null;
+    },
+    [handleSlotSelect, placementSlots],
+  );
+  const resetMapCamera = useCallback(() => {
+    setMapCamera(buildSeasonMockCamera(mapBounds, selectedPlacementSlot));
+  }, [mapBounds, selectedPlacementSlot]);
+
+  const handleSettleMockSeasonPass = useCallback(() => {
+    const preflightErrors: string[] = [];
+
+    if (!seasonTimingValid) {
+      preflightErrors.push("Season timing invalid. Settlement is currently unavailable.");
+    }
+    if (!spiresSettled) {
+      preflightErrors.push("Spires must be settled before realm placement.");
+    }
+    if (!seasonPassPresent) {
+      preflightErrors.push("Season Pass required before settlement.");
+    }
+
+    if (preflightErrors.length > 0) {
+      setMockSettleError(preflightErrors[0]);
+      return;
+    }
+
+    if (placementErrors.length > 0) {
+      setMockSettleError(placementErrors[0]);
+      return;
+    }
+
+    const outcomeError = mapSeasonMockSettleError(mockSettleOutcome);
+    if (outcomeError) {
+      setMockSettleError(outcomeError);
+      return;
+    }
+
+    setMockSettleError(null);
+    setFlowStep("settled");
+  }, [
+    mockSettleOutcome,
+    placementErrors,
+    seasonPassPresent,
+    seasonTimingValid,
+    spiresSettled,
+  ]);
 
   useEffect(() => {
     if (!isRevealRolling || !targetRevealResource) return;
@@ -552,6 +1062,10 @@ const SeasonMockupLane = () => {
     setSeasonPassPresent(true);
     setSelectedPassId(MOCK_SEASON_PASSES[0].id);
     setPlacement(DEFAULT_SEASON_MOCK_PLACEMENT);
+    setMapCamera(null);
+    mapDragStateRef.current = null;
+    setMockSettleOutcome("success");
+    setMockSettleError(null);
     setIsRevealRolling(false);
     setRollingResource(MOCK_VILLAGE_REVEAL_RESOURCES[0]);
     setTargetRevealResource(null);
@@ -561,6 +1075,9 @@ const SeasonMockupLane = () => {
   const closeMockFlow = () => {
     setActiveCardId(null);
     setFlowStep("preflight");
+    setMapCamera(null);
+    mapDragStateRef.current = null;
+    setMockSettleError(null);
     setIsRevealRolling(false);
   };
 
@@ -627,7 +1144,12 @@ const SeasonMockupLane = () => {
 
       {activeCard && (
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">
-          <div className="w-full max-w-2xl rounded-2xl border border-emerald-300/35 bg-[#04090f]/95 shadow-[0_0_45px_rgba(16,185,129,0.2)] p-4 md:p-6">
+          <div
+            className={cn(
+              "w-full rounded-2xl border border-emerald-300/35 bg-[#04090f]/95 shadow-[0_0_45px_rgba(16,185,129,0.2)] p-4 md:p-6",
+              flowStep === "placement" ? "max-w-5xl" : "max-w-2xl",
+            )}
+          >
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">Eternum S2 Mockup Flow</div>
@@ -754,7 +1276,11 @@ const SeasonMockupLane = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFlowStep("placement")}
+                    onClick={() => {
+                      setMockSettleError(null);
+                      setMapCamera(buildSeasonMockCamera(mapBounds, selectedPlacementSlot));
+                      setFlowStep("placement");
+                    }}
                     className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400"
                   >
                     Continue
@@ -765,17 +1291,132 @@ const SeasonMockupLane = () => {
 
             {flowStep === "placement" && (
               <div className="space-y-3">
-                <p className="text-sm text-emerald-50">Choose placement coordinates for this pass:</p>
-                <div className="grid grid-cols-3 gap-2">
+                <p className="text-sm text-emerald-50">
+                  Choose placement coordinates for this pass (contract format: side/layer/point):
+                </p>
+                <p className="text-xs text-emerald-100/75">
+                  Side: 0-5, Layer: {SEASON_MOCK_LAYERS_SKIPPED + 1}-{SEASON_MOCK_LAYER_MAX}, Point: 0-(layer-1)
+                </p>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-emerald-100/85">Map slot picker (click a hex to populate side/layer/point)</p>
+                  <p className="text-[11px] text-emerald-100/65">Scroll to zoom. Drag to pan. Click reset to reframe.</p>
+                  <div className="relative h-60 overflow-hidden rounded-lg border border-emerald-300/25 bg-black/40">
+                    <div className="absolute inset-0 bg-[url('/images/covers/blitz/07.png')] bg-cover bg-center opacity-20" aria-hidden />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-black/70" aria-hidden />
+                    <svg
+                      viewBox={mapViewBox}
+                      className="relative z-10 h-full w-full touch-none"
+                      aria-label="Season mock placement map"
+                      onWheel={handleMapWheel}
+                      onPointerDown={handleMapPointerDown}
+                      onPointerMove={handleMapPointerMove}
+                      onPointerUp={handleMapPointerEnd}
+                      onPointerLeave={handleMapPointerEnd}
+                    >
+                      {placementSlots.map((slot) => {
+                        const isSelected = slot.id === selectedSlotId;
+                        const isSelectable = !slot.occupied;
+                        return (
+                          <g key={slot.id}>
+                            <polygon
+                              points={buildSeasonMockHexPoints(slot.pixelX, slot.pixelY)}
+                              fill={isSelected ? "#f4d25a" : slot.occupied ? "#4b5563" : "#34d399"}
+                              fillOpacity={isSelected ? 0.88 : slot.occupied ? 0.35 : 0.28}
+                              stroke={isSelected ? "#fef3c7" : slot.occupied ? "#9ca3af" : "#86efac"}
+                              strokeWidth={isSelected ? 1.1 : 0.85}
+                              strokeOpacity={isSelected ? 1 : slot.occupied ? 0.42 : 0.72}
+                              pointerEvents="none"
+                            />
+                            <circle
+                              data-slot-id={slot.id}
+                              cx={slot.pixelX}
+                              cy={slot.pixelY}
+                              r={13}
+                              fill="rgba(255,255,255,0.001)"
+                              pointerEvents="all"
+                              className={cn(isSelectable && "cursor-pointer")}
+                            />
+                          </g>
+                        );
+                      })}
+
+                      {settledRealmSlots.map((slot) => (
+                        <circle
+                          key={`settled-${slot.id}`}
+                          cx={slot.pixelX}
+                          cy={slot.pixelY}
+                          r={3.1}
+                          fill="#f5deb3"
+                          stroke="#fef3c7"
+                          strokeWidth={0.75}
+                          opacity={0.95}
+                          pointerEvents="none"
+                        />
+                      ))}
+
+                      {spireSlots.map((slot) => (
+                        <polygon
+                          key={`spire-${slot.id}`}
+                          points={buildSpireMarkerPoints(slot.pixelX, slot.pixelY)}
+                          fill="#67e8f9"
+                          stroke="#ecfeff"
+                          strokeWidth={0.65}
+                          opacity={0.95}
+                          pointerEvents="none"
+                        />
+                      ))}
+
+                      {hyperstructureSlots.map((slot) => (
+                        <polygon
+                          key={`hyper-${slot.id}`}
+                          points={buildHyperstructureMarkerPoints(slot.pixelX, slot.pixelY)}
+                          fill="#c4b5fd"
+                          stroke="#ede9fe"
+                          strokeWidth={0.65}
+                          opacity={0.95}
+                          pointerEvents="none"
+                        />
+                      ))}
+                    </svg>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-emerald-100/75">
+                    <span>Valid slots: {placementSlots.length}</span>
+                    <span>Occupied: {occupiedSlotCount}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-emerald-100/70">
+                    <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/5 px-2 py-1">
+                      <span className="h-2 w-2 rounded-full bg-[#f5deb3]" />
+                      Settled realms
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/5 px-2 py-1">
+                      <span className="h-2 w-2 rotate-45 bg-[#67e8f9]" />
+                      Spires
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/5 px-2 py-1">
+                      <span className="h-2 w-2 rounded-sm bg-[#c4b5fd]" />
+                      Hyperstructures
+                    </span>
+                    <button
+                      type="button"
+                      onClick={resetMapCamera}
+                      className="rounded border border-white/20 bg-white/5 px-2 py-1 text-[10px] text-white/75 hover:bg-white/10"
+                    >
+                      Reset View
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <label className="text-xs text-emerald-100/80">
                     Side
                     <input
                       type="number"
                       min={0}
+                      max={5}
+                      step={1}
                       value={placement.side}
-                      onChange={(event) =>
-                        setPlacement((prev) => ({ ...prev, side: Number(event.target.value || 0) }))
-                      }
+                      onChange={(event) => updatePlacement({ side: Number.parseInt(event.target.value || "0", 10) || 0 })}
                       className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     />
                   </label>
@@ -783,11 +1424,11 @@ const SeasonMockupLane = () => {
                     Layer
                     <input
                       type="number"
-                      min={0}
+                      min={SEASON_MOCK_LAYERS_SKIPPED + 1}
+                      max={SEASON_MOCK_LAYER_MAX}
+                      step={1}
                       value={placement.layer}
-                      onChange={(event) =>
-                        setPlacement((prev) => ({ ...prev, layer: Number(event.target.value || 0) }))
-                      }
+                      onChange={(event) => updatePlacement({ layer: Number.parseInt(event.target.value || "0", 10) || 0 })}
                       className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     />
                   </label>
@@ -796,14 +1437,70 @@ const SeasonMockupLane = () => {
                     <input
                       type="number"
                       min={0}
+                      max={Math.max(0, placement.layer - 1)}
+                      step={1}
                       value={placement.point}
-                      onChange={(event) =>
-                        setPlacement((prev) => ({ ...prev, point: Number(event.target.value || 0) }))
-                      }
+                      onChange={(event) => updatePlacement({ point: Number.parseInt(event.target.value || "0", 10) || 0 })}
                       className="mt-1 w-full rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     />
                   </label>
                 </div>
+
+                {placementPreview && (
+                  <div className="rounded border border-emerald-400/35 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+                    Target coordinate preview: x {placementPreview.x}, y {placementPreview.y}
+                  </div>
+                )}
+
+                {selectedPlacementSlot && (
+                  <div className="rounded border border-emerald-400/35 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+                    Selected hex: side {selectedPlacementSlot.side}, layer {selectedPlacementSlot.layer}, point{" "}
+                    {selectedPlacementSlot.point} · x {selectedPlacementSlot.x}, y {selectedPlacementSlot.y}
+                  </div>
+                )}
+
+                {placementErrors.length > 0 && (
+                  <div className="rounded border border-red-400/35 bg-red-500/10 px-3 py-2 text-xs text-red-100 space-y-1">
+                    {placementErrors.map((error) => (
+                      <p key={error}>{error}</p>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <p className="text-xs text-emerald-100/80">Mock tx outcome</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {(
+                      [
+                        { id: "success", label: "Success" },
+                        { id: "occupied", label: "Occupied" },
+                        { id: "timing", label: "Timing" },
+                        { id: "pass-used", label: "Pass Used" },
+                      ] as const
+                    ).map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => updateMockSettleOutcome(option.id)}
+                        className={cn(
+                          "rounded border px-3 py-1.5 text-xs",
+                          mockSettleOutcome === option.id
+                            ? "border-gold/55 bg-gold/20 text-gold"
+                            : "border-white/20 bg-white/5 text-white/70 hover:bg-white/10",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {mockSettleError && (
+                  <div className="rounded border border-red-400/35 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+                    {mockSettleError}
+                  </div>
+                )}
+
                 <div className="flex gap-2 pt-1">
                   <button
                     type="button"
@@ -814,8 +1511,14 @@ const SeasonMockupLane = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFlowStep("settled")}
-                    className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400"
+                    onClick={handleSettleMockSeasonPass}
+                    disabled={placementErrors.length > 0}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-xs font-semibold",
+                      placementErrors.length === 0
+                        ? "bg-emerald-500 text-black hover:bg-emerald-400"
+                        : "bg-white/10 text-white/40 cursor-not-allowed",
+                    )}
                   >
                     Settle Realm
                   </button>
