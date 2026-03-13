@@ -5,3 +5,8 @@ declare module "*.svg" {
 
   export default ReactComponent;
 }
+
+declare module "three/webgpu" {
+  export * from "three";
+  export const WebGPURenderer: any;
+}

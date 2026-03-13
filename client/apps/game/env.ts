@@ -63,6 +63,10 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+  VITE_PUBLIC_RENDERER_BUILD_MODE: z
+    .enum(["legacy-webgl", "experimental-webgpu-auto", "experimental-webgpu-force-webgl"])
+    .optional()
+    .default("legacy-webgl"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed

@@ -4,9 +4,12 @@
   "type": "module",
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
+    "build:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "coverage": "vitest run --coverage",
     "coverage:three": "vitest run --coverage src/three",
     "dev": "vite",
+    "dev:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto vite",
+    "dev:webgpu:force-webgl": "VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-force-webgl vite",
     "generate-pwa-assets": "pwa-assets-generator",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",

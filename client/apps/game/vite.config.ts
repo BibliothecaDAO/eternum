@@ -4,20 +4,27 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path, { resolve } from "path";
 import { visualizer } from "rollup-plugin-visualizer";
-import { ConfigEnv, defineConfig, PluginOption, UserConfig } from "vite";
+import { ConfigEnv, defineConfig, loadEnv, PluginOption, UserConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
+import { resolveRendererBuildMode, resolveThreeEntryPoint } from "./src/three/renderer-build-mode";
+import { resolveRendererViteAlias } from "./src/three/renderer-vite-config";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }: ConfigEnv): UserConfig => {
+export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const isServe = command === "serve";
   const isBuild = command === "build";
+  const appEnv = loadEnv(mode, process.cwd(), "");
   const enableAnalyzer = process.env.ANALYZE === "true";
   const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
   const sentryOrg = process.env.SENTRY_ORG;
   const sentryProject = process.env.SENTRY_PROJECT;
+  const rendererBuildMode = resolveRendererBuildMode(
+    appEnv.VITE_PUBLIC_RENDERER_BUILD_MODE || process.env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+  );
+  const rendererViteAlias = resolveRendererViteAlias(rendererBuildMode);
   const sentryRelease =
     process.env.SENTRY_RELEASE ||
     process.env.VERCEL_GIT_COMMIT_SHA ||
@@ -99,18 +106,45 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
   return {
     plugins: plugins as unknown as PluginOption[],
     resolve: {
-      alias: {
-        "@/assets": path.resolve(__dirname, "../../public/assets"),
-        events: "events",
-        "@": path.resolve(__dirname, "./src"),
-        "@config": path.resolve(__dirname, "../../../config/utils/utils"),
-        "@config-deployer": path.resolve(__dirname, "../../../config/deployer"),
-        "@contracts": path.resolve(__dirname, "../../../contracts/utils/utils"),
-        "@manifests": path.resolve(__dirname, "../../../contracts/game"),
-        "@pm": path.resolve(__dirname, "./src/pm"),
-        // Videos from landing app for chest opening
-        "@videos": path.resolve(__dirname, "../landing/src/assets/videos"),
-      },
+      alias: [
+        ...(rendererViteAlias ? [rendererViteAlias] : []),
+        {
+          find: "@/assets",
+          replacement: path.resolve(__dirname, "../../public/assets"),
+        },
+        {
+          find: "events",
+          replacement: "events",
+        },
+        {
+          find: "@",
+          replacement: path.resolve(__dirname, "./src"),
+        },
+        {
+          find: "@config",
+          replacement: path.resolve(__dirname, "../../../config/utils/utils"),
+        },
+        {
+          find: "@config-deployer",
+          replacement: path.resolve(__dirname, "../../../config/deployer"),
+        },
+        {
+          find: "@contracts",
+          replacement: path.resolve(__dirname, "../../../contracts/utils/utils"),
+        },
+        {
+          find: "@manifests",
+          replacement: path.resolve(__dirname, "../../../contracts/game"),
+        },
+        {
+          find: "@pm",
+          replacement: path.resolve(__dirname, "./src/pm"),
+        },
+        {
+          find: "@videos",
+          replacement: path.resolve(__dirname, "../landing/src/assets/videos"),
+        },
+      ],
     },
     build: {
       target: "esnext",
@@ -132,7 +166,7 @@ export default defineConfig(({ command }: ConfigEnv): UserConfig => {
           },
           manualChunks: {
             // Three.js ecosystem - Separate chunk for 3D graphics
-            three: ["three", "three-stdlib", "postprocessing"],
+            three: [resolveThreeEntryPoint(rendererBuildMode), "three-stdlib", "postprocessing"],
 
             // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
             blockchain: [
