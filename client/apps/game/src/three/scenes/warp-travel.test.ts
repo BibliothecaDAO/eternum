@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./hexagon-scene", () => ({
-  HexagonScene: class {},
+  HexagonScene: class {
+    protected bootstrapSceneOwnership(): void {}
+  },
 }));
 
 import { WarpTravel } from "./warp-travel";
