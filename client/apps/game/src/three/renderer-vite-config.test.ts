@@ -6,10 +6,10 @@ describe("resolveRendererViteAlias", () => {
     expect(resolveRendererViteAlias("legacy-webgl")).toBeUndefined();
   });
 
-  it("aliases three to three/webgpu in experimental lanes", () => {
+  it("aliases three to the compat shim in experimental lanes", () => {
     expect(resolveRendererViteAlias("experimental-webgpu-auto")).toEqual({
       find: /^three$/,
-      replacement: "three/webgpu",
+      replacement: expect.stringMatching(/src\/three\/three-webgpu-compat\.ts$/),
     });
   });
 });
