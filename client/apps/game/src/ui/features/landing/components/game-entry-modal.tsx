@@ -37,17 +37,19 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import {
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
-import { RpcProvider, type Account } from "starknet";
+import { type Account } from "starknet";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -75,11 +77,9 @@ const extractTransactionHash = (value: unknown): string | null => {
   return null;
 };
 
-const parseUint256 = (result: string[] | undefined): bigint => {
-  if (!result || result.length < 2) return 0n;
-  const low = BigInt(result[0] ?? 0);
-  const high = BigInt(result[1] ?? 0);
-  return low + (high << 128n);
+const resolveResourceLabel = (resourceId: number): string | null => {
+  const label = ResourcesIds[resourceId as ResourcesIds];
+  return typeof label === "string" ? label : null;
 };
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
@@ -348,6 +348,10 @@ const SeasonPlacementPhase = ({
   seasonTimingValid,
   spiresSettled,
   hasSeasonPass,
+  seasonPasses,
+  selectedSeasonPassTokenId,
+  onSelectSeasonPass,
+  seasonPassInventoryError,
 }: {
   placement: SeasonPlacement;
   onPlacementChange: (next: SeasonPlacement) => void;
@@ -355,7 +359,12 @@ const SeasonPlacementPhase = ({
   seasonTimingValid: boolean;
   spiresSettled: boolean;
   hasSeasonPass: boolean;
+  seasonPasses: SeasonPassInventoryItem[];
+  selectedSeasonPassTokenId: bigint | null;
+  onSelectSeasonPass: (tokenId: bigint) => void;
+  seasonPassInventoryError: string | null;
 }) => {
+  const selectedSeasonPass = seasonPasses.find((pass) => pass.tokenId === selectedSeasonPassTokenId) ?? null;
   const checks = [
     { id: "season", label: "Season timing valid", ok: seasonTimingValid },
     { id: "spires", label: "Spires settled", ok: spiresSettled },
@@ -369,6 +378,69 @@ const SeasonPlacementPhase = ({
         <h2 className="text-lg font-semibold text-gold">Choose Settlement Placement</h2>
         <p className="text-xs text-gold/60 mt-1">Placement picker shell for side/layer/point (R21 wiring pending)</p>
       </div>
+
+      <div className="mb-4">
+        <p className="text-sm text-gold mb-2">Select a Season Pass:</p>
+        <div className="space-y-2 max-h-52 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          {seasonPasses.map((pass) => {
+            const isSelected = selectedSeasonPassTokenId === pass.tokenId;
+            return (
+              <div
+                key={pass.tokenId.toString()}
+                className={cn(
+                  "rounded-lg border p-2 transition-colors",
+                  isSelected ? "border-gold/50 bg-gold/10" : "border-gold/20 bg-black/20",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-gold truncate">{pass.realmName}</p>
+                    <p className="text-[11px] text-gold/50">Realm #{pass.realmId}</p>
+                  </div>
+                  <Button
+                    onClick={() => onSelectSeasonPass(pass.tokenId)}
+                    variant={isSelected ? "default" : "outline"}
+                    size="xs"
+                    forceUppercase={false}
+                    className={cn(isSelected ? "!bg-gold !text-brown" : "")}
+                  >
+                    {isSelected ? "Selected" : "Settle"}
+                  </Button>
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {pass.resourceIds.length > 0 ? (
+                    pass.resourceIds.map((resourceId, index) => {
+                      const resourceLabel = resolveResourceLabel(resourceId);
+                      if (!resourceLabel) return null;
+                      return (
+                        <div
+                          key={`${pass.tokenId.toString()}-${resourceId}-${index}`}
+                          className="inline-flex items-center gap-1 rounded-md border border-gold/20 bg-black/25 px-1.5 py-1"
+                        >
+                          <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
+                          <span className="text-[10px] text-gold/70">{resourceLabel}</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <span className="text-[11px] text-gold/50">No allowed resources decoded.</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {selectedSeasonPass && (
+        <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5 mb-4">
+          <span className="text-xs text-gold/70">
+            Selected pass: <span className="text-gold">{selectedSeasonPass.realmName}</span> (Realm #
+            {selectedSeasonPass.realmId})
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         <label className="text-xs text-gold/60">
@@ -430,9 +502,15 @@ const SeasonPlacementPhase = ({
       <Button disabled className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
         <div className="flex items-center justify-center gap-2">
           <MapPin className="w-4 h-4" />
-          <span>{canSettle ? "Confirm Placement (Coming Soon)" : "Preflight Checks Required"}</span>
+          <span>
+            {!selectedSeasonPass ? "Select a Season Pass" : canSettle ? "Confirm Placement (Coming Soon)" : "Preflight Checks Required"}
+          </span>
         </div>
       </Button>
+
+      {seasonPassInventoryError && (
+        <p className="text-[11px] text-amber-200/80 mt-2">Could not refresh season pass metadata. Try reopening the modal.</p>
+      )}
     </div>
   );
 };
@@ -775,16 +853,41 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
-  const [seasonPassBalance, setSeasonPassBalance] = useState<bigint>(0n);
-  const [isCheckingSeasonPass, setIsCheckingSeasonPass] = useState(false);
   const [seasonPlacement, setSeasonPlacement] = useState<SeasonPlacement>(DEFAULT_SEASON_PLACEMENT);
+  const [selectedSeasonPassTokenId, setSelectedSeasonPassTokenId] = useState<bigint | null>(null);
   const hasEnteredGameRef = useRef(false);
+
+  const seasonPassAddress = worldMeta?.seasonPassAddress ?? getSeasonAddresses(chain).seasonPass;
+  const {
+    seasonPasses,
+    isLoading: isLoadingSeasonPassInventory,
+    error: seasonPassInventoryError,
+  } = useSeasonPassInventory({
+    chain,
+    ownerAddress: account?.address,
+    seasonPassAddress,
+    enabled: isOpen && isEternumMode,
+  });
 
   useEffect(() => {
     if (!isOpen) {
       hasEnteredGameRef.current = false;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isEternumMode || seasonPasses.length === 0) {
+      setSelectedSeasonPassTokenId(null);
+      return;
+    }
+
+    setSelectedSeasonPassTokenId((current) => {
+      if (current != null && seasonPasses.some((pass) => pass.tokenId === current)) {
+        return current;
+      }
+      return seasonPasses[0]?.tokenId ?? null;
+    });
+  }, [isEternumMode, seasonPasses]);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -808,54 +911,6 @@ export const GameEntryModal = ({
     return Math.min(99, Math.round(completed));
   }, [bootstrapStatus, tasks, syncProgress]);
 
-  // Season pass ownership check (Eternum mode only)
-  useEffect(() => {
-    let cancelled = false;
-
-    const reset = () => {
-      setIsCheckingSeasonPass(false);
-      setSeasonPassBalance(0n);
-    };
-
-    if (!isOpen || !isEternumMode || !account?.address) {
-      reset();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const run = async () => {
-      setIsCheckingSeasonPass(true);
-      try {
-        const seasonPassAddress = getSeasonAddresses(chain).seasonPass;
-        const rpcProvider = new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) });
-        const result = await rpcProvider.callContract({
-          contractAddress: seasonPassAddress,
-          entrypoint: "balance_of",
-          calldata: [account.address],
-        });
-
-        if (!cancelled) {
-          setSeasonPassBalance(parseUint256(result as string[]));
-        }
-      } catch {
-        if (!cancelled) {
-          setSeasonPassBalance(0n);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsCheckingSeasonPass(false);
-        }
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, isEternumMode, account?.address, chain]);
-
   const nowSeconds = Date.now() / 1000;
   const seasonTimingValid =
     worldMeta?.startMainAt != null &&
@@ -863,9 +918,9 @@ export const GameEntryModal = ({
     worldMeta.startMainAt <= nowSeconds &&
     nowSeconds <= worldMeta.endAt;
   const spiresSettled = (worldMeta?.spiresSettledCount ?? 0) > 0;
-  const hasSeasonPass = seasonPassBalance > 0n;
+  const hasSeasonPass = seasonPasses.length > 0;
   const canAttemptSeasonSettle = seasonTimingValid && spiresSettled && hasSeasonPass;
-  const isLoadingEternumPrereqs = isCheckingWorldAvailability || isCheckingSeasonPass || !worldMeta;
+  const isLoadingEternumPrereqs = isCheckingWorldAvailability || isLoadingSeasonPassInventory || !worldMeta;
 
   // Both checks must complete before we can determine the final phase
   const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
@@ -919,6 +974,9 @@ export const GameEntryModal = ({
       startMainAt: worldMeta?.startMainAt,
       endAt: worldMeta?.endAt,
       spiresSettledCount: worldMeta?.spiresSettledCount,
+      seasonPassAddress: worldMeta?.seasonPassAddress,
+      seasonPassCount: seasonPasses.length,
+      selectedSeasonPassTokenId: selectedSeasonPassTokenId?.toString() ?? null,
       hasSeasonPass,
       canAttemptSeasonSettle,
     });
@@ -941,6 +999,8 @@ export const GameEntryModal = ({
     hasSeasonPass,
     worldMode,
     worldMeta,
+    seasonPasses,
+    selectedSeasonPassTokenId,
     canAttemptSeasonSettle,
     worldName,
   ]);
@@ -1248,6 +1308,7 @@ export const GameEntryModal = ({
         setNeedsHyperstructureInit(false);
         setHyperstructureCheckComplete(false);
         setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
+        setSelectedSeasonPassTokenId(null);
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
@@ -1319,6 +1380,7 @@ export const GameEntryModal = ({
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
     setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
+    setSelectedSeasonPassTokenId(null);
     // Trigger re-bootstrap
     setTimeout(() => {
       setBootstrapStatus("loading");
@@ -1708,6 +1770,10 @@ export const GameEntryModal = ({
                   seasonTimingValid={seasonTimingValid}
                   spiresSettled={spiresSettled}
                   hasSeasonPass={hasSeasonPass}
+                  seasonPasses={seasonPasses}
+                  selectedSeasonPassTokenId={selectedSeasonPassTokenId}
+                  onSelectSeasonPass={setSelectedSeasonPassTokenId}
+                  seasonPassInventoryError={seasonPassInventoryError}
                 />
               </motion.div>
             )}
