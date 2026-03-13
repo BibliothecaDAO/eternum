@@ -36,7 +36,6 @@ import {
 } from "../tools/adjacent-transfer.js";
 import { createAllocateSharesTool } from "../tools/hyperstructure.js";
 
-import { TxQueue } from "./tx-queue.js";
 import { DirectiveQueue } from "./directives.js";
 import { createAllProductionTools } from "./production-tools.js";
 import { createAllMilitaryDelegationTools } from "./military-tools.js";
@@ -120,7 +119,6 @@ export interface MultiAgentConfig {
 export interface MultiAgentSystem {
   militaryAgent: Agent;
   productionAgent: Agent;
-  txQueue: TxQueue;
   directives: DirectiveQueue;
   start(): void;
   stop(): void;
@@ -136,7 +134,6 @@ export function createMultiAgentSystem(
   gameConfig: GameConfig,
 ): MultiAgentSystem {
   const txCtx: TxContext = { provider, signer: account };
-  const txQueue = new TxQueue();
   const directives = new DirectiveQueue();
   const automationStatus: AutomationStatusMap = new Map();
   const toolErrors: ToolError[] = [];
@@ -169,7 +166,7 @@ export function createMultiAgentSystem(
     ...createReadOnlyTools(config.dataDir),
     createInspectTool(client, mapCtx, account.address),
     createTransferResourcesTool(client, mapCtx, account.address, txCtx),
-    ...createAllProductionTools(txCtx, txQueue, directives),
+    ...createAllProductionTools(txCtx, directives),
   ];
 
   const militaryMaxChars = (config.militaryModel.contextWindow ?? 200_000) * 3;
@@ -329,7 +326,6 @@ export function createMultiAgentSystem(
   return {
     militaryAgent,
     productionAgent,
-    txQueue,
     directives,
 
     start() {

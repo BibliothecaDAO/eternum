@@ -2,7 +2,6 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TxContext } from "../tools/tx-context.js";
 import { extractTxError } from "../tools/tx-context.js";
-import { TxQueue } from "./tx-queue.js";
 import { DirectiveQueue } from "./directives.js";
 
 const BUILDING_TYPES: Record<string, number> = {
@@ -33,7 +32,7 @@ const BUILDING_NAMES = Object.entries(BUILDING_TYPES)
   .map(([name, id]) => `${name}=${id}`)
   .join(", ");
 
-export function createBuildTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createBuildTool(tx: TxContext): AgentTool<any> {
   return {
     name: "build",
     label: "Build",
@@ -49,15 +48,13 @@ export function createBuildTool(tx: TxContext, txQueue: TxQueue): AgentTool<any>
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "create_building", () =>
-          tx.provider.create_building({
-            entity_id: params.realm_entity_id,
-            directions: params.directions,
-            building_category: params.building_type,
-            use_simple: params.use_simple,
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.create_building({
+          entity_id: params.realm_entity_id,
+          directions: params.directions,
+          building_category: params.building_type,
+          use_simple: params.use_simple,
+          signer: tx.signer,
+        });
         return {
           content: [{ type: "text" as const, text: `Built building ${params.building_type} successfully.` }],
           details: {},
@@ -69,7 +66,7 @@ export function createBuildTool(tx: TxContext, txQueue: TxQueue): AgentTool<any>
   };
 }
 
-export function createDestroyBuildingTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createDestroyBuildingTool(tx: TxContext): AgentTool<any> {
   return {
     name: "destroy_building",
     label: "Destroy Building",
@@ -81,13 +78,11 @@ export function createDestroyBuildingTool(tx: TxContext, txQueue: TxQueue): Agen
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "destroy_building", () =>
-          tx.provider.destroy_building({
-            entity_id: params.realm_entity_id,
-            building_coord: { alt: false, x: params.building_x, y: params.building_y },
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.destroy_building({
+          entity_id: params.realm_entity_id,
+          building_coord: { alt: false, x: params.building_x, y: params.building_y },
+          signer: tx.signer,
+        });
         return { content: [{ type: "text" as const, text: `Building destroyed.` }], details: {} };
       } catch (err: any) {
         return { content: [{ type: "text" as const, text: `Destroy failed: ${extractTxError(err)}` }], details: {} };
@@ -96,7 +91,7 @@ export function createDestroyBuildingTool(tx: TxContext, txQueue: TxQueue): Agen
   };
 }
 
-export function createUpgradeRealmTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createUpgradeRealmTool(tx: TxContext): AgentTool<any> {
   return {
     name: "upgrade_realm",
     label: "Upgrade Realm",
@@ -106,12 +101,10 @@ export function createUpgradeRealmTool(tx: TxContext, txQueue: TxQueue): AgentTo
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "upgrade_realm", () =>
-          tx.provider.upgrade_realm({
-            realm_entity_id: params.realm_entity_id,
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.upgrade_realm({
+          realm_entity_id: params.realm_entity_id,
+          signer: tx.signer,
+        });
         return { content: [{ type: "text" as const, text: `Realm upgraded successfully.` }], details: {} };
       } catch (err: any) {
         return { content: [{ type: "text" as const, text: `Upgrade failed: ${extractTxError(err)}` }], details: {} };
@@ -120,7 +113,7 @@ export function createUpgradeRealmTool(tx: TxContext, txQueue: TxQueue): AgentTo
   };
 }
 
-export function createProduceResourcesTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createProduceResourcesTool(tx: TxContext): AgentTool<any> {
   return {
     name: "produce_resources",
     label: "Produce Resources",
@@ -146,14 +139,12 @@ export function createProduceResourcesTool(tx: TxContext, txQueue: TxQueue): Age
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "produce_resources", () =>
-          tx.provider.execute_realm_production_plan({
-            realm_entity_id: params.realm_entity_id,
-            resource_to_resource: params.resource_to_resource ?? [],
-            labor_to_resource: params.labor_to_resource ?? [],
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.execute_realm_production_plan({
+          realm_entity_id: params.realm_entity_id,
+          resource_to_resource: params.resource_to_resource ?? [],
+          labor_to_resource: params.labor_to_resource ?? [],
+          signer: tx.signer,
+        });
         return { content: [{ type: "text" as const, text: `Production executed.` }], details: {} };
       } catch (err: any) {
         return { content: [{ type: "text" as const, text: `Production failed: ${extractTxError(err)}` }], details: {} };
@@ -162,7 +153,7 @@ export function createProduceResourcesTool(tx: TxContext, txQueue: TxQueue): Age
   };
 }
 
-export function createOffloadArrivalsTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createOffloadArrivalsTool(tx: TxContext): AgentTool<any> {
   return {
     name: "offload_arrivals",
     label: "Offload Arrivals",
@@ -175,15 +166,13 @@ export function createOffloadArrivalsTool(tx: TxContext, txQueue: TxQueue): Agen
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "offload_arrivals", () =>
-          tx.provider.arrivals_offload({
-            structureId: params.structure_id,
-            day: params.day,
-            slot: params.slot,
-            resource_count: params.resource_count,
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.arrivals_offload({
+          structureId: params.structure_id,
+          day: params.day,
+          slot: params.slot,
+          resource_count: params.resource_count,
+          signer: tx.signer,
+        });
         return { content: [{ type: "text" as const, text: `Arrivals offloaded.` }], details: {} };
       } catch (err: any) {
         return { content: [{ type: "text" as const, text: `Offload failed: ${extractTxError(err)}` }], details: {} };
@@ -212,7 +201,7 @@ export function createMarkRequestStatusTool(directives: DirectiveQueue): AgentTo
   };
 }
 
-export function createPauseProductionTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createPauseProductionTool(tx: TxContext): AgentTool<any> {
   return {
     name: "pause_production",
     label: "Pause Production",
@@ -224,13 +213,11 @@ export function createPauseProductionTool(tx: TxContext, txQueue: TxQueue): Agen
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "pause_production", () =>
-          tx.provider.pause_production({
-            entity_id: params.realm_entity_id,
-            building_coord: { alt: false, x: params.building_x, y: params.building_y },
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.pause_production({
+          entity_id: params.realm_entity_id,
+          building_coord: { alt: false, x: params.building_x, y: params.building_y },
+          signer: tx.signer,
+        });
         return { content: [{ type: "text" as const, text: `Production paused.` }], details: {} };
       } catch (err: any) {
         return { content: [{ type: "text" as const, text: `Pause failed: ${extractTxError(err)}` }], details: {} };
@@ -239,7 +226,7 @@ export function createPauseProductionTool(tx: TxContext, txQueue: TxQueue): Agen
   };
 }
 
-export function createResumeProductionTool(tx: TxContext, txQueue: TxQueue): AgentTool<any> {
+export function createResumeProductionTool(tx: TxContext): AgentTool<any> {
   return {
     name: "resume_production",
     label: "Resume Production",
@@ -251,13 +238,11 @@ export function createResumeProductionTool(tx: TxContext, txQueue: TxQueue): Age
     }),
     async execute(_toolCallId: string, params: any) {
       try {
-        await txQueue.enqueue("production", "resume_production", () =>
-          tx.provider.resume_production({
-            entity_id: params.realm_entity_id,
-            building_coord: { alt: false, x: params.building_x, y: params.building_y },
-            signer: tx.signer,
-          }),
-        );
+        await tx.provider.resume_production({
+          entity_id: params.realm_entity_id,
+          building_coord: { alt: false, x: params.building_x, y: params.building_y },
+          signer: tx.signer,
+        });
         return { content: [{ type: "text" as const, text: `Production resumed.` }], details: {} };
       } catch (err: any) {
         return { content: [{ type: "text" as const, text: `Resume failed: ${extractTxError(err)}` }], details: {} };
@@ -266,19 +251,15 @@ export function createResumeProductionTool(tx: TxContext, txQueue: TxQueue): Age
   };
 }
 
-export function createAllProductionTools(
-  tx: TxContext,
-  txQueue: TxQueue,
-  directives: DirectiveQueue,
-): AgentTool<any>[] {
+export function createAllProductionTools(tx: TxContext, directives: DirectiveQueue): AgentTool<any>[] {
   return [
-    createBuildTool(tx, txQueue),
-    createDestroyBuildingTool(tx, txQueue),
-    createUpgradeRealmTool(tx, txQueue),
-    createProduceResourcesTool(tx, txQueue),
-    createOffloadArrivalsTool(tx, txQueue),
-    createPauseProductionTool(tx, txQueue),
-    createResumeProductionTool(tx, txQueue),
+    createBuildTool(tx),
+    createDestroyBuildingTool(tx),
+    createUpgradeRealmTool(tx),
+    createProduceResourcesTool(tx),
+    createOffloadArrivalsTool(tx),
+    createPauseProductionTool(tx),
+    createResumeProductionTool(tx),
     createMarkRequestStatusTool(directives),
   ];
 }
