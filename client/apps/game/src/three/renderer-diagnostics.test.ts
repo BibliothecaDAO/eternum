@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   incrementRendererDiagnosticError,
   resetRendererDiagnostics,
@@ -10,6 +10,7 @@ import {
 
 describe("renderer-diagnostics", () => {
   beforeEach(() => {
+    vi.stubGlobal("window", {});
     resetRendererDiagnostics();
   });
 
@@ -76,6 +77,28 @@ describe("renderer-diagnostics", () => {
       fallbacks: 1,
       requestedMode: "experimental-webgpu-auto",
       sceneName: "worldmap",
+    });
+  });
+
+  it("mirrors the latest diagnostics snapshot onto the debug window", () => {
+    syncRendererBackendDiagnostics({
+      activeMode: "legacy-webgl",
+      buildMode: "experimental-webgpu-force-webgl",
+      fallbackReason: "manual-kill-switch",
+      initTimeMs: 12,
+      requestedMode: "legacy-webgl",
+    });
+
+    expect((window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics).toEqual({
+      activeMode: "legacy-webgl",
+      buildMode: "experimental-webgpu-force-webgl",
+      effectPlan: null,
+      fallbackReason: "manual-kill-switch",
+      fallbacks: 0,
+      initErrors: 0,
+      initTimeMs: 12,
+      requestedMode: "legacy-webgl",
+      sceneName: null,
     });
   });
 });

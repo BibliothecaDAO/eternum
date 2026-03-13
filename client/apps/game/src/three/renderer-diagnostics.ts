@@ -12,6 +12,10 @@ interface RendererDiagnosticsSnapshot {
   sceneName: string | null;
 }
 
+interface RendererDiagnosticsWindow {
+  __rendererDiagnostics?: RendererDiagnosticsSnapshot;
+}
+
 const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   activeMode: null,
   buildMode: null,
@@ -26,6 +30,14 @@ const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
 
 let rendererDiagnosticsState = createRendererDiagnosticsState();
 
+function syncRendererDiagnosticsWindow(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  (window as typeof window & RendererDiagnosticsWindow).__rendererDiagnostics = snapshotRendererDiagnostics();
+}
+
 export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): void {
   rendererDiagnosticsState = {
     ...rendererDiagnosticsState,
@@ -35,6 +47,7 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
     initTimeMs: input.initTimeMs,
     requestedMode: input.requestedMode,
   };
+  syncRendererDiagnosticsWindow();
 }
 
 export function setRendererDiagnosticEffectPlan(effectPlan: RendererPostProcessPlan): void {
@@ -46,14 +59,17 @@ export function setRendererDiagnosticEffectPlan(effectPlan: RendererPostProcessP
     toneMapping: { ...effectPlan.toneMapping },
     vignette: { ...effectPlan.vignette },
   };
+  syncRendererDiagnosticsWindow();
 }
 
 export function setRendererDiagnosticSceneName(sceneName: string): void {
   rendererDiagnosticsState.sceneName = sceneName;
+  syncRendererDiagnosticsWindow();
 }
 
 export function incrementRendererDiagnosticError(type: "fallbacks" | "initErrors", amount: number = 1): void {
   rendererDiagnosticsState[type] += Math.max(0, Math.floor(amount));
+  syncRendererDiagnosticsWindow();
 }
 
 export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
@@ -74,4 +90,5 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
 
 export function resetRendererDiagnostics(): void {
   rendererDiagnosticsState = createRendererDiagnosticsState();
+  syncRendererDiagnosticsWindow();
 }
