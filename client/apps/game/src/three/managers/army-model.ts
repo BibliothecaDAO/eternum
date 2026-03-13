@@ -36,6 +36,7 @@ import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
 import {
   resolveNearestIntersection,
   resolveMovementProgressUpdate,
@@ -379,23 +380,14 @@ export class ArmyModel {
 
   private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry;
-
-    // Handle both single material and material array cases
-    const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
-    const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
-    const instancedMesh = new InstancedMesh(
-      geometry,
-      material,
-      this.INITIAL_INSTANCE_CAPACITY,
-    ) as AnimatedInstancedMesh;
+    const pooledMaterial = createPooledInstancedMaterial(mesh.material);
+    const instancedMesh = new InstancedMesh(geometry, pooledMaterial.material, this.INITIAL_INSTANCE_CAPACITY) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
     instancedMesh.instanceMatrix.needsUpdate = true;
     instancedMesh.renderOrder = 10 + meshIndex;
-    // @ts-ignore
-    if (mesh.material.name.includes("stand")) {
+    if (pooledMaterial.usesInstanceColor) {
       instancedMesh.instanceColor = new InstancedBufferAttribute(
         new Float32Array(this.INITIAL_INSTANCE_CAPACITY * 3),
         3,
@@ -1935,9 +1927,7 @@ export class ArmyModel {
     // Dispose geometries and release materials from pool
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
-        // Release material from pool (handle both single and array materials)
-        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-        ArmyModel.materialPool.releaseMaterial(material);
+        releasePooledInstancedMaterial(mesh.material);
 
         // Dispose geometry
         mesh.geometry.dispose();
@@ -1956,8 +1946,7 @@ export class ArmyModel {
     // Dispose cosmetic models
     this.cosmeticModels.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
-        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-        ArmyModel.materialPool.releaseMaterial(material);
+        releasePooledInstancedMaterial(mesh.material);
         mesh.geometry.dispose();
         this.scene.remove(mesh);
       });

@@ -172,7 +172,7 @@ Tests first:
 - [x] Stage 3. Scene Ownership Cleanup
 - [x] Stage 4. Worldmap Decomposition
 - [x] Stage 5. Shader and Material Portability
-- [ ] Stage 6. Asset and Material Correctness
+- [x] Stage 6. Asset and Material Correctness
 - [ ] Stage 7. Integration Test Net
 
 ## Definition of Done
