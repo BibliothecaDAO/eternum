@@ -8,7 +8,7 @@ describe("shader portability inventory", () => {
         strategy: "rewrite",
       },
       "highlight-hex-material.ts": {
-        strategy: "rewrite",
+        strategy: "replace",
       },
       "hover-hex-material.ts": {
         strategy: "replace",
@@ -26,7 +26,7 @@ describe("shader portability inventory", () => {
         strategy: "replace",
       },
       "selection-pulse-material.ts": {
-        strategy: "rewrite",
+        strategy: "replace",
       },
     });
   });

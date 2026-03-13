@@ -1,8 +1,5 @@
 // @vitest-environment jsdom
 import { vi } from "vitest";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 
@@ -69,11 +66,6 @@ Object.defineProperty(navigator, "getBattery", {
 
 const { HighlightHexManager } = await import("./highlight-hex-manager");
 
-function readShaderSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, "..", "shaders", "highlight-hex-material.ts"), "utf8");
-}
-
 describe("HighlightHexManager material ownership", () => {
   it("keeps instanced highlight material state isolated per manager", () => {
     const first = new HighlightHexManager(new THREE.Scene());
@@ -82,18 +74,11 @@ describe("HighlightHexManager material ownership", () => {
     first.updateHighlightPulse(0.2);
     second.updateHighlightPulse(0.8);
 
-    const firstMaterial = (first as any).material as THREE.ShaderMaterial;
-    const secondMaterial = (second as any).material as THREE.ShaderMaterial;
+    const firstMaterial = (first as any).material as THREE.MeshBasicMaterial;
+    const secondMaterial = (second as any).material as THREE.MeshBasicMaterial;
 
     expect(firstMaterial).not.toBe(secondMaterial);
-    expect(firstMaterial.uniforms.opacity.value).toBe(0.2);
-    expect(secondMaterial.uniforms.opacity.value).toBe(0.8);
-  });
-
-  it("creates highlight materials through a factory instead of exporting a singleton", () => {
-    const source = readShaderSource();
-
-    expect(source).toMatch(/export function createHighlightHexInstancedMaterial\(/);
-    expect(source).not.toMatch(/export const highlightHexInstancedMaterial = new ShaderMaterial/);
+    expect(firstMaterial.opacity).toBe(0.2);
+    expect(secondMaterial.opacity).toBe(0.8);
   });
 });

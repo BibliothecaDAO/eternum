@@ -23,18 +23,17 @@ describe("SelectionPulseManager material ownership", () => {
     first.setPulseIntensity(0.2);
     second.setPulseIntensity(0.8);
 
-    const firstMaterial = (first as any).pulseMesh.material as THREE.ShaderMaterial;
-    const secondMaterial = (second as any).pulseMesh.material as THREE.ShaderMaterial;
+    const firstMaterial = (first as any).pulseMesh.material as THREE.MeshBasicMaterial;
+    const secondMaterial = (second as any).pulseMesh.material as THREE.MeshBasicMaterial;
 
-    expect(firstMaterial.uniforms.color.value.getHex()).toBe(0xff0000);
-    expect(secondMaterial.uniforms.color.value.getHex()).toBe(0x00ff00);
-    expect(firstMaterial.uniforms.pulseColor.value.getHex()).toBe(0xffffff);
-    expect(secondMaterial.uniforms.pulseColor.value.getHex()).toBe(0x0000ff);
-    expect(firstMaterial.uniforms.opacity.value).toBe(0.2);
-    expect(secondMaterial.uniforms.opacity.value).toBe(0.8);
+    expect(firstMaterial).not.toBe(secondMaterial);
+    expect(firstMaterial.color.getHex()).toBe(0xff0000);
+    expect(secondMaterial.color.getHex()).toBe(0x00ff00);
+    expect(firstMaterial.opacity).toBeCloseTo(0.2);
+    expect(secondMaterial.opacity).toBeCloseTo(0.8);
   });
 
-  it("advances animation time independently per manager", () => {
+  it("advances pulse opacity independently per manager", () => {
     const first = new SelectionPulseManager(new THREE.Scene());
     const second = new SelectionPulseManager(new THREE.Scene());
 
@@ -44,10 +43,9 @@ describe("SelectionPulseManager material ownership", () => {
     first.update(0.25);
     second.update(0.75);
 
-    const firstMaterial = (first as any).pulseMesh.material as THREE.ShaderMaterial;
-    const secondMaterial = (second as any).pulseMesh.material as THREE.ShaderMaterial;
+    const firstMaterial = (first as any).pulseMesh.material as THREE.MeshBasicMaterial;
+    const secondMaterial = (second as any).pulseMesh.material as THREE.MeshBasicMaterial;
 
-    expect(firstMaterial.uniforms.time.value).toBeCloseTo(0.25);
-    expect(secondMaterial.uniforms.time.value).toBeCloseTo(0.75);
+    expect(firstMaterial.opacity).not.toBe(secondMaterial.opacity);
   });
 });

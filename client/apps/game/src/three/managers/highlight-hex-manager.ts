@@ -1,4 +1,3 @@
-import { createHighlightHexInstancedMaterial } from "@/three/shaders/highlight-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
@@ -9,11 +8,10 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
-  Mesh,
   MeshBasicMaterial,
+  Mesh,
   Quaternion,
   Scene,
-  ShaderMaterial,
   Vector3,
 } from "three";
 import { getWorldPositionForHex } from "../utils";
@@ -54,7 +52,7 @@ interface InstanceAnimationState {
 
 export class HighlightHexManager {
   private instancedMesh: InstancedMesh;
-  private material: ShaderMaterial;
+  private material: MeshBasicMaterial;
   private yOffset: number = 0;
   private hexGeometryPool: HexGeometryPool;
   private highlightTimeline: gsap.core.Timeline | null = null;
@@ -70,8 +68,11 @@ export class HighlightHexManager {
   constructor(private scene: Scene) {
     this.hexGeometryPool = HexGeometryPool.getInstance();
 
-    // Create the instanced material
-    this.material = createHighlightHexInstancedMaterial();
+    this.material = new MeshBasicMaterial({
+      opacity: 0.25,
+      transparent: true,
+      vertexColors: true,
+    });
     hexGeometryDebugger.trackMaterialClone("HighlightHexManager.constructor");
 
     // Get shared geometry
@@ -176,7 +177,7 @@ export class HighlightHexManager {
   }
 
   updateHighlightPulse(pulseFactor: number) {
-    this.material.uniforms.opacity.value = pulseFactor;
+    this.material.opacity = pulseFactor;
   }
 
   setYOffset(yOffset: number) {

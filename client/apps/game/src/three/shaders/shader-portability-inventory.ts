@@ -3,7 +3,7 @@ export const SHADER_PORTABILITY_INVENTORY = {
     strategy: "rewrite",
   },
   "highlight-hex-material.ts": {
-    strategy: "rewrite",
+    strategy: "replace",
   },
   "hover-hex-material.ts": {
     strategy: "replace",
@@ -21,6 +21,6 @@ export const SHADER_PORTABILITY_INVENTORY = {
     strategy: "replace",
   },
   "selection-pulse-material.ts": {
-    strategy: "rewrite",
+    strategy: "replace",
   },
 } as const;
