@@ -12,7 +12,7 @@ export const latestFeatures: LatestFeature[] = [
     date: "2026-03-13",
     title: "Smoother World Icons",
     description:
-      "Army, structure, and chest map icons now render through a more stable material path, improving compatibility with the upcoming WebGPU renderer work while keeping hover feedback intact.",
+      "Army, structure, and chest map icons now render through a more stable material path, and movement path indicators use owned stock line materials, improving compatibility with the upcoming WebGPU renderer work while keeping hover feedback intact.",
     type: "improvement",
   },
   {

@@ -11,7 +11,7 @@ Scope: `client/apps/game/src/three`, `client/apps/game/vite.config.ts`, renderer
 - [x] Phase 2: Backend Contract V2 and Frame Pipeline
 - [ ] Phase 3: Effect and Material Porting Foundation
   - [x] Replace points-label shader path with stock `PointsMaterial` + vertex-color hover state
-  - [ ] Replace path rendering shader path with a WebGPU-compatible material stack
+  - [x] Replace path rendering shader path with owned stock line materials
   - [ ] Port remaining FX/resource FX surfaces off unsupported custom shaders
   - [ ] Finalize backend-neutral post-process parity tuning for the first canary scenes
 - [ ] Phase 4: Scene Rollout and Parity

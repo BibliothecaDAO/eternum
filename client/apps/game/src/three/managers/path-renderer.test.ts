@@ -1,102 +1,68 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as THREE from "three";
+import { PathRenderer } from "./path-renderer";
 
-const disposePathLineMaterialMock = vi.fn();
+function createPathRendererFixture() {
+  const scene = new THREE.Scene();
+  const subject = new PathRenderer();
+  subject.initialize(scene);
+  subject.createPath(
+    1,
+    [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(2, 0, 0)],
+    new THREE.Color(0.2, 0.8, 1.0),
+  );
 
-vi.mock("../geometry/path-geometry", () => ({
-  createPathInstancedGeometry: vi.fn(),
-  PathInstanceBuffers: class MockPathInstanceBuffers {
-    dispose() {}
-  },
-}));
-
-vi.mock("../shaders/path-line-material", () => ({
-  getPathLineMaterial: vi.fn(),
-  updatePathLineMaterial: vi.fn(),
-  updatePathLineResolution: vi.fn(),
-  disposePathLineMaterial: disposePathLineMaterialMock,
-  updatePathLineProgress: vi.fn(),
-}));
-
-vi.mock("../utils/centralized-visibility-manager", () => ({
-  getVisibilityManager: vi.fn(() => ({
-    isBoxVisible: vi.fn(() => true),
-  })),
-}));
-
-const { PathRenderer } = await import("./path-renderer");
-
-function createPathRendererSubject() {
-  const subject = Object.create(PathRenderer.prototype) as any;
-  const clearAll = vi.fn();
-  const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
-  const resizeHandler = vi.fn();
-  const parentRemove = vi.fn();
-  const geometryDispose = vi.fn();
-  const buffersDispose = vi.fn();
-
-  subject.clearAll = clearAll;
-  subject.resizeHandler = resizeHandler;
-  subject.mesh = {
-    parent: {
-      remove: parentRemove,
-    },
-    geometry: {
-      dispose: geometryDispose,
-    },
+  const internals = subject as unknown as {
+    mesh: THREE.Group;
+    pathObjects: Map<number, THREE.LineSegments>;
   };
-  subject.material = {};
-  subject.buffers = {
-    dispose: buffersDispose,
-  };
-  subject.scene = {} as any;
 
   return {
+    scene,
     subject,
-    clearAll,
-    removeEventListenerSpy,
-    resizeHandler,
-    parentRemove,
-    geometryDispose,
-    buffersDispose,
+    container: internals.mesh,
+    pathObject: internals.pathObjects.get(1)!,
   };
 }
 
 describe("PathRenderer lifecycle", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.stubGlobal("window", {
-      removeEventListener: vi.fn(),
-    });
+    vi.restoreAllMocks();
   });
 
-  it("disposes mesh/listeners/materials/buffers and resets singleton instance", () => {
-    const fixture = createPathRendererSubject();
-    const ownedMaterial = fixture.subject.material;
+  it("uses stock line materials for WebGPU-compatible path rendering", () => {
+    const fixture = createPathRendererFixture();
+
+    expect(fixture.container).toBeInstanceOf(THREE.Group);
+    expect(fixture.pathObject).toBeInstanceOf(THREE.LineSegments);
+    expect(fixture.pathObject.material).toBeInstanceOf(THREE.LineBasicMaterial);
+    expect(fixture.pathObject.material).not.toBeInstanceOf(THREE.ShaderMaterial);
+    expect(fixture.scene.children).toContain(fixture.container);
+  });
+
+  it("disposes owned line resources and detaches the scene container", () => {
+    const fixture = createPathRendererFixture();
+    const material = fixture.pathObject.material as THREE.LineBasicMaterial;
+    const geometryDisposeSpy = vi.spyOn(fixture.pathObject.geometry, "dispose");
+    const materialDisposeSpy = vi.spyOn(material, "dispose");
 
     fixture.subject.dispose();
 
-    expect(fixture.clearAll).toHaveBeenCalledTimes(1);
-    expect(fixture.removeEventListenerSpy).toHaveBeenCalledWith("resize", fixture.resizeHandler);
-    expect(fixture.subject.resizeHandler).toBeNull();
-    expect(fixture.parentRemove).toHaveBeenCalledTimes(1);
-    expect(fixture.geometryDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.subject.mesh).toBeNull();
-    expect(disposePathLineMaterialMock).toHaveBeenCalledWith(ownedMaterial);
-    expect(fixture.subject.material).toBeNull();
-    expect(fixture.buffersDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.subject.scene).toBeNull();
+    expect(geometryDisposeSpy).toHaveBeenCalledTimes(1);
+    expect(materialDisposeSpy).toHaveBeenCalledTimes(1);
+    expect(fixture.scene.children).not.toContain(fixture.container);
   });
 
   it("is idempotent and skips duplicate dispose work", () => {
-    const fixture = createPathRendererSubject();
+    const fixture = createPathRendererFixture();
+    const material = fixture.pathObject.material as THREE.LineBasicMaterial;
+    const materialDisposeSpy = vi.spyOn(material, "dispose");
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     fixture.subject.dispose();
     fixture.subject.dispose();
 
-    expect(fixture.clearAll).toHaveBeenCalledTimes(1);
-    expect(disposePathLineMaterialMock).toHaveBeenCalledTimes(1);
-    expect(fixture.buffersDispose).toHaveBeenCalledTimes(1);
+    expect(materialDisposeSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("PathRenderer already disposed, skipping cleanup");
   });
 });
