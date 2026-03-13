@@ -1,4 +1,5 @@
 import { createRendererInitDiagnostics, type RendererBackendV2 } from "./renderer-backend-v2";
+import { incrementRendererDiagnosticError, syncRendererBackendDiagnostics } from "./renderer-diagnostics";
 import {
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
@@ -26,24 +27,32 @@ export async function initializeSelectedRendererBackend(input: {
   });
 
   if (requestedMode === "legacy-webgl") {
-    return input.legacyFactory();
+    const legacy = await input.legacyFactory();
+    syncRendererBackendDiagnostics(legacy.diagnostics);
+    return legacy;
   }
 
   try {
-    return await input.experimentalFactory({
+    const experimental = await input.experimentalFactory({
       requestedMode,
     });
+    syncRendererBackendDiagnostics(experimental.diagnostics);
+    return experimental;
   } catch (error) {
+    incrementRendererDiagnosticError("initErrors");
     const legacy = await input.legacyFactory();
+    incrementRendererDiagnosticError("fallbacks");
+    const diagnostics = createRendererInitDiagnostics({
+      activeMode: "legacy-webgl",
+      buildMode: input.options.envBuildMode,
+      fallbackReason: "experimental-init-error",
+      requestedMode,
+    });
+    syncRendererBackendDiagnostics(diagnostics);
 
     return {
       ...legacy,
-      diagnostics: createRendererInitDiagnostics({
-        activeMode: "legacy-webgl",
-        buildMode: input.options.envBuildMode,
-        fallbackReason: "experimental-init-error",
-        requestedMode,
-      }),
+      diagnostics,
       fallbackError: error instanceof Error ? error : new Error(String(error)),
     };
   }

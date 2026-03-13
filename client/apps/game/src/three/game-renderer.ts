@@ -42,6 +42,11 @@ import {
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
 import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
+import {
+  setRendererDiagnosticEffectPlan,
+  setRendererDiagnosticSceneName,
+  syncRendererBackendDiagnostics,
+} from "./renderer-diagnostics";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
@@ -327,6 +332,9 @@ export default class GameRenderer {
       pixelRatio: this.getTargetPixelRatio(),
     });
     this.renderer = this.backend.renderer;
+    void this.backend.initialize().then((diagnostics) => {
+      syncRendererBackendDiagnostics(diagnostics);
+    });
   }
 
   initStats() {
@@ -1211,6 +1219,7 @@ export default class GameRenderer {
       overlayScene: this.hudScene.getScene(),
       sceneName: this.sceneManager?.getCurrentScene(),
     });
+    setRendererDiagnosticSceneName(this.sceneManager?.getCurrentScene() ?? "unknown");
     if (shouldRenderLabels) {
       this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     }
@@ -1399,6 +1408,7 @@ export default class GameRenderer {
     };
 
     this.postProcessController = this.backend.applyPostProcessPlan(rendererPlan);
+    setRendererDiagnosticEffectPlan(rendererPlan);
   }
 
   private resolveRendererToneMappingMode(
