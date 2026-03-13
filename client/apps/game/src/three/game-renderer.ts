@@ -48,6 +48,7 @@ import {
   setRendererDiagnosticSceneName,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
+import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
@@ -60,6 +61,7 @@ import {
   type RendererBackendFactory,
   type RendererSurfaceLike,
 } from "./renderer-backend";
+import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -152,6 +154,7 @@ export default class GameRenderer {
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
   private readonly isMobileDevice = IS_MOBILE;
+  private backendInitializationPromise?: Promise<void>;
   private readonly handleWindowResize = () => this.onWindowResize();
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -168,10 +171,9 @@ export default class GameRenderer {
     this.graphicsSetting = GRAPHICS_SETTING;
     this.dojo = dojoContext;
 
-    this.initializeRendererBackend();
+    this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeCamera();
     this.initializeRaycaster();
-    this.setupGUIControls();
 
     this.waitForLabelRendererElement()
       .then((labelRendererElement) => {
@@ -326,16 +328,59 @@ export default class GameRenderer {
     });
   }
 
-  private initializeRendererBackend(backendFactory: RendererBackendFactory = createWebGLRendererBackend) {
-    this.backend = backendFactory({
-      graphicsSetting: this.graphicsSetting,
-      isMobileDevice: this.isMobileDevice,
-      pixelRatio: this.getTargetPixelRatio(),
-    });
-    this.renderer = this.backend.renderer;
-    void this.backend.initialize().then((diagnostics) => {
+  private async initializeRendererBackend(backendFactory?: RendererBackendFactory): Promise<void> {
+    if (backendFactory) {
+      this.backend = backendFactory({
+        graphicsSetting: this.graphicsSetting,
+        isMobileDevice: this.isMobileDevice,
+        pixelRatio: this.getTargetPixelRatio(),
+      });
+      this.renderer = this.backend.renderer;
+      const diagnostics = await this.backend.initialize();
       syncRendererBackendDiagnostics(diagnostics);
+      return;
+    }
+
+    const pixelRatio = this.getTargetPixelRatio();
+    const result = await initializeSelectedRendererBackend({
+      experimentalFactory: async ({ requestedMode }) => {
+        const backend = createWebGPURendererBackend({
+          graphicsSetting: this.graphicsSetting,
+          isMobileDevice: this.isMobileDevice,
+          pixelRatio,
+          requestedMode,
+        });
+        const diagnostics = await backend.initialize();
+
+        return {
+          backend: backend as unknown as RendererBackend,
+          diagnostics,
+        };
+      },
+      legacyFactory: async () => {
+        const backend = createWebGLRendererBackend({
+          graphicsSetting: this.graphicsSetting,
+          isMobileDevice: this.isMobileDevice,
+          pixelRatio,
+        });
+        const diagnostics = await backend.initialize();
+
+        return {
+          backend,
+          diagnostics,
+        };
+      },
+      options: {
+        envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+        graphicsSetting: this.graphicsSetting,
+        isMobileDevice: this.isMobileDevice,
+        pixelRatio,
+        search: window.location.search,
+      },
     });
+
+    this.backend = result.backend;
+    this.renderer = result.backend.renderer;
   }
 
   initStats() {
@@ -691,7 +736,9 @@ export default class GameRenderer {
     console.log("📊 Stats recording shortcuts enabled: Ctrl+Shift+R (start) | Ctrl+Shift+S (stop & export)");
   }
 
-  initScene() {
+  async initScene() {
+    await this.backendInitializationPromise;
+    this.setupGUIControls();
     this.setupListeners();
 
     document.body.style.background = "black";

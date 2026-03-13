@@ -199,7 +199,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
 
   // Store the cleanup function so we can call it when navigating away
-  gameRendererCleanup = initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  gameRendererCleanup = await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
 
   inject();
 

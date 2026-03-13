@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const initializeSelectedRendererBackendMock = vi.fn();
+
 vi.mock("@bibliothecadao/eternum", () => {
   const scalar = new Proxy(
     {},
@@ -56,6 +58,16 @@ vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} 
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
 vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
+vi.mock("../../env", () => ({
+  env: {
+    VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
+    VITE_PUBLIC_GRAPHICS_DEV: false,
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+  },
+}));
+vi.mock("./renderer-backend-loader", () => ({
+  initializeSelectedRendererBackend: initializeSelectedRendererBackendMock,
+}));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
   HexagonScene: class MockHexagonScene {},
   CameraView: {
@@ -104,17 +116,44 @@ describe("GameRenderer backend seam", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     vi.restoreAllMocks();
+    initializeSelectedRendererBackendMock.mockReset();
   });
 
-  it("initializes renderer state from a backend factory", () => {
+  it("initializes renderer state from a backend factory", async () => {
     const backend = createFakeBackend();
     const subject = Object.create(GameRenderer.prototype) as any;
     subject.graphicsSetting = "HIGH";
     subject.isMobileDevice = false;
     subject.getTargetPixelRatio = vi.fn(() => 1);
 
-    subject.initializeRendererBackend(() => backend);
+    await subject.initializeRendererBackend(() => backend);
 
+    expect(subject.backend).toBe(backend);
+    expect(subject.renderer).toBe(backend.renderer);
+  });
+
+  it("routes experimental env boot through the selected-backend loader", async () => {
+    const backend = createFakeBackend();
+    const diagnostics = {
+      activeMode: "webgpu",
+      buildMode: "experimental-webgpu-auto",
+      fallbackReason: null,
+      initTimeMs: 4,
+      requestedMode: "experimental-webgpu-auto",
+    } as const;
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.graphicsSetting = "HIGH";
+    subject.isMobileDevice = false;
+    subject.getTargetPixelRatio = vi.fn(() => 1);
+
+    initializeSelectedRendererBackendMock.mockResolvedValue({
+      backend,
+      diagnostics,
+    });
+
+    await subject.initializeRendererBackend();
+
+    expect(initializeSelectedRendererBackendMock).toHaveBeenCalledTimes(1);
     expect(subject.backend).toBe(backend);
     expect(subject.renderer).toBe(backend.renderer);
   });
