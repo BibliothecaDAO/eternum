@@ -413,9 +413,7 @@ export class ChestManager {
       });
       this.pointsRenderer.setMany(nextPointConfigs);
 
-      const stalePointIds = this.pointsRenderer
-        .getEntityIds()
-        .filter((entityId) => !visibleChestIds.has(entityId));
+      const stalePointIds = this.pointsRenderer.getEntityIds().filter((entityId) => !visibleChestIds.has(entityId));
       this.pointsRenderer.removeMany(stalePointIds);
     }
   }

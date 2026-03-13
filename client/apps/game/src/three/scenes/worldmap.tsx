@@ -3356,8 +3356,7 @@ export default class WorldmapScene extends WarpTravel {
     const interactiveStartRow = chunkCenterRow - Math.floor(normalizedHeight / 2);
     const interactiveStartCol = chunkCenterCol - Math.floor(normalizedWidth / 2);
 
-    const nextInteractiveHexWindowKey =
-      `${interactiveStartRow}:${interactiveStartCol}:${normalizedWidth}:${normalizedHeight}`;
+    const nextInteractiveHexWindowKey = `${interactiveStartRow}:${interactiveStartCol}:${normalizedWidth}:${normalizedHeight}`;
 
     if (this.interactiveHexWindowKey !== nextInteractiveHexWindowKey) {
       // Keep interaction state bounded to the active rendered window.
@@ -4122,7 +4121,8 @@ export default class WorldmapScene extends WarpTravel {
 
       const cachedMetadata = cachedMatrices.get("__meta__");
       const expectedExploredTerrainInstances =
-        cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
+        cachedMetadata?.expectedExploredTerrainInstances ??
+        this.getExpectedExploredTerrainInstances(startRow, startCol);
       if (
         this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
         this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
@@ -4568,132 +4568,136 @@ export default class WorldmapScene extends WarpTravel {
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
     try {
-
       // Keep selection continuity during shortcut tabbing to avoid visible label/selection flashes.
       if (reason !== "shortcut") {
         this.clearEntitySelection();
       }
 
-    const oldChunk = this.currentChunk;
-    const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
-      previousSwitchPosition: this.lastChunkSwitchPosition
-        ? {
-            x: this.lastChunkSwitchPosition.x,
-            z: this.lastChunkSwitchPosition.z,
-          }
-        : null,
-      nextSwitchPosition: switchPosition
-        ? {
-            x: switchPosition.x,
-            z: switchPosition.z,
-          }
-        : null,
-      previousMovementVector: this.lastChunkSwitchMovement,
-      minMovementDistance: 0.001,
-    });
-    const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
-    const effectiveForce = force || shouldAggressiveReversalRefresh;
-    const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-    const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
-    const hasFiniteOldChunkCoordinates =
-      oldChunkCoordinates !== null &&
-      Number.isFinite(oldChunkCoordinates[0]) &&
-      Number.isFinite(oldChunkCoordinates[1]);
-    prepareWarpTravelChunkBounds({
-      targetChunkKey: chunkKey,
-      startRow,
-      startCol,
-      hasFiniteOldChunkCoordinates,
-      oldChunkCoordinates:
-        hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
-          ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+      const oldChunk = this.currentChunk;
+      const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
+        previousSwitchPosition: this.lastChunkSwitchPosition
+          ? {
+              x: this.lastChunkSwitchPosition.x,
+              z: this.lastChunkSwitchPosition.z,
+            }
           : null,
-      computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
-      registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
-      combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
-      applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
-    });
-
-    // Load surrounding pinned chunks for better UX.
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    if (shouldAggressiveReversalRefresh) {
-      this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
-        includeSurroundingChunks: surroundingChunks,
-        invalidateFetchAreas: true,
+        nextSwitchPosition: switchPosition
+          ? {
+              x: switchPosition.x,
+              z: switchPosition.z,
+            }
+          : null,
+        previousMovementVector: this.lastChunkSwitchMovement,
+        minMovementDistance: 0.001,
       });
-    } else if (effectiveForce) {
-      this.removeCachedMatricesForChunk(startRow, startCol);
-    }
+      const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
+      const effectiveForce = force || shouldAggressiveReversalRefresh;
+      const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
+      const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
+      const hasFiniteOldChunkCoordinates =
+        oldChunkCoordinates !== null &&
+        Number.isFinite(oldChunkCoordinates[0]) &&
+        Number.isFinite(oldChunkCoordinates[1]);
+      prepareWarpTravelChunkBounds({
+        targetChunkKey: chunkKey,
+        startRow,
+        startCol,
+        hasFiniteOldChunkCoordinates,
+        oldChunkCoordinates:
+          hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+            ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+            : null,
+        computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
+        registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
+        combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
+        applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
+      });
 
-    const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
-      chunkKey,
-      startRow,
-      startCol,
-      surroundingChunks,
-      transitionToken,
-      renderSize: this.renderChunkSize,
-      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
-      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
-        this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-      updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
-        this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
-      onChunkHydrated: (hydratedChunkKey) => {
-        this.hydratedChunkRefreshes.delete(hydratedChunkKey);
-      },
-    });
-
-    const finalizeResult = await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: tileFetchSucceeded,
-      isCurrentTransition: transitionToken === this.chunkTransitionToken,
-      targetChunk: chunkKey,
-      previousChunk: oldChunk,
-      currentChunk: this.currentChunk,
-      previousPinnedChunks,
-      hasFiniteOldChunkCoordinates,
-      oldChunkCoordinates:
-        hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
-          ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
-          : null,
-      startRow,
-      startCol,
-      force: effectiveForce,
-      transitionToken,
-      setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
-      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
-      restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
-        this.restorePreviousChunkVisualsAfterRollback(oldStartRow, oldStartCol, previousChunk, previousTransitionToken),
-      clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
-      forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
-      updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
-        this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
-      updateManagersForChunk: (targetChunkKey, managerOptions) =>
-        this.updateManagersForChunk(targetChunkKey, managerOptions),
-      unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
-    });
-
-    if (finalizeResult.status === "rolled_back") {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
-      return;
-    }
-
-    if (finalizeResult.status === "stale_dropped") {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
-      return;
-    }
-
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
-
-    // Track memory usage after chunk switch
-    if (memoryMonitor) {
-      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
-      if (preChunkStats && postChunkStats) {
-        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        // Memory monitoring hooks - intentionally silent unless threshold exceeded
-        void memoryDelta;
+      // Load surrounding pinned chunks for better UX.
+      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+      if (shouldAggressiveReversalRefresh) {
+        this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
+          includeSurroundingChunks: surroundingChunks,
+          invalidateFetchAreas: true,
+        });
+      } else if (effectiveForce) {
+        this.removeCachedMatricesForChunk(startRow, startCol);
       }
-    }
+
+      const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
+        chunkKey,
+        startRow,
+        startCol,
+        surroundingChunks,
+        transitionToken,
+        renderSize: this.renderChunkSize,
+        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+        updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+        updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
+          this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+        updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
+          this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
+        onChunkHydrated: (hydratedChunkKey) => {
+          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+        },
+      });
+
+      const finalizeResult = await finalizeWarpTravelChunkSwitch({
+        fetchSucceeded: tileFetchSucceeded,
+        isCurrentTransition: transitionToken === this.chunkTransitionToken,
+        targetChunk: chunkKey,
+        previousChunk: oldChunk,
+        currentChunk: this.currentChunk,
+        previousPinnedChunks,
+        hasFiniteOldChunkCoordinates,
+        oldChunkCoordinates:
+          hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+            ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+            : null,
+        startRow,
+        startCol,
+        force: effectiveForce,
+        transitionToken,
+        setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
+        updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+        unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
+        restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
+          this.restorePreviousChunkVisualsAfterRollback(
+            oldStartRow,
+            oldStartCol,
+            previousChunk,
+            previousTransitionToken,
+          ),
+        clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
+        forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
+        updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
+          this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
+        updateManagersForChunk: (targetChunkKey, managerOptions) =>
+          this.updateManagersForChunk(targetChunkKey, managerOptions),
+        unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
+      });
+
+      if (finalizeResult.status === "rolled_back") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
+        return;
+      }
+
+      if (finalizeResult.status === "stale_dropped") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
+        return;
+      }
+
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
+
+      // Track memory usage after chunk switch
+      if (memoryMonitor) {
+        const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
+        if (preChunkStats && postChunkStats) {
+          const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+          // Memory monitoring hooks - intentionally silent unless threshold exceeded
+          void memoryDelta;
+        }
+      }
 
       if (switchPosition) {
         this.lastChunkSwitchPosition = switchPosition;

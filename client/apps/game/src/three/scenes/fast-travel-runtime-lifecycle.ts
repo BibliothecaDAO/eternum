@@ -15,14 +15,7 @@ interface FastTravelPathRenderer {
   setSelectedPath(entityId: number | null): void;
 }
 
-interface ResetFastTravelRuntimeStateInput<
-  THydratedChunk,
-  TRenderState,
-  TEntityAnchor,
-  TArmy,
-  TSpire,
-  TTimeout,
-> {
+interface ResetFastTravelRuntimeStateInput<THydratedChunk, TRenderState, TEntityAnchor, TArmy, TSpire, TTimeout> {
   currentHydratedChunk: THydratedChunk | null;
   currentRenderState: TRenderState | null;
   currentEntityAnchors: TEntityAnchor[];
