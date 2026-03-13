@@ -1,6 +1,5 @@
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { createPointsLabelMaterial } from "../shaders/points-label-material";
 import { FrustumManager } from "../utils/frustum-manager";
 
 /**
@@ -25,10 +24,11 @@ const sharedSpriteTextureReferences = new WeakMap<THREE.Texture, number>();
 export class PointsLabelRenderer {
   private points: THREE.Points;
   private geometry: THREE.BufferGeometry;
-  private material: THREE.ShaderMaterial;
+  private material: THREE.PointsMaterial;
   private spriteTexture: THREE.Texture;
   private maxPoints: number;
   private currentCount: number = 0;
+  private readonly hoverBrightness: number;
 
   // Track entity ID to point index mapping
   private entityIdToIndex: Map<ID, number> = new Map();
@@ -42,9 +42,7 @@ export class PointsLabelRenderer {
 
   // Reusable arrays for buffer updates
   private positionsArray: Float32Array;
-  private sizesArray: Float32Array;
-  private colorIndicesArray: Float32Array;
-  private hoverArray: Float32Array;
+  private colorsArray: Float32Array;
   private frustumManager?: FrustumManager;
   private unsubscribeFrustum?: () => void;
   private boundsDirty = true;
@@ -56,36 +54,40 @@ export class PointsLabelRenderer {
     spriteTexture: THREE.Texture,
     maxPoints = 1000,
     pointSize = 32,
-    hoverScale = 1.2,
+    _hoverScale = 1.2,
     hoverBrightness = 1.3,
     sizeAttenuation = false,
     frustumManager?: FrustumManager,
   ) {
     this.maxPoints = maxPoints;
     this.spriteTexture = spriteTexture;
+    this.hoverBrightness = hoverBrightness;
     sharedSpriteTextureReferences.set(spriteTexture, (sharedSpriteTextureReferences.get(spriteTexture) ?? 0) + 1);
 
     // Initialize buffer arrays
     this.positionsArray = new Float32Array(maxPoints * 3);
-    this.sizesArray = new Float32Array(maxPoints);
-    this.colorIndicesArray = new Float32Array(maxPoints);
-    this.hoverArray = new Float32Array(maxPoints);
-
-    // Set default sizes to 1.0
-    this.sizesArray.fill(1.0);
+    this.colorsArray = new Float32Array(maxPoints * 3);
+    this.colorsArray.fill(1.0);
 
     // Create geometry with buffer attributes
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute("position", new THREE.BufferAttribute(this.positionsArray, 3));
-    this.geometry.setAttribute("size", new THREE.BufferAttribute(this.sizesArray, 1));
-    this.geometry.setAttribute("colorIndex", new THREE.BufferAttribute(this.colorIndicesArray, 1));
-    this.geometry.setAttribute("hover", new THREE.BufferAttribute(this.hoverArray, 1));
+    this.geometry.setAttribute("color", new THREE.BufferAttribute(this.colorsArray, 3));
 
     // Set initial draw range to 0 (no points visible)
     this.geometry.setDrawRange(0, 0);
 
-    // Create material
-    this.material = createPointsLabelMaterial(spriteTexture, pointSize, hoverScale, hoverBrightness, sizeAttenuation);
+    // Use stock materials so the icon path stays portable across legacy and WebGPU builds.
+    this.material = new THREE.PointsMaterial({
+      map: spriteTexture,
+      size: pointSize,
+      sizeAttenuation,
+      transparent: true,
+      alphaTest: 0.1,
+      depthTest: false,
+      depthWrite: false,
+      vertexColors: true,
+    });
 
     // Create Points object
     this.points = new THREE.Points(this.geometry, this.material);
@@ -147,7 +149,7 @@ export class PointsLabelRenderer {
    * Add or update a point label
    */
   public setPoint(config: PointLabelConfig): void {
-    const { entityId, position, size = 1.0, colorIndex = 0 } = config;
+    const { entityId, position, size: _size = 1.0, colorIndex: _colorIndex = 0 } = config;
 
     // Check if point already exists
     let index = this.entityIdToIndex.get(entityId);
@@ -172,15 +174,11 @@ export class PointsLabelRenderer {
     this.positionsArray[posIndex] = position.x;
     this.positionsArray[posIndex + 1] = position.y;
     this.positionsArray[posIndex + 2] = position.z;
-
-    // Update attributes
-    this.sizesArray[index] = size;
-    this.colorIndicesArray[index] = colorIndex;
+    this.setPointBrightness(index, this.hoveredEntityId === entityId ? this.hoverBrightness : 1);
 
     // Mark attributes as needing update
     this.geometry.attributes.position.needsUpdate = true;
-    this.geometry.attributes.size.needsUpdate = true;
-    this.geometry.attributes.colorIndex.needsUpdate = true;
+    this.geometry.attributes.color.needsUpdate = true;
 
     // Update draw range
     this.geometry.setDrawRange(0, this.currentCount);
@@ -221,9 +219,9 @@ export class PointsLabelRenderer {
       this.positionsArray[removedPosIndex + 1] = this.positionsArray[lastPosIndex + 1];
       this.positionsArray[removedPosIndex + 2] = this.positionsArray[lastPosIndex + 2];
 
-      this.sizesArray[index] = this.sizesArray[lastIndex];
-      this.colorIndicesArray[index] = this.colorIndicesArray[lastIndex];
-      this.hoverArray[index] = this.hoverArray[lastIndex];
+      this.colorsArray[removedPosIndex] = this.colorsArray[lastPosIndex];
+      this.colorsArray[removedPosIndex + 1] = this.colorsArray[lastPosIndex + 1];
+      this.colorsArray[removedPosIndex + 2] = this.colorsArray[lastPosIndex + 2];
 
       // Update mappings
       this.entityIdToIndex.set(lastEntityId, index);
@@ -239,9 +237,7 @@ export class PointsLabelRenderer {
 
     // Mark attributes as needing update
     this.geometry.attributes.position.needsUpdate = true;
-    this.geometry.attributes.size.needsUpdate = true;
-    this.geometry.attributes.colorIndex.needsUpdate = true;
-    this.geometry.attributes.hover.needsUpdate = true;
+    this.geometry.attributes.color.needsUpdate = true;
 
     // Update draw range
     this.geometry.setDrawRange(0, this.currentCount);
@@ -288,8 +284,8 @@ export class PointsLabelRenderer {
     this.indexToEntityId.clear();
     this.hoveredEntityId = null;
     this.geometry.setDrawRange(0, 0);
-    this.hoverArray.fill(0);
-    this.geometry.attributes.hover.needsUpdate = true;
+    this.colorsArray.fill(1.0);
+    this.geometry.attributes.color.needsUpdate = true;
     this.boundsDirty = true;
     this.refreshFrustumVisibility();
   }
@@ -337,7 +333,7 @@ export class PointsLabelRenderer {
     if (this.hoveredEntityId !== null) {
       const prevIndex = this.entityIdToIndex.get(this.hoveredEntityId);
       if (prevIndex !== undefined) {
-        this.hoverArray[prevIndex] = 0.0;
+        this.setPointBrightness(prevIndex, 1);
       }
     }
 
@@ -345,8 +341,8 @@ export class PointsLabelRenderer {
     this.hoveredEntityId = entityId;
     const index = this.entityIdToIndex.get(entityId);
     if (index !== undefined) {
-      this.hoverArray[index] = 1.0;
-      this.geometry.attributes.hover.needsUpdate = true;
+      this.setPointBrightness(index, this.hoverBrightness);
+      this.geometry.attributes.color.needsUpdate = true;
     }
   }
 
@@ -357,8 +353,8 @@ export class PointsLabelRenderer {
     if (this.hoveredEntityId !== null) {
       const index = this.entityIdToIndex.get(this.hoveredEntityId);
       if (index !== undefined) {
-        this.hoverArray[index] = 0.0;
-        this.geometry.attributes.hover.needsUpdate = true;
+        this.setPointBrightness(index, 1);
+        this.geometry.attributes.color.needsUpdate = true;
       }
       this.hoveredEntityId = null;
     }
@@ -416,5 +412,12 @@ export class PointsLabelRenderer {
     } else {
       sharedSpriteTextureReferences.set(this.spriteTexture, remainingReferences);
     }
+  }
+
+  private setPointBrightness(index: number, brightness: number): void {
+    const colorIndex = index * 3;
+    this.colorsArray[colorIndex] = brightness;
+    this.colorsArray[colorIndex + 1] = brightness;
+    this.colorsArray[colorIndex + 2] = brightness;
   }
 }

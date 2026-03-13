@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-13",
+    title: "Smoother World Icons",
+    description:
+      "Army, structure, and chest map icons now render through a more stable material path, improving compatibility with the upcoming WebGPU renderer work while keeping hover feedback intact.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-06",
     title: "Tournament Leaderboard Table Cleanup",
     description:
