@@ -1,17 +1,26 @@
 export const SHADER_PORTABILITY_INVENTORY = {
+  "fx-manager.ts": {
+    strategy: "rewrite",
+  },
   "highlight-hex-material.ts": {
-    disposition: "deferred",
+    strategy: "rewrite",
   },
   "hover-hex-material.ts": {
-    disposition: "deferred",
+    strategy: "rewrite",
+  },
+  "label-stack.ts": {
+    strategy: "keep",
   },
   "path-line-material.ts": {
-    disposition: "rewrite",
+    strategy: "rewrite",
   },
   "points-label-material.ts": {
-    disposition: "rewrite",
+    strategy: "redesign",
+  },
+  "resource-fx-manager.ts": {
+    strategy: "replace",
   },
   "selection-pulse-material.ts": {
-    disposition: "rewrite",
+    strategy: "rewrite",
   },
 } as const;

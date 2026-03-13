@@ -35,6 +35,33 @@ interface PostProcessingEffectPlan {
   shouldEnableChromaticAberration: boolean;
 }
 
+type RendererToneMappingMode = "aces-filmic" | "reinhard";
+
+interface RendererEffectPlanInput {
+  bloom: boolean;
+  bloomIntensity: number;
+  chromaticAberration: boolean;
+  fxaa: boolean;
+  toneMapping: RendererToneMappingMode;
+  vignette: boolean;
+}
+
+interface RendererEffectPlan {
+  antiAlias: "fxaa" | "none";
+  bloom: {
+    enabled: boolean;
+    intensity: number;
+  };
+  chromaticAberration: {
+    enabled: boolean;
+  };
+  outputTransform: "tone-mapped";
+  toneMapping: RendererToneMappingMode;
+  vignette: {
+    enabled: boolean;
+  };
+}
+
 export function resolveLabelRenderIntervalMs(view: LabelRenderView, isMobileDevice: boolean): number {
   const baseInterval = (() => {
     switch (view) {
@@ -100,5 +127,23 @@ export function resolvePostProcessingEffectPlan(input: PostProcessingEffectPlanI
     shouldEnableBloom: input.bloom,
     shouldEnableVignette: input.vignette,
     shouldEnableChromaticAberration: input.vignette,
+  };
+}
+
+export function resolveRendererEffectPlan(input: RendererEffectPlanInput): RendererEffectPlan {
+  return {
+    antiAlias: input.fxaa ? "fxaa" : "none",
+    bloom: {
+      enabled: input.bloom,
+      intensity: input.bloomIntensity,
+    },
+    chromaticAberration: {
+      enabled: input.chromaticAberration,
+    },
+    outputTransform: "tone-mapped",
+    toneMapping: input.toneMapping,
+    vignette: {
+      enabled: input.vignette,
+    },
   };
 }

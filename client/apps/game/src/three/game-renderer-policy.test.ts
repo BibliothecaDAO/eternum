@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
+  resolveRendererEffectPlan,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
@@ -158,6 +159,62 @@ describe("resolvePostProcessingEffectPlan", () => {
       shouldEnableBloom: true,
       shouldEnableVignette: true,
       shouldEnableChromaticAberration: true,
+    });
+  });
+});
+
+describe("resolveRendererEffectPlan", () => {
+  it("maps quality toggles into a backend-neutral effect policy", () => {
+    expect(
+      resolveRendererEffectPlan({
+        bloom: true,
+        bloomIntensity: 0.35,
+        chromaticAberration: false,
+        fxaa: true,
+        toneMapping: "aces-filmic",
+        vignette: false,
+      }),
+    ).toEqual({
+      antiAlias: "fxaa",
+      bloom: {
+        enabled: true,
+        intensity: 0.35,
+      },
+      chromaticAberration: {
+        enabled: false,
+      },
+      outputTransform: "tone-mapped",
+      toneMapping: "aces-filmic",
+      vignette: {
+        enabled: false,
+      },
+    });
+  });
+
+  it("disables optional effects cleanly", () => {
+    expect(
+      resolveRendererEffectPlan({
+        bloom: false,
+        bloomIntensity: 0.7,
+        chromaticAberration: true,
+        fxaa: false,
+        toneMapping: "reinhard",
+        vignette: true,
+      }),
+    ).toEqual({
+      antiAlias: "none",
+      bloom: {
+        enabled: false,
+        intensity: 0.7,
+      },
+      chromaticAberration: {
+        enabled: true,
+      },
+      outputTransform: "tone-mapped",
+      toneMapping: "reinhard",
+      vignette: {
+        enabled: true,
+      },
     });
   });
 });
