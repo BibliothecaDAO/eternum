@@ -62,12 +62,12 @@ vi.mock("@bibliothecadao/types", () => {
   );
 });
 
-import { HighlightHexManager } from "./highlight-hex-manager";
-
 Object.defineProperty(navigator, "getBattery", {
   configurable: true,
   value: vi.fn(async () => ({ charging: true })),
 });
+
+const { HighlightHexManager } = await import("./highlight-hex-manager");
 
 function readShaderSource(): string {
   const currentDir = dirname(fileURLToPath(import.meta.url));

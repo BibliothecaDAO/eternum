@@ -1,6 +1,14 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FXManager } from "./fx-manager";
+
+function readFXManagerSource(): string {
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+  return readFileSync(resolve(currentDir, "fx-manager.ts"), "utf8");
+}
 
 describe("FXManager", () => {
   afterEach(() => {
@@ -18,5 +26,13 @@ describe("FXManager", () => {
     expect(instance).toBeDefined();
 
     fxManager.destroy();
+  });
+
+  it("removes the unused batched shader path from the active FX manager implementation", () => {
+    const source = readFXManagerSource();
+
+    expect(source).not.toMatch(/class BatchedFXSystem/);
+    expect(source).not.toMatch(/new THREE\.ShaderMaterial\(/);
+    expect(source).not.toMatch(/batchedSystems: Map/);
   });
 });
