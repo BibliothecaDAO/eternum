@@ -165,6 +165,16 @@ Tests first:
 6. Asset and Material Correctness
 7. Integration Test Net
 
+## Progress
+
+- [x] Stage 1. Lifecycle Hardening
+- [ ] Stage 2. Renderer Backend Extraction
+- [ ] Stage 3. Scene Ownership Cleanup
+- [ ] Stage 4. Worldmap Decomposition
+- [ ] Stage 5. Shader and Material Portability
+- [ ] Stage 6. Asset and Material Correctness
+- [ ] Stage 7. Integration Test Net
+
 ## Definition of Done
 
 The codebase can run on the existing WebGL backend through the new abstraction, runtime tests cover the critical lifecycle paths, and the remaining WebGPU work is mostly backend implementation plus shader rewrites, not architecture cleanup.
