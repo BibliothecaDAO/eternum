@@ -24,7 +24,8 @@ Scope: `client/apps/game/src/three`, `client/apps/game/vite.config.ts`, renderer
   - [x] Rollout kill switch
   - [x] Rollout checklist and browser / device QA matrix
   - [x] Fallback and failure dashboard inputs
-- [ ] Phase 6: Legacy Backend Retirement Decision
+- [x] Phase 6: Legacy Backend Retirement Decision
+  - [x] Decision memo: keep both backends longer while internal rollout evidence accumulates
 
 ## 1. Objective
 
