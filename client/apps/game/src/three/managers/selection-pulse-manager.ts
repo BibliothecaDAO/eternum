@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { selectionPulseMaterial, updateSelectionPulseMaterial } from "@/three/shaders/selection-pulse-material";
+import { createSelectionPulseMaterial, updateSelectionPulseMaterial } from "@/three/shaders/selection-pulse-material";
 
 /**
  * Manages pulsing selection effects for armies and structures
@@ -20,6 +20,7 @@ export class SelectionPulseManager {
   // Shared material for ownership pulses (separate from main selection)
   // All ownership pulses animate together so they can share one material
   private readonly sharedOwnershipMaterial: THREE.ShaderMaterial;
+  private readonly primaryPulseMaterial: THREE.ShaderMaterial;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -28,8 +29,8 @@ export class SelectionPulseManager {
     const hexShape = createHexagonShape(HEX_SIZE * 1.1);
     this.sharedOwnershipGeometry = new THREE.ShapeGeometry(hexShape);
 
-    // Create shared material for ownership pulses (cloned once from prototype)
-    this.sharedOwnershipMaterial = selectionPulseMaterial.clone();
+    this.primaryPulseMaterial = createSelectionPulseMaterial();
+    this.sharedOwnershipMaterial = createSelectionPulseMaterial();
 
     this.createPulseMesh();
   }
@@ -39,7 +40,7 @@ export class SelectionPulseManager {
     const hexShape = createHexagonShape(HEX_SIZE * 1.1); // Slightly larger than normal hex
     const geometry = new THREE.ShapeGeometry(hexShape);
 
-    this.pulseMesh = new THREE.Mesh(geometry, selectionPulseMaterial);
+    this.pulseMesh = new THREE.Mesh(geometry, this.primaryPulseMaterial);
     this.pulseMesh.position.y = 0.5; // Much higher above ground for visibility
     this.pulseMesh.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.pulseMesh.renderOrder = 100; // Very high render order to ensure visibility
@@ -67,7 +68,7 @@ export class SelectionPulseManager {
       return;
     }
 
-    updateSelectionPulseMaterial(deltaTime);
+    updateSelectionPulseMaterial(this.primaryPulseMaterial, deltaTime);
 
     // Update shared ownership material time (all ownership pulses animate together)
     if (this.sharedOwnershipMaterial.uniforms.time) {
@@ -168,23 +169,23 @@ export class SelectionPulseManager {
    * Update pulse colors - can be used for different entity types
    */
   public setPulseColor(baseColor: THREE.Color, pulseColor: THREE.Color): void {
-    selectionPulseMaterial.uniforms.color.value.copy(baseColor);
-    selectionPulseMaterial.uniforms.pulseColor.value.copy(pulseColor);
+    this.primaryPulseMaterial.uniforms.color.value.copy(baseColor);
+    this.primaryPulseMaterial.uniforms.pulseColor.value.copy(pulseColor);
   }
 
   /**
    * Set pulse intensity (0.0 to 1.0)
    */
   public setPulseIntensity(intensity: number): void {
-    selectionPulseMaterial.uniforms.opacity.value = intensity;
-    selectionPulseMaterial.uniforms.pulseStrength.value = intensity;
+    this.primaryPulseMaterial.uniforms.opacity.value = intensity;
+    this.primaryPulseMaterial.uniforms.pulseStrength.value = intensity;
   }
 
   /**
    * Set pulse speed multiplier
    */
   public setPulseSpeed(speed: number): void {
-    selectionPulseMaterial.uniforms.speed.value = speed;
+    this.primaryPulseMaterial.uniforms.speed.value = speed;
   }
 
   /**
@@ -194,6 +195,7 @@ export class SelectionPulseManager {
     if (this.pulseMesh) {
       this.scene.remove(this.pulseMesh);
       this.pulseMesh.geometry.dispose();
+      this.primaryPulseMaterial.dispose();
       this.pulseMesh = null;
     }
 

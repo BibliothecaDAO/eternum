@@ -59,26 +59,26 @@ void main() {
 }
 `;
 
-// Create a subtle blue-white rim color
-const rimColor = new Color(0.4, 0.8, 1.0); // Soft blue
-rimColor.multiplyScalar(2.0); // Increase intensity
+export function createHoverHexMaterial(): ShaderMaterial {
+  const rimColor = new Color(0.4, 0.8, 1.0);
+  rimColor.multiplyScalar(2.0);
+  const baseColor = new Color(0.2, 0.6, 1.0);
 
-const baseColor = new Color(0.2, 0.6, 1.0); // Base blue color
-
-export const hoverHexMaterial = new ShaderMaterial({
-  vertexShader,
-  fragmentShader,
-  uniforms: {
-    color: { value: baseColor },
-    rimColor: { value: rimColor },
-    opacity: { value: 0.6 },
-    time: { value: 0 },
-    rimStrength: { value: 1.0 },
-  },
-  transparent: true,
-  depthWrite: false,
-  blending: 1, // NormalBlending instead of AdditiveBlending
-});
+  return new ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      color: { value: baseColor },
+      rimColor: { value: rimColor },
+      opacity: { value: 0.6 },
+      time: { value: 0 },
+      rimStrength: { value: 1.0 },
+    },
+    transparent: true,
+    depthWrite: false,
+    blending: 1,
+  });
+}
 
 // Frame limiting for shader animation
 let lastShaderUpdate = 0;
@@ -87,10 +87,10 @@ const SHADER_UPDATE_INTERVAL = 1000 / 30; // 30 FPS max for shader animation
 /**
  * Update the hover hex material animation with frame limiting
  */
-export function updateHoverHexMaterial(deltaTime: number) {
+export function updateHoverHexMaterial(material: ShaderMaterial, deltaTime: number) {
   const now = performance.now();
   if (now - lastShaderUpdate >= SHADER_UPDATE_INTERVAL) {
-    hoverHexMaterial.uniforms.time.value += deltaTime;
+    material.uniforms.time.value += deltaTime;
     lastShaderUpdate = now;
   }
 }

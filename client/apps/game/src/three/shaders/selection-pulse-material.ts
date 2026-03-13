@@ -60,31 +60,29 @@ void main() {
 }
 `;
 
-// Create selection-appropriate colors
-const baseColor = new Color(0.2, 0.8, 1.0); // Bright blue
-const pulseColor = new Color(1.0, 1.0, 0.8); // Warm white/yellow
-
-export const selectionPulseMaterial = new ShaderMaterial({
-  vertexShader,
-  fragmentShader,
-  uniforms: {
-    color: { value: baseColor },
-    pulseColor: { value: pulseColor },
-    opacity: { value: 0.5 }, // Half the opacity
-    time: { value: 0 },
-    pulseStrength: { value: 0.75 }, // Half the pulse strength
-    speed: { value: 2.0 }, // Keep the faster animation
-  },
-  transparent: true,
-  depthWrite: false,
-  blending: 1, // NormalBlending
-});
+export function createSelectionPulseMaterial(): ShaderMaterial {
+  return new ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      color: { value: new Color(0.2, 0.8, 1.0) },
+      pulseColor: { value: new Color(1.0, 1.0, 0.8) },
+      opacity: { value: 0.5 },
+      time: { value: 0 },
+      pulseStrength: { value: 0.75 },
+      speed: { value: 2.0 },
+    },
+    transparent: true,
+    depthWrite: false,
+    blending: 1,
+  });
+}
 
 /**
  * Update the selection pulse material animation
  */
-export function updateSelectionPulseMaterial(deltaTime: number) {
-  selectionPulseMaterial.uniforms.time.value += deltaTime;
+export function updateSelectionPulseMaterial(material: ShaderMaterial, deltaTime: number) {
+  material.uniforms.time.value += deltaTime;
 }
 
 /**
@@ -109,28 +107,28 @@ function setSelectionColorForPlayer(
 /**
  * Set selection colors directly from a PlayerColorProfile
  */
-function setSelectionColorFromProfile(profile: PlayerColorProfile): void {
-  selectionPulseMaterial.uniforms.color.value.copy(profile.selection);
+function setSelectionColorFromProfile(material: ShaderMaterial, profile: PlayerColorProfile): void {
+  material.uniforms.color.value.copy(profile.selection);
   // Use a brighter version of the primary color for the pulse
   const pulseCol = profile.primary.clone();
   pulseCol.offsetHSL(0, -0.1, 0.2); // Make it slightly lighter and less saturated
-  selectionPulseMaterial.uniforms.pulseColor.value.copy(pulseCol);
+  material.uniforms.pulseColor.value.copy(pulseCol);
 }
 
 /**
  * Reset selection colors to default (bright blue)
  */
-function resetSelectionColors(): void {
-  selectionPulseMaterial.uniforms.color.value.setRGB(0.2, 0.8, 1.0);
-  selectionPulseMaterial.uniforms.pulseColor.value.setRGB(1.0, 1.0, 0.8);
+function resetSelectionColors(material: ShaderMaterial): void {
+  material.uniforms.color.value.setRGB(0.2, 0.8, 1.0);
+  material.uniforms.pulseColor.value.setRGB(1.0, 1.0, 0.8);
 }
 
 /**
  * Get current selection colors for debugging
  */
-function getSelectionColors(): { baseColor: Color; pulseColor: Color } {
+function getSelectionColors(material: ShaderMaterial): { baseColor: Color; pulseColor: Color } {
   return {
-    baseColor: selectionPulseMaterial.uniforms.color.value.clone(),
-    pulseColor: selectionPulseMaterial.uniforms.pulseColor.value.clone(),
+    baseColor: material.uniforms.color.value.clone(),
+    pulseColor: material.uniforms.pulseColor.value.clone(),
   };
 }

@@ -1,6 +1,6 @@
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { hoverHexMaterial, updateHoverHexMaterial } from "@/three/shaders/hover-hex-material";
+import { createHoverHexMaterial, updateHoverHexMaterial } from "@/three/shaders/hover-hex-material";
 import { gltfLoader } from "@/three/utils/utils";
 import * as THREE from "three";
 
@@ -15,9 +15,11 @@ export class HoverHexManager {
   private outlineModel: THREE.Object3D | null = null;
   private isVisible = false;
   private visualMode: HoverVisualMode = "fill";
+  private readonly hoverMaterial: THREE.ShaderMaterial;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.hoverMaterial = createHoverHexMaterial();
     this.createHoverHex();
     this.loadOutlineModel();
     // Don't start animation immediately - only when hover becomes visible
@@ -28,7 +30,7 @@ export class HoverHexManager {
     const hexShape = createHexagonShape(HEX_SIZE * 1.02);
     const geometry = new THREE.ShapeGeometry(hexShape);
 
-    this.hoverHex = new THREE.Mesh(geometry, hoverHexMaterial);
+    this.hoverHex = new THREE.Mesh(geometry, this.hoverMaterial);
     this.hoverHex.position.y = 0.2; // Very slightly above ground, lower than labels
     this.hoverHex.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.hoverHex.renderOrder = 50; // Lower render order to avoid interfering with labels
@@ -73,7 +75,7 @@ export class HoverHexManager {
       return;
     }
 
-    updateHoverHexMaterial(deltaTime);
+    updateHoverHexMaterial(this.hoverMaterial, deltaTime);
   }
 
   public setVisualMode(mode: HoverVisualMode): void {
@@ -135,16 +137,16 @@ export class HoverHexManager {
    * Update hover colors - can be used for different hover states
    */
   public setHoverColor(baseColor: THREE.Color, rimColor: THREE.Color): void {
-    hoverHexMaterial.uniforms.color.value.copy(baseColor);
-    hoverHexMaterial.uniforms.rimColor.value.copy(rimColor);
+    this.hoverMaterial.uniforms.color.value.copy(baseColor);
+    this.hoverMaterial.uniforms.rimColor.value.copy(rimColor);
   }
 
   /**
    * Set hover intensity (0.0 to 1.0)
    */
   public setHoverIntensity(intensity: number): void {
-    hoverHexMaterial.uniforms.opacity.value = intensity;
-    hoverHexMaterial.uniforms.rimStrength.value = intensity;
+    this.hoverMaterial.uniforms.opacity.value = intensity;
+    this.hoverMaterial.uniforms.rimStrength.value = intensity;
   }
 
   /**
@@ -154,6 +156,7 @@ export class HoverHexManager {
     if (this.hoverHex) {
       this.scene.remove(this.hoverHex);
       this.hoverHex.geometry.dispose();
+      this.hoverMaterial.dispose();
       this.hoverHex = null;
     }
 
