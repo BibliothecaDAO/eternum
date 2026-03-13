@@ -20,6 +20,7 @@ import { PMREMGenerator } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { GraphicsSettings, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
+import { syncRenderPassScene } from "./renderer-pass-scene";
 
 export interface RendererInfoLike {
   autoReset?: boolean;
@@ -53,7 +54,8 @@ export interface RendererSurfaceLike {
 
 export interface RendererPassLike {
   dispose?: () => void;
-  scene: unknown;
+  mainScene?: unknown;
+  scene?: unknown;
 }
 
 export interface RendererComposerLike {
@@ -139,7 +141,7 @@ class WebGLRendererBackend implements RendererBackend {
   }
 
   updateRenderPassScene(pass: RendererPassLike, scene: Scene): void {
-    pass.scene = scene;
+    syncRenderPassScene(pass, scene);
   }
 
   addPass(pass: unknown): void {
