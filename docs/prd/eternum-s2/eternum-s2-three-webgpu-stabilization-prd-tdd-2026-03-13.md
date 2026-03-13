@@ -173,7 +173,7 @@ Tests first:
 - [x] Stage 4. Worldmap Decomposition
 - [x] Stage 5. Shader and Material Portability
 - [x] Stage 6. Asset and Material Correctness
-- [ ] Stage 7. Integration Test Net
+- [x] Stage 7. Integration Test Net
 
 ## Definition of Done
 
