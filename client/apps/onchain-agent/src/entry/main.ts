@@ -60,6 +60,18 @@ import { createDefendStructureTool } from "../tools/defend-structure.js";
 import { createTransferResourcesTool } from "../tools/transfer-resources.js";
 import { createOpenChestTool } from "../tools/open-chest.js";
 import { createViewMapTool } from "../tools/view-map.js";
+import {
+  createGuardDeleteTool,
+  createGuardExplorerSwapTool,
+  createAttackGuardVsExplorerTool,
+} from "../tools/guard-management.js";
+import { createApplyRelicTool } from "../tools/relic.js";
+import {
+  createTroopTroopAdjacentTransferTool,
+  createTroopStructureAdjacentTransferTool,
+  createStructureTroopAdjacentTransferTool,
+} from "../tools/adjacent-transfer.js";
+import { createAllocateSharesTool } from "../tools/hyperstructure.js";
 import { buildGameStateBlock, type ToolError } from "./game-state.js";
 import type { AutomationStatusMap } from "../automation/status.js";
 
@@ -191,6 +203,15 @@ export async function main() {
     createTransferResourcesTool(client, mapCtx, account.address, txCtx),
     createOpenChestTool(client, mapCtx, account.address, txCtx),
     createViewMapTool(mapCtx),
+    // Blitz-specific tools
+    createGuardDeleteTool(client, mapCtx, account.address, txCtx),
+    createGuardExplorerSwapTool(client, mapCtx, account.address, txCtx),
+    createAttackGuardVsExplorerTool(client, mapCtx, account.address, txCtx),
+    createApplyRelicTool(client, mapCtx, account.address, txCtx),
+    createTroopTroopAdjacentTransferTool(client, mapCtx, account.address, txCtx),
+    createTroopStructureAdjacentTransferTool(client, mapCtx, account.address, txCtx),
+    createStructureTroopAdjacentTransferTool(client, mapCtx, account.address, txCtx),
+    createAllocateSharesTool(client, mapCtx, account.address, txCtx),
   ];
 
   // 5. System prompt

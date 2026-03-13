@@ -122,7 +122,11 @@ ${after.armies}
         }
       } else if (msg.role === "toolResult") {
         const text = Array.isArray(msg.content)
-          ? msg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("").slice(0, 200)
+          ? msg.content
+              .filter((b: any) => b.type === "text")
+              .map((b: any) => b.text)
+              .join("")
+              .slice(0, 200)
           : String(msg.content ?? "").slice(0, 200);
         if (text) prompt += `  ${text}\n`;
       }
@@ -252,18 +256,17 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
  * @returns The parsed {@link EvolutionResult} with the analysis text and all
  *          validated suggestions (a subset may have been written to disk).
  */
-let previousSnapshot: EvolutionSnapshot | null = null;
+const previousSnapshots = new Map<string, EvolutionSnapshot>();
 
 export async function evolve(
   model: Model<any>,
   dataDir: string,
   currentSnapshot: EvolutionSnapshot,
 ): Promise<EvolutionResult> {
-  const prompt = buildEvolutionPrompt(dataDir, previousSnapshot, currentSnapshot);
+  const previous = previousSnapshots.get(dataDir) ?? null;
+  const prompt = buildEvolutionPrompt(dataDir, previous, currentSnapshot);
 
-  // Save current as "before" for next cycle
   const snapshotForNext = { ...currentSnapshot };
-
 
   const response = await completeSimple(model, {
     systemPrompt:
@@ -285,8 +288,7 @@ export async function evolve(
     console.log("Evolution: no changes suggested");
   }
 
-  // Save current snapshot as "before" for next evolution cycle
-  previousSnapshot = snapshotForNext;
+  previousSnapshots.set(dataDir, snapshotForNext);
 
   return result;
 }

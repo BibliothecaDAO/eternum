@@ -6,12 +6,13 @@ import type { EternumClient } from "@bibliothecadao/client";
 import type { EternumProvider } from "@bibliothecadao/provider";
 import type { GameConfig } from "@bibliothecadao/torii";
 import type { AccountInterface } from "starknet";
+import { join } from "node:path";
 
 import type { MapContext } from "../map/context.js";
 import type { TxContext } from "../tools/tx-context.js";
-import type { AutomationStatusMap } from "../automation/status.js";
 import { buildGameStateBlock, type ToolError } from "../entry/game-state.js";
 import { buildSystemPrompt } from "../entry/soul.js";
+import { evolve, type EvolutionSnapshot } from "../entry/evolution.js";
 import { pruneMessages } from "../entry/context-pruning.js";
 
 import { createInspectTool } from "../tools/inspect.js";
@@ -40,75 +41,6 @@ import { DirectiveQueue } from "./directives.js";
 import { createAllProductionTools } from "./production-tools.js";
 import { createAllMilitaryDelegationTools } from "./military-tools.js";
 
-const MILITARY_SOUL = `You are the MILITARY commander of an Eternum Blitz game.
-
-Your responsibilities:
-- Map control: scouting, exploration, army positioning
-- Combat: attacking enemies, capturing structures, defending with guards
-- Defense: guarding structures, using guard_delete/guard_explorer_swap to reposition garrisons
-- Relic management: opening chests, transferring relics (adjacent transfers), applying relics
-- Hyperstructure control: capturing and allocating shares (allocate_shares) immediately after capture
-
-You DO NOT handle production, building, or economy. That's the production agent's job.
-When you need troops, use request_troops. When you need resources for your armies, use request_resources.
-Use set_production_priority for strategic direction (e.g. "focus on Paladins — biome advantage").
-Use view_production_status to check on production progress.
-
-Combat tips:
-- Always use inspect before attacking to assess enemy strength
-- Knights beat Crossbowmen, Crossbowmen beat Paladins, Paladins beat Knights
-- Biome matters: check which troop type has advantage in the tile's biome
-- Stamina: 50 to attack, 30 to explore, 10 to travel. Regenerates 20/min.
-- Guard structures with at least one guard slot before leaving them undefended
-- Use attack_guard_vs_explorer to defend structures without moving armies
-- After capturing a hyperstructure, ALWAYS call allocate_shares to claim 100% ownership
-
-Relic workflow:
-1. Open relic chest (open_chest) — relic appears on your explorer
-2. Move explorer adjacent to target structure
-3. Transfer relic: troop_structure_adjacent_transfer to deposit relic on structure
-4. Apply relic: apply_relic on the structure to activate the bonus
-
-Strategy:
-- Explore aggressively early to find relic chests and enemy positions
-- Capture hyperstructures for points, allocate shares immediately
-- Use adjacent transfers to manage relics between armies and structures
-- Coordinate with production: request troops before you need them`;
-
-const PRODUCTION_SOUL = `You are the PRODUCTION quartermaster of an Eternum Blitz game.
-
-Your responsibilities:
-- Build and manage buildings across all owned realms
-- Produce resources (Wood, Coal, Copper, Ironwood, Gold, ColdIron, Mithral, Adamantine, Dragonhide)
-- Produce troops as requested by the military commander
-- Transfer resources between realms
-- Upgrade realms to unlock more building slots
-- Offload resource arrivals from incoming transfers
-- Pause/resume production at buildings to manage resource flow
-
-You DO NOT move armies, fight, or explore. That's the military commander's job.
-
-Each tick, check for pending military requests and prioritize them:
-1. URGENT troop/resource requests (military is under attack)
-2. NORMAL troop/resource requests (strategic buildup)
-3. Priority directives (strategic direction like "focus paladins")
-4. Autonomous optimization (upgrades, production efficiency)
-
-Building priority:
-1. Wheat farms first (everything needs Wheat)
-2. Labor buildings
-3. Resource buildings for the troop production chain
-4. Military buildings (troop type matching the priority directive)
-5. WorkersHuts when population is the bottleneck
-
-Production chains:
-- T1 troops: needs base resources (Wood, Coal, Copper)
-- T2 troops: needs mid resources (Ironwood/ColdIron/Gold) + Essence + T1 troops
-- T3 troops: needs rare resources (Adamantine/Mithral/Dragonhide) + Essence + T2 troops
-
-Use mark_request_status to update the military on progress.
-Mark requests 'in_progress' when you start working on them, 'done' when fulfilled.`;
-
 export interface MultiAgentConfig {
   militaryModel: Model<any>;
   productionModel: Model<any>;
@@ -135,14 +67,16 @@ export function createMultiAgentSystem(
 ): MultiAgentSystem {
   const txCtx: TxContext = { provider, signer: account };
   const directives = new DirectiveQueue();
-  const automationStatus: AutomationStatusMap = new Map();
   const toolErrors: ToolError[] = [];
+
+  const militaryDataDir = join(config.dataDir, "military");
+  const productionDataDir = join(config.dataDir, "production");
 
   const convertToLlm = (messages: AgentMessage[]): Message[] =>
     messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
 
   const militaryTools: AgentTool[] = [
-    ...createReadOnlyTools(config.dataDir),
+    ...createReadOnlyTools(militaryDataDir),
     createInspectTool(client, mapCtx, account.address),
     createMoveTool(client, mapCtx, account.address, txCtx, gameConfig),
     createAttackTool(client, mapCtx, account.address, txCtx, gameConfig),
@@ -163,7 +97,7 @@ export function createMultiAgentSystem(
   ];
 
   const productionTools: AgentTool[] = [
-    ...createReadOnlyTools(config.dataDir),
+    ...createReadOnlyTools(productionDataDir),
     createInspectTool(client, mapCtx, account.address),
     createTransferResourcesTool(client, mapCtx, account.address, txCtx),
     ...createAllProductionTools(txCtx, directives),
@@ -174,7 +108,7 @@ export function createMultiAgentSystem(
 
   const militaryAgent = new Agent({
     initialState: {
-      systemPrompt: MILITARY_SOUL,
+      systemPrompt: buildSystemPrompt(militaryDataDir),
       model: config.militaryModel,
       thinkingLevel: config.militaryModel.reasoning ? "medium" : "off",
       tools: militaryTools,
@@ -183,8 +117,8 @@ export function createMultiAgentSystem(
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages: AgentMessage[]) => {
-      const gameState = buildGameStateBlock(mapCtx, automationStatus, toolErrors);
-      militaryAgent.setSystemPrompt(MILITARY_SOUL + "\n\n" + gameState);
+      const gameState = buildGameStateBlock(mapCtx, new Map(), toolErrors);
+      militaryAgent.setSystemPrompt(buildSystemPrompt(militaryDataDir) + "\n\n" + gameState);
       return pruneMessages(messages, config.militaryModel, militaryMaxChars, militaryPruneTarget);
     },
   });
@@ -194,7 +128,7 @@ export function createMultiAgentSystem(
 
   const productionAgent = new Agent({
     initialState: {
-      systemPrompt: PRODUCTION_SOUL,
+      systemPrompt: buildSystemPrompt(productionDataDir),
       model: config.productionModel,
       thinkingLevel: "off",
       tools: productionTools,
@@ -203,8 +137,8 @@ export function createMultiAgentSystem(
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages: AgentMessage[]) => {
-      const gameState = buildGameStateBlock(mapCtx, automationStatus, toolErrors);
-      productionAgent.setSystemPrompt(PRODUCTION_SOUL + "\n\n" + gameState);
+      const gameState = buildGameStateBlock(mapCtx, new Map(), toolErrors);
+      productionAgent.setSystemPrompt(buildSystemPrompt(productionDataDir) + "\n\n" + gameState);
       return pruneMessages(messages, config.productionModel, productionMaxChars, productionPruneTarget);
     },
   });
@@ -212,10 +146,50 @@ export function createMultiAgentSystem(
   let militaryBusy = false;
   let productionBusy = false;
   let tickTimer: ReturnType<typeof setInterval> | null = null;
+  let tickCount = 0;
+  let evolving = false;
+  const EVOLUTION_INTERVAL = 10;
+
+  function buildEvolutionSnapshot(agent: Agent): EvolutionSnapshot {
+    return {
+      map: mapCtx.snapshot?.text ?? "Map not loaded",
+      structures: "N/A (multi-agent mode)",
+      armies: mapCtx.snapshot?.explorerDetails
+        ? [...mapCtx.snapshot.explorerDetails.entries()]
+            .map(
+              ([id, info]: [number, any]) =>
+                `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`,
+            )
+            .join("\n")
+        : "No armies",
+      toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
+      recentMessages: (agent as any).state?.messages?.slice(-30),
+      timestamp: Date.now(),
+    };
+  }
+
+  function runEvolution() {
+    if (evolving) return;
+    evolving = true;
+
+    const militarySnapshot = buildEvolutionSnapshot(militaryAgent);
+    const productionSnapshot = buildEvolutionSnapshot(productionAgent);
+
+    Promise.all([
+      evolve(config.militaryModel, militaryDataDir, militarySnapshot).catch((err) =>
+        console.error("[MILITARY] evolution error:", err instanceof Error ? err.message : err),
+      ),
+      evolve(config.productionModel, productionDataDir, productionSnapshot).catch((err) =>
+        console.error("[PRODUCTION] evolution error:", err instanceof Error ? err.message : err),
+      ),
+    ]).finally(() => {
+      evolving = false;
+    });
+  }
 
   function buildMilitaryTickPrompt(): string {
     const mapText = mapCtx.snapshot?.text ?? "Map not yet loaded.";
-    const gameState = buildGameStateBlock(mapCtx, automationStatus, toolErrors);
+    const gameState = buildGameStateBlock(mapCtx, new Map(), toolErrors);
     const productionStatus = directives.formatForMilitary();
 
     return [
@@ -233,7 +207,7 @@ export function createMultiAgentSystem(
   }
 
   function buildProductionTickPrompt(): string {
-    const gameState = buildGameStateBlock(mapCtx, automationStatus, toolErrors);
+    const gameState = buildGameStateBlock(mapCtx, new Map(), toolErrors);
     const militaryRequests = directives.formatForProduction();
 
     return [
@@ -295,6 +269,16 @@ export function createMultiAgentSystem(
               ?.join("")
               ?.slice(0, 200) ?? "";
           console.log(`[${name}] result: ${event.toolName} ${event.isError ? "ERROR" : "ok"} — ${text}`);
+          if (event.isError) {
+            const errorText =
+              event.result?.content
+                ?.filter((b: any) => b.type === "text")
+                ?.map((b: any) => b.text)
+                ?.join("")
+                ?.slice(0, 100) ?? "unknown error";
+            toolErrors.push({ tool: event.toolName, error: errorText, tick: tickCount });
+            while (toolErrors.length > 20) toolErrors.shift();
+          }
           break;
         }
         case "message_end": {
@@ -329,12 +313,16 @@ export function createMultiAgentSystem(
     directives,
 
     start() {
-      // Both agents tick on the same cadence, staggered by half
-      // Military goes first, production follows
       runMilitaryTick();
       setTimeout(() => runProductionTick(), 2000);
 
       tickTimer = setInterval(() => {
+        tickCount++;
+
+        if (tickCount % EVOLUTION_INTERVAL === 0) {
+          runEvolution();
+        }
+
         runMilitaryTick();
         setTimeout(() => runProductionTick(), 2000);
       }, config.tickIntervalMs);
@@ -342,7 +330,7 @@ export function createMultiAgentSystem(
       console.log(
         `[COORDINATOR] Multi-agent system started. ` +
           `Military: ${config.militaryModel.id}, Production: ${config.productionModel.id}, ` +
-          `Tick: ${config.tickIntervalMs / 1000}s`,
+          `Tick: ${config.tickIntervalMs / 1000}s, Evolution every ${EVOLUTION_INTERVAL} ticks`,
       );
     },
 
