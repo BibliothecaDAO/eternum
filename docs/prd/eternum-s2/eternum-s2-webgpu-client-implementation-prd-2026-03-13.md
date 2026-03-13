@@ -14,7 +14,11 @@ Scope: `client/apps/game/src/three`, `client/apps/game/vite.config.ts`, renderer
   - [x] Replace path rendering shader path with owned stock line materials
   - [x] Port remaining FX/resource FX surfaces off unsupported custom shaders
   - [x] Finalize backend-neutral post-process parity tuning for the first canary scenes
-- [ ] Phase 4: Scene Rollout and Parity
+- [x] Phase 4: Scene Rollout and Parity
+  - [x] HUD parity sign-off
+  - [x] FastTravel parity sign-off
+  - [x] Hexception parity sign-off
+  - [x] Worldmap parity sign-off
 - [ ] Phase 5: Compatibility, Telemetry, and Ship Gates
 - [ ] Phase 6: Legacy Backend Retirement Decision
 
