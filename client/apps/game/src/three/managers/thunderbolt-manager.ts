@@ -58,6 +58,7 @@ interface ActiveThunderBolt {
 export class ThunderBoltManager {
   private thunderBolts: THREE.Group = new THREE.Group();
   private activeThunderBolts: ActiveThunderBolt[] = [];
+  private scheduledSpawnTimeouts: Array<ReturnType<typeof setTimeout>> = [];
   private config: ThunderBoltConfig = {
     radius: 2,
     count: 5,
@@ -477,12 +478,14 @@ export class ThunderBoltManager {
     const spawnInterval = randomHexes.length > 1 ? maxSpawnPeriod / (randomHexes.length - 1) : 0;
 
     randomHexes.forEach((hex, index) => {
-      setTimeout(
+      const timeoutId = setTimeout(
         () => {
+          this.scheduledSpawnTimeouts = this.scheduledSpawnTimeouts.filter((scheduledTimeoutId) => scheduledTimeoutId !== timeoutId);
           this.createThunderBolt(hex);
         },
         index * spawnInterval + Math.random() * 10,
       );
+      this.scheduledSpawnTimeouts.push(timeoutId);
     });
   }
 
@@ -558,6 +561,9 @@ export class ThunderBoltManager {
   }
 
   public cleanup(): void {
+    this.scheduledSpawnTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    this.scheduledSpawnTimeouts = [];
+
     this.activeThunderBolts.forEach((thunderBolt) => {
       this.disposeThunderBolt(thunderBolt);
     });

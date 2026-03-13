@@ -174,6 +174,7 @@ export class ArmyManager {
   private chunkToArmies: Map<string, Set<ID>> = new Map();
   private chunkStride: number;
   private needsSpatialReindex = false;
+  private isDestroyed = false;
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
 
@@ -716,6 +717,10 @@ export class ArmyManager {
   }
 
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
     if (
@@ -737,6 +742,10 @@ export class ArmyManager {
 
     await this.armyModel.loadPromise;
 
+    if (this.isDestroyed) {
+      return;
+    }
+
     if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
@@ -749,6 +758,10 @@ export class ArmyManager {
       } catch (error) {
         console.warn(`Previous chunk switch failed:`, error);
       }
+    }
+
+    if (this.isDestroyed) {
+      return;
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
@@ -792,6 +805,10 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
+    if (this.isDestroyed) {
+      return Promise.resolve();
+    }
+
     if (!isCommittedManagerChunk(chunkKey)) {
       return Promise.resolve();
     }
@@ -802,6 +819,10 @@ export class ArmyManager {
   }
 
   private processRenderQueue(): Promise<void> {
+    if (this.isDestroyed) {
+      return Promise.resolve();
+    }
+
     if (this.renderQueueActive) {
       return this.renderQueuePromise ?? Promise.resolve();
     }
@@ -814,7 +835,7 @@ export class ArmyManager {
           const renderOptions = this.pendingRenderOptions;
           this.pendingRenderChunkKey = null;
           this.pendingRenderOptions = null;
-          if (chunkKey) {
+          if (chunkKey && !this.isDestroyed) {
             await this.executeRenderForChunk(chunkKey, renderOptions ?? undefined);
           }
         }
@@ -1159,6 +1180,10 @@ export class ArmyManager {
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ): Promise<void> {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const renderStartedAt = performance.now();
     if (
       !shouldRunManagerChunkUpdate({
@@ -1181,6 +1206,10 @@ export class ArmyManager {
       // Preload all required models once
       if (requiredModelTypes.size > 0) {
         await this.armyModel.preloadModels(requiredModelTypes);
+      }
+
+      if (this.isDestroyed) {
+        return;
       }
 
       if (
@@ -2853,6 +2882,12 @@ ${
   }
 
   public destroy() {
+    if (this.isDestroyed) {
+      console.warn("ArmyManager already destroyed, skipping cleanup");
+      return;
+    }
+    this.isDestroyed = true;
+
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
       this.unsubscribeFrustum = undefined;

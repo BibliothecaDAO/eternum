@@ -75,6 +75,8 @@ export class SceneManager {
   }
 
   private async completeTransition(sceneName: SceneName, scene: HexagonScene, transitionToken: number) {
+    const previousSceneName = this.currentScene;
+    let setupSucceeded = false;
     const resolveFinalizePlan = () =>
       resolveTransitionFinalizePlan({
         transitionToken,
@@ -85,15 +87,18 @@ export class SceneManager {
     try {
       if (resolveFinalizePlan().isSuperseded) return;
 
-      this._updateCurrentScene(sceneName);
       if (scene.setup) {
         await scene.setup();
       }
+      if (resolveFinalizePlan().isSuperseded) return;
+
+      this._updateCurrentScene(sceneName);
+      setupSucceeded = true;
     } catch (error) {
       console.error(`[SceneManager] Failed to set up scene ${sceneName}`, error);
     } finally {
       const finalizePlan = resolveFinalizePlan();
-      if (finalizePlan.shouldRunPostSetupEffects) {
+      if (finalizePlan.shouldRunPostSetupEffects && (setupSucceeded || previousSceneName !== undefined)) {
         this.moveCameraForScene();
         this.transitionManager.fadeIn();
       }

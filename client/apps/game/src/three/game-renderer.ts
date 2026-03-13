@@ -192,6 +192,9 @@ export default class GameRenderer {
 
     this.waitForLabelRendererElement()
       .then((labelRendererElement) => {
+        if (this.isDestroyed) {
+          return;
+        }
         this.labelRendererElement = labelRendererElement;
         this.initializeLabelRenderer();
       })
@@ -1018,6 +1021,12 @@ export default class GameRenderer {
 
     this.loadCachedEnvironmentMap(pmremGenerator)
       .then((target) => {
+        if (this.isDestroyed) {
+          if (target !== cachedHDRTarget) {
+            target.dispose();
+          }
+          return;
+        }
         this.setEnvironmentFromTarget(target, 0.1);
       })
       .catch((error) => {
@@ -1438,7 +1447,11 @@ export default class GameRenderer {
         this.environmentTarget = undefined;
       }
 
-      destroyTrackedGuiFolders(this.guiFolders);
+      if (this.transitionManager && typeof this.transitionManager.destroy === "function") {
+        this.transitionManager.destroy();
+      }
+
+      destroyTrackedGuiFolders(this.guiFolders ?? []);
 
       // Remove event listeners
       window.removeEventListener("urlChanged", this.handleURLChange);

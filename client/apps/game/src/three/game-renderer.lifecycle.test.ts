@@ -59,6 +59,15 @@ vi.mock("@bibliothecadao/types", () => {
 vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} }));
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
+vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
+vi.mock("@/three/scenes/hexagon-scene", () => ({
+  HexagonScene: class MockHexagonScene {},
+  CameraView: {
+    Close: 1,
+    Medium: 2,
+    Far: 3,
+  },
+}));
 
 Object.defineProperty(navigator, "getBattery", {
   configurable: true,
@@ -111,6 +120,7 @@ function createGameRendererSubject() {
   subject.hudScene = { destroy: hudDestroy };
   subject.controls = { dispose: controlsDispose };
   subject.environmentTarget = { dispose: envDispose };
+  subject.guiFolders = [];
   subject.memoryStatsElement = memoryStatsElement;
   subject.statsDomElement = statsDomElement;
   subject.labelRendererElement = labelRendererElement;
@@ -197,5 +207,15 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
+  });
+
+  it("cancels transition cleanup during destroy", () => {
+    const fixture = createGameRendererSubject();
+    const transitionDestroy = vi.fn();
+    fixture.subject.transitionManager = { destroy: transitionDestroy };
+
+    fixture.subject.destroy();
+
+    expect(transitionDestroy).toHaveBeenCalledTimes(1);
   });
 });

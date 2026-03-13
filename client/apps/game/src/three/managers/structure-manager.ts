@@ -981,6 +981,10 @@ export class StructureManager {
   }
 
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
     if (
@@ -1014,6 +1018,10 @@ export class StructureManager {
       } catch (error) {
         console.warn(`Previous structure chunk switch failed:`, error);
       }
+    }
+
+    if (this.isDestroyed) {
+      return;
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
@@ -1086,6 +1094,10 @@ export class StructureManager {
   }
 
   private updateVisibleStructures(): Promise<void> {
+    if (this.isDestroyed) {
+      return Promise.resolve();
+    }
+
     if (!isCommittedManagerChunk(this.currentChunk)) {
       return Promise.resolve();
     }
@@ -1232,6 +1244,10 @@ export class StructureManager {
   }
 
   private async performVisibleStructuresUpdate(): Promise<void> {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const updateStartedAt = performance.now();
     if (!isCommittedManagerChunk(this.currentChunk)) {
       this.visibleStructureCount = 0;
@@ -1291,6 +1307,10 @@ export class StructureManager {
         } catch (error) {
           console.error("Failed to preload structure models", error);
         }
+      }
+
+      if (this.isDestroyed) {
+        return;
       }
 
       this.wonderEntityIdMaps.clear();

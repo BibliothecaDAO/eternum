@@ -383,6 +383,58 @@ describe("StructureManager destroy lifecycle", () => {
     expect(warnSpy).toHaveBeenCalledWith("StructureManager already destroyed, skipping cleanup");
   });
 
+  it("stops an async visible-structure refresh from mutating after destroy", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const structureType = "Village";
+    const setMatrixAt = vi.fn();
+    const setCount = vi.fn();
+    let resolveModels: ((value: unknown) => void) | undefined;
+
+    subject.isDestroyed = false;
+    subject.currentChunk = "24,24";
+    subject.visibleStructureCount = 0;
+    subject.structureModels = new Map();
+    subject.cosmeticStructureModels = new Map();
+    subject.entityIdMaps = new Map();
+    subject.cosmeticEntityIdMaps = new Map();
+    subject.wonderEntityIdMaps = new Map();
+    subject.pointsRenderers = undefined;
+    subject.activeStructureAttachmentEntities = new Set();
+    subject.entityIdLabels = new Map();
+    subject.previousVisibleIds = new Set();
+    subject.structures = {
+      getStructureByEntityId: vi.fn(),
+    };
+    subject.getVisibleStructuresForChunk = vi.fn(() => [
+      {
+        entityId: 1,
+        hexCoords: { col: 0, row: 0 },
+        structureType,
+      },
+    ]);
+    subject.hasCosmeticSkin = vi.fn(() => false);
+    subject.ensureStructureModels = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveModels = resolve;
+        }),
+    );
+
+    const updatePromise = subject.performVisibleStructuresUpdate();
+    subject.isDestroyed = true;
+    subject.structureModels.set(structureType, [
+      {
+        setMatrixAt,
+        setCount,
+      },
+    ]);
+    resolveModels?.([]);
+    await updatePromise;
+
+    expect(setMatrixAt).not.toHaveBeenCalled();
+    expect(setCount).not.toHaveBeenCalled();
+  });
+
   it("keeps tile owner name when a building-only pending update exists", async () => {
     const { subject, structuresById } = createOnUpdateSubject();
 
