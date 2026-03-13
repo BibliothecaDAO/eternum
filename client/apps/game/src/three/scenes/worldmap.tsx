@@ -95,6 +95,7 @@ import {
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
@@ -367,6 +368,7 @@ export default class WorldmapScene extends WarpTravel {
   private battleDirectionManager: BattleDirectionManager;
 
   private selectedHexManager: SelectedHexManager;
+  private readonly interactionAdapter;
   private selectionPulseManager: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
@@ -937,6 +939,11 @@ export default class WorldmapScene extends WarpTravel {
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
+    this.interactionAdapter = createWorldmapInteractionAdapter({
+      state: this.state,
+      selectedHexManager: this.selectedHexManager,
+      dojoComponents: this.dojo.components,
+    });
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
     // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
@@ -1496,12 +1503,12 @@ export default class WorldmapScene extends WarpTravel {
 
     const shouldSpectate = this.state.isSpectating || !isMine;
 
-    this.state.setStructureEntityId(structure.id, {
+    this.interactionAdapter.enterStructure({
+      hexCoords,
+      structureId: structure.id,
       spectator: shouldSpectate,
       worldMapPosition,
     });
-
-    navigateToStructure(hexCoords.col, hexCoords.row, "hex");
   }
 
   protected getHexagonEntity(hexCoords: HexPosition) {
@@ -1554,20 +1561,14 @@ export default class WorldmapScene extends WarpTravel {
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
-    if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
-      this.selectedHexManager.setPosition(position.x, position.z);
-      this.state.setSelectedHex({
-        col: contractHexPosition.x,
-        row: contractHexPosition.y,
-      });
-
-      if (isMine) {
-        // AudioManager handles muted state internally - no need to check isSoundOn
-        AudioManager.getInstance().play("ui.click");
-        // Note: Label filtering is now handled in entity selection methods
-        // to avoid removing labels too aggressively on initial selection
-      }
-    }
+    this.interactionAdapter.selectHex({
+      contractHexPosition,
+      isMine,
+      position: {
+        x: position.x,
+        z: position.z,
+      },
+    });
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -1591,11 +1592,10 @@ export default class WorldmapScene extends WarpTravel {
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
     if (structure && isMineStructure && !hasActiveEntityAction) {
-      openStructureContextMenu({
+      this.interactionAdapter.openOwnedStructureContextMenu({
         event,
         structure,
         hexCoords,
-        components: this.dojo.components,
       });
       return;
     }
@@ -1785,10 +1785,9 @@ export default class WorldmapScene extends WarpTravel {
 
     if (direction === undefined || direction === null) return;
 
-    this.state.openArmyCreationPopup({
-      structureId: selectedEntityId,
-      isExplorer: true,
+    this.interactionAdapter.openArmyCreation({
       direction,
+      structureId: selectedEntityId,
     });
   }
 

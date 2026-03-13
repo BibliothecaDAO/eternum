@@ -170,7 +170,7 @@ Tests first:
 - [x] Stage 1. Lifecycle Hardening
 - [x] Stage 2. Renderer Backend Extraction
 - [x] Stage 3. Scene Ownership Cleanup
-- [ ] Stage 4. Worldmap Decomposition
+- [x] Stage 4. Worldmap Decomposition
 - [ ] Stage 5. Shader and Material Portability
 - [ ] Stage 6. Asset and Material Correctness
 - [ ] Stage 7. Integration Test Net
