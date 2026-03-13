@@ -19,7 +19,11 @@ Scope: `client/apps/game/src/three`, `client/apps/game/vite.config.ts`, renderer
   - [x] FastTravel parity sign-off
   - [x] Hexception parity sign-off
   - [x] Worldmap parity sign-off
-- [ ] Phase 5: Compatibility, Telemetry, and Ship Gates
+- [x] Phase 5: Compatibility, Telemetry, and Ship Gates
+  - [x] Backend telemetry contract and diagnostics coverage
+  - [x] Rollout kill switch
+  - [x] Rollout checklist and browser / device QA matrix
+  - [x] Fallback and failure dashboard inputs
 - [ ] Phase 6: Legacy Backend Retirement Decision
 
 ## 1. Objective

@@ -37,11 +37,11 @@ export function resolveRendererBuildModeFromSearch(input: {
   const queryValue = new URLSearchParams(input.search).get(RENDERER_MODE_QUERY_PARAM);
   const requestedMode = resolveRendererBuildMode(queryValue ?? undefined);
 
-  if (!usesExperimentalWebGPUThreeBuild(input.envBuildMode)) {
-    return input.envBuildMode;
+  if (requestedMode === "legacy-webgl") {
+    return "legacy-webgl";
   }
 
-  if (!usesExperimentalWebGPUThreeBuild(requestedMode)) {
+  if (!usesExperimentalWebGPUThreeBuild(input.envBuildMode)) {
     return input.envBuildMode;
   }
 
