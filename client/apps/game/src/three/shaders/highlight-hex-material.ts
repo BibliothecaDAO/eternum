@@ -67,25 +67,28 @@ void main() {
 }
 `;
 
-const greenColor = new Color("darkgreen");
-greenColor.multiplyScalar(12);
+export function createHighlightHexMaterial(): ShaderMaterial {
+  const greenColor = new Color("darkgreen");
+  greenColor.multiplyScalar(12);
 
-const highlightHexMaterial = new ShaderMaterial({
-  vertexShader,
-  fragmentShader,
-  uniforms: {
-    color: { value: greenColor },
-    opacity: { value: 0.25 },
-  },
-  transparent: true,
-});
+  return new ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      color: { value: greenColor },
+      opacity: { value: 0.25 },
+    },
+    transparent: true,
+  });
+}
 
-// Instanced material for use with InstancedMesh - supports per-instance colors
-export const highlightHexInstancedMaterial = new ShaderMaterial({
-  vertexShader: instancedVertexShader,
-  fragmentShader: instancedFragmentShader,
-  uniforms: {
-    opacity: { value: 0.25 },
-  },
-  transparent: true,
-});
+export function createHighlightHexInstancedMaterial(): ShaderMaterial {
+  return new ShaderMaterial({
+    vertexShader: instancedVertexShader,
+    fragmentShader: instancedFragmentShader,
+    uniforms: {
+      opacity: { value: 0.25 },
+    },
+    transparent: true,
+  });
+}

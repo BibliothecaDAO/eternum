@@ -1,4 +1,4 @@
-import { highlightHexInstancedMaterial } from "@/three/shaders/highlight-hex-material";
+import { createHighlightHexInstancedMaterial } from "@/three/shaders/highlight-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
@@ -71,7 +71,7 @@ export class HighlightHexManager {
     this.hexGeometryPool = HexGeometryPool.getInstance();
 
     // Create the instanced material
-    this.material = highlightHexInstancedMaterial.clone();
+    this.material = createHighlightHexInstancedMaterial();
     hexGeometryDebugger.trackMaterialClone("HighlightHexManager.constructor");
 
     // Get shared geometry
