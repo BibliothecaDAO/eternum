@@ -96,6 +96,7 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
+import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
   resolveArmyTabSelectionPosition,
@@ -1516,32 +1517,38 @@ export default class WorldmapScene extends WarpTravel {
   protected onHexagonClick(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
-    if (overlay && !overlayClick) {
+    const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
+    const { army, structure, chest } = hexCoords ? this.getHexagonEntity(hexCoords) : { army: undefined, structure: undefined, chest: undefined };
+    const clickPlan = resolveWorldmapHexClickPlan({
+      hasBlockingOverlay: Boolean(overlay && !overlayClick),
+      hexCoords,
+      accountAddress,
+      army: army ? { id: army.id, owner: army.owner } : undefined,
+      structure: structure ? { id: structure.id, owner: structure.owner } : undefined,
+      chest: chest ? { id: chest.id } : undefined,
+    });
+
+    if (clickPlan.kind === "ignore" || !hexCoords) {
       return;
     }
-    if (!hexCoords) return;
-
-    const account = ContractAddress(useAccountStore.getState().account?.address || "");
-
-    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
 
     if (structure) {
       console.log("[Worldmap] Structure entity id clicked:", structure.id);
     }
 
-    const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
-    this.handleHexSelection(hexCoords, isMine);
+    this.handleHexSelection(hexCoords, clickPlan.isMine);
 
-    if (army?.owner === account) {
-      this.onArmySelection(army.id, account);
-    } else if (structure?.owner === account) {
-      this.onStructureSelection(structure.id, hexCoords);
-    } else if (chest) {
-      // Handle chest click - chests can be interacted with by anyone
-      this.clearEntitySelection();
-    } else {
-      this.clearEntitySelection();
+    if (clickPlan.selection.type === "army") {
+      this.onArmySelection(clickPlan.selection.entityId, accountAddress);
+      return;
     }
+
+    if (clickPlan.selection.type === "structure") {
+      this.onStructureSelection(clickPlan.selection.entityId, hexCoords);
+      return;
+    }
+
+    this.clearEntitySelection();
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
