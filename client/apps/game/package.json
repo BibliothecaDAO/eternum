@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "preview": "vite preview",
+    "smoke:renderer-scenes": "node ./scripts/run-renderer-scene-smoke.mjs",
     "test": "vitest run",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:ui": "vitest --ui",

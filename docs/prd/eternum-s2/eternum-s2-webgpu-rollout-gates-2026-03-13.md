@@ -42,6 +42,21 @@ These fields are covered by:
 - Confirm init failures fall back cleanly to legacy and increment fallback counters.
 - Confirm scene parity sign-off remains green after rollout toggles.
 
+## Smoke Runner
+
+Use the scripted browser smoke runner from `client/apps/game`:
+
+```bash
+pnpm smoke:renderer-scenes -- --renderer-mode experimental-webgpu-auto --scenes map,hex --headed
+```
+
+Useful variants:
+
+- `--renderer-mode legacy-webgl`
+- `--renderer-mode experimental-webgpu-force-webgl`
+- `--scenes map,hex,travel`
+- `--base-url https://127.0.0.1:4173`
+
 ## Browser / Device QA Matrix
 
 | Platform | Expected lane | Required check |
