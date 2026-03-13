@@ -99,7 +99,8 @@ export function resolveVisibleStructureUpdateMode(input: {
 
   const ownershipBucketChanged = shouldRefreshVisibleStructures(input.previous, input.next);
   const positionChanged =
-    input.previous.hexCoords.col !== input.next.hexCoords.col || input.previous.hexCoords.row !== input.next.hexCoords.row;
+    input.previous.hexCoords.col !== input.next.hexCoords.col ||
+    input.previous.hexCoords.row !== input.next.hexCoords.row;
   if (!ownershipBucketChanged && !positionChanged) {
     return "none";
   }

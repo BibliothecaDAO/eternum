@@ -1,6 +1,7 @@
 # Eternum S2 Worldmap Mass-Exploration Rendering PRD
 
-Date: 2026-03-13 Status: Implemented Scope: `client/apps/game/src/three` render path and adjacent movement/pathfinding hot paths
+Date: 2026-03-13 Status: Implemented Scope: `client/apps/game/src/three` render path and adjacent movement/pathfinding
+hot paths
 
 ## Implementation Tracking
 
@@ -142,23 +143,19 @@ Primary hot spots:
 
 ### 5.1 Full refresh path
 
-`GameRenderer controls change / world event -> WorldmapScene.requestChunkRefresh or updateVisibleChunks(true) ->
-updateVisibleChunks -> performChunkSwitch or refreshCurrentChunk -> updateManagersForChunk -> ArmyManager.updateChunk +
-StructureManager.updateChunk + ChestManager.updateChunk`
+`GameRenderer controls change / world event -> WorldmapScene.requestChunkRefresh or updateVisibleChunks(true) -> updateVisibleChunks -> performChunkSwitch or refreshCurrentChunk -> updateManagersForChunk -> ArmyManager.updateChunk + StructureManager.updateChunk + ChestManager.updateChunk`
 
 This is the main path that must be backpressured and made incremental.
 
 ### 5.2 Remote exploration path
 
-`WorldUpdateListener.ExplorerTroopsTile -> WorldmapScene.updateArmyHexes + ArmyManager.onTileUpdate -> moveArmy ->
-worker findPath -> ArmyModel.startMovement + PathRenderer.createPath`
+`WorldUpdateListener.ExplorerTroopsTile -> WorldmapScene.updateArmyHexes + ArmyManager.onTileUpdate -> moveArmy -> worker findPath -> ArmyModel.startMovement + PathRenderer.createPath`
 
 This is the path that makes high player concurrency expensive even when the local user is only observing.
 
 ### 5.3 Tile update path
 
-`WorldUpdateListener.Tile -> WorldmapScene.updateExploredHex -> cache invalidation -> visible-tile incremental add or
-full refresh fallback`
+`WorldUpdateListener.Tile -> WorldmapScene.updateExploredHex -> cache invalidation -> visible-tile incremental add or full refresh fallback`
 
 This is the path that can convert exploration churn into terrain cache churn and forced manager fanout.
 

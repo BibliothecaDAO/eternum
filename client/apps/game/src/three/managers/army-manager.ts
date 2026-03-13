@@ -57,11 +57,7 @@ import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
-import {
-  addVisibleArmyOrderEntry,
-  removeVisibleArmyOrderEntry,
-  replaceVisibleArmyOrder,
-} from "./army-visible-order";
+import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
@@ -1740,7 +1736,9 @@ export class ArmyManager {
       incrementWorldmapRenderCounter("workerFindPathBypasses");
     }
 
-    const workerPath = shouldUseWorkerPath ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex) : null;
+    const workerPath = shouldUseWorkerPath
+      ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
+      : null;
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
 
     // Convert path to world positions

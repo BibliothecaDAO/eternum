@@ -13,9 +13,10 @@ describe("HoverLabelManager leave path", () => {
     const source = readHoverLabelManagerSource();
     const onHexLeaveStart = source.indexOf("onHexLeave()");
     const updateCameraViewStart = source.indexOf("updateCameraView(", onHexLeaveStart);
-    const methodSource = onHexLeaveStart >= 0 && updateCameraViewStart > onHexLeaveStart
-      ? source.slice(onHexLeaveStart, updateCameraViewStart)
-      : "";
+    const methodSource =
+      onHexLeaveStart >= 0 && updateCameraViewStart > onHexLeaveStart
+        ? source.slice(onHexLeaveStart, updateCameraViewStart)
+        : "";
 
     expect(methodSource).toMatch(/this\.controllers\[type\]\?\.hide\(activeId\)/);
     expect(methodSource).not.toMatch(/hideAll\?\.\(\)/);

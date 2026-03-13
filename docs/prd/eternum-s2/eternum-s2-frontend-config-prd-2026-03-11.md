@@ -1,7 +1,7 @@
 # Eternum S2 Frontend + Config PRD
 
-Date: 2026-03-11 Status: Draft Branch: `aymericdelab/season-notes` Scope: Frontend and config only (contracts for S2
-assumed complete)
+Date: 2026-03-11 Status: Contract-aligned draft Branch: `aymericdelab/s2-prd-review` Scope: Frontend and config only
+(contracts are source of truth)
 
 ## 1. Objective
 
@@ -26,8 +26,8 @@ This PRD covers:
 
 ### 3.1 Game mode and config state
 
-- Game mode registry only supports `standard` and `blitz`: `client/apps/game/src/config/game-modes/index.ts`.
-- Mode resolution is currently tied to one bool (`blitz_mode_on`) instead of an explicit mode id.
+- Game mode registry currently supports `eternum` and `blitz`: `client/apps/game/src/config/game-modes/index.ts`.
+- Mode resolution is intentionally tied to contract world config bool (`blitz_mode_on`).
 - Shared config defaults are Blitz-like and short duration (`SEASON_DURATION_SECONDS` currently 1.5h):
   `config/environments/_shared_.ts`.
 - Admin factory presets are Blitz-centric (`sandbox`, `blitz-slot`):
@@ -69,31 +69,41 @@ This PRD covers:
   `client/apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx` and
   `packages/core/src/utils/structure.ts`.
 
+### 3.6 Season pass, settlement picker, and village flow state
+
+- Season realm settlement consumes a season pass token and reads pass metadata from `season_pass_address`.
+- Season realm placement is selected via `side/layer/point` inputs (contract computes coordinate), not raw `x,y`.
+- Village settlement consumes a village pass token and requires choosing a connected realm + available direction slot.
+- Village resource is assigned randomly on `village_systems.create` and can only be revealed from post-tx state.
+- There is no in-game "buy village pass" function in game systems; acquisition is external to this contract set.
+
 ## 4. Product Requirements (Frontend + Config)
 
-### R1. Add explicit `Eternum S2` mode in client architecture
+### R1. Align mode architecture to current contract truth
 
-- Add `s2` mode config alongside `blitz`.
-- Remove boolean-only mode resolution and resolve mode via explicit world mode metadata/config.
+- Keep canonical mode ids as `eternum` and `blitz`.
+- Resolve mode from `blitz_mode_on` (`true => blitz`, `false => eternum`).
+- Layer S2-specific labels/rules/assets under `eternum` mode config.
 - Keep Blitz behavior unchanged.
 
 Acceptance criteria:
 
-- Client can detect and render correct mode for Blitz and S2 worlds.
+- Client detects and renders mode using world-config `blitz_mode_on`.
 - No Blitz regressions in labels/assets/rules.
 
 ### R2. Make lobby, registration, and entry flow mode-aware
 
-- Replace Blitz-only availability query with mode/capability-based world metadata.
+- Replace Blitz-only availability assumptions with contract-aware mode query based on `blitz_mode_on`.
 - Split registration pipeline by mode.
-- Keep Blitz token/registration flow intact.
-- Implement S2 entry path using S2 systems only.
+- Keep Blitz token/registration flow intact (`obtain_entry_token` + `register`).
+- Implement season (`eternum`) entry via `realm_systems.create`.
+- Add season preflight UX for contract prerequisites (spires settled, season pass approval/consumption, season timing).
 
 Acceptance criteria:
 
 - Player can join Blitz world through existing flow.
 - Player can join S2 world without Blitz-only blockers.
-- No Blitz system calls are executed for S2 join flow.
+- No Blitz system calls are executed for season (`eternum`) join flow.
 
 ### R3. Implement S2 multi-layer map support
 
@@ -101,7 +111,8 @@ Acceptance criteria:
 - Add URL/state/navigation support for active layer.
 - Update map fetch/query/stream paths to include layer discriminator.
 - Add layer-switch interaction around Spires and transition UX.
-- Support cross-layer occupancy conflict prompt from spire travel results.
+- Handle cross-layer occupancy conflicts with pre-check and revert UX (`destination tile is occupied`).
+- Apply cross-layer battle eligibility rule in UI affordances (same `x,y` across layers + adjacent to spire).
 
 Acceptance criteria:
 
@@ -111,19 +122,22 @@ Acceptance criteria:
 
 ### R4. Add S2 structure/UI support
 
-- Extend structure types, labels, markers, and detail panels for S2 structures.
-- Minimum required S2 structures for frontend: Spire, Camp, Essence Rift, Holy Site, Bitcoin Mine.
+- Extend discovery/entity mapping, labels, markers, and detail panels for contract-exposed entities.
+- Minimum required surfaces for season support: Spire (tile occupier interaction), Mine (mode-specific label), Holy
+  Site, Bitcoin Mine.
+- Camp remains Blitz-only in discovery UX.
 
 Acceptance criteria:
 
-- All S2 structures render with correct icon/name/interaction entry points.
+- Contract-exposed entities render with correct icon/name/interaction entry points for each mode.
 - Unknown structure fallback is not shown for expected S2 entities.
 
 ### R5. Add S2 systems UX surfaces
 
 - Faith system surfaces: faith leaderboard, devotion controls, wonder detail panels.
 - Village and deployment updates: militia timer state, raid immunity state, army strength/deployment cap UI.
-- Agent updates: type badges/metadata, local-message UX with essence cost preview.
+- Agent updates: type/tier badges and metadata from discovered troop data.
+- De-scope local-message UX with essence cost preview until messaging contracts exist.
 - Optional exploration reward UX: subtle tile indicator and collect/bypass behavior in explore flow.
 
 Acceptance criteria:
@@ -135,12 +149,29 @@ Acceptance criteria:
 
 - Add S2 preset in factory/admin world-config builder.
 - Add S2 duration and spacing defaults.
-- Ensure deployer supports S2 mode config payload shape expected by contracts.
+- Keep deployer/provider mode config on `set_game_mode_config(blitz_mode_on: bool)`.
 
 Acceptance criteria:
 
 - Admin can deploy/configure a world as Blitz or S2 from factory UI.
 - Config calldata generated by admin matches contract interfaces.
+
+### R7. Implement season pass inventory, settlement picker, and village reveal loop
+
+- Show owned season pass inventory and decode pass metadata (realm identity + resources) for the connected player.
+- Build per-pass settle flow that submits `realm_systems.create(owner, realm_id, frontend, {side,layer,point})`.
+- Add placement picker UX for `side/layer/point` with contract-aligned bounds checks and tx-error mapping.
+- Show village pass inventory and allow village settlement via
+  `village_systems.create(village_pass_token_id, realm_id, direction)`.
+- Treat village-pass "buy" as external inventory acquisition; in-game flow starts once pass ownership is present.
+- Add casino-style village resource reveal animation driven by post-transaction on-chain result.
+
+Acceptance criteria:
+
+- User can see eligible season passes and their decoded realm resource metadata before settling.
+- User can settle each selected season pass with explicit placement choice and clear validation feedback.
+- User can settle a village next to a chosen realm only on available directions.
+- Village reveal animation always resolves to the actual on-chain assigned resource.
 
 ## 5. Implementation Plan and Ownership
 
@@ -150,9 +181,10 @@ Owner: Raschel
 
 Deliverables:
 
-- Game mode registry refactor and `s2` mode addition.
+- Game mode registry refactor for contract-aligned `eternum`/`blitz` mode resolution with S2 presentation config.
 - Mode-aware availability query model.
 - Mode-aware registration and entry orchestration.
+- Season pass inventory and per-pass settlement picker UX.
 - Factory/admin `s2-season` preset.
 
 Primary files:
@@ -169,7 +201,8 @@ Primary files:
 Definition of done:
 
 - User can select and enter both modes with correct flow.
-- S2 no longer depends on Blitz selectors/system names.
+- Season (`eternum`) flow no longer depends on `blitz_*` selectors/system names.
+- Season pass ownership and metadata are visible before settlement decisions.
 
 ## Phase 2: New Map Layer and Spire Travel
 
@@ -203,10 +236,11 @@ Owner: Raschel
 
 Deliverables:
 
-- Structure type extension and UI support for S2 structures.
+- Structure/entity mapping and UI support for season-relevant discoveries and occupiers.
 - Faith UX and leaderboard surfaces.
 - Village/deployment strength/timer UI.
-- Agent and exploration-reward UI updates.
+- Agent metadata and exploration-reward UI updates (messaging UX deferred).
+- Village pass settlement flow and post-settlement resource reveal UX.
 
 Primary files:
 
@@ -247,8 +281,9 @@ Raschel:
 1. Mode architecture and mode resolution refactor.
 2. Lobby, registration, and entry flows for S2.
 3. Admin/deployer S2 preset and config plumbing.
-4. S2 structure and systems UI implementation.
+4. Contract-aligned season structure/entity and systems UI implementation.
 5. Integration QA pass across non-map features.
+6. Season pass inventory + placement picker + village pass settlement/reveal flow.
 
 Loaf:
 
@@ -257,14 +292,16 @@ Loaf:
 3. Spire traversal UX and occupancy-conflict interaction.
 4. Minimap and navigation updates for dual-layer play.
 5. Performance sanity pass for map-layer switching.
+6. Settlement/village placement map overlays and validity cues for slot selection.
 
 Ermakow:
 
 1. Ethereal layer art direction and style guide.
-2. Spire, Camp, Essence Rift, Holy Site, Bitcoin Mine visual assets.
+2. Spire, Mine (Essence Rift label treatment), Holy Site, Bitcoin Mine, and Blitz-only Camp visual assets.
 3. Minimap marker/icon system for new structures.
 4. UI overlays for faith, layer state, and S2 interaction moments.
 5. Final readability pass across desktop and mobile breakpoints.
+6. Season pass card visuals and village reveal animation assets.
 
 ## 7. QA and Validation
 
@@ -273,7 +310,9 @@ Functional checks:
 - Blitz and S2 worlds both load, register, and enter correctly.
 - S2 layer switch via spires works with consistent camera and selection state.
 - Structure names/icons/interactions match expected S2 behavior.
+- Camp discovery UI remains Blitz-only; Mine naming and rewards are mode-aware.
 - Faith/deployment/agent/explore UI reflects contract state accurately.
+- Season pass metadata, placement selection, and village reveal UX match on-chain outcomes.
 
 Regression checks:
 
@@ -288,11 +327,14 @@ Test scope:
 
 ## 8. Risks and Open Decisions
 
-- Final mode-discriminator source in world config must be confirmed against deployed S2 contracts.
-- Namespace assumptions (`s1_eternum-*`) must be removed or abstracted for S2 worlds.
-- Exact system names/selectors for S2 replacements of Blitz-only calls need to be locked before implementation starts.
-- If contracts expose additional layer-specific rules (donkey restrictions, ethereal-only entities), frontend guards
-  must mirror them explicitly.
+- `blitz_mode_on` is the canonical mode discriminator until contracts add another source.
+- Namespace assumptions (`s1_eternum-*`) should be abstracted where possible for multi-world compatibility.
+- Season entry prerequisites (spire settlement + season pass handling) must be surfaced before send-tx to avoid opaque
+  failures.
+- Spire is a tile occupier, not a structure category; UI mapping mistakes here will break layer-travel affordances.
+- Local messaging/essence-send UX remains out of scope until message contracts are implemented.
+- Village pass acquisition ("buy") is external to game systems and must be integrated from marketplace/inventory
+  sources.
 
 ## 9. Release Readiness Criteria
 
