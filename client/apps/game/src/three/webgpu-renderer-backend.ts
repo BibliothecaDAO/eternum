@@ -1,10 +1,14 @@
 import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
+import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping } from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
   createRendererInitDiagnostics,
   type RendererActiveMode,
   type RendererBackendV2,
+  type RendererFramePipeline,
+  type RendererPostProcessController,
+  type RendererPostProcessPlan,
 } from "./renderer-backend-v2";
 import type { RendererBuildMode } from "./renderer-build-mode";
 
@@ -80,6 +84,28 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
   now: () => performance.now(),
 };
 
+const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
+  setColorGrade: () => {},
+  setVignette: () => {},
+};
+
+function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]["mode"]): number {
+  switch (mode) {
+    case "linear":
+      return LinearToneMapping;
+    case "reinhard":
+      return ReinhardToneMapping;
+    case "cineon":
+      return CineonToneMapping;
+    case "aces-filmic":
+    case "neutral":
+    default:
+      // Neutral tone mapping currently depends on the postprocessing stack, which
+      // is not wired into the experimental WebGPU backend yet.
+      return ACESFilmicToneMapping;
+  }
+}
+
 export function createWebGPURendererBackend(
   options: {
     graphicsSetting: GraphicsSettingsType;
@@ -94,6 +120,29 @@ export function createWebGPURendererBackend(
   return {
     get renderer() {
       return renderer;
+    },
+    applyPostProcessPlan(plan) {
+      if (!renderer) {
+        return NOOP_POST_PROCESS_CONTROLLER;
+      }
+
+      renderer.toneMapping = resolveRendererToneMapping(plan.toneMapping.mode);
+      renderer.toneMappingExposure = plan.toneMapping.exposure;
+
+      return NOOP_POST_PROCESS_CONTROLLER;
+    },
+    applyQuality(input) {
+      if (!renderer) {
+        return;
+      }
+
+      renderer.setPixelRatio(input.pixelRatio);
+      renderer.shadowMap.enabled = input.shadows;
+      renderer.setSize(input.width, input.height);
+    },
+    dispose() {
+      renderer?.dispose();
+      renderer = undefined;
     },
     async initialize() {
       const startTime = dependencies.now();
@@ -115,6 +164,23 @@ export function createWebGPURendererBackend(
         initTimeMs: dependencies.now() - startTime,
         requestedMode: options.requestedMode,
       });
+    },
+    renderFrame(pipeline: RendererFramePipeline) {
+      if (!renderer) {
+        return;
+      }
+
+      renderer.info.reset();
+      renderer.clear();
+      renderer.render(pipeline.mainScene, pipeline.mainCamera);
+
+      if (pipeline.overlayScene && pipeline.overlayCamera) {
+        renderer.clearDepth();
+        renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
+      }
+    },
+    resize(width: number, height: number) {
+      renderer?.setSize(width, height);
     },
   };
 }
