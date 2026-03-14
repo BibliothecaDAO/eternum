@@ -21,6 +21,7 @@ export interface IconFxAnimationRuntime {
 
 export interface IconFxSpec {
   animate: (fx: IconFxAnimationRuntime, elapsed: number) => boolean;
+  animateLabelDots?: boolean;
   isInfinite?: boolean;
   labelText?: string;
   size: number;
@@ -83,6 +84,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
   protected readonly isInfinite: boolean;
   protected readonly label?: CSS2DObject;
   protected readonly labelBaseText?: string;
+  private readonly animateLabelDots: boolean;
   protected age = 0;
   protected resolvePromise?: () => void;
   private endStartTime = 0;
@@ -99,6 +101,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
     this.initialZ = spec.z;
     this.baseSize = spec.size;
     this.animateCallback = spec.animate;
+    this.animateLabelDots = spec.animateLabelDots ?? false;
     this.isInfinite = spec.isInfinite ?? false;
 
     if (spec.labelText) {
@@ -139,7 +142,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
     this.age += deltaTime;
     const elapsed = this.age;
 
-    if (this.label?.element && this.labelBaseText) {
+    if (this.animateLabelDots && this.label?.element && this.labelBaseText) {
       const dotCount = Math.floor((elapsed * 2) % DOT_SUFFIXES.length);
       if (dotCount !== this.lastDotCount) {
         this.lastDotCount = dotCount;

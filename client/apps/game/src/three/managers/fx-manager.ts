@@ -78,6 +78,7 @@ export class FXManager {
 
     const handle = this.backend.spawnIconFx({
       animate: config.animate,
+      animateLabelDots: Boolean(labelText),
       isInfinite: isInfinite || config.isInfinite,
       labelText,
       size: size ?? this.defaultSize,
