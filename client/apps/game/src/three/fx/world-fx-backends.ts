@@ -253,6 +253,7 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
   private readonly material: THREE.MeshBasicMaterial;
   private readonly pivot: THREE.Group;
   private readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  private readonly baseScale = new THREE.Vector3();
 
   constructor(scene: THREE.Scene, spec: IconFxSpec) {
     super(scene, spec);
@@ -261,15 +262,17 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
       depthWrite: false,
       map: spec.texture,
       opacity: 0,
+      side: THREE.DoubleSide,
       transparent: true,
     });
 
     this.pivot = new THREE.Group();
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
-    this.mesh.scale.set(spec.size, spec.size, spec.size);
     this.pivot.onBeforeRender = (_renderer, _scene, camera) => {
       this.pivot.quaternion.copy(camera.quaternion);
+      this.applyScale();
     };
+    this.setScale(spec.size, spec.size, spec.size);
     this.pivot.add(this.mesh);
     this.group.add(this.pivot);
   }
@@ -283,13 +286,19 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
   }
 
   public setScale(x: number, y: number, z: number): void {
-    this.mesh.scale.set(x, y, z);
+    this.baseScale.set(x, y, z);
+    this.applyScale();
   }
 
   protected disposeVisuals(): void {
     this.material.dispose();
     this.mesh.geometry.dispose();
     this.pivot.clear();
+  }
+
+  private applyScale(): void {
+    const aspectRatio = resolveTextureAspectRatio(this.spec.texture);
+    this.mesh.scale.set(this.baseScale.x * aspectRatio, this.baseScale.y, this.baseScale.z);
   }
 }
 
@@ -493,4 +502,16 @@ function createNoopWorldFxHandle(): WorldFxHandle {
     end: () => {},
     promise: Promise.resolve(),
   };
+}
+
+function resolveTextureAspectRatio(texture: THREE.Texture): number {
+  const image = texture.image as { height?: unknown; width?: unknown } | undefined;
+  const width = typeof image?.width === "number" ? image.width : NaN;
+  const height = typeof image?.height === "number" ? image.height : NaN;
+
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return 1;
+  }
+
+  return width / height;
 }
