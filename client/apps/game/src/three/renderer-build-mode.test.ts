@@ -21,6 +21,15 @@ describe("renderer build mode", () => {
 });
 
 describe("renderer build mode search overrides", () => {
+  it("uses the env build mode when no renderer query override is present", () => {
+    expect(
+      resolveRendererBuildModeFromSearch({
+        envBuildMode: "experimental-webgpu-auto",
+        search: "",
+      }),
+    ).toBe("experimental-webgpu-auto");
+  });
+
   it("allows experimental builds to be killed back to legacy webgl from the query param", () => {
     expect(
       resolveRendererBuildModeFromSearch({

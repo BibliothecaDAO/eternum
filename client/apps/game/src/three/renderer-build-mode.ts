@@ -35,7 +35,11 @@ export function resolveRendererBuildModeFromSearch(input: {
   search: string;
 }): RendererBuildMode {
   const queryValue = new URLSearchParams(input.search).get(RENDERER_MODE_QUERY_PARAM);
-  const requestedMode = resolveRendererBuildMode(queryValue ?? undefined);
+  if (!queryValue) {
+    return input.envBuildMode;
+  }
+
+  const requestedMode = resolveRendererBuildMode(queryValue);
 
   if (requestedMode === "legacy-webgl") {
     return "legacy-webgl";

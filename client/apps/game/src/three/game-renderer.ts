@@ -48,6 +48,14 @@ import {
   setRendererDiagnosticSceneName,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
+import {
+  applyRendererBackendEnvironment,
+  applyRendererBackendPostProcessPlan,
+  applyRendererBackendQuality,
+  disposeRendererBackend,
+  renderRendererBackendFrame,
+  resizeRendererBackend,
+} from "./renderer-backend-compat";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
@@ -57,12 +65,11 @@ import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 import {
   createWebGLRendererBackend,
-  type RendererBackend,
   type RendererBackendFactory,
   type RendererSurfaceLike,
 } from "./renderer-backend";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
-import type { RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
+import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
@@ -92,7 +99,7 @@ const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
   private labelRendererElement!: HTMLDivElement;
-  private backend!: RendererBackend;
+  private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   private renderer!: RendererSurfaceLike;
   private camera!: PerspectiveCamera;
   private raycaster!: Raycaster;
@@ -353,7 +360,7 @@ export default class GameRenderer {
         const diagnostics = await backend.initialize();
 
         return {
-          backend: backend as unknown as RendererBackend,
+          backend,
           diagnostics,
         };
       },
@@ -379,8 +386,9 @@ export default class GameRenderer {
       },
     });
 
-    this.backend = result.backend;
-    this.renderer = result.backend.renderer;
+    const backend = result.backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+    this.backend = backend;
+    this.renderer = backend.renderer;
   }
 
   initStats() {
@@ -993,7 +1001,7 @@ export default class GameRenderer {
   }
 
   applyEnvironment() {
-    void this.backend.applyEnvironment({
+    void applyRendererBackendEnvironment(this.backend, {
       hexceptionScene: this.hexceptionScene,
       worldmapScene: this.worldmapScene,
       fastTravelScene: this.fastTravelScene,
@@ -1081,14 +1089,14 @@ export default class GameRenderer {
       const height = container.clientHeight;
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
-      this.backend.resize(width, height);
+      resizeRendererBackend(this.backend, width, height);
       this.labelRenderer?.setSize(width, height);
       this.hudScene.onWindowResize(width, height);
     } else {
       // Fallback to window size if container not found
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
-      this.backend.resize(window.innerWidth, window.innerHeight);
+      resizeRendererBackend(this.backend, window.innerWidth, window.innerHeight);
       this.labelRenderer?.setSize(window.innerWidth, window.innerHeight);
       this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
     }
@@ -1260,7 +1268,7 @@ export default class GameRenderer {
     if (shouldRenderLabels) {
       this.labelRenderer.render(activeScene, this.camera);
     }
-    this.backend.renderFrame({
+    renderRendererBackendFrame(this.backend, {
       mainCamera: this.camera,
       mainScene: activeScene,
       overlayCamera: this.hudScene.getCamera(),
@@ -1322,7 +1330,7 @@ export default class GameRenderer {
         this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
       }
       if (this.backend) {
-        this.backend.dispose();
+        disposeRendererBackend(this.backend);
       }
 
       // Clean up scenes
@@ -1400,7 +1408,7 @@ export default class GameRenderer {
 
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
     const resolvedPixelRatio = this.resolvePixelRatio(Math.min(devicePixelRatio, features.pixelRatio));
-    this.backend.applyQuality({
+    applyRendererBackendQuality(this.backend, {
       pixelRatio: resolvedPixelRatio,
       shadows: features.shadows,
       width: window.innerWidth,
@@ -1451,7 +1459,7 @@ export default class GameRenderer {
       },
     });
 
-    this.postProcessController = this.backend.applyPostProcessPlan(rendererPlan);
+    this.postProcessController = applyRendererBackendPostProcessPlan(this.backend, rendererPlan);
     setRendererDiagnosticEffectPlan(rendererPlan);
   }
 
