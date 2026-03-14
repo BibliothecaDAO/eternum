@@ -341,7 +341,7 @@ The minimap zoom bridge and any future zoom controls must route through the same
 Implementation tracking:
 
 - [x] Phase 0: Instrumentation and baselines
-- [ ] Phase 1: Camera transition cleanup
+- [x] Phase 1: Camera transition cleanup
 - [ ] Phase 2: Input model overhaul
 - [ ] Phase 3: Refresh scheduling and state unification
 - [ ] Phase 4: Visual cleanup

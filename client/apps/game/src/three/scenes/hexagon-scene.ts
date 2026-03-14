@@ -55,6 +55,12 @@ import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnost
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import {
+  createCameraTransitionState,
+  publishCameraTransitionFrame,
+  resolveCameraTransitionCompletion,
+  resolveCameraTransitionStart,
+} from "./hexagon-scene-camera-transition";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 
 export enum CameraView {
@@ -115,6 +121,8 @@ export abstract class HexagonScene {
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
+  private cameraTransitionState = createCameraTransitionState();
+  private cameraTransitionTimeline: gsap.core.Timeline | null = null;
   protected shadowsEnabledByQuality = true;
   protected shadowMapSizeByQuality = 2048;
   private sceneOwnershipBootstrapped = false;
@@ -163,14 +171,22 @@ export abstract class HexagonScene {
   }
 
   private notifyControlsChanged(): void {
-    this.controls.update();
-    const distance = this.controls.object.position.distanceTo(this.controls.target);
-    this.updateCameraClipPlanesForDistance(distance);
-    this.updateFogForDistance(distance);
-    this.updateOutlineOpacityForDistance(distance);
-    this.controls.dispatchEvent({ type: "change" });
-    incrementWorldmapRenderCounter("controlsChangeEvents");
-    this.visibilityManager?.markDirty();
+    publishCameraTransitionFrame({
+      updateControls: () => this.controls.update(),
+      syncDistanceVisuals: () => {
+        const distance = this.controls.object.position.distanceTo(this.controls.target);
+        this.updateCameraClipPlanesForDistance(distance);
+        this.updateFogForDistance(distance);
+        this.updateOutlineOpacityForDistance(distance);
+      },
+      emitFallbackChange: () => {
+        this.controls.dispatchEvent({ type: "change" });
+      },
+      markVisibilityDirty: () => {
+        incrementWorldmapRenderCounter("controlsChangeEvents");
+        this.visibilityManager?.markDirty();
+      },
+    });
   }
 
   private initializeScene(): void {
@@ -765,29 +781,47 @@ export abstract class HexagonScene {
   cameraAnimate(newPosition: Vector3, newTarget: Vector3, transitionDuration: number, onFinish?: () => void) {
     const camera = this.controls.object;
     const target = this.controls.target;
+    const transitionStart = resolveCameraTransitionStart(this.cameraTransitionState);
+    this.cameraTransitionState = transitionStart.nextState;
+    if (transitionStart.cancelledToken !== null) {
+      incrementWorldmapRenderCounter("zoomTransitionsCancelled");
+    }
+    this.cameraTransitionTimeline?.kill();
+    this.cameraTransitionTimeline = null;
     gsap.killTweensOf(camera.position);
     gsap.killTweensOf(target);
 
     const duration = transitionDuration || 2;
+    const transitionToken = this.cameraTransitionState.activeToken;
+    if (transitionToken === null) {
+      return;
+    }
 
-    const onUpdate = () => {
-      this.notifyControlsChanged();
-    };
-
-    gsap.timeline().to(camera.position, {
-      duration,
-      repeat: 0,
-      x: newPosition.x,
-      y: newPosition.y,
-      z: newPosition.z,
-      ease: "power3.inOut",
-      onUpdate,
+    this.cameraTransitionTimeline = gsap.timeline({
+      onUpdate: () => {
+        this.notifyControlsChanged();
+      },
       onComplete: () => {
+        this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
+        this.cameraTransitionTimeline = null;
         onFinish?.();
       },
     });
 
-    gsap.timeline().to(
+    this.cameraTransitionTimeline.to(
+      camera.position,
+      {
+        duration,
+        repeat: 0,
+        x: newPosition.x,
+        y: newPosition.y,
+        z: newPosition.z,
+        ease: "power3.inOut",
+      },
+      0,
+    );
+
+    this.cameraTransitionTimeline.to(
       target,
       {
         duration,
@@ -796,9 +830,8 @@ export abstract class HexagonScene {
         y: newTarget.y,
         z: newTarget.z,
         ease: "power3.inOut",
-        onUpdate,
       },
-      "<",
+      0,
     );
   }
 
