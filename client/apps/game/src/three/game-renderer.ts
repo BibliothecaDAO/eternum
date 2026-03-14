@@ -36,9 +36,9 @@ import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
 import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
+  resolveCapabilityAwareRendererEffectPlan,
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
-  resolveRendererEffectPlan,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
@@ -1421,6 +1421,8 @@ export default class GameRenderer {
 
     if (this.postProcessingConfig) {
       this.rebuildPostProcessing(features);
+    } else {
+      setRendererDiagnosticDegradations([]);
     }
 
     this.worldmapScene?.applyQualityFeatures(features);
@@ -1437,19 +1439,26 @@ export default class GameRenderer {
     const effectPlan = resolvePostProcessingEffectPlan({
       fxaa: features.fxaa,
       bloom: features.bloom,
+      chromaticAberration: features.chromaticAberration,
       vignette: features.vignette,
     });
 
-    const rendererPlan: RendererPostProcessPlan = resolveRendererEffectPlan({
+    const rendererPlan = resolveCapabilityAwareRendererEffectPlan({
       antiAlias: effectPlan.shouldEnableFXAA ? "fxaa" : "none",
       bloomEnabled: effectPlan.shouldEnableBloom,
       bloomIntensity: features.bloomIntensity,
+      capabilities: this.backend.capabilities,
       chromaticAberrationEnabled: effectPlan.shouldEnableChromaticAberration,
       colorGrade: {
         brightness: this.postProcessingConfig.brightness,
         contrast: this.postProcessingConfig.contrast,
         hue: this.postProcessingConfig.hue,
         saturation: this.postProcessingConfig.saturation,
+      },
+      disabledReasons: {
+        bloom: features.bloom ? undefined : "disabled-by-quality",
+        chromaticAberration: features.chromaticAberration ? undefined : "disabled-by-quality",
+        vignette: features.vignette ? undefined : "disabled-by-quality",
       },
       toneMapping: {
         exposure: this.postProcessingConfig.toneMapping.exposure,
@@ -1463,8 +1472,9 @@ export default class GameRenderer {
       },
     });
 
-    this.postProcessController = applyRendererBackendPostProcessPlan(this.backend, rendererPlan);
-    setRendererDiagnosticEffectPlan(rendererPlan);
+    this.postProcessController = applyRendererBackendPostProcessPlan(this.backend, rendererPlan.plan);
+    setRendererDiagnosticDegradations(rendererPlan.degradations);
+    setRendererDiagnosticEffectPlan(rendererPlan.plan);
   }
 
   private resolveRendererToneMappingMode(

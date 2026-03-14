@@ -1,4 +1,8 @@
-import type { RendererPostProcessPlan } from "./renderer-backend-v2";
+import type {
+  RendererBackendCapabilities,
+  RendererFeatureDegradation,
+  RendererPostProcessPlan,
+} from "./renderer-backend-v2";
 
 type LabelRenderView = "close" | "medium" | "far" | undefined;
 
@@ -27,6 +31,7 @@ interface PostProcessingConfigGateInput {
 interface PostProcessingEffectPlanInput {
   fxaa: boolean;
   bloom: boolean;
+  chromaticAberration: boolean;
   vignette: boolean;
 }
 
@@ -46,6 +51,32 @@ interface RendererEffectPlanInput {
   toneMapping: RendererPostProcessPlan["toneMapping"];
   vignette: RendererPostProcessPlan["vignette"];
 }
+
+type RendererOptionalFeatureDisableReason = Extract<
+  RendererFeatureDegradation["reason"],
+  "disabled-by-quality" | "disabled-by-user"
+>;
+
+interface CapabilityAwareRendererEffectPlanInput extends RendererEffectPlanInput {
+  capabilities: RendererBackendCapabilities;
+  disabledReasons: {
+    bloom?: RendererOptionalFeatureDisableReason;
+    chromaticAberration?: RendererOptionalFeatureDisableReason;
+    vignette?: RendererOptionalFeatureDisableReason;
+  };
+}
+
+interface CapabilityAwareRendererEffectPlanResult {
+  degradations: RendererFeatureDegradation[];
+  plan: RendererPostProcessPlan;
+}
+
+const NEUTRAL_COLOR_GRADE: RendererPostProcessPlan["colorGrade"] = {
+  brightness: 0,
+  contrast: 0,
+  hue: 0,
+  saturation: 0,
+};
 
 export function resolveRendererEffectPlan(input: RendererEffectPlanInput): RendererPostProcessPlan {
   return {
@@ -74,6 +105,98 @@ export function resolveRendererEffectPlan(input: RendererEffectPlanInput): Rende
       offset: input.vignette.offset,
     },
   };
+}
+
+export function resolveCapabilityAwareRendererEffectPlan(
+  input: CapabilityAwareRendererEffectPlanInput,
+): CapabilityAwareRendererEffectPlanResult {
+  const plan = resolveRendererEffectPlan(input);
+  const degradations: RendererFeatureDegradation[] = [];
+
+  if (!input.capabilities.supportsColorGrade && hasNonNeutralColorGrade(plan.colorGrade)) {
+    plan.colorGrade = { ...NEUTRAL_COLOR_GRADE };
+    degradations.push({
+      feature: "colorGrade",
+      reason: "unsupported-backend",
+    });
+  }
+
+  resolveOptionalFeatureSupport({
+    capabilities: input.capabilities,
+    capability: "supportsBloom",
+    degradations,
+    disabledReason: input.disabledReasons.bloom,
+    feature: "bloom",
+    requestedEnabled: input.bloomEnabled,
+    setEnabled: (enabled) => {
+      plan.bloom.enabled = enabled;
+    },
+  });
+
+  resolveOptionalFeatureSupport({
+    capabilities: input.capabilities,
+    capability: "supportsVignette",
+    degradations,
+    disabledReason: input.disabledReasons.vignette,
+    feature: "vignette",
+    requestedEnabled: input.vignette.enabled,
+    setEnabled: (enabled) => {
+      plan.vignette.enabled = enabled;
+    },
+  });
+
+  resolveOptionalFeatureSupport({
+    capabilities: input.capabilities,
+    capability: "supportsChromaticAberration",
+    degradations,
+    disabledReason: input.disabledReasons.chromaticAberration,
+    feature: "chromaticAberration",
+    requestedEnabled: input.chromaticAberrationEnabled,
+    setEnabled: (enabled) => {
+      plan.chromaticAberration.enabled = enabled;
+    },
+  });
+
+  return {
+    degradations,
+    plan,
+  };
+}
+
+function hasNonNeutralColorGrade(input: RendererPostProcessPlan["colorGrade"]): boolean {
+  return input.brightness !== 0 || input.contrast !== 0 || input.hue !== 0 || input.saturation !== 0;
+}
+
+function resolveOptionalFeatureSupport(input: {
+  capabilities: RendererBackendCapabilities;
+  capability: "supportsBloom" | "supportsChromaticAberration" | "supportsVignette";
+  degradations: RendererFeatureDegradation[];
+  disabledReason?: RendererOptionalFeatureDisableReason;
+  feature: "bloom" | "chromaticAberration" | "vignette";
+  requestedEnabled: boolean;
+  setEnabled: (enabled: boolean) => void;
+}): void {
+  if (input.requestedEnabled) {
+    if (input.capabilities[input.capability]) {
+      return;
+    }
+
+    input.setEnabled(false);
+    input.degradations.push({
+      feature: input.feature,
+      reason: "unsupported-backend",
+    });
+    return;
+  }
+
+  if (!input.disabledReason) {
+    return;
+  }
+
+  input.degradations.push({
+    feature: input.feature,
+    reason: input.disabledReason,
+  });
 }
 
 export function resolveLabelRenderIntervalMs(view: LabelRenderView, isMobileDevice: boolean): number {
@@ -140,6 +263,6 @@ export function resolvePostProcessingEffectPlan(input: PostProcessingEffectPlanI
     shouldEnableFXAA: input.fxaa,
     shouldEnableBloom: input.bloom,
     shouldEnableVignette: input.vignette,
-    shouldEnableChromaticAberration: input.vignette,
+    shouldEnableChromaticAberration: input.chromaticAberration,
   };
 }

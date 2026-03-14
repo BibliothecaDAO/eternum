@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveCapabilityAwareRendererEffectPlan,
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
   resolveRendererEffectPlan,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
+import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 describe("resolveLabelRenderIntervalMs", () => {
   it("returns close-view cadence for desktop", () => {
@@ -137,6 +139,7 @@ describe("resolvePostProcessingEffectPlan", () => {
       resolvePostProcessingEffectPlan({
         fxaa: true,
         bloom: false,
+        chromaticAberration: false,
         vignette: false,
       }),
     ).toEqual({
@@ -147,17 +150,18 @@ describe("resolvePostProcessingEffectPlan", () => {
     });
   });
 
-  it("enables chromatic aberration only when vignette is enabled", () => {
+  it("keeps chromatic aberration tied to its own quality toggle", () => {
     expect(
       resolvePostProcessingEffectPlan({
         fxaa: false,
         bloom: true,
-        vignette: true,
+        chromaticAberration: true,
+        vignette: false,
       }),
     ).toEqual({
       shouldEnableFXAA: false,
       shouldEnableBloom: true,
-      shouldEnableVignette: true,
+      shouldEnableVignette: false,
       shouldEnableChromaticAberration: true,
     });
   });
@@ -264,6 +268,140 @@ describe("resolveRendererEffectPlan", () => {
         darkness: 0.65,
         enabled: true,
         offset: 0.35,
+      },
+    });
+  });
+});
+
+describe("resolveCapabilityAwareRendererEffectPlan", () => {
+  it("turns unsupported optional effects into explicit degradations instead of active flags", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "fxaa",
+        bloomEnabled: true,
+        bloomIntensity: 0.35,
+        capabilities: createRendererBackendCapabilities({
+          supportsToneMappingControl: true,
+        }),
+        chromaticAberrationEnabled: true,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0.1,
+          hue: 0,
+          saturation: 0.2,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.15,
+          mode: "aces-filmic",
+          whitePoint: 4.5,
+        },
+        vignette: {
+          darkness: 0.4,
+          enabled: true,
+          offset: 0.2,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        { feature: "colorGrade", reason: "unsupported-backend" },
+        { feature: "bloom", reason: "unsupported-backend" },
+        { feature: "vignette", reason: "unsupported-backend" },
+        { feature: "chromaticAberration", reason: "unsupported-backend" },
+      ],
+      plan: {
+        antiAlias: "fxaa",
+        bloom: {
+          enabled: false,
+          intensity: 0.35,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1.15,
+          mode: "aces-filmic",
+          whitePoint: 4.5,
+        },
+        vignette: {
+          darkness: 0.4,
+          enabled: false,
+          offset: 0.2,
+        },
+      },
+    });
+  });
+
+  it("records when optional effects were disabled by policy rather than by backend support", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0.25,
+        capabilities: createRendererBackendCapabilities({
+          supportsBloom: true,
+          supportsChromaticAberration: true,
+          supportsToneMappingControl: true,
+          supportsVignette: true,
+        }),
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        disabledReasons: {
+          bloom: "disabled-by-quality",
+          chromaticAberration: "disabled-by-user",
+        },
+        toneMapping: {
+          exposure: 1,
+          mode: "linear",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        { feature: "bloom", reason: "disabled-by-quality" },
+        { feature: "chromaticAberration", reason: "disabled-by-user" },
+      ],
+      plan: {
+        antiAlias: "none",
+        bloom: {
+          enabled: false,
+          intensity: 0.25,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1,
+          mode: "linear",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
       },
     });
   });

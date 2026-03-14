@@ -81,3 +81,5 @@ Record for each scene:
 - Phase 1 resolution for the game client is to keep `@types/three`, align it to `^0.182.0`, and pair it with a typed
   local `three/webgpu` module declaration plus `pnpm --dir client/apps/game test:three:types`. The installed
   `three@0.182.0` package in this repo does not publish a `three/webgpu` declaration file on its own.
+- Phase 2 resolution is that the runtime now publishes the backend-safe postprocess plan and explicit degradation
+  reasons, so unsupported optional effects no longer appear as active in diagnostics.

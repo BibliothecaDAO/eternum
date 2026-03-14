@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ToneMappingMode } from "postprocessing";
+import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
+import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 const initializeSelectedRendererBackendMock = vi.fn();
 
@@ -86,6 +89,14 @@ const { default: GameRenderer } = await import("./game-renderer");
 
 function createFakeBackend() {
   return {
+    capabilities: createRendererBackendCapabilities({
+      supportsBloom: true,
+      supportsChromaticAberration: true,
+      supportsColorGrade: true,
+      supportsEnvironmentIbl: true,
+      supportsToneMappingControl: true,
+      supportsVignette: true,
+    }),
     renderer: {
       info: {
         render: { calls: 0, triangles: 0 },
@@ -117,6 +128,7 @@ describe("GameRenderer backend seam", () => {
     document.body.innerHTML = "";
     vi.restoreAllMocks();
     initializeSelectedRendererBackendMock.mockReset();
+    resetRendererDiagnostics();
   });
 
   it("initializes renderer state from a backend factory", async () => {
@@ -210,6 +222,81 @@ describe("GameRenderer backend seam", () => {
       shadows: true,
       width: window.innerWidth,
     });
+  });
+
+  it("disables unsupported optional effects before applying the backend plan and reports degradations", () => {
+    const backend = createFakeBackend();
+    backend.capabilities = createRendererBackendCapabilities({
+      supportsEnvironmentIbl: false,
+      supportsToneMappingControl: true,
+    });
+
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.backend = backend;
+    subject.isMobileDevice = false;
+    subject.graphicsSetting = "HIGH";
+    subject.postProcessingConfig = {
+      bloomIntensity: 0.25,
+      brightness: 0,
+      contrast: 0,
+      hue: 0,
+      saturation: 0.1,
+      toneMapping: {
+        exposure: 0.7,
+        mode: ToneMappingMode.OPTIMIZED_CINEON,
+        whitePoint: 1.2,
+      },
+      vignette: {
+        darkness: 0.9,
+        offset: 0.35,
+      },
+    };
+    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
+    subject.resolveRendererToneMappingMode = GameRenderer.prototype.resolveRendererToneMappingMode.bind(subject);
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
+
+    subject.applyQualityFeatures({
+      pixelRatio: 1.5,
+      shadows: true,
+      fxaa: true,
+      bloom: true,
+      bloomIntensity: 0.25,
+      vignette: true,
+      chromaticAberration: true,
+    });
+
+    expect(backend.applyPostProcessPlan).toHaveBeenCalledWith({
+      antiAlias: "fxaa",
+      bloom: {
+        enabled: false,
+        intensity: 0.25,
+      },
+      chromaticAberration: {
+        enabled: false,
+      },
+      colorGrade: {
+        brightness: 0,
+        contrast: 0,
+        hue: 0,
+        saturation: 0,
+      },
+      toneMapping: {
+        exposure: 0.7,
+        mode: "cineon",
+        whitePoint: 1.2,
+      },
+      vignette: {
+        darkness: 0.9,
+        enabled: false,
+        offset: 0.35,
+      },
+    });
+    expect(snapshotRendererDiagnostics().degradations).toEqual([
+      { feature: "colorGrade", reason: "unsupported-backend" },
+      { feature: "bloom", reason: "unsupported-backend" },
+      { feature: "vignette", reason: "unsupported-backend" },
+      { feature: "chromaticAberration", reason: "unsupported-backend" },
+    ]);
   });
 
   it("uses the backend-owned frame pipeline during animate", () => {
