@@ -39,11 +39,13 @@ import {
   resolveCapabilityAwareRendererEffectPlan,
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
+  resolveRendererEnvironmentPolicy,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
 import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import {
+  replaceRendererDiagnosticDegradations,
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
   setRendererDiagnosticEffectPlan,
@@ -1005,11 +1007,22 @@ export default class GameRenderer {
   }
 
   applyEnvironment() {
+    const environmentPolicy = resolveRendererEnvironmentPolicy({
+      capabilities: this.backend.capabilities,
+      intensity: DEFAULT_ENVIRONMENT_INTENSITY[this.graphicsSetting],
+    });
+
+    replaceRendererDiagnosticDegradations(["environmentIbl"], environmentPolicy.degradations);
+
+    if (!environmentPolicy.shouldApplyEnvironment) {
+      return;
+    }
+
     void applyRendererBackendEnvironment(this.backend, {
       hexceptionScene: this.hexceptionScene,
       worldmapScene: this.worldmapScene,
       fastTravelScene: this.fastTravelScene,
-      intensity: 0.1,
+      intensity: environmentPolicy.intensity,
     });
   }
 
@@ -1473,7 +1486,10 @@ export default class GameRenderer {
     });
 
     this.postProcessController = applyRendererBackendPostProcessPlan(this.backend, rendererPlan.plan);
-    setRendererDiagnosticDegradations(rendererPlan.degradations);
+    replaceRendererDiagnosticDegradations(
+      ["colorGrade", "bloom", "vignette", "chromaticAberration"],
+      rendererPlan.degradations,
+    );
     setRendererDiagnosticEffectPlan(rendererPlan.plan);
   }
 

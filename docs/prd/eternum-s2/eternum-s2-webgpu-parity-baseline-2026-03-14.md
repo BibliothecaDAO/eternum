@@ -83,3 +83,6 @@ Record for each scene:
   `three@0.182.0` package in this repo does not publish a `three/webgpu` declaration file on its own.
 - Phase 2 resolution is that the runtime now publishes the backend-safe postprocess plan and explicit degradation
   reasons, so unsupported optional effects no longer appear as active in diagnostics.
+- Phase 3 resolution is to treat missing environment IBL as an explicit `environmentIbl` degradation with a
+  `scene key/fill fallback lighting policy` note, while preserving the normal graphics-tier environment intensity for
+  backends that do implement IBL.

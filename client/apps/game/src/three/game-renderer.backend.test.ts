@@ -352,4 +352,49 @@ describe("GameRenderer backend seam", () => {
     });
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
   });
+
+  it("applies environment ibl with the graphics-tier intensity when the backend supports it", () => {
+    const backend = createFakeBackend();
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.backend = backend;
+    subject.graphicsSetting = "HIGH";
+    subject.worldmapScene = { setEnvironment: vi.fn() };
+    subject.hexceptionScene = { setEnvironment: vi.fn() };
+    subject.fastTravelScene = { setEnvironment: vi.fn() };
+
+    subject.applyEnvironment();
+
+    expect(backend.applyEnvironment).toHaveBeenCalledWith({
+      fastTravelScene: subject.fastTravelScene,
+      hexceptionScene: subject.hexceptionScene,
+      intensity: 0.55,
+      worldmapScene: subject.worldmapScene,
+    });
+    expect(snapshotRendererDiagnostics().degradations).toEqual([]);
+  });
+
+  it("reports explicit fallback lighting when environment ibl is unavailable", () => {
+    const backend = createFakeBackend();
+    backend.capabilities = createRendererBackendCapabilities({
+      supportsToneMappingControl: true,
+    });
+
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.backend = backend;
+    subject.graphicsSetting = "MID";
+    subject.worldmapScene = { setEnvironment: vi.fn() };
+    subject.hexceptionScene = { setEnvironment: vi.fn() };
+    subject.fastTravelScene = { setEnvironment: vi.fn() };
+
+    subject.applyEnvironment();
+
+    expect(backend.applyEnvironment).not.toHaveBeenCalled();
+    expect(snapshotRendererDiagnostics().degradations).toEqual([
+      {
+        detail: "Using scene key/fill fallback lighting policy at target environment intensity 0.45",
+        feature: "environmentIbl",
+        reason: "unsupported-backend",
+      },
+    ]);
+  });
 });

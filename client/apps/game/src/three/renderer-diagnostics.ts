@@ -1,5 +1,6 @@
 import type {
   RendererBackendCapabilities,
+  RendererCapabilityFeature,
   RendererFeatureDegradation,
   RendererInitDiagnostics,
   RendererPostProcessPlan,
@@ -66,6 +67,18 @@ export function setRendererDiagnosticCapabilities(capabilities: RendererBackendC
 
 export function setRendererDiagnosticDegradations(degradations: RendererFeatureDegradation[]): void {
   rendererDiagnosticsState.degradations = degradations.map((degradation) => ({ ...degradation }));
+  syncRendererDiagnosticsWindow();
+}
+
+export function replaceRendererDiagnosticDegradations(
+  features: RendererCapabilityFeature[],
+  degradations: RendererFeatureDegradation[],
+): void {
+  const featureSet = new Set(features);
+  rendererDiagnosticsState.degradations = [
+    ...rendererDiagnosticsState.degradations.filter((degradation) => !featureSet.has(degradation.feature)),
+    ...degradations.map((degradation) => ({ ...degradation })),
+  ];
   syncRendererDiagnosticsWindow();
 }
 

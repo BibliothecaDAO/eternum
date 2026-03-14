@@ -71,6 +71,17 @@ interface CapabilityAwareRendererEffectPlanResult {
   plan: RendererPostProcessPlan;
 }
 
+interface RendererEnvironmentPolicyInput {
+  capabilities: RendererBackendCapabilities;
+  intensity: number;
+}
+
+interface RendererEnvironmentPolicyResult {
+  degradations: RendererFeatureDegradation[];
+  intensity: number;
+  shouldApplyEnvironment: boolean;
+}
+
 const NEUTRAL_COLOR_GRADE: RendererPostProcessPlan["colorGrade"] = {
   brightness: 0,
   contrast: 0,
@@ -160,6 +171,30 @@ export function resolveCapabilityAwareRendererEffectPlan(
   return {
     degradations,
     plan,
+  };
+}
+
+export function resolveRendererEnvironmentPolicy(
+  input: RendererEnvironmentPolicyInput,
+): RendererEnvironmentPolicyResult {
+  if (input.capabilities.supportsEnvironmentIbl) {
+    return {
+      degradations: [],
+      intensity: input.intensity,
+      shouldApplyEnvironment: true,
+    };
+  }
+
+  return {
+    degradations: [
+      {
+        detail: `Using scene key/fill fallback lighting policy at target environment intensity ${input.intensity.toFixed(2)}`,
+        feature: "environmentIbl",
+        reason: "unsupported-backend",
+      },
+    ],
+    intensity: input.intensity,
+    shouldApplyEnvironment: false,
   };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveRendererEnvironmentPolicy,
   resolveCapabilityAwareRendererEffectPlan,
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
@@ -403,6 +404,42 @@ describe("resolveCapabilityAwareRendererEffectPlan", () => {
           offset: 0,
         },
       },
+    });
+  });
+});
+
+describe("resolveRendererEnvironmentPolicy", () => {
+  it("applies environment IBL with the requested intensity when the backend supports it", () => {
+    expect(
+      resolveRendererEnvironmentPolicy({
+        capabilities: createRendererBackendCapabilities({
+          supportsEnvironmentIbl: true,
+        }),
+        intensity: 0.55,
+      }),
+    ).toEqual({
+      degradations: [],
+      intensity: 0.55,
+      shouldApplyEnvironment: true,
+    });
+  });
+
+  it("reports an explicit fallback lighting degradation when environment IBL is unavailable", () => {
+    expect(
+      resolveRendererEnvironmentPolicy({
+        capabilities: createRendererBackendCapabilities(),
+        intensity: 0.45,
+      }),
+    ).toEqual({
+      degradations: [
+        {
+          detail: "Using scene key/fill fallback lighting policy at target environment intensity 0.45",
+          feature: "environmentIbl",
+          reason: "unsupported-backend",
+        },
+      ],
+      intensity: 0.45,
+      shouldApplyEnvironment: false,
     });
   });
 });
