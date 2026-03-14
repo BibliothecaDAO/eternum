@@ -12,7 +12,7 @@ Scope: `client/apps/game/src/three` renderer backend parity, environment / IBL, 
 - [x] Phase 3: Environment / IBL Strategy and Runtime Parity
 - [x] Phase 4: Postprocessing Closure and Required-Vs-Optional FX Split
 - [x] Phase 5: Path / Line Readability Policy
-- [ ] Phase 6: Rollout Gates, Smoke Matrix, and Decision Packet
+- [x] Phase 6: Rollout Gates, Smoke Matrix, and Decision Packet
 
 ## 1. Objective
 

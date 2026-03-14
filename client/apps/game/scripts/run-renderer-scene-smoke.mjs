@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_SCENES = ["map", "hex"];
+const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
 const DEFAULT_WAIT_MS = 2500;
 
@@ -65,6 +66,34 @@ export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathnam
   };
 }
 
+export function normalizeRendererDiagnosticsSnapshot(snapshot) {
+  return {
+    activeMode: snapshot?.activeMode ?? null,
+    buildMode: snapshot?.buildMode ?? null,
+    capabilities: snapshot?.capabilities ?? null,
+    degradations: Array.isArray(snapshot?.degradations) ? snapshot.degradations : [],
+    effectPlan: snapshot?.effectPlan ?? null,
+    fallbackReason: snapshot?.fallbackReason ?? null,
+    fallbacks: snapshot?.fallbacks ?? 0,
+    initErrors: snapshot?.initErrors ?? 0,
+    initTimeMs: snapshot?.initTimeMs ?? null,
+    requestedMode: snapshot?.requestedMode ?? null,
+    sceneName: snapshot?.sceneName ?? null,
+  };
+}
+
+export function evaluateRendererParitySummary(diagnosticsSnapshot) {
+  const diagnostics = normalizeRendererDiagnosticsSnapshot(diagnosticsSnapshot);
+  const blocking = diagnostics.degradations.filter((degradation) => REQUIRED_RENDERER_PARITY_FEATURES.has(degradation.feature));
+  const advisory = diagnostics.degradations.filter((degradation) => !REQUIRED_RENDERER_PARITY_FEATURES.has(degradation.feature));
+
+  return {
+    advisory,
+    blocking,
+    ok: blocking.length === 0,
+  };
+}
+
 function readFlag(args, name) {
   return args.includes(name);
 }
@@ -112,8 +141,12 @@ function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
 
   const openedUrl = runAgentBrowser(session, ["get", "url"]);
   const canvasExists = runAgentBrowser(session, ["eval", "Boolean(document.getElementById('main-canvas'))"]) === "true";
+  const diagnostics = normalizeRendererDiagnosticsSnapshot(
+    JSON.parse(runAgentBrowser(session, ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"]) || "null"),
+  );
   const unableToStartCount = Number(runAgentBrowser(session, ["get", "count", "text=Unable to Start"]) || "0");
   const errors = parseErrorLines(runAgentBrowser(session, ["errors"]));
+  const parity = evaluateRendererParitySummary(diagnostics);
 
   const evaluation = evaluateSceneSmokeResult({
     canvasExists,
@@ -126,8 +159,10 @@ function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
   return {
     ...evaluation,
     canvasExists,
+    diagnostics,
     errors,
     openedUrl,
+    parity,
     rendererMode,
     scene,
     session,

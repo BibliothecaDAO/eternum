@@ -90,3 +90,5 @@ Record for each scene:
   `colorGrade`, `bloom`, `vignette`, and `chromaticAberration` advisory for the first closure pass.
 - Phase 5 resolution keeps stock `LineBasicMaterial` paths but raises medium/far opacity floors through a dedicated
   readability policy instead of pretending wide-line support exists.
+- Phase 6 resolution is a no-go rollout packet for native WebGPU-by-default. The packet is decision-ready because the
+  implemented diagnostics and parity gates already show a required blocker in `environmentIbl`.

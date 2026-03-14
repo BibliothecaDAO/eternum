@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildSceneSmokeUrl,
+  evaluateRendererParitySummary,
   evaluateSceneSmokeResult,
+  normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
 } from "./run-renderer-scene-smoke.mjs";
 
@@ -71,6 +73,59 @@ describe("evaluateSceneSmokeResult", () => {
         "\"Unable to Start\" was visible",
         "browser reported runtime errors",
       ],
+    });
+  });
+});
+
+describe("normalizeRendererDiagnosticsSnapshot", () => {
+  it("fills missing diagnostics fields with explicit null and empty defaults", () => {
+    expect(normalizeRendererDiagnosticsSnapshot(null)).toEqual({
+      activeMode: null,
+      buildMode: null,
+      capabilities: null,
+      degradations: [],
+      effectPlan: null,
+      fallbackReason: null,
+      fallbacks: 0,
+      initErrors: 0,
+      initTimeMs: null,
+      requestedMode: null,
+      sceneName: null,
+    });
+  });
+});
+
+describe("evaluateRendererParitySummary", () => {
+  it("treats unsupported required features as blockers and optional fx as advisory", () => {
+    expect(
+      evaluateRendererParitySummary({
+        activeMode: "webgpu",
+        buildMode: "experimental-webgpu-auto",
+        capabilities: {
+          supportsBloom: false,
+          supportsChromaticAberration: false,
+          supportsColorGrade: false,
+          supportsEnvironmentIbl: false,
+          supportsToneMappingControl: true,
+          supportsVignette: false,
+          supportsWideLines: false,
+        },
+        degradations: [
+          { feature: "environmentIbl", reason: "unsupported-backend" },
+          { feature: "bloom", reason: "unsupported-backend" },
+        ],
+        effectPlan: null,
+        fallbackReason: null,
+        fallbacks: 0,
+        initErrors: 0,
+        initTimeMs: 18,
+        requestedMode: "experimental-webgpu-auto",
+        sceneName: "worldmap",
+      }),
+    ).toEqual({
+      advisory: [{ feature: "bloom", reason: "unsupported-backend" }],
+      blocking: [{ feature: "environmentIbl", reason: "unsupported-backend" }],
+      ok: false,
     });
   });
 });
