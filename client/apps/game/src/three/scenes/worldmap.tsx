@@ -140,6 +140,12 @@ import {
   evaluateTerrainVisibilityAnomaly,
   resetWorldmapZoomHardeningRuntimeState,
 } from "./worldmap-zoom-hardening";
+import {
+  applyWorldmapWheelIntent,
+  createWorldmapZoomControllerState,
+  resetWorldmapWheelIntent,
+  setWorldmapZoomTargetView,
+} from "./worldmap-zoom-controller";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
@@ -296,11 +302,9 @@ export default class WorldmapScene extends WarpTravel {
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
-  private wheelAccumulator = 0;
+  private zoomControllerState = createWorldmapZoomControllerState(CameraView.Medium);
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly wheelThreshold = 10;
-  private wheelDirection: -1 | 0 | 1 = 0;
-  private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
   private renderChunkSize = this.chunkGeometry.renderSize;
 
@@ -411,7 +415,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const enableSmoothZoom = useUIStore.getState().enableMapZoom;
     if (!enableSmoothZoom) {
-      this.stepCameraView(detail.zoomOut);
+      this.applyDirectionalZoomIntent(detail.zoomOut);
       return;
     }
 
@@ -1082,29 +1086,15 @@ export default class WorldmapScene extends WarpTravel {
       event.preventDefault();
       event.stopPropagation();
 
-      if (this.wheelDirection !== direction) {
-        this.wheelDirection = direction;
-        this.wheelStepsThisGesture = 0;
-        this.wheelAccumulator = 0;
+      const zoomIntent = applyWorldmapWheelIntent(this.zoomControllerState, {
+        currentView: this.zoomControllerState.targetView,
+        normalizedDelta,
+        wheelThreshold: this.wheelThreshold,
+      });
+      this.zoomControllerState = zoomIntent.nextState;
+      if (zoomIntent.didRequestViewChange) {
+        this.changeCameraView(zoomIntent.nextTargetView);
       }
-
-      this.wheelAccumulator += normalizedDelta;
-
-      if (Math.abs(this.wheelAccumulator) < this.wheelThreshold) {
-        this.scheduleWheelAccumulatorReset();
-        return;
-      }
-
-      if (this.wheelStepsThisGesture >= 1) {
-        const saturatingDirection = (Math.sign(this.wheelAccumulator) as -1 | 0 | 1) || direction;
-        this.wheelAccumulator = saturatingDirection * this.wheelThreshold;
-        this.scheduleWheelAccumulatorReset();
-        return;
-      }
-
-      this.stepCameraView(direction > 0);
-      this.wheelStepsThisGesture = 1;
-      this.wheelAccumulator = 0;
       this.scheduleWheelAccumulatorReset();
     };
 
@@ -1114,22 +1104,26 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private stepCameraView(zoomOut: boolean) {
-    const nextView = zoomOut
-      ? Math.min(CameraView.Far, this.currentCameraView + 1)
-      : Math.max(CameraView.Close, this.currentCameraView - 1);
+  private applyDirectionalZoomIntent(zoomOut: boolean) {
+    const zoomIntent = applyWorldmapWheelIntent(this.zoomControllerState, {
+      currentView: this.zoomControllerState.targetView,
+      normalizedDelta: zoomOut ? this.wheelThreshold : -this.wheelThreshold,
+      wheelThreshold: this.wheelThreshold,
+    });
+    this.zoomControllerState = zoomIntent.nextState;
 
-    if (nextView === this.currentCameraView) {
-      if (this.isCameraDistanceOutOfSync(this.currentCameraView)) {
-        this.changeCameraView(this.currentCameraView);
-      }
+    if (zoomIntent.didRequestViewChange) {
+      this.changeCameraView(zoomIntent.nextTargetView);
       return;
     }
 
-    this.changeCameraView(nextView);
+    if (this.isCameraDistanceOutOfSync(this.currentCameraView)) {
+      this.changeCameraView(this.currentCameraView);
+    }
   }
 
   public changeCameraView(position: CameraView) {
+    this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, position);
     super.changeCameraView(position);
     if (!this.mainDirectionalLight) {
       return;
@@ -1207,9 +1201,7 @@ export default class WorldmapScene extends WarpTravel {
       clearTimeout(timeoutId);
     }
 
-    this.wheelAccumulator = 0;
-    this.wheelDirection = 0;
-    this.wheelStepsThisGesture = 0;
+    this.zoomControllerState = resetWorldmapWheelIntent(this.zoomControllerState);
   }
 
   public moveCameraToURLLocation() {

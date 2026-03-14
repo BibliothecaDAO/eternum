@@ -55,6 +55,7 @@ import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnost
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { CameraView } from "./camera-view";
 import {
   createCameraTransitionState,
   publishCameraTransitionFrame,
@@ -63,11 +64,7 @@ import {
 } from "./hexagon-scene-camera-transition";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 
-export enum CameraView {
-  Close = 1,
-  Medium = 2,
-  Far = 3,
-}
+export { CameraView } from "./camera-view";
 
 export abstract class HexagonScene {
   protected scene!: Scene;
