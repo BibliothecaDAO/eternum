@@ -3,7 +3,7 @@ import { resolveRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 
 describe("shouldPlayArmyMovementFx", () => {
-  it("disables explore compass fx when sprite scene fx are unavailable", () => {
+  it("keeps explore compass fx enabled when the webgpu-safe billboard backend is available", () => {
     expect(
       shouldPlayArmyMovementFx({
         capabilities: resolveRendererFxCapabilities({
@@ -11,7 +11,7 @@ describe("shouldPlayArmyMovementFx", () => {
         }),
         movementType: "explore",
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("keeps travel fx enabled in native webgpu during the tactical suppression window", () => {

@@ -4,9 +4,5 @@ export function shouldPlayArmyMovementFx(input: {
   capabilities: RendererFxCapabilities;
   movementType: "explore" | "travel";
 }): boolean {
-  if (!input.capabilities.supportsSpriteSceneFx && input.movementType === "explore") {
-    return false;
-  }
-
-  return true;
+  return input.capabilities.supportsSpriteSceneFx || input.capabilities.supportsBillboardMeshFx;
 }

@@ -9,7 +9,7 @@ Date: 2026-03-14 Status: Proposed Scope: `client/apps/game/src/three` FX pipelin
 - [x] Phase 2: FX Backend Abstraction
 - [x] Phase 3: WebGPU-Safe Billboard Backend
 - [x] Phase 4: Resource FX and Label FX Migration
-- [ ] Phase 5: WebGPU Smoke Matrix and Cleanup
+- [x] Phase 5: WebGPU Smoke Matrix and Cleanup
 
 ### Phase 0 Inventory
 
@@ -19,6 +19,11 @@ Date: 2026-03-14 Status: Proposed Scope: `client/apps/game/src/three` FX pipelin
 - [x] resource gain/loss
 - [x] world reward/reveal effects such as donkey/army found
 - [x] army/structure FX routed through `FXManager`
+
+### Phase 5 Notes
+
+- Automated coverage now protects capability routing, backend selection, WebGPU-safe icon rendering, resource FX cleanup, and the removal of the temporary WebGPU explore suppression.
+- Manual native-WebGPU smoke execution against the full matrix still needs browser/GPU verification outside this terminal environment.
 
 ## 1. Objective
 
