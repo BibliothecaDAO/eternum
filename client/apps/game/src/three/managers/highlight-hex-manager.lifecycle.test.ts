@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
-import { vi } from "vitest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 
 vi.mock("@bibliothecadao/eternum", () => {
@@ -70,20 +69,51 @@ Object.defineProperty(URL, "createObjectURL", {
 });
 
 const { HighlightHexManager } = await import("./highlight-hex-manager");
+const { ActionType } = await import("@bibliothecadao/eternum");
 
-describe("HighlightHexManager material ownership", () => {
-  it("keeps instanced highlight material state isolated per manager", () => {
-    const first = new HighlightHexManager(new THREE.Scene());
-    const second = new HighlightHexManager(new THREE.Scene());
+describe("HighlightHexManager lifecycle", () => {
+  it("uses stock materials for owned highlight visuals", () => {
+    const manager = new HighlightHexManager(new THREE.Scene());
 
-    first.updateHighlightPulse(0.2);
-    second.updateHighlightPulse(0.8);
+    manager.highlightHexes([
+      {
+        hex: { col: 0, row: 0 },
+        actionType: ActionType.Move,
+      },
+    ]);
 
-    const firstMaterial = (first as any).material as THREE.MeshBasicMaterial;
-    const secondMaterial = (second as any).material as THREE.MeshBasicMaterial;
+    const instancedMaterial = (manager as any).material;
+    const launchGlowMaterials = ((manager as any).activeLaunchGlows as Array<{ material: THREE.Material }>).map(
+      (entry) => entry.material,
+    );
 
-    expect(firstMaterial).not.toBe(secondMaterial);
-    expect(firstMaterial.opacity).toBe(0.2);
-    expect(secondMaterial.opacity).toBe(0.8);
+    expect(instancedMaterial).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect(launchGlowMaterials).not.toHaveLength(0);
+    expect(launchGlowMaterials.every((material) => material instanceof THREE.MeshBasicMaterial)).toBe(true);
+    expect([instancedMaterial, ...launchGlowMaterials].some((material) => material instanceof THREE.ShaderMaterial)).toBe(
+      false,
+    );
+  });
+
+  it("removes its owned scene objects on dispose", () => {
+    const scene = new THREE.Scene();
+    const manager = new HighlightHexManager(scene);
+
+    manager.highlightHexes([
+      {
+        hex: { col: 0, row: 0 },
+        actionType: ActionType.Move,
+      },
+    ]);
+
+    const instancedMesh = (manager as any).instancedMesh as THREE.InstancedMesh;
+
+    expect(scene.children).toContain(instancedMesh);
+    expect(scene.children.length).toBeGreaterThan(1);
+
+    manager.dispose();
+
+    expect(scene.children).not.toContain(instancedMesh);
+    expect(scene.children).toHaveLength(0);
   });
 });
