@@ -1,7 +1,6 @@
-import { HEX_SIZE } from "@/three/constants";
 import * as THREE from "three";
-
-const HOVER_HEX_RADIUS = HEX_SIZE * 1.02;
+const HOVER_HEX_TEXTURE_SIZE = 96;
+const HOVER_HEX_TEXTURE_RADIUS = 0.9;
 
 export interface HoverHexMaterialUniforms {
   [uniform: string]: THREE.IUniform;
@@ -28,7 +27,7 @@ export interface HoverHexMaterialParameters {
 }
 
 export interface HoverHexMaterialController {
-  material: THREE.ShaderMaterial;
+  material: THREE.MeshBasicMaterial;
   uniforms: HoverHexMaterialUniforms;
   setPalette: (baseColor: THREE.ColorRepresentation, accentColor: THREE.ColorRepresentation, intensity: number) => void;
   setTime: (time: number) => void;
@@ -47,69 +46,106 @@ export const DEFAULT_HOVER_HEX_MATERIAL_PARAMETERS: HoverHexMaterialParameters =
   centerAlpha: 0.12,
 };
 
-const vertexShader = `
-  varying vec2 vHexPosition;
+const scratchColor = new THREE.Color();
+const scratchAccentColor = new THREE.Color();
 
-  void main() {
-    vHexPosition = position.xy;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
 
-const fragmentShader = `
-  varying vec2 vHexPosition;
+function mix(start: number, end: number, alpha: number): number {
+  return start + (end - start) * alpha;
+}
 
-  uniform vec3 uBaseColor;
-  uniform vec3 accentColor;
-  uniform float intensity;
-  uniform float time;
-  uniform float scanSpeed;
-  uniform float scanWidth;
-  uniform float borderThickness;
-  uniform float innerRingThickness;
-  uniform float centerAlpha;
-
-  const float HEX_RADIUS = ${HOVER_HEX_RADIUS.toFixed(6)};
-
-  float hash21(vec2 point) {
-    point = fract(point * vec2(123.34, 456.21));
-    point += dot(point, point + 45.32);
-    return fract(point.x * point.y);
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  if (edge0 === edge1) {
+    return value < edge0 ? 0 : 1;
   }
 
-  float sdHexagon(vec2 point, float radius) {
-    const vec3 k = vec3(-0.866025404, 0.5, 0.577350269);
-    point = abs(point);
-    point -= 2.0 * min(dot(k.xy, point), 0.0) * k.xy;
-    point -= vec2(clamp(point.x, -k.z * radius, k.z * radius), radius);
-    return length(point) * sign(point.y);
+  const t = clamp01((value - edge0) / (edge1 - edge0));
+  return t * t * (3 - 2 * t);
+}
+
+function fract(value: number): number {
+  return value - Math.floor(value);
+}
+
+function hash21(x: number, y: number): number {
+  const px = fract(x * 123.34);
+  const py = fract(y * 456.21);
+  const dot = px * (px + 45.32) + py * (py + 45.32);
+  return fract((px + dot) * (py + dot));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function sdHexagon(x: number, y: number, radius: number): number {
+  const kx = -0.866025404;
+  const ky = 0.5;
+  const kz = 0.577350269;
+  let px = Math.abs(x);
+  let py = Math.abs(y);
+  const dot = kx * px + ky * py;
+  const minDot = Math.min(dot, 0);
+  px -= 2 * minDot * kx;
+  py -= 2 * minDot * ky;
+  px -= clamp(px, -kz * radius, kz * radius);
+  py -= radius;
+  const magnitude = Math.sqrt(px * px + py * py);
+  return magnitude * (py >= 0 ? 1 : -1);
+}
+
+function redrawHoverTexture(texture: THREE.DataTexture, uniforms: HoverHexMaterialUniforms): void {
+  const data = texture.image.data as Uint8Array;
+  const size = texture.image.width as number;
+  const baseColor = scratchColor.copy(uniforms.uBaseColor.value);
+  const accentColor = scratchAccentColor.copy(uniforms.accentColor.value);
+  const intensity = uniforms.intensity.value;
+  const time = uniforms.time.value;
+  const scanSpeed = uniforms.scanSpeed.value;
+  const scanWidth = uniforms.scanWidth.value;
+  const borderThickness = uniforms.borderThickness.value;
+  const innerRingThickness = uniforms.innerRingThickness.value;
+  const centerAlpha = uniforms.centerAlpha.value;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const index = (y * size + x) * 4;
+      const localX = (((x + 0.5) / size) - 0.5) * 2;
+      const localY = (((y + 0.5) / size) - 0.5) * 2;
+      const edgeDistance = sdHexagon(localX, localY, HOVER_HEX_TEXTURE_RADIUS);
+      const normalizedDepth = clamp01((-edgeDistance) / HOVER_HEX_TEXTURE_RADIUS);
+      const outerRim = smoothstep(borderThickness, 0, Math.abs(edgeDistance));
+      const innerRing = smoothstep(
+        innerRingThickness,
+        0,
+        Math.abs(edgeDistance + HOVER_HEX_TEXTURE_RADIUS * 0.22),
+      );
+      const scanPhase = fract(
+        ((localX / HOVER_HEX_TEXTURE_RADIUS) * 0.42) +
+          ((localY / HOVER_HEX_TEXTURE_RADIUS) * 0.58) -
+          (time * scanSpeed),
+      );
+      const scanBand = smoothstep(scanWidth, 0, Math.abs(scanPhase - 0.5));
+      const scanMask = scanBand * smoothstep(0.12, 0.82, normalizedDepth);
+      const breakup = mix(0.72, 1, hash21(Math.floor(localX * 5), Math.floor(localY * 5)));
+      const centerMask = smoothstep(0.2, 0.78, normalizedDepth);
+      const interior = centerAlpha * centerMask * breakup;
+      const alpha = clamp01(interior + outerRim * 0.92 + innerRing * 0.4 + scanMask * 0.48) * intensity;
+      const accentMix = clamp01(outerRim * 0.78 + innerRing * 0.32 + scanMask * 0.6);
+      const pixelColor = scratchColor.copy(baseColor).lerp(accentColor, accentMix).convertLinearToSRGB();
+
+      data[index] = Math.round(clamp01(pixelColor.r) * 255);
+      data[index + 1] = Math.round(clamp01(pixelColor.g) * 255);
+      data[index + 2] = Math.round(clamp01(pixelColor.b) * 255);
+      data[index + 3] = Math.round(alpha * 255);
+    }
   }
 
-  void main() {
-    float edgeDistance = sdHexagon(vHexPosition, HEX_RADIUS);
-    float normalizedDepth = clamp((-edgeDistance) / HEX_RADIUS, 0.0, 1.0);
-    float outerRim = smoothstep(borderThickness, 0.0, abs(edgeDistance));
-    float innerRing = smoothstep(innerRingThickness, 0.0, abs(edgeDistance + HEX_RADIUS * 0.22));
-
-    float scanPhase = fract(
-      ((vHexPosition.x / HEX_RADIUS) * 0.42) +
-      ((vHexPosition.y / HEX_RADIUS) * 0.58) -
-      (time * scanSpeed)
-    );
-    float scanBand = smoothstep(scanWidth, 0.0, abs(scanPhase - 0.5));
-    float scanMask = scanBand * smoothstep(0.12, 0.82, normalizedDepth);
-
-    float breakup = mix(0.72, 1.0, hash21(floor(vHexPosition * 5.0)));
-    float centerMask = smoothstep(0.2, 0.78, normalizedDepth);
-    float interior = centerAlpha * centerMask * breakup;
-
-    float alpha = clamp(interior + outerRim * 0.92 + innerRing * 0.4 + scanMask * 0.48, 0.0, 1.0) * intensity;
-    float accentMix = clamp(outerRim * 0.78 + innerRing * 0.32 + scanMask * 0.6, 0.0, 1.0);
-    vec3 color = mix(uBaseColor, accentColor, accentMix);
-
-    gl_FragColor = vec4(color, alpha);
-  }
-`;
+  texture.needsUpdate = true;
+}
 
 export function createHoverHexMaterial(
   parameters: Partial<HoverHexMaterialParameters> = {},
@@ -131,14 +167,21 @@ export function createHoverHexMaterial(
     centerAlpha: { value: resolved.centerAlpha },
   };
 
-  const material = new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader,
-    fragmentShader,
+  const textureData = new Uint8Array(HOVER_HEX_TEXTURE_SIZE * HOVER_HEX_TEXTURE_SIZE * 4);
+  const texture = new THREE.DataTexture(textureData, HOVER_HEX_TEXTURE_SIZE, HOVER_HEX_TEXTURE_SIZE, THREE.RGBAFormat);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    color: 0xffffff,
     transparent: true,
     depthWrite: false,
   });
   material.toneMapped = false;
+  redrawHoverTexture(texture, uniforms);
 
   return {
     material,
@@ -147,9 +190,11 @@ export function createHoverHexMaterial(
       uniforms.uBaseColor.value.set(baseColor);
       uniforms.accentColor.value.set(accentColor);
       uniforms.intensity.value = intensity;
+      redrawHoverTexture(texture, uniforms);
     },
     setTime(time) {
       uniforms.time.value = time;
+      redrawHoverTexture(texture, uniforms);
     },
     setParameters(nextParameters) {
       if (nextParameters.baseColor !== undefined) {
@@ -183,8 +228,11 @@ export function createHoverHexMaterial(
       if (nextParameters.centerAlpha !== undefined) {
         uniforms.centerAlpha.value = nextParameters.centerAlpha;
       }
+
+      redrawHoverTexture(texture, uniforms);
     },
     dispose() {
+      texture.dispose();
       material.dispose();
     },
   };

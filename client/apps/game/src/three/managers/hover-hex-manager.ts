@@ -16,6 +16,8 @@ export interface HoverHexDebugState {
   visualMode: HoverVisualMode;
 }
 
+const HOVER_FILL_Y = 0.32;
+
 /**
  * Manages hover effects with rim lighting on hexagons
  */
@@ -26,7 +28,7 @@ export class HoverHexManager {
   private isVisible = false;
   private visualMode: HoverVisualMode = "fill";
   private readonly hoverMaterialController: HoverHexMaterialController;
-  private readonly hoverMaterial: THREE.ShaderMaterial;
+  private readonly hoverMaterial: THREE.MeshBasicMaterial;
   private outlineMaterials: THREE.Material[] = [];
   private readonly baseColor = new THREE.Color(0.2, 0.6, 1.0);
   private readonly rimColor = new THREE.Color(0.4, 0.8, 1.0).multiplyScalar(2.0);
@@ -52,7 +54,7 @@ export class HoverHexManager {
     const geometry = new THREE.ShapeGeometry(hexShape);
 
     this.hoverHex = new THREE.Mesh(geometry, this.hoverMaterial);
-    this.hoverHex.position.y = 0.2; // Very slightly above ground, lower than labels
+    this.hoverHex.position.y = HOVER_FILL_Y; // Lifted off the terrain enough to survive dense ground detail.
     this.hoverHex.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.hoverHex.renderOrder = 50; // Lower render order to avoid interfering with labels
     this.hoverHex.raycast = () => {}; // Disable raycasting to prevent interference
@@ -132,7 +134,7 @@ export class HoverHexManager {
   public showHover(x: number, z: number): void {
     if (!this.hoverHex) return;
 
-    this.hoverHex.position.set(x, 0.2, z);
+    this.hoverHex.position.set(x, HOVER_FILL_Y, z);
 
     if (this.outlineModel) {
       this.outlineModel.position.set(x, 0.01, z);
@@ -205,11 +207,11 @@ export class HoverHexManager {
 
   public getDebugState(): HoverHexDebugState {
     return {
-      centerAlpha: this.hoverMaterial.uniforms.centerAlpha.value,
+      centerAlpha: this.hoverMaterialController.uniforms.centerAlpha.value,
       fillAttached: Boolean(this.hoverHex?.parent),
       isVisible: this.isVisible,
       materialType: this.hoverMaterial.type,
-      scanWidth: this.hoverMaterial.uniforms.scanWidth.value,
+      scanWidth: this.hoverMaterialController.uniforms.scanWidth.value,
       visualMode: this.visualMode,
     };
   }
