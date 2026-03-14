@@ -40,8 +40,7 @@ export class SelectionPulseManager {
     this.primaryPulseIntensity = defaultPulsePalette.intensity;
 
     // Pre-create shared geometry for ownership pulses
-    const hexShape = createHexagonShape(HEX_SIZE * 1.1);
-    this.sharedOwnershipGeometry = new THREE.ShapeGeometry(hexShape);
+    this.sharedOwnershipGeometry = this.createRingGeometry(HEX_SIZE * 1.12, HEX_SIZE * 0.86);
 
     this.primaryPulseMaterial = new THREE.MeshBasicMaterial({
       color: this.primaryBaseColor.clone(),
@@ -58,7 +57,7 @@ export class SelectionPulseManager {
   }
 
   private createPulseMesh(): void {
-    const geometry = this.createPulseRingGeometry();
+    const geometry = this.createRingGeometry(HEX_SIZE * 1.16, HEX_SIZE * 0.82);
 
     this.pulseMesh = new THREE.Mesh(geometry, this.primaryPulseMaterial);
     this.pulseMesh.position.y = 0.5; // Much higher above ground for visibility
@@ -71,9 +70,9 @@ export class SelectionPulseManager {
     this.scene.add(this.pulseMesh);
   }
 
-  private createPulseRingGeometry(): THREE.ShapeGeometry {
-    const outer = createHexagonShape(HEX_SIZE * 1.16);
-    const innerPoints = createHexagonShape(HEX_SIZE * 0.82)
+  private createRingGeometry(outerRadius: number, innerRadius: number): THREE.ShapeGeometry {
+    const outer = createHexagonShape(outerRadius);
+    const innerPoints = createHexagonShape(innerRadius)
       .getPoints()
       .slice()
       .reverse();

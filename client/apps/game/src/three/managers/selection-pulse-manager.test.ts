@@ -61,4 +61,16 @@ describe("SelectionPulseManager material ownership", () => {
     expect(material.color.getHex()).toBe(palette.baseColor);
     expect(material.opacity).toBeCloseTo(palette.intensity);
   });
+
+  it("uses ring geometry for ownership pulses instead of flat filled planes", () => {
+    const manager = new SelectionPulseManager(new THREE.Scene());
+
+    manager.showOwnershipPulses([{ x: 0, z: 0 }], new THREE.Color("#00aaff"), new THREE.Color("#ffffff"));
+
+    const ownershipMesh = (manager as any).ownershipPulseMeshes[0] as THREE.Mesh;
+    const shapes = (ownershipMesh.geometry as any).parameters.shapes;
+    const primaryShape = Array.isArray(shapes) ? shapes[0] : shapes;
+
+    expect(primaryShape.holes.length).toBeGreaterThan(0);
+  });
 });
