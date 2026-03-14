@@ -94,6 +94,7 @@ import {
   toggleMapHexView,
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
+import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
@@ -106,6 +107,7 @@ import {
   shouldAcceptArmyTabSelectionAttempt,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
+import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import { resolveExploreCompletionPendingClearPlan, type TravelEffectType } from "./worldmap-travel-effect-policy";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
@@ -1663,71 +1665,78 @@ export default class WorldmapScene extends WarpTravel {
       const key = `${targetHex.col},${targetHex.row}`;
       const effectType = isExplored ? "travel" : "compass";
       const effectLabel = isExplored ? "Traveling" : "Exploring";
+      let cleanup = () => {};
+      const shouldPlayMovementFx = shouldPlayArmyMovementFx({
+        capabilities: snapshotRendererFxCapabilities(),
+        movementType: isExplored ? "travel" : "explore",
+      });
 
-      const existingEffect = this.travelEffects.get(key);
-      if (existingEffect) {
-        existingEffect();
+      if (shouldPlayMovementFx) {
+        const existingEffect = this.travelEffects.get(key);
+        if (existingEffect) {
+          existingEffect();
+        }
+
+        const existingByEntity = this.travelEffectsByEntity.get(selectedEntityId);
+        if (existingByEntity) {
+          existingByEntity.cleanup();
+        }
+
+        const { end } = this.fxManager.playFxAtCoords(
+          effectType,
+          position.x,
+          position.y + 2.5,
+          position.z,
+          0.95,
+          effectLabel,
+          true,
+        );
+
+        let cleaned = false;
+        const effectStartedAtMs = performance.now();
+        let delayedCleanupTimeout: ReturnType<typeof setTimeout> | undefined;
+        let maxLifetimeTimeout: ReturnType<typeof setTimeout> | undefined;
+        const runCleanupNow = () => {
+          if (cleaned) return;
+          cleaned = true;
+          if (delayedCleanupTimeout) {
+            clearTimeout(delayedCleanupTimeout);
+            delayedCleanupTimeout = undefined;
+          }
+          if (maxLifetimeTimeout) {
+            clearTimeout(maxLifetimeTimeout);
+            maxLifetimeTimeout = undefined;
+          }
+          end();
+          this.travelEffects.delete(key);
+
+          const tracked = this.travelEffectsByEntity.get(selectedEntityId);
+          if (tracked?.key === key) {
+            this.travelEffectsByEntity.delete(selectedEntityId);
+          }
+        };
+        cleanup = () => {
+          if (cleaned) return;
+          const delayMs = getMinEffectCleanupDelayMs(effectStartedAtMs, performance.now(), MIN_TRAVEL_EFFECT_VISIBLE_MS);
+          if (delayMs === 0) {
+            runCleanupNow();
+            return;
+          }
+          if (delayedCleanupTimeout) {
+            return;
+          }
+          delayedCleanupTimeout = setTimeout(() => {
+            delayedCleanupTimeout = undefined;
+            runCleanupNow();
+          }, delayMs);
+        };
+
+        // Store the cleanup function with the hex coordinates as key
+        this.travelEffects.set(key, cleanup);
+
+        this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup, effectType });
+        maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
       }
-
-      const existingByEntity = this.travelEffectsByEntity.get(selectedEntityId);
-      if (existingByEntity) {
-        existingByEntity.cleanup();
-      }
-
-      const { end } = this.fxManager.playFxAtCoords(
-        effectType,
-        position.x,
-        position.y + 2.5,
-        position.z,
-        0.95,
-        effectLabel,
-        true,
-      );
-
-      let cleaned = false;
-      const effectStartedAtMs = performance.now();
-      let delayedCleanupTimeout: ReturnType<typeof setTimeout> | undefined;
-      let maxLifetimeTimeout: ReturnType<typeof setTimeout> | undefined;
-      const runCleanupNow = () => {
-        if (cleaned) return;
-        cleaned = true;
-        if (delayedCleanupTimeout) {
-          clearTimeout(delayedCleanupTimeout);
-          delayedCleanupTimeout = undefined;
-        }
-        if (maxLifetimeTimeout) {
-          clearTimeout(maxLifetimeTimeout);
-          maxLifetimeTimeout = undefined;
-        }
-        end();
-        this.travelEffects.delete(key);
-
-        const tracked = this.travelEffectsByEntity.get(selectedEntityId);
-        if (tracked?.key === key) {
-          this.travelEffectsByEntity.delete(selectedEntityId);
-        }
-      };
-      const cleanup = () => {
-        if (cleaned) return;
-        const delayMs = getMinEffectCleanupDelayMs(effectStartedAtMs, performance.now(), MIN_TRAVEL_EFFECT_VISIBLE_MS);
-        if (delayMs === 0) {
-          runCleanupNow();
-          return;
-        }
-        if (delayedCleanupTimeout) {
-          return;
-        }
-        delayedCleanupTimeout = setTimeout(() => {
-          delayedCleanupTimeout = undefined;
-          runCleanupNow();
-        }, delayMs);
-      };
-
-      // Store the cleanup function with the hex coordinates as key
-      this.travelEffects.set(key, cleanup);
-
-      this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup, effectType });
-      maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
 
       // Mark army as having pending movement transaction
       this.markPendingArmyMovement(selectedEntityId);
