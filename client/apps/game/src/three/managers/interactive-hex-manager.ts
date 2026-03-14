@@ -127,6 +127,10 @@ export class InteractiveHexManager {
     this.hoverHexManager.applyHoverPalette(palette);
   }
 
+  public setCameraView(cameraView: number) {
+    this.hoverHexManager.setCameraView(cameraView);
+  }
+
   public onMouseMove(raycaster: THREE.Raycaster) {
     if (!this.instanceMesh) return;
     const hoveredHex = this.pickHexFromRaycaster(raycaster);

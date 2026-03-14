@@ -24,14 +24,14 @@ describe("HoverHexManager material ownership", () => {
     first.setHoverIntensity(0.2);
     second.setHoverIntensity(0.8);
 
-    const firstMaterial = (first as any).hoverHex.material as THREE.MeshBasicMaterial;
-    const secondMaterial = (second as any).hoverHex.material as THREE.MeshBasicMaterial;
+    const firstMaterial = (first as any).hoverHex.material as THREE.ShaderMaterial;
+    const secondMaterial = (second as any).hoverHex.material as THREE.ShaderMaterial;
 
     expect(firstMaterial).not.toBe(secondMaterial);
-    expect(firstMaterial.color.getHex()).toBe(0xff0000);
-    expect(secondMaterial.color.getHex()).toBe(0x00ff00);
-    expect(firstMaterial.opacity).toBeCloseTo(0.2);
-    expect(secondMaterial.opacity).toBeCloseTo(0.8);
+    expect(firstMaterial.uniforms.uBaseColor.value.getHex()).toBe(0xff0000);
+    expect(secondMaterial.uniforms.uBaseColor.value.getHex()).toBe(0x00ff00);
+    expect(firstMaterial.uniforms.intensity.value).toBeCloseTo(0.2);
+    expect(secondMaterial.uniforms.intensity.value).toBeCloseTo(0.8);
   });
 
   it("switches between contextual outline and generic fill palettes without stale fill state", () => {
@@ -46,6 +46,51 @@ describe("HoverHexManager material ownership", () => {
     manager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
 
     expect(hoverHex.visible).toBe(true);
-    expect((hoverHex.material as THREE.MeshBasicMaterial).opacity).toBeCloseTo(0.32);
+    expect(((hoverHex.material as THREE.ShaderMaterial).uniforms.centerAlpha.value as number)).toBeCloseTo(0.12);
+    expect(((hoverHex.material as THREE.ShaderMaterial).uniforms.intensity.value as number)).toBeCloseTo(0.32);
+  });
+
+  it("keeps the fill detached while outline-only hover is active", () => {
+    const scene = new THREE.Scene();
+    const manager = new HoverHexManager(scene);
+
+    manager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: true, actionType: "move" as any }));
+    manager.showHover(4, 8);
+
+    const hoverHex = (manager as any).hoverHex as THREE.Mesh;
+
+    expect(manager.isHoverVisible()).toBe(true);
+    expect(hoverHex.visible).toBe(false);
+    expect(hoverHex.parent).toBeNull();
+  });
+
+  it("disposes shader material and geometry ownership", () => {
+    const manager = new HoverHexManager(new THREE.Scene());
+    const hoverHex = (manager as any).hoverHex as THREE.Mesh;
+    const material = hoverHex.material as THREE.ShaderMaterial;
+    const geometryDispose = vi.spyOn(hoverHex.geometry, "dispose");
+    const materialDispose = vi.spyOn(material, "dispose");
+
+    manager.dispose();
+
+    expect(geometryDispose).toHaveBeenCalledTimes(1);
+    expect(materialDispose).toHaveBeenCalledTimes(1);
+    expect((manager as any).hoverHex).toBeNull();
+  });
+
+  it("reports hover diagnostics for mode, attachment, and material type", () => {
+    const manager = new HoverHexManager(new THREE.Scene());
+
+    manager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: true, actionType: "move" as any }));
+    manager.showHover(2, 3);
+
+    expect(manager.getDebugState()).toEqual({
+      centerAlpha: 0.12,
+      fillAttached: false,
+      isVisible: true,
+      materialType: "ShaderMaterial",
+      scanWidth: 0.14,
+      visualMode: "outline",
+    });
   });
 });

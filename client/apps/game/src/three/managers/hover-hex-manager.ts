@@ -1,10 +1,20 @@
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { createHoverHexMaterial, type HoverHexMaterialController } from "@/three/shaders/hover-hex-material";
 import { gltfLoader } from "@/three/utils/utils";
 import * as THREE from "three";
+import { resolveHoverHexViewTuning } from "./hover-hex-view-policy";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 export type HoverVisualMode = "fill" | "outline";
+export interface HoverHexDebugState {
+  centerAlpha: number;
+  fillAttached: boolean;
+  isVisible: boolean;
+  materialType: string;
+  scanWidth: number;
+  visualMode: HoverVisualMode;
+}
 
 /**
  * Manages hover effects with rim lighting on hexagons
@@ -15,22 +25,22 @@ export class HoverHexManager {
   private outlineModel: THREE.Object3D | null = null;
   private isVisible = false;
   private visualMode: HoverVisualMode = "fill";
-  private readonly hoverMaterial: THREE.MeshBasicMaterial;
+  private readonly hoverMaterialController: HoverHexMaterialController;
+  private readonly hoverMaterial: THREE.ShaderMaterial;
   private outlineMaterials: THREE.Material[] = [];
   private readonly baseColor = new THREE.Color(0.2, 0.6, 1.0);
   private readonly rimColor = new THREE.Color(0.4, 0.8, 1.0).multiplyScalar(2.0);
   private hoverIntensity = 0.6;
   private pulseTime = 0;
   private readonly animatedColor = new THREE.Color();
+  private currentCameraView = 2;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.hoverMaterial = new THREE.MeshBasicMaterial({
-      color: this.baseColor.clone(),
-      depthWrite: false,
-      opacity: this.hoverIntensity,
-      transparent: true,
-    });
+    this.hoverMaterialController = createHoverHexMaterial();
+    this.hoverMaterial = this.hoverMaterialController.material;
+    this.applyViewTuning();
+    this.applyMaterialState();
     this.createHoverHex();
     this.loadOutlineModel();
     // Don't start animation immediately - only when hover becomes visible
@@ -184,6 +194,26 @@ export class HoverHexManager {
     this.applyOutlineMaterialState();
   }
 
+  public setCameraView(cameraView: number): void {
+    if (this.currentCameraView === cameraView) {
+      return;
+    }
+
+    this.currentCameraView = cameraView;
+    this.applyViewTuning();
+  }
+
+  public getDebugState(): HoverHexDebugState {
+    return {
+      centerAlpha: this.hoverMaterial.uniforms.centerAlpha.value,
+      fillAttached: Boolean(this.hoverHex?.parent),
+      isVisible: this.isVisible,
+      materialType: this.hoverMaterial.type,
+      scanWidth: this.hoverMaterial.uniforms.scanWidth.value,
+      visualMode: this.visualMode,
+    };
+  }
+
   /**
    * Clean up resources
    */
@@ -191,7 +221,7 @@ export class HoverHexManager {
     if (this.hoverHex) {
       this.scene.remove(this.hoverHex);
       this.hoverHex.geometry.dispose();
-      this.hoverMaterial.dispose();
+      this.hoverMaterialController.dispose();
       this.hoverHex = null;
     }
 
@@ -265,15 +295,20 @@ export class HoverHexManager {
 
   private applyMaterialState(): void {
     if (!this.isVisible) {
-      this.hoverMaterial.color.copy(this.baseColor);
-      this.hoverMaterial.opacity = this.hoverIntensity;
+      this.hoverMaterialController.setPalette(this.baseColor, this.rimColor, this.hoverIntensity);
+      this.hoverMaterialController.setTime(0);
       return;
     }
 
     const pulse = 0.8 + 0.2 * Math.sin(this.pulseTime * 3.0);
-    this.animatedColor.copy(this.baseColor).lerp(this.rimColor, 0.2 * pulse);
-    this.hoverMaterial.color.copy(this.animatedColor);
-    this.hoverMaterial.opacity = this.hoverIntensity;
+    this.animatedColor.copy(this.rimColor).lerp(this.baseColor, 0.24 - 0.08 * pulse);
+    this.hoverMaterialController.setPalette(this.baseColor, this.animatedColor, this.hoverIntensity);
+    this.hoverMaterialController.setTime(this.pulseTime);
+  }
+
+  private applyViewTuning(): void {
+    const tuning = resolveHoverHexViewTuning(this.currentCameraView);
+    this.hoverMaterialController.setParameters(tuning);
   }
 
   private applyOutlineMaterialState(): void {
