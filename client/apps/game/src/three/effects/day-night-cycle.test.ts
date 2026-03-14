@@ -57,6 +57,8 @@ describe("DayNightCycleManager", () => {
 
     fixture.manager.update(37.5, new Vector3(5, 1, 5));
     expect(fixture.directionalLight.intensity).not.toBe(2);
+    fixture.fog.near = 18;
+    fixture.fog.far = 72;
 
     fixture.manager.setEnabled(false);
 
@@ -67,11 +69,11 @@ describe("DayNightCycleManager", () => {
     expect(fixture.hemisphereLight.intensity).toBe(1.5);
     expect(fixture.ambientLight.intensity).toBe(0.5);
     expect((fixture.scene.background as Color).getHex()).toBe(0x111111);
-    expect(fixture.fog.near).toBe(5);
-    expect(fixture.fog.far).toBe(50);
+    expect(fixture.fog.near).toBe(18);
+    expect(fixture.fog.far).toBe(72);
   });
 
-  it("applies weather modulation to sun, ambient fill, and fog", () => {
+  it("applies weather modulation to sun, ambient fill, and fog color without overriding fog range", () => {
     const fixture = createFixture();
 
     fixture.manager.update(37.5);
@@ -79,13 +81,26 @@ describe("DayNightCycleManager", () => {
     const beforeHemisphere = fixture.hemisphereLight.intensity;
     const beforeFogNear = fixture.fog.near;
     const beforeFogFar = fixture.fog.far;
+    const beforeFogColor = fixture.fog.color.getHex();
 
     fixture.manager.applyWeatherModulation(0.8, 0.7, 0.6);
 
     expect(fixture.directionalLight.intensity).toBeLessThan(beforeSun);
     expect(fixture.hemisphereLight.intensity).toBeGreaterThan(beforeHemisphere);
-    expect(fixture.fog.near).toBeLessThan(beforeFogNear);
-    expect(fixture.fog.far).toBeLessThan(beforeFogFar);
+    expect(fixture.fog.color.getHex()).not.toBe(beforeFogColor);
+    expect(fixture.fog.near).toBe(beforeFogNear);
+    expect(fixture.fog.far).toBe(beforeFogFar);
+  });
+
+  it("does not overwrite camera-owned fog near and far during the day-night update", () => {
+    const fixture = createFixture();
+    fixture.fog.near = 24;
+    fixture.fog.far = 81;
+
+    fixture.manager.update(12.5, new Vector3(2, 1, 4));
+
+    expect(fixture.fog.near).toBe(24);
+    expect(fixture.fog.far).toBe(81);
   });
 
   it("is idempotent on dispose", () => {

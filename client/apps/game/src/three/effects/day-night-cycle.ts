@@ -80,8 +80,6 @@ export class DayNightCycleManager {
     ambientIntensity: number;
     sceneBackground: Color;
     fogColor: Color;
-    fogNear: number;
-    fogFar: number;
   };
 
   // Color stops for different times of day
@@ -179,8 +177,6 @@ export class DayNightCycleManager {
       ambientIntensity: this.ambientLight.intensity,
       sceneBackground: (this.scene.background as Color).clone(),
       fogColor: this.fog.color.clone(),
-      fogNear: this.fog.near,
-      fogFar: this.fog.far,
     };
   }
 
@@ -336,8 +332,6 @@ export class DayNightCycleManager {
 
     // Update fog
     this.fog.color.setHex(timeColors.fogColor);
-    this.fog.near = timeColors.fogNear;
-    this.fog.far = timeColors.fogFar;
   }
 
   /**
@@ -420,10 +414,6 @@ export class DayNightCycleManager {
 
     // Increase fog density for storm atmosphere
     if (fogDensity > 0) {
-      const fogIncrease = fogDensity * 0.4; // Max 40% closer fog
-      this.fog.near *= 1 - fogIncrease;
-      this.fog.far *= 1 - fogIncrease * 0.5;
-
       // Tint fog slightly gray-blue during storms
       this.fog.color.lerp(this.stormTint, fogDensity * 0.3);
     }
@@ -460,8 +450,6 @@ export class DayNightCycleManager {
     (this.scene.background as Color).copy(this.originalLightingState.sceneBackground);
 
     this.fog.color.copy(this.originalLightingState.fogColor);
-    this.fog.near = this.originalLightingState.fogNear;
-    this.fog.far = this.originalLightingState.fogFar;
     this.isProgressInitialized = false;
   }
 
