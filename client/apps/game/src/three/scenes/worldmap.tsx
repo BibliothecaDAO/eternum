@@ -167,6 +167,7 @@ import {
   type WorldmapChunkDiagnostics,
 } from "./worldmap-chunk-diagnostics";
 import {
+  incrementWorldmapRenderCounter,
   incrementWorldmapForceRefreshReason,
   recordWorldmapRenderDuration,
   resetWorldmapRenderDiagnostics,
@@ -4364,6 +4365,7 @@ export default class WorldmapScene extends WarpTravel {
       return this.chunkRefreshRequestToken;
     }
 
+    incrementWorldmapRenderCounter("chunkRefreshRequests");
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     this.chunkRefreshRequestToken += 1;
     if (force) {
@@ -4497,6 +4499,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.isSwitchedOff) {
       return false;
     }
+    incrementWorldmapRenderCounter("updateVisibleChunksCalls");
     const updateStartedAt = performance.now();
 
     try {

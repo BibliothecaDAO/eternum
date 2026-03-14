@@ -51,6 +51,7 @@ import {
 } from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
+import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
@@ -168,6 +169,7 @@ export abstract class HexagonScene {
     this.updateFogForDistance(distance);
     this.updateOutlineOpacityForDistance(distance);
     this.controls.dispatchEvent({ type: "change" });
+    incrementWorldmapRenderCounter("controlsChangeEvents");
     this.visibilityManager?.markDirty();
   }
 
@@ -1345,6 +1347,9 @@ export abstract class HexagonScene {
     console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
     const previousView = this.currentCameraView;
     const target = this.controls.target;
+    if (position !== previousView) {
+      incrementWorldmapRenderCounter("zoomTransitionsStarted");
+    }
     this.currentCameraView = position;
 
     switch (position) {
@@ -1376,7 +1381,11 @@ export abstract class HexagonScene {
     this.updateOutlineOpacityForDistance(this.cameraDistance);
     this.updateCameraClipPlanesForDistance(this.cameraDistance);
     this.updateFogForDistance(this.cameraDistance);
-    this.cameraAnimate(newPosition, target, duration);
+    this.cameraAnimate(newPosition, target, duration, () => {
+      if (position !== previousView) {
+        incrementWorldmapRenderCounter("zoomTransitionsCompleted");
+      }
+    });
 
     // Notify all listeners of the camera view change
     this.cameraViewListeners.forEach((listener) => listener(position));

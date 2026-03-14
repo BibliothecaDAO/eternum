@@ -11,7 +11,27 @@ export type WorldmapRenderDurationMetric =
 
 export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
 
-export type WorldmapRenderCounter = "workerFindPathCalls" | "workerFindPathBypasses" | "pathCreateCalls";
+export type WorldmapRenderCounter =
+  | "workerFindPathCalls"
+  | "workerFindPathBypasses"
+  | "pathCreateCalls"
+  | "controlsChangeEvents"
+  | "chunkRefreshRequests"
+  | "updateVisibleChunksCalls"
+  | "zoomTransitionsStarted"
+  | "zoomTransitionsCompleted"
+  | "zoomTransitionsCancelled";
+
+export interface WorldmapZoomTelemetrySummary {
+  controlsChangeEvents: number;
+  chunkRefreshRequests: number;
+  updateVisibleChunksCalls: number;
+  zoomTransitions: {
+    started: number;
+    completed: number;
+    cancelled: number;
+  };
+}
 
 export type WorldmapForceRefreshReason =
   | "default"
@@ -66,6 +86,12 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     workerFindPathCalls: 0,
     workerFindPathBypasses: 0,
     pathCreateCalls: 0,
+    controlsChangeEvents: 0,
+    chunkRefreshRequests: 0,
+    updateVisibleChunksCalls: 0,
+    zoomTransitionsStarted: 0,
+    zoomTransitionsCompleted: 0,
+    zoomTransitionsCancelled: 0,
   },
   forceRefreshReasons: {
     default: 0,
@@ -126,6 +152,21 @@ export function snapshotWorldmapRenderDiagnostics(): WorldmapRenderDiagnosticsSn
     counters: { ...diagnosticsState.counters },
     forceRefreshReasons: { ...diagnosticsState.forceRefreshReasons },
     updatedAtMs: diagnosticsState.updatedAtMs,
+  };
+}
+
+export function createWorldmapZoomTelemetrySummary(
+  snapshot: WorldmapRenderDiagnosticsSnapshot,
+): WorldmapZoomTelemetrySummary {
+  return {
+    controlsChangeEvents: snapshot.counters.controlsChangeEvents,
+    chunkRefreshRequests: snapshot.counters.chunkRefreshRequests,
+    updateVisibleChunksCalls: snapshot.counters.updateVisibleChunksCalls,
+    zoomTransitions: {
+      started: snapshot.counters.zoomTransitionsStarted,
+      completed: snapshot.counters.zoomTransitionsCompleted,
+      cancelled: snapshot.counters.zoomTransitionsCancelled,
+    },
   };
 }
 

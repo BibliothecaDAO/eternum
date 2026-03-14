@@ -15,13 +15,18 @@ describe("worldmap render diagnostics wiring", () => {
     const structureManagerSource = readSource("managers/structure-manager.ts");
     const workerManagerSource = readSource("../managers/game-worker-manager.ts");
     const pathRendererSource = readSource("managers/path-renderer.ts");
+    const hexagonSceneSource = readSource("scenes/hexagon-scene.ts");
 
     expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("updateVisibleChunks"/);
     expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("performChunkSwitch"/);
     expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("updateManagersForChunk"/);
+    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("chunkRefreshRequests"/);
+    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("updateVisibleChunksCalls"/);
     expect(armyManagerSource).toMatch(/recordWorldmapRenderDuration\("executeRenderForChunk"/);
     expect(structureManagerSource).toMatch(/recordWorldmapRenderDuration\("performVisibleStructuresUpdate"/);
     expect(workerManagerSource).toMatch(/recordWorldmapRenderDuration\("workerFindPath"/);
     expect(pathRendererSource).toMatch(/recordWorldmapRenderDuration\("createPath"/);
+    expect(hexagonSceneSource).toMatch(/incrementWorldmapRenderCounter\("controlsChangeEvents"/);
+    expect(hexagonSceneSource).toMatch(/incrementWorldmapRenderCounter\("zoomTransitionsStarted"/);
   });
 });
