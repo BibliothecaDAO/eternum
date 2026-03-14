@@ -86,3 +86,5 @@ Record for each scene:
 - Phase 3 resolution is to treat missing environment IBL as an explicit `environmentIbl` degradation with a
   `scene key/fill fallback lighting policy` note, while preserving the normal graphics-tier environment intensity for
   backends that do implement IBL.
+- Phase 4 resolution is to classify `environmentIbl` and `toneMappingControl` as blocking parity features while keeping
+  `colorGrade`, `bloom`, `vignette`, and `chromaticAberration` advisory for the first closure pass.
