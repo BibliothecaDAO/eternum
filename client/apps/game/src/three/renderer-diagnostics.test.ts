@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   incrementRendererDiagnosticError,
   resetRendererDiagnostics,
+  setRendererDiagnosticCapabilities,
+  setRendererDiagnosticDegradations,
   setRendererDiagnosticEffectPlan,
   setRendererDiagnosticSceneName,
   snapshotRendererDiagnostics,
@@ -22,6 +24,26 @@ describe("renderer-diagnostics", () => {
       initTimeMs: 42,
       requestedMode: "experimental-webgpu-auto",
     });
+    setRendererDiagnosticCapabilities({
+      supportsBloom: false,
+      supportsChromaticAberration: false,
+      supportsColorGrade: false,
+      supportsEnvironmentIbl: false,
+      supportsToneMappingControl: true,
+      supportsVignette: false,
+      supportsWideLines: false,
+    });
+    setRendererDiagnosticDegradations([
+      {
+        detail: "webgpu backend does not own PMREM-based environment yet",
+        feature: "environmentIbl",
+        reason: "unsupported-backend",
+      },
+      {
+        feature: "bloom",
+        reason: "disabled-by-quality",
+      },
+    ]);
     setRendererDiagnosticEffectPlan({
       antiAlias: "fxaa",
       bloom: { enabled: true, intensity: 0.35 },
@@ -50,6 +72,26 @@ describe("renderer-diagnostics", () => {
     expect(snapshotRendererDiagnostics()).toEqual({
       activeMode: "webgl2-fallback",
       buildMode: "experimental-webgpu-auto",
+      capabilities: {
+        supportsBloom: false,
+        supportsChromaticAberration: false,
+        supportsColorGrade: false,
+        supportsEnvironmentIbl: false,
+        supportsToneMappingControl: true,
+        supportsVignette: false,
+        supportsWideLines: false,
+      },
+      degradations: [
+        {
+          detail: "webgpu backend does not own PMREM-based environment yet",
+          feature: "environmentIbl",
+          reason: "unsupported-backend",
+        },
+        {
+          feature: "bloom",
+          reason: "disabled-by-quality",
+        },
+      ],
       effectPlan: {
         antiAlias: "fxaa",
         bloom: { enabled: true, intensity: 0.35 },
@@ -88,10 +130,29 @@ describe("renderer-diagnostics", () => {
       initTimeMs: 12,
       requestedMode: "legacy-webgl",
     });
+    setRendererDiagnosticCapabilities({
+      supportsBloom: true,
+      supportsChromaticAberration: true,
+      supportsColorGrade: true,
+      supportsEnvironmentIbl: true,
+      supportsToneMappingControl: true,
+      supportsVignette: true,
+      supportsWideLines: false,
+    });
 
     expect((window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics).toEqual({
       activeMode: "legacy-webgl",
       buildMode: "experimental-webgpu-force-webgl",
+      capabilities: {
+        supportsBloom: true,
+        supportsChromaticAberration: true,
+        supportsColorGrade: true,
+        supportsEnvironmentIbl: true,
+        supportsToneMappingControl: true,
+        supportsVignette: true,
+        supportsWideLines: false,
+      },
+      degradations: [],
       effectPlan: null,
       fallbackReason: "manual-kill-switch",
       fallbacks: 0,

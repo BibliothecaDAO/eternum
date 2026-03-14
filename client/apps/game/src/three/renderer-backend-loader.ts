@@ -1,5 +1,10 @@
 import { createRendererInitDiagnostics, type RendererBackendV2 } from "./renderer-backend-v2";
-import { incrementRendererDiagnosticError, syncRendererBackendDiagnostics } from "./renderer-diagnostics";
+import {
+  incrementRendererDiagnosticError,
+  setRendererDiagnosticCapabilities,
+  setRendererDiagnosticDegradations,
+  syncRendererBackendDiagnostics,
+} from "./renderer-diagnostics";
 import {
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
@@ -29,6 +34,8 @@ export async function initializeSelectedRendererBackend(input: {
   if (requestedMode === "legacy-webgl") {
     const legacy = await input.legacyFactory();
     syncRendererBackendDiagnostics(legacy.diagnostics);
+    setRendererDiagnosticCapabilities(legacy.backend.capabilities);
+    setRendererDiagnosticDegradations([]);
     return legacy;
   }
 
@@ -37,6 +44,8 @@ export async function initializeSelectedRendererBackend(input: {
       requestedMode,
     });
     syncRendererBackendDiagnostics(experimental.diagnostics);
+    setRendererDiagnosticCapabilities(experimental.backend.capabilities);
+    setRendererDiagnosticDegradations([]);
     return experimental;
   } catch (error) {
     incrementRendererDiagnosticError("initErrors");
@@ -49,6 +58,8 @@ export async function initializeSelectedRendererBackend(input: {
       requestedMode,
     });
     syncRendererBackendDiagnostics(diagnostics);
+    setRendererDiagnosticCapabilities(legacy.backend.capabilities);
+    setRendererDiagnosticDegradations([]);
 
     return {
       ...legacy,

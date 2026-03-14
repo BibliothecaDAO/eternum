@@ -30,6 +30,7 @@ import { GraphicsSettings, type GraphicsSettings as GraphicsSettingsType } from 
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import {
+  createRendererBackendCapabilities,
   createRendererInitDiagnostics,
   type RendererBackendV2,
   type RendererFramePipeline,
@@ -101,8 +102,19 @@ export type RendererBackendFactory = (options: {
 let cachedHDRTarget: WebGLRenderTarget | null = null;
 let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
 
+const WEBGL_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
+  supportsBloom: true,
+  supportsChromaticAberration: true,
+  supportsColorGrade: true,
+  supportsEnvironmentIbl: true,
+  supportsToneMappingControl: true,
+  supportsVignette: true,
+  supportsWideLines: false,
+});
+
 class WebGLRendererBackend implements RendererBackend {
   public readonly renderer: WebGLRenderer;
+  public readonly capabilities = WEBGL_RENDERER_BACKEND_CAPABILITIES;
   private readonly composer: EffectComposer;
   private environmentTarget?: WebGLRenderTarget;
   private isDisposed = false;

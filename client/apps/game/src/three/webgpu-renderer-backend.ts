@@ -3,6 +3,7 @@ import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardTo
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
+  createRendererBackendCapabilities,
   createRendererInitDiagnostics,
   type RendererActiveMode,
   type RendererBackendV2,
@@ -89,6 +90,16 @@ const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
   setVignette: () => {},
 };
 
+const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
+  supportsBloom: false,
+  supportsChromaticAberration: false,
+  supportsColorGrade: false,
+  supportsEnvironmentIbl: false,
+  supportsToneMappingControl: true,
+  supportsVignette: false,
+  supportsWideLines: false,
+});
+
 function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]["mode"]): number {
   switch (mode) {
     case "linear":
@@ -118,6 +129,7 @@ export function createWebGPURendererBackend(
   let renderer: RendererSurfaceLike | undefined;
 
   return {
+    capabilities: WEBGPU_RENDERER_BACKEND_CAPABILITIES,
     get renderer() {
       return renderer;
     },

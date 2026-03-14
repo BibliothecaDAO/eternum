@@ -6,6 +6,31 @@ import type { RendererBuildMode } from "./renderer-build-mode";
 
 export type RendererActiveMode = "legacy-webgl" | "webgpu" | "webgl2-fallback";
 
+export interface RendererBackendCapabilities {
+  supportsEnvironmentIbl: boolean;
+  supportsToneMappingControl: boolean;
+  supportsColorGrade: boolean;
+  supportsBloom: boolean;
+  supportsVignette: boolean;
+  supportsChromaticAberration: boolean;
+  supportsWideLines: boolean;
+}
+
+export type RendererCapabilityFeature =
+  | "environmentIbl"
+  | "toneMappingControl"
+  | "colorGrade"
+  | "bloom"
+  | "vignette"
+  | "chromaticAberration"
+  | "wideLines";
+
+export interface RendererFeatureDegradation {
+  detail?: string;
+  feature: RendererCapabilityFeature;
+  reason: "disabled-by-quality" | "disabled-by-user" | "fallback-active" | "unsupported-backend";
+}
+
 export interface RendererInitDiagnostics {
   activeMode: RendererActiveMode;
   buildMode: RendererBuildMode;
@@ -15,6 +40,7 @@ export interface RendererInitDiagnostics {
 }
 
 export interface RendererBackendV2 {
+  readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;
   applyEnvironment?(targets: unknown): Promise<void>;
   applyPostProcessPlan?(plan: RendererPostProcessPlan): RendererPostProcessController;
@@ -69,6 +95,20 @@ export type RendererBackendV2Factory = (options: {
   isMobileDevice: boolean;
   pixelRatio: number;
 }) => RendererBackendV2;
+
+export function createRendererBackendCapabilities(
+  input: Partial<RendererBackendCapabilities> = {},
+): RendererBackendCapabilities {
+  return {
+    supportsBloom: input.supportsBloom ?? false,
+    supportsChromaticAberration: input.supportsChromaticAberration ?? false,
+    supportsColorGrade: input.supportsColorGrade ?? false,
+    supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
+    supportsToneMappingControl: input.supportsToneMappingControl ?? false,
+    supportsVignette: input.supportsVignette ?? false,
+    supportsWideLines: input.supportsWideLines ?? false,
+  };
+}
 
 export function createRendererInitDiagnostics(
   input: Pick<RendererInitDiagnostics, "activeMode" | "buildMode" | "requestedMode"> &

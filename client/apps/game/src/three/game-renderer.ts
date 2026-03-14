@@ -44,6 +44,8 @@ import {
 } from "./game-renderer-policy";
 import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import {
+  setRendererDiagnosticCapabilities,
+  setRendererDiagnosticDegradations,
   setRendererDiagnosticEffectPlan,
   setRendererDiagnosticSceneName,
   syncRendererBackendDiagnostics,
@@ -345,6 +347,8 @@ export default class GameRenderer {
       this.renderer = this.backend.renderer;
       const diagnostics = await this.backend.initialize();
       syncRendererBackendDiagnostics(diagnostics);
+      setRendererDiagnosticCapabilities(this.backend.capabilities);
+      setRendererDiagnosticDegradations([]);
       return;
     }
 

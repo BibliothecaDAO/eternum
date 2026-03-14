@@ -28,6 +28,31 @@ function createRendererSurface() {
 }
 
 describe("createWebGPURendererBackend", () => {
+  it("advertises only the renderer capabilities it actually implements", () => {
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1.5,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(),
+        now: vi.fn(() => 100),
+      },
+    );
+
+    expect(backend.capabilities).toEqual({
+      supportsBloom: false,
+      supportsChromaticAberration: false,
+      supportsColorGrade: false,
+      supportsEnvironmentIbl: false,
+      supportsToneMappingControl: true,
+      supportsVignette: false,
+      supportsWideLines: false,
+    });
+  });
+
   it("boots the experimental auto lane and reports native webgpu", async () => {
     const renderer = createRendererSurface();
     const init = vi.fn(async () => {});

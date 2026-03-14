@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  createRendererBackendCapabilities,
   createRendererInitDiagnostics,
   initializeRendererBackendV2,
   type RendererBackendV2,
@@ -63,6 +64,38 @@ describe("createRendererInitDiagnostics", () => {
       fallbackReason: null,
       initTimeMs: 0,
       requestedMode: "legacy-webgl",
+    });
+  });
+});
+
+describe("createRendererBackendCapabilities", () => {
+  it("defaults every declared capability to false", () => {
+    expect(createRendererBackendCapabilities()).toEqual({
+      supportsBloom: false,
+      supportsChromaticAberration: false,
+      supportsColorGrade: false,
+      supportsEnvironmentIbl: false,
+      supportsToneMappingControl: false,
+      supportsVignette: false,
+      supportsWideLines: false,
+    });
+  });
+
+  it("merges explicit capability truth over the conservative defaults", () => {
+    expect(
+      createRendererBackendCapabilities({
+        supportsColorGrade: true,
+        supportsEnvironmentIbl: true,
+        supportsToneMappingControl: true,
+      }),
+    ).toEqual({
+      supportsBloom: false,
+      supportsChromaticAberration: false,
+      supportsColorGrade: true,
+      supportsEnvironmentIbl: true,
+      supportsToneMappingControl: true,
+      supportsVignette: false,
+      supportsWideLines: false,
     });
   });
 });

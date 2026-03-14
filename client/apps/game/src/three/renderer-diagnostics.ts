@@ -1,8 +1,15 @@
-import type { RendererInitDiagnostics, RendererPostProcessPlan } from "./renderer-backend-v2";
+import type {
+  RendererBackendCapabilities,
+  RendererFeatureDegradation,
+  RendererInitDiagnostics,
+  RendererPostProcessPlan,
+} from "./renderer-backend-v2";
 
 interface RendererDiagnosticsSnapshot {
   activeMode: RendererInitDiagnostics["activeMode"] | null;
   buildMode: RendererInitDiagnostics["buildMode"] | null;
+  capabilities: RendererBackendCapabilities | null;
+  degradations: RendererFeatureDegradation[];
   effectPlan: RendererPostProcessPlan | null;
   fallbackReason: string | null;
   fallbacks: number;
@@ -19,6 +26,8 @@ interface RendererDiagnosticsWindow {
 const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   activeMode: null,
   buildMode: null,
+  capabilities: null,
+  degradations: [],
   effectPlan: null,
   fallbackReason: null,
   fallbacks: 0,
@@ -50,6 +59,16 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
   syncRendererDiagnosticsWindow();
 }
 
+export function setRendererDiagnosticCapabilities(capabilities: RendererBackendCapabilities): void {
+  rendererDiagnosticsState.capabilities = { ...capabilities };
+  syncRendererDiagnosticsWindow();
+}
+
+export function setRendererDiagnosticDegradations(degradations: RendererFeatureDegradation[]): void {
+  rendererDiagnosticsState.degradations = degradations.map((degradation) => ({ ...degradation }));
+  syncRendererDiagnosticsWindow();
+}
+
 export function setRendererDiagnosticEffectPlan(effectPlan: RendererPostProcessPlan): void {
   rendererDiagnosticsState.effectPlan = {
     antiAlias: effectPlan.antiAlias,
@@ -75,6 +94,8 @@ export function incrementRendererDiagnosticError(type: "fallbacks" | "initErrors
 export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
   return {
     ...rendererDiagnosticsState,
+    capabilities: rendererDiagnosticsState.capabilities ? { ...rendererDiagnosticsState.capabilities } : null,
+    degradations: rendererDiagnosticsState.degradations.map((degradation) => ({ ...degradation })),
     effectPlan: rendererDiagnosticsState.effectPlan
       ? {
           antiAlias: rendererDiagnosticsState.effectPlan.antiAlias,
