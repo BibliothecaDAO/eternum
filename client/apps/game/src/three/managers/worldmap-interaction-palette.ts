@@ -56,9 +56,12 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   },
 };
 
+const HOVER_SELECTOR_BASE_COLOR = 0xff4fd8;
+const HOVER_SELECTOR_RIM_COLOR = 0xffb3f5;
+
 const GENERIC_HOVER_PALETTE: HoverVisualPalette = {
-  baseColor: 0x3399ff,
-  rimColor: 0x7ed7ff,
+  baseColor: HOVER_SELECTOR_BASE_COLOR,
+  rimColor: HOVER_SELECTOR_RIM_COLOR,
   intensity: 0.32,
   visualMode: "fill",
 };
@@ -97,12 +100,11 @@ export function resolveHoverVisualPalette(params: {
   }
 
   if (params.hasSelection && params.actionType) {
-    const palette = resolveHighlightLayerPalette(params.actionType);
     return {
-      baseColor: palette.routeColor,
-      rimColor: palette.endpointColor,
+      baseColor: HOVER_SELECTOR_BASE_COLOR,
+      rimColor: HOVER_SELECTOR_RIM_COLOR,
       intensity: 0.48,
-      visualMode: "outline",
+      visualMode: "fill",
     };
   }
 

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-const HOVER_HEX_TEXTURE_SIZE = 96;
+const HOVER_HEX_TEXTURE_SIZE = 128;
 const HOVER_HEX_TEXTURE_RADIUS = 0.9;
 
 export interface HoverHexMaterialUniforms {
@@ -53,10 +53,6 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-function mix(start: number, end: number, alpha: number): number {
-  return start + (end - start) * alpha;
-}
-
 function smoothstep(edge0: number, edge1: number, value: number): number {
   if (edge0 === edge1) {
     return value < edge0 ? 0 : 1;
@@ -64,17 +60,6 @@ function smoothstep(edge0: number, edge1: number, value: number): number {
 
   const t = clamp01((value - edge0) / (edge1 - edge0));
   return t * t * (3 - 2 * t);
-}
-
-function fract(value: number): number {
-  return value - Math.floor(value);
-}
-
-function hash21(x: number, y: number): number {
-  const px = fract(x * 123.34);
-  const py = fract(y * 456.21);
-  const dot = px * (px + 45.32) + py * (py + 45.32);
-  return fract((px + dot) * (py + dot));
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -103,12 +88,8 @@ function redrawHoverTexture(texture: THREE.DataTexture, uniforms: HoverHexMateri
   const baseColor = scratchColor.copy(uniforms.uBaseColor.value);
   const accentColor = scratchAccentColor.copy(uniforms.accentColor.value);
   const intensity = uniforms.intensity.value;
-  const time = uniforms.time.value;
-  const scanSpeed = uniforms.scanSpeed.value;
-  const scanWidth = uniforms.scanWidth.value;
   const borderThickness = uniforms.borderThickness.value;
   const innerRingThickness = uniforms.innerRingThickness.value;
-  const centerAlpha = uniforms.centerAlpha.value;
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -121,20 +102,11 @@ function redrawHoverTexture(texture: THREE.DataTexture, uniforms: HoverHexMateri
       const innerRing = smoothstep(
         innerRingThickness,
         0,
-        Math.abs(edgeDistance + HOVER_HEX_TEXTURE_RADIUS * 0.22),
+        Math.abs(edgeDistance + HOVER_HEX_TEXTURE_RADIUS * 0.18),
       );
-      const scanPhase = fract(
-        ((localX / HOVER_HEX_TEXTURE_RADIUS) * 0.42) +
-          ((localY / HOVER_HEX_TEXTURE_RADIUS) * 0.58) -
-          (time * scanSpeed),
-      );
-      const scanBand = smoothstep(scanWidth, 0, Math.abs(scanPhase - 0.5));
-      const scanMask = scanBand * smoothstep(0.12, 0.82, normalizedDepth);
-      const breakup = mix(0.72, 1, hash21(Math.floor(localX * 5), Math.floor(localY * 5)));
-      const centerMask = smoothstep(0.2, 0.78, normalizedDepth);
-      const interior = centerAlpha * centerMask * breakup;
-      const alpha = clamp01(interior + outerRim * 0.92 + innerRing * 0.4 + scanMask * 0.48) * intensity;
-      const accentMix = clamp01(outerRim * 0.78 + innerRing * 0.32 + scanMask * 0.6);
+      const edgeHalo = smoothstep(borderThickness * 2, 0, Math.abs(edgeDistance - HOVER_HEX_TEXTURE_RADIUS * 0.03));
+      const alpha = clamp01(outerRim * 0.22 + innerRing * 0.04 + edgeHalo * 0.18) * intensity;
+      const accentMix = clamp01(outerRim * 0.18 + innerRing * 0.04 + edgeHalo * 0.16);
       const pixelColor = scratchColor.copy(baseColor).lerp(accentColor, accentMix).convertLinearToSRGB();
 
       data[index] = Math.round(clamp01(pixelColor.r) * 255);

@@ -11,6 +11,7 @@ import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexC
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 const INTERACTIVE_HEX_Y = 0.1;
+const INTERACTIVE_PICK_Y = 0;
 const RAY_PARALLEL_EPSILON = 1e-6;
 
 export type InteractiveHexHoverVisualMode = HoverVisualMode;
@@ -470,7 +471,7 @@ export class InteractiveHexManager {
       return this.pickHexFromRaycast(raycaster);
     }
 
-    const t = (INTERACTIVE_HEX_Y - ray.origin.y) / ray.direction.y;
+    const t = (INTERACTIVE_PICK_Y - ray.origin.y) / ray.direction.y;
     if (!Number.isFinite(t) || t < 0) {
       return this.pickHexFromRaycast(raycaster);
     }

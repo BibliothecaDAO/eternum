@@ -51,4 +51,66 @@ describe("hover hex material factory", () => {
     expect(managerSource).not.toMatch(/new THREE\.ShaderMaterial\(/);
     expect(worldmapSource).not.toMatch(/new THREE\.ShaderMaterial\(/);
   });
+
+  it("keeps the animated hover texture centered instead of reading like an offset tile", () => {
+    const subject = createHoverHexMaterial();
+    subject.setTime(0.6);
+
+    const texture = subject.material.map as THREE.DataTexture;
+    const data = texture.image.data as Uint8Array;
+    const size = texture.image.width as number;
+    let weightedX = 0;
+    let weightedY = 0;
+    let totalAlpha = 0;
+    let leftAlpha = 0;
+    let rightAlpha = 0;
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const alpha = data[(y * size + x) * 4 + 3];
+        weightedX += x * alpha;
+        weightedY += y * alpha;
+        totalAlpha += alpha;
+
+        if (x < size / 2) {
+          leftAlpha += alpha;
+        } else {
+          rightAlpha += alpha;
+        }
+      }
+    }
+
+    const centroidX = weightedX / totalAlpha;
+    const centroidY = weightedY / totalAlpha;
+
+    expect(centroidX).toBeGreaterThan(size * 0.44);
+    expect(centroidX).toBeLessThan(size * 0.56);
+    expect(centroidY).toBeGreaterThan(size * 0.44);
+    expect(centroidY).toBeLessThan(size * 0.56);
+    expect(leftAlpha / rightAlpha).toBeGreaterThan(0.9);
+    expect(leftAlpha / rightAlpha).toBeLessThan(1.1);
+  });
+
+  it("keeps the hover selector texture stable across time samples", () => {
+    const subject = createHoverHexMaterial();
+    const texture = subject.material.map as THREE.DataTexture;
+
+    subject.setTime(0);
+    const firstFrame = new Uint8Array(texture.image.data as Uint8Array);
+
+    subject.setTime(1.25);
+    const secondFrame = texture.image.data as Uint8Array;
+
+    expect(Array.from(secondFrame)).toEqual(Array.from(firstFrame));
+  });
+
+  it("drops the interior fill so the selector reads as an outline only", () => {
+    const subject = createHoverHexMaterial();
+    const texture = subject.material.map as THREE.DataTexture;
+    const size = texture.image.width as number;
+    const centerIndex = ((Math.floor(size / 2) * size) + Math.floor(size / 2)) * 4 + 3;
+    const centerAlpha = (texture.image.data as Uint8Array)[centerIndex];
+
+    expect(centerAlpha).toBe(0);
+  });
 });
