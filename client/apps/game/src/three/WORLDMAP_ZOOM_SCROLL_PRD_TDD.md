@@ -343,7 +343,7 @@ Implementation tracking:
 - [x] Phase 0: Instrumentation and baselines
 - [x] Phase 1: Camera transition cleanup
 - [x] Phase 2: Input model overhaul
-- [ ] Phase 3: Refresh scheduling and state unification
+- [x] Phase 3: Refresh scheduling and state unification
 - [ ] Phase 4: Visual cleanup
 
 ### Phase 0: Instrumentation and baselines

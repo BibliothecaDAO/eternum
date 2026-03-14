@@ -63,8 +63,10 @@ import {
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
+import { resolveWorldmapViewFromDistance } from "./worldmap-zoom-controller";
 
 export { CameraView } from "./camera-view";
+type CameraTransitionStatus = "idle" | "transitioning";
 
 export abstract class HexagonScene {
   protected scene!: Scene;
@@ -102,6 +104,7 @@ export abstract class HexagonScene {
   private originalLightningColor: number = 0;
   private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
+  private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
   private lastLightningTriggerProgress: number = -1;
   private lightningSequenceTimeout: NodeJS.Timeout | null = null;
   private currentStrikeIndex: number = 0;
@@ -115,11 +118,13 @@ export abstract class HexagonScene {
   protected cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
   protected cameraAngle = CAMERA_CONFIG.defaultAngle;
   protected currentCameraView = CameraView.Medium; // Track current camera view position
+  protected targetCameraView = CameraView.Medium;
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
   private cameraTransitionState = createCameraTransitionState();
   private cameraTransitionTimeline: gsap.core.Timeline | null = null;
+  private cameraTransitionStatus: CameraTransitionStatus = "idle";
   protected shadowsEnabledByQuality = true;
   protected shadowMapSizeByQuality = 2048;
   private sceneOwnershipBootstrapped = false;
@@ -158,6 +163,8 @@ export abstract class HexagonScene {
     });
     this.visibilityManager.initialize(this.camera, this.controls);
     this.setupLighting();
+    this.applyResolvedCameraView(this.currentCameraView);
+    this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
     this.setupInputHandlers();
     this.setupGUI();
     if (this.shouldCreateGroundMesh()) {
@@ -175,6 +182,7 @@ export abstract class HexagonScene {
         this.updateCameraClipPlanesForDistance(distance);
         this.updateFogForDistance(distance);
         this.updateOutlineOpacityForDistance(distance);
+        this.syncResolvedCameraViewFromDistance(distance);
       },
       emitFallbackChange: () => {
         this.controls.dispatchEvent({ type: "change" });
@@ -793,6 +801,7 @@ export abstract class HexagonScene {
     if (transitionToken === null) {
       return;
     }
+    this.setCameraTransitionStatus("transitioning");
 
     this.cameraTransitionTimeline = gsap.timeline({
       onUpdate: () => {
@@ -801,6 +810,7 @@ export abstract class HexagonScene {
       onComplete: () => {
         this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
         this.cameraTransitionTimeline = null;
+        this.setCameraTransitionStatus("idle");
         onFinish?.();
       },
     });
@@ -1331,6 +1341,7 @@ export abstract class HexagonScene {
 
     // Clear listeners
     this.cameraViewListeners.clear();
+    this.cameraTransitionListeners.clear();
 
     // Clean up any pending promises or model loading
     this.modelLoadPromises = [];
@@ -1373,34 +1384,24 @@ export abstract class HexagonScene {
     this.cameraViewListeners.delete(listener);
   }
 
+  public addCameraTransitionListener(listener: (status: CameraTransitionStatus) => void) {
+    this.cameraTransitionListeners.add(listener);
+    listener(this.cameraTransitionStatus);
+  }
+
+  public removeCameraTransitionListener(listener: (status: CameraTransitionStatus) => void) {
+    this.cameraTransitionListeners.delete(listener);
+  }
+
   public changeCameraView(position: CameraView) {
-    console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
-    const previousView = this.currentCameraView;
+    console.log("HexagonScene changeCameraView:", this.targetCameraView, "->", position);
+    const previousView = this.targetCameraView;
     const target = this.controls.target;
     if (position !== previousView) {
       incrementWorldmapRenderCounter("zoomTransitionsStarted");
     }
-    this.currentCameraView = position;
-
-    switch (position) {
-      case CameraView.Close: // Close view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.02;
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6; // 30 degrees
-        break;
-      case CameraView.Medium: // Medium view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.015;
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3; // 60 degrees
-        break;
-      case CameraView.Far: // Far view
-        this.mainDirectionalLight.castShadow = false;
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
-        break;
-    }
+    this.targetCameraView = position;
+    this.applyTargetCameraView(position);
 
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
@@ -1408,17 +1409,12 @@ export abstract class HexagonScene {
     const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
     const viewDelta = Math.abs(position - previousView);
     const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
-    this.updateOutlineOpacityForDistance(this.cameraDistance);
-    this.updateCameraClipPlanesForDistance(this.cameraDistance);
-    this.updateFogForDistance(this.cameraDistance);
     this.cameraAnimate(newPosition, target, duration, () => {
       if (position !== previousView) {
         incrementWorldmapRenderCounter("zoomTransitionsCompleted");
       }
+      this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
     });
-
-    // Notify all listeners of the camera view change
-    this.cameraViewListeners.forEach((listener) => listener(position));
   }
 
   private updateCameraClipPlanesForDistance(distance: number): void {
@@ -1469,5 +1465,65 @@ export abstract class HexagonScene {
     this.fog.far = desiredFar;
     this.lastFogNear = desiredNear;
     this.lastFogFar = desiredFar;
+  }
+
+  private applyTargetCameraView(position: CameraView): void {
+    switch (position) {
+      case CameraView.Close:
+        this.cameraDistance = 10;
+        this.cameraAngle = Math.PI / 6;
+        break;
+      case CameraView.Medium:
+        this.cameraDistance = 20;
+        this.cameraAngle = Math.PI / 3;
+        break;
+      case CameraView.Far:
+        this.cameraDistance = 40;
+        this.cameraAngle = (50 * Math.PI) / 180;
+        break;
+    }
+  }
+
+  private applyResolvedCameraView(view: CameraView): void {
+    if (!this.mainDirectionalLight) {
+      return;
+    }
+
+    switch (view) {
+      case CameraView.Close:
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.02;
+        break;
+      case CameraView.Medium:
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.015;
+        break;
+      case CameraView.Far:
+        this.mainDirectionalLight.castShadow = false;
+        break;
+    }
+  }
+
+  private syncResolvedCameraViewFromDistance(distance: number): void {
+    const nextView = resolveWorldmapViewFromDistance({
+      currentView: this.currentCameraView,
+      distance,
+    });
+    if (nextView === this.currentCameraView) {
+      return;
+    }
+
+    this.currentCameraView = nextView;
+    this.applyResolvedCameraView(nextView);
+    this.cameraViewListeners.forEach((listener) => listener(nextView));
+  }
+
+  private setCameraTransitionStatus(status: CameraTransitionStatus): void {
+    if (this.cameraTransitionStatus === status) {
+      return;
+    }
+
+    this.cameraTransitionStatus = status;
+    this.cameraTransitionListeners.forEach((listener) => listener(status));
   }
 }

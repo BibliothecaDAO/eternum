@@ -116,7 +116,6 @@ import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
-  resolveControlsChangeChunkRefreshPlan,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
@@ -146,6 +145,7 @@ import {
   resetWorldmapWheelIntent,
   setWorldmapZoomTargetView,
 } from "./worldmap-zoom-controller";
+import { flushDeferredWorldmapZoomRefresh, resolveWorldmapZoomRefreshPlan } from "./worldmap-zoom-refresh-policy";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
@@ -324,6 +324,9 @@ export default class WorldmapScene extends WarpTravel {
   private zeroTerrainFrames = 0;
   private lowTerrainFrames = 0;
   private offscreenChunkFrames = 0;
+  private isScriptedZoomTransitionActive = false;
+  private hasDeferredZoomRefresh = false;
+  private deferredZoomRefreshForce = false;
   private terrainReferenceInstances = 0;
   private terrainReferenceChunkKey: string | null = null;
   private terrainRecoveryInFlight = false;
@@ -445,15 +448,20 @@ export default class WorldmapScene extends WarpTravel {
     this.updateCameraTargetHexThrottled?.();
 
     const nextCameraDistance = this.getCurrentCameraDistance();
-    const refreshPlan = resolveControlsChangeChunkRefreshPlan({
+    const refreshPlan = resolveWorldmapZoomRefreshPlan({
       previousDistance: this.lastControlsCameraDistance,
       nextDistance: nextCameraDistance,
       threshold: this.zoomForceRefreshDistanceThreshold,
+      isScriptedTransitionActive: this.isScriptedZoomTransitionActive,
+      hasDeferredRefresh: this.hasDeferredZoomRefresh,
+      deferredForceRefresh: this.deferredZoomRefreshForce,
     });
     this.lastControlsCameraDistance = nextCameraDistance;
+    this.hasDeferredZoomRefresh = refreshPlan.nextHasDeferredRefresh;
+    this.deferredZoomRefreshForce = refreshPlan.nextDeferredForceRefresh;
 
-    if (refreshPlan.shouldRequestRefresh) {
-      this.requestChunkRefresh(refreshPlan.shouldForceRefresh);
+    if (refreshPlan.shouldRequestRefreshNow) {
+      this.requestChunkRefresh(refreshPlan.shouldForceRefreshNow);
     }
   };
   private isUrlChangedListenerAttached = false;
@@ -720,6 +728,13 @@ export default class WorldmapScene extends WarpTravel {
       this.hoverLabelManager.updateCameraView(view);
       this.highlightHexManager.setCameraView(view);
       this.interactiveHexManager.setCameraView(view);
+      this.configureWorldmapShadows();
+    });
+    this.addCameraTransitionListener((status) => {
+      this.isScriptedZoomTransitionActive = status === "transitioning";
+      if (status === "idle") {
+        this.flushDeferredZoomRefresh();
+      }
     });
 
     // Store the unsubscribe function for Army updates
@@ -1125,10 +1140,6 @@ export default class WorldmapScene extends WarpTravel {
   public changeCameraView(position: CameraView) {
     this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, position);
     super.changeCameraView(position);
-    if (!this.mainDirectionalLight) {
-      return;
-    }
-    this.configureWorldmapShadows();
   }
 
   private configureWorldmapShadows() {
@@ -1202,6 +1213,18 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.zoomControllerState = resetWorldmapWheelIntent(this.zoomControllerState);
+  }
+
+  private flushDeferredZoomRefresh() {
+    const deferredRefresh = flushDeferredWorldmapZoomRefresh({
+      hasDeferredRefresh: this.hasDeferredZoomRefresh,
+      deferredForceRefresh: this.deferredZoomRefreshForce,
+    });
+    this.hasDeferredZoomRefresh = deferredRefresh.nextHasDeferredRefresh;
+    this.deferredZoomRefreshForce = deferredRefresh.nextDeferredForceRefresh;
+    if (deferredRefresh.shouldRequestRefresh) {
+      this.requestChunkRefresh(deferredRefresh.shouldForceRefresh);
+    }
   }
 
   public moveCameraToURLLocation() {
@@ -2445,6 +2468,9 @@ export default class WorldmapScene extends WarpTravel {
     this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
     this.lowTerrainFrames = 0;
     this.offscreenChunkFrames = 0;
+    this.hasDeferredZoomRefresh = false;
+    this.deferredZoomRefreshForce = false;
+    this.isScriptedZoomTransitionActive = false;
     this.terrainReferenceInstances = 0;
     this.terrainReferenceChunkKey = null;
     this.lastChunkSwitchMovement = null;
