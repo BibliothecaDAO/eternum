@@ -6,8 +6,8 @@ Date: 2026-03-14 Status: Proposed Scope: `client/apps/game/src/three` FX pipelin
 
 - [x] Phase 0: Repro Inventory and Guardrails
 - [x] Phase 1: Renderer Capability Seam
-- [ ] Phase 2: FX Backend Abstraction
-- [ ] Phase 3: WebGPU-Safe Billboard Backend
+- [x] Phase 2: FX Backend Abstraction
+- [x] Phase 3: WebGPU-Safe Billboard Backend
 - [ ] Phase 4: Resource FX and Label FX Migration
 - [ ] Phase 5: WebGPU Smoke Matrix and Cleanup
 
