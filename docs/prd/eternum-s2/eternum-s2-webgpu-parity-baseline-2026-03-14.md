@@ -78,3 +78,6 @@ Record for each scene:
 
 - This baseline is intentionally conservative. Capability truth reflects implemented behavior only.
 - Later phases should update the degradation snapshot from runtime policy instead of editing this matrix by hand.
+- Phase 1 resolution for the game client is to keep `@types/three`, align it to `^0.182.0`, and pair it with a typed
+  local `three/webgpu` module declaration plus `pnpm --dir client/apps/game test:three:types`. The installed
+  `three@0.182.0` package in this repo does not publish a `three/webgpu` declaration file on its own.
