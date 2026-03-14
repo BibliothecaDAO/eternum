@@ -1848,7 +1848,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.updateEntityActionPaths(actionPaths.getPaths());
 
-    this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
+    this.highlightHexManager.highlightHexes(actionPaths.getHighlightDescriptors());
 
     if (hexCoords) {
       const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
@@ -2064,7 +2064,7 @@ export default class WorldmapScene extends WarpTravel {
     );
 
     const paths = actionPaths.getPaths();
-    const highlightedHexes = actionPaths.getHighlightedHexes();
+    const highlightedHexes = actionPaths.getHighlightDescriptors();
 
     this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);

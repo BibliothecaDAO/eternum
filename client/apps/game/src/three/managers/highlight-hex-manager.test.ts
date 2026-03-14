@@ -79,11 +79,14 @@ describe("HighlightHexManager material ownership", () => {
     first.updateHighlightPulse(0.2);
     second.updateHighlightPulse(0.8);
 
-    const firstMaterial = (first as any).material as THREE.MeshBasicMaterial;
-    const secondMaterial = (second as any).material as THREE.MeshBasicMaterial;
+    const firstRouteMaterial = (first as any).routeLayer.material as THREE.MeshBasicMaterial;
+    const secondRouteMaterial = (second as any).routeLayer.material as THREE.MeshBasicMaterial;
+    const firstEndpointMaterial = (first as any).endpointLayer.material as THREE.MeshBasicMaterial;
+    const secondEndpointMaterial = (second as any).endpointLayer.material as THREE.MeshBasicMaterial;
 
-    expect(firstMaterial).not.toBe(secondMaterial);
-    expect(firstMaterial.opacity).toBe(0.2);
-    expect(secondMaterial.opacity).toBe(0.8);
+    expect(firstRouteMaterial).not.toBe(secondRouteMaterial);
+    expect(firstEndpointMaterial).not.toBe(secondEndpointMaterial);
+    expect(firstRouteMaterial.opacity).not.toBe(secondRouteMaterial.opacity);
+    expect(firstEndpointMaterial.opacity).not.toBe(secondEndpointMaterial.opacity);
   });
 });

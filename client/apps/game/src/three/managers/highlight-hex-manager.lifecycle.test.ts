@@ -72,6 +72,41 @@ const { HighlightHexManager } = await import("./highlight-hex-manager");
 const { ActionType } = await import("@bibliothecadao/eternum");
 
 describe("HighlightHexManager lifecycle", () => {
+  it("routes descriptors into layered render buckets", () => {
+    const manager = new HighlightHexManager(new THREE.Scene());
+
+    manager.highlightHexes([
+      {
+        hex: { col: 0, row: 0 },
+        actionType: ActionType.Move,
+        kind: "route",
+        isEndpoint: false,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+      {
+        hex: { col: 1, row: 0 },
+        actionType: ActionType.Move,
+        kind: "destination",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+      {
+        hex: { col: 2, row: 0 },
+        actionType: ActionType.Explore,
+        kind: "frontier",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+    ]);
+
+    expect((manager as any).routeLayer.mesh.count).toBe(3);
+    expect((manager as any).endpointLayer.mesh.count).toBe(1);
+    expect((manager as any).frontierLayer.mesh.count).toBe(1);
+  });
+
   it("uses stock materials for owned highlight visuals", () => {
     const manager = new HighlightHexManager(new THREE.Scene());
 
@@ -79,20 +114,72 @@ describe("HighlightHexManager lifecycle", () => {
       {
         hex: { col: 0, row: 0 },
         actionType: ActionType.Move,
+        kind: "destination",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
       },
     ]);
 
-    const instancedMaterial = (manager as any).material;
+    const instancedMaterials = [
+      (manager as any).routeLayer.material,
+      (manager as any).endpointLayer.material,
+      (manager as any).frontierLayer.material,
+    ] as THREE.Material[];
     const launchGlowMaterials = ((manager as any).activeLaunchGlows as Array<{ material: THREE.Material }>).map(
       (entry) => entry.material,
     );
 
-    expect(instancedMaterial).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect(instancedMaterials.every((material) => material instanceof THREE.MeshBasicMaterial)).toBe(true);
     expect(launchGlowMaterials).not.toHaveLength(0);
     expect(launchGlowMaterials.every((material) => material instanceof THREE.MeshBasicMaterial)).toBe(true);
-    expect([instancedMaterial, ...launchGlowMaterials].some((material) => material instanceof THREE.ShaderMaterial)).toBe(
-      false,
-    );
+    expect([...instancedMaterials, ...launchGlowMaterials].some((material) => material instanceof THREE.ShaderMaterial)).toBe(false);
+  });
+
+  it("keeps layered scene ownership stable across repeated updates and clears", () => {
+    const scene = new THREE.Scene();
+    const manager = new HighlightHexManager(scene);
+
+    manager.highlightHexes([
+      {
+        hex: { col: 0, row: 0 },
+        actionType: ActionType.Move,
+        kind: "route",
+        isEndpoint: false,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+    ]);
+    manager.highlightHexes([
+      {
+        hex: { col: 1, row: 0 },
+        actionType: ActionType.Move,
+        kind: "destination",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+      {
+        hex: { col: 2, row: 0 },
+        actionType: ActionType.Explore,
+        kind: "frontier",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+    ]);
+
+    const layeredMeshes = scene.children.filter((child) => child instanceof THREE.InstancedMesh);
+    expect(layeredMeshes).toHaveLength(3);
+    expect((manager as any).routeLayer.mesh.count).toBe(2);
+    expect((manager as any).endpointLayer.mesh.count).toBe(1);
+    expect((manager as any).frontierLayer.mesh.count).toBe(1);
+
+    manager.highlightHexes([]);
+
+    expect((manager as any).routeLayer.mesh.count).toBe(0);
+    expect((manager as any).endpointLayer.mesh.count).toBe(0);
+    expect((manager as any).frontierLayer.mesh.count).toBe(0);
   });
 
   it("removes its owned scene objects on dispose", () => {
@@ -103,17 +190,27 @@ describe("HighlightHexManager lifecycle", () => {
       {
         hex: { col: 0, row: 0 },
         actionType: ActionType.Move,
+        kind: "destination",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
       },
     ]);
 
-    const instancedMesh = (manager as any).instancedMesh as THREE.InstancedMesh;
+    const routeMesh = (manager as any).routeLayer.mesh as THREE.InstancedMesh;
+    const endpointMesh = (manager as any).endpointLayer.mesh as THREE.InstancedMesh;
+    const frontierMesh = (manager as any).frontierLayer.mesh as THREE.InstancedMesh;
 
-    expect(scene.children).toContain(instancedMesh);
-    expect(scene.children.length).toBeGreaterThan(1);
+    expect(scene.children).toContain(routeMesh);
+    expect(scene.children).toContain(endpointMesh);
+    expect(scene.children).toContain(frontierMesh);
+    expect(scene.children.length).toBeGreaterThan(3);
 
     manager.dispose();
 
-    expect(scene.children).not.toContain(instancedMesh);
+    expect(scene.children).not.toContain(routeMesh);
+    expect(scene.children).not.toContain(endpointMesh);
+    expect(scene.children).not.toContain(frontierMesh);
     expect(scene.children).toHaveLength(0);
   });
 });
