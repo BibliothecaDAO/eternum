@@ -8,6 +8,7 @@ import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
 import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils/utils";
+import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 const INTERACTIVE_HEX_Y = 0.1;
 const RAY_PARALLEL_EPSILON = 1e-6;
@@ -120,6 +121,10 @@ export class InteractiveHexManager {
 
   public setHoverVisualMode(mode: InteractiveHexHoverVisualMode) {
     this.hoverHexManager.setVisualMode(mode);
+  }
+
+  public applyHoverPalette(palette: HoverVisualPalette) {
+    this.hoverHexManager.applyHoverPalette(palette);
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {

@@ -79,6 +79,7 @@ import { preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
+import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
@@ -947,6 +948,7 @@ export default class WorldmapScene extends WarpTravel {
       dojoComponents: this.dojo.components,
     });
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
+    this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
 
     // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
     // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
@@ -1452,6 +1454,7 @@ export default class WorldmapScene extends WarpTravel {
     if (hex === null) {
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
+      this.applyContextualHoverPalette(null);
 
       // Reset cursor when leaving hex
       document.body.style.cursor = "default";
@@ -1474,6 +1477,8 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.state.updateEntityActionHoveredHex(hexCoords);
     }
+
+    this.applyContextualHoverPalette(hexCoords);
   }
 
   // double-click to enter hex view; spectate when the structure is not yours
@@ -1866,12 +1871,10 @@ export default class WorldmapScene extends WarpTravel {
     if (hexCoords) {
       const worldPos = getWorldPositionForHex(hexCoords);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
-      // Set structure-specific pulse colors (orange/gold for structures)
-      this.selectionPulseManager.setPulseColor(
-        new Color(1.0, 0.6, 0.2), // Orange base
-        new Color(1.0, 0.9, 0.4), // Gold pulse
-      );
+      this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("structure"));
     }
+
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
 
     const extraHexes: HexPosition[] = [];
     if (hexCoords) {
@@ -2076,11 +2079,7 @@ export default class WorldmapScene extends WarpTravel {
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
-      // Set army-specific pulse colors (blue/cyan for armies)
-      this.selectionPulseManager.setPulseColor(
-        new Color(0.2, 0.6, 1.0), // Blue base
-        new Color(0.8, 1.0, 1.0), // Cyan pulse
-      );
+      this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("army"));
     } else {
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
@@ -2096,6 +2095,7 @@ export default class WorldmapScene extends WarpTravel {
       selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
 
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
   }
 
@@ -2192,9 +2192,32 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionSelectedEntityId(null);
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.selectionPulseManager.clearOwnershipPulses();
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.chestManager.addLabelsToScene();
+  }
+
+  private applyContextualHoverPalette(hexCoords: HexPosition | null): void {
+    const selectedEntityId = this.state.entityActions.selectedEntityId;
+    const hasSelection = selectedEntityId !== null && selectedEntityId !== undefined;
+    const actionType = this.getHoveredActionType(hexCoords);
+
+    this.interactiveHexManager.applyHoverPalette(
+      resolveHoverVisualPalette({
+        hasSelection,
+        actionType,
+      }),
+    );
+  }
+
+  private getHoveredActionType(hexCoords: HexPosition | null): ActionType | undefined {
+    if (!hexCoords) {
+      return undefined;
+    }
+
+    const actionPath = this.state.entityActions.actionPaths.get(`${hexCoords.col + FELT_CENTER()},${hexCoords.row + FELT_CENTER()}`);
+    return actionPath ? ActionPaths.getActionType(actionPath) : undefined;
   }
 
   private updateStructureOwnershipPulses(structureId: ID | undefined, extraHexes: HexPosition[] = []) {

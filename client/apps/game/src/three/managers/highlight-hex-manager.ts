@@ -15,17 +15,7 @@ import {
   Vector3,
 } from "three";
 import { getWorldPositionForHex } from "../utils";
-
-const BASE_HIGHLIGHT_COLOR_BY_ACTION = new Map<ActionType, Color>([
-  [ActionType.Explore, new Color(0x4de3ff)],
-  [ActionType.Move, new Color(0x4fcf6b)],
-  [ActionType.Attack, new Color(0xff6b3d)],
-  [ActionType.Help, new Color(0xe36cff)],
-  [ActionType.Build, new Color(0xd3a746)],
-  [ActionType.Quest, new Color(0xf3df77)],
-  [ActionType.Chest, new Color(0xffcb4c)],
-  [ActionType.CreateArmy, new Color(0x66d6ff)],
-]);
+import { resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
 
 const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
 const ENDPOINT_ACCENT_LIFT = new Color(0xffffff);
@@ -55,8 +45,7 @@ interface HighlightRenderLayer {
 }
 
 const createColorForAction = (actionType: ActionType): Color =>
-  BASE_HIGHLIGHT_COLOR_BY_ACTION.get(actionType)?.clone() ??
-  BASE_HIGHLIGHT_COLOR_BY_ACTION.get(ActionType.CreateArmy)!.clone();
+  new Color(resolveHighlightLayerPalette(actionType).routeColor);
 
 const createMesh = (geometry: InstancedMesh["geometry"], material: MeshBasicMaterial, renderOrder: number): InstancedMesh => {
   const mesh = new InstancedMesh(geometry, material, MAX_HIGHLIGHTS);
@@ -266,14 +255,16 @@ export class HighlightHexManager {
   }
 
   private resolveRouteColor(descriptor: ActionHighlightDescriptor): Color {
-    const color = createColorForAction(descriptor.actionType as ActionType);
+    const palette = resolveHighlightLayerPalette(descriptor.actionType as ActionType);
+    const color = new Color(palette.routeColor);
     const quietAmount = descriptor.isEndpoint ? 0.78 : descriptor.isSharedRoute ? 0.55 : 0.62;
     return color.multiplyScalar(quietAmount);
   }
 
   private resolveEndpointColor(descriptor: ActionHighlightDescriptor): Color {
-    const color = createColorForAction(descriptor.actionType as ActionType);
-    return color.lerp(ENDPOINT_ACCENT_LIFT, 0.35);
+    const palette = resolveHighlightLayerPalette(descriptor.actionType as ActionType);
+    const color = new Color(palette.endpointColor);
+    return color.lerp(ENDPOINT_ACCENT_LIFT, 0.12);
   }
 
   private resetLayer(layer: HighlightRenderLayer): void {

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { type PulseVisualPalette, resolveSelectionPulsePalette } from "./worldmap-interaction-palette";
 
 /**
  * Manages pulsing selection effects for armies and structures
@@ -20,11 +21,11 @@ export class SelectionPulseManager {
   // All ownership pulses animate together so they can share one material
   private readonly sharedOwnershipMaterial: THREE.MeshBasicMaterial;
   private readonly primaryPulseMaterial: THREE.MeshBasicMaterial;
-  private readonly primaryBaseColor = new THREE.Color(0.2, 0.8, 1.0);
-  private readonly primaryPulseColor = new THREE.Color(1.0, 1.0, 0.8);
+  private readonly primaryBaseColor = new THREE.Color();
+  private readonly primaryPulseColor = new THREE.Color();
   private readonly ownershipBaseColor = new THREE.Color(0.2, 0.8, 1.0);
   private readonly ownershipPulseColor = new THREE.Color(1.0, 1.0, 0.8);
-  private primaryPulseIntensity = 0.5;
+  private primaryPulseIntensity = 0.28;
   private ownershipPulseIntensity = 0.5;
   private primaryPulseTime = 0;
   private ownershipPulseTime = 0;
@@ -33,6 +34,10 @@ export class SelectionPulseManager {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    const defaultPulsePalette = resolveSelectionPulsePalette("army");
+    this.primaryBaseColor.setHex(defaultPulsePalette.baseColor);
+    this.primaryPulseColor.setHex(defaultPulsePalette.pulseColor);
+    this.primaryPulseIntensity = defaultPulsePalette.intensity;
 
     // Pre-create shared geometry for ownership pulses
     const hexShape = createHexagonShape(HEX_SIZE * 1.1);
@@ -53,9 +58,7 @@ export class SelectionPulseManager {
   }
 
   private createPulseMesh(): void {
-    // Create hexagon shape and convert to BufferGeometry
-    const hexShape = createHexagonShape(HEX_SIZE * 1.1); // Slightly larger than normal hex
-    const geometry = new THREE.ShapeGeometry(hexShape);
+    const geometry = this.createPulseRingGeometry();
 
     this.pulseMesh = new THREE.Mesh(geometry, this.primaryPulseMaterial);
     this.pulseMesh.position.y = 0.5; // Much higher above ground for visibility
@@ -66,6 +69,17 @@ export class SelectionPulseManager {
 
     // Add to scene once on creation
     this.scene.add(this.pulseMesh);
+  }
+
+  private createPulseRingGeometry(): THREE.ShapeGeometry {
+    const outer = createHexagonShape(HEX_SIZE * 1.16);
+    const innerPoints = createHexagonShape(HEX_SIZE * 0.82)
+      .getPoints()
+      .slice()
+      .reverse();
+
+    outer.holes.push(new THREE.Path(innerPoints));
+    return new THREE.ShapeGeometry(outer);
   }
 
   private shouldAnimate(): boolean {
@@ -210,6 +224,21 @@ export class SelectionPulseManager {
   public setPulseColor(baseColor: THREE.Color, pulseColor: THREE.Color): void {
     this.primaryBaseColor.copy(baseColor);
     this.primaryPulseColor.copy(pulseColor);
+    this.applyMaterialState(
+      this.primaryPulseMaterial,
+      this.primaryBaseColor,
+      this.primaryPulseColor,
+      this.primaryPulseIntensity,
+      this.primaryPulseTime,
+      this.animatedPrimaryColor,
+      this.isVisible,
+    );
+  }
+
+  public applyPulsePalette(palette: PulseVisualPalette): void {
+    this.primaryBaseColor.setHex(palette.baseColor);
+    this.primaryPulseColor.setHex(palette.pulseColor);
+    this.primaryPulseIntensity = palette.intensity;
     this.applyMaterialState(
       this.primaryPulseMaterial,
       this.primaryBaseColor,

@@ -9,7 +9,7 @@ Scope: `client/apps/game/src/three` worldmap movement-selection visuals, action-
 - [x] Phase 0: Audit Lock and Test Harness
 - [x] Phase 1: Highlight Metadata Expansion
 - [x] Phase 2: Layered Highlight Rendering
-- [ ] Phase 3: Selection and Hover Harmonization
+- [x] Phase 3: Selection and Hover Harmonization
 - [ ] Phase 4: Camera-Distance Tuning and Scene Parity
 - [ ] Phase 5: Cleanup, Diagnostics, and Ship Guardrails
 

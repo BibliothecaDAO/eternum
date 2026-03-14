@@ -12,6 +12,7 @@ vi.mock("@/three/constants", () => ({
 }));
 
 import { SelectionPulseManager } from "./selection-pulse-manager";
+import { resolveSelectionPulsePalette } from "./worldmap-interaction-palette";
 
 describe("SelectionPulseManager material ownership", () => {
   it("keeps primary pulse material state isolated per scene manager", () => {
@@ -47,5 +48,17 @@ describe("SelectionPulseManager material ownership", () => {
     const secondMaterial = (second as any).pulseMesh.material as THREE.MeshBasicMaterial;
 
     expect(firstMaterial.opacity).not.toBe(secondMaterial.opacity);
+  });
+
+  it("applies the shared army pulse palette contract", () => {
+    const manager = new SelectionPulseManager(new THREE.Scene());
+    const palette = resolveSelectionPulsePalette("army");
+
+    manager.applyPulsePalette(palette);
+
+    const material = (manager as any).pulseMesh.material as THREE.MeshBasicMaterial;
+
+    expect(material.color.getHex()).toBe(palette.baseColor);
+    expect(material.opacity).toBeCloseTo(palette.intensity);
   });
 });

@@ -2,6 +2,7 @@ import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { gltfLoader } from "@/three/utils/utils";
 import * as THREE from "three";
+import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 export type HoverVisualMode = "fill" | "outline";
 
@@ -15,6 +16,7 @@ export class HoverHexManager {
   private isVisible = false;
   private visualMode: HoverVisualMode = "fill";
   private readonly hoverMaterial: THREE.MeshBasicMaterial;
+  private outlineMaterials: THREE.Material[] = [];
   private readonly baseColor = new THREE.Color(0.2, 0.6, 1.0);
   private readonly rimColor = new THREE.Color(0.4, 0.8, 1.0).multiplyScalar(2.0);
   private hoverIntensity = 0.6;
@@ -55,11 +57,23 @@ export class HoverHexManager {
       this.outlineModel.position.y = 0.01;
       // this.outlineModel.rotation.x = -Math.PI / 2;
       this.outlineModel.renderOrder = 45;
+      this.outlineMaterials = [];
       this.outlineModel.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.raycast = () => {};
+          if (Array.isArray(child.material)) {
+            child.material = child.material.map((material) => {
+              const clone = material.clone();
+              this.outlineMaterials.push(clone);
+              return clone;
+            });
+          } else if (child.material) {
+            child.material = child.material.clone();
+            this.outlineMaterials.push(child.material);
+          }
         }
       });
+      this.applyOutlineMaterialState();
 
       if (this.isVisible) {
         // Hover is already active – attach the outline immediately.
@@ -150,6 +164,7 @@ export class HoverHexManager {
     this.baseColor.copy(baseColor);
     this.rimColor.copy(rimColor);
     this.applyMaterialState();
+    this.applyOutlineMaterialState();
   }
 
   /**
@@ -158,6 +173,15 @@ export class HoverHexManager {
   public setHoverIntensity(intensity: number): void {
     this.hoverIntensity = intensity;
     this.applyMaterialState();
+  }
+
+  public applyHoverPalette(palette: HoverVisualPalette): void {
+    this.baseColor.setHex(palette.baseColor);
+    this.rimColor.setHex(palette.rimColor);
+    this.hoverIntensity = palette.intensity;
+    this.setVisualMode(palette.visualMode);
+    this.applyMaterialState();
+    this.applyOutlineMaterialState();
   }
 
   /**
@@ -185,6 +209,8 @@ export class HoverHexManager {
       });
       this.outlineModel = null;
     }
+
+    this.outlineMaterials = [];
 
     this.isVisible = false;
   }
@@ -248,5 +274,25 @@ export class HoverHexManager {
     this.animatedColor.copy(this.baseColor).lerp(this.rimColor, 0.2 * pulse);
     this.hoverMaterial.color.copy(this.animatedColor);
     this.hoverMaterial.opacity = this.hoverIntensity;
+  }
+
+  private applyOutlineMaterialState(): void {
+    this.outlineMaterials.forEach((material) => {
+      if ("color" in material && material.color instanceof THREE.Color) {
+        material.color.copy(this.rimColor);
+      }
+
+      if ("emissive" in material && material.emissive instanceof THREE.Color) {
+        material.emissive.copy(this.rimColor);
+      }
+
+      if ("opacity" in material && typeof material.opacity === "number") {
+        material.opacity = Math.min(1, this.hoverIntensity + 0.12);
+      }
+
+      if ("transparent" in material && typeof material.transparent === "boolean") {
+        material.transparent = true;
+      }
+    });
   }
 }
