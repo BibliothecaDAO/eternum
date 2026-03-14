@@ -182,6 +182,50 @@ describe("HighlightHexManager lifecycle", () => {
     expect((manager as any).frontierLayer.mesh.count).toBe(0);
   });
 
+  it("caps oversized descriptor sets and exposes debug counts for diagnostics", () => {
+    const manager = new HighlightHexManager(new THREE.Scene());
+
+    manager.highlightHexes(
+      Array.from({ length: 640 }, (_, index) => ({
+        hex: { col: index, row: 0 },
+        actionType: ActionType.Move,
+        kind: "route" as const,
+        isEndpoint: false,
+        isSharedRoute: false,
+        pathDepth: 1,
+      })),
+    );
+
+    expect((manager as any).routeLayer.mesh.count).toBe(500);
+    expect(manager.getDebugState()).toEqual({
+      cameraView: 2,
+      routeCount: 500,
+      endpointCount: 0,
+      frontierCount: 0,
+    });
+  });
+
+  it("retunes active highlight layers when the camera view changes", () => {
+    const manager = new HighlightHexManager(new THREE.Scene());
+
+    manager.highlightHexes([
+      {
+        hex: { col: 0, row: 0 },
+        actionType: ActionType.Explore,
+        kind: "frontier",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      },
+    ]);
+
+    manager.setCameraView(3);
+
+    expect(manager.getDebugState().cameraView).toBe(3);
+    expect((manager as any).frontierLayer.material.opacity).toBeGreaterThan((manager as any).routeLayer.material.opacity);
+    expect((manager as any).frontierLayer.mesh.count).toBe(1);
+  });
+
   it("removes its owned scene objects on dispose", () => {
     const scene = new THREE.Scene();
     const manager = new HighlightHexManager(scene);

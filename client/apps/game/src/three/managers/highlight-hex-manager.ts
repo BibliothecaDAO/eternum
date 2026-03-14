@@ -16,6 +16,7 @@ import {
 } from "three";
 import { getWorldPositionForHex } from "../utils";
 import { resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
+import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
 const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
 const ENDPOINT_ACCENT_LIFT = new Color(0xffffff);
@@ -64,10 +65,12 @@ export class HighlightHexManager {
   private endpointLayer: HighlightRenderLayer;
   private frontierLayer: HighlightRenderLayer;
   private yOffset = 0;
+  private cameraView = 2;
   private hexGeometryPool: HexGeometryPool;
   private highlightTimeline: gsap.core.Timeline | null = null;
   private activeLaunchGlows: Array<{ mesh: Mesh; material: MeshBasicMaterial }> = [];
   private activeInstances: InstanceAnimationState[] = [];
+  private lastDescriptors: ActionHighlightDescriptor[] = [];
   private readonly rolloutConfig = {
     stepDelay: 0.018,
     entryDuration: 0.18,
@@ -112,6 +115,7 @@ export class HighlightHexManager {
 
     this.material = this.routeLayer.material;
     this.instancedMesh = this.routeLayer.mesh;
+    this.applyViewTuning();
     this.applyPulseToLayers(0);
   }
 
@@ -152,6 +156,7 @@ export class HighlightHexManager {
   }
 
   highlightHexes(descriptors: ActionHighlightDescriptor[]) {
+    this.lastDescriptors = descriptors.slice(0, MAX_HIGHLIGHTS);
     this.highlightTimeline?.kill();
     this.highlightTimeline = null;
     this.cleanupLaunchGlows();
@@ -161,21 +166,28 @@ export class HighlightHexManager {
     this.resetLayer(this.endpointLayer);
     this.resetLayer(this.frontierLayer);
 
-    if (descriptors.length === 0) {
+    if (this.lastDescriptors.length === 0) {
       return;
     }
 
     const timeline = gsap.timeline();
-    const routeDescriptors = descriptors.slice(0, MAX_HIGHLIGHTS);
-    const endpointDescriptors = descriptors.filter((descriptor) => descriptor.isEndpoint && descriptor.kind !== "frontier");
-    const frontierDescriptors = descriptors.filter((descriptor) => descriptor.kind === "frontier");
+    const routeDescriptors = this.lastDescriptors;
+    const endpointDescriptors = this.lastDescriptors.filter(
+      (descriptor) => descriptor.isEndpoint && descriptor.kind !== "frontier",
+    );
+    const frontierDescriptors = this.lastDescriptors.filter((descriptor) => descriptor.kind === "frontier");
 
     this.populateLayer(
       this.routeLayer,
       routeDescriptors,
       timeline,
       (descriptor) => this.resolveRouteColor(descriptor),
-      (descriptor) => (descriptor.isEndpoint ? 0.98 : descriptor.isSharedRoute ? 0.88 : this.routeLayer.targetScale),
+      (descriptor) =>
+        descriptor.isEndpoint
+          ? this.routeLayer.targetScale + 0.06
+          : descriptor.isSharedRoute
+            ? this.routeLayer.targetScale - 0.04
+            : this.routeLayer.targetScale,
       true,
     );
     this.populateLayer(
@@ -294,6 +306,38 @@ export class HighlightHexManager {
 
   setYOffset(yOffset: number) {
     this.yOffset = yOffset;
+  }
+
+  setCameraView(cameraView: number) {
+    if (this.cameraView === cameraView) {
+      return;
+    }
+
+    this.cameraView = cameraView;
+    this.applyViewTuning();
+    if (this.lastDescriptors.length > 0) {
+      this.highlightHexes(this.lastDescriptors);
+    }
+  }
+
+  getDebugState() {
+    return {
+      cameraView: this.cameraView,
+      routeCount: this.routeLayer.mesh.count,
+      endpointCount: this.endpointLayer.mesh.count,
+      frontierCount: this.frontierLayer.mesh.count,
+    };
+  }
+
+  private applyViewTuning(): void {
+    const tuning = resolveHighlightViewTuning(this.cameraView);
+    this.routeLayer.baseOpacity = tuning.routeOpacity;
+    this.endpointLayer.baseOpacity = tuning.endpointOpacity;
+    this.frontierLayer.baseOpacity = tuning.frontierOpacity;
+    this.routeLayer.targetScale = tuning.routeScale;
+    this.endpointLayer.targetScale = tuning.endpointScale;
+    this.frontierLayer.targetScale = tuning.frontierScale;
+    this.applyPulseToLayers(0);
   }
 
   private triggerLaunchGlow(position: Vector3, color: Color, timeline: gsap.core.Timeline, startTime: number) {

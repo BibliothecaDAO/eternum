@@ -712,6 +712,7 @@ export default class WorldmapScene extends WarpTravel {
     // Subscribe hover label manager to camera view changes
     this.addCameraViewListener((view: CameraView) => {
       this.hoverLabelManager.updateCameraView(view);
+      this.highlightHexManager.setCameraView(view);
     });
 
     // Store the unsubscribe function for Army updates

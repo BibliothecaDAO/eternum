@@ -10,8 +10,8 @@ Scope: `client/apps/game/src/three` worldmap movement-selection visuals, action-
 - [x] Phase 1: Highlight Metadata Expansion
 - [x] Phase 2: Layered Highlight Rendering
 - [x] Phase 3: Selection and Hover Harmonization
-- [ ] Phase 4: Camera-Distance Tuning and Scene Parity
-- [ ] Phase 5: Cleanup, Diagnostics, and Ship Guardrails
+- [x] Phase 4: Camera-Distance Tuning and Scene Parity
+- [x] Phase 5: Cleanup, Diagnostics, and Ship Guardrails
 
 ## 1. Objective
 

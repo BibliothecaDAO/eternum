@@ -278,6 +278,10 @@ export default class HexceptionScene extends HexagonScene {
               this.highlights.map((hex) => ({
                 hex: { col: hex.col, row: hex.row },
                 actionType: ActionType.Build,
+                kind: "destination",
+                isEndpoint: true,
+                isSharedRoute: false,
+                pathDepth: 1,
               })),
             );
           } else {
