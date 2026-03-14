@@ -113,6 +113,7 @@ import { resolveExploreCompletionPendingClearPlan, type TravelEffectType } from 
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
+import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
   resolveControlsChangeChunkRefreshPlan,
@@ -2095,7 +2096,7 @@ export default class WorldmapScene extends WarpTravel {
     const owningStructureId =
       selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
 
-    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
+    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
   }
@@ -2221,43 +2222,39 @@ export default class WorldmapScene extends WarpTravel {
     return actionPath ? ActionPaths.getActionType(actionPath) : undefined;
   }
 
-  private updateStructureOwnershipPulses(structureId: ID | undefined, extraHexes: HexPosition[] = []) {
+  private updateStructureOwnershipPulses(
+    structureId: ID | undefined,
+    extraHexes: HexPosition[] = [],
+    suppressedHexes: HexPosition[] = [],
+  ) {
     if (structureId === undefined || structureId === null) {
       this.selectionPulseManager.clearOwnershipPulses();
       return;
     }
 
     const colors = this.getStructurePulseColors(structureId);
-    const positions: Array<{ x: number; z: number }> = [];
-    const seenHexes = new Set<string>();
+    const ownershipHexes = resolveOwnershipPulseHexes({
+      structureHex: this.getStructureHexPosition(structureId),
+      ownedArmyHexes: [
+        ...this.armyManager
+          .getArmies()
+          .filter((army) => army.owningStructureId === structureId)
+          .map((army) => {
+            const normalized = army.hexCoords.getNormalized();
+            return { col: normalized.x, row: normalized.y };
+          }),
+        ...Array.from(this.armyStructureOwners.entries())
+          .filter(([, ownerStructureId]) => ownerStructureId === structureId)
+          .map(([armyId]) => this.armiesPositions.get(armyId)),
+      ],
+      extraHexes,
+      suppressedHexes,
+    });
 
-    const addHex = (hex: HexPosition | null | undefined) => {
-      if (!hex) return;
-      const key = `${hex.col},${hex.row}`;
-      if (seenHexes.has(key)) {
-        return;
-      }
-      seenHexes.add(key);
+    const positions = ownershipHexes.map((hex) => {
       const worldPos = getWorldPositionForHex(hex);
-      positions.push({ x: worldPos.x, z: worldPos.z });
-    };
-
-    addHex(this.getStructureHexPosition(structureId));
-
-    this.armyManager.getArmies().forEach((army) => {
-      if (army.owningStructureId === structureId) {
-        const normalized = army.hexCoords.getNormalized();
-        addHex({ col: normalized.x, row: normalized.y });
-      }
+      return { x: worldPos.x, z: worldPos.z };
     });
-
-    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
-      if (ownerStructureId === structureId) {
-        addHex(this.armiesPositions.get(armyId));
-      }
-    });
-
-    extraHexes.forEach((hex) => addHex(hex));
 
     if (positions.length === 0) {
       this.selectionPulseManager.clearOwnershipPulses();
