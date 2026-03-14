@@ -88,3 +88,5 @@ Record for each scene:
   backends that do implement IBL.
 - Phase 4 resolution is to classify `environmentIbl` and `toneMappingControl` as blocking parity features while keeping
   `colorGrade`, `bloom`, `vignette`, and `chromaticAberration` advisory for the first closure pass.
+- Phase 5 resolution keeps stock `LineBasicMaterial` paths but raises medium/far opacity floors through a dedicated
+  readability policy instead of pretending wide-line support exists.

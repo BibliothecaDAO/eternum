@@ -10,10 +10,10 @@ import {
   computePathBounds,
   createPathSegments,
   DEFAULT_PATH_CONFIG,
-  PATH_OPACITY,
   PathDisplayState,
   PathRenderConfig,
 } from "../types/path";
+import { resolvePathReadabilityPolicy } from "../scenes/path-readability-policy";
 import { getVisibilityManager } from "../utils/centralized-visibility-manager";
 
 /**
@@ -163,7 +163,10 @@ export class PathRenderer {
     const line = this.pathObjects.get(entityId);
     if (line) {
       const material = line.material as LineBasicMaterial;
-      material.opacity = PATH_OPACITY[state];
+      material.opacity = resolvePathReadabilityPolicy({
+        displayState: state,
+        view: "medium",
+      }).opacity;
       material.needsUpdate = true;
     }
   }
@@ -351,7 +354,10 @@ export class PathRenderer {
     const material = new LineBasicMaterial({
       color: path.color,
       transparent: true,
-      opacity: PATH_OPACITY[path.displayState],
+      opacity: resolvePathReadabilityPolicy({
+        displayState: path.displayState,
+        view: "medium",
+      }).opacity,
       depthWrite: false,
     });
 

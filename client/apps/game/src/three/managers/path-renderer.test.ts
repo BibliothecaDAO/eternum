@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { PathRenderer } from "./path-renderer";
+import { resolvePathReadabilityPolicy } from "../scenes/path-readability-policy";
 
 function createPathRendererFixture() {
   const scene = new THREE.Scene();
@@ -37,6 +38,12 @@ describe("PathRenderer lifecycle", () => {
     expect(fixture.pathObject).toBeInstanceOf(THREE.LineSegments);
     expect(fixture.pathObject.material).toBeInstanceOf(THREE.LineBasicMaterial);
     expect(fixture.pathObject.material).not.toBeInstanceOf(THREE.ShaderMaterial);
+    expect((fixture.pathObject.material as THREE.LineBasicMaterial).opacity).toBe(
+      resolvePathReadabilityPolicy({
+        displayState: "selected",
+        view: "medium",
+      }).opacity,
+    );
     expect(fixture.scene.children).toContain(fixture.container);
   });
 
