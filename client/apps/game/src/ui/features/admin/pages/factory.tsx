@@ -1367,8 +1367,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                               <Loader2 className="w-3 h-3 animate-spin" />
                                               Creating Banks...
                                             </span>
-                                          ) : worldBankStatus[name] ||
-                                            createBanksTx[name]?.status === "success" ? (
+                                          ) : worldBankStatus[name] || createBanksTx[name]?.status === "success" ? (
                                             <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
                                               <CheckCircle2 className="w-3 h-3" />
                                               Banks Created
@@ -1395,13 +1394,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   [name]: { status: "running" },
                                                 }));
                                                 try {
-                                                  const profile = await buildWorldProfile(
-                                                    currentChain as Chain,
-                                                    name,
-                                                  );
-                                                  const baseManifest = getGameManifest(
-                                                    currentChain as Chain,
-                                                  );
+                                                  const profile = await buildWorldProfile(currentChain as Chain, name);
+                                                  const baseManifest = getGameManifest(currentChain as Chain);
                                                   const patched = patchManifestWithFactory(
                                                     baseManifest as any,
                                                     profile.worldAddress,
@@ -1416,20 +1410,15 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                   // Build bank data from HexGrid
                                                   const distantCoords =
                                                     HexGrid.findHexCoordsfromCenter(BANK_STEPS_FROM_CENTER);
-                                                  const bankCoords = Object.values(distantCoords).map(
-                                                    (coord) => ({
-                                                      alt: false,
-                                                      x: coord.x,
-                                                      y: coord.y,
-                                                    }),
-                                                  );
-                                                  const banks = Array.from(
-                                                    { length: BANK_COUNT },
-                                                    (_, i) => ({
-                                                      name: `${BANK_NAME_PREFIX} ${i + 1}`,
-                                                      coord: bankCoords[i],
-                                                    }),
-                                                  );
+                                                  const bankCoords = Object.values(distantCoords).map((coord) => ({
+                                                    alt: false,
+                                                    x: coord.x,
+                                                    y: coord.y,
+                                                  }));
+                                                  const banks = Array.from({ length: BANK_COUNT }, (_, i) => ({
+                                                    name: `${BANK_NAME_PREFIX} ${i + 1}`,
+                                                    coord: bankCoords[i],
+                                                  }));
 
                                                   // Contract requires exactly 6 banks in one call
                                                   const tx = await localProvider.create_banks({
@@ -2468,7 +2457,6 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                         {worldConfigTx[name]?.error && (
                                           <p className="text-xs text-red-600">{worldConfigTx[name]?.error}</p>
                                         )}
-
                                       </div>
                                     </div>
                                   )}
