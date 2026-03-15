@@ -1,4 +1,8 @@
 name: Factory Torii Deployer
+run-name: >-
+  Factory Torii Deployer / ${{ inputs.env || github.event.inputs.env || 'unknown' }} /
+  ${{ inputs.torii_prefix || github.event.inputs.torii_prefix || 'torii' }} /
+  ${{ inputs.launch_request_id || github.event.inputs.launch_request_id || 'manual' }}
 
 on:
   workflow_dispatch:
@@ -45,6 +49,10 @@ on:
         description: "Torii replicas"
         required: false
         default: "2"
+      launch_request_id:
+        description: "Internal launch correlation id"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -65,7 +73,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: "next"
+          ref: ${{ github.ref }}
 
       - name: Install Slot CLI
         run: |

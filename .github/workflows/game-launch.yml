@@ -1,0 +1,115 @@
+name: Game Launch
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - slot.blitz
+          - slot.eternum
+      game_name:
+        description: "Game/world name"
+        required: true
+      game_start_time:
+        description: "Game start time (unix seconds, unix milliseconds, or ISO-8601)"
+        required: true
+      dev_mode_on:
+        description: 'Optional override for dev mode ("true" or "false"). Leave blank to use the environment config.'
+        required: false
+        type: string
+      single_realm_mode:
+        description: 'Optional override for single realm mode ("true" or "false"). Leave blank to use the environment config.'
+        required: false
+        type: string
+      two_player_mode:
+        description: 'Optional override for two player mode ("true" or "false"). Leave blank to use the environment config.'
+        required: false
+        type: string
+      duration_seconds:
+        description: "Optional override for duration in seconds. Leave blank to use the environment config. Used by blitz season end_at."
+        required: false
+        type: string
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ github.event.inputs.environment }}
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build required packages
+        run: |
+          set -euo pipefail
+          pnpm --dir packages/types build
+          pnpm --dir packages/provider build
+
+      - name: Launch game
+        env:
+          DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
+          DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; then
+            echo "Missing DOJO credentials for ${{ github.event.inputs.environment }}" >&2
+            exit 1
+          fi
+
+          args=(
+            --environment "${{ github.event.inputs.environment }}"
+            --game "${{ github.event.inputs.game_name }}"
+            --start-time "${{ github.event.inputs.game_start_time }}"
+            --mode batched
+          )
+
+          if [ -n "${{ github.event.inputs.dev_mode_on }}" ]; then
+            args+=(--dev-mode-on "${{ github.event.inputs.dev_mode_on }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.single_realm_mode }}" ]; then
+            args+=(--single-realm-mode "${{ github.event.inputs.single_realm_mode }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.two_player_mode }}" ]; then
+            args+=(--two-player-mode "${{ github.event.inputs.two_player_mode }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.duration_seconds }}" ]; then
+            args+=(--duration-seconds "${{ github.event.inputs.duration_seconds }}")
+          fi
+
+          bun config/deployer/clean/cli/create.ts "${args[@]}"
+
+      - name: Upload launch summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-launch-summary
+          path: .context/game-launch/*.json
+          if-no-files-found: error
