@@ -14,15 +14,15 @@ function createPathRendererFixture() {
   );
 
   const internals = subject as unknown as {
+    batchObjects: Array<{ line: THREE.LineSegments }>;
     mesh: THREE.Group;
-    pathObjects: Map<number, THREE.LineSegments>;
   };
 
   return {
     scene,
     subject,
     container: internals.mesh,
-    pathObject: internals.pathObjects.get(1)!,
+    pathObject: internals.batchObjects[0]!.line,
   };
 }
 
@@ -44,7 +44,26 @@ describe("PathRenderer lifecycle", () => {
         view: "medium",
       }).opacity,
     );
+    expect(fixture.container.children).toHaveLength(1);
     expect(fixture.scene.children).toContain(fixture.container);
+  });
+
+  it("rebuilds multiple active paths through a bounded number of line batches", () => {
+    const scene = new THREE.Scene();
+    const subject = new PathRenderer({ maxSegments: 4 });
+    subject.initialize(scene);
+
+    subject.createPath(1, [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(2, 0, 0)], new THREE.Color("#fff"), "moving");
+    subject.createPath(2, [new THREE.Vector3(3, 0, 0), new THREE.Vector3(4, 0, 0), new THREE.Vector3(5, 0, 0)], new THREE.Color("#fff"), "moving");
+    subject.createPath(3, [new THREE.Vector3(6, 0, 0), new THREE.Vector3(7, 0, 0)], new THREE.Color("#fff"), "selected");
+
+    const internals = subject as unknown as {
+      batchObjects: Array<{ entityIds: Set<number> }>;
+    };
+
+    expect(internals.batchObjects).toHaveLength(2);
+    expect([...internals.batchObjects[0]!.entityIds]).toEqual([1, 2]);
+    expect([...internals.batchObjects[1]!.entityIds]).toEqual([3]);
   });
 
   it("disposes owned line resources and detaches the scene container", () => {

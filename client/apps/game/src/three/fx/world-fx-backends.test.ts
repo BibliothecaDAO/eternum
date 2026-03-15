@@ -73,6 +73,33 @@ describe("createWorldFxBackend", () => {
 
     expect(backend.kind).toBe("webgpu-billboard");
   });
+
+  it("suppresses DOM labels on icon FX when DOM label support is disabled", () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: {
+        activeMode: "webgpu",
+        supportsBillboardMeshFx: true,
+        supportsDomLabelFx: false,
+        supportsSpriteSceneFx: false,
+      },
+      scene,
+    });
+
+    backend.spawnIconFx({
+      animate: () => true,
+      isInfinite: true,
+      labelText: "traveling",
+      size: 1,
+      texture: createTexture(),
+      type: "travel",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+
+    expect(collectObjectTypes(scene)).not.toContain("CSS2DObject");
+  });
 });
 
 describe("webgpu billboard sizing", () => {
