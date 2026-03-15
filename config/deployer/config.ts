@@ -56,6 +56,40 @@ try {
 
 // Type compatibility for browser & Node environments
 type AnyAccount = any; // Use any to avoid version conflicts between environments
+type ConfigLogger = Pick<typeof globalThis.console, "log" | "info">;
+
+let configLoggerStorage: {
+  run: <Result>(logger: ConfigLogger, callback: () => Result) => Result;
+  getStore: () => ConfigLogger | undefined;
+} | null = null;
+try {
+  const { AsyncLocalStorage } = require("node:async_hooks");
+  configLoggerStorage = new AsyncLocalStorage<ConfigLogger>();
+} catch {
+  // Browser fallback: legacy logging goes straight to the real console.
+  configLoggerStorage = null;
+}
+
+const defaultLog = globalThis.console.log.bind(globalThis.console);
+const defaultInfo = (globalThis.console.info ?? globalThis.console.log).bind(globalThis.console);
+const console: ConfigLogger = {
+  log: (...args: unknown[]) => {
+    const scopedLogger = configLoggerStorage?.getStore();
+    return (scopedLogger?.log ?? defaultLog)(...args);
+  },
+  info: (...args: unknown[]) => {
+    const scopedLogger = configLoggerStorage?.getStore();
+    return (scopedLogger?.info ?? scopedLogger?.log ?? defaultInfo)(...args);
+  },
+};
+
+export function withConfigLogger<Result>(logger: ConfigLogger | undefined, operation: () => Result): Result {
+  if (!configLoggerStorage || !logger) {
+    return operation();
+  }
+
+  return configLoggerStorage.run(logger, operation);
+}
 
 interface Config {
   account: Account;
