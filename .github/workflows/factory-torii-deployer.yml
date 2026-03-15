@@ -26,7 +26,7 @@ on:
       torii_tier:
         description: "Cartridge Slot tier"
         required: false
-        default: "pro"
+        default: "epic"
       rpc_url:
         description: "Starknet RPC URL"
         required: true
