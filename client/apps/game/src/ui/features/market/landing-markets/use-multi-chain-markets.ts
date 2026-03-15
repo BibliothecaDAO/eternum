@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { CairoCustomEnum } from "starknet";
 import { useMemo } from "react";
 
-import type { RegisteredToken } from "@/pm/bindings";
+import type { ConditionResolution, RegisteredToken } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
 import { MarketStatusFilter, MarketTypeFilter, getPmSqlApiForUrl, type MarketWithDetailsRow } from "@/pm/hooks/queries";
 import { useConfig } from "@/pm/providers";
@@ -173,12 +173,34 @@ const transformToMarketClass = (
     value: BigInt(entry.value),
   }));
 
+  const conditionResolution = (() => {
+    if (!row.resolution_payout_numerators) return undefined;
+
+    try {
+      const rawPayouts = JSON.parse(row.resolution_payout_numerators);
+      const payoutNumerators = Array.isArray(rawPayouts)
+        ? rawPayouts.map((value) => BigInt(value as string | number))
+        : [];
+
+      return {
+        condition_id: row.condition_id,
+        oracle: row.oracle,
+        question_id: row.question_id,
+        outcome_slot_count: BigInt(row.outcome_slot_count),
+        payout_numerators: payoutNumerators,
+      } as unknown as ConditionResolution;
+    } catch {
+      return undefined;
+    }
+  })();
+
   return new MarketClass({
     market: market as never,
     marketCreated: marketCreated as never,
     collateralToken,
     vaultDenominator: vaultDenominator as never,
     vaultNumerators: vaultNumerators as never[],
+    conditionResolution,
   });
 };
 
@@ -263,8 +285,20 @@ const fetchChainMarkets = async ({
     .filter((item): item is EnrichedMarket => Boolean(item));
 };
 
-const mergeAndSortByNewest = (markets: EnrichedMarket[]) =>
+const getMarketStatusPriority = (market: MarketClass) => {
+  if (!market.isResolved() && !market.isEnded()) return 0; // Live / open trading.
+  if (!market.isResolved() && !market.isResolvable()) return 1; // Trading ended, awaiting resolve window.
+  if (!market.isResolved() && market.isResolvable()) return 2; // Awaiting resolution.
+  return 3; // Resolved.
+};
+
+const mergeAndSortMarkets = (markets: EnrichedMarket[], status: MarketStatusKey) =>
   markets.toSorted((a, b) => {
+    if (status === "all") {
+      const statusDifference = getMarketStatusPriority(a.market) - getMarketStatusPriority(b.market);
+      if (statusDifference !== 0) return statusDifference;
+    }
+
     const createdAtDifference = Number(b.market.created_at ?? 0) - Number(a.market.created_at ?? 0);
     if (createdAtDifference !== 0) return createdAtDifference;
     if (a.volumeRaw !== b.volumeRaw) return a.volumeRaw > b.volumeRaw ? -1 : 1;
@@ -396,7 +430,7 @@ export function useMultiChainMarkets({
       });
 
       return {
-        markets: mergeAndSortByNewest(merged),
+        markets: mergeAndSortMarkets(merged, status),
         sourceStatus,
       };
     },
