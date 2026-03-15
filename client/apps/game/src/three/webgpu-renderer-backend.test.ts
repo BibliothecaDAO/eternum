@@ -58,7 +58,7 @@ describe("createWebGPURendererBackend", () => {
       supportsChromaticAberration: false,
       supportsColorGrade: false,
       supportsEnvironmentIbl: false,
-      supportsToneMappingControl: false,
+      supportsToneMappingControl: true,
       supportsVignette: false,
       supportsWideLines: false,
     });
@@ -193,8 +193,18 @@ describe("createWebGPURendererBackend", () => {
     expect(diagnostics.requestedMode).toBe("experimental-webgpu-force-webgl");
   });
 
-  it("applies renderer-supported tone mapping controls after initialization", async () => {
+  it("creates and uses a backend-owned postprocess runtime after initialization", async () => {
     const renderer = createRendererSurface();
+    const controller = {
+      setColorGrade: vi.fn(),
+      setVignette: vi.fn(),
+    };
+    const runtime = {
+      dispose: vi.fn(),
+      renderFrame: vi.fn(),
+      setPlan: vi.fn(() => controller),
+      setSize: vi.fn(),
+    };
     const backend = createWebGPURendererBackend(
       {
         graphicsSetting: "HIGH" as never,
@@ -209,13 +219,14 @@ describe("createWebGPURendererBackend", () => {
             init: vi.fn(async () => {}),
           }),
         })),
+        createPostProcessRuntime: vi.fn(() => runtime),
         now: vi.fn(() => 0),
       },
     );
 
     await backend.initialize();
 
-    backend.applyPostProcessPlan?.({
+    const controllerResult = backend.applyPostProcessPlan?.({
       antiAlias: "none",
       bloom: { enabled: true, intensity: 0.4 },
       chromaticAberration: { enabled: true },
@@ -237,62 +248,20 @@ describe("createWebGPURendererBackend", () => {
       },
     });
 
-    expect(renderer.toneMapping).toBe(CineonToneMapping);
-    expect(renderer.toneMappingExposure).toBe(1.25);
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: false, intensity: 0 },
-      chromaticAberration: { enabled: false },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0,
-      },
-      toneMapping: {
-        exposure: 0.9,
-        mode: "neutral",
-        whitePoint: 1,
-      },
-      vignette: {
-        darkness: 0,
-        enabled: false,
-        offset: 0,
-      },
-    });
-
-    expect(renderer.toneMapping).toBe(ACESFilmicToneMapping);
-    expect(renderer.toneMappingExposure).toBe(0.9);
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: false, intensity: 0 },
-      chromaticAberration: { enabled: false },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0,
-      },
-      toneMapping: {
-        exposure: 0.7,
-        mode: "reinhard",
-        whitePoint: 1,
-      },
-      vignette: {
-        darkness: 0,
-        enabled: false,
-        offset: 0,
-      },
-    });
-
-    expect(renderer.toneMapping).toBe(ReinhardToneMapping);
-    expect(renderer.toneMappingExposure).toBe(0.7);
+    expect(controllerResult).toBe(controller);
+    expect(runtime.setPlan).toHaveBeenCalledTimes(1);
+    expect(renderer.toneMapping).toBe(0);
+    expect(renderer.toneMappingExposure).toBe(0);
   });
 
   it("owns quality, resize, frame rendering, and disposal once initialized", async () => {
     const renderer = createRendererSurface();
+    const runtime = {
+      dispose: vi.fn(),
+      renderFrame: vi.fn(),
+      setPlan: vi.fn(),
+      setSize: vi.fn(),
+    };
     const backend = createWebGPURendererBackend(
       {
         graphicsSetting: "HIGH" as never,
@@ -307,6 +276,7 @@ describe("createWebGPURendererBackend", () => {
             init: vi.fn(async () => {}),
           }),
         })),
+        createPostProcessRuntime: vi.fn(() => runtime),
         now: vi.fn(() => 0),
       },
     );
@@ -332,10 +302,11 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.shadowMap.enabled).toBe(true);
     expect(renderer.setSize).toHaveBeenNthCalledWith(2, 640, 360);
     expect(renderer.setSize).toHaveBeenNthCalledWith(3, 800, 450);
-    expect(renderer.info.reset).toHaveBeenCalledTimes(1);
-    expect(renderer.clear).toHaveBeenCalledTimes(1);
-    expect(renderer.clearDepth).toHaveBeenCalledTimes(1);
-    expect(renderer.render).toHaveBeenCalledTimes(2);
+    expect(runtime.setSize).toHaveBeenNthCalledWith(1, 640, 360);
+    expect(runtime.setSize).toHaveBeenNthCalledWith(2, 800, 450);
+    expect(runtime.renderFrame).toHaveBeenCalledTimes(1);
+    expect(renderer.render).not.toHaveBeenCalled();
+    expect(runtime.dispose).toHaveBeenCalledTimes(1);
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
     expect(backend.renderer).toBeUndefined();
   });

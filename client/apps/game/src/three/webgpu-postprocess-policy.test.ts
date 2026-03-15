@@ -25,16 +25,18 @@ describe("resolveWebgpuPostprocessPolicy", () => {
     });
   });
 
-  it("reports the native webgpu lane as minimal until parity features are implemented", () => {
+  it("reports the native webgpu lane as a postprocess graph once tone mapping parity is implemented", () => {
     expect(
       resolveWebgpuPostprocessPolicy({
         activeMode: "webgpu",
-        capabilities: createRendererBackendCapabilities(),
+        capabilities: createRendererBackendCapabilities({
+          supportsToneMappingControl: true,
+        }),
       }),
     ).toEqual({
-      mode: "native-webgpu-minimal",
+      mode: "native-webgpu-postprocess",
       prewarmStrategy: "compile-async",
-      unsupportedFeatures: ["bloom", "chromaticAberration", "colorGrade", "environmentIbl", "toneMappingControl", "vignette"],
+      unsupportedFeatures: ["bloom", "chromaticAberration", "colorGrade", "environmentIbl", "vignette"],
     });
   });
 

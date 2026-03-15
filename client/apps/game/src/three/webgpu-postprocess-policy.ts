@@ -4,7 +4,7 @@ import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererAc
 import type { RendererSurfaceLike } from "./renderer-backend";
 
 export interface WebgpuPostprocessPolicy {
-  mode: "legacy-webgl-postprocess" | "native-webgpu-minimal" | "webgl2-fallback-postprocess";
+  mode: "legacy-webgl-postprocess" | "native-webgpu-minimal" | "native-webgpu-postprocess" | "webgl2-fallback-postprocess";
   prewarmStrategy: "compile-async" | "none";
   unsupportedFeatures: RendererCapabilityFeature[];
 }
@@ -58,7 +58,7 @@ export function resolveWebgpuPostprocessPolicy(input: {
   });
 
   return {
-    mode: "native-webgpu-minimal",
+    mode: input.capabilities.supportsToneMappingControl ? "native-webgpu-postprocess" : "native-webgpu-minimal",
     prewarmStrategy: "compile-async",
     unsupportedFeatures,
   };

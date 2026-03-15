@@ -1,5 +1,5 @@
 import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping } from "three";
+import { ACESFilmicToneMapping } from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -12,11 +12,11 @@ import {
   createRendererInitDiagnostics,
   type RendererActiveMode,
   type RendererBackendV2,
-  type RendererFramePipeline,
   type RendererPostProcessController,
-  type RendererPostProcessPlan,
+  type RendererPostProcessRuntime,
 } from "./renderer-backend-v2";
 import type { RendererBuildMode } from "./renderer-build-mode";
+import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 
 type ExperimentalRendererBuildMode = Exclude<RendererBuildMode, "legacy-webgl">;
 
@@ -48,6 +48,7 @@ interface WebGPURendererDevice {
 }
 
 interface WebGPURendererBackendDependencies {
+  createPostProcessRuntime(input: { renderer: WebGPURendererSurface }): RendererPostProcessRuntime;
   createRenderer(input: {
     forceWebGL: boolean;
     graphicsSetting: GraphicsSettingsType;
@@ -104,6 +105,7 @@ async function createDefaultWebGPURenderer(input: {
 }
 
 const defaultDependencies: WebGPURendererBackendDependencies = {
+  createPostProcessRuntime: createWebGPUPostProcessRuntime,
   createRenderer: createDefaultWebGPURenderer,
   now: () => performance.now(),
 };
@@ -118,7 +120,7 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsChromaticAberration: false,
   supportsColorGrade: false,
   supportsEnvironmentIbl: false,
-  supportsToneMappingControl: false,
+  supportsToneMappingControl: true,
   supportsVignette: false,
   supportsWideLines: false,
 });
@@ -165,23 +167,6 @@ function attachWebGpuDeviceDiagnostics(input: {
   };
 }
 
-function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]["mode"]): number {
-  switch (mode) {
-    case "linear":
-      return LinearToneMapping;
-    case "reinhard":
-      return ReinhardToneMapping;
-    case "cineon":
-      return CineonToneMapping;
-    case "aces-filmic":
-    case "neutral":
-    default:
-      // Neutral tone mapping currently depends on the postprocessing stack, which
-      // is not wired into the experimental WebGPU backend yet.
-      return ACESFilmicToneMapping;
-  }
-}
-
 export function createWebGPURendererBackend(
   options: {
     graphicsSetting: GraphicsSettingsType;
@@ -189,9 +174,14 @@ export function createWebGPURendererBackend(
     pixelRatio: number;
     requestedMode: ExperimentalRendererBuildMode;
   },
-  dependencies: WebGPURendererBackendDependencies = defaultDependencies,
+  dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
 ): RendererBackendV2 {
+  const resolvedDependencies = {
+    ...defaultDependencies,
+    ...dependencies,
+  } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
+  let postProcessRuntime: RendererPostProcessRuntime | undefined;
   let cleanupDeviceDiagnostics: (() => void) | undefined;
 
   return {
@@ -200,14 +190,11 @@ export function createWebGPURendererBackend(
       return renderer;
     },
     applyPostProcessPlan(plan) {
-      if (!renderer) {
+      if (!postProcessRuntime) {
         return NOOP_POST_PROCESS_CONTROLLER;
       }
 
-      renderer.toneMapping = resolveRendererToneMapping(plan.toneMapping.mode);
-      renderer.toneMappingExposure = plan.toneMapping.exposure;
-
-      return NOOP_POST_PROCESS_CONTROLLER;
+      return postProcessRuntime.setPlan(plan);
     },
     applyQuality(input) {
       if (!renderer) {
@@ -217,16 +204,19 @@ export function createWebGPURendererBackend(
       renderer.setPixelRatio(input.pixelRatio);
       renderer.shadowMap.enabled = input.shadows;
       renderer.setSize(input.width, input.height);
+      postProcessRuntime?.setSize(input.width, input.height);
     },
     dispose() {
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = undefined;
+      postProcessRuntime?.dispose();
+      postProcessRuntime = undefined;
       renderer?.dispose();
       renderer = undefined;
     },
     async initialize() {
-      const startTime = dependencies.now();
-      const createdRenderer = await dependencies.createRenderer({
+      const startTime = resolvedDependencies.now();
+      const createdRenderer = await resolvedDependencies.createRenderer({
         forceWebGL: options.requestedMode === "experimental-webgpu-force-webgl",
         graphicsSetting: options.graphicsSetting,
         isMobileDevice: options.isMobileDevice,
@@ -250,6 +240,9 @@ export function createWebGPURendererBackend(
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = releaseDeviceDiagnostics;
       renderer = createdRenderer.renderer;
+      postProcessRuntime = resolvedDependencies.createPostProcessRuntime({
+        renderer: createdRenderer.renderer,
+      });
 
       if (createdRenderer.activeMode === "webgpu" && createdRenderer.device) {
         markRendererDiagnosticDeviceReady();
@@ -258,26 +251,20 @@ export function createWebGPURendererBackend(
       return createRendererInitDiagnostics({
         activeMode: createdRenderer.activeMode,
         buildMode: options.requestedMode,
-        initTimeMs: dependencies.now() - startTime,
+        initTimeMs: resolvedDependencies.now() - startTime,
         requestedMode: options.requestedMode,
       });
     },
-    renderFrame(pipeline: RendererFramePipeline) {
-      if (!renderer) {
+    renderFrame(pipeline) {
+      if (!postProcessRuntime) {
         return;
       }
 
-      renderer.info.reset();
-      renderer.clear();
-      renderer.render(pipeline.mainScene, pipeline.mainCamera);
-
-      if (pipeline.overlayScene && pipeline.overlayCamera) {
-        renderer.clearDepth();
-        renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
-      }
+      postProcessRuntime.renderFrame(pipeline);
     },
     resize(width: number, height: number) {
       renderer?.setSize(width, height);
+      postProcessRuntime?.setSize(width, height);
     },
   };
 }
