@@ -139,7 +139,7 @@ The plan should build on those seams instead of bypassing them.
 - [x] Stage 3: Upload and instance churn reduction
 - [x] Stage 4: Secondary renderer batching
 - [x] Stage 5: Feature parity and post stack migration
-- [ ] Stage 6: Advanced WebGPU experiments
+- [x] Stage 6: Advanced WebGPU experiments deferred behind telemetry gate
 
 ## 8. Detailed Stages
 
@@ -445,6 +445,9 @@ Exit criteria:
 #### Objective
 
 Evaluate higher-risk WebGPU work only after the previous stages prove where the remaining bottlenecks are.
+
+Status: Deferred.
+Reason: the PRD requires these experiments to be justified by telemetry after Stages 0 through 5. That justification is not yet established in this workspace, so Stage 6 remains opt-in follow-up work rather than default production code.
 
 #### Scope
 
