@@ -1,0 +1,81 @@
+import type { Camera, Object3D } from "three";
+
+import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererActiveMode } from "./renderer-backend-v2";
+import type { RendererSurfaceLike } from "./renderer-backend";
+
+export interface WebgpuPostprocessPolicy {
+  mode: "legacy-webgl-postprocess" | "native-webgpu-minimal" | "webgl2-fallback-postprocess";
+  prewarmStrategy: "compile-async" | "none";
+  unsupportedFeatures: RendererCapabilityFeature[];
+}
+
+const POSTPROCESS_FEATURES: RendererCapabilityFeature[] = [
+  "bloom",
+  "chromaticAberration",
+  "colorGrade",
+  "environmentIbl",
+  "toneMappingControl",
+  "vignette",
+];
+
+export function resolveWebgpuPostprocessPolicy(input: {
+  activeMode: RendererActiveMode;
+  capabilities: RendererBackendCapabilities;
+}): WebgpuPostprocessPolicy {
+  if (input.activeMode === "legacy-webgl") {
+    return {
+      mode: "legacy-webgl-postprocess",
+      prewarmStrategy: "compile-async",
+      unsupportedFeatures: [],
+    };
+  }
+
+  if (input.activeMode === "webgl2-fallback") {
+    return {
+      mode: "webgl2-fallback-postprocess",
+      prewarmStrategy: "compile-async",
+      unsupportedFeatures: [],
+    };
+  }
+
+  const unsupportedFeatures = POSTPROCESS_FEATURES.filter((feature) => {
+    switch (feature) {
+      case "bloom":
+        return !input.capabilities.supportsBloom;
+      case "chromaticAberration":
+        return !input.capabilities.supportsChromaticAberration;
+      case "colorGrade":
+        return !input.capabilities.supportsColorGrade;
+      case "environmentIbl":
+        return !input.capabilities.supportsEnvironmentIbl;
+      case "toneMappingControl":
+        return !input.capabilities.supportsToneMappingControl;
+      case "vignette":
+        return !input.capabilities.supportsVignette;
+      default:
+        return false;
+    }
+  });
+
+  return {
+    mode: "native-webgpu-minimal",
+    prewarmStrategy: "compile-async",
+    unsupportedFeatures,
+  };
+}
+
+export async function requestRendererScenePrewarm(
+  renderer: RendererSurfaceLike | undefined,
+  scene: Object3D,
+  camera: Camera,
+): Promise<void> {
+  const compileAsync = (renderer as RendererSurfaceLike & {
+    compileAsync?: (scene: Object3D, camera: Camera) => Promise<void>;
+  } | undefined)?.compileAsync;
+
+  if (typeof compileAsync !== "function") {
+    return;
+  }
+
+  await compileAsync(scene, camera);
+}

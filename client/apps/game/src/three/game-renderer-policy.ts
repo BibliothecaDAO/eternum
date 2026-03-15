@@ -89,6 +89,12 @@ const NEUTRAL_COLOR_GRADE: RendererPostProcessPlan["colorGrade"] = {
   saturation: 0,
 };
 
+const DEFAULT_UNSUPPORTED_TONE_MAPPING: RendererPostProcessPlan["toneMapping"] = {
+  exposure: 0.8,
+  mode: "aces-filmic",
+  whitePoint: 1,
+};
+
 export function resolveRendererEffectPlan(input: RendererEffectPlanInput): RendererPostProcessPlan {
   return {
     antiAlias: input.antiAlias,
@@ -123,6 +129,15 @@ export function resolveCapabilityAwareRendererEffectPlan(
 ): CapabilityAwareRendererEffectPlanResult {
   const plan = resolveRendererEffectPlan(input);
   const degradations: RendererFeatureDegradation[] = [];
+
+  if (!input.capabilities.supportsToneMappingControl) {
+    plan.toneMapping = { ...DEFAULT_UNSUPPORTED_TONE_MAPPING };
+    degradations.push({
+      detail: "Using backend default tone mapping because the active renderer does not expose parity controls",
+      feature: "toneMappingControl",
+      reason: "unsupported-backend",
+    });
+  }
 
   if (!input.capabilities.supportsColorGrade && hasNonNeutralColorGrade(plan.colorGrade)) {
     plan.colorGrade = { ...NEUTRAL_COLOR_GRADE };

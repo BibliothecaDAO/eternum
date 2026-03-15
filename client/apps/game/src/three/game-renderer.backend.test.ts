@@ -224,6 +224,7 @@ describe("GameRenderer backend seam", () => {
     });
   });
 
+
   it("disables unsupported optional effects before applying the backend plan and reports degradations", () => {
     const backend = createFakeBackend();
     backend.capabilities = createRendererBackendCapabilities({

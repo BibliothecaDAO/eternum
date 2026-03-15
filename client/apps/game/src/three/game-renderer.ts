@@ -49,6 +49,8 @@ import {
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
   setRendererDiagnosticEffectPlan,
+  setRendererDiagnosticPostprocessPolicy,
+  snapshotRendererDiagnostics,
   setRendererDiagnosticSceneName,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
@@ -74,6 +76,7 @@ import {
 } from "./renderer-backend";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
+import { requestRendererScenePrewarm, resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
@@ -868,6 +871,9 @@ export default class GameRenderer {
   async prepareScenes() {
     this.initializeSceneManagement();
     this.initializeScenes();
+    this.requestScenePrewarm(this.worldmapScene);
+    this.requestScenePrewarm(this.hexceptionScene);
+    this.requestScenePrewarm(this.fastTravelScene);
     this.applyEnvironment();
     this.setupPostProcessingEffects();
     this.sceneManager.moveCameraForScene();
@@ -1491,6 +1497,31 @@ export default class GameRenderer {
       rendererPlan.degradations,
     );
     setRendererDiagnosticEffectPlan(rendererPlan.plan);
+    setRendererDiagnosticPostprocessPolicy(
+      resolveWebgpuPostprocessPolicy({
+        activeMode: snapshotRendererDiagnostics().activeMode ?? "legacy-webgl",
+        capabilities: this.backend.capabilities,
+      }),
+    );
+  }
+
+  private async requestScenePrewarm(
+    scene:
+      | {
+          getCamera(): unknown;
+          getScene(): unknown;
+        }
+      | undefined,
+  ): Promise<void> {
+    if (!scene || !this.backend?.renderer) {
+      return;
+    }
+
+    try {
+      await requestRendererScenePrewarm(this.backend.renderer, scene.getScene(), scene.getCamera());
+    } catch (error) {
+      console.warn("GameRenderer: Scene prewarm failed", error);
+    }
   }
 
   private resolveRendererToneMappingMode(

@@ -5,6 +5,7 @@ import type {
   RendererInitDiagnostics,
   RendererPostProcessPlan,
 } from "./renderer-backend-v2";
+import type { WebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 import {
   markRendererGpuDeviceLost,
   markRendererGpuDeviceReady,
@@ -25,6 +26,7 @@ interface RendererDiagnosticsSnapshot {
   gpuTelemetry: ReturnType<typeof snapshotRendererGpuTelemetry>;
   initErrors: number;
   initTimeMs: number | null;
+  postprocessPolicy: WebgpuPostprocessPolicy | null;
   requestedMode: RendererInitDiagnostics["requestedMode"] | null;
   sceneName: string | null;
 }
@@ -44,6 +46,7 @@ const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   gpuTelemetry: snapshotRendererGpuTelemetry(),
   initErrors: 0,
   initTimeMs: null,
+  postprocessPolicy: null,
   requestedMode: null,
   sceneName: null,
 });
@@ -139,6 +142,15 @@ export function setRendererDiagnosticEffectPlan(effectPlan: RendererPostProcessP
   syncRendererDiagnosticsWindow();
 }
 
+export function setRendererDiagnosticPostprocessPolicy(policy: WebgpuPostprocessPolicy): void {
+  rendererDiagnosticsState.postprocessPolicy = {
+    mode: policy.mode,
+    prewarmStrategy: policy.prewarmStrategy,
+    unsupportedFeatures: [...policy.unsupportedFeatures],
+  };
+  syncRendererDiagnosticsWindow();
+}
+
 export function setRendererDiagnosticSceneName(sceneName: string): void {
   rendererDiagnosticsState.sceneName = sceneName;
   syncRendererDiagnosticsWindow();
@@ -165,6 +177,13 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
         }
       : null,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
+    postprocessPolicy: rendererDiagnosticsState.postprocessPolicy
+      ? {
+          mode: rendererDiagnosticsState.postprocessPolicy.mode,
+          prewarmStrategy: rendererDiagnosticsState.postprocessPolicy.prewarmStrategy,
+          unsupportedFeatures: [...rendererDiagnosticsState.postprocessPolicy.unsupportedFeatures],
+        }
+      : null,
   };
 }
 

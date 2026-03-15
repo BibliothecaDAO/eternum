@@ -5,6 +5,7 @@ import {
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
   setRendererDiagnosticEffectPlan,
+  setRendererDiagnosticPostprocessPolicy,
   setRendererDiagnosticSceneName,
   snapshotRendererDiagnostics,
   syncRendererBackendDiagnostics,
@@ -64,6 +65,11 @@ describe("renderer-diagnostics", () => {
         enabled: true,
         offset: 0.25,
       },
+    });
+    setRendererDiagnosticPostprocessPolicy({
+      mode: "native-webgpu-minimal",
+      prewarmStrategy: "compile-async",
+      unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
     });
     setRendererDiagnosticSceneName("worldmap");
     incrementRendererDiagnosticError("fallbacks");
@@ -129,6 +135,11 @@ describe("renderer-diagnostics", () => {
       initErrors: 2,
       initTimeMs: 42,
       fallbacks: 1,
+      postprocessPolicy: {
+        mode: "native-webgpu-minimal",
+        prewarmStrategy: "compile-async",
+        unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
+      },
       requestedMode: "experimental-webgpu-auto",
       sceneName: "worldmap",
     });
@@ -182,6 +193,7 @@ describe("renderer-diagnostics", () => {
       },
       initErrors: 0,
       initTimeMs: 12,
+      postprocessPolicy: null,
       requestedMode: "legacy-webgl",
       sceneName: null,
     });

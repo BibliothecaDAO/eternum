@@ -275,6 +275,69 @@ describe("resolveRendererEffectPlan", () => {
 });
 
 describe("resolveCapabilityAwareRendererEffectPlan", () => {
+  it("degrades tone-mapping explicitly when the backend cannot honor parity controls", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0,
+        capabilities: createRendererBackendCapabilities(),
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.2,
+          mode: "cineon",
+          whitePoint: 2,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        {
+          detail: "Using backend default tone mapping because the active renderer does not expose parity controls",
+          feature: "toneMappingControl",
+          reason: "unsupported-backend",
+        },
+      ],
+      plan: {
+        antiAlias: "none",
+        bloom: {
+          enabled: false,
+          intensity: 0,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 0.8,
+          mode: "aces-filmic",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      },
+    });
+  });
+
   it("turns unsupported optional effects into explicit degradations instead of active flags", () => {
     expect(
       resolveCapabilityAwareRendererEffectPlan({
