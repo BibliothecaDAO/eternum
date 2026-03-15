@@ -1,6 +1,10 @@
 import type { RendererCapabilityFeature, RendererFeatureDegradation } from "./renderer-backend-v2";
 
-export const REQUIRED_RENDERER_PARITY_FEATURES: RendererCapabilityFeature[] = ["environmentIbl", "toneMappingControl"];
+export const REQUIRED_RENDERER_PARITY_FEATURES: RendererCapabilityFeature[] = [
+  "environmentIbl",
+  "toneMappingControl",
+  "bloom",
+];
 
 const REQUIRED_RENDERER_PARITY_FEATURE_SET = new Set<RendererCapabilityFeature>(REQUIRED_RENDERER_PARITY_FEATURES);
 

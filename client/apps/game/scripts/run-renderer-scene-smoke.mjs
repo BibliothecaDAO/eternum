@@ -3,9 +3,16 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_SCENES = ["map", "hex"];
-const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl"]);
+const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
 const DEFAULT_WAIT_MS = 2500;
+
+export const GLOW_REPRO_SCENES = ["map", "travel"];
+export const GLOW_REPRO_TARGETS = [
+  "Essence Rift / FragmentMine emissive structures",
+  "Fast-travel accent surfaces",
+  "World FX emissive icons",
+];
 
 export function normalizeSceneList(value) {
   if (!value || value.trim().length === 0) {
@@ -77,6 +84,7 @@ export function normalizeRendererDiagnosticsSnapshot(snapshot) {
     fallbacks: snapshot?.fallbacks ?? 0,
     initErrors: snapshot?.initErrors ?? 0,
     initTimeMs: snapshot?.initTimeMs ?? null,
+    postprocessPolicy: snapshot?.postprocessPolicy ?? null,
     requestedMode: snapshot?.requestedMode ?? null,
     sceneName: snapshot?.sceneName ?? null,
   };

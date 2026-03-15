@@ -1,12 +1,26 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 
 import {
   buildSceneSmokeUrl,
+  GLOW_REPRO_SCENES,
+  GLOW_REPRO_TARGETS,
   evaluateRendererParitySummary,
   evaluateSceneSmokeResult,
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
 } from "./run-renderer-scene-smoke.mjs";
+
+describe("glow repro matrix", () => {
+  it("locks the named scenes and targets used for glow regression review", () => {
+    expect(GLOW_REPRO_SCENES).toEqual(["map", "travel"]);
+    expect(GLOW_REPRO_TARGETS).toEqual([
+      "Essence Rift / FragmentMine emissive structures",
+      "Fast-travel accent surfaces",
+      "World FX emissive icons",
+    ]);
+  });
+});
 
 describe("normalizeSceneList", () => {
   it("defaults to world and hex scenes when no explicit scene list is provided", () => {
@@ -89,6 +103,7 @@ describe("normalizeRendererDiagnosticsSnapshot", () => {
       fallbacks: 0,
       initErrors: 0,
       initTimeMs: null,
+      postprocessPolicy: null,
       requestedMode: null,
       sceneName: null,
     });
@@ -119,12 +134,21 @@ describe("evaluateRendererParitySummary", () => {
         fallbacks: 0,
         initErrors: 0,
         initTimeMs: 18,
+        postprocessPolicy: {
+          bloomRouting: "mrt-emissive",
+          mode: "native-webgpu-postprocess",
+          prewarmStrategy: "compile-async",
+          unsupportedFeatures: ["environmentIbl"],
+        },
         requestedMode: "experimental-webgpu-auto",
         sceneName: "worldmap",
       }),
     ).toEqual({
-      advisory: [{ feature: "bloom", reason: "unsupported-backend" }],
-      blocking: [{ feature: "environmentIbl", reason: "unsupported-backend" }],
+      advisory: [],
+      blocking: [
+        { feature: "environmentIbl", reason: "unsupported-backend" },
+        { feature: "bloom", reason: "unsupported-backend" },
+      ],
       ok: false,
     });
   });
