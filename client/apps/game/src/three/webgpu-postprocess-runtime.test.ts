@@ -102,6 +102,56 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(renderer.render).toHaveBeenCalledWith({ id: "overlay-scene" }, { id: "overlay-camera" });
   });
 
+  it("falls back to the live renderer tone mapping when no explicit plan has been applied yet", () => {
+    const renderer = {
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      info: {
+        reset: vi.fn(),
+      },
+      outputColorSpace: "srgb",
+      render: vi.fn(),
+      toneMapping: 7,
+      toneMappingExposure: 0.9,
+    };
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const sceneColorNode = { id: "scene-color-node" };
+    const scenePass = {
+      camera: null,
+      getTextureNode: vi.fn(() => sceneColorNode),
+      scene: null,
+      setMRT: vi.fn(),
+    };
+    const outputNode = { id: "output-node" };
+    const createRenderOutput = vi.fn(() => outputNode);
+
+    const runtime = createWebGPUPostProcessRuntime(
+      {
+        renderer: renderer as never,
+      },
+      {
+        createPass: vi.fn(() => scenePass),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+        createRenderOutput,
+      },
+    );
+
+    runtime.renderFrame({
+      mainCamera: { id: "main-camera" } as never,
+      mainScene: { id: "main-scene" } as never,
+    });
+
+    expect(createRenderOutput).toHaveBeenCalledWith(sceneColorNode, 7, "srgb");
+    expect(postProcessing.outputNode).toBe(outputNode);
+    expect(postProcessing.render).toHaveBeenCalledTimes(1);
+  });
+
   it("builds bloom from the emissive mrt output when bloom is enabled", () => {
     const renderer = {
       clear: vi.fn(),

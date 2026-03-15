@@ -112,22 +112,25 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
   }
 
   private rebuildOutputNode(): void {
-    if (!this.plan || !this.scenePass) {
+    if (!this.scenePass) {
       return;
     }
 
-    this.renderer.toneMapping = resolveRendererToneMapping(this.plan.toneMapping.mode);
-    this.renderer.toneMappingExposure = this.plan.toneMapping.exposure;
+    const plan = this.plan;
+    if (plan) {
+      this.renderer.toneMapping = resolveRendererToneMapping(plan.toneMapping.mode);
+      this.renderer.toneMappingExposure = plan.toneMapping.exposure;
+    }
 
     const sceneColorNode = this.scenePass.getTextureNode("output") as {
       add?: (input: unknown) => unknown;
     };
     let outputNode = sceneColorNode as unknown;
 
-    if (this.plan.bloom.enabled) {
+    if (plan?.bloom.enabled) {
       this.scenePass.setMRT(this.dependencies.createBloomMrt());
       const emissiveNode = this.scenePass.getTextureNode("emissive");
-      const bloomNode = this.dependencies.createBloom(emissiveNode, this.plan.bloom.intensity);
+      const bloomNode = this.dependencies.createBloom(emissiveNode, plan.bloom.intensity);
       outputNode = sceneColorNode.add?.(bloomNode) ?? outputNode;
     } else {
       this.scenePass.setMRT(null);
