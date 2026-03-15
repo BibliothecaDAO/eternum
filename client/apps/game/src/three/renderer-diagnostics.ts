@@ -5,6 +5,11 @@ import type {
   RendererInitDiagnostics,
   RendererPostProcessPlan,
 } from "./renderer-backend-v2";
+import {
+  recordRendererInitTelemetry,
+  resetRendererGpuTelemetry,
+  snapshotRendererGpuTelemetry,
+} from "./perf/renderer-gpu-telemetry";
 
 interface RendererDiagnosticsSnapshot {
   activeMode: RendererInitDiagnostics["activeMode"] | null;
@@ -14,6 +19,7 @@ interface RendererDiagnosticsSnapshot {
   effectPlan: RendererPostProcessPlan | null;
   fallbackReason: string | null;
   fallbacks: number;
+  gpuTelemetry: ReturnType<typeof snapshotRendererGpuTelemetry>;
   initErrors: number;
   initTimeMs: number | null;
   requestedMode: RendererInitDiagnostics["requestedMode"] | null;
@@ -32,6 +38,7 @@ const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   effectPlan: null,
   fallbackReason: null,
   fallbacks: 0,
+  gpuTelemetry: snapshotRendererGpuTelemetry(),
   initErrors: 0,
   initTimeMs: null,
   requestedMode: null,
@@ -49,12 +56,17 @@ function syncRendererDiagnosticsWindow(): void {
 }
 
 export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): void {
+  recordRendererInitTelemetry({
+    activeMode: input.activeMode,
+    initTimeMs: input.initTimeMs,
+  });
   rendererDiagnosticsState = {
     ...rendererDiagnosticsState,
     activeMode: input.activeMode,
     buildMode: input.buildMode,
     fallbackReason: input.fallbackReason,
     initTimeMs: input.initTimeMs,
+    gpuTelemetry: snapshotRendererGpuTelemetry(),
     requestedMode: input.requestedMode,
   };
   syncRendererDiagnosticsWindow();
@@ -119,10 +131,12 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
           vignette: { ...rendererDiagnosticsState.effectPlan.vignette },
         }
       : null,
+    gpuTelemetry: snapshotRendererGpuTelemetry(),
   };
 }
 
 export function resetRendererDiagnostics(): void {
+  resetRendererGpuTelemetry();
   rendererDiagnosticsState = createRendererDiagnosticsState();
   syncRendererDiagnosticsWindow();
 }

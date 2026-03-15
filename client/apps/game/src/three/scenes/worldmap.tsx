@@ -175,12 +175,14 @@ import {
 import {
   incrementWorldmapRenderCounter,
   incrementWorldmapForceRefreshReason,
+  incrementWorldmapRenderUploadBytes,
   recordWorldmapRenderDuration,
   resetWorldmapRenderDiagnostics,
   setWorldmapRenderGauge,
   snapshotWorldmapRenderDiagnostics,
   type WorldmapForceRefreshReason,
 } from "../perf/worldmap-render-diagnostics";
+import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
 import {
   captureChunkDiagnosticsBaseline,
@@ -4211,6 +4213,9 @@ export default class WorldmapScene extends WarpTravel {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         if (matrices) {
           hexMesh.setMatricesAndCount(matrices, count);
+          const matrixUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 16;
+          incrementWorldmapRenderUploadBytes("cachedChunkReplay", matrixUploadBytes);
+          recordRendererMatrixUploadBytes(count, "worldmap-cache-replay");
         } else {
           hexMesh.setCount(count);
         }
@@ -4226,6 +4231,9 @@ export default class WorldmapScene extends WarpTravel {
             (mesh.instanceColor.array as Float32Array).set(landColors);
             mesh.instanceColor.needsUpdate = true;
           });
+          const colorUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 3;
+          incrementWorldmapRenderUploadBytes("cachedChunkReplay", colorUploadBytes);
+          recordRendererColorUploadBytes(count, "worldmap-cache-replay");
         }
       }
       this.ensureMatrixCacheLimit();

@@ -1,7 +1,16 @@
-// @vitest-environment jsdom
 import { ACESFilmicToneMapping, CineonToneMapping, ReinhardToneMapping } from "three";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
+
+beforeEach(() => {
+  vi.stubGlobal("window", {
+    innerHeight: 720,
+    innerWidth: 1280,
+  });
+  vi.stubGlobal("document", {
+    createElement: vi.fn(() => ({ nodeName: "CANVAS" })),
+  });
+});
 
 function createRendererSurface() {
   return {

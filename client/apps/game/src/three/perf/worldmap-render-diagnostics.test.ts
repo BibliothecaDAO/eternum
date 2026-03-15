@@ -3,6 +3,7 @@ import {
   createWorldmapZoomTelemetrySummary,
   incrementWorldmapForceRefreshReason,
   incrementWorldmapRenderCounter,
+  incrementWorldmapRenderUploadBytes,
   recordWorldmapRenderDuration,
   resetWorldmapRenderDiagnostics,
   setWorldmapRenderGauge,
@@ -20,6 +21,7 @@ describe("worldmap-render-diagnostics", () => {
     recordWorldmapRenderDuration("workerFindPath", 5);
     setWorldmapRenderGauge("activePaths", 17);
     setWorldmapRenderGauge("visibleArmies", 301);
+    incrementWorldmapRenderUploadBytes("cachedChunkReplay", 256);
     incrementWorldmapRenderCounter("controlsChangeEvents", 4);
     incrementWorldmapRenderCounter("chunkRefreshRequests", 3);
     incrementWorldmapRenderCounter("updateVisibleChunksCalls", 2);
@@ -41,6 +43,7 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations.workerFindPath.count).toBe(1);
     expect(snapshot.gauges.activePaths).toBe(17);
     expect(snapshot.gauges.visibleArmies).toBe(301);
+    expect(snapshot.uploadBytes.cachedChunkReplay).toBe(256);
     expect(snapshot.counters.controlsChangeEvents).toBe(4);
     expect(snapshot.counters.chunkRefreshRequests).toBe(3);
     expect(snapshot.counters.updateVisibleChunksCalls).toBe(2);
@@ -56,6 +59,7 @@ describe("worldmap-render-diagnostics", () => {
   it("resets back to zeroed state", () => {
     recordWorldmapRenderDuration("createPath", 3);
     setWorldmapRenderGauge("activeLabels", 4);
+    incrementWorldmapRenderUploadBytes("cachedChunkReplay", 16);
     incrementWorldmapRenderCounter("controlsChangeEvents");
     incrementWorldmapRenderCounter("pathCreateCalls");
     incrementWorldmapForceRefreshReason("visibility_recovery");
@@ -65,6 +69,7 @@ describe("worldmap-render-diagnostics", () => {
 
     expect(snapshot.durations.createPath.count).toBe(0);
     expect(snapshot.gauges.activeLabels).toBe(0);
+    expect(snapshot.uploadBytes.cachedChunkReplay).toBe(0);
     expect(snapshot.counters.controlsChangeEvents).toBe(0);
     expect(snapshot.counters.pathCreateCalls).toBe(0);
     expect(snapshot.forceRefreshReasons.visibility_recovery).toBe(0);

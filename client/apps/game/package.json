@@ -17,7 +17,7 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "preview": "vite preview",
     "smoke:renderer-scenes": "node ./scripts/run-renderer-scene-smoke.mjs",
-    "test": "vitest run",
+    "test": "node ./scripts/run-vitest.mjs",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:three:types": "tsc --noEmit --pretty false -p tsconfig.three-types.json",
     "test:ui": "vitest --ui",

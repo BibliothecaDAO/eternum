@@ -10,6 +10,7 @@ export type WorldmapRenderDurationMetric =
   | "createPath";
 
 export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
+export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
   | "workerFindPathCalls"
@@ -54,6 +55,7 @@ export interface WorldmapRenderDurationStats {
 export interface WorldmapRenderDiagnosticsSnapshot {
   durations: Record<WorldmapRenderDurationMetric, WorldmapRenderDurationStats>;
   gauges: Record<WorldmapRenderGauge, number>;
+  uploadBytes: Record<WorldmapRenderUploadMetric, number>;
   counters: Record<WorldmapRenderCounter, number>;
   forceRefreshReasons: Record<WorldmapForceRefreshReason, number>;
   updatedAtMs: number;
@@ -81,6 +83,9 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
+  },
+  uploadBytes: {
+    cachedChunkReplay: 0,
   },
   counters: {
     workerFindPathCalls: 0,
@@ -132,6 +137,11 @@ export function incrementWorldmapRenderCounter(counter: WorldmapRenderCounter, a
   diagnosticsState.updatedAtMs = Date.now();
 }
 
+export function incrementWorldmapRenderUploadBytes(metric: WorldmapRenderUploadMetric, amount: number): void {
+  diagnosticsState.uploadBytes[metric] += Math.max(0, Math.floor(amount));
+  diagnosticsState.updatedAtMs = Date.now();
+}
+
 export function incrementWorldmapForceRefreshReason(reason: WorldmapForceRefreshReason): void {
   diagnosticsState.forceRefreshReasons[reason] += 1;
   diagnosticsState.updatedAtMs = Date.now();
@@ -149,6 +159,7 @@ export function snapshotWorldmapRenderDiagnostics(): WorldmapRenderDiagnosticsSn
       ]),
     ) as WorldmapRenderDiagnosticsSnapshot["durations"],
     gauges: { ...diagnosticsState.gauges },
+    uploadBytes: { ...diagnosticsState.uploadBytes },
     counters: { ...diagnosticsState.counters },
     forceRefreshReasons: { ...diagnosticsState.forceRefreshReasons },
     updatedAtMs: diagnosticsState.updatedAtMs,
