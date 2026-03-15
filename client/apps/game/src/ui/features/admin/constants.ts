@@ -13,7 +13,7 @@ export const WORLD_SERIES_METADATA_KEY = "eternum_world_series_metadata";
 
 // Defaults
 export const DEFAULT_VERSION_BLITZ = "180";
-export const DEFAULT_VERSION_ETERNUM = "200";
+export const DEFAULT_VERSION_ETERNUM = "180";
 export const getDefaultVersion = (gameType: string): string =>
   gameType === "eternum" ? DEFAULT_VERSION_ETERNUM : DEFAULT_VERSION_BLITZ;
 export const DEFAULT_NAMESPACE = "s1_eternum";

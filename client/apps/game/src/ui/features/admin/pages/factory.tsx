@@ -1402,7 +1402,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                           )}
                                         </div>
 
-                                        {/* Game Mode indicator (read-only, determined by VITE_PUBLIC_GAME_TYPE) */}
+                                        {/* Game Mode indicator (read-only, determined by VITE_PUBLIC_FORCE_GAME_MODE_ID) */}
                                         <div className="space-y-1">
                                           <label className="text-xs font-semibold text-gold/70">Game Mode</label>
                                           <div className="flex items-center gap-3">
@@ -1415,7 +1415,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             <span className="font-mono">
                                               {activeGameMode}.{env.VITE_PUBLIC_CHAIN}.json
                                             </span>
-                                            . Change via <span className="font-mono">VITE_PUBLIC_GAME_TYPE</span> env
+                                            . Change via <span className="font-mono">VITE_PUBLIC_FORCE_GAME_MODE_ID</span> env
                                             var.
                                           </p>
                                         </div>
