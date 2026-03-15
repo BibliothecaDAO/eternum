@@ -348,6 +348,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemyVillage: new PointsLabelRenderer(
                 this.scene,
@@ -358,6 +359,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               allyVillage: new PointsLabelRenderer(
                 this.scene,
@@ -368,6 +370,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               myRealm: new PointsLabelRenderer(
                 this.scene,
@@ -378,6 +381,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemyRealm: new PointsLabelRenderer(
                 this.scene,
@@ -388,6 +392,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               allyRealm: new PointsLabelRenderer(
                 this.scene,
@@ -398,6 +403,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               hyperstructure: new PointsLabelRenderer(
                 this.scene,
@@ -408,6 +414,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               bank: new PointsLabelRenderer(
                 this.scene,
@@ -418,6 +425,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               fragmentMine: new PointsLabelRenderer(
                 this.scene,
@@ -428,6 +436,7 @@ export class StructureManager {
                 1.3,
                 true,
                 this.frustumManager,
+                this.visibilityManager,
               ),
             };
 

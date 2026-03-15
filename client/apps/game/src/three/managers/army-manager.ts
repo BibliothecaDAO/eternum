@@ -260,6 +260,7 @@ export class ArmyManager {
     // Initialize path renderer for movement visualization
     this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(scene);
+    this.pathRenderer.setVisibilityManager(this.visibilityManager);
 
     // Initialize player indicator manager
     this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);

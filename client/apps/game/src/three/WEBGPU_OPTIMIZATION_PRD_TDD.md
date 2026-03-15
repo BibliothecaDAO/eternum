@@ -135,7 +135,7 @@ The plan should build on those seams instead of bypassing them.
 
 - [x] Stage 0: Observability and test harness hardening
 - [x] Stage 1: Backend correctness hardening
-- [ ] Stage 2: Visibility and animation convergence
+- [x] Stage 2: Visibility and animation convergence
 - [ ] Stage 3: Upload and instance churn reduction
 - [ ] Stage 4: Secondary renderer batching
 - [ ] Stage 5: Feature parity and post stack migration

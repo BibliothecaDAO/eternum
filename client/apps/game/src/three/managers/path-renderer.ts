@@ -4,6 +4,7 @@ import {
   recordWorldmapRenderDuration,
   setWorldmapRenderGauge,
 } from "../perf/worldmap-render-diagnostics";
+import type { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import {
   ArmyPath,
   calculatePathLength,
@@ -14,7 +15,6 @@ import {
   PathRenderConfig,
 } from "../types/path";
 import { resolvePathReadabilityPolicy } from "../scenes/path-readability-policy";
-import { getVisibilityManager } from "../utils/centralized-visibility-manager";
 
 /**
  * PathRenderer - scene-owned manager for rendering army movement paths
@@ -39,6 +39,7 @@ export class PathRenderer {
   private culledPaths: Set<number> = new Set();
   private lastCullFrame = 0;
   private cullCheckInterval = 3; // Check every N frames for performance
+  private visibilityManager?: Pick<CentralizedVisibilityManager, "isBoxVisible">;
 
   private isDisposed = false;
 
@@ -66,6 +67,10 @@ export class PathRenderer {
     if (!this.mesh.parent) {
       this.scene.add(this.mesh);
     }
+  }
+
+  public setVisibilityManager(visibilityManager?: Pick<CentralizedVisibilityManager, "isBoxVisible">): void {
+    this.visibilityManager = visibilityManager;
   }
 
   /**
@@ -231,10 +236,16 @@ export class PathRenderer {
   private updateFrustumCulling(): void {
     if (this.activePaths.size === 0) return;
 
-    const visibilityManager = getVisibilityManager();
+    if (!this.visibilityManager) {
+      this.culledPaths.clear();
+      this.pathObjects.forEach((line) => {
+        line.visible = true;
+      });
+      return;
+    }
 
     for (const [entityId, path] of this.activePaths) {
-      const isVisible = visibilityManager.isBoxVisible(path.boundingBox);
+      const isVisible = this.visibilityManager.isBoxVisible(path.boundingBox);
       const wasCulled = this.culledPaths.has(entityId);
       const line = this.pathObjects.get(entityId);
 

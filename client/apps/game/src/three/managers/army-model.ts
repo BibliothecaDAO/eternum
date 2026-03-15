@@ -851,20 +851,78 @@ export class ArmyModel {
   }
 
   // Animation Methods
-  public updateAnimations(_deltaTime: number, _visibility?: AnimationVisibilityContext): void {
+  public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
     const now = performance.now();
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
+      if (!this.shouldAnimateModel(modelData, visibility)) {
+        return;
+      }
       this.updateModelAnimations(modelData, time, now);
     });
 
     // Also update cosmetic model animations
     this.cosmeticModels.forEach((modelData) => {
+      if (!this.shouldAnimateModel(modelData, visibility)) {
+        return;
+      }
       this.updateModelAnimations(modelData, time, now);
     });
+  }
+
+  private shouldAnimateModel(modelData: ModelData, visibility?: AnimationVisibilityContext): boolean {
+    if (!visibility) {
+      return true;
+    }
+
+    if (modelData.activeInstances.size === 0) {
+      return false;
+    }
+
+    for (const slot of modelData.activeInstances) {
+      const entityId = this.matrixIndexOwners.get(slot);
+      if (entityId === undefined) {
+        continue;
+      }
+
+      const instance = this.instanceData.get(entityId);
+      if (!instance?.position) {
+        continue;
+      }
+
+      if (this.isAnimationPositionVisible(instance.position, visibility)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private isAnimationPositionVisible(position: Vector3, visibility: AnimationVisibilityContext): boolean {
+    if (visibility.visibilityManager) {
+      if (!visibility.visibilityManager.isPointVisible(position)) {
+        return false;
+      }
+
+      if (visibility.cameraPosition && visibility.maxDistance !== undefined) {
+        return visibility.cameraPosition.distanceTo(position) <= visibility.maxDistance;
+      }
+
+      return true;
+    }
+
+    if (visibility.frustumManager && !visibility.frustumManager.isPointVisible(position)) {
+      return false;
+    }
+
+    if (visibility.cameraPosition && visibility.maxDistance !== undefined) {
+      return visibility.cameraPosition.distanceTo(position) <= visibility.maxDistance;
+    }
+
+    return true;
   }
 
   private updateModelAnimations(modelData: ModelData, time: number, now: number): void {

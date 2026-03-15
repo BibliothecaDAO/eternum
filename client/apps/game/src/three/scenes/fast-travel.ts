@@ -72,6 +72,7 @@ export default class FastTravelScene extends WarpTravel {
     this.pathRenderer = new PathRenderer();
     this.renderAssets = createFastTravelRenderAssets();
     this.pathRenderer.initialize(this.scene);
+    this.pathRenderer.setVisibilityManager(this.visibilityManager);
     this.scene.add(this.travelSurfaceGroup);
     this.scene.add(this.travelContentGroup);
   }
