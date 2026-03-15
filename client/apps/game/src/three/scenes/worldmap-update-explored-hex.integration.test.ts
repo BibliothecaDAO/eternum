@@ -11,8 +11,8 @@ describe("Worldmap updateExploredHex integration wiring", () => {
     });
 
     expect(fixture.invalidateCalls).toBe(1);
-    expect(fixture.updateVisibleChunksCalls).toEqual([true]);
-    expect(fixture.requestChunkRefreshCalls).toEqual([]);
+    expect(fixture.updateVisibleChunksCalls).toEqual([]);
+    expect(fixture.requestChunkRefreshCalls).toEqual([{ force: true, reason: "duplicate_tile" }]);
   });
 
   it("requests deferred chunk refresh when duplicate reconcile strategy is deferred", async () => {
@@ -25,7 +25,7 @@ describe("Worldmap updateExploredHex integration wiring", () => {
 
     expect(fixture.invalidateCalls).toBe(1);
     expect(fixture.updateVisibleChunksCalls).toEqual([]);
-    expect(fixture.requestChunkRefreshCalls).toEqual([true]);
+    expect(fixture.requestChunkRefreshCalls).toEqual([{ force: true, reason: "duplicate_tile" }]);
   });
 
   it("does not request any refresh when duplicate reconcile strategy is none", async () => {

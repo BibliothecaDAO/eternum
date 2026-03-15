@@ -76,7 +76,7 @@ pub mod troop_management_systems {
     use crate::models::map::{Tile, TileImpl};
     use crate::models::map2::TileOpt;
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::position::{Coord, CoordTrait, Direction, TravelTrait};
     use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
         WeightStoreImpl,
@@ -327,8 +327,7 @@ pub mod troop_management_systems {
             // ensure explorer is adjacent to home structure
             let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
             assert!(
-                explorer_owner_structure.coord() == explorer.coord.neighbor(home_direction),
-                "explorer not adjacent to home structure",
+                explorer.coord.is_adjacent(explorer_owner_structure.coord()), "explorer not adjacent to home structure",
             );
 
             // deduct resources used to create explorer
@@ -468,8 +467,7 @@ pub mod troop_management_systems {
 
             // ensure explorers are adjacent to one another
             assert!(
-                to_explorer.coord == from_explorer.coord.neighbor(to_explorer_direction),
-                "to explorer is not at the target coordinate",
+                from_explorer.coord.is_adjacent(to_explorer.coord), "to explorer is not adjacent to source explorer",
             );
 
             // ensure count is valid
@@ -621,8 +619,7 @@ pub mod troop_management_systems {
             // ensure explorer is adjacent to structure
             let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
             assert!(
-                to_structure_base.coord() == from_explorer.coord.neighbor(to_structure_direction),
-                "explorer is not adjacent to structure",
+                from_explorer.coord.is_adjacent(to_structure_base.coord()), "explorer is not adjacent to structure",
             );
 
             // if target is a village, ensure explorer belongs to same village or master realm
@@ -801,8 +798,7 @@ pub mod troop_management_systems {
             // ensure structure is adjacent to explorer
             let mut from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             assert!(
-                to_explorer.coord == from_structure_base.coord().neighbor(to_explorer_direction),
-                "structure is not adjacent to explorer",
+                from_structure_base.coord().is_adjacent(to_explorer.coord), "structure is not adjacent to explorer",
             );
 
             // ensure count is less than or equal to structure guard count

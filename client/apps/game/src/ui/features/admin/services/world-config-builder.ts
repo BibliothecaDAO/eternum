@@ -18,6 +18,7 @@ interface FactoryWorldConfigOverrides {
   startSettlingAt?: number;
   devModeOn?: boolean;
   mmrEnabled?: boolean;
+  gameMode?: "blitz" | "eternum";
   durationHours?: string;
   durationMinutes?: string;
   blitzFeeAmount?: string;
@@ -60,6 +61,7 @@ interface FactoryConfigLike {
     pointRegistrationCloseAfterEndSeconds?: number;
   };
   blitz?: {
+    mode?: { on?: boolean };
     registration?: {
       fee_amount?: bigint;
       fee_token?: string;
@@ -248,6 +250,10 @@ export const buildWorldConfigForFactory = ({
     },
     blitz: {
       ...(baseConfig.blitz || {}),
+      mode: {
+        ...(baseConfig.blitz?.mode || {}),
+        on: overrides.gameMode ? overrides.gameMode === "blitz" : (baseConfig.blitz?.mode?.on ?? true),
+      },
       registration: {
         ...(baseConfig.blitz?.registration || {}),
         fee_amount: blitzFeeAmount,

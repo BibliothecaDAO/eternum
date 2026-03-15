@@ -49,4 +49,5 @@ export const BUILDING_INFORMATION: {
   [BuildingType.ResourcePaladinT3]: "Tier 3 Stables, where divine power manifests, create legendary Paladins.",
   [BuildingType.ResourceWheat]: "Enchanted Farms, blessed by Gaia, yield golden Wheat.",
   [BuildingType.ResourceFish]: "Mystical Fishing Villages, guided by the Moon, harvest the bounty of Fish.",
+  [BuildingType.ResourceResearch]: "Research Labs, where ancient knowledge is unlocked, advance realm technologies.",
 };

@@ -37,6 +37,7 @@ import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import {
+  resolveNearestIntersection,
   resolveMovementProgressUpdate,
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
@@ -1891,6 +1892,40 @@ export class ArmyModel {
     const sortedResults = results.toSorted((a, b) => a.distance - b.distance);
 
     return sortedResults;
+  }
+
+  public raycastNearest(raycaster: Raycaster): { instanceId: number | undefined; mesh: InstancedMesh } | undefined {
+    let nearest:
+      | {
+          instanceId: number | undefined;
+          mesh: InstancedMesh;
+          distance: number;
+        }
+      | undefined;
+
+    this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        const intersects = raycaster.intersectObject(mesh);
+        if (intersects.length === 0) {
+          return;
+        }
+
+        nearest = resolveNearestIntersection(nearest, {
+          instanceId: intersects[0].instanceId,
+          mesh,
+          distance: intersects[0].distance,
+        });
+      });
+    });
+
+    if (!nearest) {
+      return undefined;
+    }
+
+    return {
+      instanceId: nearest.instanceId,
+      mesh: nearest.mesh,
+    };
   }
 
   /**

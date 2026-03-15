@@ -66,7 +66,7 @@ export class SceneManager {
     }
 
     const previousScene = this.currentScene ? this.scenes.get(this.currentScene) : undefined;
-    previousScene?.onSwitchOff();
+    previousScene?.onSwitchOff(sceneNameToTransition);
 
     this.transitionInProgress = true;
     this.transitionManager.fadeOut(async () => {

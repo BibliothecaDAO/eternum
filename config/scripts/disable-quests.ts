@@ -3,8 +3,16 @@ import { getGameManifest } from "@contracts";
 import chalk from "chalk";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "utils/confirmation";
-import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "utils/environment";
+import { logNetwork, saveConfigJsonFromConfigTsFile, type GameType, type NetworkType } from "utils/environment";
 import { type Chain } from "../utils/utils";
+
+const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
+const gameType = process.argv[2] as GameType;
+if (!gameType || !VALID_GAME_TYPES.includes(gameType)) {
+  console.error(`Usage: bun run ./scripts/disable-quests.ts <game_type>`);
+  console.error(`  game_type must be one of: ${VALID_GAME_TYPES.join(", ")}`);
+  process.exit(1);
+}
 
 const {
   VITE_PUBLIC_MASTER_ADDRESS,
@@ -16,7 +24,7 @@ const {
 
 // prompt user to confirm non-local deployment
 confirmNonLocalDeployment(VITE_PUBLIC_CHAIN!);
-await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType);
+await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType, gameType);
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
 
 const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);

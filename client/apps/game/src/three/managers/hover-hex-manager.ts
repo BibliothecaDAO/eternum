@@ -4,6 +4,8 @@ import { hoverHexMaterial, updateHoverHexMaterial } from "@/three/shaders/hover-
 import { gltfLoader } from "@/three/utils/utils";
 import * as THREE from "three";
 
+export type HoverVisualMode = "fill" | "outline";
+
 /**
  * Manages hover effects with rim lighting on hexagons
  */
@@ -12,6 +14,7 @@ export class HoverHexManager {
   private hoverHex: THREE.Mesh | null = null;
   private outlineModel: THREE.Object3D | null = null;
   private isVisible = false;
+  private visualMode: HoverVisualMode = "fill";
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -73,6 +76,20 @@ export class HoverHexManager {
     updateHoverHexMaterial(deltaTime);
   }
 
+  public setVisualMode(mode: HoverVisualMode): void {
+    this.visualMode = mode;
+
+    if (!this.isVisible) {
+      return;
+    }
+
+    if (this.visualMode === "fill") {
+      this.attachHoverFill();
+    } else {
+      this.detachHoverFill();
+    }
+  }
+
   /**
    * Show hover effect at the specified position
    */
@@ -85,17 +102,14 @@ export class HoverHexManager {
       this.outlineModel.position.set(x, 0.01, z);
     }
 
-    if (!this.isVisible) {
-      this.scene.add(this.hoverHex);
-      this.hoverHex.visible = true;
-
-      if (this.outlineModel) {
-        this.scene.add(this.outlineModel);
-        this.outlineModel.visible = true;
-      }
-
-      this.isVisible = true;
+    if (this.visualMode === "fill") {
+      this.attachHoverFill();
+    } else {
+      this.detachHoverFill();
     }
+
+    this.attachOutlineModel();
+    this.isVisible = true;
   }
 
   /**
@@ -104,13 +118,8 @@ export class HoverHexManager {
   public hideHover(): void {
     if (!this.hoverHex || !this.isVisible) return;
 
-    this.scene.remove(this.hoverHex);
-    this.hoverHex.visible = false;
-
-    if (this.outlineModel) {
-      this.scene.remove(this.outlineModel);
-      this.outlineModel.visible = false;
-    }
+    this.detachHoverFill();
+    this.detachOutlineModel();
 
     this.isVisible = false;
   }
@@ -164,5 +173,53 @@ export class HoverHexManager {
     }
 
     this.isVisible = false;
+  }
+
+  private attachHoverFill(): void {
+    if (!this.hoverHex) {
+      return;
+    }
+
+    if (!this.hoverHex.parent) {
+      this.scene.add(this.hoverHex);
+    }
+
+    this.hoverHex.visible = true;
+  }
+
+  private detachHoverFill(): void {
+    if (!this.hoverHex) {
+      return;
+    }
+
+    if (this.hoverHex.parent) {
+      this.scene.remove(this.hoverHex);
+    }
+
+    this.hoverHex.visible = false;
+  }
+
+  private attachOutlineModel(): void {
+    if (!this.outlineModel) {
+      return;
+    }
+
+    if (!this.outlineModel.parent) {
+      this.scene.add(this.outlineModel);
+    }
+
+    this.outlineModel.visible = true;
+  }
+
+  private detachOutlineModel(): void {
+    if (!this.outlineModel) {
+      return;
+    }
+
+    if (this.outlineModel.parent) {
+      this.scene.remove(this.outlineModel);
+    }
+
+    this.outlineModel.visible = false;
   }
 }

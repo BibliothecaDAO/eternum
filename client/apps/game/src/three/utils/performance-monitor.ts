@@ -36,7 +36,7 @@ class PerformanceMonitorImpl {
 
   private metrics: Map<string, PerformanceMetric> = new Map();
   private activeMarks: Map<string, number> = new Map();
-  private enabled: boolean = true;
+  private enabled: boolean = import.meta.env?.DEV ?? false;
   private maxSamples: number = 60; // ~1 second at 60fps
   private callbacks: Set<MetricCallback> = new Set();
 
@@ -102,6 +102,7 @@ class PerformanceMonitorImpl {
       performance.measure(`perf_${name}`, startMark, endMark);
       performance.clearMarks(startMark);
       performance.clearMarks(endMark);
+      performance.clearMeasures(`perf_${name}`);
     } catch {
       // Ignore if measures not supported
     }

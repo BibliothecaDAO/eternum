@@ -75,16 +75,11 @@ export class HoverLabelManager {
   onHexLeave(): void {
     (Object.keys(this.activeLabels) as HoverLabelType[]).forEach((type) => {
       const activeId = this.activeLabels[type];
-      const controller = this.controllers[type];
-
-      if (controller && activeId !== undefined) {
-        controller.hide(activeId);
+      if (activeId !== undefined) {
+        this.controllers[type]?.hide(activeId);
       }
-
       delete this.activeLabels[type];
     });
-
-    Object.values(this.controllers).forEach((controller) => controller?.hideAll?.());
 
     this.currentHoveredHex = null;
   }
@@ -99,6 +94,10 @@ export class HoverLabelManager {
 
   public hasActiveLabels(): boolean {
     return this.currentHoveredHex !== null;
+  }
+
+  public getActiveLabelCount(): number {
+    return Object.keys(this.activeLabels).length;
   }
 
   private toggleLabel(type: HoverLabelType, entityId?: ID): void {

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getGameModeId } from "@/config/game-modes";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -9,6 +10,7 @@ import {
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/hexagon-scene";
+import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
@@ -52,6 +54,8 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { env } from "../../env";
+import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
+import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
   resolveLabelRenderDecision,
@@ -59,8 +63,10 @@ import {
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
+import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
+import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
@@ -149,6 +155,7 @@ export default class GameRenderer {
 
   // Scenes
   private worldmapScene!: WorldmapScene;
+  private fastTravelScene?: FastTravelScene;
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
@@ -157,6 +164,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
+  private guiFolders: TrackableGuiFolder[] = [];
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
@@ -217,16 +225,23 @@ export default class GameRenderer {
     this.setupRendererGUI();
   }
 
+  private isFastTravelEnabled(): boolean {
+    return getGameModeId() !== "blitz";
+  }
+
   private setupSceneSwitchingGUI() {
-    const changeSceneFolder = GUIManager.addFolder("Switch scene");
+    const changeSceneFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Switch scene"));
     const changeSceneParams = { scene: SceneName.WorldMap };
-    changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
+    const sceneOptions = this.isFastTravelEnabled()
+      ? [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel]
+      : [SceneName.WorldMap, SceneName.Hexception];
+    changeSceneFolder.add(changeSceneParams, "scene", sceneOptions).name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
   }
 
   private setupCameraMovementGUI() {
-    const moveCameraFolder = GUIManager.addFolder("Move Camera");
+    const moveCameraFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Move Camera"));
     const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
 
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
@@ -267,7 +282,7 @@ export default class GameRenderer {
   }
 
   private setupRendererGUI() {
-    const rendererFolder = GUIManager.addFolder("Renderer");
+    const rendererFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Renderer"));
     rendererFolder
       .add(this.renderer, "toneMapping", {
         "No Tone Mapping": NoToneMapping,
@@ -280,7 +295,7 @@ export default class GameRenderer {
     rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
     rendererFolder.close();
 
-    const contactShadowFolder = GUIManager.addFolder("Contact Shadows");
+    const contactShadowFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Contact Shadows"));
     const { material } = getContactShadowResources();
     const params = { opacity: material.opacity };
     contactShadowFolder
@@ -389,7 +404,7 @@ export default class GameRenderer {
 
     // Provide renderer reference for better resource tracking
     this.memoryMonitor.setRenderer(this.renderer);
-    (window as any).__gameRenderer = this;
+    registerGameRendererDebugGlobals(window, this, this.renderer);
 
     // Create memory stats display element
     this.createMemoryStatsDisplay();
@@ -750,6 +765,8 @@ export default class GameRenderer {
       this.labelsDirty = true;
       if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
         this.worldmapScene.requestChunkRefresh();
+      } else if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
+        this.fastTravelScene.requestSceneRefresh();
       }
     });
     this.controls.keys = {
@@ -794,12 +811,17 @@ export default class GameRenderer {
     const url = new URL(window.location.href);
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const sceneSlug = pathSegments.pop();
-    const targetScene =
-      sceneSlug === SceneName.Hexception || sceneSlug === SceneName.WorldMap
-        ? (sceneSlug as SceneName)
-        : SceneName.WorldMap;
+    const fastTravelEnabled = this.isFastTravelEnabled();
+    const targetScene = resolveNavigationSceneTarget({
+      requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
+      currentPath: url.pathname,
+      fastTravelEnabled,
+    });
 
-    if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
+    if (
+      targetScene === this.sceneManager.getCurrentScene() &&
+      (targetScene === SceneName.WorldMap || (targetScene === SceneName.FastTravel && this.fastTravelScene))
+    ) {
       this.sceneManager.moveCameraForScene();
       this.transitionManager?.fadeIn();
     } else {
@@ -833,6 +855,20 @@ export default class GameRenderer {
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
 
+    if (this.isFastTravelEnabled()) {
+      // Initialize FastTravel scene for non-Blitz modes only.
+      this.fastTravelScene = new FastTravelScene(
+        this.dojo,
+        this.raycaster,
+        this.controls,
+        this.mouse,
+        this.sceneManager,
+      );
+      this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
+    } else {
+      this.fastTravelScene = undefined;
+    }
+
     // Set up render pass
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
@@ -857,7 +893,7 @@ export default class GameRenderer {
     mutableToneMapping.exposure = config.toneMapping.exposure;
     mutableToneMapping.whitePoint = config.toneMapping.whitePoint;
 
-    const folder = GUIManager.addFolder("Tone Mapping");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Tone Mapping"));
     folder
       .add(config.toneMapping, "mode", {
         ...ToneMappingMode,
@@ -900,7 +936,7 @@ export default class GameRenderer {
     }
     this.postProcessingGUIInitialized = true;
 
-    const folder = GUIManager.addFolder("Color Grade");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Color Grade"));
 
     folder
       .add(config, "saturation", -0.5, 0.5, 0.01)
@@ -951,7 +987,7 @@ export default class GameRenderer {
       offset: config.vignette.offset,
     });
 
-    const folder = GUIManager.addFolder("Vignette");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Vignette"));
     folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
       this.vignetteEffect!.darkness = value;
     });
@@ -996,6 +1032,7 @@ export default class GameRenderer {
     const envMap = renderTarget.texture;
     this.hexceptionScene.setEnvironment(envMap, intensity);
     this.worldmapScene.setEnvironment(envMap, intensity);
+    this.fastTravelScene?.setEnvironment(envMap, intensity);
 
     if (
       this.environmentTarget &&
@@ -1199,6 +1236,9 @@ export default class GameRenderer {
     if (currentScene === SceneName.WorldMap) {
       view = this.worldmapScene.getCurrentCameraView();
       labelsActive = this.worldmapScene.hasActiveLabelAnimations();
+    } else if (currentScene === SceneName.FastTravel && this.fastTravelScene) {
+      view = this.fastTravelScene.getCurrentCameraView();
+      labelsActive = this.fastTravelScene.hasActiveLabelAnimations();
     } else if (currentScene === SceneName.Hexception) {
       view = this.hexceptionScene.getCurrentCameraView();
       labelsActive = this.hexceptionScene.hasActiveLabelAnimations();
@@ -1283,16 +1323,24 @@ export default class GameRenderer {
     this.hudScene.update(deltaTime, cycleProgress);
     const weatherState = this.hudScene.getWeatherState();
     this.worldmapScene.setWeatherAtmosphereState(weatherState);
+    this.fastTravelScene?.setWeatherAtmosphereState(weatherState);
     this.hexceptionScene.setWeatherAtmosphereState(weatherState);
 
     // Render the current game scene
     const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
+    const isFastTravel = this.sceneManager?.getCurrentScene() === SceneName.FastTravel && Boolean(this.fastTravelScene);
     if (isWorldMap) {
       this.worldmapScene.update(deltaTime);
+    } else if (isFastTravel && this.fastTravelScene) {
+      this.fastTravelScene.update(deltaTime);
     } else {
       this.hexceptionScene.update(deltaTime);
     }
-    const activeScene = isWorldMap ? this.worldmapScene.getScene() : this.hexceptionScene.getScene();
+    const activeScene = isWorldMap
+      ? this.worldmapScene.getScene()
+      : isFastTravel
+        ? (this.fastTravelScene?.getScene() ?? this.worldmapScene.getScene())
+        : this.hexceptionScene.getScene();
     (this.renderPass as unknown as { scene: unknown }).scene = activeScene;
 
     const shouldRenderLabels = this.shouldRenderLabels(currentTime);
@@ -1368,6 +1416,9 @@ export default class GameRenderer {
       if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
         this.worldmapScene.destroy();
       }
+      if (this.fastTravelScene && typeof this.fastTravelScene.destroy === "function") {
+        this.fastTravelScene.destroy();
+      }
       if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
         this.hexceptionScene.destroy();
       }
@@ -1387,6 +1438,8 @@ export default class GameRenderer {
         this.environmentTarget = undefined;
       }
 
+      destroyTrackedGuiFolders(this.guiFolders);
+
       // Remove event listeners
       window.removeEventListener("urlChanged", this.handleURLChange);
       window.removeEventListener("popstate", this.handleURLChange);
@@ -1395,6 +1448,7 @@ export default class GameRenderer {
       document.removeEventListener("blur", this.handleDocumentBlur, true);
 
       // Clean up memory monitoring
+      clearGameRendererDebugGlobals(window);
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
       }
@@ -1444,6 +1498,7 @@ export default class GameRenderer {
     }
 
     this.worldmapScene?.applyQualityFeatures(features);
+    this.fastTravelScene?.applyQualityFeatures(features);
     this.hexceptionScene?.applyQualityFeatures(features);
 
     if (this.composer) {

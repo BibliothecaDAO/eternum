@@ -54,6 +54,7 @@ import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 
 export enum CameraView {
   Close = 1,
@@ -146,7 +147,9 @@ export abstract class HexagonScene {
     this.setupLighting();
     this.setupInputHandlers();
     this.setupGUI();
-    this.createGroundMesh();
+    if (this.shouldCreateGroundMesh()) {
+      this.createGroundMesh();
+    }
   }
 
   private notifyControlsChanged(): void {
@@ -156,7 +159,6 @@ export abstract class HexagonScene {
     this.updateFogForDistance(distance);
     this.updateOutlineOpacityForDistance(distance);
     this.controls.dispatchEvent({ type: "change" });
-    this.frustumManager?.forceUpdate();
     this.visibilityManager?.markDirty();
   }
 
@@ -1169,6 +1171,10 @@ export abstract class HexagonScene {
     return true;
   }
 
+  protected shouldCreateGroundMesh(): boolean {
+    return true;
+  }
+
   // Cleanup method for lightning sequence
   protected cleanupLightning(): void {
     if (this.lightningSequenceTimeout) {
@@ -1225,6 +1231,11 @@ export abstract class HexagonScene {
     if (this.inputManager) {
       this.inputManager.destroy();
     }
+
+    destroyHexagonSceneOwnedManagers({
+      frustumManager: this.frustumManager,
+      visibilityManager: this.visibilityManager,
+    });
 
     // Clean up shortcuts
     if (this.shortcutManager) {
@@ -1288,7 +1299,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
   public abstract setup(): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
-  public abstract onSwitchOff(): void;
+  public abstract onSwitchOff(nextSceneName?: SceneName): void;
 
   public getCurrentCameraView(): CameraView {
     return this.currentCameraView;
