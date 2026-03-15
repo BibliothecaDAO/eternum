@@ -11178,7 +11178,7 @@
     },
     {
       "address": "0xf19a893fe993fd9808aead7d242f732810a102a65f77643d319d6aeb754195",
-      "class_hash": "0x52e253cb71ab5c7632b28932c0ba80489f76fd1ce4c95168813cfa3920a2746",
+      "class_hash": "0x4cf94c35443603b75bc9e3d833fa487e3f504f3d53c3097b6e83bb21a879a",
       "init_calldata": [],
       "tag": "s1_eternum-troop_movement_systems",
       "selector": "0x522c38540c126c2f193f496d4eb1882a63cdc02997f64c298d41622b26ded2b",
