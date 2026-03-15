@@ -55,6 +55,7 @@ import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import {
@@ -891,11 +892,39 @@ export class ArmyManager {
   }
 
   private updateVisibleArmyBuffers(): void {
+    this.compactVisibleArmySlots();
     this.syncVisibleSlots();
     this.armyModel.updateAllInstances();
     this.armyModel.computeBoundingSphere();
     this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
+  }
+
+  private compactVisibleArmySlots(): void {
+    const plan = resolveArmySlotCompactionPlan(
+      Array.from(this.visibleArmyIndices.entries()).map(([entityId, slot]) => ({
+        entityId,
+        slot,
+      })),
+    );
+
+    if (!plan.needsCompaction) {
+      return;
+    }
+
+    plan.reassignments.forEach(({ entityId, toSlot }) => {
+      const numericId = this.toNumericId(entityId);
+      this.armyModel.moveInstanceSlot(numericId, toSlot);
+      this.visibleArmyIndices.set(entityId, toSlot);
+
+      const army = this.armies.get(entityId);
+      if (army) {
+        this.armies.set(entityId, {
+          ...army,
+          matrixIndex: toSlot,
+        });
+      }
+    });
   }
 
   private addVisibleArmy(army: ArmyData, modelType: ModelType): void {

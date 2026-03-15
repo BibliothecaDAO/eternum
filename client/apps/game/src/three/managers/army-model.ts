@@ -654,6 +654,35 @@ export class ArmyModel {
     this.rebindMovementMatrixIndex(entityId, newSlot);
   }
 
+  public moveInstanceSlot(entityId: number, newSlot: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    const previousSlot = instanceData?.matrixIndex;
+    if (!instanceData || previousSlot === undefined || previousSlot === newSlot) {
+      return;
+    }
+
+    this.takeFreedSlot(newSlot);
+    const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
+    this.updateInstance(entityId, newSlot, instanceData.position, instanceData.scale, instanceData.rotation, instanceData.color);
+    this.setAnimationState(newSlot, wasWalking);
+    this.clearInstanceSlot(previousSlot);
+    this.matrixIndexOwners.delete(previousSlot);
+    instanceData.matrixIndex = newSlot;
+    this.rebindMovementMatrixIndex(entityId, newSlot);
+  }
+
+  private takeFreedSlot(slot: number): void {
+    if (!this.freeSlotSet.has(slot)) {
+      return;
+    }
+
+    this.freeSlotSet.delete(slot);
+    const freeSlotIndex = this.freeSlots.indexOf(slot);
+    if (freeSlotIndex !== -1) {
+      this.freeSlots.splice(freeSlotIndex, 1);
+    }
+  }
+
   private getScaleForModelType(modelType: ModelType): Vector3 {
     if (modelType === ModelType.Boat) {
       return this.boatScale;

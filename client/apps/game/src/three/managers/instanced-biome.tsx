@@ -309,6 +309,10 @@ export default class InstancedModel {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
         child.instanceMatrix.needsUpdate = true;
+        if (this.worldBounds) {
+          this.applyWorldBounds(child);
+          return;
+        }
         child.computeBoundingSphere();
         this.applyWorldBounds(child);
       }
