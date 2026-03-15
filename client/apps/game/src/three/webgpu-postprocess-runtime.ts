@@ -41,7 +41,7 @@ const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
 
 const defaultDependencies: WebGPUPostProcessRuntimeDependencies = {
   createBloom: (emissiveNode, intensity) => bloom(emissiveNode as never, intensity) as unknown,
-  createBloomMrt: () => mrt({ emissive, output }) as unknown,
+  createBloomMrt: () => mrt({ output, emissive }) as unknown,
   createPass: (scene, camera) => pass(scene, camera) as unknown as WebGPUScenePass,
   createPostProcessing: (renderer) => new PostProcessing(renderer as never) as unknown as WebGPUPostProcessing,
   createRenderOutput: (colorNode, toneMapping, outputColorSpace) =>
@@ -122,18 +122,21 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
       this.renderer.toneMappingExposure = plan.toneMapping.exposure;
     }
 
+    if (plan?.bloom.enabled) {
+      this.scenePass.setMRT(this.dependencies.createBloomMrt());
+    } else {
+      this.scenePass.setMRT(null);
+    }
+
     const sceneColorNode = this.scenePass.getTextureNode("output") as {
       add?: (input: unknown) => unknown;
     };
     let outputNode = sceneColorNode as unknown;
 
     if (plan?.bloom.enabled) {
-      this.scenePass.setMRT(this.dependencies.createBloomMrt());
       const emissiveNode = this.scenePass.getTextureNode("emissive");
       const bloomNode = this.dependencies.createBloom(emissiveNode, plan.bloom.intensity);
       outputNode = sceneColorNode.add?.(bloomNode) ?? outputNode;
-    } else {
-      this.scenePass.setMRT(null);
     }
 
     this.postProcessing.outputNode = this.dependencies.createRenderOutput(
