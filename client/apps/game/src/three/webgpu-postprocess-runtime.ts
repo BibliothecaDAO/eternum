@@ -1,6 +1,7 @@
 import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping, type Camera, type Scene } from "three";
 import { PostProcessing } from "three/webgpu";
-import { pass, renderOutput } from "three/tsl";
+import { pass, renderOutput, emissive, mrt, output } from "three/tsl";
+import { bloom } from "three/addons/tsl/display/BloomNode.js";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -26,6 +27,8 @@ interface WebGPUPostProcessing {
 }
 
 interface WebGPUPostProcessRuntimeDependencies {
+  createBloom(emissiveNode: unknown, intensity: number): unknown;
+  createBloomMrt(): unknown;
   createPass(scene: Scene, camera: Camera): WebGPUScenePass;
   createPostProcessing(renderer: RendererSurfaceLike): WebGPUPostProcessing;
   createRenderOutput(colorNode: unknown, toneMapping: number, outputColorSpace: string | undefined): unknown;
@@ -37,6 +40,8 @@ const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
 };
 
 const defaultDependencies: WebGPUPostProcessRuntimeDependencies = {
+  createBloom: (emissiveNode, intensity) => bloom(emissiveNode as never, intensity) as unknown,
+  createBloomMrt: () => mrt({ emissive, output }) as unknown,
   createPass: (scene, camera) => pass(scene, camera) as unknown as WebGPUScenePass,
   createPostProcessing: (renderer) => new PostProcessing(renderer as never) as unknown as WebGPUPostProcessing,
   createRenderOutput: (colorNode, toneMapping, outputColorSpace) =>
@@ -114,9 +119,22 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
     this.renderer.toneMapping = resolveRendererToneMapping(this.plan.toneMapping.mode);
     this.renderer.toneMappingExposure = this.plan.toneMapping.exposure;
 
-    const sceneColorNode = this.scenePass.getTextureNode("output");
+    const sceneColorNode = this.scenePass.getTextureNode("output") as {
+      add?: (input: unknown) => unknown;
+    };
+    let outputNode = sceneColorNode as unknown;
+
+    if (this.plan.bloom.enabled) {
+      this.scenePass.setMRT(this.dependencies.createBloomMrt());
+      const emissiveNode = this.scenePass.getTextureNode("emissive");
+      const bloomNode = this.dependencies.createBloom(emissiveNode, this.plan.bloom.intensity);
+      outputNode = sceneColorNode.add?.(bloomNode) ?? outputNode;
+    } else {
+      this.scenePass.setMRT(null);
+    }
+
     this.postProcessing.outputNode = this.dependencies.createRenderOutput(
-      sceneColorNode,
+      outputNode,
       this.renderer.toneMapping,
       this.renderer.outputColorSpace,
     );

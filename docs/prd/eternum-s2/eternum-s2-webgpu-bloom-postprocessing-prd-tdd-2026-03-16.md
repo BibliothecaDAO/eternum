@@ -10,7 +10,7 @@ diagnostics, selected scene/asset tagging, and targeted renderer tests
 - [ ] Phase 0: Baseline Lock and Glow Repro Harness
 - [x] Phase 1: Shared Postprocess Contract and Test Seam
 - [x] Phase 2: Native WebGPU PostProcessing Graph Boot
-- [ ] Phase 3: Bloom Parity and Selective Glow Routing
+- [x] Phase 3: Bloom Parity and Selective Glow Routing
 - [ ] Phase 4: Optional Grade / Vignette / Aberration Closure
 - [ ] Phase 5: Diagnostics, Smoke Matrix, and Rollout Gate Update
 

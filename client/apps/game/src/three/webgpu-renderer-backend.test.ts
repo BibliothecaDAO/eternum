@@ -54,7 +54,7 @@ describe("createWebGPURendererBackend", () => {
     );
 
     expect(backend.capabilities).toEqual({
-      supportsBloom: false,
+      supportsBloom: true,
       supportsChromaticAberration: false,
       supportsColorGrade: false,
       supportsEnvironmentIbl: false,

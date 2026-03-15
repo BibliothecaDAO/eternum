@@ -101,4 +101,74 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(renderer.clearDepth).toHaveBeenCalledTimes(1);
     expect(renderer.render).toHaveBeenCalledWith({ id: "overlay-scene" }, { id: "overlay-camera" });
   });
+
+  it("builds bloom from the emissive mrt output when bloom is enabled", () => {
+    const renderer = {
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      info: {
+        reset: vi.fn(),
+      },
+      outputColorSpace: "srgb",
+      render: vi.fn(),
+      toneMapping: 0,
+      toneMappingExposure: 0,
+    };
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const bloomNode = { id: "bloom-node" };
+    const combinedOutputNode = { id: "combined-output-node" };
+    const emissiveNode = { id: "emissive-node" };
+    const sceneColorNode = {
+      add: vi.fn(() => combinedOutputNode),
+      id: "scene-color-node",
+    };
+    const scenePass = {
+      camera: null,
+      getTextureNode: vi.fn((name?: string) => (name === "emissive" ? emissiveNode : sceneColorNode)),
+      scene: null,
+      setMRT: vi.fn(),
+    };
+    const mrtNode = { id: "mrt-node" };
+    const outputNode = { id: "output-node" };
+    const createBloom = vi.fn(() => bloomNode);
+    const createRenderOutput = vi.fn(() => outputNode);
+
+    const runtime = createWebGPUPostProcessRuntime(
+      {
+        renderer: renderer as never,
+      },
+      {
+        createBloom,
+        createBloomMrt: vi.fn(() => mrtNode),
+        createPass: vi.fn(() => scenePass),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+        createRenderOutput,
+      },
+    );
+
+    runtime.setPlan(
+      createPlan({
+        bloom: {
+          enabled: true,
+          intensity: 0.4,
+        },
+      }),
+    );
+    runtime.renderFrame({
+      mainCamera: { id: "main-camera" } as never,
+      mainScene: { id: "main-scene" } as never,
+    });
+
+    expect(scenePass.setMRT).toHaveBeenCalledWith(mrtNode);
+    expect(scenePass.getTextureNode).toHaveBeenCalledWith("emissive");
+    expect(createBloom).toHaveBeenCalledWith(emissiveNode, 0.4);
+    expect(sceneColorNode.add).toHaveBeenCalledWith(bloomNode);
+    expect(createRenderOutput).toHaveBeenCalledWith(combinedOutputNode, renderer.toneMapping, "srgb");
+  });
 });

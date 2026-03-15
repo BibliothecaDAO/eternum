@@ -67,6 +67,7 @@ describe("renderer-diagnostics", () => {
       },
     });
     setRendererDiagnosticPostprocessPolicy({
+      bloomRouting: "deferred",
       mode: "native-webgpu-minimal",
       prewarmStrategy: "compile-async",
       unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
@@ -136,6 +137,7 @@ describe("renderer-diagnostics", () => {
       initTimeMs: 42,
       fallbacks: 1,
       postprocessPolicy: {
+        bloomRouting: "deferred",
         mode: "native-webgpu-minimal",
         prewarmStrategy: "compile-async",
         unsupportedFeatures: ["environmentIbl", "toneMappingControl"],

@@ -116,7 +116,7 @@ const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
 };
 
 const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
-  supportsBloom: false,
+  supportsBloom: true,
   supportsChromaticAberration: false,
   supportsColorGrade: false,
   supportsEnvironmentIbl: false,

@@ -19,6 +19,7 @@ describe("resolveWebgpuPostprocessPolicy", () => {
         }),
       }),
     ).toEqual({
+      bloomRouting: "none",
       mode: "legacy-webgl-postprocess",
       prewarmStrategy: "compile-async",
       unsupportedFeatures: [],
@@ -30,13 +31,15 @@ describe("resolveWebgpuPostprocessPolicy", () => {
       resolveWebgpuPostprocessPolicy({
         activeMode: "webgpu",
         capabilities: createRendererBackendCapabilities({
+          supportsBloom: true,
           supportsToneMappingControl: true,
         }),
       }),
     ).toEqual({
+      bloomRouting: "mrt-emissive",
       mode: "native-webgpu-postprocess",
       prewarmStrategy: "compile-async",
-      unsupportedFeatures: ["bloom", "chromaticAberration", "colorGrade", "environmentIbl", "vignette"],
+      unsupportedFeatures: ["chromaticAberration", "colorGrade", "environmentIbl", "vignette"],
     });
   });
 
@@ -54,6 +57,7 @@ describe("resolveWebgpuPostprocessPolicy", () => {
         }),
       }),
     ).toEqual({
+      bloomRouting: "none",
       mode: "webgl2-fallback-postprocess",
       prewarmStrategy: "compile-async",
       unsupportedFeatures: [],

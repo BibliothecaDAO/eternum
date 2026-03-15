@@ -4,6 +4,7 @@ import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererAc
 import type { RendererSurfaceLike } from "./renderer-backend";
 
 export interface WebgpuPostprocessPolicy {
+  bloomRouting: "deferred" | "mrt-emissive" | "none";
   mode: "legacy-webgl-postprocess" | "native-webgpu-minimal" | "native-webgpu-postprocess" | "webgl2-fallback-postprocess";
   prewarmStrategy: "compile-async" | "none";
   unsupportedFeatures: RendererCapabilityFeature[];
@@ -24,6 +25,7 @@ export function resolveWebgpuPostprocessPolicy(input: {
 }): WebgpuPostprocessPolicy {
   if (input.activeMode === "legacy-webgl") {
     return {
+      bloomRouting: "none",
       mode: "legacy-webgl-postprocess",
       prewarmStrategy: "compile-async",
       unsupportedFeatures: [],
@@ -32,6 +34,7 @@ export function resolveWebgpuPostprocessPolicy(input: {
 
   if (input.activeMode === "webgl2-fallback") {
     return {
+      bloomRouting: "none",
       mode: "webgl2-fallback-postprocess",
       prewarmStrategy: "compile-async",
       unsupportedFeatures: [],
@@ -58,6 +61,7 @@ export function resolveWebgpuPostprocessPolicy(input: {
   });
 
   return {
+    bloomRouting: input.capabilities.supportsBloom ? "mrt-emissive" : "deferred",
     mode: input.capabilities.supportsToneMappingControl ? "native-webgpu-postprocess" : "native-webgpu-minimal",
     prewarmStrategy: "compile-async",
     unsupportedFeatures,

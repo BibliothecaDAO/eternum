@@ -144,6 +144,7 @@ export function setRendererDiagnosticEffectPlan(effectPlan: RendererPostProcessP
 
 export function setRendererDiagnosticPostprocessPolicy(policy: WebgpuPostprocessPolicy): void {
   rendererDiagnosticsState.postprocessPolicy = {
+    bloomRouting: policy.bloomRouting,
     mode: policy.mode,
     prewarmStrategy: policy.prewarmStrategy,
     unsupportedFeatures: [...policy.unsupportedFeatures],
@@ -179,6 +180,7 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
     gpuTelemetry: snapshotRendererGpuTelemetry(),
     postprocessPolicy: rendererDiagnosticsState.postprocessPolicy
       ? {
+          bloomRouting: rendererDiagnosticsState.postprocessPolicy.bloomRouting,
           mode: rendererDiagnosticsState.postprocessPolicy.mode,
           prewarmStrategy: rendererDiagnosticsState.postprocessPolicy.prewarmStrategy,
           unsupportedFeatures: [...rendererDiagnosticsState.postprocessPolicy.unsupportedFeatures],
