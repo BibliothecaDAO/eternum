@@ -4,7 +4,7 @@ import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { EternumProvider } from "@bibliothecadao/provider";
-import type { Config as EternumConfig } from "@bibliothecadao/types";
+import { HexGrid, type Config as EternumConfig } from "@bibliothecadao/types";
 import {
   SetResourceFactoryConfig,
   setAgentConfig,
@@ -50,6 +50,9 @@ import { shortString } from "starknet";
 import { env } from "../../../../../env";
 import { AdminHeader } from "../components/admin-header";
 import {
+  BANK_COUNT,
+  BANK_NAME_PREFIX,
+  BANK_STEPS_FROM_CENTER,
   CARTRIDGE_API_BASE,
   DEFAULT_NAMESPACE,
   FACTORY_ADDRESSES,
@@ -337,12 +340,14 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [creatingIndexer, setCreatingIndexer] = useState<Record<string, boolean>>({});
   const [indexerActionErrors, setIndexerActionErrors] = useState<Record<string, string>>({});
   const [worldDeployedStatus, setWorldDeployedStatus] = useState<Record<string, boolean>>({});
+  const [worldBankStatus, setWorldBankStatus] = useState<Record<string, boolean>>({});
   const [verifyingDeployment, setVerifyingDeployment] = useState<Record<string, boolean>>({});
   const [autoDeployState, setAutoDeployState] = useState<Record<string, AutoDeployState>>({});
   const autoDeployCancelRef = useRef<Record<string, boolean>>({});
   // Per-world config execution state
   const [worldConfigOpen, setWorldConfigOpen] = useState<Record<string, boolean>>({});
   const [worldConfigTx, setWorldConfigTx] = useState<Record<string, TxState>>({});
+  const [createBanksTx, setCreateBanksTx] = useState<Record<string, TxState>>({});
   // Per-world season start override (epoch seconds)
   const [startMainAtOverrides, setStartMainAtOverrides] = useState<Record<string, number>>({});
   const [startSettlingAtOverrides, setStartSettlingAtOverrides] = useState<Record<string, number>>({});
@@ -406,13 +411,17 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     [blitzFeeRecipientOverrides, defaultBlitzFeeRecipient],
   );
 
-  // Check indexer and deployment status for all stored worlds
+  // Check indexer, deployment, and bank status for all stored worlds
   const checkAllWorldStatuses = useCallback(async () => {
     const worlds = getStoredWorldNames();
-    const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(worlds);
+    const { indexerStatusMap, deployedStatusMap, bankStatusMap } = await refreshStatuses(worlds, {
+      checkBanks: activeGameMode === "eternum",
+      bankCount: BANK_COUNT,
+    });
     setWorldIndexerStatus(indexerStatusMap);
     setWorldDeployedStatus(deployedStatusMap);
-  }, [refreshStatuses]);
+    setWorldBankStatus(bankStatusMap);
+  }, [refreshStatuses, activeGameMode]);
 
   const applyConfigPreset = useCallback(
     (preset: ConfigPreset) => {
@@ -1347,12 +1356,124 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                         )}
                                       </>
                                     )}
+
+                                    {/* Step 4: Create Banks (eternum only, after deploy + indexer) */}
+                                    {activeGameMode === "eternum" &&
+                                      worldDeployedStatus[name] &&
+                                      worldIndexerStatus[name] && (
+                                        <>
+                                          {createBanksTx[name]?.status === "running" ? (
+                                            <span className="flex items-center gap-1.5 px-3 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 cursor-wait">
+                                              <Loader2 className="w-3 h-3 animate-spin" />
+                                              Creating Banks...
+                                            </span>
+                                          ) : worldBankStatus[name] ||
+                                            createBanksTx[name]?.status === "success" ? (
+                                            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
+                                              <CheckCircle2 className="w-3 h-3" />
+                                              Banks Created
+                                              {createBanksTx[name]?.hash && (
+                                                <a
+                                                  href={getExplorerTxUrl(
+                                                    currentChain as any,
+                                                    createBanksTx[name]!.hash!,
+                                                  )}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="text-emerald-600 hover:underline ml-1"
+                                                >
+                                                  Tx
+                                                </a>
+                                              )}
+                                            </span>
+                                          ) : (
+                                            <button
+                                              onClick={async () => {
+                                                if (!account) return;
+                                                setCreateBanksTx((p) => ({
+                                                  ...p,
+                                                  [name]: { status: "running" },
+                                                }));
+                                                try {
+                                                  const profile = await buildWorldProfile(
+                                                    currentChain as Chain,
+                                                    name,
+                                                  );
+                                                  const baseManifest = getGameManifest(
+                                                    currentChain as Chain,
+                                                  );
+                                                  const patched = patchManifestWithFactory(
+                                                    baseManifest as any,
+                                                    profile.worldAddress,
+                                                    profile.contractsBySelector,
+                                                  );
+                                                  const localProvider = new EternumProvider(
+                                                    patched,
+                                                    env.VITE_PUBLIC_NODE_URL,
+                                                    env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+                                                  );
+
+                                                  // Build bank data from HexGrid
+                                                  const distantCoords =
+                                                    HexGrid.findHexCoordsfromCenter(BANK_STEPS_FROM_CENTER);
+                                                  const bankCoords = Object.values(distantCoords).map(
+                                                    (coord) => ({
+                                                      alt: false,
+                                                      x: coord.x,
+                                                      y: coord.y,
+                                                    }),
+                                                  );
+                                                  const banks = Array.from(
+                                                    { length: BANK_COUNT },
+                                                    (_, i) => ({
+                                                      name: `${BANK_NAME_PREFIX} ${i + 1}`,
+                                                      coord: bankCoords[i],
+                                                    }),
+                                                  );
+
+                                                  // Contract requires exactly 6 banks in one call
+                                                  const tx = await localProvider.create_banks({
+                                                    signer: account,
+                                                    banks,
+                                                  });
+                                                  setCreateBanksTx((p) => ({
+                                                    ...p,
+                                                    [name]: {
+                                                      status: "success",
+                                                      hash: tx?.transaction_hash,
+                                                    },
+                                                  }));
+                                                  setWorldBankStatus((p) => ({
+                                                    ...p,
+                                                    [name]: true,
+                                                  }));
+                                                } catch (e: any) {
+                                                  setCreateBanksTx((p) => ({
+                                                    ...p,
+                                                    [name]: {
+                                                      status: "error",
+                                                      error: e?.message ?? String(e),
+                                                    },
+                                                  }));
+                                                }
+                                              }}
+                                              disabled={!account}
+                                              className="px-3 py-1 bg-black/40 hover:bg-gold/15 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 hover:border-gold/40 transition-colors"
+                                            >
+                                              Create {BANK_COUNT} Banks
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
                                   </div>
                                   {metadataParts.length > 0 && (
                                     <p className="text-[11px] text-gold/60">Series: {metadataParts.join(" ")}</p>
                                   )}
                                   {indexerActionErrors[name] && !worldIndexerStatus[name] && (
                                     <p className="text-[11px] text-red-600">{indexerActionErrors[name]}</p>
+                                  )}
+                                  {createBanksTx[name]?.status === "error" && (
+                                    <p className="text-[11px] text-red-600">{createBanksTx[name]?.error}</p>
                                   )}
 
                                   {/* No extra status panel; only small wait timer above */}
@@ -1415,8 +1536,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             <span className="font-mono">
                                               {activeGameMode}.{env.VITE_PUBLIC_CHAIN}.json
                                             </span>
-                                            . Change via <span className="font-mono">VITE_PUBLIC_FORCE_GAME_MODE_ID</span> env
-                                            var.
+                                            . Change via{" "}
+                                            <span className="font-mono">VITE_PUBLIC_FORCE_GAME_MODE_ID</span> env var.
                                           </p>
                                         </div>
 
@@ -2347,6 +2468,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                         {worldConfigTx[name]?.error && (
                                           <p className="text-xs text-red-600">{worldConfigTx[name]?.error}</p>
                                         )}
+
                                       </div>
                                     </div>
                                   )}

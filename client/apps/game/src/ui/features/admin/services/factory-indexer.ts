@@ -47,3 +47,21 @@ export const getWorldDeployedAddress = async (chain: Chain, worldName: string): 
   const base = getFactorySqlBaseUrl(chain);
   return resolveWorldAddressFromFactory(base, worldName);
 };
+
+/**
+ * Check if banks have been created for a world by querying its torii SQL endpoint.
+ * Bank structures have category = 3 in the Structure model.
+ */
+export const checkBanksExist = async (worldName: string, expectedCount: number): Promise<boolean> => {
+  const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql?query=${encodeURIComponent(
+    "SELECT COUNT(*) as count FROM [s1_eternum-Structure] WHERE category = 3",
+  )}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return false;
+    const rows = (await res.json()) as Record<string, unknown>[];
+    return Number(rows?.[0]?.count ?? 0) >= expectedCount;
+  } catch {
+    return false;
+  }
+};

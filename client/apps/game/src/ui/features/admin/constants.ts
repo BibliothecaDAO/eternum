@@ -91,6 +91,11 @@ export const getDefaultBlitzRegistrationConfig = (chain: ChainType): BlitzRegist
 // Public API: reuse runtime helper for SQL base URL
 export const getFactorySqlBaseUrl = (chain: Chain) => getFactorySqlBaseUrlRuntime(chain);
 
+// Bank creation config (eternum only)
+export const BANK_STEPS_FROM_CENTER = 15 * 21;
+export const BANK_NAME_PREFIX = "Central Bank";
+export const BANK_COUNT = 6;
+
 // Torii RPC per environment (admin usage)
 export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
   switch (chain) {
