@@ -214,7 +214,10 @@ function matchesDispatch(
   return displayTitle.includes(dispatchId);
 }
 
-function toWorkflowRun(run: GitHubWorkflowRunResponse, config: Pick<GitHubWorkflowDispatchConfig, "workflowFile" | "ref">) {
+function toWorkflowRun(
+  run: GitHubWorkflowRunResponse,
+  config: Pick<GitHubWorkflowDispatchConfig, "workflowFile" | "ref">,
+) {
   return {
     workflowFile: config.workflowFile,
     ref: config.ref,
@@ -253,9 +256,7 @@ async function findWorkflowRun(
   }
 
   const payload = await parseJson<GitHubWorkflowRunsResponse>(response);
-  return (
-    payload.workflow_runs?.find((run) => matchesDispatch(run, dispatchId, dispatchStartedAtMs, config)) || null
-  );
+  return payload.workflow_runs?.find((run) => matchesDispatch(run, dispatchId, dispatchStartedAtMs, config)) || null;
 }
 
 async function getWorkflowRun(

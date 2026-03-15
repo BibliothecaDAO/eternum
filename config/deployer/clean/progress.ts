@@ -109,7 +109,12 @@ export function createProgressReporter(): ProgressReporter {
         const elapsedMs = Date.now() - stageStartedAt;
         write(
           "success",
-          resolveStageMessage(messages?.success, `${label} completed in ${formatDuration(elapsedMs)}`, result, elapsedMs),
+          resolveStageMessage(
+            messages?.success,
+            `${label} completed in ${formatDuration(elapsedMs)}`,
+            result,
+            elapsedMs,
+          ),
         );
         return result;
       } catch (error) {

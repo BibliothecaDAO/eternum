@@ -99,14 +99,24 @@ describe("executeConfigSteps", () => {
     };
 
     await executeConfigSteps({
-      context: { account: { address: "0x1" } as any, provider, config: {} as any, logger: { log: (...args) => logs.push(args.map(String).join(" ")) } },
+      context: {
+        account: { address: "0x1" } as any,
+        provider,
+        config: {} as any,
+        logger: { log: (...args) => logs.push(args.map(String).join(" ")) },
+      },
       steps: [noisyStep],
       mode: "batched",
       suppressStepLogs: true,
     });
 
     await executeConfigSteps({
-      context: { account: { address: "0x1" } as any, provider, config: {} as any, logger: { log: (...args) => logs.push(args.map(String).join(" ")) } },
+      context: {
+        account: { address: "0x1" } as any,
+        provider,
+        config: {} as any,
+        logger: { log: (...args) => logs.push(args.map(String).join(" ")) },
+      },
       steps: [noisyStep],
       mode: "batched",
       suppressStepLogs: false,

@@ -1,8 +1,8 @@
 name: Factory Torii Deployer
 run-name: >-
-  Factory Torii Deployer / ${{ inputs.env || github.event.inputs.env || 'unknown' }} /
-  ${{ inputs.torii_prefix || github.event.inputs.torii_prefix || 'torii' }} /
-  ${{ inputs.launch_request_id || github.event.inputs.launch_request_id || 'manual' }}
+  Factory Torii Deployer / ${{ inputs.env || github.event.inputs.env || 'unknown' }} / ${{ inputs.torii_prefix ||
+  github.event.inputs.torii_prefix || 'torii' }} / ${{ inputs.launch_request_id || github.event.inputs.launch_request_id
+  || 'manual' }}
 
 on:
   workflow_dispatch:

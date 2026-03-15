@@ -56,9 +56,13 @@ GitHub Actions credentials are selected through GitHub Environments:
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
 
-The workflow does not need CI-provided defaults for Torii namespaces, Cartridge API base, or VRF provider address. Those are defaulted inside the clean deployer module, and the VRF provider default matches the shared slot value from the game env files.
+The workflow does not need CI-provided defaults for Torii namespaces, Cartridge API base, or VRF provider address. Those
+are defaulted inside the clean deployer module, and the VRF provider default matches the shared slot value from the game
+env files.
 
-The clean deployer creates indexers only by dispatching `.github/workflows/factory-torii-deployer.yml` directly with GitHub's workflow API. It waits for that workflow run to finish, and only marks the indexer as created when the workflow concludes with `success`.
+The clean deployer creates indexers only by dispatching `.github/workflows/factory-torii-deployer.yml` directly with
+GitHub's workflow API. It waits for that workflow run to finish, and only marks the indexer as created when the workflow
+concludes with `success`.
 
 When running locally, the clean deployer can fill in missing GitHub dispatch inputs from local tooling:
 
@@ -70,8 +74,10 @@ Whenever one of those fallbacks is used, it logs the reason to stderr.
 
 Artifacts are written to `.context/game-launch/`.
 
-Progress output is written to stderr during execution so CI logs show the current stage and elapsed time without breaking the final JSON written to stdout.
+Progress output is written to stderr during execution so CI logs show the current stage and elapsed time without
+breaking the final JSON written to stdout.
 
 `single_realm_mode` and `two_player_mode` are validated as mutually exclusive.
 
-`durationSeconds` remains a config override. The clean deployer uses it for blitz `season.end_at`, while eternum seasons still send `end_at = 0` because they end on in-game completion conditions.
+`durationSeconds` remains a config override. The clean deployer uses it for blitz `season.end_at`, while eternum seasons
+still send `end_at = 0` because they end on in-game completion conditions.

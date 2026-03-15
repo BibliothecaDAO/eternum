@@ -194,7 +194,13 @@ export async function launchGame(request: LaunchGameRequest): Promise<LaunchGame
       account.execute({
         contractAddress: factoryAddress,
         entrypoint: "create_game",
-        calldata: [shortString.encodeShortString(request.gameName), maxActions, version, seriesNameFelt, seriesGameNumber],
+        calldata: [
+          shortString.encodeShortString(request.gameName),
+          maxActions,
+          version,
+          seriesNameFelt,
+          seriesGameNumber,
+        ],
       }),
     {
       start: `Submitting create_game via ${shortenHash(factoryAddress)}`,

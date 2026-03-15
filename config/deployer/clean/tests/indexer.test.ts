@@ -34,15 +34,18 @@ describe("createIndexer", () => {
     clearGitHubEnv();
 
     await expect(
-      createIndexer({
-        env: "slot",
-        rpcUrl: "https://rpc.example",
-        namespaces: "s1_eternum",
-        worldName: "bltz-fire-gate-42",
-        worldAddress: "0x123",
-      }, {
-        commandRunner: () => null,
-      }),
+      createIndexer(
+        {
+          env: "slot",
+          rpcUrl: "https://rpc.example",
+          namespaces: "s1_eternum",
+          worldName: "bltz-fire-gate-42",
+          worldAddress: "0x123",
+        },
+        {
+          commandRunner: () => null,
+        },
+      ),
     ).rejects.toThrow(
       "Indexer creation requires direct GitHub workflow dispatch. Set GITHUB_TOKEN and GITHUB_REPOSITORY, and provide a ref via --ref or GITHUB_REF_NAME when not running inside GitHub Actions.",
     );

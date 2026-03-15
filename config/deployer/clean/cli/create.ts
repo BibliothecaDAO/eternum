@@ -147,7 +147,10 @@ async function main() {
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),
     singleRealmMode: resolveOptionalBooleanArg(args, "single-realm-mode", ["SINGLE_REALM_MODE"]),
     twoPlayerMode: resolveOptionalBooleanArg(args, "two-player-mode", ["TWO_PLAYER_MODE"]),
-    durationSeconds: resolveOptionalNumber(args["duration-seconds"] || process.env.DURATION_SECONDS, "duration seconds"),
+    durationSeconds: resolveOptionalNumber(
+      args["duration-seconds"] || process.env.DURATION_SECONDS,
+      "duration seconds",
+    ),
     cartridgeApiBase: args["cartridge-api-base"] || process.env.CARTRIDGE_API_BASE || DEFAULT_CARTRIDGE_API_BASE,
     toriiNamespaces: args["torii-namespaces"] || process.env.TORII_NAMESPACES || DEFAULT_NAMESPACE,
     vrfProviderAddress:
