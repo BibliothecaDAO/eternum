@@ -12,7 +12,10 @@ export const WORLD_DEPLOYED_ADDRESS_MAP_KEY = "eternum_world_deployed_address_ma
 export const WORLD_SERIES_METADATA_KEY = "eternum_world_series_metadata";
 
 // Defaults
-export const DEFAULT_VERSION = "180";
+const DEFAULT_VERSION_BLITZ = "180";
+const DEFAULT_VERSION_ETERNUM = "180";
+export const getDefaultVersion = (gameType: string): string =>
+  gameType === "eternum" ? DEFAULT_VERSION_ETERNUM : DEFAULT_VERSION_BLITZ;
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const INDEXER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -87,6 +90,11 @@ export const getDefaultBlitzRegistrationConfig = (chain: ChainType): BlitzRegist
 
 // Public API: reuse runtime helper for SQL base URL
 export const getFactorySqlBaseUrl = (chain: Chain) => getFactorySqlBaseUrlRuntime(chain);
+
+// Bank creation config (eternum only)
+export const BANK_STEPS_FROM_CENTER = 15 * 21;
+export const BANK_NAME_PREFIX = "Central Bank";
+export const BANK_COUNT = 6;
 
 // Torii RPC per environment (admin usage)
 export const getRpcUrlForChain = (chain: Chain | ChainType): string => {

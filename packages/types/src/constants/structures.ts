@@ -300,6 +300,7 @@ export enum CapacityConfig {
   FragmentMineStructure = 8,
   HolySiteStructure = 9,
   CampStructure = 10,
+  BitcoinMineStructure = 11,
 }
 
 export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {
