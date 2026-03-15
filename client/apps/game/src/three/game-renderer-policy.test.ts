@@ -469,6 +469,70 @@ describe("resolveCapabilityAwareRendererEffectPlan", () => {
       },
     });
   });
+
+  it("keeps bloom active while explicitly degrading the remaining unsupported optional effects", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "fxaa",
+        bloomEnabled: true,
+        bloomIntensity: 0.4,
+        capabilities: createRendererBackendCapabilities({
+          supportsBloom: true,
+          supportsToneMappingControl: true,
+        }),
+        chromaticAberrationEnabled: true,
+        colorGrade: {
+          brightness: 0.05,
+          contrast: 0.1,
+          hue: 0,
+          saturation: 0.2,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.1,
+          mode: "cineon",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0.35,
+          enabled: true,
+          offset: 0.2,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        { feature: "colorGrade", reason: "unsupported-backend" },
+        { feature: "vignette", reason: "unsupported-backend" },
+        { feature: "chromaticAberration", reason: "unsupported-backend" },
+      ],
+      plan: {
+        antiAlias: "fxaa",
+        bloom: {
+          enabled: true,
+          intensity: 0.4,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1.1,
+          mode: "cineon",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0.35,
+          enabled: false,
+          offset: 0.2,
+        },
+      },
+    });
+  });
 });
 
 describe("resolveRendererEnvironmentPolicy", () => {
