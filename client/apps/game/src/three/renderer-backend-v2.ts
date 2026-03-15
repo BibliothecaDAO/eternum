@@ -90,6 +90,13 @@ export interface RendererPostProcessController {
   setVignette(input: Partial<Omit<RendererPostProcessPlan["vignette"], "enabled">>): void;
 }
 
+export interface RendererPostProcessRuntime {
+  dispose(): void;
+  renderFrame(pipeline: RendererFramePipeline): void;
+  setPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
+  setSize(width: number, height: number): void;
+}
+
 export type RendererBackendV2Factory = (options: {
   graphicsSetting: GraphicsSettingsType;
   isMobileDevice: boolean;
