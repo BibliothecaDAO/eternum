@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { createWorldFxBackend } from "./world-fx-backends";
 
@@ -30,6 +30,26 @@ function findFirstMesh(root: THREE.Object3D): THREE.Mesh | undefined {
   });
   return mesh;
 }
+
+beforeEach(() => {
+  class MockElement {}
+  const ownerDocument = { defaultView: { Element: MockElement, HTMLElement: MockElement } };
+  vi.stubGlobal("document", {
+    createElement: vi.fn(() =>
+      Object.assign(new MockElement(), {
+        appendChild: vi.fn(),
+        className: "",
+        nodeType: 1,
+        ownerDocument,
+        parentNode: null,
+        remove: vi.fn(),
+        setAttribute: vi.fn(),
+        style: {},
+        textContent: "",
+      }),
+    ),
+  });
+});
 
 describe("createWorldFxBackend", () => {
   it("selects the legacy sprite backend when sprite scene fx are supported", () => {
@@ -137,6 +157,66 @@ describe.each([
     backend.update(1);
     await handle.promise;
 
+    expect(scene.children).toHaveLength(0);
+  });
+});
+
+describe("world fx promise teardown", () => {
+  it("resolves the handle promise when dispose() is called directly", async () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: resolveRendererFxCapabilities({
+        activeMode: "webgpu",
+      }),
+      scene,
+    });
+
+    const handle = backend.spawnIconFx({
+      animate: () => true,
+      isInfinite: true,
+      size: 1,
+      texture: createTexture(),
+      type: "travel",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+
+    handle.dispose();
+    await expect(handle.promise).resolves.toBeUndefined();
+    expect(scene.children).toHaveLength(0);
+  });
+
+  it("resolves all outstanding promises when the backend is destroyed", async () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: resolveRendererFxCapabilities({
+        activeMode: "legacy-webgl",
+      }),
+      scene,
+    });
+
+    const first = backend.spawnIconFx({
+      animate: () => true,
+      isInfinite: true,
+      size: 1,
+      texture: createTexture(),
+      type: "travel",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+    const second = backend.spawnTextFx({
+      color: "#fff",
+      text: "queued",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+
+    backend.destroy();
+
+    await expect(Promise.all([first.promise, second.promise])).resolves.toEqual([undefined, undefined]);
     expect(scene.children).toHaveLength(0);
   });
 });

@@ -6,6 +6,9 @@ import type {
   RendererPostProcessPlan,
 } from "./renderer-backend-v2";
 import {
+  markRendererGpuDeviceLost,
+  markRendererGpuDeviceReady,
+  recordRendererGpuUncapturedError,
   recordRendererInitTelemetry,
   resetRendererGpuTelemetry,
   snapshotRendererGpuTelemetry,
@@ -68,6 +71,36 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
     initTimeMs: input.initTimeMs,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
     requestedMode: input.requestedMode,
+  };
+  syncRendererDiagnosticsWindow();
+}
+
+export function markRendererDiagnosticDeviceReady(): void {
+  markRendererGpuDeviceReady();
+  rendererDiagnosticsState = {
+    ...rendererDiagnosticsState,
+    gpuTelemetry: snapshotRendererGpuTelemetry(),
+  };
+  syncRendererDiagnosticsWindow();
+}
+
+export function markRendererDiagnosticDeviceLost(message?: string): void {
+  markRendererGpuDeviceLost(message);
+  rendererDiagnosticsState = {
+    ...rendererDiagnosticsState,
+    activeMode: rendererDiagnosticsState.activeMode === "webgpu" ? null : rendererDiagnosticsState.activeMode,
+    fallbackReason:
+      rendererDiagnosticsState.activeMode === "webgpu" ? "webgpu-device-lost" : rendererDiagnosticsState.fallbackReason,
+    gpuTelemetry: snapshotRendererGpuTelemetry(),
+  };
+  syncRendererDiagnosticsWindow();
+}
+
+export function recordRendererDiagnosticUncapturedError(message?: string): void {
+  recordRendererGpuUncapturedError(message);
+  rendererDiagnosticsState = {
+    ...rendererDiagnosticsState,
+    gpuTelemetry: snapshotRendererGpuTelemetry(),
   };
   syncRendererDiagnosticsWindow();
 }

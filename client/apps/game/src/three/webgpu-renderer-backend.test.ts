@@ -1,5 +1,6 @@
 import { ACESFilmicToneMapping, CineonToneMapping, ReinhardToneMapping } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetRendererDiagnostics, snapshotRendererDiagnostics, syncRendererBackendDiagnostics } from "./renderer-diagnostics";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 
 beforeEach(() => {
@@ -10,6 +11,7 @@ beforeEach(() => {
   vi.stubGlobal("document", {
     createElement: vi.fn(() => ({ nodeName: "CANVAS" })),
   });
+  resetRendererDiagnostics();
 });
 
 function createRendererSurface() {
@@ -56,9 +58,80 @@ describe("createWebGPURendererBackend", () => {
       supportsChromaticAberration: false,
       supportsColorGrade: false,
       supportsEnvironmentIbl: false,
-      supportsToneMappingControl: true,
+      supportsToneMappingControl: false,
       supportsVignette: false,
       supportsWideLines: false,
+    });
+  });
+
+  it("disposes a partially created renderer when initialization fails", async () => {
+    const renderer = Object.assign(createRendererSurface(), {
+      init: vi.fn(async () => {
+        throw new Error("init failed");
+      }),
+    });
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgpu" as const,
+          renderer,
+        })),
+        now: vi.fn(() => 0),
+      },
+    );
+
+    await expect(backend.initialize()).rejects.toThrow("init failed");
+
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+    expect(backend.renderer).toBeUndefined();
+  });
+
+  it("marks the diagnostics as degraded when the gpu device is lost", async () => {
+    let resolveLost: ((value: { message: string }) => void) | undefined;
+    const renderer = Object.assign(createRendererSurface(), {
+      init: vi.fn(async () => {}),
+    });
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgpu" as const,
+          device: {
+            lost: new Promise<{ message: string }>((resolve) => {
+              resolveLost = resolve;
+            }),
+          },
+          renderer,
+        })),
+        now: vi.fn(() => 10).mockReturnValueOnce(10).mockReturnValueOnce(15),
+      },
+    );
+
+    syncRendererBackendDiagnostics(await backend.initialize());
+    expect(snapshotRendererDiagnostics().activeMode).toBe("webgpu");
+
+    resolveLost?.({ message: "device lost during frame" });
+    await Promise.resolve();
+
+    expect(snapshotRendererDiagnostics()).toMatchObject({
+      activeMode: null,
+      fallbackReason: "webgpu-device-lost",
+      gpuTelemetry: {
+        activeMode: "webgpu",
+        deviceLossMessage: "device lost during frame",
+        deviceStatus: "lost",
+      },
     });
   });
 

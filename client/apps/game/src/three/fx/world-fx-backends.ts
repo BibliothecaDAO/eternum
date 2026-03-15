@@ -427,7 +427,7 @@ abstract class BaseWorldFxBackend implements WorldFxBackend {
   }
 
   public destroy(): void {
-    this.activeEffects.forEach((effect) => {
+    [...this.activeEffects].forEach((effect) => {
       effect.destroy();
     });
     this.activeEffects.clear();
@@ -446,18 +446,30 @@ abstract class BaseWorldFxBackend implements WorldFxBackend {
   protected registerEffect(effect: ManagedWorldFxEffect): WorldFxHandle {
     this.activeEffects.add(effect);
 
-    const promise = new Promise<void>((resolve) => {
-      effect.onComplete(resolve);
-    });
-
     const cleanup = () => {
       this.activeEffects.delete(effect);
     };
+    let resolvePromise: (() => void) | undefined;
+    let settled = false;
+    const finalize = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      resolvePromise?.();
+    };
+
+    const promise = new Promise<void>((resolve) => {
+      resolvePromise = resolve;
+      effect.onComplete(finalize);
+    });
 
     const originalDestroy = effect.destroy.bind(effect);
     effect.destroy = () => {
       originalDestroy();
-      cleanup();
+      finalize();
     };
 
     return {

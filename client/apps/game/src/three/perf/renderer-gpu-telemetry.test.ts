@@ -25,10 +25,14 @@ describe("renderer-gpu-telemetry", () => {
 
     expect(snapshotRendererGpuTelemetry()).toEqual({
       activeMode: "webgpu",
+      deviceLossMessage: null,
+      deviceStatus: "unknown",
       gpuFrameTimeMs: 3.5,
       initTimeMs: 24,
+      lastUncapturedErrorMessage: null,
       lastUploadLabel: "worldmap-cache-replay",
       totalUploadBytes: 152,
+      uncapturedErrorCount: 0,
       uploadBytesByLabel: {
         "worldmap-cache-replay": 152,
       },
@@ -46,10 +50,14 @@ describe("renderer-gpu-telemetry", () => {
 
     expect(snapshotRendererGpuTelemetry()).toEqual({
       activeMode: null,
+      deviceLossMessage: null,
+      deviceStatus: "unknown",
       gpuFrameTimeMs: null,
       initTimeMs: null,
+      lastUncapturedErrorMessage: null,
       lastUploadLabel: null,
       totalUploadBytes: 0,
+      uncapturedErrorCount: 0,
       uploadBytesByLabel: {},
     });
   });

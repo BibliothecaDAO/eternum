@@ -3,6 +3,11 @@ import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardTo
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
+  markRendererDiagnosticDeviceLost,
+  markRendererDiagnosticDeviceReady,
+  recordRendererDiagnosticUncapturedError,
+} from "./renderer-diagnostics";
+import {
   createRendererBackendCapabilities,
   createRendererInitDiagnostics,
   type RendererActiveMode,
@@ -22,7 +27,24 @@ interface WebGPURendererSurface extends RendererSurfaceLike {
 
 interface CreatedWebGPURenderer {
   activeMode: RendererActiveMode;
+  device?: WebGPURendererDevice;
   renderer: WebGPURendererSurface;
+}
+
+interface WebGpuDeviceLostInfo {
+  message?: string;
+}
+
+interface WebGpuDeviceUncapturedErrorEvent {
+  error?: {
+    message?: string;
+  };
+}
+
+interface WebGPURendererDevice {
+  addEventListener?: (type: "uncapturederror", listener: (event: WebGpuDeviceUncapturedErrorEvent) => void) => void;
+  lost?: Promise<WebGpuDeviceLostInfo>;
+  removeEventListener?: (type: "uncapturederror", listener: (event: WebGpuDeviceUncapturedErrorEvent) => void) => void;
 }
 
 interface WebGPURendererBackendDependencies {
@@ -76,6 +98,7 @@ async function createDefaultWebGPURenderer(input: {
 
   return {
     activeMode: input.forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
+    device: resolveWebGpuRendererDevice(renderer),
     renderer,
   };
 }
@@ -95,10 +118,52 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsChromaticAberration: false,
   supportsColorGrade: false,
   supportsEnvironmentIbl: false,
-  supportsToneMappingControl: true,
+  supportsToneMappingControl: false,
   supportsVignette: false,
   supportsWideLines: false,
 });
+
+function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURendererDevice | undefined {
+  const rendererWithBackend = renderer as WebGPURendererSurface & {
+    backend?: {
+      device?: WebGPURendererDevice;
+    };
+  };
+
+  return rendererWithBackend.backend?.device;
+}
+
+function attachWebGpuDeviceDiagnostics(input: {
+  activeMode: RendererActiveMode;
+  device?: WebGPURendererDevice;
+}): () => void {
+  if (input.activeMode !== "webgpu" || !input.device) {
+    return () => {};
+  }
+
+  let disposed = false;
+  const handleUncapturedError = (event: WebGpuDeviceUncapturedErrorEvent) => {
+    if (disposed) {
+      return;
+    }
+
+    recordRendererDiagnosticUncapturedError(event.error?.message);
+  };
+
+  input.device.addEventListener?.("uncapturederror", handleUncapturedError);
+  void input.device.lost?.then((info) => {
+    if (disposed) {
+      return;
+    }
+
+    markRendererDiagnosticDeviceLost(info.message);
+  });
+
+  return () => {
+    disposed = true;
+    input.device?.removeEventListener?.("uncapturederror", handleUncapturedError);
+  };
+}
 
 function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]["mode"]): number {
   switch (mode) {
@@ -127,6 +192,7 @@ export function createWebGPURendererBackend(
   dependencies: WebGPURendererBackendDependencies = defaultDependencies,
 ): RendererBackendV2 {
   let renderer: RendererSurfaceLike | undefined;
+  let cleanupDeviceDiagnostics: (() => void) | undefined;
 
   return {
     capabilities: WEBGPU_RENDERER_BACKEND_CAPABILITIES,
@@ -153,6 +219,8 @@ export function createWebGPURendererBackend(
       renderer.setSize(input.width, input.height);
     },
     dispose() {
+      cleanupDeviceDiagnostics?.();
+      cleanupDeviceDiagnostics = undefined;
       renderer?.dispose();
       renderer = undefined;
     },
@@ -164,11 +232,28 @@ export function createWebGPURendererBackend(
         isMobileDevice: options.isMobileDevice,
         pixelRatio: options.pixelRatio,
       });
+      const releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({
+        activeMode: createdRenderer.activeMode,
+        device: createdRenderer.device,
+      });
 
-      createdRenderer.renderer.setPixelRatio(options.pixelRatio);
-      createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
-      await createdRenderer.renderer.init();
+      try {
+        createdRenderer.renderer.setPixelRatio(options.pixelRatio);
+        createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
+        await createdRenderer.renderer.init();
+      } catch (error) {
+        releaseDeviceDiagnostics();
+        createdRenderer.renderer.dispose();
+        throw error;
+      }
+
+      cleanupDeviceDiagnostics?.();
+      cleanupDeviceDiagnostics = releaseDeviceDiagnostics;
       renderer = createdRenderer.renderer;
+
+      if (createdRenderer.activeMode === "webgpu" && createdRenderer.device) {
+        markRendererDiagnosticDeviceReady();
+      }
 
       return createRendererInitDiagnostics({
         activeMode: createdRenderer.activeMode,

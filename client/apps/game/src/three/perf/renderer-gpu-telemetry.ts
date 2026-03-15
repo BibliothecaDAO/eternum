@@ -2,10 +2,14 @@ import type { RendererActiveMode } from "../renderer-backend-v2";
 
 interface RendererGpuTelemetrySnapshot {
   activeMode: RendererActiveMode | null;
+  deviceLossMessage: string | null;
+  deviceStatus: "lost" | "ready" | "unknown";
   gpuFrameTimeMs: number | null;
   initTimeMs: number | null;
+  lastUncapturedErrorMessage: string | null;
   lastUploadLabel: string | null;
   totalUploadBytes: number;
+  uncapturedErrorCount: number;
   uploadBytesByLabel: Record<string, number>;
 }
 
@@ -14,10 +18,14 @@ const COLOR_UPLOAD_BYTES_PER_INSTANCE = Float32Array.BYTES_PER_ELEMENT * 3;
 
 const createRendererGpuTelemetryState = (): RendererGpuTelemetrySnapshot => ({
   activeMode: null,
+  deviceLossMessage: null,
+  deviceStatus: "unknown",
   gpuFrameTimeMs: null,
   initTimeMs: null,
+  lastUncapturedErrorMessage: null,
   lastUploadLabel: null,
   totalUploadBytes: 0,
+  uncapturedErrorCount: 0,
   uploadBytesByLabel: {},
 });
 
@@ -47,7 +55,35 @@ export function recordRendererInitTelemetry(input: {
   rendererGpuTelemetryState = {
     ...rendererGpuTelemetryState,
     activeMode: input.activeMode,
+    deviceLossMessage: null,
+    deviceStatus: "unknown",
     initTimeMs: input.initTimeMs,
+    lastUncapturedErrorMessage: null,
+    uncapturedErrorCount: 0,
+  };
+}
+
+export function markRendererGpuDeviceReady(): void {
+  rendererGpuTelemetryState = {
+    ...rendererGpuTelemetryState,
+    deviceLossMessage: null,
+    deviceStatus: "ready",
+  };
+}
+
+export function markRendererGpuDeviceLost(message?: string): void {
+  rendererGpuTelemetryState = {
+    ...rendererGpuTelemetryState,
+    deviceLossMessage: message ?? null,
+    deviceStatus: "lost",
+  };
+}
+
+export function recordRendererGpuUncapturedError(message?: string): void {
+  rendererGpuTelemetryState = {
+    ...rendererGpuTelemetryState,
+    lastUncapturedErrorMessage: message ?? null,
+    uncapturedErrorCount: rendererGpuTelemetryState.uncapturedErrorCount + 1,
   };
 }
 
