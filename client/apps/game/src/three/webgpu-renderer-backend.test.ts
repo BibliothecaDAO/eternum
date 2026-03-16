@@ -54,11 +54,14 @@ describe("createWebGPURendererBackend", () => {
     );
 
     expect(backend.capabilities).toEqual({
+      fallbackLightingMode: "no-ibl-balanced-rig",
       supportsBloom: false,
       supportsChromaticAberration: false,
       supportsColorGrade: false,
       supportsEnvironmentIbl: false,
+      supportsWeatherColorPostFx: false,
       supportsToneMappingControl: false,
+      supportsWorldWeatherFx: true,
       supportsVignette: false,
       supportsWideLines: false,
     });

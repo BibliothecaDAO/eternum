@@ -124,7 +124,10 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsChromaticAberration: false,
   supportsColorGrade: false,
   supportsEnvironmentIbl: false,
+  fallbackLightingMode: "no-ibl-balanced-rig",
+  supportsWeatherColorPostFx: false,
   supportsToneMappingControl: false,
+  supportsWorldWeatherFx: true,
   supportsVignette: false,
   supportsWideLines: false,
 });

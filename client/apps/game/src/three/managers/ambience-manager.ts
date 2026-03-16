@@ -1,3 +1,4 @@
+import type { AtmosphereSnapshot } from "@/three/atmosphere/atmosphere-controller";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { WeatherType } from "./weather-manager";
 
@@ -574,6 +575,16 @@ export class AmbienceManager {
     this.applyWeatherVolumeModulation();
   }
 
+  updateFromSnapshot(snapshot: AtmosphereSnapshot, deltaTime: number): void {
+    this.update(
+      snapshot.cycleProgress,
+      snapshot.weatherType,
+      deltaTime,
+      snapshot.intensity,
+      snapshot.stormIntensity,
+    );
+  }
+
   private applyWeatherVolumeModulation(): void {
     this.activeSounds.forEach((activeSound, layerId) => {
       const layerIndex = parseInt(layerId.split("_")[1]);
@@ -604,6 +615,10 @@ export class AmbienceManager {
    */
   getWeatherIntensity(): number {
     return this.params.weatherIntensity;
+  }
+
+  getCurrentWeather(): WeatherType {
+    return this.currentWeather;
   }
 
   /**

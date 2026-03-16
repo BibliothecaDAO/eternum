@@ -103,6 +103,8 @@ const WEBGL_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsColorGrade: true,
   supportsEnvironmentIbl: true,
   supportsToneMappingControl: true,
+  supportsWeatherColorPostFx: true,
+  supportsWorldWeatherFx: true,
   supportsVignette: true,
   supportsWideLines: false,
 });

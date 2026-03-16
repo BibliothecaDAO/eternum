@@ -1,10 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { RainEffect } from "@/three/effects/rain-effect";
+import { type AtmosphereSnapshot } from "@/three/atmosphere/atmosphere-controller";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
-import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -18,13 +17,11 @@ export default class HUDScene {
   private navigator: Navigator;
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
-  private rainEffect!: RainEffect;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
-  private ambientParticles!: AmbientParticleSystem;
   private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
-  private particleSpawnCenter: Vector3 = new Vector3();
+  private atmosphereSnapshot!: AtmosphereSnapshot;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new Scene();
@@ -48,18 +45,14 @@ export default class HUDScene {
 
     this.addAmbientLight();
     this.addHemisphereLight();
-    this.rainEffect = new RainEffect(this.scene);
-    this.rainEffect.addGUIControls(this.GUIFolder);
 
     // Initialize weather and ambience systems
-    this.weatherManager = new WeatherManager(this.scene, this.rainEffect);
+    this.weatherManager = new WeatherManager(this.scene);
     this.weatherManager.addGUIControls(this.GUIFolder);
 
     this.ambienceManager = new AmbienceManager();
     this.ambienceManager.addGUIControls(this.GUIFolder);
-
-    // Initialize ambient particle system (dust motes, fireflies)
-    this.ambientParticles = new AmbientParticleSystem(this.scene);
+    this.atmosphereSnapshot = this.weatherManager.getAtmosphereSnapshot(this.cycleProgress);
 
     // Store subscription reference for cleanup
     this.navigationTargetUnsubscribe = useUIStore.subscribe(
@@ -133,6 +126,10 @@ export default class HUDScene {
     return this.weatherManager.getState();
   }
 
+  getAtmosphereSnapshot(): AtmosphereSnapshot {
+    return this.atmosphereSnapshot;
+  }
+
   public hasActiveLabelAnimations(): boolean {
     return this.navigator?.hasActiveLabel() ?? false;
   }
@@ -148,34 +145,8 @@ export default class HUDScene {
       this.cycleProgress = cycleProgress;
     }
 
-    // Get current weather state
-    const weatherState = this.weatherManager.getState();
-    const currentWeatherType = this.weatherManager.getCurrentWeather();
-
-    // Drive time-of-day and weather layer scheduling in a single pass.
-    this.ambienceManager.update(
-      this.cycleProgress,
-      currentWeatherType,
-      deltaTime,
-      weatherState.intensity,
-      weatherState.stormIntensity,
-    );
-
-    // Update ambient particles (dust motes, fireflies)
-    if (cycleProgress !== undefined) {
-      this.ambientParticles.setTimeProgress(cycleProgress);
-    }
-
-    // Pass wind to ambient particles
-    const windState = this.weatherManager.getWindState();
-    this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
-
-    // Fade out ambient particles during weather
-    this.ambientParticles.setWeatherIntensity(weatherState.intensity);
-
-    // Update particle positions (follow camera)
-    this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
-    this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
+    this.atmosphereSnapshot = this.weatherManager.getAtmosphereSnapshot(this.cycleProgress);
+    this.ambienceManager.updateFromSnapshot(this.atmosphereSnapshot, deltaTime);
   }
 
   onWindowResize(width: number, height: number) {
@@ -205,11 +176,6 @@ export default class HUDScene {
       (this.navigator as any).destroy();
     }
 
-    // Clean up rain effect resources
-    if (this.rainEffect) {
-      this.rainEffect.dispose();
-    }
-
     // Clean up weather manager
     if (this.weatherManager) {
       this.weatherManager.dispose();
@@ -218,11 +184,6 @@ export default class HUDScene {
     // Clean up ambience manager
     if (this.ambienceManager) {
       this.ambienceManager.dispose();
-    }
-
-    // Clean up ambient particles
-    if (this.ambientParticles) {
-      this.ambientParticles.dispose();
     }
 
     // Clean up lights

@@ -1,8 +1,11 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { type AtmosphereSnapshot } from "@/three/atmosphere/atmosphere-controller";
+import { resolveFogPolicy } from "@/three/atmosphere/fog-policy";
+import { resolveStormVisualPolicy } from "@/three/atmosphere/storm-visual-policy";
+import { createWorldWeatherFxBackend, type WorldWeatherFxBackend } from "@/three/atmosphere/world-weather-fx-backend";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
 import { DayNightCycleManager } from "@/three/effects/day-night-cycle";
-import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -52,6 +55,7 @@ import {
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
+import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
@@ -95,7 +99,8 @@ export abstract class HexagonScene {
 
   private stormAmbientBaseIntensity?: number;
   private stormHemisphereBaseIntensity?: number;
-  private weatherAtmosphereState?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">;
+  private weatherAtmosphereState?: AtmosphereSnapshot;
+  private worldWeatherFxBackend!: WorldWeatherFxBackend;
 
   private groundMesh!: Mesh;
   private uiStateUnsubscribe?: () => void;
@@ -105,7 +110,8 @@ export abstract class HexagonScene {
   private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
-  private lastLightningTriggerProgress: number = -1;
+  private delayedLightningKickoffTimeout: NodeJS.Timeout | null = null;
+  private lastLightningAtMs = 0;
   private lightningSequenceTimeout: NodeJS.Timeout | null = null;
   private currentStrikeIndex: number = 0;
   private lightningStrikes: Array<{ delay: number; duration: number }> = [
@@ -207,12 +213,16 @@ export abstract class HexagonScene {
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
     this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
-    this.fogEnabledByUser = false;
+    this.fogEnabledByUser = true;
     if (this.fogEnabledByQuality && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
       const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
       this.updateFogForDistance(initialDistance);
     }
+    this.worldWeatherFxBackend = createWorldWeatherFxBackend({
+      activeMode: snapshotRendererFxCapabilities().activeMode ?? "legacy-webgl",
+      scene: this.scene,
+    });
 
     // subscribe to state changes
     this.uiStateUnsubscribe = useUIStore.subscribe(
@@ -979,6 +989,7 @@ export abstract class HexagonScene {
     this.updateLights();
     this.updateHighlightPulse();
     this.thunderBoltManager.update();
+    this.worldWeatherFxBackend.update(deltaTime, this.camera, this.controls.target);
 
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
@@ -1021,10 +1032,11 @@ export abstract class HexagonScene {
     });
   }
 
-  public setWeatherAtmosphereState(
-    state?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">,
-  ): void {
+  public setWeatherAtmosphereState(state?: AtmosphereSnapshot): void {
     this.weatherAtmosphereState = state ? { ...state } : undefined;
+    if (state) {
+      this.worldWeatherFxBackend.setSnapshot(state);
+    }
   }
 
   protected getAnimationDistanceForView(): number {
@@ -1085,45 +1097,37 @@ export abstract class HexagonScene {
       this.endLightning();
     }
 
-    // Check for lightning trigger based on cycle timing instead of random
     const cycleProgress = this.state.cycleProgress || 0;
-    this.shouldTriggerLightningAtCycleProgress(cycleProgress);
-
-    // Update day/night cycle with camera target for proper light positioning
     const cameraTarget = this.controls.target;
     this.dayNightCycleManager.update(cycleProgress, cameraTarget);
 
     const weatherState = this.weatherAtmosphereState;
-    const cycleStormDepth = cycleProgress < 20 ? 1 - Math.abs(cycleProgress - 10) / 10 : 0;
-
-    const stormDepth =
+    const stormPolicy =
       weatherState !== undefined
-        ? Math.max(0, Math.min(1, Math.max(weatherState.intensity, weatherState.stormIntensity)))
-        : cycleStormDepth;
+        ? resolveStormVisualPolicy({
+            hasScheduledLightning: this.lightningSequenceTimeout !== null || this.delayedLightningKickoffTimeout !== null,
+            lightningActive: this.lightningEndTime > 0,
+            snapshot: weatherState,
+            timeSinceLastLightningMs: currentTime - this.lastLightningAtMs,
+          })
+        : {
+            allowLightning: false,
+            allowStormFill: false,
+            ambientFlicker: 1,
+            hemisphereFlicker: 1,
+            shouldScheduleLightning: false,
+            stormFillIntensity: 0,
+          };
 
-    const skyDarkness = weatherState !== undefined ? weatherState.skyDarkness : stormDepth * 0.6;
-    const fogDensity = weatherState !== undefined ? weatherState.fogDensity : stormDepth * 0.5;
-    const sunOcclusion =
-      weatherState !== undefined
-        ? Math.min(1, weatherState.intensity * 0.75 + weatherState.stormIntensity * 0.25)
-        : stormDepth * 0.7;
-
-    if (stormDepth > 0.001) {
-      this.dayNightCycleManager.applyWeatherModulation(skyDarkness, fogDensity, sunOcclusion);
-    }
+    this.dayNightCycleManager.applyWeatherModulation(
+      weatherState?.skyDarkness ?? 0,
+      weatherState?.fogFactor ?? 0,
+      weatherState?.sunOcclusion ?? 0,
+    );
 
     // Make storm light follow camera to avoid shadow/light direction mismatch
     // Position above and slightly behind camera target for consistent fill lighting
     this.stormLight.position.set(cameraTarget.x, cameraTarget.y + 25, cameraTarget.z + 5);
-
-    // Only update normal storm effects if lightning is not active
-    // Reduced base intensity to avoid overpowering directional light shadows
-    // Also scale storm light with storm period intensity
-    if (this.lightningEndTime === 0) {
-      const baseStormIntensity = stormDepth > 0.05 ? 0.6 : 0.2;
-      const stormIntensity = baseStormIntensity + Math.sin(elapsedTime * 0.3) * 0.15;
-      this.stormLight.intensity = stormIntensity;
-    }
 
     // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
     const dayNightEnabled = this.dayNightCycleManager?.params?.enabled === true;
@@ -1143,11 +1147,40 @@ export abstract class HexagonScene {
       this.stormHemisphereBaseIntensity ??= hemisphereBase;
     }
 
-    const ambientFlicker = 1 + Math.sin(elapsedTime * 2) * 0.06;
-    this.ambientPurpleLight.intensity = ambientBase * ambientFlicker;
+    if (!stormPolicy.allowStormFill) {
+      if (this.lightningSequenceTimeout) {
+        clearTimeout(this.lightningSequenceTimeout);
+        this.lightningSequenceTimeout = null;
+      }
+      this.stormLight.intensity = this.lightningEndTime === 0 ? 0 : this.stormLight.intensity;
+      this.ambientPurpleLight.intensity = ambientBase;
+      this.hemisphereLight.intensity = hemisphereBase;
+      this.cleanupDelayedLightningKickoff();
+      return;
+    }
 
-    const hemisphereFlicker = 1 + Math.sin(elapsedTime * 1.5) * 0.06;
-    this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
+    if (this.lightningEndTime === 0) {
+      const flicker = Math.sin(elapsedTime * 0.3) * 0.08;
+      this.stormLight.intensity = Math.max(0, stormPolicy.stormFillIntensity + flicker);
+    }
+
+    this.ambientPurpleLight.intensity = ambientBase * stormPolicy.ambientFlicker;
+    this.hemisphereLight.intensity = hemisphereBase * stormPolicy.hemisphereFlicker;
+
+    if (stormPolicy.shouldScheduleLightning) {
+      this.scheduleLightningSequence();
+    }
+  }
+
+  private scheduleLightningSequence(): void {
+    if (this.delayedLightningKickoffTimeout || this.lightningSequenceTimeout) {
+      return;
+    }
+
+    this.delayedLightningKickoffTimeout = setTimeout(() => {
+      this.delayedLightningKickoffTimeout = null;
+      this.startLightningSequence();
+    }, 2000);
   }
 
   private startLightningSequence(): void {
@@ -1189,6 +1222,7 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.intensity = 3.5;
     this.mainDirectionalLight.color.setHex(0xe6ccff);
     this.stormLight.intensity = 4;
+    this.lastLightningAtMs = performance.now();
 
     // Spawn thunder bolts around center
     this.thunderBoltManager.spawnThunderBolts();
@@ -1207,31 +1241,16 @@ export abstract class HexagonScene {
     this.lightningEndTime = 0;
   }
 
-  private shouldTriggerLightningAtCycleProgress(cycleProgress: number): boolean {
-    // Trigger lightning only at the start of each cycle (when progress is near 0)
-    const tolerance = 20; // 15% tolerance around cycle start to catch larger tick jumps
-
-    // Check if we're at the start of a cycle and haven't already triggered for this cycle
-    if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
-      this.lastLightningTriggerProgress = 0;
-      // Add 0.5 second delay before starting lightning sequence
-      setTimeout(() => {
-        this.startLightningSequence();
-      }, 2000);
-      return false; // Don't trigger immediately
-    }
-
-    // Reset the trigger flag when we're well into the cycle
-    if (cycleProgress > tolerance * 2) {
-      this.lastLightningTriggerProgress = -1;
-    }
-
-    return false;
-  }
-
   protected shouldEnableStormEffects(): boolean {
     // Override this method in child classes to control storm effects
     return true;
+  }
+
+  private cleanupDelayedLightningKickoff(): void {
+    if (this.delayedLightningKickoffTimeout) {
+      clearTimeout(this.delayedLightningKickoffTimeout);
+      this.delayedLightningKickoffTimeout = null;
+    }
   }
 
   protected shouldCreateGroundMesh(): boolean {
@@ -1240,6 +1259,7 @@ export abstract class HexagonScene {
 
   // Cleanup method for lightning sequence
   protected cleanupLightning(): void {
+    this.cleanupDelayedLightningKickoff();
     if (this.lightningSequenceTimeout) {
       clearTimeout(this.lightningSequenceTimeout);
       this.lightningSequenceTimeout = null;
@@ -1327,6 +1347,7 @@ export abstract class HexagonScene {
       this.scene.remove(this.ambientPurpleLight);
       this.ambientPurpleLight.dispose();
     }
+    this.worldWeatherFxBackend.destroy();
 
     // Clean up light helper
     if (this.lightHelper) {
@@ -1439,7 +1460,19 @@ export abstract class HexagonScene {
   }
 
   private updateFogForDistance(distance: number): void {
-    if (!this.fogEnabledByQuality || !this.fogEnabledByUser || this.currentCameraView === CameraView.Close) {
+    const fogPolicy = resolveFogPolicy({
+      cameraFar: Math.min(this.camera.far, distance * 3.5),
+      cameraView:
+        this.currentCameraView === CameraView.Close
+          ? "close"
+          : this.currentCameraView === CameraView.Medium
+            ? "medium"
+            : "far",
+      qualityEnabled: this.fogEnabledByQuality && this.fogEnabledByUser,
+      weatherFogFactor: this.weatherAtmosphereState?.fogFactor ?? 0,
+    });
+
+    if (!fogPolicy.enabled) {
       if (this.scene.fog) {
         this.scene.fog = null;
       }
@@ -1450,12 +1483,8 @@ export abstract class HexagonScene {
       this.scene.fog = this.fog;
     }
 
-    const clipFar = Math.min(this.camera.far, distance * 3.5);
-    const startFactor = this.currentCameraView === CameraView.Medium ? 0.35 : 0.45;
-    const endFactor = this.currentCameraView === CameraView.Medium ? 0.85 : 0.9;
-
-    const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
-    const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
+    const desiredNear = Math.max(FOG_CONFIG.near, fogPolicy.near ?? FOG_CONFIG.near);
+    const desiredFar = Math.max(desiredNear + 1, fogPolicy.far ?? FOG_CONFIG.far);
 
     if (Math.abs(desiredNear - this.lastFogNear) < 0.5 && Math.abs(desiredFar - this.lastFogFar) < 0.5) {
       return;

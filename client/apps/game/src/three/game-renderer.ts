@@ -1137,12 +1137,13 @@ export default class GameRenderer {
     if (!this.weatherPostProcessingEnabled) return;
     if (!this.hudScene) return;
 
-    const weatherManager = this.hudScene.getWeatherManager();
-    if (!weatherManager) return;
+    const snapshot = this.hudScene.getAtmosphereSnapshot();
+    const intensity = snapshot.intensity;
+    const stormIntensity = snapshot.stormIntensity;
 
-    const state = weatherManager.getState();
-    const intensity = state.intensity;
-    const stormIntensity = state.stormIntensity;
+    if (!this.backend.capabilities.supportsWeatherColorPostFx) {
+      return;
+    }
 
     // Store base values on first call if not already stored
     if (this.basePostProcessingValues.saturation === 0 && this.postProcessingConfig) {
@@ -1266,10 +1267,10 @@ export default class GameRenderer {
     }
     const cycleProgress = useUIStore.getState().cycleProgress || 0;
     this.hudScene.update(deltaTime, cycleProgress);
-    const weatherState = this.hudScene.getWeatherState();
-    this.worldmapScene.setWeatherAtmosphereState(weatherState);
-    this.fastTravelScene?.setWeatherAtmosphereState(weatherState);
-    this.hexceptionScene.setWeatherAtmosphereState(weatherState);
+    const atmosphereSnapshot = this.hudScene.getAtmosphereSnapshot();
+    this.worldmapScene.setWeatherAtmosphereState(atmosphereSnapshot);
+    this.fastTravelScene?.setWeatherAtmosphereState(atmosphereSnapshot);
+    this.hexceptionScene.setWeatherAtmosphereState(atmosphereSnapshot);
 
     // Render the current game scene
     const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;

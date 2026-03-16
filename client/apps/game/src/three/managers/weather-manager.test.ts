@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { WeatherManager, WeatherType } from "./weather-manager";
 
 describe("weather-manager", () => {
-  it("fades rain and storm intensity during departing phase", () => {
+  it("fades rain and storm intensity during departing phase after the storm minimum peak window", () => {
     const rainEffect = {
       setEnabled: () => {},
       setWindFromSystem: () => {},
@@ -15,7 +15,7 @@ describe("weather-manager", () => {
 
     manager.setWeather(WeatherType.STORM);
     manager.clearWeather();
-    manager.update(0.1, new Vector3());
+    manager.update(45.1, new Vector3());
 
     const state = manager.getState();
 

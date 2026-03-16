@@ -1,3 +1,4 @@
+import { createAtmosphereSnapshot, type AtmosphereSnapshot } from "@/three/atmosphere/atmosphere-controller";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { WindSystem } from "@/three/systems/wind-system";
 import { Scene, Vector3 } from "three";
@@ -20,7 +21,7 @@ export enum WeatherType {
  * PEAK: Full weather intensity
  * DEPARTING: Weather fading, clearing
  */
-enum WeatherPhase {
+export enum WeatherPhase {
   CLEAR = "clear",
   APPROACHING = "approaching",
   ARRIVING = "arriving",
@@ -97,8 +98,6 @@ interface WeatherManagerParams {
  * Weather doesn't flip, it arrives. Storms build anticipation.
  */
 export class WeatherManager {
-  private scene: Scene;
-  private rainEffect: RainEffect;
   private windSystem: WindSystem;
 
   // Current state
@@ -120,6 +119,7 @@ export class WeatherManager {
   private autoChangeTimer: number = 0;
   private peakTimer: number = 0;
   private guiStatusIntervalId?: ReturnType<typeof setInterval>;
+  private zeroDepartureIntensities = false;
 
   // Configuration
   private weatherConfigs: Record<WeatherType, WeatherConfig> = {
@@ -171,13 +171,8 @@ export class WeatherManager {
     phaseProgress: 0,
   };
 
-  constructor(scene: Scene, rainEffect: RainEffect, windSystem?: WindSystem) {
-    this.scene = scene;
-    this.rainEffect = rainEffect;
+  constructor(_scene: Scene, _rainEffect?: RainEffect, windSystem?: WindSystem) {
     this.windSystem = windSystem || new WindSystem();
-
-    // Start with rain disabled
-    this.rainEffect.setEnabled(false);
   }
 
   /**
@@ -195,9 +190,6 @@ export class WeatherManager {
 
     // Compute derived intensity values
     this.computeIntensities();
-
-    // Apply effects
-    this.applyEffects(deltaTime, spawnCenter);
 
     // Notify listeners
     this.notifyListeners();
@@ -217,6 +209,10 @@ export class WeatherManager {
   private updatePhase(deltaTime: number): void {
     if (this.currentPhase === WeatherPhase.CLEAR && this.targetType === WeatherType.CLEAR) {
       return; // Nothing to do
+    }
+
+    if (this.currentPhase === WeatherPhase.PEAK) {
+      this.peakTimer += deltaTime;
     }
 
     this.phaseElapsed += deltaTime;
@@ -243,7 +239,10 @@ export class WeatherManager {
       case WeatherPhase.ARRIVING:
         return config.arriveDuration;
       case WeatherPhase.PEAK:
-        // Peak duration is controlled by peakTimer, not phaseProgress
+        if (this.targetType === WeatherType.CLEAR) {
+          const minimumPeakDuration = this.weatherConfigs[this.currentType].peakMinDuration;
+          return Math.max(0, minimumPeakDuration - this.peakTimer);
+        }
         return this.params.peakDuration;
       case WeatherPhase.DEPARTING:
         return config.departDuration;
@@ -276,7 +275,7 @@ export class WeatherManager {
 
       case WeatherPhase.PEAK:
         // Check if we should start departing
-        if (this.targetType === WeatherType.CLEAR) {
+        if (this.targetType === WeatherType.CLEAR && this.peakTimer >= this.weatherConfigs[this.currentType].peakMinDuration) {
           this.currentPhase = WeatherPhase.DEPARTING;
         }
         // Otherwise stay at peak
@@ -287,6 +286,7 @@ export class WeatherManager {
         this.currentType = WeatherType.CLEAR;
         this.targetType = WeatherType.CLEAR;
         this.departingFromType = null;
+        this.zeroDepartureIntensities = false;
         this.intensity = 0;
         break;
     }
@@ -334,6 +334,14 @@ export class WeatherManager {
 
       case WeatherPhase.DEPARTING:
         // Everything fades
+        if (this.zeroDepartureIntensities) {
+          this.intensity = 0;
+          this.rainIntensity = 0;
+          this.stormIntensity = 0;
+          this.fogDensity = 0;
+          this.skyDarkness = 0;
+          break;
+        }
         const fadeOut = 1 - eased;
         this.intensity = 0.8 * fadeOut;
         this.rainIntensity = config.peakRainIntensity * fadeOut;
@@ -341,20 +349,6 @@ export class WeatherManager {
         this.fogDensity = 0.7 * fadeOut;
         this.skyDarkness = 0.8 * fadeOut;
         break;
-    }
-  }
-
-  private applyEffects(deltaTime: number, spawnCenter?: Vector3): void {
-    // Apply rain effect
-    const shouldRain = this.rainIntensity > 0.1;
-    this.rainEffect.setEnabled(shouldRain);
-
-    if (shouldRain) {
-      // Pass wind to rain effect
-      const windState = this.windSystem.getState();
-      this.rainEffect.setWindFromSystem(windState.direction, windState.effectiveSpeed);
-      this.rainEffect.setIntensity(this.rainIntensity);
-      this.rainEffect.update(deltaTime, spawnCenter);
     }
   }
 
@@ -390,25 +384,56 @@ export class WeatherManager {
   transitionToWeather(weather: WeatherType): void {
     if (weather === this.targetType) return;
 
-    // If we're at peak and target is CLEAR, start departing
     if (weather === WeatherType.CLEAR && this.currentPhase === WeatherPhase.PEAK) {
       this.targetType = WeatherType.CLEAR;
       this.departingFromType = this.currentType;
-      this.advancePhase(); // Will set to DEPARTING
+      this.zeroDepartureIntensities = false;
+      return;
+    }
+
+    if (weather === WeatherType.CLEAR) {
+      const departingFromType =
+        this.currentType !== WeatherType.CLEAR ? this.currentType : this.departingFromType ?? WeatherType.CLEAR;
+      this.currentType = WeatherType.CLEAR;
+      this.targetType = WeatherType.CLEAR;
+      this.departingFromType = departingFromType;
+      this.currentPhase = WeatherPhase.DEPARTING;
+      this.phaseElapsed = 0;
+      this.phaseProgress = 0;
+      this.zeroDepartureIntensities = true;
+      this.intensity = 0;
+      this.rainIntensity = 0;
+      this.stormIntensity = 0;
+      this.fogDensity = 0;
+      this.skyDarkness = 0;
       return;
     }
 
     // If we're clear, start approaching
     if (this.currentPhase === WeatherPhase.CLEAR) {
+      this.currentType = weather;
       this.targetType = weather;
       this.phaseElapsed = 0;
       this.phaseProgress = 0;
       this.currentPhase = WeatherPhase.APPROACHING;
+      this.zeroDepartureIntensities = false;
       return;
     }
 
-    // If we're in a transition, just update target
+    if (this.currentPhase === WeatherPhase.PEAK || this.currentPhase === WeatherPhase.DEPARTING) {
+      this.currentType = weather;
+      this.targetType = weather;
+      this.departingFromType = null;
+      this.currentPhase = WeatherPhase.ARRIVING;
+      this.phaseElapsed = 0;
+      this.phaseProgress = 0;
+      this.zeroDepartureIntensities = false;
+      return;
+    }
+
+    this.currentType = weather;
     this.targetType = weather;
+    this.zeroDepartureIntensities = false;
   }
 
   /**
@@ -420,6 +445,8 @@ export class WeatherManager {
     this.departingFromType = null;
     this.phaseElapsed = 0;
     this.phaseProgress = 0;
+    this.peakTimer = 0;
+    this.zeroDepartureIntensities = false;
 
     if (weather === WeatherType.CLEAR) {
       this.currentPhase = WeatherPhase.CLEAR;
@@ -431,6 +458,7 @@ export class WeatherManager {
     } else {
       this.currentPhase = WeatherPhase.PEAK;
       const config = this.weatherConfigs[weather];
+      this.peakTimer = 0;
       this.intensity = 0.85;
       this.rainIntensity = config.peakRainIntensity;
       this.stormIntensity = config.stormMultiplier;
@@ -471,6 +499,14 @@ export class WeatherManager {
       this.currentPhase !== WeatherPhase.CLEAR && this.currentPhase !== WeatherPhase.PEAK;
     this.cachedState.phaseProgress = this.phaseProgress;
     return this.cachedState;
+  }
+
+  getAtmosphereSnapshot(cycleProgress: number): AtmosphereSnapshot {
+    return createAtmosphereSnapshot({
+      cycleProgress,
+      weatherState: this.getState(),
+      windState: this.getWindState(),
+    });
   }
 
   /**

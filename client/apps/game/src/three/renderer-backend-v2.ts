@@ -10,6 +10,9 @@ export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
   supportsToneMappingControl: boolean;
   supportsColorGrade: boolean;
+  supportsWorldWeatherFx: boolean;
+  supportsWeatherColorPostFx: boolean;
+  fallbackLightingMode: "none" | "no-ibl-balanced-rig";
   supportsBloom: boolean;
   supportsVignette: boolean;
   supportsChromaticAberration: boolean;
@@ -111,6 +114,9 @@ export function createRendererBackendCapabilities(
     supportsChromaticAberration: input.supportsChromaticAberration ?? false,
     supportsColorGrade: input.supportsColorGrade ?? false,
     supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
+    supportsWorldWeatherFx: input.supportsWorldWeatherFx ?? true,
+    supportsWeatherColorPostFx: input.supportsWeatherColorPostFx ?? false,
+    fallbackLightingMode: input.fallbackLightingMode ?? "none",
     supportsToneMappingControl: input.supportsToneMappingControl ?? false,
     supportsVignette: input.supportsVignette ?? false,
     supportsWideLines: input.supportsWideLines ?? false,

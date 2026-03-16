@@ -26,11 +26,14 @@ describe("renderer-diagnostics", () => {
       requestedMode: "experimental-webgpu-auto",
     });
     setRendererDiagnosticCapabilities({
+      fallbackLightingMode: "no-ibl-balanced-rig",
       supportsBloom: false,
       supportsChromaticAberration: false,
       supportsColorGrade: false,
       supportsEnvironmentIbl: false,
+      supportsWeatherColorPostFx: false,
       supportsToneMappingControl: true,
+      supportsWorldWeatherFx: true,
       supportsVignette: false,
       supportsWideLines: false,
     });
@@ -84,7 +87,10 @@ describe("renderer-diagnostics", () => {
         supportsChromaticAberration: false,
         supportsColorGrade: false,
         supportsEnvironmentIbl: false,
+        supportsWeatherColorPostFx: false,
         supportsToneMappingControl: true,
+        supportsWorldWeatherFx: true,
+        fallbackLightingMode: "no-ibl-balanced-rig",
         supportsVignette: false,
         supportsWideLines: false,
       },
@@ -156,11 +162,14 @@ describe("renderer-diagnostics", () => {
       requestedMode: "legacy-webgl",
     });
     setRendererDiagnosticCapabilities({
+      fallbackLightingMode: "none",
       supportsBloom: true,
       supportsChromaticAberration: true,
       supportsColorGrade: true,
       supportsEnvironmentIbl: true,
+      supportsWeatherColorPostFx: true,
       supportsToneMappingControl: true,
+      supportsWorldWeatherFx: true,
       supportsVignette: true,
       supportsWideLines: false,
     });
@@ -173,7 +182,10 @@ describe("renderer-diagnostics", () => {
         supportsChromaticAberration: true,
         supportsColorGrade: true,
         supportsEnvironmentIbl: true,
+        supportsWeatherColorPostFx: true,
         supportsToneMappingControl: true,
+        supportsWorldWeatherFx: true,
+        fallbackLightingMode: "none",
         supportsVignette: true,
         supportsWideLines: false,
       },
