@@ -1396,7 +1396,7 @@ export const GameEntryModal = ({
     seasonPassAddress,
     rpcUrl: selectedWorldRpcUrl,
     enabled: isOpen && isEternumMode,
-    refetchIntervalMs: 15_000,
+    refetchIntervalMs: 0,
   });
   const {
     data: seasonOccupiedCoordKeys = [],
@@ -1423,6 +1423,14 @@ export const GameEntryModal = ({
   });
   const seasonOccupiedSlotsError =
     seasonOccupiedSlotsErrorRaw instanceof Error ? seasonOccupiedSlotsErrorRaw.message : null;
+  const seasonPassInventoryWarning = useMemo(() => {
+    if (!seasonPassInventoryError) return null;
+    const normalized = seasonPassInventoryError.toLowerCase();
+    if (normalized.includes("does not expose token enumeration")) {
+      return null;
+    }
+    return seasonPassInventoryError;
+  }, [seasonPassInventoryError]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -2591,7 +2599,7 @@ export const GameEntryModal = ({
                   mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
                   onRefreshSeasonPassInventory={refetchSeasonPassInventory}
                   isRefreshingSeasonPassInventory={isLoadingSeasonPassInventory}
-                  seasonPassInventoryError={seasonPassInventoryError}
+                  seasonPassInventoryError={seasonPassInventoryWarning}
                 />
               </motion.div>
             )}
@@ -2625,7 +2633,7 @@ export const GameEntryModal = ({
                   occupiedCoordKeys={seasonOccupiedCoordKeys}
                   isLoadingOccupiedSlots={isLoadingSeasonOccupiedSlots}
                   occupiedSlotsError={seasonOccupiedSlotsError}
-                  seasonPassInventoryError={seasonPassInventoryError}
+                  seasonPassInventoryError={seasonPassInventoryWarning}
                 />
               </motion.div>
             )}
