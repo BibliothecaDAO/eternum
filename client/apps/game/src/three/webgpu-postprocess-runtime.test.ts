@@ -67,9 +67,7 @@ describe("createWebGPUPostProcessRuntime", () => {
       scene: null,
       setMRT: vi.fn(),
     };
-    const outputNode = { id: "output-node" };
     const createPass = vi.fn(() => scenePass);
-    const createRenderOutput = vi.fn(() => outputNode);
 
     const runtime = createWebGPUPostProcessRuntime(
       {
@@ -78,7 +76,6 @@ describe("createWebGPUPostProcessRuntime", () => {
       {
         createPass,
         createPostProcessing: vi.fn(() => postProcessing as never),
-        createRenderOutput,
       },
     );
 
@@ -92,9 +89,8 @@ describe("createWebGPUPostProcessRuntime", () => {
 
     expect(createPass).toHaveBeenCalledWith({ id: "main-scene" }, { id: "main-camera" });
     expect(scenePass.getTextureNode).not.toHaveBeenCalledWith("output");
-    expect(createRenderOutput).toHaveBeenCalledWith(scenePass, renderer.toneMapping, "srgb");
-    expect(postProcessing.outputColorTransform).toBe(false);
-    expect(postProcessing.outputNode).toBe(outputNode);
+    expect(postProcessing.outputColorTransform).toBe(true);
+    expect(postProcessing.outputNode).toBe(scenePass);
     expect(postProcessing.needsUpdate).toBe(true);
     expect(renderer.toneMappingExposure).toBe(1.25);
     expect(postProcessing.render).toHaveBeenCalledTimes(1);
@@ -128,9 +124,6 @@ describe("createWebGPUPostProcessRuntime", () => {
       scene: null,
       setMRT: vi.fn(),
     };
-    const outputNode = { id: "output-node" };
-    const createRenderOutput = vi.fn(() => outputNode);
-
     const runtime = createWebGPUPostProcessRuntime(
       {
         renderer: renderer as never,
@@ -138,7 +131,6 @@ describe("createWebGPUPostProcessRuntime", () => {
       {
         createPass: vi.fn(() => scenePass),
         createPostProcessing: vi.fn(() => postProcessing as never),
-        createRenderOutput,
       },
     );
 
@@ -147,8 +139,7 @@ describe("createWebGPUPostProcessRuntime", () => {
       mainScene: { id: "main-scene" } as never,
     });
 
-    expect(createRenderOutput).toHaveBeenCalledWith(scenePass, 7, "srgb");
-    expect(postProcessing.outputNode).toBe(outputNode);
+    expect(postProcessing.outputNode).toBe(scenePass);
     expect(postProcessing.render).toHaveBeenCalledTimes(1);
   });
 
@@ -185,9 +176,7 @@ describe("createWebGPUPostProcessRuntime", () => {
       setMRT: vi.fn(),
     };
     const mrtNode = { id: "mrt-node" };
-    const outputNode = { id: "output-node" };
     const createBloom = vi.fn(() => bloomNode);
-    const createRenderOutput = vi.fn(() => outputNode);
 
     const runtime = createWebGPUPostProcessRuntime(
       {
@@ -198,7 +187,6 @@ describe("createWebGPUPostProcessRuntime", () => {
         createBloomMrt: vi.fn(() => mrtNode),
         createPass: vi.fn(() => scenePass),
         createPostProcessing: vi.fn(() => postProcessing as never),
-        createRenderOutput,
       },
     );
 
@@ -220,6 +208,7 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(scenePass.getTextureNode).toHaveBeenCalledWith("emissive");
     expect(createBloom).toHaveBeenCalledWith(emissiveNode, 0.4);
     expect(sceneColorNode.add).toHaveBeenCalledWith(bloomNode);
-    expect(createRenderOutput).toHaveBeenCalledWith(combinedOutputNode, renderer.toneMapping, "srgb");
+    expect(postProcessing.outputColorTransform).toBe(true);
+    expect(postProcessing.outputNode).toBe(combinedOutputNode);
   });
 });

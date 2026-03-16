@@ -1,6 +1,6 @@
 import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping, type Camera, type Scene } from "three";
 import { PostProcessing } from "three/webgpu";
-import { pass, renderOutput, emissive, mrt, output } from "three/tsl";
+import { pass, emissive, mrt, output } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
@@ -31,7 +31,6 @@ interface WebGPUPostProcessRuntimeDependencies {
   createBloomMrt(): unknown;
   createPass(scene: Scene, camera: Camera): WebGPUScenePass;
   createPostProcessing(renderer: RendererSurfaceLike): WebGPUPostProcessing;
-  createRenderOutput(colorNode: unknown, toneMapping: number, outputColorSpace: string | undefined): unknown;
 }
 
 const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
@@ -44,8 +43,6 @@ const defaultDependencies: WebGPUPostProcessRuntimeDependencies = {
   createBloomMrt: () => mrt({ output, emissive }) as unknown,
   createPass: (scene, camera) => pass(scene, camera) as unknown as WebGPUScenePass,
   createPostProcessing: (renderer) => new PostProcessing(renderer as never) as unknown as WebGPUPostProcessing,
-  createRenderOutput: (colorNode, toneMapping, outputColorSpace) =>
-    renderOutput(colorNode as never, toneMapping, outputColorSpace) as unknown,
 };
 
 export function createWebGPUPostProcessRuntime(
@@ -67,7 +64,7 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
     private readonly dependencies: WebGPUPostProcessRuntimeDependencies,
   ) {
     this.postProcessing = this.dependencies.createPostProcessing(this.renderer);
-    this.postProcessing.outputColorTransform = false;
+    this.postProcessing.outputColorTransform = true;
   }
 
   setPlan(plan: RendererPostProcessPlan): RendererPostProcessController {
@@ -139,11 +136,7 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
       outputNode = sceneColorNode.add?.(bloomNode) ?? outputNode;
     }
 
-    this.postProcessing.outputNode = this.dependencies.createRenderOutput(
-      outputNode,
-      this.renderer.toneMapping,
-      this.renderer.outputColorSpace,
-    );
+    this.postProcessing.outputNode = outputNode;
     this.postProcessing.needsUpdate = true;
   }
 }
