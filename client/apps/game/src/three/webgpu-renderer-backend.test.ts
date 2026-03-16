@@ -58,7 +58,7 @@ describe("createWebGPURendererBackend", () => {
       supportsChromaticAberration: false,
       supportsColorGrade: false,
       supportsEnvironmentIbl: false,
-      supportsToneMappingControl: true,
+      supportsToneMappingControl: false,
       supportsVignette: false,
       supportsWideLines: false,
     });

@@ -120,7 +120,7 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsChromaticAberration: false,
   supportsColorGrade: false,
   supportsEnvironmentIbl: false,
-  supportsToneMappingControl: true,
+  supportsToneMappingControl: false,
   supportsVignette: false,
   supportsWideLines: false,
 });
