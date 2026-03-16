@@ -50,7 +50,7 @@ import {
 } from "./game-entry-settlement.utils";
 import { Coord, Direction, ResourcesIds } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
-import { CallData, type Account } from "starknet";
+import { CallData, type Account, uint256 } from "starknet";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -212,6 +212,28 @@ const mapSeasonSettleError = (error: unknown): string => {
   }
 
   return "Settlement transaction failed. Please try another placement.";
+};
+
+const getNormalizedErrorMessage = (error: unknown): string =>
+  (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
+
+const isRealmAlreadyMintedError = (error: unknown): boolean => {
+  const message = getNormalizedErrorMessage(error);
+  return message.includes("already minted") || message.includes("already exists") || message.includes("token exists");
+};
+
+const mapSeasonPassMintError = (error: unknown): string => {
+  const message = getNormalizedErrorMessage(error);
+
+  if (message.includes("only realm owner")) {
+    return "You can only mint a season pass for a realm ID owned by your wallet.";
+  }
+
+  if (message.includes("already minted")) {
+    return "A season pass already exists for that realm ID in this wallet.";
+  }
+
+  return "Failed to mint realm/season pass. Try another realm ID.";
 };
 
 const SEASON_MAP_HEX_RADIUS = 6.5;
@@ -579,7 +601,23 @@ const DEFAULT_SEASON_PLACEMENT: SeasonPlacement = {
   point: 0,
 };
 
-const SeasonPassRequiredPhase = ({ onGetSeasonPass }: { onGetSeasonPass: () => void }) => {
+const SeasonPassRequiredPhase = ({
+  onGetSeasonPass,
+  canUseSandboxMintFlow,
+  mintRealmTokenIdInput,
+  onMintRealmTokenIdInputChange,
+  onMintRealmAndSeasonPass,
+  isMintingRealmAndSeasonPass,
+  mintRealmAndSeasonPassError,
+}: {
+  onGetSeasonPass: () => void;
+  canUseSandboxMintFlow: boolean;
+  mintRealmTokenIdInput: string;
+  onMintRealmTokenIdInputChange: (value: string) => void;
+  onMintRealmAndSeasonPass: () => void;
+  isMintingRealmAndSeasonPass: boolean;
+  mintRealmAndSeasonPassError: string | null;
+}) => {
   return (
     <div className="flex flex-col items-center text-center">
       <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -595,6 +633,42 @@ const SeasonPassRequiredPhase = ({ onGetSeasonPass }: { onGetSeasonPass: () => v
           <span>Get a Season Pass</span>
         </div>
       </Button>
+      {canUseSandboxMintFlow && (
+        <div className="mt-3 w-full rounded-md border border-gold/25 bg-black/20 p-3 text-left">
+          <p className="text-[11px] text-gold/70 mb-2">
+            Sandbox shortcut: mint a mock realm and a season pass for the same realm ID.
+          </p>
+          <label className="block text-[11px] text-gold/70 mb-2">
+            Realm ID
+            <input
+              type="text"
+              inputMode="numeric"
+              value={mintRealmTokenIdInput}
+              onChange={(event) => onMintRealmTokenIdInputChange(event.target.value)}
+              className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+              placeholder="e.g. 1"
+            />
+          </label>
+          <Button
+            onClick={onMintRealmAndSeasonPass}
+            disabled={isMintingRealmAndSeasonPass}
+            className="w-full h-10 !text-brown !bg-emerald-400 rounded-md"
+            forceUppercase={false}
+          >
+            <div className="flex items-center justify-center gap-2">
+              {isMintingRealmAndSeasonPass ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Castle className="w-4 h-4" />
+              )}
+              <span>{isMintingRealmAndSeasonPass ? "Minting..." : "Mint Realm + Season Pass"}</span>
+            </div>
+          </Button>
+          {mintRealmAndSeasonPassError && (
+            <p className="mt-2 text-[11px] text-red-200/90">{mintRealmAndSeasonPassError}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -1267,13 +1341,19 @@ export const GameEntryModal = ({
   const [isSubmittingSeasonSettlement, setIsSubmittingSeasonSettlement] = useState(false);
   const [seasonSettlementError, setSeasonSettlementError] = useState<string | null>(null);
   const [seasonSettlementComplete, setSeasonSettlementComplete] = useState(false);
+  const [mintRealmTokenIdInput, setMintRealmTokenIdInput] = useState("1");
+  const [isMintingRealmAndSeasonPass, setIsMintingRealmAndSeasonPass] = useState(false);
+  const [mintRealmAndSeasonPassError, setMintRealmAndSeasonPassError] = useState<string | null>(null);
   const hasEnteredGameRef = useRef(false);
 
-  const seasonPassAddress = worldMeta?.seasonPassAddress ?? getSeasonAddresses(chain).seasonPass;
+  const seasonAddresses = getSeasonAddresses(chain);
+  const seasonPassAddress = worldMeta?.seasonPassAddress ?? seasonAddresses.seasonPass;
+  const realmsAddress = seasonAddresses.realms;
   const {
     seasonPasses,
     isLoading: isLoadingSeasonPassInventory,
     error: seasonPassInventoryError,
+    refetch: refetchSeasonPassInventory,
   } = useSeasonPassInventory({
     chain,
     ownerAddress: account?.address,
@@ -1312,6 +1392,8 @@ export const GameEntryModal = ({
       setIsSubmittingSeasonSettlement(false);
       setSeasonSettlementError(null);
       setSeasonSettlementComplete(false);
+      setIsMintingRealmAndSeasonPass(false);
+      setMintRealmAndSeasonPassError(null);
     }
   }, [isOpen]);
 
@@ -1914,6 +1996,80 @@ export const GameEntryModal = ({
     window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
   }, []);
 
+  const canUseSandboxMintFlow = isEternumMode && (chain === "slot" || chain === "slottest");
+
+  const handleMintRealmAndSeasonPass = useCallback(async () => {
+    if (!account?.address) {
+      setMintRealmAndSeasonPassError("Connect your wallet first.");
+      return;
+    }
+    if (!seasonPassAddress || !realmsAddress) {
+      setMintRealmAndSeasonPassError("Season contracts are not configured for this world.");
+      return;
+    }
+
+    const tokenInput = mintRealmTokenIdInput.trim();
+    if (tokenInput.length === 0) {
+      setMintRealmAndSeasonPassError("Enter a realm ID to mint.");
+      return;
+    }
+
+    let realmId: bigint;
+    try {
+      realmId = BigInt(tokenInput);
+    } catch {
+      setMintRealmAndSeasonPassError("Realm ID must be a valid integer.");
+      return;
+    }
+
+    if (realmId < 0n) {
+      setMintRealmAndSeasonPassError("Realm ID cannot be negative.");
+      return;
+    }
+
+    setIsMintingRealmAndSeasonPass(true);
+    setMintRealmAndSeasonPassError(null);
+
+    try {
+      const signer = account as unknown as Account;
+
+      try {
+        const mintRealmResult = await signer.execute({
+          contractAddress: realmsAddress,
+          entrypoint: "mint",
+          calldata: CallData.compile([uint256.bnToUint256(realmId)]),
+        });
+        await waitForSubmittedTransaction(mintRealmResult, "mint test realm");
+      } catch (realmMintError) {
+        if (!isRealmAlreadyMintedError(realmMintError)) {
+          throw realmMintError;
+        }
+      }
+
+      const mintSeasonPassResult = await signer.execute({
+        contractAddress: seasonPassAddress,
+        entrypoint: "mint",
+        calldata: CallData.compile([account.address, uint256.bnToUint256(realmId)]),
+      });
+      await waitForSubmittedTransaction(mintSeasonPassResult, "mint season pass");
+
+      await refetchSeasonPassInventory();
+      setSelectedSeasonPassTokenId(realmId);
+      setMintRealmAndSeasonPassError(null);
+    } catch (error) {
+      setMintRealmAndSeasonPassError(mapSeasonPassMintError(error));
+    } finally {
+      setIsMintingRealmAndSeasonPass(false);
+    }
+  }, [
+    account,
+    seasonPassAddress,
+    realmsAddress,
+    mintRealmTokenIdInput,
+    waitForSubmittedTransaction,
+    refetchSeasonPassInventory,
+  ]);
+
   // Enter game handler - navigates to the game.
   // Does NOT prefetch structures from SQL — the GameLoadingOverlay will wait for
   // usePlayerStructureSync to populate RECS, then navigate to the player's realm.
@@ -2377,7 +2533,15 @@ export const GameEntryModal = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <SeasonPassRequiredPhase onGetSeasonPass={handleGetSeasonPass} />
+                <SeasonPassRequiredPhase
+                  onGetSeasonPass={handleGetSeasonPass}
+                  canUseSandboxMintFlow={canUseSandboxMintFlow}
+                  mintRealmTokenIdInput={mintRealmTokenIdInput}
+                  onMintRealmTokenIdInputChange={setMintRealmTokenIdInput}
+                  onMintRealmAndSeasonPass={handleMintRealmAndSeasonPass}
+                  isMintingRealmAndSeasonPass={isMintingRealmAndSeasonPass}
+                  mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
+                />
               </motion.div>
             )}
             {phase === "season-placement" && (
