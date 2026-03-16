@@ -609,6 +609,10 @@ export class ArmyModel {
     return this.models.get(modelType);
   }
 
+  public getAssignedModelType(entityId: number): ModelType | undefined {
+    return this.entityModelMap.get(entityId);
+  }
+
   public allocateInstanceSlot(entityId: number): number {
     const existingSlot = this.instanceData.get(entityId)?.matrixIndex;
     if (existingSlot !== undefined) {

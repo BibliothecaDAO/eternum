@@ -75,7 +75,7 @@ import {
 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
-import { preloadAllCosmeticAssets } from "../cosmetics";
+import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
@@ -578,6 +578,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
+  private cosmeticsSubscriptionCleanup?: () => void;
   private toriiStreamManager?: ToriiStreamManager;
   private toriiBoundsAreaKey: string | null = null;
   private toriiBoundsUpdateCounts: Record<ToriiBoundsCounterKey, number> = {
@@ -697,6 +698,14 @@ export default class WorldmapScene extends WarpTravel {
       this.requestChunkRefresh(true, "visibility_recovery");
     };
     document.addEventListener("visibilitychange", this.visibilityChangeHandler);
+    this.cosmeticsSubscriptionCleanup = playerCosmeticsStore.subscribe((owner) => {
+      if (!owner) {
+        return;
+      }
+
+      this.armyManager.refreshCosmeticsForOwner(owner);
+      this.structureManager.refreshCosmeticsForOwner(owner);
+    });
 
     // Initialize the battle direction manager
     this.battleDirectionManager = new BattleDirectionManager(
@@ -5314,6 +5323,8 @@ export default class WorldmapScene extends WarpTravel {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
       this.visibilityChangeHandler = undefined;
     }
+    this.cosmeticsSubscriptionCleanup?.();
+    this.cosmeticsSubscriptionCleanup = undefined;
 
     super.destroy();
   }

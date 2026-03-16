@@ -1997,6 +1997,30 @@ export class ArmyManager {
     return this.visibleArmyOrder.length;
   }
 
+  public refreshCosmeticsForOwner(owner: string | bigint): void {
+    const normalizedOwner =
+      typeof owner === "bigint" ? `0x${owner.toString(16)}` : owner.toLowerCase().startsWith("0x") ? owner.toLowerCase() : owner;
+
+    this.armies.forEach((army, entityId) => {
+      const armyOwner = `0x${army.owner.address.toString(16)}`;
+      if (armyOwner !== normalizedOwner) {
+        return;
+      }
+
+      const slot = this.visibleArmyIndices.get(entityId);
+      if (slot === undefined) {
+        return;
+      }
+
+      const assignedModelType = this.armyModel.getAssignedModelType(this.toNumericId(entityId));
+      if (!assignedModelType) {
+        return;
+      }
+
+      this.refreshArmyInstance(army, slot, assignedModelType, true);
+    });
+  }
+
   public getActivePathCount(): number {
     return this.pathRenderer.getStats().activePaths;
   }

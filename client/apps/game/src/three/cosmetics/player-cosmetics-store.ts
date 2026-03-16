@@ -54,13 +54,13 @@ const createEmptySnapshot = (owner: string): PlayerCosmeticsSnapshot => ({
 class PlayerCosmeticsStore {
   private snapshots = new Map<string, PlayerCosmeticsSnapshot>();
   private readyPromise: Promise<void> = Promise.resolve();
-  private listeners = new Set<() => void>();
+  private listeners = new Set<(owner?: string) => void>();
 
-  private emitChange(): void {
-    this.listeners.forEach((listener) => listener());
+  private emitChange(owner?: string): void {
+    this.listeners.forEach((listener) => listener(owner));
   }
 
-  subscribe(listener: () => void): () => void {
+  subscribe(listener: (owner?: string) => void): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
@@ -90,7 +90,7 @@ class PlayerCosmeticsStore {
       pendingBlitzLoadouts: snapshot.pendingBlitzLoadouts ?? {},
       activeBlitzLoadouts: snapshot.activeBlitzLoadouts ?? {},
     });
-    this.emitChange();
+    this.emitChange(snapshot.owner);
   }
 
   applySelection(owner: ContractAddress | string | bigint, selection: PlayerCosmeticSelection): void {
@@ -198,7 +198,7 @@ class PlayerCosmeticsStore {
     };
 
     this.snapshots.set(ownerKey, snapshot);
-    this.emitChange();
+    this.emitChange(ownerKey);
     return snapshot;
   }
 

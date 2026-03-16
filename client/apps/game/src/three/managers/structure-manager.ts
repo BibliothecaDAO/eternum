@@ -1096,6 +1096,45 @@ export class StructureManager {
     return this.visibleStructureCount;
   }
 
+  public refreshCosmeticsForOwner(owner: string | bigint): void {
+    const normalizedOwner =
+      typeof owner === "bigint" ? `0x${owner.toString(16)}` : owner.toLowerCase().startsWith("0x") ? owner.toLowerCase() : owner;
+
+    let shouldRefreshVisibleStructures = false;
+    const allStructures = this.structures.getStructures();
+
+    allStructures.forEach((structuresByHex) => {
+      structuresByHex.forEach((structure) => {
+        const structureOwner = `0x${structure.owner.address.toString(16)}`;
+        if (structureOwner !== normalizedOwner) {
+          return;
+        }
+
+        const enumName = StructureType[structure.structureType as unknown as keyof typeof StructureType];
+        const defaultModelKey = typeof enumName === "string" ? enumName : String(structure.structureType);
+        const cosmetic = resolveStructureCosmetic({
+          owner: structure.owner.address,
+          structureType: structure.structureType,
+          stage: structure.stage,
+          defaultModelKey,
+        });
+
+        structure.cosmeticId = cosmetic.skin.cosmeticId;
+        structure.cosmeticAssetPaths = cosmetic.skin.assetPaths;
+        structure.usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
+        structure.attachments = cosmetic.attachments;
+
+        if (this.isInCurrentChunk(structure.hexCoords)) {
+          shouldRefreshVisibleStructures = true;
+        }
+      });
+    });
+
+    if (shouldRefreshVisibleStructures) {
+      void this.updateVisibleStructures();
+    }
+  }
+
   private updateVisibleStructures(): Promise<void> {
     if (this.isDestroyed) {
       return Promise.resolve();
