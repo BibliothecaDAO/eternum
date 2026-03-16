@@ -1,7 +1,7 @@
 import type { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { resolveEligibleCosmeticIds } from "./ownership";
+import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
 import { BlitzGameLoadoutDraft, PlayerCosmeticsSnapshot, PlayerCosmeticSelection } from "./types";
 
 const DEFAULT_VERSION = 1;
@@ -54,6 +54,18 @@ const createEmptySnapshot = (owner: string): PlayerCosmeticsSnapshot => ({
 class PlayerCosmeticsStore {
   private snapshots = new Map<string, PlayerCosmeticsSnapshot>();
   private readyPromise: Promise<void> = Promise.resolve();
+  private listeners = new Set<() => void>();
+
+  private emitChange(): void {
+    this.listeners.forEach((listener) => listener());
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
 
   async prefetch(): Promise<void> {
     await this.readyPromise;
@@ -78,19 +90,46 @@ class PlayerCosmeticsStore {
       pendingBlitzLoadouts: snapshot.pendingBlitzLoadouts ?? {},
       activeBlitzLoadouts: snapshot.activeBlitzLoadouts ?? {},
     });
+    this.emitChange();
+  }
+
+  applySelection(owner: ContractAddress | string | bigint, selection: PlayerCosmeticSelection): void {
+    const ownerKey = toHexString(toBigInt(owner));
+    const snapshot = this.getSnapshot(ownerKey) ?? createEmptySnapshot(ownerKey);
+
+    this.setSnapshot({
+      ...snapshot,
+      selection: {
+        armies: {
+          ...(snapshot.selection.armies ?? {}),
+          ...(selection.armies ?? {}),
+        },
+        structures: {
+          ...(snapshot.selection.structures ?? {}),
+          ...(selection.structures ?? {}),
+        },
+        globalAttachments: selection.globalAttachments ?? snapshot.selection.globalAttachments ?? [],
+      },
+    });
   }
 
   setPendingBlitzLoadout(worldKey: string, owner: ContractAddress | string | bigint, draft: BlitzGameLoadoutDraft): void {
     const ownerKey = toHexString(toBigInt(owner));
     const snapshot = this.getSnapshot(ownerKey) ?? createEmptySnapshot(ownerKey);
+    const selectedCosmeticIds = Object.values(draft.selectedBySlot ?? {}).flatMap((selection) => selection.cosmeticIds);
+    const derivedSelection = buildSelectionFromCosmeticIds(selectedCosmeticIds);
+    const hasAppliedLoadout = Boolean(snapshot.activeBlitzLoadouts?.[worldKey]);
+
     this.setSnapshot({
       ...snapshot,
       pendingBlitzLoadouts: {
         ...snapshot.pendingBlitzLoadouts,
         [worldKey]: {
           tokenIds: [...draft.tokenIds],
+          selectedBySlot: draft.selectedBySlot ? { ...draft.selectedBySlot } : {},
         },
       },
+      selection: hasAppliedLoadout ? snapshot.selection : derivedSelection,
     });
   }
 
@@ -116,6 +155,7 @@ class PlayerCosmeticsStore {
     }
 
     const ownedAttrs = normalizeOwnedAttrs(value.attrs as Iterable<bigint> | undefined);
+    const eligibleCosmeticIds = resolveEligibleCosmeticIds(ownedAttrs);
     const previous = this.snapshots.get(ownerKey) ?? createEmptySnapshot(ownerKey);
 
     const snapshot: PlayerCosmeticsSnapshot = {
@@ -124,16 +164,24 @@ class PlayerCosmeticsStore {
         owner: ownerKey,
         version: DEFAULT_VERSION,
         ownedAttrs,
-        eligibleCosmeticIds: resolveEligibleCosmeticIds(ownedAttrs),
+        eligibleCosmeticIds,
       },
+      selection:
+        Object.keys(previous.selection.armies ?? {}).length > 0 ||
+        Object.keys(previous.selection.structures ?? {}).length > 0 ||
+        (previous.selection.globalAttachments?.length ?? 0) > 0
+          ? previous.selection
+          : buildSelectionFromCosmeticIds(eligibleCosmeticIds),
     };
 
     this.snapshots.set(ownerKey, snapshot);
+    this.emitChange();
     return snapshot;
   }
 
   clear() {
     this.snapshots.clear();
+    this.emitChange();
   }
 }
 

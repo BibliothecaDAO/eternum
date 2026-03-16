@@ -27,6 +27,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import {
   buildSettlementExecutionPlan,
@@ -571,6 +572,20 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
+  const loadoutScopeKey = `blitz:${chain}:${worldName}`;
+  const pendingLoadout = useCosmeticLoadoutStore(
+    (state) => ({
+      pendingCount: state.pendingCount,
+      isEmpty: state.isEmpty,
+      isValid: state.isValid,
+      errors: state.errors,
+    }),
+    {
+      scopeKey: loadoutScopeKey,
+      fallbackScopeKeys: [`cosmetics:${chain}`],
+    },
+  );
+  const pendingLoadoutSummary = describeBlitzLoadoutSummary(pendingLoadout);
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -1345,6 +1360,13 @@ export const GameEntryModal = ({
             <span>{isForgeMode ? "Forging Hyperstructures" : isSpectateMode ? "Spectating" : "Entering"}</span>
           </div>
           <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
+          {!isForgeMode && !isSpectateMode && (
+            <div className="mt-3 rounded-xl border border-gold/15 bg-black/30 px-3 py-2">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-gold/60">Next Blitz Loadout</p>
+              <p className="mt-1 text-xs text-gold/80">{pendingLoadoutSummary}</p>
+              {!pendingLoadout.isValid && <p className="mt-2 text-xs text-amber-200">{pendingLoadout.errors[0]}</p>}
+            </div>
+          )}
         </div>
 
         {/* Content */}

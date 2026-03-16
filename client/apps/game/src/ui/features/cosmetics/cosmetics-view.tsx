@@ -26,6 +26,7 @@ import {
   resolveConnectedTxNetworkFromRuntime,
 } from "@/ui/features/cosmetics/config/networks";
 import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/cosmetics/lib/use-torii-cosmetics";
+import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import { switchWalletToChain, type WalletChainControllerLike } from "@/ui/utils/network-switch";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -52,6 +53,19 @@ export const LandingCosmetics = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(0);
   const [openingChest, setOpeningChest] = useState<{ id: string; epoch: ChestEpoch } | null>(null);
+  const loadoutScopeKey = `cosmetics:${selectedNetwork}`;
+  const pendingLoadoutState = useCosmeticLoadoutStore(
+    (state) => ({
+      pendingCount: state.pendingCount,
+      isEmpty: state.isEmpty,
+      isValid: state.isValid,
+      errors: state.errors,
+      selectedBySlot: state.selectedBySlot,
+      clearAll: state.clearAll,
+    }),
+    { scopeKey: loadoutScopeKey },
+  );
+  const pendingLoadoutSummary = describeBlitzLoadoutSummary(pendingLoadoutState);
 
   // Chest opening state
   const { showLootChestOpening, setShowLootChestOpening } = useLootChestOpeningStore();
@@ -285,10 +299,47 @@ export const LandingCosmetics = () => {
                       {isError && <p className="text-xs text-rose-300">Failed to load on-chain cosmetics.</p>}
                     </div>
 
+                    <div className="rounded-2xl border border-gold/15 bg-black/40 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-gold/60">
+                            Next Blitz Loadout
+                          </p>
+                          <p className="text-sm text-gold">{pendingLoadoutSummary}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={pendingLoadoutState.clearAll}
+                          disabled={pendingLoadoutState.isEmpty}
+                          className="rounded-lg border border-gold/20 px-3 py-1.5 text-xs text-gold/70 transition hover:border-gold/50 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Clear
+                        </button>
+                      </div>
+
+                      {Object.keys(pendingLoadoutState.selectedBySlot).length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {Object.entries(pendingLoadoutState.selectedBySlot).map(([slot, tokenId]) => (
+                            <span
+                              key={`${slot}-${tokenId}`}
+                              className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-[0.7rem] text-gold/80"
+                            >
+                              {slot}: {tokenId}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {!pendingLoadoutState.isValid && (
+                        <p className="mt-3 text-xs text-amber-200">{pendingLoadoutState.errors[0]}</p>
+                      )}
+                    </div>
+
                     <CosmeticGallery
                       items={filteredItems}
                       selectedId={selectedId}
                       onSelect={(id) => setSelectedId(id)}
+                      loadoutScopeKey={loadoutScopeKey}
                     />
                   </div>
 
@@ -297,7 +348,7 @@ export const LandingCosmetics = () => {
                       className="pointer-events-none absolute inset-0 rounded-2xl border border-gold/5"
                       aria-hidden
                     />
-                    <CosmeticShowcase item={selectedItem} />
+                    <CosmeticShowcase item={selectedItem} loadoutScopeKey={loadoutScopeKey} />
                   </aside>
                 </div>
               )}

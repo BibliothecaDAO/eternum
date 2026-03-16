@@ -8,19 +8,23 @@ interface CosmeticTileProps {
   item: CosmeticItem;
   active: boolean;
   onSelect: (id: string) => void;
+  loadoutScopeKey?: string;
 }
 
-export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
+export const CosmeticTile = ({ item, active, onSelect, loadoutScopeKey }: CosmeticTileProps) => {
   const attributes = item.attributes ?? item.metadata?.attributes ?? [];
   const rarity = attributes.find((attribute) => attribute.trait_type === "Rarity")?.value;
   const cosmeticType = attributes.find((attribute) => attribute.trait_type === "Type")?.value;
   const slotKey = item.slot ?? cosmeticType ?? null;
-  const isEquipped = useCosmeticLoadoutStore((state) => {
-    if (!slotKey || !item.tokenId) {
-      return false;
-    }
-    return state.selectedBySlot[slotKey] === item.tokenId;
-  });
+  const isEquipped = useCosmeticLoadoutStore(
+    (state) => {
+      if (!slotKey || !item.tokenId) {
+        return false;
+      }
+      return state.selectedBySlot[slotKey] === item.tokenId;
+    },
+    { scopeKey: loadoutScopeKey },
+  );
 
   const baseClass =
     "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-gold/5 p-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";

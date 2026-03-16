@@ -81,12 +81,21 @@ export interface CosmeticOwnershipSnapshot {
   eligibleCosmeticIds: string[];
 }
 
+export interface BlitzLoadoutSlotSelection {
+  tokenId: string;
+  cosmeticIds: string[];
+  ownershipKey?: string;
+  label?: string;
+}
+
 export interface BlitzGameLoadoutDraft {
   tokenIds: string[];
+  selectedBySlot?: Record<string, BlitzLoadoutSlotSelection>;
 }
 
 export interface BlitzGameLoadoutApplied {
   tokenIds: string[];
+  selectedBySlot?: Record<string, BlitzLoadoutSlotSelection>;
 }
 
 export interface PlayerCosmeticsSnapshot {

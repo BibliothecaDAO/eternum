@@ -1,4 +1,5 @@
-import { getCosmeticRegistry } from "./registry";
+import { PlayerCosmeticSelection } from "./types";
+import { getCosmeticRegistry, findCosmeticById } from "./registry";
 
 const normalizeOwnershipKey = (value: string): string => {
   const trimmed = value.trim().toLowerCase();
@@ -24,4 +25,43 @@ export const resolveEligibleCosmeticIds = (ownedAttrs: readonly string[]): strin
   }
 
   return eligibleCosmeticIds;
+};
+
+export const buildSelectionFromCosmeticIds = (cosmeticIds: readonly string[]): PlayerCosmeticSelection => {
+  const selection: PlayerCosmeticSelection = {
+    armies: {},
+    structures: {},
+    globalAttachments: [],
+  };
+
+  for (const cosmeticId of cosmeticIds) {
+    const entry = findCosmeticById(cosmeticId);
+    if (!entry) continue;
+
+    if (entry.category === "army-skin") {
+      for (const target of entry.appliesTo) {
+        selection.armies![target] = {
+          ...(selection.armies![target] ?? {}),
+          skin: entry.id,
+        };
+      }
+      continue;
+    }
+
+    if (entry.category === "structure-skin") {
+      for (const target of entry.appliesTo) {
+        selection.structures![target] = {
+          ...(selection.structures![target] ?? {}),
+          skin: entry.id,
+        };
+      }
+      continue;
+    }
+
+    if (!selection.globalAttachments!.includes(entry.id)) {
+      selection.globalAttachments!.push(entry.id);
+    }
+  }
+
+  return selection;
 };

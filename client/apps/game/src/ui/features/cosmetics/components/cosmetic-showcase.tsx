@@ -8,14 +8,15 @@ const TRADE_BASE_URL = "https://empire.realms.world/trade/cosmetics";
 
 interface CosmeticShowcaseProps {
   item: CosmeticItem | null;
+  loadoutScopeKey?: string;
 }
 
-export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
+export const CosmeticShowcase = ({ item, loadoutScopeKey }: CosmeticShowcaseProps) => {
   const attributes = item?.attributes ?? item?.metadata?.attributes ?? [];
   const slot = item?.slot ?? attributes.find((attribute) => attribute.trait_type === "Type")?.value ?? null;
 
-  const addCosmetic = useCosmeticLoadoutStore((state) => state.addCosmetic);
-  const selectedBySlot = useCosmeticLoadoutStore((state) => state.selectedBySlot);
+  const addCosmetic = useCosmeticLoadoutStore((state) => state.addCosmetic, { scopeKey: loadoutScopeKey });
+  const selectedBySlot = useCosmeticLoadoutStore((state) => state.selectedBySlot, { scopeKey: loadoutScopeKey });
 
   const slotTokenId = slot ? selectedBySlot[slot] : undefined;
   const isEquipped = Boolean(slot && item?.tokenId && slotTokenId === item.tokenId);
@@ -28,7 +29,7 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
       return;
     }
 
-    addCosmetic(slot, item.tokenId);
+    addCosmetic(slot, item);
   };
 
   return (

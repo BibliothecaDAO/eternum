@@ -78,6 +78,7 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
 
     expect(playerCosmeticsStore.getPendingBlitzLoadout("slot:eternum-test", "0x123")).toEqual({
       tokenIds: ["0xaaa", "0xbbb"],
+      selectedBySlot: {},
     });
   });
 
@@ -92,5 +93,60 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
       "attachment:army:aura-legacy",
       "army:Knight:T3:legacy",
     ]);
+  });
+
+  it("applies army, structure, and global attachment selection without dropping prior state", () => {
+    playerCosmeticsStore.applySelection("0x123", {
+      armies: {
+        "army:Knight:T3": {
+          skin: "army:Knight:T3:legacy",
+        },
+      },
+    });
+
+    playerCosmeticsStore.applySelection("0x123", {
+      structures: {
+        "structure:Realm:2": {
+          skin: "structure:realm:castle-s1-lvl2",
+        },
+      },
+      globalAttachments: ["attachment:army:aura-legacy"],
+    });
+
+    expect(playerCosmeticsStore.getSnapshot("0x123")?.selection).toEqual({
+      armies: {
+        "army:Knight:T3": {
+          skin: "army:Knight:T3:legacy",
+        },
+      },
+      structures: {
+        "structure:Realm:2": {
+          skin: "structure:realm:castle-s1-lvl2",
+        },
+      },
+      globalAttachments: ["attachment:army:aura-legacy"],
+    });
+  });
+
+  it("preserves valid local selection when ownership hydration refreshes", () => {
+    playerCosmeticsStore.applySelection("0x123", {
+      armies: {
+        "army:Knight:T3": {
+          skin: "army:Knight:T3:legacy",
+        },
+      },
+    });
+
+    getComponentValueMock.mockReturnValue({
+      attrs: [0x107050201n],
+    });
+
+    const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
+
+    expect(result?.selection.armies).toEqual({
+      "army:Knight:T3": {
+        skin: "army:Knight:T3:legacy",
+      },
+    });
   });
 });
