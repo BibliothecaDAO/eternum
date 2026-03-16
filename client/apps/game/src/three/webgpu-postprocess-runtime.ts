@@ -128,12 +128,12 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
       this.scenePass.setMRT(null);
     }
 
-    const sceneColorNode = this.scenePass.getTextureNode("output") as {
-      add?: (input: unknown) => unknown;
-    };
-    let outputNode = sceneColorNode as unknown;
+    let outputNode: unknown = this.scenePass;
 
     if (plan?.bloom.enabled) {
+      const sceneColorNode = this.scenePass.getTextureNode("output") as {
+        add?: (input: unknown) => unknown;
+      };
       const emissiveNode = this.scenePass.getTextureNode("emissive");
       const bloomNode = this.dependencies.createBloom(emissiveNode, plan.bloom.intensity);
       outputNode = sceneColorNode.add?.(bloomNode) ?? outputNode;

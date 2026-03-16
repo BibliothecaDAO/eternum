@@ -91,8 +91,8 @@ describe("createWebGPUPostProcessRuntime", () => {
     });
 
     expect(createPass).toHaveBeenCalledWith({ id: "main-scene" }, { id: "main-camera" });
-    expect(scenePass.getTextureNode).toHaveBeenCalledWith("output");
-    expect(createRenderOutput).toHaveBeenCalledWith(sceneColorNode, renderer.toneMapping, "srgb");
+    expect(scenePass.getTextureNode).not.toHaveBeenCalledWith("output");
+    expect(createRenderOutput).toHaveBeenCalledWith(scenePass, renderer.toneMapping, "srgb");
     expect(postProcessing.outputColorTransform).toBe(false);
     expect(postProcessing.outputNode).toBe(outputNode);
     expect(postProcessing.needsUpdate).toBe(true);
@@ -147,7 +147,7 @@ describe("createWebGPUPostProcessRuntime", () => {
       mainScene: { id: "main-scene" } as never,
     });
 
-    expect(createRenderOutput).toHaveBeenCalledWith(sceneColorNode, 7, "srgb");
+    expect(createRenderOutput).toHaveBeenCalledWith(scenePass, 7, "srgb");
     expect(postProcessing.outputNode).toBe(outputNode);
     expect(postProcessing.render).toHaveBeenCalledTimes(1);
   });
