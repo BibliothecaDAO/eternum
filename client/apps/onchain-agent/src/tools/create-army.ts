@@ -70,15 +70,13 @@ export function createCreateArmyTool(
     name: "create_army",
     label: "Create Army",
     description:
-      "Create a new army at one of your realms. Check YOUR ENTITIES in the map for available troop reserves and army slots. " +
+      "Create a new army at one of your realms. " +
       "Choose troop type (Knight, Paladin, Crossbowman), tier (1/2/3), and how many to deploy. " +
       "Biome bonuses: Knight +30% on forest/taiga, Paladin +30% on desert/grassland, Crossbowman +30% on ocean/snow. " +
       "Higher tiers are much stronger (T2 ~2.5x, T3 ~7x) but require T2/T3 barracks buildings. " +
-      "After creating, use reinforce_army to bulk up from structures or merge with other armies. " +
       "Spawns at the first open adjacent hex.",
     parameters: Type.Object({
-      row: Type.Number({ description: "Line number of your realm on the map" }),
-      col: Type.Number({ description: "Column of your realm on the map" }),
+      structure_id: Type.Number({ description: "Entity ID of your realm (from briefing or map_query)" }),
       troop_type: Type.Optional(
         Type.Union([Type.Literal("Knight"), Type.Literal("Paladin"), Type.Literal("Crossbowman")], {
           description: "Troop type. If omitted, auto-selects best type for the realm's biome.",
@@ -94,51 +92,47 @@ export function createCreateArmyTool(
       ),
     }),
     async execute(_toolCallId, params, signal) {
-      const { row, col } = params;
+      const { structure_id: structureId } = params;
       const tier = params.tier ?? 1;
 
       if (signal?.aborted) throw new Error("Operation cancelled");
-
-      // ── Validate map ──
 
       if (!mapCtx.snapshot) {
         throw new Error("Map not loaded yet. Wait for the next tick.");
       }
 
-      const hexCoords = mapCtx.snapshot.resolve(row, col);
-      if (!hexCoords) {
-        throw new Error(
-          `Invalid position ${row}:${col}. Map is ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols.`,
-        );
-      }
+      // ── Find structure tile by entity ID ──
 
-      const tile = mapCtx.snapshot.tileAt(row, col);
+      let tile = null as any;
+      for (const t of mapCtx.snapshot.tiles) {
+        if (t.occupierId === structureId) { tile = t; break; }
+      }
       if (!tile) {
-        throw new Error(`Tile ${row}:${col} is unexplored.`);
+        throw new Error(`Structure ${structureId} not found on the map.`);
       }
 
       // ── Fetch structure ──
 
-      const { x, y } = hexCoords;
+      const { x, y } = tile.position;
       const structure = await client.view.structureAt(x, y);
 
       if (!structure) {
-        throw new Error(`No structure at ${row}:${col}. Point at one of your realms.`);
+        throw new Error(`Structure ${structureId} not found.`);
       }
 
       if (structure.category !== "Realm") {
-        throw new Error(`${structure.category} at ${row}:${col} is not a realm. Only realms can create armies.`);
+        throw new Error(`${structure.category} ${structureId} is not a realm. Only realms can create armies.`);
       }
 
       if (playerAddress && !addressesEqual(structure.ownerAddress, playerAddress)) {
-        throw new Error(`Realm at ${row}:${col} is not yours (owner: ${structure.ownerAddress}).`);
+        throw new Error(`Realm ${structureId} is not yours (owner: ${structure.ownerAddress}).`);
       }
 
       // ── Check army cap ──
 
       const { explorerCount, maxExplorerCount } = structure;
       if (maxExplorerCount > 0 && explorerCount >= maxExplorerCount) {
-        throw new Error(`Army cap reached at this realm (${explorerCount}/${maxExplorerCount}). Try another realm.`);
+        throw new Error(`Army cap reached at realm ${structureId} (${explorerCount}/${maxExplorerCount}). Try another realm.`);
       }
 
       // ── Determine troop type ──

@@ -57,8 +57,8 @@ import { createReinforceArmyTool } from "../tools/reinforce-army.js";
 import { createDefendStructureTool } from "../tools/defend-structure.js";
 import { createTransferResourcesTool } from "../tools/transfer-resources.js";
 import { createOpenChestTool } from "../tools/open-chest.js";
-import { createViewMapTool } from "../tools/view-map.js";
-import { buildGameStateBlock, type ToolError } from "./game-state.js";
+import { createMapQueryTool } from "../tools/map-query.js";
+import type { ToolError } from "./game-state.js";
 import type { AutomationStatusMap } from "../automation/status.js";
 
 // ---------------------------------------------------------------------------
@@ -213,16 +213,15 @@ async function pruneMessages(
  *          strategic instructions for the turn.
  */
 function buildTickPrompt(mapCtx: MapContext): string {
-  const mapText = mapCtx.snapshot?.text ?? "Map not yet loaded.";
+  const briefing = mapCtx.protocol?.briefing() ?? "Map not yet loaded.";
   return [
     "## Tick — New Turn",
     "",
-    "Current map:",
-    mapText,
+    briefing,
     "",
     "Review your priorities and decide what to do this turn.",
-    "You can move troops across multiple explored tiles in a single move_army call, but movement into unexplored territory is limited to 1 step at a time.",
-    "Use inspect to examine targets, move_army to reposition, attack to engage, open_chest to claim relics, or create_army to build forces.",
+    "Use map_query to explore the world: tile_info, nearby, entity_info, find.",
+    "Use move_army to reposition, attack to engage, open_chest to claim relics, or create_army to build forces.",
   ].join("\n");
 }
 
@@ -311,7 +310,7 @@ export async function main() {
 
   // 3. Shared contexts
   const mapFilePath = join(config.dataDir, "map.txt");
-  const mapCtx: MapContext = { snapshot: null, filePath: mapFilePath };
+  const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: mapFilePath };
   const txCtx: TxContext = { provider, signer: account };
   const automationStatus: AutomationStatusMap = new Map();
   const toolErrors: ToolError[] = [];
@@ -327,7 +326,7 @@ export async function main() {
     createDefendStructureTool(client, mapCtx, account.address, txCtx),
     createTransferResourcesTool(client, mapCtx, account.address, txCtx),
     createOpenChestTool(client, mapCtx, account.address, txCtx),
-    createViewMapTool(mapCtx),
+    createMapQueryTool(mapCtx),
   ];
 
   // 5. System prompt
@@ -349,8 +348,11 @@ export async function main() {
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages) => {
-      const gameState = buildGameStateBlock(mapCtx, automationStatus, toolErrors);
-      agent.setSystemPrompt(buildSystemPrompt(config.dataDir) + "\n\n" + gameState);
+      const briefing = mapCtx.protocol?.briefing() ?? "";
+      const errorBlock = toolErrors.length > 0
+        ? "\n<tool_errors>\n" + toolErrors.map((e) => `  ${e.tool}: ${e.error}`).join("\n") + "\n</tool_errors>"
+        : "";
+      agent.setSystemPrompt(buildSystemPrompt(config.dataDir) + "\n\n" + briefing + errorBlock);
       const maxChars = (model.contextWindow ?? 200_000) * 3;
       const pruneTarget = Math.floor(maxChars * 0.5);
       return pruneMessages(messages, model, maxChars, pruneTarget);

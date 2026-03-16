@@ -30,7 +30,7 @@ describe("map-loop", () => {
   it("refresh() updates the snapshot", async () => {
     const tiles = [makeTile(0, 0), makeTile(1, 0)];
     const client = makeClient(tiles);
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     expect(ctx.snapshot).toBeNull();
@@ -44,7 +44,7 @@ describe("map-loop", () => {
     const tiles1 = [makeTile(0, 0)];
     const tiles2 = [makeTile(0, 0), makeTile(1, 0), makeTile(2, 0)];
     const client = makeClient(tiles1);
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
@@ -69,7 +69,7 @@ describe("map-loop", () => {
     const { writeFileSync } = await import("fs");
     (writeFileSync as any).mockClear();
     const client = makeClient([makeTile(0, 0)]);
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
@@ -78,7 +78,7 @@ describe("map-loop", () => {
 
   it("survives a failed fetch", async () => {
     const client = makeClient([makeTile(0, 0)]);
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
@@ -95,7 +95,7 @@ describe("map-loop", () => {
 
   it("start/stop controls the interval", () => {
     const client = makeClient([makeTile(0, 0)]);
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     expect(loop.isRunning).toBe(false);
@@ -107,7 +107,7 @@ describe("map-loop", () => {
 
   it("fetches all tiles with large radius", async () => {
     const client = makeClient([makeTile(0, 0)]);
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();

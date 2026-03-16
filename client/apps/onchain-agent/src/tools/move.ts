@@ -1,7 +1,7 @@
 /**
  * move_army tool — move one of your explorers to a target tile.
  *
- * Point at your army (from_row:from_col) and the destination (to_row:to_col).
+ * Takes an army entity ID and a target world hex coordinate.
  * Uses A* pathfinding over explored tiles, converts to a direction array,
  * and executes via the provider's explorer_travel.
  *
@@ -122,17 +122,16 @@ export function createMoveTool(
     description:
       "Move one of your armies to a target tile. Can move through explored tiles or explore into adjacent unexplored tiles. " +
       "If the target is occupied (structure, army, chest), automatically stops 1 hex away. " +
-      "Use your army's line:col from YOUR ENTITIES as army_row:army_col, and the destination as target_row:target_col. " +
       "Pathfinds automatically around obstacles. Exploring new tiles may yield rewards. " +
-      "Returns: success/failure, new position, stamina remaining, adjacent tiles.",
+      "Returns: success/failure, new position (x,y), stamina remaining, adjacent tiles.",
     parameters: Type.Object({
-      army_row: Type.Number({ description: "Line number of your army on the map" }),
-      army_col: Type.Number({ description: "Column of your army on the map" }),
-      target_row: Type.Number({ description: "Target line number on the map" }),
-      target_col: Type.Number({ description: "Target column on the map" }),
+      army_id: Type.Number({ description: "Entity ID of your army (from briefing or map_query)" }),
+      target_x: Type.Number({ description: "Target world hex X coordinate" }),
+      target_y: Type.Number({ description: "Target world hex Y coordinate" }),
     }),
     async execute(_toolCallId, params, signal) {
-      const { army_row: from_row, army_col: from_col, target_row: to_row, target_col: to_col } = params;
+      const { army_id: armyId, target_x, target_y } = params;
+      const target = { x: target_x, y: target_y };
 
       if (signal?.aborted) throw new Error("Operation cancelled");
 
@@ -142,66 +141,27 @@ export function createMoveTool(
         // ── Validate map ──
 
         if (!mapCtx.snapshot) {
-          throw new Error(
-            "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
-          );
+          throw new Error("Map not loaded yet. Wait for the next tick.");
         }
 
-        const fromHex = mapCtx.snapshot.resolve(from_row, from_col);
-        if (!fromHex) {
-          throw new Error(
-            `Invalid army position ${from_row}:${from_col}. Map is ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols.`,
-          );
-        }
+        // ── Find explorer by entity ID ──
 
-        const target = mapCtx.snapshot.resolve(to_row, to_col);
-        if (!target) {
-          throw new Error(
-            `Invalid target position ${to_row}:${to_col}. Map is ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols.`,
-          );
-        }
-
-        // ── Find explorer at from position ──
-
-        let fromTile = mapCtx.snapshot.tileAt(from_row, from_col);
-        let explorerId: number | undefined;
-
-        // Check snapshot first
-        if (fromTile && isExplorer(fromTile.occupierType)) {
-          explorerId = fromTile.occupierId;
-        }
-
-        // Fallback: check recentlyMoved — the army may have been moved here
-        // but Torii hasn't indexed it yet, so the snapshot still shows the old position.
-        if (!explorerId && mapCtx.recentlyMoved) {
-          const worldCoords = mapCtx.snapshot.resolve(from_row, from_col);
-          if (worldCoords) {
-            const key = `${worldCoords.x},${worldCoords.y}`;
-            const movedEntityId = mapCtx.recentlyMoved.get(key);
-            if (movedEntityId) explorerId = movedEntityId;
-          }
-        }
-
-        if (!explorerId) {
-          throw new Error(`No army at ${from_row}:${from_col}. Point at one of your armies on the map.`);
-        }
-
-        const explorer = await client.view.explorerInfo(explorerId);
+        const explorer = await client.view.explorerInfo(armyId);
         if (!explorer) {
-          throw new Error(`Explorer ${explorerId} not found.`);
+          throw new Error(`Army ${armyId} not found.`);
         }
 
         // ── Verify ownership ──
 
         if (playerAddress && (!explorer.ownerAddress || !addressesEqual(explorer.ownerAddress, playerAddress))) {
-          throw new Error(`Army at ${from_row}:${from_col} is not yours (owner: ${explorer.ownerAddress}).`);
+          throw new Error(`Army ${armyId} is not yours (owner: ${explorer.ownerAddress}).`);
         }
 
         // ── Already there? ──
 
         const start = explorer.position;
         if (start.x === target.x && start.y === target.y) {
-          throw new Error(`Already at ${to_row}:${to_col}.`);
+          throw new Error(`Already at (${target.x},${target.y}).`);
         }
 
         // ── Pathfind ──
@@ -274,11 +234,11 @@ export function createMoveTool(
         );
 
         if (!pathResult) {
-          throw new Error(`No path to ${to_row}:${to_col}. Target may be blocked, unexplored, or unreachable.`);
+          throw new Error(`No path to (${target.x},${target.y}). Target may be blocked, unexplored, or unreachable.`);
         }
 
         // If destination is occupied, stop 1 hex before (can't move onto occupied tiles)
-        const targetTile = mapCtx.snapshot.tileAt(to_row, to_col);
+        const targetTile = mapCtx.snapshot.gridIndex.get(`${target.x},${target.y}`) ?? null;
         const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
 
         if (targetIsOccupied) {
@@ -297,7 +257,7 @@ export function createMoveTool(
             } else if (isChest(targetTile.occupierType)) {
               actions.push("open_chest");
             }
-            throw new Error(`Already adjacent to ${occupier} at ${to_row}:${to_col}. You can: ${actions.join(", ")}.`);
+            throw new Error(`Already adjacent to ${occupier} at (${target.x},${target.y}). You can: ${actions.join(", ")}.`);
           }
 
           // Trim the last step — stop adjacent to the target
@@ -449,7 +409,7 @@ export function createMoveTool(
             }
             if (attempt < MAX_ATTEMPTS) continue; // retry with fresh map
             throw new Error(
-              `Path to ${to_row}:${to_col} is blocked by an entity. Map refreshed — try a different destination.`,
+              `Path to (${target.x},${target.y}) is blocked by an entity. Map refreshed — try a different destination.`,
             );
           }
           throw new Error(`Move failed: ${errStr}`);
@@ -501,11 +461,11 @@ export function createMoveTool(
             nextActions.push("attack_target", "reinforce_army (if your army)", "defend_structure (if yours)");
           else if (isExplorer(occType)) nextActions.push("attack_target", "reinforce_army (if yours)");
           else if (isChest(occType)) nextActions.push("open_chest");
-          statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${occName} at ${to_row}:${to_col}. You can: ${nextActions.join(", ")}.`;
+          statusLine = `${action} ${pathResult.distance} steps to adjacent tile of ${occName} at (${target.x},${target.y}). You can: ${nextActions.join(", ")}.`;
         } else if (reachedTarget) {
-          statusLine = `${action} ${pathResult.distance} steps to ${to_row}:${to_col}.`;
+          statusLine = `${action} ${pathResult.distance} steps to (${target.x},${target.y}).`;
         } else {
-          statusLine = `${action} ${pathResult.distance} steps toward ${to_row}:${to_col} (ran out of stamina — call move_army again next turn to continue).`;
+          statusLine = `${action} ${pathResult.distance} steps toward (${target.x},${target.y}) (ran out of stamina — call move_army again next turn to continue).`;
         }
 
         const responseLines = [

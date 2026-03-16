@@ -110,47 +110,47 @@ export function createTransferResourcesTool(
       "Specify resource name and amount. Check YOUR ENTITIES for available resources. " +
       "Resources arrive automatically (auto-offloaded by automation).",
     parameters: Type.Object({
-      from_row: Type.Number({ description: "Row of the sending structure" }),
-      from_col: Type.Number({ description: "Column of the sending structure" }),
-      to_row: Type.Number({ description: "Row of the receiving structure" }),
-      to_col: Type.Number({ description: "Column of the receiving structure" }),
+      from_structure_id: Type.Number({ description: "Entity ID of the sending structure" }),
+      to_structure_id: Type.Number({ description: "Entity ID of the receiving structure" }),
       resource_name: Type.String({ description: "Resource to send (e.g. 'Wheat', 'Wood', 'Knight T1', 'Paladin T1')" }),
       amount: Type.Number({ description: "Amount to send (human-readable, e.g. 1000 for 1000 wheat)" }),
     }),
     async execute(_toolCallId, params, signal) {
-      const { from_row, from_col, to_row, to_col, resource_name, amount } = params;
+      const { from_structure_id: fromId, to_structure_id: toId, resource_name, amount } = params;
 
       if (signal?.aborted) throw new Error("Operation cancelled");
       if (!mapCtx.snapshot) throw new Error("Map not loaded yet. Wait for the next tick.");
 
-      // ── Resolve structures ──
+      // ── Find structure tiles by entity ID ──
 
-      const fromHex = mapCtx.snapshot.resolve(from_row, from_col);
-      const toHex = mapCtx.snapshot.resolve(to_row, to_col);
-      if (!fromHex) throw new Error(`Invalid source position ${from_row}:${from_col}.`);
-      if (!toHex) throw new Error(`Invalid target position ${to_row}:${to_col}.`);
-
-      const fromTile = mapCtx.snapshot.tileAt(from_row, from_col);
-      const toTile = mapCtx.snapshot.tileAt(to_row, to_col);
+      let fromTile = null as any;
+      let toTile = null as any;
+      for (const t of mapCtx.snapshot.tiles) {
+        if (t.occupierId === fromId) fromTile = t;
+        if (t.occupierId === toId) toTile = t;
+      }
 
       if (!fromTile || !isStructure(fromTile.occupierType)) {
-        throw new Error(`No structure at ${from_row}:${from_col}.`);
+        throw new Error(`Source structure ${fromId} not found.`);
       }
       if (!toTile || !isStructure(toTile.occupierType)) {
-        throw new Error(`No structure at ${to_row}:${to_col}.`);
+        throw new Error(`Target structure ${toId} not found.`);
       }
+
+      const fromHex = fromTile.position;
+      const toHex = toTile.position;
 
       const fromStructure = await client.view.structureAt(fromHex.x, fromHex.y);
       const toStructure = await client.view.structureAt(toHex.x, toHex.y);
 
-      if (!fromStructure) throw new Error(`Source structure not found.`);
-      if (!toStructure) throw new Error(`Target structure not found.`);
+      if (!fromStructure) throw new Error(`Source structure ${fromId} not found.`);
+      if (!toStructure) throw new Error(`Target structure ${toId} not found.`);
 
       if (!addressesEqual(fromStructure.ownerAddress, playerAddress)) {
-        throw new Error(`Source structure at ${from_row}:${from_col} is not yours.`);
+        throw new Error(`Source structure ${fromId} is not yours.`);
       }
       if (!addressesEqual(toStructure.ownerAddress, playerAddress)) {
-        throw new Error(`Target structure at ${to_row}:${to_col} is not yours.`);
+        throw new Error(`Target structure ${toId} is not yours.`);
       }
 
       // ── Resolve resource ──
@@ -219,7 +219,7 @@ export function createTransferResourcesTool(
           {
             type: "text" as const,
             text: [
-              `Sent ${sendAmount.toLocaleString()} ${resource_name} from ${fromStructure.category} at ${from_row}:${from_col} → ${toStructure.category} at ${to_row}:${to_col}`,
+              `Sent ${sendAmount.toLocaleString()} ${resource_name} from ${fromStructure.category} ${fromId} at (${fromHex.x},${fromHex.y}) → ${toStructure.category} ${toId} at (${toHex.x},${toHex.y})`,
               donkeysNeeded > 0 ? `Donkeys burnt: ${donkeysNeeded}` : "No donkeys needed (zero weight)",
               `Estimated arrival: ~${travelTimeMin} min (${distance.toFixed(1)} km)`,
               `Resources will be auto-offloaded on arrival.`,

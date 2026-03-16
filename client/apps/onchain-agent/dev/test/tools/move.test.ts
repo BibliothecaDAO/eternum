@@ -58,6 +58,8 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
       if (!pos) return null;
       return grid.get(`${pos.x},${pos.y}`) ?? null;
     },
+    explorerDetails: new Map(),
+    structureDetails: new Map(),
     anchor,
   };
 }
@@ -118,51 +120,31 @@ const testGameConfig: GameConfig = {
 
 describe("move_army — prerequisites", () => {
   it("throws when no map is loaded", async () => {
-    const mapCtx: MapContext = { snapshot: null, filePath: null };
+    const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_id: 1, target_x: 1, target_y: 0 })).rejects.toThrow(
       "Map not loaded",
     );
   });
 
-  it("throws for invalid from coordinates", async () => {
-    const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0)];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
-    const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
-
-    await expect(tool.execute("id", { army_row: 99, army_col: 99, target_row: 1, target_col: 1 })).rejects.toThrow(
-      "Invalid army position",
-    );
-  });
-
-  it("throws for invalid to coordinates", async () => {
-    const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0)];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
-    const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
-
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 99, target_col: 99 })).rejects.toThrow(
-      "Invalid target position",
-    );
-  });
-
-  it("throws when no army at from position", async () => {
+  it("throws when army not found", async () => {
     const tiles = [makeTile(0, 0), makeTile(1, 0)]; // no explorer at (0,0)
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(null), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
-      "No army at",
+    await expect(tool.execute("id", { army_id: 999, target_x: 1, target_y: 0 })).rejects.toThrow(
+      "Army 999 not found",
     );
   });
 
   it("throws when army is not yours", async () => {
     const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0)];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const explorer = makeExplorer(0, 0, 100, { ownerAddress: "0xENEMY" });
     const tool = createMoveTool(makeClient(explorer), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 2 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_id: 1, target_x: 1, target_y: 0 })).rejects.toThrow(
       "not yours",
     );
   });
@@ -171,10 +153,10 @@ describe("move_army — prerequisites", () => {
 describe("move_army — already at target", () => {
   it("throws already-there message", async () => {
     const tiles = [makeTile(5, 5, 15, 1)];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(5, 5, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 1 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_id: 1, target_x: 5, target_y: 5 })).rejects.toThrow(
       "Already at",
     );
   });
@@ -184,10 +166,10 @@ describe("move_army — no stamina", () => {
   it("throws no stamina", async () => {
     // 3x1 corridor: explorer at (0,0), target at (2,0)
     const tiles = [makeTile(0, 0, 15, 1), makeTile(1, 0), makeTile(2, 0)];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 0)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    await expect(tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 3 })).rejects.toThrow(
+    await expect(tool.execute("id", { army_id: 1, target_x: 2, target_y: 0 })).rejects.toThrow(
       "no stamina",
     );
   });
@@ -197,11 +179,11 @@ describe("move_army — successful move", () => {
   it("moves with stamina accounting", async () => {
     // 5x1 row of tiles at y=0, x=0..4. Explorer at x=0.
     const tiles = [makeTile(0, 0, 15, 1), ...Array.from({ length: 4 }, (_, i) => makeTile(i + 1, 0))];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 100)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    // Move from (0,0) col=1 to (3,0) col=4
-    const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 4 });
+    // Move from (0,0) to (3,0) — world hex coords
+    const result = await tool.execute("id", { army_id: 1, target_x: 3, target_y: 0 });
     expect((result.content[0] as any).text).toContain("3 steps");
     // Paladin on Grassland (biome 11): cost = 20 - 10 = 10 per hex. 3 * 10 = 30. 100 - 30 = 70.
     expect((result.content[0] as any).text).toContain("100 → 70");
@@ -212,10 +194,10 @@ describe("move_army — successful move", () => {
   it("moves as far as possible when target exceeds stamina", async () => {
     // Long row: explorer at x=0 with only 20 stamina, Paladin on Grassland = 10/hex → 2 steps max
     const tiles = [makeTile(0, 0, 15, 1), ...Array.from({ length: 19 }, (_, i) => makeTile(i + 1, 0))];
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 0, 20)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    const result = await tool.execute("id", { army_row: 1, army_col: 1, target_row: 1, target_col: 11 });
+    const result = await tool.execute("id", { army_id: 1, target_x: 10, target_y: 0 });
     // Should move 2 steps (20 stamina / 10 per hex) toward target, not throw
     expect((result.content[0] as any).text).toContain("2 steps toward");
     expect((result.content[0] as any).text).toContain("ran out of stamina");
@@ -238,12 +220,11 @@ describe("move_army — obstacle avoidance", () => {
         }
       }
     }
-    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), filePath: null };
+    const mapCtx: MapContext = { snapshot: makeSnapshot(tiles), protocol: null, filePath: null };
     const tool = createMoveTool(makeClient(makeExplorer(0, 1, 200)), mapCtx, PLAYER, makeTxCtx(), testGameConfig);
 
-    // (0,1) → maxY=2, y=1 → row=2. minX=0, x=0 → col=1
-    // (4,1) → row=2, col=5
-    const result = await tool.execute("id", { army_row: 2, army_col: 1, target_row: 2, target_col: 5 });
+    // Explorer at (0,1), target at (4,1) — world hex coords
+    const result = await tool.execute("id", { army_id: 1, target_x: 4, target_y: 1 });
     expect((result.content[0] as any).text).toContain("steps");
     const details = result.details as any;
     expect(details.distance).toBeGreaterThanOrEqual(4);
