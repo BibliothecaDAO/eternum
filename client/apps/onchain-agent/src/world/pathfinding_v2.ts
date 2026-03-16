@@ -203,14 +203,37 @@ export interface H3TileIndex {
   h3ToOccupier: Map<string, number>;
   h3ToPosition: Map<string, Position>;
   keyToH3: Map<string, string>;
+  /** Coordinate offset subtracted to normalize into H3's IJ range */
+  originX: number;
+  originY: number;
   count: number;
 }
 
 /**
  * Build H3 tile index from game client TileState[].
  * Call once, reuse for multiple findPath calls.
+ *
+ * Normalizes coordinates by subtracting the minimum x/y so that H3's
+ * localIjToCell works correctly. Eternum world coords (~2 billion)
+ * overflow H3's IJ space at resolution 7 — normalization brings them
+ * near zero where H3 operates.
  */
 export function buildH3TileIndex(tiles: TileState[]): H3TileIndex {
+  if (tiles.length === 0) {
+    return {
+      h3ToBiome: new Map(), h3ToOccupier: new Map(),
+      h3ToPosition: new Map(), keyToH3: new Map(),
+      originX: 0, originY: 0, count: 0,
+    };
+  }
+
+  // Find coordinate bounds for normalization
+  let minX = Infinity, minY = Infinity;
+  for (const t of tiles) {
+    if (t.position.x < minX) minX = t.position.x;
+    if (t.position.y < minY) minY = t.position.y;
+  }
+
   const h3ToBiome = new Map<string, number>();
   const h3ToOccupier = new Map<string, number>();
   const h3ToPos = new Map<string, Position>();
@@ -218,20 +241,25 @@ export function buildH3TileIndex(tiles: TileState[]): H3TileIndex {
 
   for (const t of tiles) {
     const { x, y } = t.position;
+    // Normalize to near-zero for H3 IJ mapping
     let h3: string;
     try {
-      h3 = coordToH3(x, y);
+      h3 = coordToH3(x - minX, y - minY);
     } catch {
       continue;
     }
 
     h3ToBiome.set(h3, t.biome);
     h3ToOccupier.set(h3, t.occupierType);
+    // Store original (non-normalized) position for result reconstruction
     h3ToPos.set(h3, t.position);
     keyToH3.set(`${x},${y}`, h3);
   }
 
-  return { h3ToBiome, h3ToOccupier, h3ToPosition: h3ToPos, keyToH3, count: h3ToBiome.size };
+  return {
+    h3ToBiome, h3ToOccupier, h3ToPosition: h3ToPos, keyToH3,
+    originX: minX, originY: minY, count: h3ToBiome.size,
+  };
 }
 
 // ============================================================================
@@ -438,7 +466,7 @@ export function regenTicksNeeded(
 }
 
 /**
- * Tile cost function compatible with compare-me's TileCostFn signature.
+ * Tile cost function compatible with the old pathfinding.ts TileCostFn signature.
  */
 export function makeTileCostFn(
   index: H3TileIndex,
@@ -452,4 +480,91 @@ export function makeTileCostFn(
     if (biomeId > 0) return travelStaminaCostById(biomeId, troop, config);
     return config.travelCost;
   };
+}
+
+// ============================================================================
+// INDEX MUTATION (for runtime overlays like recentlyMoved/recentlyExplored)
+// ============================================================================
+
+/**
+ * Mark a tile as blocked in the index (e.g. army just moved there but Torii
+ * hasn't synced yet). Uses original (non-normalized) coordinates.
+ */
+export function markBlocked(index: H3TileIndex, x: number, y: number): void {
+  const h3 = index.keyToH3.get(`${x},${y}`);
+  if (h3) {
+    index.h3ToOccupier.set(h3, 1); // non-zero = occupied
+  }
+}
+
+/**
+ * Mark a tile as unblocked (e.g. explorer left this tile).
+ * Uses original (non-normalized) coordinates.
+ */
+export function markUnblocked(index: H3TileIndex, x: number, y: number): void {
+  const h3 = index.keyToH3.get(`${x},${y}`);
+  if (h3) {
+    index.h3ToOccupier.set(h3, 0);
+  }
+}
+
+/**
+ * Mark a tile as explored (e.g. just explored but Torii hasn't synced).
+ * Uses original (non-normalized) coordinates.
+ * Adds the tile to the H3 index if it doesn't exist yet.
+ */
+export function markExplored(
+  index: H3TileIndex,
+  x: number,
+  y: number,
+  biome: number = 1, // default to any non-zero value (discovered)
+): void {
+  const key = `${x},${y}`;
+  let h3 = index.keyToH3.get(key);
+  if (!h3) {
+    // Tile not in index yet — add it with normalized coords
+    try {
+      h3 = coordToH3(x - index.originX, y - index.originY);
+    } catch {
+      return;
+    }
+    index.keyToH3.set(key, h3);
+    index.h3ToPosition.set(h3, { x, y });
+    index.h3ToOccupier.set(h3, 0);
+    index.count++;
+  }
+  index.h3ToBiome.set(h3, biome);
+}
+
+/**
+ * Convenience: apply recentlyMoved and recentlyExplored overlays from the
+ * agent's MapContext onto an H3TileIndex.
+ */
+export function applyMapOverlays(
+  index: H3TileIndex,
+  options: {
+    /** "x,y" → any. All keys are marked as blocked. */
+    recentlyMoved?: Map<string, unknown>;
+    /** Set of "x,y" keys to mark as explored. */
+    recentlyExplored?: Set<string>;
+    /** "x,y" of the explorer's current position — unblock it. */
+    selfPosition?: string;
+  },
+): void {
+  if (options.recentlyMoved) {
+    Array.from(options.recentlyMoved.keys()).forEach((key) => {
+      const [x, y] = key.split(",").map(Number) as [number, number];
+      markBlocked(index, x, y);
+    });
+  }
+  if (options.recentlyExplored) {
+    Array.from(options.recentlyExplored).forEach((key) => {
+      const [x, y] = key.split(",").map(Number) as [number, number];
+      markExplored(index, x, y);
+    });
+  }
+  if (options.selfPosition) {
+    const [x, y] = options.selfPosition.split(",").map(Number) as [number, number];
+    markUnblocked(index, x, y);
+  }
 }

@@ -15,11 +15,11 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { EternumClient, Position } from "@bibliothecadao/client";
 import { packTileSeed, getNeighborOffsets } from "@bibliothecadao/types";
-import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
+import type { GameConfig } from "@bibliothecadao/torii";
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 import { isExplorer, isStructure, isChest } from "../world/occupier.js";
-import { findPath as findPathV2, buildH3TileIndex, travelStaminaCostById, type H3TileIndex, type FindPathOptions, type PathResult as PathResultV2 } from "../world/pathfinding_v2.js";
+import { findPath as findPathV2, buildH3TileIndex, applyMapOverlays, travelStaminaCostById, type FindPathOptions, type PathResult as PathResultV2 } from "../world/pathfinding_v2.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 import { getNeighborHexes } from "@bibliothecadao/types";
 
@@ -158,36 +158,13 @@ export function createMoveTool(
 
         // ── Build H3 tile index ──
 
-        // Start with snapshot tiles, then patch with recent context
-        const tilesToIndex = [...mapCtx.snapshot.tiles];
+        const h3Index = buildH3TileIndex(mapCtx.snapshot.tiles);
+        applyMapOverlays(h3Index, {
+          recentlyMoved: mapCtx.recentlyMoved,
+          recentlyExplored: mapCtx.recentlyExplored,
+          selfPosition: `${start.x},${start.y}`,
+        });
 
-        // Patch: mark recently moved army positions as occupied
-        // (Torii may not have indexed these yet)
-        if (mapCtx.recentlyMoved) {
-          for (const [key, entityId] of mapCtx.recentlyMoved) {
-            const [kx, ky] = key.split(",").map(Number);
-            // Add a synthetic occupied tile if not already in the snapshot
-            const existing = mapCtx.snapshot.gridIndex.get(key);
-            if (!existing) {
-              tilesToIndex.push({
-                position: { x: kx, y: ky },
-                biome: 0,
-                occupierId: entityId,
-                occupierType: 15, // explorer
-                occupierIsStructure: false,
-                rewardExtracted: false,
-              });
-            }
-          }
-        }
-
-        const h3Index = buildH3TileIndex(tilesToIndex);
-
-        // Remove the start tile from occupier index (the army is leaving)
-        const startH3 = h3Index.keyToH3.get(`${start.x},${start.y}`);
-        if (startH3) h3Index.h3ToOccupier.set(startH3, 0);
-
-        // Explorer troopType is already a string matching TroopType enum values
         const troopEnum = explorer.troopType as any;
 
         const pathOptions: FindPathOptions = {
@@ -211,7 +188,6 @@ export function createMoveTool(
         const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
 
         let pathResult: PathResultV2 | null = null;
-        let actualTarget = target;
 
         if (targetIsOccupied) {
           // Check if already adjacent
@@ -243,7 +219,6 @@ export function createMoveTool(
             if (candidate && !candidate.reachedLimit) {
               if (!bestPath || candidate.staminaCost < bestPath.staminaCost) {
                 bestPath = candidate;
-                actualTarget = adjTarget;
               }
             }
           }
