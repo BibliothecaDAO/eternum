@@ -149,4 +149,33 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
       },
     });
   });
+
+  it("marks a successful pending loadout as the applied world loadout", () => {
+    playerCosmeticsStore.setPendingBlitzLoadout("blitz:mainnet:alpha", "0x123", {
+      tokenIds: ["0xabc"],
+      selectedBySlot: {
+        armor: {
+          tokenId: "0xabc",
+          cosmeticIds: ["army:Knight:T3:legacy"],
+        },
+      },
+    });
+
+    playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");
+
+    expect(playerCosmeticsStore.getSnapshot("0x123")?.activeBlitzLoadouts?.["blitz:mainnet:alpha"]).toEqual({
+      tokenIds: ["0xabc"],
+      selectedBySlot: {
+        armor: {
+          tokenId: "0xabc",
+          cosmeticIds: ["army:Knight:T3:legacy"],
+        },
+      },
+    });
+    expect(playerCosmeticsStore.getSnapshot("0x123")?.selection.armies).toEqual({
+      "army:Knight:T3": {
+        skin: "army:Knight:T3:legacy",
+      },
+    });
+  });
 });

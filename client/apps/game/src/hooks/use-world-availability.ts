@@ -12,7 +12,7 @@ import { useQueries } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "blitz_registration_config.collectibles_cosmetics_max" AS collectibles_cosmetics_max, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "s1_eternum-WorldConfig" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
@@ -105,6 +105,7 @@ export interface WorldConfigMeta {
   entryTokenAddress: string | null;
   feeTokenAddress: string | null;
   feeAmount: bigint;
+  collectiblesCosmeticsMax: number | null;
   registrationStartAt: number | null;
   registrationEndAt: number | null;
   // MMR
@@ -222,6 +223,7 @@ const fetchWorldConfigMeta = async (
     entryTokenAddress: null,
     feeTokenAddress: null,
     feeAmount: 0n,
+    collectiblesCosmeticsMax: null,
     registrationStartAt: null,
     registrationEndAt: null,
     mmrEnabled: false,
@@ -245,6 +247,8 @@ const fetchWorldConfigMeta = async (
       if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
       if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
       if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
+      if (row.collectibles_cosmetics_max != null)
+        meta.collectiblesCosmeticsMax = parseMaybeHexToNumber(row.collectibles_cosmetics_max) ?? null;
       if (row.registration_start_at != null)
         meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
       if (row.registration_end_at != null)

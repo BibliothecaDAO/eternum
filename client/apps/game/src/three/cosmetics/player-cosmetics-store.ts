@@ -141,6 +141,29 @@ class PlayerCosmeticsStore {
     return this.getSnapshot(ownerKey)?.pendingBlitzLoadouts?.[worldKey];
   }
 
+  markAppliedBlitzLoadout(worldKey: string, owner: ContractAddress | string | bigint): void {
+    const ownerKey = toHexString(toBigInt(owner));
+    const snapshot = this.getSnapshot(ownerKey) ?? createEmptySnapshot(ownerKey);
+    const pendingLoadout = snapshot.pendingBlitzLoadouts?.[worldKey];
+
+    if (!pendingLoadout) {
+      return;
+    }
+
+    const selectedCosmeticIds = Object.values(pendingLoadout.selectedBySlot ?? {}).flatMap(
+      (selection) => selection.cosmeticIds,
+    );
+
+    this.setSnapshot({
+      ...snapshot,
+      activeBlitzLoadouts: {
+        ...snapshot.activeBlitzLoadouts,
+        [worldKey]: pendingLoadout,
+      },
+      selection: buildSelectionFromCosmeticIds(selectedCosmeticIds),
+    });
+  }
+
   hydrateFromBlitzComponent(
     components: ClientComponents,
     owner: ContractAddress | string | bigint,

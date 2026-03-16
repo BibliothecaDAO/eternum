@@ -9,7 +9,7 @@ Scope: `client/apps/game/src/three` cosmetics resolution, ownership hydration, s
 - [x] Phase 0: Baseline Lock and Contract Cleanup
 - [x] Phase 1: Ownership Hydration and Registry Mapping
 - [x] Phase 2: Selection Source of Truth and UI Integration
-- [ ] Phase 3: Blitz Registration Wiring
+- [x] Phase 3: Blitz Registration Wiring
 - [ ] Phase 4: Resolver Contract Normalization
 - [ ] Phase 5: Renderer Integration and Asset Loading Unification
 - [ ] Phase 6: Targeted Runtime Refresh and Disposal
