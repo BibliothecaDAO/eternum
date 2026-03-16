@@ -160,6 +160,10 @@ class PlayerCosmeticsStore {
         ...snapshot.activeBlitzLoadouts,
         [worldKey]: pendingLoadout,
       },
+      ownership: {
+        ...snapshot.ownership,
+        eligibleCosmeticIds: Array.from(new Set([...snapshot.ownership.eligibleCosmeticIds, ...selectedCosmeticIds])),
+      },
       selection: buildSelectionFromCosmeticIds(selectedCosmeticIds),
     });
   }

@@ -43,6 +43,19 @@ const findEntryForTarget = (target: string): CosmeticRegistryEntry | undefined =
   return getCosmeticRegistry().find((entry) => entry.appliesTo.includes(target));
 };
 
+const findFallbackEntry = (
+  category: "army-skin" | "structure-skin",
+  targets: readonly string[],
+): CosmeticRegistryEntry | undefined => {
+  return getCosmeticRegistry().find((entry) => {
+    if (entry.category !== category) {
+      return false;
+    }
+
+    return entry.appliesTo.some((target) => targets.includes(target)) && (entry.ownershipKeys?.length ?? 0) === 0;
+  });
+};
+
 const isCompatibleSkinEntry = (
   entry: CosmeticRegistryEntry | undefined,
   category: "army-skin" | "structure-skin",
@@ -132,7 +145,7 @@ const collectAttachmentEntries = (
 export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolutionResult {
   const owner = normalizeOwner(params.owner);
   const target = formatArmyCosmeticTarget(params.troopType, params.tier);
-  const fallbackEntry = findEntryForTarget(target);
+  const fallbackEntry = findFallbackEntry("army-skin", [target]);
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
   const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];
@@ -196,8 +209,7 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
 export function resolveStructureCosmetic(params: StructureCosmeticParams): CosmeticResolutionResult {
   const owner = normalizeOwner(params.owner);
   const target = formatStructureCosmeticTarget(params.structureType, params.stage);
-  const fallbackEntry =
-    findEntryForTarget(target) ?? findEntryForTarget(formatStructureCosmeticTarget(params.structureType));
+  const fallbackEntry = findFallbackEntry("structure-skin", [formatStructureCosmeticTarget(params.structureType), target]);
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
   const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];
