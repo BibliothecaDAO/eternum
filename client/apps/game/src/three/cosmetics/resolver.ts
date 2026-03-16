@@ -84,6 +84,7 @@ const buildSkin = (
   fallbackId: string,
   fallbackModelKey: string,
   fallbackModelType: ModelType | undefined,
+  isFallback: boolean,
 ): ResolvedCosmeticSkin => {
   if (entry) {
     ensureCosmeticAsset(entry);
@@ -92,7 +93,7 @@ const buildSkin = (
   return {
     cosmeticId: entry?.id ?? fallbackId,
     assetPaths: entry?.assetPaths ?? [],
-    isFallback: !entry || entry.id === fallbackId || entry.id.endsWith(":base") || entry.id.endsWith(":default"),
+    isFallback,
     modelType: (entry?.metadata?.baseModelType as ModelType | undefined) ?? fallbackModelType,
     modelKey: entry?.id ?? fallbackModelKey,
     registryEntry: entry,
@@ -102,6 +103,7 @@ const buildSkin = (
 const collectAttachmentEntries = (
   ids: readonly string[] | undefined,
   allowedTargets: readonly string[],
+  eligibleCosmeticIds: readonly string[] | undefined,
 ): CosmeticRegistryEntry[] => {
   if (!ids || ids.length === 0) return [];
   const uniques = new Set<string>();
@@ -111,6 +113,9 @@ const collectAttachmentEntries = (
       if (uniques.has(id)) return undefined;
       const entry = findCosmeticById(id);
       if (!entry || entry.category !== "attachment") {
+        return undefined;
+      }
+      if (eligibleCosmeticIds && eligibleCosmeticIds.length > 0 && !eligibleCosmeticIds.includes(id)) {
         return undefined;
       }
       if (!entry.appliesTo.some((value) => allowedTargets.includes(value))) {
@@ -130,6 +135,7 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   const fallbackEntry = findEntryForTarget(target);
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
+  const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];
   const armySelection = snapshot?.selection.armies?.[target];
   const selectionSkinId = typeof armySelection === "string" ? armySelection : armySelection?.skin;
   const selectionAttachments =
@@ -148,7 +154,10 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   }
 
   const selectedEntry = selectionSkinId ? findCosmeticById(selectionSkinId) : undefined;
-  const resolvedEntry = isCompatibleSkinEntry(selectedEntry, "army-skin", target) ? selectedEntry : fallbackEntry;
+  const resolvedEntry =
+    isCompatibleSkinEntry(selectedEntry, "army-skin", target) && eligibleCosmeticIds.includes(selectedEntry.id)
+      ? selectedEntry
+      : fallbackEntry;
 
   const attachments: CosmeticAttachmentTemplate[] = [];
 
@@ -158,15 +167,21 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   const globalAttachments = snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
 
   const attachmentEntries = [
-    ...collectAttachmentEntries(globalAttachments, allowedTargets),
-    ...collectAttachmentEntries(selectionAttachments, allowedTargets),
+    ...collectAttachmentEntries(globalAttachments, allowedTargets, eligibleCosmeticIds),
+    ...collectAttachmentEntries(selectionAttachments, allowedTargets, eligibleCosmeticIds),
   ];
 
   attachmentEntries.forEach((entry) => {
     upsertAttachments(attachments, entry.attachments, entry.attachmentSlot);
   });
 
-  const skin = buildSkin(resolvedEntry, `${target}:default`, target, params.defaultModelType);
+  const skin = buildSkin(
+    resolvedEntry,
+    `${target}:default`,
+    target,
+    params.defaultModelType,
+    !resolvedEntry || resolvedEntry.id === fallbackEntry?.id,
+  );
   return {
     skin,
     attachments,
@@ -185,6 +200,7 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
     findEntryForTarget(target) ?? findEntryForTarget(formatStructureCosmeticTarget(params.structureType));
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
+  const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];
   const structureSelection = snapshot?.selection.structures?.[target];
   const selectionSkinId = typeof structureSelection === "string" ? structureSelection : structureSelection?.skin;
   const selectionAttachments =
@@ -203,7 +219,10 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
   }
 
   const selectedEntry = selectionSkinId ? findCosmeticById(selectionSkinId) : undefined;
-  const resolvedEntry = isCompatibleSkinEntry(selectedEntry, "structure-skin", target) ? selectedEntry : fallbackEntry;
+  const resolvedEntry =
+    isCompatibleSkinEntry(selectedEntry, "structure-skin", target) && eligibleCosmeticIds.includes(selectedEntry.id)
+      ? selectedEntry
+      : fallbackEntry;
 
   const attachments: CosmeticAttachmentTemplate[] = [];
   const allowedTargets = [target, formatStructureCosmeticTarget(params.structureType)];
@@ -213,15 +232,21 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
   const globalAttachments = snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
 
   const attachmentEntries = [
-    ...collectAttachmentEntries(globalAttachments, allowedTargets),
-    ...collectAttachmentEntries(selectionAttachments, allowedTargets),
+    ...collectAttachmentEntries(globalAttachments, allowedTargets, eligibleCosmeticIds),
+    ...collectAttachmentEntries(selectionAttachments, allowedTargets, eligibleCosmeticIds),
   ];
 
   attachmentEntries.forEach((entry) => {
     upsertAttachments(attachments, entry.attachments, entry.attachmentSlot);
   });
 
-  const skin = buildSkin(resolvedEntry, `${target}:default`, params.defaultModelKey, undefined);
+  const skin = buildSkin(
+    resolvedEntry,
+    `${target}:default`,
+    params.defaultModelKey,
+    undefined,
+    !resolvedEntry || resolvedEntry.id === fallbackEntry?.id,
+  );
   return {
     skin,
     attachments,

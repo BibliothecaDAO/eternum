@@ -969,6 +969,7 @@ export class ArmyManager {
     // Handle cosmetic model assignment
     let cosmeticId = army.cosmeticId;
     let cosmeticAssetPaths = army.cosmeticAssetPaths;
+    let usesFallbackCosmeticSkin = army.usesFallbackCosmeticSkin ?? true;
 
     // Re-resolve cosmetics if requested (for debug mode)
     if (reResolveCosmetics) {
@@ -978,22 +979,18 @@ export class ArmyManager {
         tier: army.tier,
         defaultModelType: modelType,
       });
-      cosmeticId = cosmetic.cosmeticId;
-      cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
+      cosmeticId = cosmetic.skin.cosmeticId;
+      cosmeticAssetPaths = cosmetic.skin.assetPaths;
+      usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
 
       // Update army data with new cosmetic info
       army.cosmeticId = cosmeticId;
       army.cosmeticAssetPaths = cosmeticAssetPaths;
+      army.usesFallbackCosmeticSkin = usesFallbackCosmeticSkin;
       army.attachments = cosmetic.attachments;
     }
 
-    // Check if this is a custom cosmetic skin (not base/default)
-    const hasCosmeticSkin =
-      cosmeticAssetPaths &&
-      cosmeticAssetPaths.length > 0 &&
-      cosmeticId &&
-      !cosmeticId.endsWith(":base") &&
-      !cosmeticId.endsWith(":default");
+    const hasCosmeticSkin = Boolean(cosmeticId && cosmeticAssetPaths && cosmeticAssetPaths.length > 0 && !usesFallbackCosmeticSkin);
 
     if (hasCosmeticSkin) {
       this.armyModel.assignCosmeticToEntity(numericId, cosmeticId!, cosmeticAssetPaths![0]);
@@ -1712,23 +1709,18 @@ export class ArmyManager {
       tier: params.tier,
       defaultModelType: baseModelType,
     });
-    const resolvedModelType = cosmetic.modelType ?? baseModelType;
+    const resolvedModelType = cosmetic.skin.modelType ?? baseModelType;
 
     // Extract cosmetic asset paths for potential custom model
-    const cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
-    const hasCosmeticSkin =
-      cosmeticAssetPaths &&
-      cosmeticAssetPaths.length > 0 &&
-      cosmetic.cosmeticId &&
-      !cosmetic.cosmeticId.endsWith(":base") &&
-      !cosmetic.cosmeticId.endsWith(":default");
+    const cosmeticAssetPaths = cosmetic.skin.assetPaths;
+    const hasCosmeticSkin = !cosmetic.skin.isFallback && cosmeticAssetPaths.length > 0;
 
     await this.armyModel.preloadModels([resolvedModelType]);
     this.armyModel.assignModelToEntity(numericEntityId, resolvedModelType);
 
     // If there's a custom cosmetic skin, assign it to the entity
     if (hasCosmeticSkin) {
-      this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.cosmeticId, cosmeticAssetPaths[0]);
+      this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.skin.cosmeticId, cosmeticAssetPaths[0]);
     }
 
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
@@ -1751,8 +1743,9 @@ export class ArmyManager {
         ownerName: finalOwnerName,
         guildName: finalGuildName,
       },
-      cosmeticId: cosmetic.cosmeticId,
+      cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths,
+      usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
       attachments: cosmetic.attachments,
       color,
       category: params.category,

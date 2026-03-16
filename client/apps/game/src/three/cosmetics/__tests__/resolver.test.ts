@@ -102,6 +102,36 @@ describe("cosmetics resolver", () => {
     expect(result.skin.isFallback).toBe(true);
   });
 
+  it("rejects selected cosmetics that are not ownership-eligible", () => {
+    playerCosmeticsStore.setSnapshot({
+      owner: "0x1",
+      version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: [],
+      },
+      selection: {
+        armies: {
+          [formatArmyCosmeticTarget(TroopType.Knight, TroopTier.T3)]: {
+            skin: "army:Knight:T3:legacy",
+          },
+        },
+      },
+    });
+
+    const result = resolveArmyCosmetic({
+      owner: "0x1",
+      troopType: TroopType.Knight,
+      tier: TroopTier.T3,
+      defaultModelType: ModelType.Knight3,
+    });
+
+    expect(result.skin.cosmeticId).toBe("army:Knight:T3:base");
+    expect(result.skin.isFallback).toBe(true);
+  });
+
   it("merges per-army attachments when compatible", () => {
     registerCosmetic({
       id: "attachment:test:crossbow-banner",
@@ -146,5 +176,40 @@ describe("cosmetics resolver", () => {
     const attachmentIds = result.attachments.map((attachment) => attachment.id).toSorted();
     expect(attachmentIds).toEqual(["bow-common", "crossbow-banner"]);
     expect(result.attachments.every((item) => !!item.slot)).toBe(true);
+  });
+
+  it("lets target-local attachments replace global attachments in the same slot", () => {
+    playerCosmeticsStore.setSnapshot({
+      owner: "0x1",
+      version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: [
+          "attachment:army:aura-legacy",
+          "attachment:structure:aura-winter-spike",
+          "attachment:structure:aura-legacy",
+        ],
+      },
+      selection: {
+        structures: {
+          "structure:Realm": {
+            attachments: ["attachment:structure:aura-winter-spike"],
+          },
+        },
+        globalAttachments: ["attachment:structure:aura-legacy"],
+      },
+    });
+
+    const result = resolveStructureCosmetic({
+      owner: "0x1",
+      structureType: StructureType.Realm,
+      defaultModelKey: "Realm",
+    });
+
+    expect(result.attachments.filter((attachment) => attachment.slot === "aura")).toEqual([
+      expect.objectContaining({ id: "winter-spike-aura" }),
+    ]);
   });
 });

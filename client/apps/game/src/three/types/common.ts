@@ -29,6 +29,7 @@ export interface StructureInfo {
   hasWonder: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
+  usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
@@ -53,6 +54,7 @@ export interface ArmyData {
   isDaydreamsAgent: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
+  usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   troopCount: number;

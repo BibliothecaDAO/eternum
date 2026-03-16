@@ -933,8 +933,9 @@ export class StructureManager {
 
     const structureRecord = this.structures.getStructureByEntityId(entityId);
     if (structureRecord) {
-      structureRecord.cosmeticId = cosmetic.cosmeticId;
-      structureRecord.cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
+      structureRecord.cosmeticId = cosmetic.skin.cosmeticId;
+      structureRecord.cosmeticAssetPaths = cosmetic.skin.assetPaths;
+      structureRecord.usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
       structureRecord.attachments = cosmetic.attachments;
     }
 
@@ -966,7 +967,7 @@ export class StructureManager {
         level,
         isMine: structureRecord?.isMine ?? false,
         isAlly: structureRecord?.isAlly ?? false,
-        cosmeticId: cosmetic.cosmeticId,
+        cosmeticId: cosmetic.skin.cosmeticId,
         attachmentSignature: this.getAttachmentSignature(cosmetic.attachments),
       },
       wasVisible: existingWasVisible,
@@ -1129,8 +1130,7 @@ export class StructureManager {
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
-    // Default cosmetics end with ":base" and use the standard model paths
-    return !structure.cosmeticId.endsWith(":base");
+    return !structure.usesFallbackCosmeticSkin;
   }
 
   private getModelForStructure(structure: StructureInfo): InstancedModel | undefined {
