@@ -1648,7 +1648,115 @@ const PlayTabContent = ({
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
       <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={setModeFilter} />
 
-      {modeFilter === "season" && <SeasonMockupLane />}
+      {modeFilter === "season" && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">Eternum Live Data</div>
+
+            {/* Three columns: Live | Upcoming | Ended */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
+              {/* Live Games Column */}
+              <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
+                      <Zap className="h-3.5 w-3.5 text-emerald-400" />
+                    </div>
+                    <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Live Games</h2>
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                  </div>
+                  <button
+                    onClick={onRefresh}
+                    disabled={isRefreshing}
+                    className="p-1 rounded-md bg-emerald-500/10 text-emerald-400/70 hover:bg-emerald-500/20 hover:text-emerald-400 transition-all disabled:opacity-50"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
+                  <UnifiedGameGrid
+                    onSelectGame={onSelectGame}
+                    onSpectate={onSpectate}
+                    onForgeHyperstructures={onForgeHyperstructures}
+                    onRegistrationComplete={onRegistrationComplete}
+                    modeFilter="eternum"
+                    statusFilter="ongoing"
+                    hideHeader
+                    hideLegend
+                    layout="vertical"
+                    sortRegisteredFirst
+                  />
+                </div>
+              </div>
+
+              {/* Upcoming Games Column */}
+              <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
+                      <Clock className="h-3.5 w-3.5 text-amber-400" />
+                    </div>
+                    <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
+                  </div>
+                  <button
+                    onClick={onRefresh}
+                    disabled={isRefreshing}
+                    className="p-1 rounded-md bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400 transition-all disabled:opacity-50"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
+                  <UnifiedGameGrid
+                    onSelectGame={onSelectGame}
+                    onSpectate={onSpectate}
+                    onForgeHyperstructures={onForgeHyperstructures}
+                    onRegistrationComplete={onRegistrationComplete}
+                    modeFilter="eternum"
+                    devModeFilter={false}
+                    statusFilter="upcoming"
+                    hideHeader
+                    hideLegend
+                    layout="vertical"
+                    sortRegisteredFirst
+                  />
+                </div>
+              </div>
+
+              {/* Ended Games Column */}
+              <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px] md:col-span-2 xl:col-span-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
+                    <Trophy className="h-3.5 w-3.5 text-gold" />
+                  </div>
+                  <h2 className="font-cinzel text-base text-gold uppercase tracking-wider">Ended Games</h2>
+                </div>
+                <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+                  <UnifiedGameGrid
+                    onSelectGame={onSelectGame}
+                    onSpectate={onSpectate}
+                    onSeeScore={onSeeScore}
+                    onClaimRewards={onClaimRewards}
+                    onRegistrationComplete={onRegistrationComplete}
+                    modeFilter="eternum"
+                    devModeFilter={false}
+                    statusFilter="ended"
+                    hideHeader
+                    hideLegend
+                    layout="vertical"
+                    sortClaimableRewardsFirst
+                    sortEndedNewestFirst
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <SeasonMockupLane />
+        </div>
+      )}
 
       {modeFilter === "blitz" && (
         <div className="flex flex-col gap-2">
@@ -1681,6 +1789,7 @@ const PlayTabContent = ({
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
                   onRegistrationComplete={onRegistrationComplete}
+                  modeFilter="blitz"
                   statusFilter="ongoing"
                   hideHeader
                   hideLegend
@@ -1714,6 +1823,7 @@ const PlayTabContent = ({
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
                   onRegistrationComplete={onRegistrationComplete}
+                  modeFilter="blitz"
                   devModeFilter={false}
                   statusFilter="upcoming"
                   hideHeader
@@ -1739,6 +1849,7 @@ const PlayTabContent = ({
                   onSeeScore={onSeeScore}
                   onClaimRewards={onClaimRewards}
                   onRegistrationComplete={onRegistrationComplete}
+                  modeFilter="blitz"
                   devModeFilter={false}
                   statusFilter="ended"
                   hideHeader
