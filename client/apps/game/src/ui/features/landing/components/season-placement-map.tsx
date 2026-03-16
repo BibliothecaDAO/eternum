@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -207,11 +207,8 @@ export const SeasonPlacementMap = ({
   mapHeightClassName = "h-60",
   tone = "emerald",
 }: SeasonPlacementMapProps) => {
-  const selectedSlot = useMemo(
-    () => slots.find((slot) => (selectedSlotId ? slot.id === selectedSlotId : false)) ?? null,
-    [slots, selectedSlotId],
-  );
   const mapBounds = useMemo(() => getSeasonMapBounds(slots), [slots]);
+  const defaultMapCamera = useMemo(() => buildSeasonMapCamera(mapBounds, null), [mapBounds]);
   const occupiedSlotCount = useMemo(
     () => slots.reduce((count, slot) => (slot.occupied ? count + 1 : count), 0),
     [slots],
@@ -229,6 +226,7 @@ export const SeasonPlacementMap = ({
     [slots, hyperstructureSlotIds],
   );
   const [mapCamera, setMapCamera] = useState<SeasonPlacementMapCamera | null>(null);
+  const mapSvgRef = useRef<SVGSVGElement | null>(null);
   const mapDragStateRef = useRef<{
     pointerId: number;
     startClientX: number;
@@ -236,10 +234,7 @@ export const SeasonPlacementMap = ({
     startCamera: SeasonPlacementMapCamera;
     hasMoved: boolean;
   } | null>(null);
-  const mapViewBox = useMemo(
-    () => seasonMapCameraToViewBox(mapCamera ?? buildSeasonMapCamera(mapBounds, selectedSlot)),
-    [mapBounds, mapCamera, selectedSlot],
-  );
+  const mapViewBox = useMemo(() => seasonMapCameraToViewBox(mapCamera ?? defaultMapCamera), [defaultMapCamera, mapCamera]);
 
   const handleSlotSelect = useCallback(
     (slot: SeasonPlacementMapSlot) => {
@@ -250,11 +245,14 @@ export const SeasonPlacementMap = ({
   );
 
   const handleMapWheel = useCallback(
-    (event: React.WheelEvent<SVGSVGElement>) => {
+    (event: WheelEvent) => {
       if (slots.length === 0) return;
       event.preventDefault();
-      const currentCamera = mapCamera ?? buildSeasonMapCamera(mapBounds, selectedSlot);
-      const worldPoint = getSeasonMapWorldPointFromClient(event.currentTarget, event.clientX, event.clientY);
+      event.stopPropagation();
+      const mapElement = mapSvgRef.current;
+      if (!mapElement) return;
+      const currentCamera = mapCamera ?? defaultMapCamera;
+      const worldPoint = getSeasonMapWorldPointFromClient(mapElement, event.clientX, event.clientY);
       if (!worldPoint) return;
       const cursorRatioX = (worldPoint.x - currentCamera.x) / currentCamera.width;
       const cursorRatioY = (worldPoint.y - currentCamera.y) / currentCamera.height;
@@ -273,14 +271,28 @@ export const SeasonPlacementMap = ({
       );
       setMapCamera(nextCamera);
     },
-    [mapBounds, mapCamera, selectedSlot, slots.length],
+    [defaultMapCamera, mapBounds, mapCamera, slots.length],
   );
+
+  useEffect(() => {
+    const mapElement = mapSvgRef.current;
+    if (!mapElement) return;
+
+    const handleWheelEvent = (event: WheelEvent) => {
+      handleMapWheel(event);
+    };
+
+    mapElement.addEventListener("wheel", handleWheelEvent, { passive: false });
+    return () => {
+      mapElement.removeEventListener("wheel", handleWheelEvent);
+    };
+  }, [handleMapWheel]);
 
   const handleMapPointerDown = useCallback(
     (event: React.PointerEvent<SVGSVGElement>) => {
       if (slots.length === 0) return;
       if (event.button !== 0) return;
-      const currentCamera = mapCamera ?? buildSeasonMapCamera(mapBounds, selectedSlot);
+      const currentCamera = mapCamera ?? defaultMapCamera;
       event.currentTarget.setPointerCapture(event.pointerId);
       mapDragStateRef.current = {
         pointerId: event.pointerId,
@@ -290,7 +302,7 @@ export const SeasonPlacementMap = ({
         hasMoved: false,
       };
     },
-    [mapBounds, mapCamera, selectedSlot, slots.length],
+    [defaultMapCamera, mapCamera, slots.length],
   );
 
   const handleMapPointerMove = useCallback(
@@ -347,8 +359,8 @@ export const SeasonPlacementMap = ({
   );
 
   const resetMapCamera = useCallback(() => {
-    setMapCamera(buildSeasonMapCamera(mapBounds, selectedSlot));
-  }, [mapBounds, selectedSlot]);
+    setMapCamera(defaultMapCamera);
+  }, [defaultMapCamera]);
 
   const toneClass = tone === "gold" ? "text-gold/70" : "text-emerald-100/70";
   const titleClass = tone === "gold" ? "text-gold/85" : "text-emerald-100/85";
@@ -375,13 +387,14 @@ export const SeasonPlacementMap = ({
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-black/70" aria-hidden />
         <svg
+          ref={mapSvgRef}
           viewBox={mapViewBox}
           className="relative z-10 h-full w-full touch-none"
           aria-label="Season placement map"
-          onWheel={handleMapWheel}
           onPointerDown={handleMapPointerDown}
           onPointerMove={handleMapPointerMove}
           onPointerUp={handleMapPointerEnd}
+          onPointerCancel={handleMapPointerEnd}
           onPointerLeave={handleMapPointerEnd}
         >
           {slots.map((slot) => {
