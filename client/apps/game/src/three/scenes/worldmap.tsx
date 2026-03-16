@@ -148,6 +148,7 @@ import {
   resetWorldmapWheelIntent,
   setWorldmapZoomTargetView,
 } from "./worldmap-zoom-controller";
+import { resolveWorldmapCameraStoreSyncPlan } from "./worldmap-camera-store-sync";
 import { flushDeferredWorldmapZoomRefresh, resolveWorldmapZoomRefreshPlan } from "./worldmap-zoom-refresh-policy";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
@@ -397,16 +398,20 @@ export default class WorldmapScene extends WarpTravel {
     const contractHex = new Position({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
     const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
     const state = useUIStore.getState();
-    const currentHex = state.cameraTargetHex;
-    const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
     const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
-    const distanceChanged = state.cameraDistance === null || Math.abs(state.cameraDistance - nextCameraDistance) > 0.01;
+    const syncPlan = resolveWorldmapCameraStoreSyncPlan({
+      currentDistance: state.cameraDistance,
+      currentHex: state.cameraTargetHex,
+      isScriptedTransitionActive: this.isScriptedZoomTransitionActive,
+      nextDistance: nextCameraDistance,
+      nextHex,
+    });
 
-    if (!hexChanged && !distanceChanged) return;
+    if (!syncPlan.shouldUpdateHex && !syncPlan.shouldUpdateDistance) return;
 
     const nextState: { cameraTargetHex?: typeof nextHex; cameraDistance?: number } = {};
-    if (hexChanged) nextState.cameraTargetHex = nextHex;
-    if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
+    if (syncPlan.shouldUpdateHex) nextState.cameraTargetHex = nextHex;
+    if (syncPlan.shouldUpdateDistance) nextState.cameraDistance = nextCameraDistance;
     useUIStore.setState(nextState);
   };
   private minimapCameraMoveTarget: { col: number; row: number } | null = null;
@@ -740,6 +745,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addCameraTransitionListener((status) => {
       this.isScriptedZoomTransitionActive = status === "transitioning";
       if (status === "idle") {
+        this.updateCameraTargetHex();
         this.flushDeferredZoomRefresh();
       }
     });

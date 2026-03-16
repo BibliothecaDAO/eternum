@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   createCameraTransitionState,
   publishCameraTransitionFrame,
+  resolveCameraViewTransitionDuration,
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
@@ -104,6 +105,14 @@ describe("camera transition state", () => {
   });
 });
 
+describe("resolveCameraViewTransitionDuration", () => {
+  it("keeps scripted zoom transitions short enough to feel responsive", () => {
+    expect(resolveCameraViewTransitionDuration(0)).toBe(0.18);
+    expect(resolveCameraViewTransitionDuration(1)).toBe(0.32);
+    expect(resolveCameraViewTransitionDuration(2)).toBe(0.44);
+  });
+});
+
 describe("hexagon scene camera transition wiring", () => {
   it("uses the camera transition frame publisher and records retarget cancellations", () => {
     const source = readHexagonSceneSource();
@@ -111,5 +120,11 @@ describe("hexagon scene camera transition wiring", () => {
     expect(source).toMatch(/publishCameraTransitionFrame\(/);
     expect(source).toMatch(/incrementWorldmapRenderCounter\("zoomTransitionsCancelled"\)/);
     expect(source).toMatch(/gsap\.timeline\(\{/);
+  });
+
+  it("routes camera view timing through the shared transition-duration helper", () => {
+    const source = readHexagonSceneSource();
+
+    expect(source).toMatch(/resolveCameraViewTransitionDuration\(viewDelta\)/);
   });
 });

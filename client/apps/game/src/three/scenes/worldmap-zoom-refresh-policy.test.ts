@@ -35,7 +35,7 @@ describe("resolveWorldmapZoomRefreshPlan", () => {
     });
   });
 
-  it("still forces refresh when a hard zoom threshold is crossed", () => {
+  it("does not escalate scripted zoom distance into a forced current-chunk refresh", () => {
     const result = resolveWorldmapZoomRefreshPlan({
       previousDistance: 20,
       nextDistance: 21,
@@ -47,6 +47,6 @@ describe("resolveWorldmapZoomRefreshPlan", () => {
 
     expect(result.shouldRequestRefreshNow).toBe(false);
     expect(result.nextHasDeferredRefresh).toBe(true);
-    expect(result.nextDeferredForceRefresh).toBe(true);
+    expect(result.nextDeferredForceRefresh).toBe(false);
   });
 });

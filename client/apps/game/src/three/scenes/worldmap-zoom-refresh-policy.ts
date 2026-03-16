@@ -49,7 +49,7 @@ export function resolveWorldmapZoomRefreshPlan(input: WorldmapZoomRefreshPlanInp
       shouldRequestRefreshNow: false,
       shouldForceRefreshNow: false,
       nextHasDeferredRefresh: true,
-      nextDeferredForceRefresh: input.deferredForceRefresh || shouldForceRefresh,
+      nextDeferredForceRefresh: input.deferredForceRefresh,
     };
   }
 

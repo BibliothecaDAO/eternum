@@ -63,6 +63,7 @@ import { CameraView } from "./camera-view";
 import {
   createCameraTransitionState,
   publishCameraTransitionFrame,
+  resolveCameraViewTransitionDuration,
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
@@ -1429,7 +1430,7 @@ export abstract class HexagonScene {
 
     const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
     const viewDelta = Math.abs(position - previousView);
-    const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
+    const duration = resolveCameraViewTransitionDuration(viewDelta);
     this.cameraAnimate(newPosition, target, duration, () => {
       if (position !== previousView) {
         incrementWorldmapRenderCounter("zoomTransitionsCompleted");

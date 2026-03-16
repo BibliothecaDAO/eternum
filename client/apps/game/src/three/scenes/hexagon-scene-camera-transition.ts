@@ -47,6 +47,17 @@ export function resolveCameraTransitionCompletion(
   };
 }
 
+export function resolveCameraViewTransitionDuration(viewDelta: number): number {
+  switch (viewDelta) {
+    case 0:
+      return 0.18;
+    case 1:
+      return 0.32;
+    default:
+      return 0.44;
+  }
+}
+
 export function publishCameraTransitionFrame(input: CameraTransitionFrameInput): void {
   const controlsHandledChange = input.updateControls();
   input.syncDistanceVisuals();
