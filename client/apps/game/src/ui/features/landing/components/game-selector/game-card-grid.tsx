@@ -430,7 +430,7 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
-  const showPreviewButton = import.meta.env.DEV && isOngoing && !showRegistered && Boolean(playerAddress) && canPreviewEnter;
+  const showPreviewButton = import.meta.env.DEV && isOngoing && Boolean(playerAddress) && canPreviewEnter;
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
   const previewActionLabel = hasPreviewEntry ? "Reapply Preview" : "Local Preview";
 
@@ -671,7 +671,7 @@ const GameCard = ({
             </button>
           )}
 
-          {hasPreviewEntry && !game.isRegistered && (
+          {hasPreviewEntry && (
             <button
               onClick={handleClearPreview}
               className={cn(

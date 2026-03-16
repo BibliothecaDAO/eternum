@@ -12,6 +12,7 @@ describe("Game card dev preview gating", () => {
 
     expect(source).toContain("const hasPreviewEntry = previewEntry?.previewEntered === true;");
     expect(source).toContain("const canPlay = isOngoing && (game.isRegistered || hasPreviewEntry);");
+    expect(source).toContain("{hasPreviewEntry && (");
     expect(source).toContain("Clear Preview");
   });
 });
