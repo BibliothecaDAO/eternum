@@ -28,6 +28,7 @@ import {
   switchWalletToChain,
   type WalletChainControllerLike,
 } from "@/ui/utils/network-switch";
+import { useWorldPreviewEntry } from "@/hooks/use-world-preview-entry";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -274,7 +275,20 @@ const GameCard = ({
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
   const devModeOn = game.config?.devModeOn ?? false;
-  const canPlay = isOngoing && game.isRegistered;
+  const {
+    enterPreview,
+    clearPreview,
+    previewEntry,
+    previewEntryStage,
+    error: previewError,
+    canPreviewEnter,
+  } = useWorldPreviewEntry({
+    worldName: game.name,
+    chain: game.chain,
+    enabled: game.status === "ok" && isOngoing && Boolean(playerAddress),
+  });
+  const hasPreviewEntry = previewEntry?.previewEntered === true;
+  const canPlay = isOngoing && (game.isRegistered || hasPreviewEntry);
   // Can spectate ongoing or ended games
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
@@ -416,8 +430,31 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
-  const showPreviewButton = import.meta.env.DEV && isOngoing && !showRegistered && Boolean(playerAddress);
+  const showPreviewButton = import.meta.env.DEV && isOngoing && !showRegistered && Boolean(playerAddress) && canPreviewEnter;
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
+  const previewActionLabel = hasPreviewEntry ? "Reapply Preview" : "Local Preview";
+
+  const handlePreviewEnter = useCallback(() => {
+    if (!onPreviewEnter) {
+      return;
+    }
+
+    runWithNetworkGuard(() => {
+      void enterPreview()
+        .then(() => {
+          onPreviewEnter();
+        })
+        .catch((err) => {
+          console.error("Preview entry failed:", err);
+        });
+    });
+  }, [enterPreview, onPreviewEnter, runWithNetworkGuard]);
+
+  const handleClearPreview = useCallback(() => {
+    clearPreview();
+  }, [clearPreview]);
+
+  const handlePlayAction = hasPreviewEntry && !game.isRegistered && onPreviewEnter ? onPreviewEnter : onPlay;
 
   return (
     <div
@@ -567,7 +604,7 @@ const GameCard = ({
           {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
-              onClick={() => runWithNetworkGuard(onPlay)}
+              onClick={() => runWithNetworkGuard(handlePlayAction)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
@@ -623,14 +660,26 @@ const GameCard = ({
 
           {showPreviewButton && onPreviewEnter && (
             <button
-              onClick={() => runWithNetworkGuard(onPreviewEnter)}
+              onClick={handlePreviewEnter}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-amber-500/15 text-amber-200 border border-amber-400/35 hover:bg-amber-500/25 transition-colors",
               )}
             >
               <Sparkles className="w-3 h-3" />
-              Local Preview
+              {previewActionLabel}
+            </button>
+          )}
+
+          {hasPreviewEntry && !game.isRegistered && (
+            <button
+              onClick={handleClearPreview}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
+                "bg-white/5 text-white/70 border border-white/15 hover:bg-white/10 transition-colors",
+              )}
+            >
+              Clear Preview
             </button>
           )}
 
@@ -752,6 +801,11 @@ const GameCard = ({
         {registrationStage === "error" && error && !showRegistered && (
           <div className="text-[10px] text-red-400 text-center truncate" title={error}>
             {error}
+          </div>
+        )}
+        {previewEntryStage === "error" && previewError && !showRegistered && (
+          <div className="text-[10px] text-red-400 text-center truncate" title={previewError}>
+            {previewError}
           </div>
         )}
       </div>

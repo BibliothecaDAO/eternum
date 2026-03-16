@@ -10,7 +10,9 @@ describe("Game card dev preview entry visibility", () => {
       "utf8",
     );
 
-    expect(source).toContain("const showPreviewButton = import.meta.env.DEV && isOngoing && !showRegistered && Boolean(playerAddress);");
+    expect(source).toContain(
+      "const showPreviewButton = import.meta.env.DEV && isOngoing && !showRegistered && Boolean(playerAddress) && canPreviewEnter;",
+    );
     expect(source).toContain("Local Preview");
     expect(source).toContain("onPreviewEnter");
   });

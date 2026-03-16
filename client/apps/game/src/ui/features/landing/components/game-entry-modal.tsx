@@ -25,6 +25,7 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
+import { useWorldPreviewEntry } from "@/hooks/use-world-preview-entry";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
@@ -595,6 +596,11 @@ export const GameEntryModal = ({
         ? `${pendingLoadout.pendingCount} cosmetics ready for local preview.`
         : pendingLoadout.errors[0] ?? "The pending Blitz loadout needs attention before preview."
     : pendingLoadoutSummary;
+  const { clearPreview } = useWorldPreviewEntry({
+    worldName,
+    chain,
+    enabled: isPreviewMode && isOpen,
+  });
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -796,6 +802,11 @@ export const GameEntryModal = ({
     },
     [setupResult, account],
   );
+
+  const handleClearPreview = useCallback(() => {
+    clearPreview();
+    onClose();
+  }, [clearPreview, onClose]);
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
@@ -1385,6 +1396,12 @@ export const GameEntryModal = ({
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-amber-100">Local Dev Preview</p>
               <p className="mt-1 text-xs text-amber-50/90">This enters the world without a registration transaction.</p>
               <p className="mt-1 text-xs text-amber-100/75">Other players will not see this preview.</p>
+              <p className="mt-1 text-xs text-amber-100/75">This only affects your current browser session.</p>
+              <div className="mt-3">
+                <Button variant="outline" onClick={handleClearPreview} className="w-full" forceUppercase={false}>
+                  Clear Preview
+                </Button>
+              </div>
             </div>
           )}
           {!isForgeMode && !isSpectateMode && (
