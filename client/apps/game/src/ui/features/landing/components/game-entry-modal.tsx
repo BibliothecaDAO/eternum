@@ -49,6 +49,7 @@ import {
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
+import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { Coord, Direction, ResourcesIds } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
 import { CallData, type Account, uint256 } from "starknet";
@@ -108,17 +109,7 @@ type SeasonPlacementPreview = {
   y: number;
 };
 
-type SeasonPlacementSlot = {
-  id: string;
-  side: number;
-  layer: number;
-  point: number;
-  x: number;
-  y: number;
-  pixelX: number;
-  pixelY: number;
-  occupied: boolean;
-};
+type SeasonPlacementSlot = SeasonPlacementMapSlot;
 
 const validateSeasonPlacement = ({
   side,
@@ -237,7 +228,7 @@ const mapSeasonPassMintError = (error: unknown): string => {
   return "Failed to mint realm/season pass. Try another realm ID.";
 };
 
-const SEASON_MAP_HEX_RADIUS = 6.5;
+const SEASON_MAP_HEX_RADIUS = 8;
 const SEASON_MAP_SQRT3 = Math.sqrt(3);
 
 const toSeasonPlacementSlotId = (side: number, layer: number, point: number): string => `${side}:${layer}:${point}`;
@@ -253,17 +244,6 @@ const seasonMapOffsetToPixel = (col: number, row: number): { x: number; y: numbe
     x: col * horizontalDistance - rowOffset,
     y: row * verticalDistance,
   };
-};
-
-const buildSeasonMapHexPoints = (centerX: number, centerY: number): string => {
-  const points: string[] = [];
-  for (let index = 0; index < 6; index += 1) {
-    const angle = ((60 * index - 30) * Math.PI) / 180;
-    const x = centerX + SEASON_MAP_HEX_RADIUS * Math.cos(angle);
-    const y = centerY + SEASON_MAP_HEX_RADIUS * Math.sin(angle);
-    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
-  }
-  return points.join(" ");
 };
 
 const buildSeasonPlacementSlots = ({
@@ -319,48 +299,6 @@ const buildSeasonPlacementSlots = ({
   }
 
   return slots;
-};
-
-const buildSeasonPlacementViewBox = (
-  slots: SeasonPlacementSlot[],
-  selectedSlot: SeasonPlacementSlot | null,
-): string => {
-  if (slots.length === 0) {
-    return "-120 -120 240 240";
-  }
-
-  let minX = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-
-  for (const slot of slots) {
-    minX = Math.min(minX, slot.pixelX - SEASON_MAP_HEX_RADIUS);
-    maxX = Math.max(maxX, slot.pixelX + SEASON_MAP_HEX_RADIUS);
-    minY = Math.min(minY, slot.pixelY - SEASON_MAP_HEX_RADIUS);
-    maxY = Math.max(maxY, slot.pixelY + SEASON_MAP_HEX_RADIUS);
-  }
-
-  const padding = 22;
-  const boundedMinX = minX - padding;
-  const boundedMaxX = maxX + padding;
-  const boundedMinY = minY - padding;
-  const boundedMaxY = maxY + padding;
-  const width = Math.max(1, boundedMaxX - boundedMinX);
-  const height = Math.max(1, boundedMaxY - boundedMinY);
-
-  if (!selectedSlot) {
-    return `${boundedMinX} ${boundedMinY} ${width} ${height}`;
-  }
-
-  const focusWidth = Math.max(170, width * 0.78);
-  const focusHeight = Math.max(170, height * 0.78);
-  const rawViewX = selectedSlot.pixelX - focusWidth / 2;
-  const rawViewY = selectedSlot.pixelY - focusHeight / 2;
-  const clampedViewX = Math.max(boundedMinX, Math.min(rawViewX, boundedMaxX - focusWidth));
-  const clampedViewY = Math.max(boundedMinY, Math.min(rawViewY, boundedMaxY - focusHeight));
-
-  return `${clampedViewX} ${clampedViewY} ${focusWidth} ${focusHeight}`;
 };
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
@@ -769,18 +707,10 @@ const SeasonPlacementPhase = ({
       }),
     [layerMax, layersSkipped, settlementBaseDistance, mapCenterOffset, occupiedCoordLookup],
   );
-  const occupiedSlotCount = useMemo(
-    () => placementSlots.reduce((count, slot) => (slot.occupied ? count + 1 : count), 0),
-    [placementSlots],
-  );
   const selectedSlotId = toSeasonPlacementSlotId(placement.side, placement.layer, placement.point);
   const selectedPlacementSlot = useMemo(
     () => placementSlots.find((slot) => slot.id === selectedSlotId) ?? null,
     [placementSlots, selectedSlotId],
-  );
-  const mapViewBox = useMemo(
-    () => buildSeasonPlacementViewBox(placementSlots, selectedPlacementSlot),
-    [placementSlots, selectedPlacementSlot],
   );
 
   useEffect(() => {
@@ -925,48 +855,18 @@ const SeasonPlacementPhase = ({
 
       <div className="mb-4">
         <p className="text-sm text-gold mb-2">Map placement overlay</p>
-        <div className="relative h-64 overflow-hidden rounded-lg border border-gold/20 bg-black/35">
-          <div
-            className="absolute inset-0 bg-[url('/images/covers/blitz/07.png')] bg-cover bg-center opacity-20"
-            aria-hidden
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" aria-hidden />
-          <svg
-            viewBox={mapViewBox}
-            className="relative z-10 h-full w-full"
-            role="img"
-            aria-label="Season settlement placement map"
-          >
-            {placementSlots.map((slot) => {
-              const isSelected = slot.id === selectedSlotId;
-              const isSelectable = !slot.occupied;
-              return (
-                <polygon
-                  key={slot.id}
-                  points={buildSeasonMapHexPoints(slot.pixelX, slot.pixelY)}
-                  fill={isSelected ? "#f4d25a" : slot.occupied ? "#4b5563" : "#34d399"}
-                  fillOpacity={isSelected ? 0.88 : slot.occupied ? 0.35 : 0.28}
-                  stroke={isSelected ? "#fef3c7" : slot.occupied ? "#9ca3af" : "#86efac"}
-                  strokeWidth={isSelected ? 1.15 : 0.85}
-                  strokeOpacity={isSelected ? 1 : slot.occupied ? 0.45 : 0.72}
-                  className={cn(isSelectable && "cursor-pointer")}
-                  onClick={() => {
-                    if (!isSelectable) return;
-                    onPlacementChange({
-                      side: slot.side,
-                      layer: slot.layer,
-                      point: slot.point,
-                    });
-                  }}
-                />
-              );
-            })}
-          </svg>
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-gold/65">
-          <span>Valid slots: {placementSlots.length}</span>
-          <span>Occupied: {occupiedSlotCount}</span>
-        </div>
+        <SeasonPlacementMap
+          slots={placementSlots}
+          selectedSlotId={selectedSlotId}
+          onSelectSlot={(slot) =>
+            onPlacementChange({
+              ...placement,
+              side: slot.side,
+              layer: slot.layer,
+              point: slot.point,
+            })
+          }
+        />
         {selectedPlacementSlot && (
           <div className="mt-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5">
             <p className="text-xs text-emerald-200">
