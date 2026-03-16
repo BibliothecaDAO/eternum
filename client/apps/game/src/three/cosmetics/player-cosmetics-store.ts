@@ -1,6 +1,7 @@
 import type { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { resolveEligibleCosmeticIds } from "./ownership";
 import { BlitzGameLoadoutDraft, PlayerCosmeticsSnapshot, PlayerCosmeticSelection } from "./types";
 
 const DEFAULT_VERSION = 1;
@@ -123,7 +124,7 @@ class PlayerCosmeticsStore {
         owner: ownerKey,
         version: DEFAULT_VERSION,
         ownedAttrs,
-        eligibleCosmeticIds: [],
+        eligibleCosmeticIds: resolveEligibleCosmeticIds(ownedAttrs),
       },
     };
 

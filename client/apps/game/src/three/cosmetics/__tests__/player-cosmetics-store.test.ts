@@ -1,5 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@bibliothecadao/types", () => ({
+  TroopType: {
+    Knight: "Knight",
+    Crossbowman: "Crossbowman",
+    Paladin: "Paladin",
+  },
+  TroopTier: {
+    T1: "T1",
+    T2: "T2",
+    T3: "T3",
+  },
+  StructureType: {
+    1: "Realm",
+    Realm: 1,
+  },
+}));
+
+vi.mock("@/three/constants/scene-constants", () => ({
+  getStructureModelPaths: () => ({
+    1: ["structures/realm.glb"],
+  }),
+}));
+
 import { playerCosmeticsStore } from "../player-cosmetics-store";
 import type { ClientComponents } from "@bibliothecadao/types";
 
@@ -56,5 +79,18 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
     expect(playerCosmeticsStore.getPendingBlitzLoadout("slot:eternum-test", "0x123")).toEqual({
       tokenIds: ["0xaaa", "0xbbb"],
     });
+  });
+
+  it("hydrates deterministic eligible cosmetics from owned attrs", () => {
+    getComponentValueMock.mockReturnValue({
+      attrs: [0x107050201n, 0x4050301n],
+    });
+
+    const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
+
+    expect(result?.ownership.eligibleCosmeticIds).toEqual([
+      "attachment:army:aura-legacy",
+      "army:Knight:T3:legacy",
+    ]);
   });
 });
