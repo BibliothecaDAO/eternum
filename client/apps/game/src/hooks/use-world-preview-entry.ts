@@ -6,6 +6,8 @@ import {
   type DevPreviewEntryStateRecord,
 } from "./store/use-dev-preview-entry-store";
 
+export type { DevPreviewEntryStateRecord } from "./store/use-dev-preview-entry-store";
+
 export interface DevPreviewEntryStateAdapter {
   setPreviewEntry: (key: string, entry: DevPreviewEntryStateRecord) => void;
 }

@@ -86,6 +86,7 @@ interface GameEntryModalProps {
   worldName: string;
   chain: Chain;
   isSpectateMode?: boolean;
+  isPreviewMode?: boolean;
   /** If true, skip settlement and just forge hyperstructures, then close */
   isForgeMode?: boolean;
   /** Number of hyperstructures left to forge (for forge mode) */
@@ -565,6 +566,7 @@ export const GameEntryModal = ({
   worldName,
   chain,
   isSpectateMode = false,
+  isPreviewMode = false,
   isForgeMode = false,
   numHyperstructuresLeft: initialNumHyperstructuresLeft,
 }: GameEntryModalProps) => {
@@ -586,6 +588,13 @@ export const GameEntryModal = ({
     },
   );
   const pendingLoadoutSummary = describeBlitzLoadoutSummary(pendingLoadout);
+  const previewLoadoutSummary = isPreviewMode
+    ? pendingLoadout.isEmpty
+      ? "No cosmetics selected for local preview."
+      : pendingLoadout.isValid
+        ? `${pendingLoadout.pendingCount} cosmetics ready for local preview.`
+        : pendingLoadout.errors[0] ?? "The pending Blitz loadout needs attention before preview."
+    : pendingLoadoutSummary;
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -655,7 +664,7 @@ export const GameEntryModal = ({
       result = "error";
     } else if (bootstrapStatus !== "ready") {
       result = "loading";
-    } else if (isSpectateMode) {
+    } else if (isSpectateMode || isPreviewMode) {
       result = "ready";
     } else if (!checksComplete) {
       // Still checking settlement/hyperstructure status - stay in loading
@@ -674,6 +683,7 @@ export const GameEntryModal = ({
       hasError: !!bootstrapError,
       isForgeMode,
       isSpectateMode,
+      isPreviewMode,
       checksComplete,
       settlementCheckComplete,
       hyperstructureCheckComplete,
@@ -687,6 +697,7 @@ export const GameEntryModal = ({
     bootstrapError,
     isForgeMode,
     isSpectateMode,
+    isPreviewMode,
     checksComplete,
     settlementCheckComplete,
     hyperstructureCheckComplete,
@@ -803,7 +814,7 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || isForgeMode) {
+    if (isSpectateMode || isPreviewMode || isForgeMode) {
       debugLog(worldName, "Skipping settlement check - spectate or forge mode");
       setSettlementCheckComplete(true);
       return;
@@ -855,6 +866,7 @@ export const GameEntryModal = ({
     setupResult,
     account,
     isSpectateMode,
+    isPreviewMode,
     isForgeMode,
     worldName,
     readSettlementSnapshot,
@@ -880,7 +892,7 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || isForgeMode) {
+    if (isSpectateMode || isPreviewMode || isForgeMode) {
       debugLog(worldName, "Skipping hyperstructure check - spectate or forge mode");
       setHyperstructureCheckComplete(true);
       return;
@@ -945,7 +957,7 @@ export const GameEntryModal = ({
     };
 
     checkHyperstructures();
-  }, [bootstrapStatus, setupResult, isSpectateMode, isForgeMode, worldName]);
+  }, [bootstrapStatus, setupResult, isSpectateMode, isPreviewMode, isForgeMode, worldName]);
 
   // Start bootstrap when modal opens
   useEffect(() => {
@@ -1357,13 +1369,30 @@ export const GameEntryModal = ({
             ) : (
               <Play className="w-3 h-3" />
             )}
-            <span>{isForgeMode ? "Forging Hyperstructures" : isSpectateMode ? "Spectating" : "Entering"}</span>
+            <span>
+              {isForgeMode
+                ? "Forging Hyperstructures"
+                : isSpectateMode
+                  ? "Spectating"
+                  : isPreviewMode
+                    ? "Local Dev Preview"
+                    : "Entering"}
+            </span>
           </div>
           <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
+          {isPreviewMode && (
+            <div className="mt-3 rounded-xl border border-amber-300/25 bg-amber-500/10 px-3 py-2">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-amber-100">Local Dev Preview</p>
+              <p className="mt-1 text-xs text-amber-50/90">This enters the world without a registration transaction.</p>
+              <p className="mt-1 text-xs text-amber-100/75">Other players will not see this preview.</p>
+            </div>
+          )}
           {!isForgeMode && !isSpectateMode && (
             <div className="mt-3 rounded-xl border border-gold/15 bg-black/30 px-3 py-2">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-gold/60">Next Blitz Loadout</p>
-              <p className="mt-1 text-xs text-gold/80">{pendingLoadoutSummary}</p>
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-gold/60">
+                {isPreviewMode ? "Preview Blitz Loadout" : "Next Blitz Loadout"}
+              </p>
+              <p className="mt-1 text-xs text-gold/80">{previewLoadoutSummary}</p>
               {!pendingLoadout.isValid && <p className="mt-2 text-xs text-amber-200">{pendingLoadout.errors[0]}</p>}
             </div>
           )}

@@ -231,6 +231,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
 interface GameCardProps {
   game: GameData;
   onPlay: () => void;
+  onPreviewEnter?: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
   onClaimRewards?: () => void;
@@ -248,6 +249,7 @@ interface GameCardProps {
 const GameCard = ({
   game,
   onPlay,
+  onPreviewEnter,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -414,6 +416,7 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
+  const showPreviewButton = import.meta.env.DEV && isOngoing && !showRegistered && Boolean(playerAddress);
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
 
   return (
@@ -618,6 +621,19 @@ const GameCard = ({
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           ) : null}
 
+          {showPreviewButton && onPreviewEnter && (
+            <button
+              onClick={() => runWithNetworkGuard(onPreviewEnter)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                "bg-amber-500/15 text-amber-200 border border-amber-400/35 hover:bg-amber-500/25 transition-colors",
+              )}
+            >
+              <Sparkles className="w-3 h-3" />
+              Local Preview
+            </button>
+          )}
+
           {/* See Score button for ended games where player participated */}
           {isEnded && showRegistered && onSeeScore && (
             <button
@@ -757,6 +773,7 @@ const GameCard = ({
 
 interface UnifiedGameGridProps {
   onSelectGame: (selection: WorldSelection) => void;
+  onPreviewEnter?: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
   onClaimRewards?: (selection: WorldSelection) => void;
@@ -791,6 +808,7 @@ interface UnifiedGameGridProps {
  */
 export const UnifiedGameGrid = ({
   onSelectGame,
+  onPreviewEnter,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -1211,6 +1229,16 @@ export const UnifiedGameGrid = ({
                   onPlay={() =>
                     onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                   }
+                  onPreviewEnter={
+                    onPreviewEnter
+                      ? () =>
+                          onPreviewEnter({
+                            name: game.name,
+                            chain: game.chain,
+                            worldAddress: game.worldAddress ?? undefined,
+                          })
+                      : undefined
+                  }
                   onSpectate={() =>
                     onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                   }
@@ -1264,6 +1292,16 @@ export const UnifiedGameGrid = ({
                     game={game}
                     onPlay={() =>
                       onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    }
+                    onPreviewEnter={
+                      onPreviewEnter
+                        ? () =>
+                            onPreviewEnter({
+                              name: game.name,
+                              chain: game.chain,
+                              worldAddress: game.worldAddress ?? undefined,
+                            })
+                        : undefined
                     }
                     onSpectate={() =>
                       onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
