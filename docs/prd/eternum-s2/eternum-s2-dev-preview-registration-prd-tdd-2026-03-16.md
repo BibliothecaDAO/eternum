@@ -7,7 +7,7 @@ Scope: local-only Blitz preview entry, pending cosmetic loadout promotion, sessi
 ## Implementation Tracking
 
 - [x] Phase 0: Baseline Lock and Scope Guardrails
-- [ ] Phase 1: Session-Scoped Dev Preview State
+- [x] Phase 1: Session-Scoped Dev Preview State
 - [ ] Phase 2: Dev Preview Entry UX
 - [ ] Phase 3: Runtime Promotion and Resolver Application
 - [ ] Phase 4: Entry Gating and Lifecycle Reset
