@@ -50,6 +50,8 @@ import { getManifest } from "../../src/auth/embedded-data.js";
 import { discoverWorld, patchManifest } from "../../src/world/discovery.js";
 import { getAccount } from "../../src/auth/session.js";
 import { createMapLoop } from "../../src/map/loop.js";
+import { createAutomationLoop } from "../../src/automation/loop.js";
+import type { AutomationStatusMap } from "../../src/automation/status.js";
 import type { MapContext } from "../../src/map/context.js";
 import type { TxContext } from "../../src/tools/tx-context.js";
 import { extractTxError, addressesEqual } from "../../src/tools/tx-context.js";
@@ -125,6 +127,13 @@ async function main() {
   }
   log(mapCtx.snapshot ? `Map loaded: ${mapCtx.snapshot.tiles.length} tiles` : "Map failed to load");
 
+  // ── Automation loop (off by default, toggled via tool) ──
+  const automationStatus: AutomationStatusMap = new Map();
+  const automationLoop = createAutomationLoop(
+    client, provider, account, playerAddress, config.dataDir, mapCtx, gameConfig, 60_000, automationStatus,
+  );
+  let automationRunning = false;
+
   // ── MCP Server ──
   const server = new McpServer({ name: "eternum", version: "1.0.0" });
 
@@ -191,6 +200,47 @@ async function main() {
     async () => {
       if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
       return { content: [{ type: "text", text: mapCtx.protocol.briefing() || "(No owned entities)" }] };
+    },
+  );
+
+  // ── Automation Tools ──
+
+  server.tool(
+    "automation",
+    "Toggle the background automation system (building, upgrading, production for all realms). " +
+    "Use action='status' to check, 'start' to enable, 'stop' to disable.",
+    { action: z.enum(["start", "stop", "status"]).describe("start, stop, or status") },
+    async ({ action }) => {
+      if (action === "status") {
+        const lines: string[] = [`Automation: ${automationRunning ? "RUNNING" : "STOPPED"}`];
+        if (automationStatus.size > 0) {
+          for (const s of automationStatus.values()) {
+            const errs = s.errors.length > 0 ? ` | ERRORS: ${s.errors[0]}` : "";
+            lines.push(`  ${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}${errs}`);
+          }
+        } else {
+          lines.push("  No realm data yet.");
+        }
+        return { content: [{ type: "text", text: lines.join("\n") }] };
+      }
+
+      if (action === "start") {
+        if (automationRunning) return { content: [{ type: "text", text: "Automation is already running." }] };
+        automationLoop.start();
+        automationRunning = true;
+        log("Automation started.");
+        return { content: [{ type: "text", text: "Automation started. Building, upgrading, and production will run every 60s for all owned realms." }] };
+      }
+
+      if (action === "stop") {
+        if (!automationRunning) return { content: [{ type: "text", text: "Automation is already stopped." }] };
+        automationLoop.stop();
+        automationRunning = false;
+        log("Automation stopped.");
+        return { content: [{ type: "text", text: "Automation stopped." }] };
+      }
+
+      return { content: [{ type: "text", text: `Unknown action: ${action}` }], isError: true };
     },
   );
 
