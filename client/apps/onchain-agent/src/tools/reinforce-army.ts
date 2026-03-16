@@ -46,35 +46,26 @@ export function createReinforceArmyTool(
       "Structures are preferred over army merges. " +
       "Specify optional amount (default: all available, up to 10K from structures, all from army merges).",
     parameters: Type.Object({
-      row: Type.Number({ description: "Row of the army to reinforce" }),
-      col: Type.Number({ description: "Column of the army to reinforce" }),
+      army_id: Type.Number({ description: "Entity ID of the army to reinforce (from briefing or map_query)" }),
       amount: Type.Optional(
         Type.Number({ description: "Troops to add (default: all available, up to 10K from structures)" }),
       ),
     }),
     async execute(_toolCallId, params, signal) {
-      const { row, col } = params;
+      const { army_id: armyId } = params;
 
       if (signal?.aborted) throw new Error("Operation cancelled");
       if (!mapCtx.snapshot) throw new Error("Map not loaded yet. Wait for the next tick.");
 
-      const hexCoords = mapCtx.snapshot.resolve(row, col);
-      if (!hexCoords) throw new Error(`Invalid position ${row}:${col}.`);
-
       // ── Find the target army ──
 
-      const tile = mapCtx.snapshot.tileAt(row, col);
-      if (!tile || !isExplorer(tile.occupierType)) {
-        throw new Error(`No army at ${row}:${col}. Point at one of your armies.`);
-      }
-
-      const explorer = await client.view.explorerInfo(tile.occupierId);
-      if (!explorer) throw new Error(`Explorer ${tile.occupierId} not found.`);
+      const explorer = await client.view.explorerInfo(armyId);
+      if (!explorer) throw new Error(`Army ${armyId} not found.`);
       if (!addressesEqual(explorer.ownerAddress ?? "", playerAddress)) {
-        throw new Error(`Army at ${row}:${col} is not yours.`);
+        throw new Error(`Army ${armyId} is not yours.`);
       }
 
-      const { x, y } = hexCoords;
+      const { x, y } = explorer.position;
       const neighbors = getNeighborHexes(x, y);
       const troopType = explorer.troopType;
       const troopTier = explorer.troopTier;

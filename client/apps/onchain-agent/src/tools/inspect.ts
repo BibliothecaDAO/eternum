@@ -122,35 +122,26 @@ export function createInspectTool(client: EternumClient, ctx: MapContext, player
     description:
       "Inspect any tile for detailed info: owner, guard composition and strength, resources, troop counts, biome. " +
       "Use before attacking to assess enemy strength. Use on your own structures to check reserves. " +
-      "Coordinates are row:col from the map.",
+      "Coordinates are world hex (x, y) from the briefing or map_query results.",
     parameters: Type.Object({
-      row: Type.Number({ description: "Line number from the map (left side)" }),
-      col: Type.Number({ description: "Column number from the map" }),
+      x: Type.Number({ description: "World hex X coordinate" }),
+      y: Type.Number({ description: "World hex Y coordinate" }),
     }),
     async execute(_toolCallId, params, signal) {
       if (signal?.aborted) throw new Error("Operation cancelled");
-      const { row, col } = params;
+      const { x, y } = params;
 
       if (!ctx.snapshot) {
-        throw new Error(
-          "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
-        );
+        throw new Error("Map not loaded yet. Wait for the next tick.");
       }
 
-      const hexCoords = ctx.snapshot.resolve(row, col);
-      if (!hexCoords) {
-        throw new Error(
-          `Invalid position ${row}:${col}. Map is ${ctx.snapshot.rowCount} rows × ${ctx.snapshot.colCount} cols.`,
-        );
-      }
-
-      const tile = ctx.snapshot.tileAt(row, col);
+      const tile = ctx.snapshot.gridIndex.get(`${x},${y}`);
 
       // Unexplored
       if (!tile) {
         return {
-          content: [{ type: "text" as const, text: "Unexplored territory" }],
-          details: { row, col, hexCoords },
+          content: [{ type: "text" as const, text: `Unexplored territory at (${x},${y})` }],
+          details: { x, y },
         };
       }
 
@@ -158,12 +149,11 @@ export function createInspectTool(client: EternumClient, ctx: MapContext, player
       let text: string;
 
       if (occupierType === 0) {
-        // Explored but empty
         text = formatEmpty(tile.biome);
       } else if (isChest(occupierType)) {
         text = formatChest(tile.rewardExtracted);
       } else if (isStructure(occupierType)) {
-        const info = await client.view.structureAt(hexCoords.x, hexCoords.y);
+        const info = await client.view.structureAt(x, y);
         if (info) {
           text = formatStructure(info, tile.biome, playerAddress);
         } else {
@@ -177,14 +167,13 @@ export function createInspectTool(client: EternumClient, ctx: MapContext, player
           text = `Explorer (entity ${tile.occupierId}) — no data available`;
         }
       } else {
-        // Quest (33), Spire (35), or unknown
         const labels: Record<number, string> = { 33: "Quest", 35: "Spire" };
         text = labels[occupierType] ?? `Unknown occupier (type ${occupierType})`;
       }
 
       return {
         content: [{ type: "text" as const, text }],
-        details: { row, col, hexCoords },
+        details: { x, y },
       };
     },
   };

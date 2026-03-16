@@ -1,7 +1,7 @@
 /**
  * attack tool — attack a target adjacent to one of your armies.
  *
- * Point at your army (army_row:army_col) and the target (target_row:target_col).
+ * Takes an army entity ID and a target world hex coordinate.
  * The army must be 1 hex from the target.
  *
  * Output answers:
@@ -45,58 +45,36 @@ export function createAttackTool(
       "Attack OR CLAIM a target adjacent to one of your armies. " +
       "This is the ONLY way to capture hyperstructures, realms, villages, and mines — move adjacent then call this tool. " +
       "Unguarded structures are captured for free. " +
-      "Use your army's row:col from YOUR ENTITIES as army_row:army_col, and the target as target_row:target_col. " +
       "Your army must be 1 hex away from the target. " +
       "Returns: outcome, troops remaining, stamina after.",
     parameters: Type.Object({
-      army_row: Type.Number({ description: "Line number of your army on the map" }),
-      army_col: Type.Number({ description: "Column of your army on the map" }),
-      target_row: Type.Number({ description: "Target line number on the map" }),
-      target_col: Type.Number({ description: "Target column on the map" }),
+      army_id: Type.Number({ description: "Entity ID of your army (from briefing or map_query)" }),
+      target_x: Type.Number({ description: "Target world hex X coordinate" }),
+      target_y: Type.Number({ description: "Target world hex Y coordinate" }),
     }),
     async execute(_toolCallId, params, signal) {
-      const { army_row, army_col, target_row, target_col } = params;
+      const { army_id: armyId, target_x, target_y } = params;
+      const targetHex = { x: target_x, y: target_y };
 
       if (signal?.aborted) throw new Error("Operation cancelled");
 
       // ── Validate map ──
 
       if (!mapCtx.snapshot) {
-        throw new Error(
-          "Map not loaded yet. Wait for the next tick — the map is included automatically in each tick prompt.",
-        );
+        throw new Error("Map not loaded yet. Wait for the next tick.");
       }
 
-      const armyHex = mapCtx.snapshot.resolve(army_row, army_col);
-      if (!armyHex) {
-        throw new Error(
-          `Invalid army position ${army_row}:${army_col}. Map is ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols.`,
-        );
-      }
+      // ── Find explorer by entity ID ──
 
-      const targetHex = mapCtx.snapshot.resolve(target_row, target_col);
-      if (!targetHex) {
-        throw new Error(
-          `Invalid target position ${target_row}:${target_col}. Map is ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols.`,
-        );
-      }
-
-      // ── Find explorer at army position ──
-
-      const armyTile = mapCtx.snapshot.tileAt(army_row, army_col);
-      if (!armyTile || !isExplorer(armyTile.occupierType)) {
-        throw new Error(`No army at ${army_row}:${army_col}. Point at one of your armies on the map.`);
-      }
-
-      const explorer = await client.view.explorerInfo(armyTile.occupierId);
+      const explorer = await client.view.explorerInfo(armyId);
       if (!explorer) {
-        throw new Error(`Explorer ${armyTile.occupierId} not found.`);
+        throw new Error(`Army ${armyId} not found.`);
       }
 
       // ── Verify ownership ──
 
       if (playerAddress && (!explorer.ownerAddress || !addressesEqual(explorer.ownerAddress, playerAddress))) {
-        throw new Error(`Army at ${army_row}:${army_col} is not yours (owner: ${explorer.ownerAddress}).`);
+        throw new Error(`Army ${armyId} is not yours (owner: ${explorer.ownerAddress}).`);
       }
 
       // ── Check adjacency ──
@@ -104,7 +82,7 @@ export function createAttackTool(
       const direction = directionBetween(explorer.position, targetHex);
       if (direction === null) {
         throw new Error(
-          `Army at ${army_row}:${army_col} is not adjacent to ${target_row}:${target_col}. You MUST call move_army first to get within 1 hex, THEN attack.`,
+          `Army ${armyId} at (${explorer.position.x},${explorer.position.y}) is not adjacent to (${target_x},${target_y}). Use move_army first to get within 1 hex, then attack.`,
         );
       }
 
@@ -123,15 +101,15 @@ export function createAttackTool(
 
       // ── Identify target ──
 
-      const tile = mapCtx.snapshot.tileAt(target_row, target_col);
+      const tile = mapCtx.snapshot.gridIndex.get(`${target_x},${target_y}`) ?? null;
       if (!tile) {
-        throw new Error(`Tile ${target_row}:${target_col} is unexplored. Nothing to attack.`);
+        throw new Error(`Tile (${target_x},${target_y}) is unexplored. Nothing to attack.`);
       }
 
       const occupierType = tile.occupierType;
 
       if (occupierType === 0) {
-        throw new Error(`Tile ${target_row}:${target_col} is empty. Nothing to attack.`);
+        throw new Error(`Tile (${target_x},${target_y}) is empty. Nothing to attack.`);
       }
 
       if (isExplorer(occupierType)) {
@@ -154,7 +132,7 @@ export function createAttackTool(
         return result;
       }
 
-      throw new Error(`Cannot attack occupier type ${occupierType} at ${target_row}:${target_col}.`);
+      throw new Error(`Cannot attack occupier type ${occupierType} at (${target_x},${target_y}).`);
     },
   };
 }

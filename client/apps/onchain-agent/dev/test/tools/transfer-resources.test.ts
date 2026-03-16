@@ -58,6 +58,8 @@ function makeSnapshot(tiles: TileState[]): MapSnapshot {
       if (!pos) return null;
       return grid.get(`${pos.x},${pos.y}`) ?? null;
     },
+    explorerDetails: new Map(),
+    structureDetails: new Map(),
     anchor,
   };
 }
@@ -131,73 +133,46 @@ function twoStructureSetup() {
 
 describe("transfer_resources — map prerequisites", () => {
   it("fails when map is not loaded", async () => {
-    const mapCtx: MapContext = { snapshot: null, filePath: null };
+    const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(makeClient(), mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
     ).rejects.toThrow("Map not loaded");
   });
 
-  it("fails when source position is out of bounds", async () => {
+  it("fails when source structure not found on map", async () => {
     const { snapshot } = twoStructureSetup();
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(makeClient(), mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 99, from_col: 99, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
-    ).rejects.toThrow("Invalid source position");
+      tool.execute("id", { from_structure_id: 999, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
+    ).rejects.toThrow("Source structure 999 not found");
   });
 
-  it("fails when target position is out of bounds", async () => {
+  it("fails when target structure not found on map", async () => {
     const { snapshot } = twoStructureSetup();
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(makeClient(), mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 99, to_col: 99, resource_name: "Wood", amount: 10 }),
-    ).rejects.toThrow("Invalid target position");
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 999, resource_name: "Wood", amount: 10 }),
+    ).rejects.toThrow("Target structure 999 not found");
   });
 });
 
 describe("transfer_resources — structure validation", () => {
-  it("rejects when source tile is not a structure", async () => {
-    const { snapshot } = twoStructureSetup();
-    const mapCtx: MapContext = { snapshot, filePath: null };
-    const tool = createTransferResourcesTool(makeClient(), mapCtx, PLAYER, makeTxCtx());
-
-    // col 2 is an empty tile (occupierType=0)
-    await expect(
-      tool.execute("id", { from_row: 1, from_col: 2, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
-    ).rejects.toThrow("No structure");
-  });
-
-  it("rejects when target tile is not a structure", async () => {
-    const { snapshot } = twoStructureSetup();
-    const source = makeStructure(5, 5, [
-      { name: "Wood", amount: 500 },
-      { name: "Donkey", amount: 50 },
-    ]);
-    const client = makeClient({ "5,5": source });
-    const mapCtx: MapContext = { snapshot, filePath: null };
-    const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
-
-    // col 3 is an empty tile
-    await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 3, resource_name: "Wood", amount: 10 }),
-    ).rejects.toThrow("No structure");
-  });
-
   it("rejects when source structure is not found via client", async () => {
     const { snapshot } = twoStructureSetup();
     // structureAt returns null for source position
     const client = makeClient({ "5,5": null, "8,5": makeStructure(8, 5, []) });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
-    ).rejects.toThrow("Source structure not found");
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
+    ).rejects.toThrow("Source structure 100 not found");
   });
 
   it("rejects when target structure is not found via client", async () => {
@@ -207,12 +182,12 @@ describe("transfer_resources — structure validation", () => {
       { name: "Donkey", amount: 50 },
     ]);
     const client = makeClient({ "5,5": source, "8,5": null });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
-    ).rejects.toThrow("Target structure not found");
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
+    ).rejects.toThrow("Target structure 200 not found");
   });
 });
 
@@ -222,11 +197,11 @@ describe("transfer_resources — ownership validation", () => {
     const source = makeStructure(5, 5, [{ name: "Wood", amount: 500 }], { ownerAddress: "0xENEMY" });
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
     ).rejects.toThrow("not yours");
   });
 
@@ -238,11 +213,11 @@ describe("transfer_resources — ownership validation", () => {
     ]);
     const target = makeStructure(8, 5, [], { entityId: 200, ownerAddress: "0xENEMY" });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
     ).rejects.toThrow("not yours");
   });
 });
@@ -256,11 +231,11 @@ describe("transfer_resources — resource validation", () => {
     ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Unobtanium", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Unobtanium", amount: 10 }),
     ).rejects.toThrow('Unknown resource "Unobtanium"');
   });
 
@@ -273,11 +248,11 @@ describe("transfer_resources — resource validation", () => {
     ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Stone", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Stone", amount: 10 }),
     ).rejects.toThrow("No Stone at source");
   });
 
@@ -289,11 +264,11 @@ describe("transfer_resources — resource validation", () => {
     ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
     ).rejects.toThrow("No Wood at source");
   });
 });
@@ -308,11 +283,11 @@ describe("transfer_resources — donkey cost", () => {
     ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 100 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 100 }),
     ).rejects.toThrow("Need 2 donkeys");
   });
 
@@ -321,11 +296,11 @@ describe("transfer_resources — donkey cost", () => {
     const source = makeStructure(5, 5, [{ name: "Wood", amount: 10 }]); // no Donkey entry
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     await expect(
-      tool.execute("id", { from_row: 1, from_col: 1, to_row: 1, to_col: 4, resource_name: "Wood", amount: 10 }),
+      tool.execute("id", { from_structure_id: 100, to_structure_id: 200, resource_name: "Wood", amount: 10 }),
     ).rejects.toThrow("donkeys");
   });
 
@@ -338,15 +313,13 @@ describe("transfer_resources — donkey cost", () => {
     ]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const txCtx = makeTxCtx();
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, txCtx);
 
     const result = await tool.execute("id", {
-      from_row: 1,
-      from_col: 1,
-      to_row: 1,
-      to_col: 4,
+      from_structure_id: 100,
+      to_structure_id: 200,
       resource_name: "Wood",
       amount: 50,
     });
@@ -362,15 +335,13 @@ describe("transfer_resources — free resources (zero weight)", () => {
     const source = makeStructure(5, 5, [{ name: "Donkey", amount: 1000 }]);
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const txCtx = makeTxCtx();
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, txCtx);
 
     const result = await tool.execute("id", {
-      from_row: 1,
-      from_col: 1,
-      to_row: 1,
-      to_col: 4,
+      from_structure_id: 100,
+      to_structure_id: 200,
       resource_name: "Donkey",
       amount: 1000,
     });
@@ -396,15 +367,13 @@ describe("transfer_resources — successful send", () => {
     );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const txCtx = makeTxCtx();
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, txCtx);
 
     await tool.execute("id", {
-      from_row: 1,
-      from_col: 1,
-      to_row: 1,
-      to_col: 4,
+      from_structure_id: 100,
+      to_structure_id: 200,
       resource_name: "Wood",
       amount: 100,
     });
@@ -432,15 +401,13 @@ describe("transfer_resources — successful send", () => {
     );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const txCtx = makeTxCtx();
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, txCtx);
 
     const result = await tool.execute("id", {
-      from_row: 1,
-      from_col: 1,
-      to_row: 1,
-      to_col: 4,
+      from_structure_id: 100,
+      to_structure_id: 200,
       resource_name: "Wood",
       amount: 200,
     });
@@ -467,14 +434,12 @@ describe("transfer_resources — output", () => {
     );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", {
-      from_row: 1,
-      from_col: 1,
-      to_row: 1,
-      to_col: 4,
+      from_structure_id: 100,
+      to_structure_id: 200,
       resource_name: "Wood",
       amount: 100,
     });
@@ -501,14 +466,12 @@ describe("transfer_resources — output", () => {
     );
     const target = makeStructure(8, 5, [], { entityId: 200 });
     const client = makeClient({ "5,5": source, "8,5": target });
-    const mapCtx: MapContext = { snapshot, filePath: null };
+    const mapCtx: MapContext = { snapshot, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(client, mapCtx, PLAYER, makeTxCtx());
 
     const result = await tool.execute("id", {
-      from_row: 1,
-      from_col: 1,
-      to_row: 1,
-      to_col: 4,
+      from_structure_id: 100,
+      to_structure_id: 200,
       resource_name: "Stone",
       amount: 100,
     });
@@ -525,13 +488,11 @@ describe("transfer_resources — output", () => {
   });
 
   it("has correct parameters schema with required fields", () => {
-    const mapCtx: MapContext = { snapshot: null, filePath: null };
+    const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const tool = createTransferResourcesTool(makeClient(), mapCtx, PLAYER, makeTxCtx());
 
-    expect(tool.parameters.properties).toHaveProperty("from_row");
-    expect(tool.parameters.properties).toHaveProperty("from_col");
-    expect(tool.parameters.properties).toHaveProperty("to_row");
-    expect(tool.parameters.properties).toHaveProperty("to_col");
+    expect(tool.parameters.properties).toHaveProperty("from_structure_id");
+    expect(tool.parameters.properties).toHaveProperty("to_structure_id");
     expect(tool.parameters.properties).toHaveProperty("resource_name");
     expect(tool.parameters.properties).toHaveProperty("amount");
   });

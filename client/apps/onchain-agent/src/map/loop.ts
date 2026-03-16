@@ -12,6 +12,7 @@ import type { EternumClient, ExplorerInfo, StructureInfo } from "@bibliothecadao
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import { renderMap } from "./renderer.js";
 import type { MapContext } from "./context.js";
+import { createMapProtocol } from "./protocol.js";
 import { isExplorer } from "../world/occupier.js";
 import { detectThreats, type ThreatAlert } from "./threat-detection.js";
 
@@ -151,6 +152,7 @@ export function createMapLoop(
         structureDetailMap,
       );
       ctx.snapshot = snapshot;
+      ctx.protocol = createMapProtocol(snapshot, ownedEntityIds ?? new Set(), staminaConfig, client);
 
       if (onThreat && ownedEntityIds) {
         const toInput = (t: any) => ({

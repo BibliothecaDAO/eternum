@@ -134,19 +134,19 @@ describe("inspect tool — empty tiles", () => {
     const ctx = await loadMap(view);
     const inspectTool = createInspectTool(client, ctx);
 
-    let row = 0,
-      col = 0;
-    for (let r = 1; r <= ctx.snapshot!.rowCount && row === 0; r++) {
-      for (let c = 1; c <= ctx.snapshot!.colCount && row === 0; c++) {
-        const tile = ctx.snapshot!.tileAt(r, c);
-        if (tile && tile.occupierType === 0) {
-          row = r;
-          col = c;
-        }
+    // Find an empty tile by scanning the snapshot's gridIndex for occupierType === 0
+    let tileX = 0, tileY = 0, found = false;
+    for (const tile of ctx.snapshot!.tiles) {
+      if (tile.occupierType === 0) {
+        tileX = tile.position.x;
+        tileY = tile.position.y;
+        found = true;
+        break;
       }
     }
+    expect(found).toBe(true);
 
-    const result = await inspectTool.execute("call-2", { row, col });
+    const result = await inspectTool.execute("call-2", { x: tileX, y: tileY });
     expect((result.content[0] as any).text).toContain("Empty tile");
   });
 
@@ -156,20 +156,18 @@ describe("inspect tool — empty tiles", () => {
     const ctx = await loadMap(view);
     const inspectTool = createInspectTool(client, ctx);
 
-    let row = 1,
-      col = ctx.snapshot!.colCount;
-    while (ctx.snapshot!.tileAt(row, col) && col > 1) col--;
-    const result = await inspectTool.execute("call-2", { row, col });
+    // Use coordinates far outside the explored area
+    const result = await inspectTool.execute("call-2", { x: 999999, y: 999999 });
     expect((result.content[0] as any).text).toContain("Unexplored");
   });
 
   it("errors when no map is loaded", async () => {
     const view = createView(tilesDecoded);
     const client = { view } as any;
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const inspectTool = createInspectTool(client, ctx);
 
-    await expect(inspectTool.execute("call-1", { row: 1, col: 1 })).rejects.toThrow("Map not loaded");
+    await expect(inspectTool.execute("call-1", { x: 0, y: 0 })).rejects.toThrow("Map not loaded");
   });
 });
 
@@ -209,19 +207,19 @@ describe("inspect tool — structures", () => {
     const ctx = await loadMap(view);
     const inspectTool = createInspectTool(client, ctx);
 
-    let row = 0,
-      col = 0;
-    for (let r = 1; r <= ctx.snapshot!.rowCount && row === 0; r++) {
-      for (let c = 1; c <= ctx.snapshot!.colCount && row === 0; c++) {
-        const tile = ctx.snapshot!.tileAt(r, c);
-        if (tile && tile.occupierType >= 1 && tile.occupierType <= 14) {
-          row = r;
-          col = c;
-        }
+    // Find a structure tile (occupierType 1-14) by scanning tiles
+    let tileX = 0, tileY = 0, found = false;
+    for (const tile of ctx.snapshot!.tiles) {
+      if (tile.occupierType >= 1 && tile.occupierType <= 14) {
+        tileX = tile.position.x;
+        tileY = tile.position.y;
+        found = true;
+        break;
       }
     }
+    expect(found).toBe(true);
 
-    const result = await inspectTool.execute("call-2", { row, col });
+    const result = await inspectTool.execute("call-2", { x: tileX, y: tileY });
     const text = (result.content[0] as any).text;
     expect(text).toContain("Realm");
     expect(text).toContain("Guards:");
@@ -251,31 +249,36 @@ describe("inspect tool — explorers", () => {
 
     const view = new ViewClient(sql);
     const client = { view } as any;
-    const ctx: MapContext = { snapshot: null, filePath: null };
+    const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const inspectTool = createInspectTool(client, ctx);
+
+    const explorerTile = {
+      position: { x: 100, y: 200 },
+      biome: 11,
+      occupierId: 99,
+      occupierType: 15,
+      occupierIsStructure: false,
+      rewardExtracted: false,
+    };
+    const gridIndex = new Map();
+    gridIndex.set("100,200", explorerTile);
 
     ctx.snapshot = {
       text: "",
       headerLines: 0,
       rowCount: 1,
       colCount: 1,
-      tiles: [],
-      gridIndex: new Map(),
+      tiles: [explorerTile],
+      gridIndex,
       resolve: (r, c) => (r === 1 && c === 1 ? { x: 100, y: 200 } : null),
       tileAt: (r, c) =>
-        r === 1 && c === 1
-          ? {
-              position: { x: 100, y: 200 },
-              biome: 11,
-              occupierId: 99,
-              occupierType: 15,
-              occupierIsStructure: false,
-              rewardExtracted: false,
-            }
-          : null,
+        r === 1 && c === 1 ? explorerTile : null,
+      explorerDetails: new Map(),
+      structureDetails: new Map(),
+      anchor: { minX: 100, minY: 200, maxX: 100, maxY: 200 },
     };
 
-    const result = await inspectTool.execute("call-2", { row: 1, col: 1 });
+    const result = await inspectTool.execute("call-2", { x: 100, y: 200 });
     const text = (result.content[0] as any).text;
     // troop_category 1 = Paladin, troop_tier 2 = T3
     expect(text).toContain("Paladin T3");

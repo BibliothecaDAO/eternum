@@ -1,7 +1,7 @@
 /**
  * open_chest tool — open a relic chest adjacent to one of your armies.
  *
- * Point at your army (army_row:army_col) and the chest (chest_row:chest_col).
+ * Takes an army entity ID and the chest's world hex coordinates.
  * The army must be 1 hex from the chest.
  * Opening grants relics and victory points.
  */
@@ -11,7 +11,7 @@ import { Type } from "@mariozechner/pi-ai";
 import type { EternumClient } from "@bibliothecadao/client";
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
-import { isExplorer, isChest } from "../world/occupier.js";
+import { isChest } from "../world/occupier.js";
 import { directionBetween } from "../world/pathfinding.js";
 
 /**
@@ -37,13 +37,13 @@ export function createOpenChestTool(
       "Grants relics and victory points. Use move_army first to get adjacent, then open_chest. " +
       "Returns: success/failure and relics obtained.",
     parameters: Type.Object({
-      army_row: Type.Number({ description: "Line number of your army on the map" }),
-      army_col: Type.Number({ description: "Column of your army on the map" }),
-      target_row: Type.Number({ description: "Line number of the chest on the map" }),
-      target_col: Type.Number({ description: "Column of the chest on the map" }),
+      army_id: Type.Number({ description: "Entity ID of your army (from briefing or map_query)" }),
+      chest_x: Type.Number({ description: "Chest world hex X coordinate" }),
+      chest_y: Type.Number({ description: "Chest world hex Y coordinate" }),
     }),
     async execute(_toolCallId, params) {
-      const { army_row, army_col, target_row: chest_row, target_col: chest_col } = params;
+      const { army_id: armyId, chest_x, chest_y } = params;
+      const chestHex = { x: chest_x, y: chest_y };
 
       if (!mapCtx.snapshot) {
         throw new Error("Map not loaded yet. Wait for the next tick.");
@@ -51,50 +51,39 @@ export function createOpenChestTool(
 
       // ── Find army ──
 
-      const armyTile = mapCtx.snapshot.tileAt(army_row, army_col);
-      if (!armyTile || !isExplorer(armyTile.occupierType)) {
-        throw new Error(`No army at ${army_row}:${army_col}. Point at one of your armies on the map.`);
-      }
-
-      const explorer = await client.view.explorerInfo(armyTile.occupierId);
+      const explorer = await client.view.explorerInfo(armyId);
       if (!explorer) {
-        throw new Error(`Explorer ${armyTile.occupierId} not found.`);
+        throw new Error(`Army ${armyId} not found.`);
       }
 
       // ── Verify ownership ──
 
       if (playerAddress && (!explorer.ownerAddress || !addressesEqual(explorer.ownerAddress, playerAddress))) {
-        throw new Error(`Army at ${army_row}:${army_col} is not yours.`);
+        throw new Error(`Army ${armyId} is not yours.`);
       }
 
       // ── Find chest ──
 
-      const chestTile = mapCtx.snapshot.tileAt(chest_row, chest_col);
+      const chestTile = mapCtx.snapshot.gridIndex.get(`${chest_x},${chest_y}`) ?? null;
       if (!chestTile || !isChest(chestTile.occupierType)) {
-        throw new Error(`No chest at ${chest_row}:${chest_col}.`);
+        throw new Error(`No chest at (${chest_x},${chest_y}).`);
       }
 
       if (chestTile.rewardExtracted) {
-        throw new Error(`Chest at ${chest_row}:${chest_col} has already been opened.`);
+        throw new Error(`Chest at (${chest_x},${chest_y}) has already been opened.`);
       }
 
-      // Check if another army already opened this chest this tick
-      const chestKey = `${chestTile.position.x},${chestTile.position.y}`;
+      const chestKey = `${chest_x},${chest_y}`;
       if (mapCtx.recentlyOpenedChests?.has(chestKey)) {
-        throw new Error(`Chest at ${chest_row}:${chest_col} was already opened this tick.`);
+        throw new Error(`Chest at (${chest_x},${chest_y}) was already opened this tick.`);
       }
 
       // ── Check adjacency ──
 
-      const chestHex = mapCtx.snapshot.resolve(chest_row, chest_col);
-      if (!chestHex) {
-        throw new Error(`Invalid chest position ${chest_row}:${chest_col}.`);
-      }
-
       const direction = directionBetween(explorer.position, chestHex);
       if (direction === null) {
         throw new Error(
-          `Army at ${army_row}:${army_col} is not adjacent to chest at ${chest_row}:${chest_col}. Use move_army first to get within 1 hex.`,
+          `Army ${armyId} is not adjacent to chest at (${chest_x},${chest_y}). Use move_army first to get within 1 hex.`,
         );
       }
 
@@ -130,7 +119,7 @@ export function createOpenChestTool(
         content: [
           {
             type: "text" as const,
-            text: `Opened chest at ${chest_row}:${chest_col}. Relics and victory points granted!`,
+            text: `Opened chest at (${chest_x},${chest_y}). Relics and victory points granted!`,
           },
         ],
         details: {

@@ -1,4 +1,5 @@
 import type { MapSnapshot } from "./renderer.js";
+import type { MapProtocol } from "./protocol.js";
 
 /**
  * Shared mutable context threaded through the map loop and all tools.
@@ -10,6 +11,8 @@ import type { MapSnapshot } from "./renderer.js";
 export interface MapContext {
   /** Latest rendered map snapshot, or null before the first refresh completes. */
   snapshot: MapSnapshot | null;
+  /** Structured query layer over the snapshot — like LSP for the map. */
+  protocol: MapProtocol | null;
   /** Absolute path where the ASCII map is written after each refresh (typically `<dataDir>/map.txt`). Null in tests to skip disk writes. */
   filePath: string | null;
   /**

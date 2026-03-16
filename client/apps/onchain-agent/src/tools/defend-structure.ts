@@ -14,7 +14,7 @@ import type { EternumClient } from "@bibliothecadao/client";
 import { getDirectionBetweenAdjacentHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
-import { isExplorer, isStructure } from "../world/occupier.js";
+import { isStructure } from "../world/occupier.js";
 
 /** Maps troop names to their on-chain category index (Knight=0, Paladin=1, Crossbowman=2). */
 const TROOP_CATEGORY: Record<string, number> = { Knight: 0, Paladin: 1, Crossbowman: 2 };
@@ -60,7 +60,7 @@ export function createDefendStructureTool(
     description:
       "Assign guard troops to defend one of your structures (realm, village, mine, hyperstructure). " +
       "Two modes: " +
-      "(1) Specify from_army_row/col to transfer troops from an adjacent field army — " +
+      "(1) Specify from_army_id to transfer troops from an adjacent field army — " +
       "use this right after capturing a structure to garrison it. " +
       "(2) Omit from_army to use troops from the structure's own reserves — " +
       "requires troop_type and tier since the structure may have multiple troop types. " +
@@ -68,12 +68,10 @@ export function createDefendStructureTool(
       "Guard slot capacity scales with structure level: ~1,500 (lv0), ~7,500 (lv1), ~22,500 (lv2), ~45,000 (lv3). " +
       "Defaults to max capacity for the structure's level.",
     parameters: Type.Object({
-      row: Type.Number({ description: "Row of the structure to defend" }),
-      col: Type.Number({ description: "Column of the structure to defend" }),
-      from_army_row: Type.Optional(
-        Type.Number({ description: "Row of your army to transfer troops from (must be adjacent)" }),
+      structure_id: Type.Number({ description: "Entity ID of the structure to defend (from briefing or map_query)" }),
+      from_army_id: Type.Optional(
+        Type.Number({ description: "Entity ID of your army to transfer troops from (must be adjacent)" }),
       ),
-      from_army_col: Type.Optional(Type.Number({ description: "Column of your army to transfer troops from" })),
       troop_type: Type.Optional(
         Type.Union([Type.Literal("Knight"), Type.Literal("Paladin"), Type.Literal("Crossbowman")], {
           description: "Troop type (required when using reserves, auto-detected from army)",
@@ -89,26 +87,27 @@ export function createDefendStructureTool(
       ),
     }),
     async execute(_toolCallId, params, signal) {
-      const { row, col } = params;
-      const useArmy = params.from_army_row != null && params.from_army_col != null;
+      const { structure_id: structureId } = params;
+      const useArmy = params.from_army_id != null;
 
       if (signal?.aborted) throw new Error("Operation cancelled");
       if (!mapCtx.snapshot) throw new Error("Map not loaded yet. Wait for the next tick.");
 
-      const structHex = mapCtx.snapshot.resolve(row, col);
-      if (!structHex) throw new Error(`Invalid position ${row}:${col}.`);
+      // ── Find structure tile by entity ID ──
 
-      // ── Validate structure ──
-
-      const structTile = mapCtx.snapshot.tileAt(row, col);
+      let structTile = null as any;
+      for (const t of mapCtx.snapshot.tiles) {
+        if (t.occupierId === structureId) { structTile = t; break; }
+      }
       if (!structTile || !isStructure(structTile.occupierType)) {
-        throw new Error(`No structure at ${row}:${col}.`);
+        throw new Error(`No structure with ID ${structureId} found.`);
       }
 
+      const structHex = structTile.position;
       const structure = await client.view.structureAt(structHex.x, structHex.y);
-      if (!structure) throw new Error(`Structure at ${row}:${col} not found.`);
+      if (!structure) throw new Error(`Structure ${structureId} not found.`);
       if (!addressesEqual(structure.ownerAddress, playerAddress)) {
-        throw new Error(`Structure at ${row}:${col} is not yours.`);
+        throw new Error(`Structure ${structureId} is not yours.`);
       }
 
       // ── Find empty guard slot ──
@@ -132,19 +131,14 @@ export function createDefendStructureTool(
       // ── Mode 1: Transfer from adjacent army ──
 
       if (useArmy) {
-        const armyHex = mapCtx.snapshot.resolve(params.from_army_row!, params.from_army_col!);
-        if (!armyHex) throw new Error(`Invalid army position ${params.from_army_row}:${params.from_army_col}.`);
-
-        const armyTile = mapCtx.snapshot.tileAt(params.from_army_row!, params.from_army_col!);
-        if (!armyTile || !isExplorer(armyTile.occupierType)) {
-          throw new Error(`No army at ${params.from_army_row}:${params.from_army_col}.`);
-        }
-
-        const explorer = await client.view.explorerInfo(armyTile.occupierId);
-        if (!explorer) throw new Error(`Explorer not found.`);
+        const fromArmyId = params.from_army_id!;
+        const explorer = await client.view.explorerInfo(fromArmyId);
+        if (!explorer) throw new Error(`Army ${fromArmyId} not found.`);
         if (!addressesEqual(explorer.ownerAddress ?? "", playerAddress)) {
-          throw new Error(`Army at ${params.from_army_row}:${params.from_army_col} is not yours.`);
+          throw new Error(`Army ${fromArmyId} is not yours.`);
         }
+
+        const armyHex = explorer.position;
 
         const direction = getDirectionBetweenAdjacentHexes(
           { col: armyHex.x, row: armyHex.y },
@@ -261,7 +255,7 @@ export function createDefendStructureTool(
             type: "text" as const,
             text: [
               `Assigned ${troopCount.toLocaleString()} ${troopResName} to guard slot ${slotName}`,
-              `Structure: ${structure.category} at ${row}:${col}`,
+              `Structure: ${structure.category} ${structureId} at (${structHex.x},${structHex.y})`,
               `Remaining ${troopResName}: ~${Math.max(0, remainingDisplay).toLocaleString()}`,
             ].join("\n"),
           },
