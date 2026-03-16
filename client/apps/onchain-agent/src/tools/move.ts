@@ -19,41 +19,9 @@ import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
 import type { MapContext } from "../map/context.js";
 import { type TxContext, addressesEqual, extractTxError } from "./tx-context.js";
 import { isExplorer, isStructure, isChest } from "../world/occupier.js";
-import { findPath, buildTileIndex } from "../world/pathfinding.js";
+import { findPath as findPathV2, buildH3TileIndex, travelStaminaCostById, type H3TileIndex, type FindPathOptions, type PathResult as PathResultV2 } from "../world/pathfinding_v2.js";
 import { projectExplorerStamina } from "../world/stamina.js";
-
-/**
- * Return the stamina cost to travel into a tile, based on biome and troop type.
- * Matches the game's configManager.getTravelStaminaCost logic.
- */
-function tileTravelCost(biomeId: number, troopType: string, stamina: StaminaConfig): number {
-  const base = stamina.travelCost;
-  const bonus = stamina.bonusValue;
-  const isPaladin = troopType === "Paladin";
-
-  switch (biomeId) {
-    case 1:
-    case 2: // DeepOcean, Ocean
-      return base - bonus;
-    case 4: // Scorched
-      return base + bonus;
-    case 5:
-    case 6:
-    case 8:
-    case 9:
-    case 11:
-    case 14: // Bare, Tundra, TempDesert, Shrubland, Grassland, SubtropDesert
-      return isPaladin ? base - bonus : base;
-    case 10:
-    case 12:
-    case 13:
-    case 15:
-    case 16: // Taiga, TempDecidForest, TempRainForest, TropSeasonForest, TropRainForest
-      return isPaladin ? base + bonus : base;
-    default: // Beach(3), Snow(7), None(0), unknown
-      return base;
-  }
-}
+import { getNeighborHexes } from "@bibliothecadao/types";
 
 function describeOccupier(occupierType: number): string {
   if (isStructure(occupierType)) return "structure";
@@ -164,44 +132,20 @@ export function createMoveTool(
           throw new Error(`Already at (${target.x},${target.y}).`);
         }
 
-        // ── Pathfind ──
+        // ── Stamina ──
 
-        const { explored, blocked } = buildTileIndex(mapCtx.snapshot.tiles);
-        blocked.delete(`${start.x},${start.y}`);
-
-        // Merge in positions of armies that moved recently but
-        // whose new positions aren't yet reflected in the Torii snapshot.
-        if (mapCtx.recentlyMoved) {
-          for (const [key] of mapCtx.recentlyMoved) {
-            blocked.add(key);
-          }
-        }
-
-        // Merge in tiles explored recently but not yet in Torii's snapshot.
-        // This prevents explorer_explore on tiles we already explored this tick.
-        if (mapCtx.recentlyExplored) {
-          for (const key of mapCtx.recentlyExplored) {
-            explored.add(key);
-          }
-        }
-
-        // Use known actual stamina if we have it (from prior move results or chain errors),
-        // otherwise fall back to Torii projection. Known values expire after 120s.
         const known = mapCtx.knownStamina?.get(explorer.entityId);
         const knownValid = known && (Date.now() - known.time) < 120_000;
         let projectedStamina: number;
 
         if (knownValid) {
-          // We know the actual stamina from a recent move or chain error — trust it,
-          // but add regen since the known value was recorded.
           const elapsedSec = (Date.now() - known.time) / 1000;
           const armiesTickSec = gameConfig.stamina.armiesTickInSeconds || 1;
           const elapsedTicks = Math.floor(elapsedSec / armiesTickSec);
           const regen = elapsedTicks * gameConfig.stamina.gainPerTick;
-          const baseMax = gameConfig.stamina.knightMaxStamina; // conservative — use lowest
+          const baseMax = gameConfig.stamina.knightMaxStamina;
           projectedStamina = Math.min(known.stamina + regen, baseMax + 40);
         } else {
-          // Fall back to Torii projection + staminaSpent tracking
           const baseProjected = projectExplorerStamina(explorer, gameConfig.stamina);
           const tracked = mapCtx.staminaSpent?.get(explorer.entityId);
           const alreadySpent = tracked && tracked.atTick === explorer.staminaUpdatedTick ? tracked.spent : 0;
@@ -212,46 +156,73 @@ export function createMoveTool(
           throw new Error(`Cannot move — no stamina (${projectedStamina}). Wait for regeneration.`);
         }
 
-        // Build biome lookup so the pathfinder can weight edges by stamina cost
-        const biomeIndex = new Map<string, number>();
-        for (const t of mapCtx.snapshot.tiles) {
-          biomeIndex.set(`${t.position.x},${t.position.y}`, t.biome);
+        // ── Build H3 tile index ──
+
+        // Start with snapshot tiles, then patch with recent context
+        const tilesToIndex = [...mapCtx.snapshot.tiles];
+
+        // Patch: mark recently moved army positions as occupied
+        // (Torii may not have indexed these yet)
+        if (mapCtx.recentlyMoved) {
+          for (const [key, entityId] of mapCtx.recentlyMoved) {
+            const [kx, ky] = key.split(",").map(Number);
+            // Add a synthetic occupied tile if not already in the snapshot
+            const existing = mapCtx.snapshot.gridIndex.get(key);
+            if (!existing) {
+              tilesToIndex.push({
+                position: { x: kx, y: ky },
+                biome: 0,
+                occupierId: entityId,
+                occupierType: 15, // explorer
+                occupierIsStructure: false,
+                rewardExtracted: false,
+              });
+            }
+          }
         }
 
-        const tileCost = (tileKey: string): number => {
-          const biome = biomeIndex.get(tileKey) ?? 0;
-          return tileTravelCost(biome, explorer.troopType, gameConfig.stamina);
+        const h3Index = buildH3TileIndex(tilesToIndex);
+
+        // Remove the start tile from occupier index (the army is leaving)
+        const startH3 = h3Index.keyToH3.get(`${start.x},${start.y}`);
+        if (startH3) h3Index.h3ToOccupier.set(startH3, 0);
+
+        // Explorer troopType is already a string matching TroopType enum values
+        const troopEnum = explorer.troopType as any;
+
+        const pathOptions: FindPathOptions = {
+          troop: troopEnum,
+          maxStamina: projectedStamina,
+          staminaConfig: {
+            gainPerTick: gameConfig.stamina.gainPerTick,
+            travelCost: gameConfig.stamina.travelCost,
+            exploreCost: gameConfig.stamina.exploreCost,
+            bonusValue: gameConfig.stamina.bonusValue,
+            maxKnight: gameConfig.stamina.knightMaxStamina,
+            maxPaladin: gameConfig.stamina.paladinMaxStamina,
+            maxCrossbowman: gameConfig.stamina.crossbowmanMaxStamina,
+          },
         };
 
-        let pathResult = findPath(
-          start,
-          target,
-          explored,
-          blocked,
-          projectedStamina,
-          tileCost,
-          gameConfig.stamina.exploreCost,
-        );
+        // ── Pathfind ──
 
-        if (!pathResult) {
-          throw new Error(`No path to (${target.x},${target.y}). Target may be blocked, unexplored, or unreachable.`);
-        }
-
-        // If destination is occupied, stop 1 hex before (can't move onto occupied tiles)
+        // Check if target is occupied — if so, pathfind to best adjacent tile instead
         const targetTile = mapCtx.snapshot.gridIndex.get(`${target.x},${target.y}`) ?? null;
         const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
 
+        let pathResult: PathResultV2 | null = null;
+        let actualTarget = target;
+
         if (targetIsOccupied) {
-          if (pathResult.path.length <= 2) {
-            // Path is [start, target] — already adjacent, no move needed
+          // Check if already adjacent
+          const neighbors = getNeighborHexes(target.x, target.y);
+          const isAlreadyAdjacent = neighbors.some(n => n.col === start.x && n.row === start.y);
+
+          if (isAlreadyAdjacent) {
             const occupier = describeOccupier(targetTile.occupierType);
             const actions = ["inspect_tile"];
             if (isStructure(targetTile.occupierType)) {
-              actions.push(
-                "attack_target (to capture)",
-                "reinforce_army (if your army)",
-                "defend_structure (if yours)",
-              );
+              actions.push("attack_target (to capture)", "reinforce_army (if your army)", "defend_structure (if yours)");
             } else if (isExplorer(targetTile.occupierType)) {
               actions.push("attack_target", "reinforce_army (if yours, merges same type/tier)");
             } else if (isChest(targetTile.occupierType)) {
@@ -260,34 +231,47 @@ export function createMoveTool(
             throw new Error(`Already adjacent to ${occupier} at (${target.x},${target.y}). You can: ${actions.join(", ")}.`);
           }
 
-          // Trim the last step — stop adjacent to the target
-          const trimmedPath = pathResult.path.slice(0, -1);
-          const trimmedDirs = pathResult.directions.slice(0, -1);
+          // Try each adjacent tile as a destination, pick the cheapest reachable one
+          let bestPath: any = null;
+          for (const n of neighbors) {
+            const adjTarget = { x: n.col, y: n.row };
+            const adjTile = mapCtx.snapshot.gridIndex.get(`${n.col},${n.row}`);
+            // Adjacent tile must be explored and unoccupied
+            if (!adjTile || adjTile.occupierType !== 0) continue;
 
-          let trimmedCost = 0;
-          for (let i = 1; i < trimmedPath.length; i++) {
-            const key = `${trimmedPath[i].x},${trimmedPath[i].y}`;
-            trimmedCost += tileCost(key);
+            const candidate = findPathV2(start, adjTarget, h3Index, pathOptions);
+            if (candidate && !candidate.reachedLimit) {
+              if (!bestPath || candidate.staminaCost < bestPath.staminaCost) {
+                bestPath = candidate;
+                actualTarget = adjTarget;
+              }
+            }
           }
 
-          pathResult = {
-            path: trimmedPath,
-            directions: trimmedDirs,
-            distance: trimmedDirs.length,
-            staminaCost: trimmedCost,
-            reachedLimit: false,
-          };
+          pathResult = bestPath;
+          if (!pathResult) {
+            throw new Error(`No path to any tile adjacent to (${target.x},${target.y}). All approaches may be blocked.`);
+          }
+        } else {
+          // Target is unoccupied — pathfind directly
+          pathResult = findPathV2(start, target, h3Index, pathOptions);
+        }
+
+        if (!pathResult) {
+          throw new Error(`No path to (${target.x},${target.y}). Target may be blocked, unexplored, or unreachable.`);
         }
 
         // If path exceeds stamina, truncate to move as far as we can afford
         if (pathResult.reachedLimit) {
+          const config = pathOptions.staminaConfig!;
           let budget = projectedStamina;
-          let truncateAt = 0; // how many steps we can take
+          let truncateAt = 0;
           for (let i = 1; i < pathResult.path.length; i++) {
             const key = `${pathResult.path[i].x},${pathResult.path[i].y}`;
-            // Final step into unexplored tile costs exploreCost, not travel cost
-            const isExploreStep = i === pathResult.path.length - 1 && !explored.has(key);
-            const cost = isExploreStep ? gameConfig.stamina.exploreCost : tileCost(key);
+            const h3 = h3Index.keyToH3.get(key);
+            const biomeId = h3 ? (h3Index.h3ToBiome.get(h3) ?? 0) : 0;
+            const isExploredTile = biomeId !== 0;
+            const cost = isExploredTile ? travelStaminaCostById(biomeId, troopEnum, config) : config.exploreCost;
             if (budget < cost) break;
             budget -= cost;
             truncateAt = i;
@@ -302,6 +286,15 @@ export function createMoveTool(
             staminaCost: projectedStamina - budget,
             reachedLimit: false,
           };
+        }
+
+        // Build explored set for segment splitting
+        const explored = new Set<string>();
+        for (const t of mapCtx.snapshot.tiles) {
+          if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`);
+        }
+        if (mapCtx.recentlyExplored) {
+          for (const key of mapCtx.recentlyExplored) explored.add(key);
         }
 
         const endPos = pathResult.path[pathResult.path.length - 1];
