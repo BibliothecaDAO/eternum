@@ -25,11 +25,12 @@ import {
   DEFAULT_COSMETICS_NETWORK,
   resolveConnectedTxNetworkFromRuntime,
 } from "@/ui/features/cosmetics/config/networks";
+import { buildDevPreviewCatalogItems } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
 import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/cosmetics/lib/use-torii-cosmetics";
 import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import { switchWalletToChain, type WalletChainControllerLike } from "@/ui/utils/network-switch";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 const resolveAssetImage = (uri?: string | null): string | null => {
   if (!uri) return null;
@@ -77,12 +78,7 @@ export const LandingCosmetics = () => {
     : connectedTxNetwork
       ? `You're connected to ${COSMETICS_NETWORK_CONFIG[connectedTxNetwork].label}. Click Open Chest to switch to ${selectedNetworkLabel}.`
       : `You're on an unsupported transaction network for this action. Click Open Chest to switch to ${selectedNetworkLabel}.`;
-
-  useEffect(() => {
-    if (canOpenSelectedNetworkChests && showWrongNetworkPrompt) {
-      setShowWrongNetworkPrompt(false);
-    }
-  }, [canOpenSelectedNetworkChests, showWrongNetworkPrompt]);
+  const wrongNetworkPromptOpen = showWrongNetworkPrompt && !canOpenSelectedNetworkChests;
 
   const toriiItems = useMemo<CosmeticItem[]>(() => {
     if (!toriiCosmetics || toriiCosmetics.length === 0) {
@@ -132,10 +128,12 @@ export const LandingCosmetics = () => {
       };
     });
   }, [toriiCosmetics]);
+  const devPreviewCatalogItems = useMemo(() => buildDevPreviewCatalogItems(COSMETIC_ITEMS), []);
+  const showingDevPreviewCatalog = import.meta.env.DEV && toriiItems.length === 0;
 
   // Data is already grouped by SQL, no client-side grouping needed
   // Only use toriiItems when loaded, don't fall back to COSMETIC_ITEMS during loading
-  const baseItems = toriiItems;
+  const baseItems = showingDevPreviewCatalog ? devPreviewCatalogItems : toriiItems;
 
   const filteredItems = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -166,24 +164,22 @@ export const LandingCosmetics = () => {
     });
   }, [baseItems, searchTerm]);
 
-  useEffect(() => {
+  const resolvedSelectedId = useMemo(() => {
     if (filteredItems.length === 0) {
-      if (selectedId !== null) {
-        setSelectedId(null);
-      }
-      return;
+      return null;
     }
 
-    const hasSelected = selectedId && filteredItems.some((item) => item.id === selectedId);
-    if (!hasSelected) {
-      setSelectedId(filteredItems[0]?.id ?? null);
+    if (selectedId && filteredItems.some((item) => item.id === selectedId)) {
+      return selectedId;
     }
+
+    return filteredItems[0]?.id ?? null;
   }, [filteredItems, selectedId]);
 
   const selectedItem = useMemo<CosmeticItem | null>(() => {
-    if (!selectedId) return null;
-    return filteredItems.find((item) => item.id === selectedId) ?? null;
-  }, [filteredItems, selectedId]);
+    if (!resolvedSelectedId) return null;
+    return filteredItems.find((item) => item.id === resolvedSelectedId) ?? null;
+  }, [filteredItems, resolvedSelectedId]);
 
   const handleSwitchNetwork = useCallback(async () => {
     const switched = await switchWalletToChain({
@@ -297,6 +293,12 @@ export const LandingCosmetics = () => {
                       />
 
                       {isError && <p className="text-xs text-rose-300">Failed to load on-chain cosmetics.</p>}
+                      {showingDevPreviewCatalog && (
+                        <p className="text-xs text-amber-200">
+                          Dev preview catalog enabled. This account has no owned cosmetics, so the full catalog is
+                          available for local testing only.
+                        </p>
+                      )}
                     </div>
 
                     <div className="rounded-2xl border border-gold/15 bg-black/40 p-4">
@@ -337,7 +339,7 @@ export const LandingCosmetics = () => {
 
                     <CosmeticGallery
                       items={filteredItems}
-                      selectedId={selectedId}
+                      selectedId={resolvedSelectedId}
                       onSelect={(id) => setSelectedId(id)}
                       loadoutScopeKey={loadoutScopeKey}
                     />
@@ -391,7 +393,7 @@ export const LandingCosmetics = () => {
       )}
 
       <SwitchNetworkPrompt
-        open={showWrongNetworkPrompt}
+        open={wrongNetworkPromptOpen}
         description={`You're trying to open a ${selectedNetworkLabel} chest while your wallet is on another chain.`}
         hint={`Switch your wallet to ${selectedNetworkLabel} to continue.`}
         switchLabel={`Switch To ${selectedNetworkLabel}`}

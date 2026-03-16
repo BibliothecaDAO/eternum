@@ -10,10 +10,11 @@ import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { env } from "../../env";
 import { buildBlitzRegisterCalls } from "./blitz-registration";
+import { resolveRegistrationCosmeticTokenIds } from "./registration-cosmetic-token-ids";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
@@ -260,7 +261,7 @@ export const useWorldRegistration = ({
   }, [chain, worldName]);
 
   const worldLoadoutKey = `blitz:${chain}:${worldName}`;
-  const fallbackLoadoutKeys = [`cosmetics:${chain}`];
+  const fallbackLoadoutKeys = useMemo(() => [`cosmetics:${chain}`], [chain]);
 
   const resolvePendingCosmeticTokenIds = useCallback((): string[] => {
     if (!address) {
@@ -278,17 +279,7 @@ export const useWorldRegistration = ({
     }
 
     const maxSelections = config?.collectiblesCosmeticsMax ?? DEFAULT_COSMETIC_SELECTION_LIMIT;
-    const validTokenIds = Object.values(draft.selectedBySlot ?? {})
-      .filter((selection) => selection.tokenId && selection.cosmeticIds.length > 0)
-      .map((selection) => selection.tokenId);
-
-    const tokenIds = validTokenIds.length > 0 ? validTokenIds : draft.tokenIds;
-
-    if (tokenIds.length > maxSelections) {
-      throw new Error(`Select at most ${maxSelections} cosmetics before registering for Blitz.`);
-    }
-
-    return tokenIds;
+    return resolveRegistrationCosmeticTokenIds({ draft, maxSelections });
   }, [address, config?.collectiblesCosmeticsMax, fallbackLoadoutKeys, worldLoadoutKey]);
 
   /**
@@ -490,7 +481,6 @@ export const useWorldRegistration = ({
     account,
     address,
     config,
-    worldName,
     chain,
     feeAmount,
     requiresEntryToken,

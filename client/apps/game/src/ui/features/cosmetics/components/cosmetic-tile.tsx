@@ -1,4 +1,5 @@
 import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import { isDevPreviewSyntheticTokenId } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
 import { useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 
@@ -61,7 +62,7 @@ export const CosmeticTile = ({ item, active, onSelect, loadoutScopeKey }: Cosmet
           </div>
         )}
         {/* Trade link - appears on hover */}
-        {item.tokenId && (
+        {item.tokenId && !isDevPreviewSyntheticTokenId(item.tokenId) && (
           <a
             href={`${TRADE_BASE_URL}/${item.tokenId}`}
             target="_blank"
@@ -79,6 +80,11 @@ export const CosmeticTile = ({ item, active, onSelect, loadoutScopeKey }: Cosmet
         <span className="text-sm font-medium text-gold">{item.name}</span>
         <span className="mt-1 line-clamp-2 text-xs text-gold/60">{item.description}</span>
         <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-gold/70">
+          {isDevPreviewSyntheticTokenId(item.tokenId) && (
+            <span className="rounded-full border border-amber-300/30 bg-amber-500/10 px-2 py-0.5 uppercase tracking-wide text-amber-100">
+              Dev Preview
+            </span>
+          )}
           {rarity && (
             <span className="rounded-full border border-gold/20 bg-black/40 px-2 py-0.5 uppercase tracking-wide">
               {rarity}

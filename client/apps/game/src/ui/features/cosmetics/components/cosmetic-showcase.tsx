@@ -1,5 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
 import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import { isDevPreviewSyntheticTokenId } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
 import { useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import { CosmeticModelViewer } from "./cosmetic-model-viewer";
@@ -83,7 +84,7 @@ export const CosmeticShowcase = ({ item, loadoutScopeKey }: CosmeticShowcaseProp
               {isEquipped ? "Equipped" : hasSlotConflict ? "Replace equipped cosmetic" : "Equip cosmetic"}
             </Button>
 
-            {item?.tokenId && (
+            {item?.tokenId && !isDevPreviewSyntheticTokenId(item.tokenId) && (
               <a
                 href={`${TRADE_BASE_URL}/${item.tokenId}`}
                 target="_blank"
@@ -99,6 +100,13 @@ export const CosmeticShowcase = ({ item, loadoutScopeKey }: CosmeticShowcaseProp
           {!canEquip && (
             <p className="text-xs text-gold/50">
               On-chain cosmetics expose a token and slot before they can be assigned.
+            </p>
+          )}
+
+          {item?.tokenId && isDevPreviewSyntheticTokenId(item.tokenId) && (
+            <p className="text-xs text-amber-200">
+              Dev preview cosmetic only. This selection is available for local testing and will not be registered
+              onchain.
             </p>
           )}
 
