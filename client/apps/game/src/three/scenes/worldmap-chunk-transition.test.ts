@@ -4,8 +4,11 @@ import {
   resolveDuplicateTileReconcilePlan,
   resolveEntityActionPathsTransitionTokenSync,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
+  resolvePendingChunkRefreshUiReason,
+  shouldHoldShortcutArmySelectionProtection,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldClearEntitySelectionForEntityActionTransition,
+  shouldClearEntitySelectionForChunkSwitch,
   resolveRefreshCompletionActions,
   resolveDuplicateTileUpdateMode,
   resolveDuplicateTileUpdateActions,
@@ -93,6 +96,106 @@ describe("resolveChunkSwitchActions", () => {
       shouldUnregisterPreviousChunk: false,
       shouldRestorePreviousState: false,
     });
+  });
+});
+
+describe("shouldClearEntitySelectionForChunkSwitch", () => {
+  it("clears selection for default chunk switches outside shortcut tabbing", () => {
+    expect(
+      shouldClearEntitySelectionForChunkSwitch({
+        reason: "default",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("preserves selection for explicit shortcut chunk switches", () => {
+    expect(
+      shouldClearEntitySelectionForChunkSwitch({
+        reason: "shortcut",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("preserves selection when a default refresh overlaps shortcut tabbing", () => {
+    expect(
+      shouldClearEntitySelectionForChunkSwitch({
+        reason: "default",
+        isShortcutArmySelectionInFlight: true,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolvePendingChunkRefreshUiReason", () => {
+  it("promotes queued refreshes to shortcut mode while tab selection is in flight", () => {
+    expect(
+      resolvePendingChunkRefreshUiReason({
+        currentReason: "default",
+        isShortcutArmySelectionInFlight: true,
+      }),
+    ).toBe("shortcut");
+  });
+
+  it("keeps shortcut mode sticky until the queued refresh is consumed", () => {
+    expect(
+      resolvePendingChunkRefreshUiReason({
+        currentReason: "shortcut",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe("shortcut");
+  });
+
+  it("stays in default mode when no shortcut selection is active", () => {
+    expect(
+      resolvePendingChunkRefreshUiReason({
+        currentReason: "default",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe("default");
+  });
+});
+
+describe("shouldHoldShortcutArmySelectionProtection", () => {
+  it("holds protection while a chunk refresh timer is pending", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: true,
+        isChunkRefreshRunning: false,
+        hasGlobalChunkSwitchPromise: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("holds protection while a chunk refresh is running", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: false,
+        isChunkRefreshRunning: true,
+        hasGlobalChunkSwitchPromise: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("holds protection while a global chunk switch is still in flight", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: false,
+        isChunkRefreshRunning: false,
+        hasGlobalChunkSwitchPromise: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("releases protection when chunk work has fully drained", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: false,
+        isChunkRefreshRunning: false,
+        hasGlobalChunkSwitchPromise: false,
+      }),
+    ).toBe(false);
   });
 });
 

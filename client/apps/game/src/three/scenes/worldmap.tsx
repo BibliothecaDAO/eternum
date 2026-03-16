@@ -122,7 +122,10 @@ import {
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
+  resolvePendingChunkRefreshUiReason,
   shouldRequestTileRefreshForStructureBoundsChange,
+  shouldClearEntitySelectionForChunkSwitch,
+  shouldHoldShortcutArmySelectionProtection,
   shouldClearEntitySelectionForEntityActionTransition,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldForceShortcutNavigationRefresh,
@@ -316,11 +319,13 @@ export default class WorldmapScene extends WarpTravel {
   private isChunkTransitioning: boolean = false;
   private chunkRefreshTimeout: number | null = null;
   private pendingChunkRefreshForce = false;
+  private pendingChunkRefreshUiReason: "default" | "shortcut" = "default";
   private chunkRefreshRequestToken = 0;
   private chunkRefreshAppliedToken = 0;
   private chunkRefreshRunning = false;
   private chunkRefreshRerunRequested = false;
   private readonly chunkRefreshDebounceMs = 140;
+  private isShortcutArmySelectionInFlight = false;
   private lastControlsCameraDistance: number | null = null;
   private readonly zoomForceRefreshDistanceThreshold = 0.75;
   private zeroTerrainFrames = 0;
@@ -2466,6 +2471,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chunkRefreshRunning = resetState.chunkRefreshRunning;
     this.chunkRefreshRerunRequested = resetState.chunkRefreshRerunRequested;
     this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
+    this.pendingChunkRefreshUiReason = "default";
     this.zeroTerrainFrames = resetState.zeroTerrainFrames;
     this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
     this.lowTerrainFrames = 0;
@@ -2476,6 +2482,7 @@ export default class WorldmapScene extends WarpTravel {
     this.terrainReferenceInstances = 0;
     this.terrainReferenceChunkKey = null;
     this.lastChunkSwitchMovement = null;
+    this.isShortcutArmySelectionInFlight = false;
   }
 
   onSwitchOff(nextSceneName?: SceneName) {
@@ -4394,6 +4401,10 @@ export default class WorldmapScene extends WarpTravel {
     incrementWorldmapRenderCounter("chunkRefreshRequests");
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     this.chunkRefreshRequestToken += 1;
+    this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
+      currentReason: this.pendingChunkRefreshUiReason,
+      isShortcutArmySelectionInFlight: this.isShortcutArmySelectionInFlight,
+    });
     if (force) {
       this.pendingChunkRefreshForce = true;
       incrementWorldmapForceRefreshReason(reason);
@@ -4441,9 +4452,11 @@ export default class WorldmapScene extends WarpTravel {
 
     this.chunkRefreshTimeout = window.setTimeout(() => {
       const shouldForce = this.pendingChunkRefreshForce;
+      const refreshReason = this.pendingChunkRefreshUiReason;
       this.pendingChunkRefreshForce = false;
+      this.pendingChunkRefreshUiReason = "default";
       this.chunkRefreshTimeout = null;
-      void this.updateVisibleChunks(shouldForce).catch((error) => {
+      void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
         console.error("[WorldMap] Legacy chunk refresh failed:", error);
       });
     }, this.chunkRefreshDebounceMs);
@@ -4491,11 +4504,13 @@ export default class WorldmapScene extends WarpTravel {
 
     this.chunkRefreshRunning = true;
     const shouldForce = this.pendingChunkRefreshForce;
+    const refreshReason = this.pendingChunkRefreshUiReason;
     this.pendingChunkRefreshForce = false;
+    this.pendingChunkRefreshUiReason = "default";
 
     try {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_executed");
-      await this.updateVisibleChunks(shouldForce);
+      await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
     } catch (error) {
       console.error("[WorldMap] Chunk refresh failed:", error);
     } finally {
@@ -4634,9 +4649,14 @@ export default class WorldmapScene extends WarpTravel {
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
     try {
-
-      // Keep selection continuity during shortcut tabbing to avoid visible label/selection flashes.
-      if (reason !== "shortcut") {
+      // Keep selection continuity during shortcut tabbing, including any
+      // overlapping scheduled refresh that still routes through the default branch.
+      if (
+        shouldClearEntitySelectionForChunkSwitch({
+          reason,
+          isShortcutArmySelectionInFlight: this.isShortcutArmySelectionInFlight,
+        })
+      ) {
         this.clearEntitySelection();
       }
 
@@ -5350,79 +5370,119 @@ export default class WorldmapScene extends WarpTravel {
   private async selectNextArmy(): Promise<void> {
     if (this.selectableArmies.length === 0) return;
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
-
-    // Find the next army that can actually be selected.
-    let attempts = 0;
-    while (attempts < this.selectableArmies.length) {
-      this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
-      const army = this.selectableArmies[this.armyIndex];
-      const hasPendingMovement = this.pendingArmyMovements.has(army.entityId);
-
-      // Skip armies with pending movement transactions
-      if (hasPendingMovement) {
-        attempts++;
-        continue;
-      }
-
-      const selectableArmyNormalizedPosition = new Position({
-        x: army.position.col,
-        y: army.position.row,
-      }).getNormalized();
-      const resolvedPosition = resolveArmyTabSelectionPosition({
-        renderedArmyPosition: this.armiesPositions.get(army.entityId),
-        selectableArmyNormalizedPosition: {
-          col: selectableArmyNormalizedPosition.x,
-          row: selectableArmyNormalizedPosition.y,
-        },
+    this.isShortcutArmySelectionInFlight = true;
+    if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
+      this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
+        currentReason: this.pendingChunkRefreshUiReason,
+        isShortcutArmySelectionInFlight: true,
       });
-      this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    }
 
-      try {
-        await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error(
-            `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
-            error,
-          );
+    try {
+      // Find the next army that can actually be selected.
+      let attempts = 0;
+      while (attempts < this.selectableArmies.length) {
+        this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
+        const army = this.selectableArmies[this.armyIndex];
+        const hasPendingMovement = this.pendingArmyMovements.has(army.entityId);
+
+        // Skip armies with pending movement transactions
+        if (hasPendingMovement) {
+          attempts++;
+          continue;
         }
-      }
 
-      this.handleHexSelection(resolvedPosition, true);
-      let selectionSucceeded = this.onArmySelection(army.entityId, account, {
-        deferDuringChunkTransition: false,
-      });
+        const selectableArmyNormalizedPosition = new Position({
+          x: army.position.col,
+          y: army.position.row,
+        }).getNormalized();
+        const resolvedPosition = resolveArmyTabSelectionPosition({
+          renderedArmyPosition: this.armiesPositions.get(army.entityId),
+          selectableArmyNormalizedPosition: {
+            col: selectableArmyNormalizedPosition.x,
+            row: selectableArmyNormalizedPosition.y,
+          },
+        });
+        this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
 
-      if (!selectionSucceeded) {
         try {
-          await this.updateVisibleChunks(true, { reason: "shortcut" });
+          await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
         } catch (error) {
           if (import.meta.env.DEV) {
-            console.warn(
-              `[WorldMap] Forced chunk refresh failed while selecting army (entityId=${army.entityId}):`,
+            console.error(
+              `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
               error,
             );
           }
         }
 
-        selectionSucceeded = this.onArmySelection(army.entityId, account, {
+        this.handleHexSelection(resolvedPosition, true);
+        let selectionSucceeded = this.onArmySelection(army.entityId, account, {
           deferDuringChunkTransition: false,
         });
+
+        if (!selectionSucceeded) {
+          try {
+            await this.updateVisibleChunks(true, { reason: "shortcut" });
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[WorldMap] Forced chunk refresh failed while selecting army (entityId=${army.entityId}):`,
+                error,
+              );
+            }
+          }
+
+          selectionSucceeded = this.onArmySelection(army.entityId, account, {
+            deferDuringChunkTransition: false,
+          });
+        }
+
+        if (
+          shouldAcceptArmyTabSelectionAttempt({
+            hasPendingMovement,
+            selectionSucceeded,
+          })
+        ) {
+          this.state.setLeftNavigationView(LeftView.EntityView);
+          break;
+        }
+
+        attempts++;
+      }
+      // If all armies have pending movements, do nothing
+    } finally {
+      const shouldHoldProtection = shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: this.chunkRefreshTimeout !== null,
+        isChunkRefreshRunning: this.chunkRefreshRunning,
+        hasGlobalChunkSwitchPromise: this.globalChunkSwitchPromise !== null,
+      });
+
+      if (shouldHoldProtection) {
+        const pendingRefreshToken = this.chunkRefreshRequestToken;
+
+        if (this.globalChunkSwitchPromise) {
+          try {
+            await this.globalChunkSwitchPromise;
+          } catch (error) {
+            console.warn("[WorldMap] Shortcut selection wait failed for chunk switch settlement", error);
+          }
+        }
+
+        if (pendingRefreshToken > 0 && (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning)) {
+          try {
+            await this.waitForRequestedChunkRefresh(pendingRefreshToken);
+          } catch (error) {
+            console.warn("[WorldMap] Shortcut selection wait failed for refresh settlement", error);
+          }
+        }
       }
 
-      if (
-        shouldAcceptArmyTabSelectionAttempt({
-          hasPendingMovement,
-          selectionSucceeded,
-        })
-      ) {
-        this.state.setLeftNavigationView(LeftView.EntityView);
-        break;
+      this.isShortcutArmySelectionInFlight = false;
+      if (this.chunkRefreshTimeout === null && !this.chunkRefreshRunning && this.globalChunkSwitchPromise === null) {
+        this.pendingChunkRefreshUiReason = "default";
       }
-
-      attempts++;
     }
-    // If all armies have pending movements, do nothing
   }
 
   private async refreshChunksAfterShortcutNavigation(

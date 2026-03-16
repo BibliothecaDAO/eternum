@@ -56,6 +56,22 @@ interface MissingActionPathOwnershipDecisionInput {
   allowPendingLocalOwnership?: boolean;
 }
 
+interface ChunkSwitchSelectionClearDecisionInput {
+  reason: "default" | "shortcut";
+  isShortcutArmySelectionInFlight: boolean;
+}
+
+interface PendingChunkRefreshUiReasonInput {
+  currentReason: "default" | "shortcut";
+  isShortcutArmySelectionInFlight: boolean;
+}
+
+interface ShortcutArmySelectionProtectionHoldInput {
+  hasPendingChunkRefreshTimer: boolean;
+  isChunkRefreshRunning: boolean;
+  hasGlobalChunkSwitchPromise: boolean;
+}
+
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
@@ -285,6 +301,36 @@ export function shouldClearEntitySelectionForEntityActionTransition(
   const hadSelection = previousSelectedEntityId !== null && previousSelectedEntityId !== undefined;
   const hasSelection = nextSelectedEntityId !== null && nextSelectedEntityId !== undefined;
   return hadSelection && !hasSelection;
+}
+
+/**
+ * Shortcut tabbing should preserve selection even when a concurrent default
+ * refresh overlaps the shortcut navigation window.
+ */
+export function shouldClearEntitySelectionForChunkSwitch(input: ChunkSwitchSelectionClearDecisionInput): boolean {
+  return input.reason !== "shortcut" && !input.isShortcutArmySelectionInFlight;
+}
+
+/**
+ * Queued refreshes should stay in shortcut mode until they are consumed so a
+ * delayed scheduler flush cannot reintroduce selection flashes mid-tab cycle.
+ */
+export function resolvePendingChunkRefreshUiReason(input: PendingChunkRefreshUiReasonInput): "default" | "shortcut" {
+  if (input.currentReason === "shortcut" || input.isShortcutArmySelectionInFlight) {
+    return "shortcut";
+  }
+
+  return "default";
+}
+
+/**
+ * Keep shortcut selection protection alive until known chunk work has drained,
+ * otherwise a late-running refresh can still clear the freshly-tabbed selection.
+ */
+export function shouldHoldShortcutArmySelectionProtection(
+  input: ShortcutArmySelectionProtectionHoldInput,
+): boolean {
+  return input.hasPendingChunkRefreshTimer || input.isChunkRefreshRunning || input.hasGlobalChunkSwitchPromise;
 }
 
 /**

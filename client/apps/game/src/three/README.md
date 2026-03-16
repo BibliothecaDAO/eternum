@@ -8,6 +8,8 @@ and HUD.
 - Install deps once at repo root: `pnpm install`
 - Run the Blitz client: `pnpm --dir client/apps/game dev`
 - `GameRenderer` is instantiated by the app shell with the Dojo `SetupResult` and mounts into `#main-canvas`.
+- Detailed zoom-scroll redesign plan: `WORLDMAP_ZOOM_SCROLL_PRD_TDD.md`
+- Detailed WebGPU optimization and hardening plan: `WEBGPU_OPTIMIZATION_PRD_TDD.md`
 
 ## Key entry points
 
