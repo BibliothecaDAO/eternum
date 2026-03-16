@@ -34,7 +34,8 @@ vi.mock("../asset-cache", () => ({
 }));
 
 import { buildBlitzRegisterCalls } from "@/hooks/blitz-registration";
-import { createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
+import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
+import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
 import { ModelType } from "../../types/army";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { playerCosmeticsStore } from "../player-cosmetics-store";
@@ -46,6 +47,7 @@ describe("cosmetic pipeline integration", () => {
     playerCosmeticsStore.clear();
     clearRegistry();
     seedDefaultCosmetics({ force: true });
+    useDevPreviewEntryStore.getState().clearAllPreviewEntries();
   });
 
   it("flows from pending loadout to register calldata to applied army skin", () => {
@@ -139,6 +141,63 @@ describe("cosmetic pipeline integration", () => {
     expect(army.attachments).toEqual([expect.objectContaining({ id: "legacy-troop-aura" })]);
     expect(structure.skin.cosmeticId).toBe("structure:realm:castle-s1-lvl2");
     expect(structure.attachments).toEqual([expect.objectContaining({ id: "legacy-realm-aura" })]);
+  });
+
+  it("clears preview state and reapplies a changed draft on the next explicit preview entry", async () => {
+    playerCosmeticsStore.setPendingBlitzLoadout("cosmetics:slot", "0x123", {
+      tokenIds: ["0xaaa"],
+      selectedBySlot: {
+        armor: {
+          tokenId: "0xaaa",
+          cosmeticIds: ["army:Knight:T3:legacy"],
+        },
+      },
+    });
+
+    const controller = createWorldPreviewEntryController({
+      isDev: true,
+      address: "0x123",
+      chain: "slot",
+      worldName: "alpha",
+      previewEntries: useDevPreviewEntryStore.getState(),
+      cosmeticsStore: playerCosmeticsStore,
+    });
+
+    await controller.enterPreview();
+
+    expect(
+      resolveArmyCosmetic({
+        owner: "0x123",
+        troopType: TroopType.Knight,
+        tier: TroopTier.T3,
+        defaultModelType: ModelType.Knight3,
+      }).skin.cosmeticId,
+    ).toBe("army:Knight:T3:legacy");
+
+    const previewWorldKey = buildDevPreviewWorldKey({
+      chain: "slot",
+      worldName: "alpha",
+      address: "0x123",
+    });
+    useDevPreviewEntryStore.getState().clearPreviewEntry(previewWorldKey);
+
+    playerCosmeticsStore.setPendingBlitzLoadout("cosmetics:slot", "0x123", {
+      tokenIds: [],
+      selectedBySlot: {},
+    });
+
+    await controller.enterPreview();
+
+    const reenteredArmy = resolveArmyCosmetic({
+      owner: "0x123",
+      troopType: TroopType.Knight,
+      tier: TroopTier.T3,
+      defaultModelType: ModelType.Knight3,
+    });
+
+    expect(useDevPreviewEntryStore.getState().hasPreviewEntry(previewWorldKey)).toBe(true);
+    expect(reenteredArmy.skin.cosmeticId).toBe("army:Knight:T3:base");
+    expect(reenteredArmy.skin.isFallback).toBe(true);
   });
 
   it("hydrates ownership-driven structure cosmetics and attachments", () => {

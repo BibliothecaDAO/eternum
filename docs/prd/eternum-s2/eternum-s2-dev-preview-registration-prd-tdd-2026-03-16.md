@@ -11,7 +11,7 @@ Scope: local-only Blitz preview entry, pending cosmetic loadout promotion, sessi
 - [x] Phase 2: Dev Preview Entry UX
 - [x] Phase 3: Runtime Promotion and Resolver Application
 - [x] Phase 4: Entry Gating and Lifecycle Reset
-- [ ] Phase 5: Signoff Matrix and Follow-Up Fence
+- [x] Phase 5: Signoff Matrix and Follow-Up Fence
 
 ## 1. Objective
 
@@ -523,7 +523,19 @@ This PRD is complete when:
 7. tests cover the preview-entry seam end to end,
 8. synthetic fixture injection remains explicitly out of scope.
 
-## 13. Follow-Up Scope (Not In This PRD)
+## 13. MVP Signoff Matrix
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Dev-only preview entry affordance | Done | `Local Preview` / `Reapply Preview` only render in dev builds |
+| Separate preview seam from registration tx | Done | Preview uses `use-world-preview-entry.ts`; `use-world-registration.ts` remains tx-backed |
+| Session-scoped preview state | Done | Preview entries are keyed by `chain:world:address` and mirrored to `sessionStorage` |
+| Pending draft -> applied runtime promotion | Done | Preview entry seeds the world draft and promotes through `markAppliedBlitzLoadout(...)` |
+| Army and structure resolver path reuse | Done | Integration coverage verifies army skin, structure skin, and attachment application |
+| Local gating + reset | Done | Preview state unlocks local play entry and can be cleared without mutating Torii registration truth |
+| No synthetic preview fixtures | Done | Accounts without visible entities may still see little or nothing in-world |
+
+## 14. Follow-Up Fence (Not In This PRD)
 
 If we later want cosmetics preview to work even when the player has no real world entities, that should be a new PRD covering:
 

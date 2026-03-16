@@ -19,6 +19,11 @@ interface DevPreviewCosmeticsAdapter {
   markAppliedBlitzLoadout: (worldKey: string, owner: string) => void;
 }
 
+interface DevPreviewBlitzLoadoutDraft {
+  tokenIds?: string[];
+  selectedBySlot?: Record<string, unknown>;
+}
+
 interface CreateWorldPreviewEntryControllerOptions {
   isDev: boolean;
   enabled?: boolean;
@@ -31,6 +36,10 @@ interface CreateWorldPreviewEntryControllerOptions {
 }
 
 const normalizePreviewAddress = (address: string): string => address.trim().toLowerCase();
+const arePreviewDraftsEqual = (
+  left: DevPreviewBlitzLoadoutDraft | null | undefined,
+  right: DevPreviewBlitzLoadoutDraft | null | undefined,
+): boolean => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 
 export const buildDevPreviewWorldKey = ({
   chain,
@@ -71,11 +80,16 @@ export const createWorldPreviewEntryController = ({
     }
 
     if (cosmeticsStore && normalizedAddress) {
-      const worldDraft = cosmeticsStore.getPendingBlitzLoadout(worldLoadoutKey, normalizedAddress);
-      const fallbackDraft =
-        worldDraft == null ? cosmeticsStore.getPendingBlitzLoadout(fallbackLoadoutKey, normalizedAddress) : undefined;
+      const worldDraft = cosmeticsStore.getPendingBlitzLoadout(
+        worldLoadoutKey,
+        normalizedAddress,
+      ) as DevPreviewBlitzLoadoutDraft | undefined;
+      const fallbackDraft = cosmeticsStore.getPendingBlitzLoadout(
+        fallbackLoadoutKey,
+        normalizedAddress,
+      ) as DevPreviewBlitzLoadoutDraft | undefined;
 
-      if (worldDraft == null && fallbackDraft != null) {
+      if (fallbackDraft != null && !arePreviewDraftsEqual(worldDraft, fallbackDraft)) {
         cosmeticsStore.setPendingBlitzLoadout(worldLoadoutKey, normalizedAddress, fallbackDraft);
       }
 
