@@ -55,7 +55,8 @@ import type { AutomationStatusMap } from "../../src/automation/status.js";
 import type { MapContext } from "../../src/map/context.js";
 import type { TxContext } from "../../src/tools/tx-context.js";
 import { extractTxError, addressesEqual } from "../../src/tools/tx-context.js";
-import { findPath, buildTileIndex, directionBetween } from "../../src/world/pathfinding.js";
+import { directionBetween } from "../../src/world/pathfinding.js";
+import { findPath as findPathV2, buildH3TileIndex, travelStaminaCostById } from "../../src/world/pathfinding_v2.js";
 import { isExplorer, isStructure, isChest } from "../../src/world/occupier.js";
 import { calculateStrength, calculateGuardStrength } from "../../src/world/strength.js";
 import { projectExplorerStamina } from "../../src/world/stamina.js";
@@ -269,20 +270,54 @@ async function main() {
         return { content: [{ type: "text", text: `Already at (${target_x},${target_y}).` }], isError: true };
       }
 
-      const { explored, blocked } = buildTileIndex(mapCtx.snapshot.tiles);
-      blocked.delete(`${start.x},${start.y}`);
+      const projectedStamina = projectExplorerStamina(explorer, gameConfig.stamina);
+      if (projectedStamina <= 0) {
+        return { content: [{ type: "text", text: `No stamina (${projectedStamina}). Wait for regen.` }], isError: true };
+      }
 
-      const biomeIndex = new Map<string, number>();
-      for (const t of mapCtx.snapshot.tiles) biomeIndex.set(`${t.position.x},${t.position.y}`, t.biome);
+      // Build H3 index
+      const h3Index = buildH3TileIndex(mapCtx.snapshot.tiles);
+      const startH3 = h3Index.keyToH3.get(`${start.x},${start.y}`);
+      if (startH3) h3Index.h3ToOccupier.set(startH3, 0); // army is leaving
 
-      const tileCost = (key: string) => {
-        const biome = biomeIndex.get(key) ?? 0;
-        return gameConfig.stamina.travelCost; // simplified
+      const staminaConfig = {
+        gainPerTick: gameConfig.stamina.gainPerTick,
+        travelCost: gameConfig.stamina.travelCost,
+        exploreCost: gameConfig.stamina.exploreCost,
+        bonusValue: gameConfig.stamina.bonusValue,
+        maxKnight: gameConfig.stamina.knightMaxStamina,
+        maxPaladin: gameConfig.stamina.paladinMaxStamina,
+        maxCrossbowman: gameConfig.stamina.crossbowmanMaxStamina,
       };
 
-      const projectedStamina = projectExplorerStamina(explorer, gameConfig.stamina);
-      const pathResult = findPath(start, target, explored, blocked, projectedStamina, tileCost, gameConfig.stamina.exploreCost);
+      const pathOptions = { troop: explorer.troopType as any, maxStamina: projectedStamina, staminaConfig };
+
+      // Check if target is occupied — pathfind to adjacent instead
+      const targetTile = mapCtx.snapshot.gridIndex.get(`${target_x},${target_y}`);
+      const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
+
+      let pathResult: any = null;
+      if (targetIsOccupied) {
+        const { getNeighborHexes } = await import("@bibliothecadao/types");
+        const neighbors = getNeighborHexes(target_x, target_y);
+        for (const n of neighbors) {
+          const adjTile = mapCtx.snapshot.gridIndex.get(`${n.col},${n.row}`);
+          if (!adjTile || adjTile.occupierType !== 0) continue;
+          const candidate = findPathV2(start, { x: n.col, y: n.row }, h3Index, pathOptions);
+          if (candidate && !candidate.reachedLimit) {
+            if (!pathResult || candidate.staminaCost < pathResult.staminaCost) pathResult = candidate;
+          }
+        }
+        if (!pathResult) return { content: [{ type: "text", text: `No path to any tile adjacent to (${target_x},${target_y}).` }], isError: true };
+      } else {
+        pathResult = findPathV2(start, target, h3Index, pathOptions);
+      }
+
       if (!pathResult) return { content: [{ type: "text", text: `No path to (${target_x},${target_y}).` }], isError: true };
+
+      // Build explored set for segment splitting
+      const explored = new Set<string>();
+      for (const t of mapCtx.snapshot.tiles) { if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`); }
 
       // Execute movement segments
       try {
