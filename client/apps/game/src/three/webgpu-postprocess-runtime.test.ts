@@ -93,6 +93,7 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(postProcessing.outputNode).toBe(scenePass);
     expect(postProcessing.needsUpdate).toBe(true);
     expect(renderer.toneMappingExposure).toBe(1.25);
+    expect(renderer.clear).not.toHaveBeenCalled();
     expect(postProcessing.render).toHaveBeenCalledTimes(1);
     expect(renderer.clearDepth).toHaveBeenCalledTimes(1);
     expect(renderer.render).toHaveBeenCalledWith({ id: "overlay-scene" }, { id: "overlay-camera" });

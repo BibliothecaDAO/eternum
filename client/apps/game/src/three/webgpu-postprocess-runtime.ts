@@ -91,7 +91,6 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
     }
 
     this.renderer.info.reset();
-    this.renderer.clear();
     this.postProcessing.render();
 
     if (pipeline.overlayScene && pipeline.overlayCamera) {
