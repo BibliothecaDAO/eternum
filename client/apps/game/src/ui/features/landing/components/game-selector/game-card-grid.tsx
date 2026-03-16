@@ -291,6 +291,7 @@ const GameCard = ({
   const isMainnetGame = game.chain === "mainnet";
   const marketSnapshot = marketState?.data ?? null;
   const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
+  const showPredictionMarket = hasPrizeAddress && !devModeOn;
   const marketChain = marketSnapshot?.chain;
   const marketCanTrade = marketChain ? canInteractOnChain(marketChain) : true;
   const { claimableDisplay: marketClaimableDisplay, hasAnythingToClaim: hasMarketWinningsToClaim } = useMarketRedeem(
@@ -479,7 +480,7 @@ const GameCard = ({
           />
         </div>
 
-        {marketSnapshot ? (
+        {showPredictionMarket && marketSnapshot ? (
           <div className="rounded-lg border border-emerald-400/35 bg-gradient-to-br from-emerald-500/10 via-black/40 to-black/20 p-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -546,7 +547,7 @@ const GameCard = ({
               </p>
             ) : null}
           </div>
-        ) : hasPrizeAddress ? (
+        ) : showPredictionMarket ? (
           <div className="rounded-lg border border-white/15 bg-white/[0.04] px-2 py-1.5 text-[10px] text-white/55">
             {marketState?.isLoading
               ? "Loading prediction market..."
@@ -1024,15 +1025,16 @@ export const UnifiedGameGrid = ({
     queries: resolvedGames.map((game) => {
       const preferredChain = toMarketChain(game.chain);
       const paddedPrizeAddress = normalizeHexAddress(game.config?.prizeDistributionAddress);
+      const showPredictionMarket = Boolean(paddedPrizeAddress) && !(game.config?.devModeOn ?? false);
 
       return {
         queryKey: ["landing", "game-market", game.worldKey, preferredChain, paddedPrizeAddress ?? "none"],
-        enabled: Boolean(paddedPrizeAddress),
+        enabled: showPredictionMarket,
         staleTime: 30 * 1000,
         gcTime: 5 * 60 * 1000,
         retry: 1,
         queryFn: async (): Promise<GameMarketSnapshot | null> => {
-          if (!paddedPrizeAddress) return null;
+          if (!showPredictionMarket || !paddedPrizeAddress) return null;
           const chainsToCheck: MarketDataChain[] =
             preferredChain === "mainnet" ? ["mainnet", "slot"] : ["slot", "mainnet"];
 
