@@ -32,6 +32,7 @@ import { applyWorldSelection } from "@/runtime/world";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { getActiveWorld } from "@/runtime/world/store";
 import { sqlApi } from "@/services/api";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
@@ -609,6 +610,9 @@ const SeasonPassRequiredPhase = ({
   onMintRealmAndSeasonPass,
   isMintingRealmAndSeasonPass,
   mintRealmAndSeasonPassError,
+  onRefreshSeasonPassInventory,
+  isRefreshingSeasonPassInventory,
+  seasonPassInventoryError,
 }: {
   onGetSeasonPass: () => void;
   canUseSandboxMintFlow: boolean;
@@ -617,6 +621,9 @@ const SeasonPassRequiredPhase = ({
   onMintRealmAndSeasonPass: () => void;
   isMintingRealmAndSeasonPass: boolean;
   mintRealmAndSeasonPassError: string | null;
+  onRefreshSeasonPassInventory: () => void;
+  isRefreshingSeasonPassInventory: boolean;
+  seasonPassInventoryError: string | null;
 }) => {
   return (
     <div className="flex flex-col items-center text-center">
@@ -633,6 +640,22 @@ const SeasonPassRequiredPhase = ({
           <span>Get a Season Pass</span>
         </div>
       </Button>
+      <Button
+        onClick={onRefreshSeasonPassInventory}
+        disabled={isRefreshingSeasonPassInventory}
+        variant="outline"
+        className="w-full h-9 mt-2"
+        forceUppercase={false}
+      >
+        <div className="flex items-center justify-center gap-2">
+          {isRefreshingSeasonPassInventory ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <span>Refresh Pass Status</span>
+          )}
+        </div>
+      </Button>
+      {seasonPassInventoryError && <p className="mt-2 text-[11px] text-amber-200/80">{seasonPassInventoryError}</p>}
       {canUseSandboxMintFlow && (
         <div className="mt-3 w-full rounded-md border border-gold/25 bg-black/20 p-3 text-left">
           <p className="text-[11px] text-gold/70 mb-2">
@@ -680,6 +703,7 @@ const SeasonPlacementPhase = ({
   seasonTimingValid,
   spiresSettled,
   hasSeasonPass,
+  seasonPassBalance,
   seasonPasses,
   selectedSeasonPassTokenId,
   onSelectSeasonPass,
@@ -703,9 +727,10 @@ const SeasonPlacementPhase = ({
   seasonTimingValid: boolean;
   spiresSettled: boolean;
   hasSeasonPass: boolean;
+  seasonPassBalance: bigint;
   seasonPasses: SeasonPassInventoryItem[];
   selectedSeasonPassTokenId: bigint | null;
-  onSelectSeasonPass: (tokenId: bigint) => void;
+  onSelectSeasonPass: (tokenId: bigint | null) => void;
   onConfirmSettlement: () => void;
   isSubmittingSettlement: boolean;
   placementValidationErrors: string[];
@@ -721,10 +746,12 @@ const SeasonPlacementPhase = ({
   seasonPassInventoryError: string | null;
 }) => {
   const selectedSeasonPass = seasonPasses.find((pass) => pass.tokenId === selectedSeasonPassTokenId) ?? null;
+  const [manualSeasonPassTokenInput, setManualSeasonPassTokenInput] = useState("");
+  const [manualSeasonPassTokenError, setManualSeasonPassTokenError] = useState<string | null>(null);
   const minLayer = Math.max(1, (layersSkipped ?? 0) + 1);
   const maxPointForLayer = Math.max(0, placement.layer - 1);
   const canSubmit =
-    Boolean(selectedSeasonPass) && canSettle && placementValidationErrors.length === 0 && !isSubmittingSettlement;
+    selectedSeasonPassTokenId != null && canSettle && placementValidationErrors.length === 0 && !isSubmittingSettlement;
   const checks = [
     { id: "season", label: "Season timing valid", ok: seasonTimingValid },
     { id: "spires", label: "Spires settled", ok: spiresSettled },
@@ -755,6 +782,12 @@ const SeasonPlacementPhase = ({
     () => buildSeasonPlacementViewBox(placementSlots, selectedPlacementSlot),
     [placementSlots, selectedPlacementSlot],
   );
+
+  useEffect(() => {
+    if (selectedSeasonPassTokenId == null) return;
+    setManualSeasonPassTokenInput(selectedSeasonPassTokenId.toString());
+    setManualSeasonPassTokenError(null);
+  }, [selectedSeasonPassTokenId]);
 
   return (
     <div className="flex flex-col">
@@ -824,6 +857,54 @@ const SeasonPlacementPhase = ({
             );
           })}
         </div>
+        {seasonPasses.length === 0 && seasonPassBalance > 0n && (
+          <div className="mt-3 rounded-md border border-gold/25 bg-black/20 p-3">
+            <p className="text-[11px] text-gold/70">
+              Your wallet has a season pass, but token enumeration is unavailable for this contract.
+            </p>
+            <label className="block text-[11px] text-gold/70 mt-2">
+              Season Pass Token ID (Realm ID)
+              <input
+                type="text"
+                inputMode="numeric"
+                value={manualSeasonPassTokenInput}
+                onChange={(event) => {
+                  setManualSeasonPassTokenInput(event.target.value);
+                  setManualSeasonPassTokenError(null);
+                }}
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+                placeholder="e.g. 1"
+              />
+            </label>
+            <Button
+              onClick={() => {
+                const value = manualSeasonPassTokenInput.trim();
+                if (value.length === 0) {
+                  setManualSeasonPassTokenError("Enter a token ID.");
+                  return;
+                }
+                try {
+                  const parsed = BigInt(value);
+                  if (parsed < 0n) {
+                    setManualSeasonPassTokenError("Token ID cannot be negative.");
+                    return;
+                  }
+                  onSelectSeasonPass(parsed);
+                  setManualSeasonPassTokenError(null);
+                } catch {
+                  setManualSeasonPassTokenError("Token ID must be a valid integer.");
+                }
+              }}
+              className="w-full h-9 mt-2 !text-brown !bg-gold rounded-md"
+              forceUppercase={false}
+            >
+              Use Token ID
+            </Button>
+            {manualSeasonPassTokenError && (
+              <p className="mt-2 text-[11px] text-red-200/90">{manualSeasonPassTokenError}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {selectedSeasonPass && (
@@ -831,6 +912,13 @@ const SeasonPlacementPhase = ({
           <span className="text-xs text-gold/70">
             Selected pass: <span className="text-gold">{selectedSeasonPass.realmName}</span> (Realm #
             {selectedSeasonPass.realmId})
+          </span>
+        </div>
+      )}
+      {!selectedSeasonPass && selectedSeasonPassTokenId != null && (
+        <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5 mb-4">
+          <span className="text-xs text-gold/70">
+            Selected pass token: <span className="text-gold">#{selectedSeasonPassTokenId.toString()}</span>
           </span>
         </div>
       )}
@@ -1346,10 +1434,13 @@ export const GameEntryModal = ({
   const [mintRealmAndSeasonPassError, setMintRealmAndSeasonPassError] = useState<string | null>(null);
   const hasEnteredGameRef = useRef(false);
 
+  const activeWorldProfile = getActiveWorld();
+  const selectedWorldRpcUrl = activeWorldProfile?.name === worldName ? (activeWorldProfile.rpcUrl ?? null) : null;
   const seasonAddresses = getSeasonAddresses(chain);
   const seasonPassAddress = worldMeta?.seasonPassAddress ?? seasonAddresses.seasonPass;
   const realmsAddress = seasonAddresses.realms;
   const {
+    seasonPassBalance,
     seasonPasses,
     isLoading: isLoadingSeasonPassInventory,
     error: seasonPassInventoryError,
@@ -1358,7 +1449,9 @@ export const GameEntryModal = ({
     chain,
     ownerAddress: account?.address,
     seasonPassAddress,
+    rpcUrl: selectedWorldRpcUrl,
     enabled: isOpen && isEternumMode,
+    refetchIntervalMs: 15_000,
   });
   const {
     data: seasonOccupiedCoordKeys = [],
@@ -1398,10 +1491,11 @@ export const GameEntryModal = ({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isEternumMode || seasonPasses.length === 0) {
+    if (!isEternumMode) {
       setSelectedSeasonPassTokenId(null);
       return;
     }
+    if (seasonPasses.length === 0) return;
 
     setSelectedSeasonPassTokenId((current) => {
       if (current != null && seasonPasses.some((pass) => pass.tokenId === current)) {
@@ -1457,7 +1551,7 @@ export const GameEntryModal = ({
     worldMeta.startMainAt <= nowSeconds &&
     nowSeconds <= worldMeta.endAt;
   const spiresSettled = (worldMeta?.spiresSettledCount ?? 0) > 0;
-  const hasSeasonPass = seasonPasses.length > 0;
+  const hasSeasonPass = seasonPassBalance > 0n || seasonPasses.length > 0;
   const canAttemptSeasonSettle = seasonTimingValid && spiresSettled && hasSeasonPass;
   const isLoadingEternumPrereqs = isCheckingWorldAvailability || isLoadingSeasonPassInventory || !worldMeta;
   const seasonPlacementValidationErrors = useMemo(
@@ -2541,6 +2635,9 @@ export const GameEntryModal = ({
                   onMintRealmAndSeasonPass={handleMintRealmAndSeasonPass}
                   isMintingRealmAndSeasonPass={isMintingRealmAndSeasonPass}
                   mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
+                  onRefreshSeasonPassInventory={refetchSeasonPassInventory}
+                  isRefreshingSeasonPassInventory={isLoadingSeasonPassInventory}
+                  seasonPassInventoryError={seasonPassInventoryError}
                 />
               </motion.div>
             )}
@@ -2558,6 +2655,7 @@ export const GameEntryModal = ({
                   seasonTimingValid={seasonTimingValid}
                   spiresSettled={spiresSettled}
                   hasSeasonPass={hasSeasonPass}
+                  seasonPassBalance={seasonPassBalance}
                   seasonPasses={seasonPasses}
                   selectedSeasonPassTokenId={selectedSeasonPassTokenId}
                   onSelectSeasonPass={setSelectedSeasonPassTokenId}

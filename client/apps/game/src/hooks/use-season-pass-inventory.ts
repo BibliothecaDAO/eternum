@@ -14,10 +14,13 @@ interface UseSeasonPassInventoryProps {
   chain: Chain;
   ownerAddress?: string | null;
   seasonPassAddress?: string | null;
+  rpcUrl?: string | null;
   enabled?: boolean;
+  refetchIntervalMs?: number;
 }
 
 interface UseSeasonPassInventoryReturn {
+  seasonPassBalance: bigint;
   seasonPasses: SeasonPassInventoryItem[];
   isLoading: boolean;
   error: string | null;
@@ -87,23 +90,43 @@ export const useSeasonPassInventory = ({
   chain,
   ownerAddress,
   seasonPassAddress,
+  rpcUrl,
   enabled = true,
+  refetchIntervalMs = 15_000,
 }: UseSeasonPassInventoryProps): UseSeasonPassInventoryReturn => {
+  const [seasonPassBalance, setSeasonPassBalance] = useState(0n);
   const [seasonPasses, setSeasonPasses] = useState<SeasonPassInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const provider = useMemo(() => new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) }), [chain]);
+  const resolvedRpcUrl = useMemo(() => {
+    const customRpcUrl = rpcUrl?.trim();
+    if (customRpcUrl) return customRpcUrl;
+    return getRpcUrlForChain(chain);
+  }, [chain, rpcUrl]);
+
+  const provider = useMemo(() => new RpcProvider({ nodeUrl: resolvedRpcUrl }), [resolvedRpcUrl]);
 
   const refetch = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
   }, []);
 
   useEffect(() => {
+    if (!enabled || refetchIntervalMs <= 0) return;
+    const timer = window.setInterval(() => {
+      setRefreshTick((prev) => prev + 1);
+    }, refetchIntervalMs);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [enabled, refetchIntervalMs]);
+
+  useEffect(() => {
     let cancelled = false;
 
     if (!enabled || !ownerAddress || !seasonPassAddress) {
+      setSeasonPassBalance(0n);
       setSeasonPasses([]);
       setIsLoading(false);
       setError(null);
@@ -123,6 +146,9 @@ export const useSeasonPassInventory = ({
           calldata: [ownerAddress],
         });
         const balance = parseUint256(balanceResult as string[]);
+        if (!cancelled) {
+          setSeasonPassBalance(balance);
+        }
 
         if (balance === 0n) {
           if (!cancelled) {
@@ -140,15 +166,24 @@ export const useSeasonPassInventory = ({
             calldata: [ownerAddress, index.toString(), "0"],
           });
           const tokenId = parseUint256(tokenResult as string[]);
-          if (tokenId === 0n) continue;
 
-          const metadataResult = await provider.callContract({
-            contractAddress: seasonPassAddress,
-            entrypoint: "get_encoded_metadata",
-            calldata: [tokenId.toString()],
-          });
-          const [nameAndAttrs] = metadataResult ?? [];
-          const { realmName, resourceIds } = decodeEncodedMetadata(nameAndAttrs, tokenId);
+          let realmName = `Realm #${tokenId.toString()}`;
+          let resourceIds: number[] = [];
+          try {
+            const metadataResult = await provider.callContract({
+              contractAddress: seasonPassAddress,
+              entrypoint: "get_encoded_metadata",
+              calldata: [tokenId.toString()],
+            });
+            const [nameAndAttrs] = metadataResult ?? [];
+            const decoded = decodeEncodedMetadata(nameAndAttrs, tokenId);
+            realmName = decoded.realmName;
+            resourceIds = decoded.resourceIds;
+          } catch {
+            // Some season pass contracts cannot decode metadata for every token id.
+            // Keep the token discoverable even without metadata.
+          }
+
           const realmId = tokenId <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(tokenId) : 0;
 
           items.push({
@@ -169,7 +204,13 @@ export const useSeasonPassInventory = ({
       } catch (loadError) {
         if (!cancelled) {
           setSeasonPasses([]);
-          setError(loadError instanceof Error ? loadError.message : "Failed to load season passes.");
+          const message = loadError instanceof Error ? loadError.message : "Failed to load season passes.";
+          const normalizedMessage = message.toLowerCase();
+          if (normalizedMessage.includes("token_of_owner_by_index") || normalizedMessage.includes("entry point")) {
+            setError("Season pass detected, but this contract does not expose token enumeration.");
+          } else {
+            setError(message);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -186,6 +227,7 @@ export const useSeasonPassInventory = ({
   }, [enabled, ownerAddress, provider, refreshTick, seasonPassAddress]);
 
   return {
+    seasonPassBalance,
     seasonPasses,
     isLoading,
     error,
