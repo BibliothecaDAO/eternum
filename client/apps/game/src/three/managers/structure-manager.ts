@@ -22,10 +22,12 @@ import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-s
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
+  findCosmeticById,
   playerCosmeticsStore,
   resolveStructureCosmetic,
   resolveStructureMountTransforms,
 } from "../cosmetics";
+import { resolveAllSkinGltfs } from "../cosmetics/skin-asset-source";
 import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
@@ -683,7 +685,7 @@ export class StructureManager {
       return empty;
     }
 
-    pending = Promise.all(assetPaths.map((modelPath) => this.loadCosmeticStructureModel(cosmeticId, modelPath)))
+    pending = this.loadCosmeticStructureModels(cosmeticId, assetPaths)
       .then((models) => {
         this.cosmeticStructureModels.set(cosmeticId, models);
         models.forEach((model) => {
@@ -708,25 +710,14 @@ export class StructureManager {
     return pending;
   }
 
-  private loadCosmeticStructureModel(cosmeticId: string, modelPath: string): Promise<InstancedModel> {
-    return new Promise((resolve, reject) => {
-      gltfLoader.load(
-        modelPath,
-        (gltf) => {
-          try {
-            const instancedModel = new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId);
-            resolve(instancedModel);
-          } catch (error) {
-            reject(error);
-          }
-        },
-        undefined,
-        (error) => {
-          console.error(`[StructureManager] Failed to load cosmetic model ${modelPath}:`, error);
-          reject(error);
-        },
-      );
+  private async loadCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<InstancedModel[]> {
+    const gltfs = await resolveAllSkinGltfs({
+      cosmeticId,
+      assetPaths,
+      registryEntry: findCosmeticById(cosmeticId),
     });
+
+    return gltfs.map((gltf) => new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId));
   }
 
   async onUpdate(update: StructureTileSystemUpdate) {

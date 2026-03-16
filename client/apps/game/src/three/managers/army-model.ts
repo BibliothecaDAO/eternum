@@ -37,6 +37,8 @@ import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
+import type { ResolvedCosmeticSkin } from "../cosmetics/types";
+import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
 import {
   resolveNearestIntersection,
   resolveMovementProgressUpdate,
@@ -206,7 +208,8 @@ export class ArmyModel {
   /**
    * Ensures a cosmetic model is loaded by cosmeticId and asset path.
    */
-  private async ensureCosmeticModel(cosmeticId: string, assetPath: string): Promise<ModelData> {
+  private async ensureCosmeticModel(skin: ResolvedCosmeticSkin): Promise<ModelData> {
+    const { cosmeticId, assetPaths, registryEntry } = skin;
     if (this.cosmeticModels.has(cosmeticId)) {
       return this.cosmeticModels.get(cosmeticId)!;
     }
@@ -217,24 +220,21 @@ export class ArmyModel {
     }
 
     pending = new Promise<ModelData>((resolve, reject) => {
-      gltfLoader.load(
-        assetPath,
-        (gltf) => {
-          try {
-            const modelData = this.createModelData(gltf);
-            this.cosmeticModels.set(cosmeticId, modelData);
-            this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
-            resolve(modelData);
-          } catch (error) {
-            reject(error as Error);
-          }
-        },
-        undefined,
-        (error) => {
-          console.error(`[ArmyModel] Failed to load cosmetic model ${cosmeticId} from ${assetPath}:`, error);
+      void resolvePrimarySkinGltf({
+        cosmeticId,
+        assetPath: assetPaths[0] ?? "",
+        registryEntry,
+      })
+        .then((gltf) => {
+          const modelData = this.createModelData(gltf);
+          this.cosmeticModels.set(cosmeticId, modelData);
+          this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
+          resolve(modelData);
+        })
+        .catch((error) => {
+          console.error(`[ArmyModel] Failed to load cosmetic model ${cosmeticId}:`, error);
           reject(error);
-        },
-      );
+        });
     }).finally(() => {
       this.pendingCosmeticModelLoads.delete(cosmeticId);
     });
@@ -558,22 +558,23 @@ export class ArmyModel {
   /**
    * Preloads a cosmetic model by ID and asset path.
    */
-  public async preloadCosmeticModel(cosmeticId: string, assetPath: string): Promise<void> {
+  public async preloadCosmeticModel(skin: ResolvedCosmeticSkin): Promise<void> {
     try {
-      await this.ensureCosmeticModel(cosmeticId, assetPath);
+      await this.ensureCosmeticModel(skin);
     } catch (error) {
-      console.error(`Failed to preload cosmetic model ${cosmeticId}`, error);
+      console.error(`Failed to preload cosmetic model ${skin.cosmeticId}`, error);
     }
   }
 
   /**
    * Assigns a cosmetic model to an entity. This takes precedence over the base ModelType.
    */
-  public assignCosmeticToEntity(entityId: number, cosmeticId: string, assetPath: string): void {
+  public assignCosmeticToEntity(entityId: number, skin: ResolvedCosmeticSkin): void {
+    const { cosmeticId } = skin;
     const oldCosmeticId = this.entityCosmeticMap.get(entityId);
     if (oldCosmeticId === cosmeticId) return;
     this.entityCosmeticMap.set(entityId, cosmeticId);
-    void this.ensureCosmeticModel(cosmeticId, assetPath).catch((error) => {
+    void this.ensureCosmeticModel(skin).catch((error) => {
       console.error(`Failed to load cosmetic model ${cosmeticId}`, error);
     });
   }

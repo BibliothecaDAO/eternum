@@ -31,6 +31,7 @@ import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
+  findCosmeticById,
   playerCosmeticsStore,
   resolveArmyCosmetic,
   resolveArmyMountTransforms,
@@ -993,7 +994,12 @@ export class ArmyManager {
     const hasCosmeticSkin = Boolean(cosmeticId && cosmeticAssetPaths && cosmeticAssetPaths.length > 0 && !usesFallbackCosmeticSkin);
 
     if (hasCosmeticSkin) {
-      this.armyModel.assignCosmeticToEntity(numericId, cosmeticId!, cosmeticAssetPaths![0]);
+      this.armyModel.assignCosmeticToEntity(numericId, {
+        cosmeticId: cosmeticId!,
+        assetPaths: cosmeticAssetPaths!,
+        isFallback: false,
+        registryEntry: findCosmeticById(cosmeticId!),
+      });
     } else {
       // Clear any existing cosmetic assignment
       this.armyModel.clearCosmeticForEntity(numericId);
@@ -1720,7 +1726,7 @@ export class ArmyManager {
 
     // If there's a custom cosmetic skin, assign it to the entity
     if (hasCosmeticSkin) {
-      this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.skin.cosmeticId, cosmeticAssetPaths[0]);
+      this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.skin);
     }
 
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
