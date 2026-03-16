@@ -7,6 +7,7 @@ import {
   CosmeticAttachmentTemplate,
   CosmeticResolutionResult,
   CosmeticRegistryEntry,
+  ResolvedCosmeticSkin,
   StructureCosmeticParams,
 } from "./types";
 import {
@@ -42,6 +43,15 @@ const findEntryForTarget = (target: string): CosmeticRegistryEntry | undefined =
   return getCosmeticRegistry().find((entry) => entry.appliesTo.includes(target));
 };
 
+const isCompatibleSkinEntry = (
+  entry: CosmeticRegistryEntry | undefined,
+  category: "army-skin" | "structure-skin",
+  target: string,
+): entry is CosmeticRegistryEntry => {
+  if (!entry) return false;
+  return entry.category === category && entry.appliesTo.includes(target);
+};
+
 const cloneTemplate = (template: CosmeticAttachmentTemplate, fallbackSlot?: string): CosmeticAttachmentTemplate => {
   const slot = template.slot ?? fallbackSlot;
   return {
@@ -69,24 +79,23 @@ const upsertAttachments = (
   });
 };
 
-const buildResult = (
+const buildSkin = (
   entry: CosmeticRegistryEntry | undefined,
   fallbackId: string,
   fallbackModelKey: string,
   fallbackModelType: ModelType | undefined,
-  attachments: CosmeticAttachmentTemplate[],
-): CosmeticResolutionResult => {
+): ResolvedCosmeticSkin => {
   if (entry) {
     ensureCosmeticAsset(entry);
   }
 
   return {
     cosmeticId: entry?.id ?? fallbackId,
-    modelKey: entry?.id ?? fallbackModelKey,
+    assetPaths: entry?.assetPaths ?? [],
+    isFallback: !entry || entry.id === fallbackId || entry.id.endsWith(":base") || entry.id.endsWith(":default"),
     modelType: (entry?.metadata?.baseModelType as ModelType | undefined) ?? fallbackModelType,
-    attachments,
+    modelKey: entry?.id ?? fallbackModelKey,
     registryEntry: entry,
-    metadata: entry?.metadata,
   };
 };
 
@@ -138,7 +147,8 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
     return debugOverride;
   }
 
-  const resolvedEntry = (selectionSkinId ? findCosmeticById(selectionSkinId) : undefined) ?? fallbackEntry;
+  const selectedEntry = selectionSkinId ? findCosmeticById(selectionSkinId) : undefined;
+  const resolvedEntry = isCompatibleSkinEntry(selectedEntry, "army-skin", target) ? selectedEntry : fallbackEntry;
 
   const attachments: CosmeticAttachmentTemplate[] = [];
 
@@ -156,7 +166,16 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
     upsertAttachments(attachments, entry.attachments, entry.attachmentSlot);
   });
 
-  return buildResult(resolvedEntry, `${target}:default`, target, params.defaultModelType, attachments);
+  const skin = buildSkin(resolvedEntry, `${target}:default`, target, params.defaultModelType);
+  return {
+    skin,
+    attachments,
+    metadata: resolvedEntry?.metadata,
+    cosmeticId: skin.cosmeticId,
+    modelKey: skin.modelKey,
+    modelType: skin.modelType,
+    registryEntry: skin.registryEntry,
+  };
 }
 
 export function resolveStructureCosmetic(params: StructureCosmeticParams): CosmeticResolutionResult {
@@ -183,7 +202,8 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
     return debugOverride;
   }
 
-  const resolvedEntry = (selectionSkinId ? findCosmeticById(selectionSkinId) : undefined) ?? fallbackEntry;
+  const selectedEntry = selectionSkinId ? findCosmeticById(selectionSkinId) : undefined;
+  const resolvedEntry = isCompatibleSkinEntry(selectedEntry, "structure-skin", target) ? selectedEntry : fallbackEntry;
 
   const attachments: CosmeticAttachmentTemplate[] = [];
   const allowedTargets = [target, formatStructureCosmeticTarget(params.structureType)];
@@ -201,5 +221,14 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
     upsertAttachments(attachments, entry.attachments, entry.attachmentSlot);
   });
 
-  return buildResult(resolvedEntry, `${target}:default`, params.defaultModelKey, undefined, attachments);
+  const skin = buildSkin(resolvedEntry, `${target}:default`, params.defaultModelKey, undefined);
+  return {
+    skin,
+    attachments,
+    metadata: resolvedEntry?.metadata,
+    cosmeticId: skin.cosmeticId,
+    modelKey: skin.modelKey,
+    modelType: skin.modelType,
+    registryEntry: skin.registryEntry,
+  };
 }

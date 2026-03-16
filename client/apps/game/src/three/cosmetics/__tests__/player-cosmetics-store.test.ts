@@ -36,9 +36,25 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
     const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
 
     expect(result).toBeDefined();
-    expect(result?.selection.tokens).toEqual(["0x1", "0x2", "0x3"]);
+    expect(result?.ownership.ownedAttrs).toEqual(["0x1", "0x2", "0x3"]);
+    expect(result?.ownership.eligibleCosmeticIds).toEqual([]);
+    expect(result?.selection).toEqual({
+      armies: {},
+      structures: {},
+      globalAttachments: [],
+    });
 
     const snapshot = playerCosmeticsStore.getSnapshot("0x123");
-    expect(snapshot?.selection.tokens).toEqual(["0x1", "0x2", "0x3"]);
+    expect(snapshot?.ownership.ownedAttrs).toEqual(["0x1", "0x2", "0x3"]);
+  });
+
+  it("tracks pending blitz loadout drafts by world", () => {
+    playerCosmeticsStore.setPendingBlitzLoadout("slot:eternum-test", "0x123", {
+      tokenIds: ["0xaaa", "0xbbb"],
+    });
+
+    expect(playerCosmeticsStore.getPendingBlitzLoadout("slot:eternum-test", "0x123")).toEqual({
+      tokenIds: ["0xaaa", "0xbbb"],
+    });
   });
 });

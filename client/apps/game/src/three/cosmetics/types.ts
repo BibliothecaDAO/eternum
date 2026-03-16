@@ -54,6 +54,8 @@ export interface CosmeticRegistryEntry {
   minGraphicsTier?: "low" | "medium" | "high";
   /** Attachment slot enforced for category `attachment`. */
   attachmentSlot?: string;
+  /** Normalized ownership keys that unlock this cosmetic at runtime. */
+  ownershipKeys?: string[];
 }
 
 interface ArmyCosmeticSelection {
@@ -70,13 +72,30 @@ export interface PlayerCosmeticSelection {
   armies?: Record<string, ArmyCosmeticSelection>; // key: troopType|tier -> selection
   structures?: Record<string, StructureCosmeticSelection>; // key: structureType|stage -> selection
   globalAttachments?: string[]; // cosmetics applied to every entity (auras etc.)
-  tokens?: string[]; // raw cosmetic token ids (hex strings)
+}
+
+export interface CosmeticOwnershipSnapshot {
+  owner: string;
+  version: number;
+  ownedAttrs: string[];
+  eligibleCosmeticIds: string[];
+}
+
+export interface BlitzGameLoadoutDraft {
+  tokenIds: string[];
+}
+
+export interface BlitzGameLoadoutApplied {
+  tokenIds: string[];
 }
 
 export interface PlayerCosmeticsSnapshot {
   owner: string; // ContractAddress serialized as hex string
   version: number;
+  ownership: CosmeticOwnershipSnapshot;
   selection: PlayerCosmeticSelection;
+  pendingBlitzLoadouts?: Record<string, BlitzGameLoadoutDraft>;
+  activeBlitzLoadouts?: Record<string, BlitzGameLoadoutApplied>;
 }
 
 export interface ArmyCosmeticParams {
@@ -93,11 +112,25 @@ export interface StructureCosmeticParams {
   defaultModelKey: string;
 }
 
-export interface CosmeticResolutionResult {
+export interface ResolvedCosmeticSkin {
   cosmeticId: string;
-  modelKey: string;
+  assetPaths: string[];
+  isFallback: boolean;
   modelType?: ModelType;
-  attachments: CosmeticAttachmentTemplate[];
+  modelKey?: string;
   registryEntry?: CosmeticRegistryEntry;
+}
+
+export interface CosmeticResolutionResult {
+  skin: ResolvedCosmeticSkin;
+  attachments: CosmeticAttachmentTemplate[];
   metadata?: Record<string, unknown>;
+  /** @deprecated Phase 4 migrates consumers to `skin`. */
+  cosmeticId?: string;
+  /** @deprecated Phase 4 migrates consumers to `skin`. */
+  modelKey?: string;
+  /** @deprecated Phase 4 migrates consumers to `skin`. */
+  modelType?: ModelType;
+  /** @deprecated Phase 4 migrates consumers to `skin.registryEntry`. */
+  registryEntry?: CosmeticRegistryEntry;
 }

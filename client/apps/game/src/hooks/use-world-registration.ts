@@ -7,12 +7,12 @@ import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
-import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { env } from "../../env";
+import { buildBlitzRegisterCalls } from "./blitz-registration";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
@@ -303,26 +303,13 @@ export const useWorldRegistration = ({
    */
   const buildRegisterCalls = useCallback(
     (blitzSystemsAddress: string, tokenId: bigint): Call[] => {
-      const calls: Call[] = [];
-
-      // Lock entry token if required
-      if (config?.entryTokenAddress && tokenId > 0n) {
-        const tokenIdUint256 = uint256.bnToUint256(tokenId);
-        calls.push({
-          contractAddress: config.entryTokenAddress,
-          entrypoint: "token_lock",
-          calldata: CallData.compile([tokenIdUint256, ENTRY_TOKEN_LOCK_ID]),
-        });
-      }
-
-      // Register
-      calls.push({
-        contractAddress: blitzSystemsAddress,
-        entrypoint: "register",
-        calldata: [usernameFelt, tokenId.toString(), "0"],
+      return buildBlitzRegisterCalls({
+        blitzSystemsAddress,
+        entryTokenAddress: config?.entryTokenAddress,
+        usernameFelt,
+        tokenId,
+        cosmeticTokenIds: [],
       });
-
-      return calls;
     },
     [config, usernameFelt],
   );

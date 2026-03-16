@@ -54,8 +54,9 @@ describe("cosmetics resolver", () => {
       defaultModelType: ModelType.Knight1,
     });
 
-    expect(result.cosmeticId).toContain("army:Knight:T1");
-    expect(result.modelType).toBe(ModelType.Knight1);
+    expect(result.skin.cosmeticId).toContain("army:Knight:T1");
+    expect(result.skin.modelType).toBe(ModelType.Knight1);
+    expect(result.skin.isFallback).toBe(true);
     expect(result.attachments).toEqual([]);
   });
 
@@ -66,8 +67,39 @@ describe("cosmetics resolver", () => {
       defaultModelKey: "Realm",
     });
 
-    expect(result.cosmeticId).toContain("structure:Realm".toLowerCase());
-    expect(result.modelType).toBeUndefined();
+    expect(result.skin.cosmeticId).toContain("structure:Realm".toLowerCase());
+    expect(result.skin.modelType).toBeUndefined();
+    expect(result.skin.isFallback).toBe(true);
+  });
+
+  it("rejects incompatible selected skins and falls back", () => {
+    playerCosmeticsStore.setSnapshot({
+      owner: "0x1",
+      version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: [],
+      },
+      selection: {
+        armies: {
+          [formatArmyCosmeticTarget(TroopType.Crossbowman, TroopTier.T1)]: {
+            skin: "structure:realm:castle-s1-lvl2",
+          },
+        },
+      },
+    });
+
+    const result = resolveArmyCosmetic({
+      owner: "0x1",
+      troopType: TroopType.Crossbowman,
+      tier: TroopTier.T1,
+      defaultModelType: ModelType.Crossbowman1,
+    });
+
+    expect(result.skin.cosmeticId).toContain("army:Crossbowman:T1");
+    expect(result.skin.isFallback).toBe(true);
   });
 
   it("merges per-army attachments when compatible", () => {
@@ -88,6 +120,12 @@ describe("cosmetics resolver", () => {
     playerCosmeticsStore.setSnapshot({
       owner: "0x1",
       version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: ["attachment:weapon:bow-common", "attachment:test:crossbow-banner"],
+      },
       selection: {
         armies: {
           [formatArmyCosmeticTarget(TroopType.Crossbowman, TroopTier.T1)]: {
@@ -95,7 +133,6 @@ describe("cosmetics resolver", () => {
           },
         },
         globalAttachments: [],
-        tokens: [],
       },
     });
 
