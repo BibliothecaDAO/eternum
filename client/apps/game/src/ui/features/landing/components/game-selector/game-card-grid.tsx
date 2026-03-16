@@ -770,6 +770,8 @@ interface UnifiedGameGridProps {
   onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
   className?: string;
+  /** Filter games by mode */
+  modeFilter?: "blitz" | "eternum";
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
   devModeFilter?: boolean;
   /** Custom title for the grid */
@@ -803,6 +805,7 @@ export const UnifiedGameGrid = ({
   onForgeHyperstructures,
   onRegistrationComplete,
   className,
+  modeFilter,
   devModeFilter,
   title = "Games",
   statusFilter,
@@ -906,6 +909,11 @@ export const UnifiedGameGrid = ({
         if (!statusFilter) return true;
         const statuses = Array.isArray(statusFilter) ? statusFilter : [statusFilter];
         return statuses.includes(game.gameStatus);
+      })
+      // Filter by mode if specified
+      .filter((game) => {
+        if (!modeFilter) return true;
+        return game.config?.mode === modeFilter;
       });
 
     // Sort: optionally registered first, then by status, then by start time
@@ -934,6 +942,7 @@ export const UnifiedGameGrid = ({
     isOngoing,
     isEnded,
     isUpcoming,
+    modeFilter,
     devModeFilter,
     statusFilter,
     sortRegisteredFirst,
