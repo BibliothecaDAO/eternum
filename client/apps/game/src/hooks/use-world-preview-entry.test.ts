@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/three/cosmetics/player-cosmetics-store", () => ({
+  playerCosmeticsStore: {
+    getPendingBlitzLoadout: vi.fn(),
+    setPendingBlitzLoadout: vi.fn(),
+    markAppliedBlitzLoadout: vi.fn(),
+  },
+}));
+
 import type { Chain } from "@contracts";
 import {
   buildDevPreviewWorldKey,
@@ -68,5 +76,47 @@ describe("createWorldPreviewEntryController", () => {
       enteredAt: 123456789,
       loadoutWorldKey: "blitz:mainnet:eternum-1",
     });
+  });
+
+  it("promotes the pending loadout into the applied world slot for preview entry", async () => {
+    const previewStore = createPreviewStore();
+    const cosmeticsStore = {
+      getPendingBlitzLoadout: vi
+        .fn()
+        .mockReturnValueOnce(undefined)
+        .mockReturnValueOnce({
+          tokenIds: ["0xabc"],
+          selectedBySlot: {
+            armor: {
+              tokenId: "0xabc",
+              cosmeticIds: ["army:Knight:T3:legacy"],
+            },
+          },
+        }),
+      setPendingBlitzLoadout: vi.fn(),
+      markAppliedBlitzLoadout: vi.fn(),
+    };
+
+    const controller = createWorldPreviewEntryController({
+      isDev: true,
+      address: "0x123",
+      chain: "slot",
+      worldName: "alpha",
+      previewEntries: previewStore,
+      cosmeticsStore,
+    });
+
+    await controller.enterPreview();
+
+    expect(cosmeticsStore.setPendingBlitzLoadout).toHaveBeenCalledWith("blitz:slot:alpha", "0x123", {
+      tokenIds: ["0xabc"],
+      selectedBySlot: {
+        armor: {
+          tokenId: "0xabc",
+          cosmeticIds: ["army:Knight:T3:legacy"],
+        },
+      },
+    });
+    expect(cosmeticsStore.markAppliedBlitzLoadout).toHaveBeenCalledWith("blitz:slot:alpha", "0x123");
   });
 });

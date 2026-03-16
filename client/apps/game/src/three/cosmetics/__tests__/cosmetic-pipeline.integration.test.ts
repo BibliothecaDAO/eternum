@@ -34,6 +34,7 @@ vi.mock("../asset-cache", () => ({
 }));
 
 import { buildBlitzRegisterCalls } from "@/hooks/blitz-registration";
+import { createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { ModelType } from "../../types/army";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { playerCosmeticsStore } from "../player-cosmetics-store";
@@ -81,6 +82,63 @@ describe("cosmetic pipeline integration", () => {
 
     expect(result.skin.cosmeticId).toBe("army:Knight:T3:legacy");
     expect(result.skin.isFallback).toBe(false);
+  });
+
+  it("flows from a pending draft through preview entry into applied army and structure cosmetics", async () => {
+    playerCosmeticsStore.setPendingBlitzLoadout("cosmetics:slot", "0x123", {
+      tokenIds: ["0xaaa", "0xbbb", "0xccc"],
+      selectedBySlot: {
+        armor: {
+          tokenId: "0xaaa",
+          cosmeticIds: ["army:Knight:T3:legacy"],
+        },
+        realm: {
+          tokenId: "0xbbb",
+          cosmeticIds: ["structure:realm:castle-s1-lvl2"],
+        },
+        aura: {
+          tokenId: "0xccc",
+          cosmeticIds: ["attachment:army:aura-legacy", "attachment:structure:aura-legacy"],
+        },
+      },
+    });
+
+    const previewEntries = new Map<string, { previewEntered: boolean; enteredAt: number; loadoutWorldKey: string }>();
+    const controller = createWorldPreviewEntryController({
+      isDev: true,
+      address: "0x123",
+      chain: "slot",
+      worldName: "alpha",
+      previewEntries: {
+        setPreviewEntry: (key, entry) => {
+          previewEntries.set(key, entry);
+        },
+      },
+      cosmeticsStore: playerCosmeticsStore,
+    });
+
+    await controller.enterPreview();
+
+    const army = resolveArmyCosmetic({
+      owner: "0x123",
+      troopType: TroopType.Knight,
+      tier: TroopTier.T3,
+      defaultModelType: ModelType.Knight3,
+    });
+    const structure = resolveStructureCosmetic({
+      owner: "0x123",
+      structureType: StructureType.Realm,
+      stage: 2,
+      defaultModelKey: "Realm",
+    });
+
+    expect(previewEntries.get("slot:alpha:0x123")).toEqual(
+      expect.objectContaining({ previewEntered: true, loadoutWorldKey: "blitz:slot:alpha" }),
+    );
+    expect(army.skin.cosmeticId).toBe("army:Knight:T3:legacy");
+    expect(army.attachments).toEqual([expect.objectContaining({ id: "legacy-troop-aura" })]);
+    expect(structure.skin.cosmeticId).toBe("structure:realm:castle-s1-lvl2");
+    expect(structure.attachments).toEqual([expect.objectContaining({ id: "legacy-realm-aura" })]);
   });
 
   it("hydrates ownership-driven structure cosmetics and attachments", () => {

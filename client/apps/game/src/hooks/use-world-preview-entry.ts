@@ -1,6 +1,7 @@
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo, useState } from "react";
+import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import {
   useDevPreviewEntryStore,
   type DevPreviewEntryStateRecord,
@@ -12,6 +13,12 @@ export interface DevPreviewEntryStateAdapter {
   setPreviewEntry: (key: string, entry: DevPreviewEntryStateRecord) => void;
 }
 
+interface DevPreviewCosmeticsAdapter {
+  getPendingBlitzLoadout: (worldKey: string, owner: string) => unknown;
+  setPendingBlitzLoadout: (worldKey: string, owner: string, draft: unknown) => void;
+  markAppliedBlitzLoadout: (worldKey: string, owner: string) => void;
+}
+
 interface CreateWorldPreviewEntryControllerOptions {
   isDev: boolean;
   enabled?: boolean;
@@ -20,6 +27,7 @@ interface CreateWorldPreviewEntryControllerOptions {
   worldName: string;
   now?: () => number;
   previewEntries: DevPreviewEntryStateAdapter;
+  cosmeticsStore?: DevPreviewCosmeticsAdapter;
 }
 
 const normalizePreviewAddress = (address: string): string => address.trim().toLowerCase();
@@ -42,9 +50,11 @@ export const createWorldPreviewEntryController = ({
   worldName,
   now = () => Date.now(),
   previewEntries,
+  cosmeticsStore,
 }: CreateWorldPreviewEntryControllerOptions) => {
   const normalizedAddress = address ? normalizePreviewAddress(address) : null;
   const worldLoadoutKey = `blitz:${chain}:${worldName}`;
+  const fallbackLoadoutKey = `cosmetics:${chain}`;
   const previewWorldKey = normalizedAddress
     ? buildDevPreviewWorldKey({ chain, worldName, address: normalizedAddress })
     : null;
@@ -58,6 +68,18 @@ export const createWorldPreviewEntryController = ({
 
     if (!enabled || !previewWorldKey) {
       throw new Error("Dev preview entry is not available for this world.");
+    }
+
+    if (cosmeticsStore && normalizedAddress) {
+      const worldDraft = cosmeticsStore.getPendingBlitzLoadout(worldLoadoutKey, normalizedAddress);
+      const fallbackDraft =
+        worldDraft == null ? cosmeticsStore.getPendingBlitzLoadout(fallbackLoadoutKey, normalizedAddress) : undefined;
+
+      if (worldDraft == null && fallbackDraft != null) {
+        cosmeticsStore.setPendingBlitzLoadout(worldLoadoutKey, normalizedAddress, fallbackDraft);
+      }
+
+      cosmeticsStore.markAppliedBlitzLoadout(worldLoadoutKey, normalizedAddress);
     }
 
     previewEntries.setPreviewEntry(previewWorldKey, {
@@ -99,6 +121,7 @@ export const useWorldPreviewEntry = ({ worldName, chain, enabled = true }: UseWo
         chain,
         worldName,
         previewEntries: { setPreviewEntry },
+        cosmeticsStore: playerCosmeticsStore,
       }),
     [address, chain, enabled, setPreviewEntry, worldName],
   );
