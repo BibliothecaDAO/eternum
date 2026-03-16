@@ -2,6 +2,7 @@ import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo, useState } from "react";
 import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
+import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import {
   useDevPreviewEntryStore,
   type DevPreviewEntryStateRecord,
@@ -63,7 +64,7 @@ export const createWorldPreviewEntryController = ({
 }: CreateWorldPreviewEntryControllerOptions) => {
   const normalizedAddress = address ? normalizePreviewAddress(address) : null;
   const worldLoadoutKey = `blitz:${chain}:${worldName}`;
-  const fallbackLoadoutKey = `cosmetics:${chain}`;
+  const fallbackLoadoutKey = resolveCosmeticsLoadoutScopeKeyForChain(chain);
   const previewWorldKey = normalizedAddress
     ? buildDevPreviewWorldKey({ chain, worldName, address: normalizedAddress })
     : null;

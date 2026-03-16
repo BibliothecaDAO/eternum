@@ -8,6 +8,7 @@ import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -261,7 +262,7 @@ export const useWorldRegistration = ({
   }, [chain, worldName]);
 
   const worldLoadoutKey = `blitz:${chain}:${worldName}`;
-  const fallbackLoadoutKeys = useMemo(() => [`cosmetics:${chain}`], [chain]);
+  const fallbackLoadoutKeys = useMemo(() => [resolveCosmeticsLoadoutScopeKeyForChain(chain)], [chain]);
 
   const resolvePendingCosmeticTokenIds = useCallback((): string[] => {
     if (!address) {

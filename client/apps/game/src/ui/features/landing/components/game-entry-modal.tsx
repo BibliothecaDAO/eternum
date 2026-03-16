@@ -26,6 +26,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getWorldKey } from "@/hooks/use-world-availability";
 import { useWorldPreviewEntry } from "@/hooks/use-world-preview-entry";
+import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
@@ -585,7 +586,7 @@ export const GameEntryModal = ({
     }),
     {
       scopeKey: loadoutScopeKey,
-      fallbackScopeKeys: [`cosmetics:${chain}`],
+      fallbackScopeKeys: [resolveCosmeticsLoadoutScopeKeyForChain(chain)],
     },
   );
   const pendingLoadoutSummary = describeBlitzLoadoutSummary(pendingLoadout);
