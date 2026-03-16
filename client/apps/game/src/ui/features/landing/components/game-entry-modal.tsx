@@ -640,6 +640,8 @@ const SeasonPlacementPhase = ({
   canSettle,
   seasonTimingValid,
   spiresSettled,
+  spiresSettledCount,
+  spiresMaxCount,
   hasSeasonPass,
   seasonPassBalance,
   seasonPasses,
@@ -664,6 +666,8 @@ const SeasonPlacementPhase = ({
   canSettle: boolean;
   seasonTimingValid: boolean;
   spiresSettled: boolean;
+  spiresSettledCount: number | null;
+  spiresMaxCount: number | null;
   hasSeasonPass: boolean;
   seasonPassBalance: bigint;
   seasonPasses: SeasonPassInventoryItem[];
@@ -690,9 +694,13 @@ const SeasonPlacementPhase = ({
   const maxPointForLayer = Math.max(0, placement.layer - 1);
   const canSubmit =
     selectedSeasonPassTokenId != null && canSettle && placementValidationErrors.length === 0 && !isSubmittingSettlement;
+  const spiresProgressLabel =
+    spiresSettledCount != null && spiresMaxCount != null
+      ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
+      : "unknown";
   const checks = [
     { id: "season", label: "Season timing valid", ok: seasonTimingValid },
-    { id: "spires", label: "Spires settled", ok: spiresSettled },
+    { id: "spires", label: `Spires settled (${spiresProgressLabel})`, ok: spiresSettled },
     { id: "pass", label: "Season pass present", ok: hasSeasonPass },
   ];
   const occupiedCoordLookup = useMemo(() => new Set(occupiedCoordKeys), [occupiedCoordKeys]);
@@ -989,6 +997,11 @@ const SeasonPlacementPhase = ({
           {seasonPassInventoryError && (
             <p className="text-[11px] text-amber-200/80">
               Could not refresh season pass metadata. Try reopening the modal.
+            </p>
+          )}
+          {!spiresSettled && (
+            <p className="text-[11px] text-amber-200/85">
+              All required spires must be settled on-chain before realm settlement can proceed.
             </p>
           )}
         </aside>
@@ -1498,12 +1511,16 @@ export const GameEntryModal = ({
   }, [bootstrapStatus, tasks, syncProgress]);
 
   const nowSeconds = Date.now() / 1000;
-  const seasonTimingValid =
-    worldMeta?.startMainAt != null &&
-    worldMeta?.endAt != null &&
-    worldMeta.startMainAt <= nowSeconds &&
-    nowSeconds <= worldMeta.endAt;
-  const spiresSettled = (worldMeta?.spiresSettledCount ?? 0) > 0;
+  const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
+  const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
+  const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
+  const seasonTimingValid = seasonHasStarted && seasonNotEnded;
+  const spiresSettledCount = worldMeta?.spiresSettledCount ?? null;
+  const spiresMaxCount = worldMeta?.spiresMaxCount ?? null;
+  const spiresSettled =
+    spiresSettledCount != null && spiresMaxCount != null
+      ? spiresMaxCount === 0 || spiresSettledCount >= spiresMaxCount
+      : (spiresSettledCount ?? 0) > 0;
   const hasSeasonPass = seasonPassBalance > 0n || seasonPasses.length > 0;
   const canAttemptSeasonSettle = seasonTimingValid && spiresSettled && hasSeasonPass;
   const isLoadingEternumPrereqs = isCheckingWorldAvailability || isLoadingSeasonPassInventory || !worldMeta;
@@ -1604,8 +1621,10 @@ export const GameEntryModal = ({
       needsHyperstructureInit,
       needsSettlement,
       worldMode,
+      startSettlingAt: worldMeta?.startSettlingAt,
       startMainAt: worldMeta?.startMainAt,
       endAt: worldMeta?.endAt,
+      spiresMaxCount: worldMeta?.spiresMaxCount,
       spiresSettledCount: worldMeta?.spiresSettledCount,
       seasonPassAddress: worldMeta?.seasonPassAddress,
       settlementLayerMax: worldMeta?.settlementLayerMax,
@@ -2616,6 +2635,8 @@ export const GameEntryModal = ({
                   canSettle={canAttemptSeasonSettle}
                   seasonTimingValid={seasonTimingValid}
                   spiresSettled={spiresSettled}
+                  spiresSettledCount={spiresSettledCount}
+                  spiresMaxCount={spiresMaxCount}
                   hasSeasonPass={hasSeasonPass}
                   seasonPassBalance={seasonPassBalance}
                   seasonPasses={seasonPasses}

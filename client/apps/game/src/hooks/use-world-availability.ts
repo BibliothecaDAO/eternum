@@ -17,10 +17,10 @@ const HYPERSTRUCTURE_GLOBALS_TABLE = "s1_eternum-HyperstructureGlobals";
 const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts.
-const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
-const WORLD_CONFIG_ETERNUM_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "mmr_config.enabled" AS mmr_enabled, "settlement_config.base_distance" AS settlement_base_distance, "settlement_config.spires_layer_distance" AS spires_layer_distance, "settlement_config.spires_settled_count" AS spires_settled_count, "settlement_config.layer_max" AS settlement_layer_max, "settlement_config.layers_skipped" AS settlement_layers_skipped, "season_addresses_config.season_pass_address" AS season_pass_address, "map_center_offset" AS map_center_offset FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+const WORLD_CONFIG_ETERNUM_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "mmr_config.enabled" AS mmr_enabled, "settlement_config.base_distance" AS settlement_base_distance, "settlement_config.spires_layer_distance" AS spires_layer_distance, "settlement_config.spires_max_count" AS spires_max_count, "settlement_config.spires_settled_count" AS spires_settled_count, "settlement_config.layer_max" AS settlement_layer_max, "settlement_config.layers_skipped" AS settlement_layers_skipped, "season_addresses_config.season_pass_address" AS season_pass_address, "map_center_offset" AS map_center_offset FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Query to get hyperstructure created count (separate table)
 const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "${HYPERSTRUCTURE_GLOBALS_TABLE}" LIMIT 1;`;
@@ -107,12 +107,14 @@ const fetchTokenBalance = async (
 
 export interface WorldConfigMeta {
   mode: "blitz" | "eternum" | "unknown";
+  startSettlingAt: number | null;
   startMainAt: number | null;
   endAt: number | null;
   seasonDurationSeconds: number | null;
   // Eternum spacing config
   settlementBaseDistance: number | null;
   spiresLayerDistance: number | null;
+  spiresMaxCount: number | null;
   spiresSettledCount: number | null;
   settlementLayerMax: number | null;
   settlementLayersSkipped: number | null;
@@ -235,11 +237,13 @@ const fetchWorldConfigMeta = async (
 ): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
     mode: "unknown",
+    startSettlingAt: null,
     startMainAt: null,
     endAt: null,
     seasonDurationSeconds: null,
     settlementBaseDistance: null,
     spiresLayerDistance: null,
+    spiresMaxCount: null,
     spiresSettledCount: null,
     settlementLayerMax: null,
     settlementLayersSkipped: null,
@@ -275,6 +279,7 @@ const fetchWorldConfigMeta = async (
     if (!response.ok) return meta;
     const [row] = (await response.json()) as Record<string, unknown>[];
     if (row) {
+      if (row.start_settling_at != null) meta.startSettlingAt = parseMaybeHexToNumber(row.start_settling_at) ?? null;
       if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
       if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
 
@@ -331,6 +336,9 @@ const fetchWorldConfigMeta = async (
         }
         if (row.spires_layer_distance != null) {
           meta.spiresLayerDistance = parseMaybeHexToNumber(row.spires_layer_distance);
+        }
+        if (row.spires_max_count != null) {
+          meta.spiresMaxCount = parseMaybeHexToNumber(row.spires_max_count);
         }
         if (row.spires_settled_count != null) {
           meta.spiresSettledCount = parseMaybeHexToNumber(row.spires_settled_count);
