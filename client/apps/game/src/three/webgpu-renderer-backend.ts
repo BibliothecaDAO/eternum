@@ -1,5 +1,5 @@
 import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
-import { ACESFilmicToneMapping } from "three";
+import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping } from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -12,8 +12,10 @@ import {
   createRendererInitDiagnostics,
   type RendererActiveMode,
   type RendererBackendV2,
+  type RendererFramePipeline,
   type RendererPostProcessController,
   type RendererPostProcessRuntime,
+  type RendererPostProcessPlan,
 } from "./renderer-backend-v2";
 import type { RendererBuildMode } from "./renderer-build-mode";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
@@ -110,13 +112,15 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
   now: () => performance.now(),
 };
 
+const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
+
 const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
   setColorGrade: () => {},
   setVignette: () => {},
 };
 
 const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
-  supportsBloom: true,
+  supportsBloom: false,
   supportsChromaticAberration: false,
   supportsColorGrade: false,
   supportsEnvironmentIbl: false,
@@ -167,6 +171,21 @@ function attachWebGpuDeviceDiagnostics(input: {
   };
 }
 
+function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]["mode"]): number {
+  switch (mode) {
+    case "linear":
+      return LinearToneMapping;
+    case "reinhard":
+      return ReinhardToneMapping;
+    case "cineon":
+      return CineonToneMapping;
+    case "aces-filmic":
+    case "neutral":
+    default:
+      return ACESFilmicToneMapping;
+  }
+}
+
 export function createWebGPURendererBackend(
   options: {
     graphicsSetting: GraphicsSettingsType;
@@ -191,6 +210,12 @@ export function createWebGPURendererBackend(
     },
     applyPostProcessPlan(plan) {
       if (!postProcessRuntime) {
+        if (!renderer) {
+          return NOOP_POST_PROCESS_CONTROLLER;
+        }
+
+        renderer.toneMapping = resolveRendererToneMapping(plan.toneMapping.mode);
+        renderer.toneMappingExposure = plan.toneMapping.exposure;
         return NOOP_POST_PROCESS_CONTROLLER;
       }
 
@@ -204,13 +229,17 @@ export function createWebGPURendererBackend(
       renderer.setPixelRatio(input.pixelRatio);
       renderer.shadowMap.enabled = input.shadows;
       renderer.setSize(input.width, input.height);
-      postProcessRuntime?.setSize(input.width, input.height);
+      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
+        postProcessRuntime?.setSize(input.width, input.height);
+      }
     },
     dispose() {
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = undefined;
-      postProcessRuntime?.dispose();
-      postProcessRuntime = undefined;
+      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
+        postProcessRuntime?.dispose();
+        postProcessRuntime = undefined;
+      }
       renderer?.dispose();
       renderer = undefined;
     },
@@ -240,9 +269,11 @@ export function createWebGPURendererBackend(
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = releaseDeviceDiagnostics;
       renderer = createdRenderer.renderer;
-      postProcessRuntime = resolvedDependencies.createPostProcessRuntime({
-        renderer: createdRenderer.renderer,
-      });
+      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
+        postProcessRuntime = resolvedDependencies.createPostProcessRuntime({
+          renderer: createdRenderer.renderer,
+        });
+      }
 
       if (createdRenderer.activeMode === "webgpu" && createdRenderer.device) {
         markRendererDiagnosticDeviceReady();
@@ -255,8 +286,20 @@ export function createWebGPURendererBackend(
         requestedMode: options.requestedMode,
       });
     },
-    renderFrame(pipeline) {
-      if (!postProcessRuntime) {
+    renderFrame(pipeline: RendererFramePipeline) {
+      if (!ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME || !postProcessRuntime) {
+        if (!renderer) {
+          return;
+        }
+
+        renderer.info.reset();
+        renderer.clear();
+        renderer.render(pipeline.mainScene, pipeline.mainCamera);
+
+        if (pipeline.overlayScene && pipeline.overlayCamera) {
+          renderer.clearDepth();
+          renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
+        }
         return;
       }
 
@@ -264,7 +307,9 @@ export function createWebGPURendererBackend(
     },
     resize(width: number, height: number) {
       renderer?.setSize(width, height);
-      postProcessRuntime?.setSize(width, height);
+      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
+        postProcessRuntime?.setSize(width, height);
+      }
     },
   };
 }

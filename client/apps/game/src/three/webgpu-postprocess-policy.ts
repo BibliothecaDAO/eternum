@@ -62,7 +62,7 @@ export function resolveWebgpuPostprocessPolicy(input: {
 
   return {
     bloomRouting: input.capabilities.supportsBloom ? "mrt-emissive" : "deferred",
-    mode: input.capabilities.supportsToneMappingControl ? "native-webgpu-postprocess" : "native-webgpu-minimal",
+    mode: "native-webgpu-minimal",
     prewarmStrategy: "compile-async",
     unsupportedFeatures,
   };
