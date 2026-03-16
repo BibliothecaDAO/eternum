@@ -42,6 +42,9 @@ interface SeasonPlacementMapProps {
   className?: string;
   showLegend?: boolean;
   showStats?: boolean;
+  showInstructions?: boolean;
+  mapHeightClassName?: string;
+  tone?: "emerald" | "gold";
 }
 
 const buildSeasonMapHexPoints = (centerX: number, centerY: number): string => {
@@ -200,6 +203,9 @@ export const SeasonPlacementMap = ({
   className,
   showLegend = true,
   showStats = true,
+  showInstructions = true,
+  mapHeightClassName = "h-60",
+  tone = "emerald",
 }: SeasonPlacementMapProps) => {
   const selectedSlot = useMemo(
     () => slots.find((slot) => (selectedSlotId ? slot.id === selectedSlotId : false)) ?? null,
@@ -344,11 +350,25 @@ export const SeasonPlacementMap = ({
     setMapCamera(buildSeasonMapCamera(mapBounds, selectedSlot));
   }, [mapBounds, selectedSlot]);
 
+  const toneClass = tone === "gold" ? "text-gold/70" : "text-emerald-100/70";
+  const titleClass = tone === "gold" ? "text-gold/85" : "text-emerald-100/85";
+  const subtitleClass = tone === "gold" ? "text-gold/60" : "text-emerald-100/65";
+  const frameClass = tone === "gold" ? "border-gold/30 bg-black/45" : "border-emerald-300/25 bg-black/40";
+  const unoccupiedFill = tone === "gold" ? "#d6b064" : "#34d399";
+  const unoccupiedStroke = tone === "gold" ? "#f5d27a" : "#86efac";
+  const neutralBorderClass = tone === "gold" ? "border-gold/20" : "border-white/20";
+  const neutralBgClass = tone === "gold" ? "bg-gold/10 hover:bg-gold/20" : "bg-white/5 hover:bg-white/10";
+  const neutralTextClass = tone === "gold" ? "text-gold/80" : "text-white/75";
+
   return (
     <div className={cn("space-y-2", className)}>
-      <p className="text-xs text-emerald-100/85">Map slot picker (click a hex to populate side/layer/point)</p>
-      <p className="text-[11px] text-emerald-100/65">Scroll to zoom. Drag to pan. Click reset to reframe.</p>
-      <div className="relative h-60 overflow-hidden rounded-lg border border-emerald-300/25 bg-black/40">
+      {showInstructions && (
+        <>
+          <p className={cn("text-xs", titleClass)}>Map slot picker (click a hex to populate side/layer/point)</p>
+          <p className={cn("text-[11px]", subtitleClass)}>Scroll to zoom. Drag to pan. Click reset to reframe.</p>
+        </>
+      )}
+      <div className={cn("relative overflow-hidden rounded-lg border", mapHeightClassName, frameClass)}>
         <div
           className="absolute inset-0 bg-[url('/images/covers/blitz/07.png')] bg-cover bg-center opacity-20"
           aria-hidden
@@ -371,9 +391,9 @@ export const SeasonPlacementMap = ({
               <g key={slot.id}>
                 <polygon
                   points={buildSeasonMapHexPoints(slot.pixelX, slot.pixelY)}
-                  fill={isSelected ? "#f4d25a" : slot.occupied ? "#4b5563" : "#34d399"}
+                  fill={isSelected ? "#f4d25a" : slot.occupied ? "#4b5563" : unoccupiedFill}
                   fillOpacity={isSelected ? 0.88 : slot.occupied ? 0.35 : 0.28}
-                  stroke={isSelected ? "#fef3c7" : slot.occupied ? "#9ca3af" : "#86efac"}
+                  stroke={isSelected ? "#fef3c7" : slot.occupied ? "#9ca3af" : unoccupiedStroke}
                   strokeWidth={isSelected ? 1.1 : 0.85}
                   strokeOpacity={isSelected ? 1 : slot.occupied ? 0.42 : 0.72}
                   pointerEvents="none"
@@ -431,13 +451,13 @@ export const SeasonPlacementMap = ({
         </svg>
       </div>
       {showStats && (
-        <div className="flex items-center justify-between text-[11px] text-emerald-100/75">
+        <div className={cn("flex items-center justify-between text-[11px]", toneClass)}>
           <span>Valid slots: {slots.length}</span>
           <span>Occupied: {occupiedSlotCount}</span>
         </div>
       )}
       {showLegend && (
-        <div className="flex flex-wrap items-center gap-2 text-[10px] text-emerald-100/70">
+        <div className={cn("flex flex-wrap items-center gap-2 text-[10px]", toneClass)}>
           {settledSlots.length > 0 && (
             <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/5 px-2 py-1">
               <span className="h-2 w-2 rounded-full bg-[#f5deb3]" />
@@ -459,7 +479,7 @@ export const SeasonPlacementMap = ({
           <button
             type="button"
             onClick={resetMapCamera}
-            className="rounded border border-white/20 bg-white/5 px-2 py-1 text-[10px] text-white/75 hover:bg-white/10"
+            className={cn("rounded border px-2 py-1 text-[10px]", neutralBorderClass, neutralBgClass, neutralTextClass)}
           >
             Reset View
           </button>

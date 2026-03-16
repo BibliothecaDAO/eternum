@@ -719,243 +719,283 @@ const SeasonPlacementPhase = ({
     setManualSeasonPassTokenError(null);
   }, [selectedSeasonPassTokenId]);
 
+  const selectedPassDisplay = selectedSeasonPass
+    ? `${selectedSeasonPass.realmName} (Realm #${selectedSeasonPass.realmId})`
+    : selectedSeasonPassTokenId != null
+      ? `Token #${selectedSeasonPassTokenId.toString()}`
+      : "No pass selected";
+
   return (
-    <div className="flex flex-col">
-      <div className="text-center mb-4">
-        <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Season settlement" />
-        <h2 className="text-lg font-semibold text-gold">Choose Settlement Placement</h2>
-        <p className="text-xs text-gold/60 mt-1">
-          Click any valid hex on the map overlay to populate side/layer/point automatically.
-        </p>
-      </div>
-
-      <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5 mb-4">
-        <span className="text-xs text-gold/70">
-          Placement format: <span className="text-gold">side (0-5), layer (ring), point (0..layer-1)</span>
-        </span>
-      </div>
-
-      <div className="mb-4">
-        <p className="text-sm text-gold mb-2">Select a Season Pass:</p>
-        <div className="space-y-2 max-h-52 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          {seasonPasses.map((pass) => {
-            const isSelected = selectedSeasonPassTokenId === pass.tokenId;
-            return (
-              <div
-                key={pass.tokenId.toString()}
-                className={cn(
-                  "rounded-lg border p-2 transition-colors",
-                  isSelected ? "border-gold/50 bg-gold/10" : "border-gold/20 bg-black/20",
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm text-gold truncate">{pass.realmName}</p>
-                    <p className="text-[11px] text-gold/50">Realm #{pass.realmId}</p>
-                  </div>
-                  <Button
-                    onClick={() => onSelectSeasonPass(pass.tokenId)}
-                    variant={isSelected ? "default" : "outline"}
-                    size="xs"
-                    forceUppercase={false}
-                    className={cn(isSelected ? "!bg-gold !text-brown" : "")}
-                  >
-                    {isSelected ? "Selected" : "Settle"}
-                  </Button>
-                </div>
-
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {pass.resourceIds.length > 0 ? (
-                    pass.resourceIds.map((resourceId, index) => {
-                      const resourceLabel = resolveResourceLabel(resourceId);
-                      if (!resourceLabel) return null;
-                      return (
-                        <div
-                          key={`${pass.tokenId.toString()}-${resourceId}-${index}`}
-                          className="inline-flex items-center gap-1 rounded-md border border-gold/20 bg-black/25 px-1.5 py-1"
-                        >
-                          <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
-                          <span className="text-[10px] text-gold/70">{resourceLabel}</span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <span className="text-[11px] text-gold/50">No allowed resources decoded.</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <img src="/images/logos/eternum-loader.png" className="w-12" alt="Season settlement" />
+          <div>
+            <h2 className="text-lg font-semibold text-gold">Choose Settlement Placement</h2>
+            <p className="text-xs text-gold/65">Claim your realm position and settle with the selected season pass.</p>
+          </div>
         </div>
-        {seasonPasses.length === 0 && seasonPassBalance > 0n && (
-          <div className="mt-3 rounded-md border border-gold/25 bg-black/20 p-3">
-            <p className="text-[11px] text-gold/70">
-              Your wallet has a season pass, but token enumeration is unavailable for this contract.
-            </p>
-            <label className="block text-[11px] text-gold/70 mt-2">
-              Season Pass Token ID (Realm ID)
+        <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[11px] text-gold/85">
+          <span className="font-semibold">Step 2 / 3</span>
+          <span className="text-gold/60">Pass + Placement</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <section className="rounded-xl border border-gold/25 bg-gradient-to-b from-[#1a140b]/95 via-[#100d08]/95 to-[#0b0906]/95 p-3 md:p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-gold">War Map Placement</p>
+              <p className="text-[11px] text-gold/60">
+                Click any valid hex to populate <span className="text-gold/85">side / layer / point</span>.
+              </p>
+            </div>
+            <span className="rounded-full border border-gold/25 bg-black/25 px-2 py-1 text-[10px] text-gold/70">
+              side (0-5), layer (ring), point (0..layer-1)
+            </span>
+          </div>
+
+          <SeasonPlacementMap
+            slots={placementSlots}
+            selectedSlotId={selectedSlotId}
+            onSelectSlot={(slot) =>
+              onPlacementChange({
+                ...placement,
+                side: slot.side,
+                layer: slot.layer,
+                point: slot.point,
+              })
+            }
+            showInstructions={false}
+            tone="gold"
+            mapHeightClassName="h-[320px] md:h-[430px]"
+          />
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <label className="text-xs text-gold/70">
+              Side
               <input
-                type="text"
-                inputMode="numeric"
-                value={manualSeasonPassTokenInput}
-                onChange={(event) => {
-                  setManualSeasonPassTokenInput(event.target.value);
-                  setManualSeasonPassTokenError(null);
-                }}
-                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
-                placeholder="e.g. 1"
+                type="number"
+                min={0}
+                max={5}
+                value={placement.side}
+                onChange={(event) =>
+                  onPlacementChange({
+                    ...placement,
+                    side: Number(event.target.value || 0),
+                  })
+                }
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1 text-sm text-gold"
               />
             </label>
-            <Button
-              onClick={() => {
-                const value = manualSeasonPassTokenInput.trim();
-                if (value.length === 0) {
-                  setManualSeasonPassTokenError("Enter a token ID.");
-                  return;
+            <label className="text-xs text-gold/70">
+              Layer
+              <input
+                type="number"
+                min={minLayer}
+                max={layerMax ?? undefined}
+                value={placement.layer}
+                onChange={(event) =>
+                  onPlacementChange({
+                    ...placement,
+                    layer: Number(event.target.value || 0),
+                  })
                 }
-                try {
-                  const parsed = BigInt(value);
-                  if (parsed < 0n) {
-                    setManualSeasonPassTokenError("Token ID cannot be negative.");
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1 text-sm text-gold"
+              />
+            </label>
+            <label className="text-xs text-gold/70">
+              Point
+              <input
+                type="number"
+                min={0}
+                max={maxPointForLayer}
+                value={placement.point}
+                onChange={(event) =>
+                  onPlacementChange({
+                    ...placement,
+                    point: Number(event.target.value || 0),
+                  })
+                }
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1 text-sm text-gold"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+            {selectedPlacementSlot ? (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5">
+                <p className="text-xs text-emerald-200">
+                  Selected hex: side {selectedPlacementSlot.side}, layer {selectedPlacementSlot.layer}, point{" "}
+                  {selectedPlacementSlot.point}
+                  {" · "}x {selectedPlacementSlot.x}, y {selectedPlacementSlot.y}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5">
+                <p className="text-xs text-gold/65">No hex selected yet.</p>
+              </div>
+            )}
+            <div className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1.5">
+              <p className="text-xs text-emerald-200">
+                Target coordinate:{" "}
+                {targetCoordPreview ? (
+                  <>
+                    <span className="text-emerald-100">x {targetCoordPreview.x}</span>,{" "}
+                    <span className="text-emerald-100">y {targetCoordPreview.y}</span>
+                  </>
+                ) : (
+                  <span className="text-emerald-100/80">waiting for valid side/layer/point</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {isLoadingOccupiedSlots && (
+            <p className="mt-2 text-[11px] text-gold/60">Loading occupied settlement slots...</p>
+          )}
+          {occupiedSlotsError && <p className="mt-2 text-[11px] text-amber-200/80">{occupiedSlotsError}</p>}
+        </section>
+
+        <aside className="flex flex-col gap-3 rounded-xl border border-gold/25 bg-gradient-to-b from-black/45 to-black/25 p-3 md:p-4">
+          <div>
+            <p className="text-sm font-semibold text-gold">Season Pass Selection</p>
+            <p className="text-[11px] text-gold/60">Pick the pass bound to the realm you want to settle.</p>
+          </div>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            {seasonPasses.map((pass) => {
+              const isSelected = selectedSeasonPassTokenId === pass.tokenId;
+              return (
+                <div
+                  key={pass.tokenId.toString()}
+                  className={cn(
+                    "rounded-lg border p-2 transition-colors",
+                    isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/25 hover:border-gold/35",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gold truncate">{pass.realmName}</p>
+                      <p className="text-[11px] text-gold/50">Realm #{pass.realmId}</p>
+                    </div>
+                    <Button
+                      onClick={() => onSelectSeasonPass(pass.tokenId)}
+                      variant={isSelected ? "default" : "outline"}
+                      size="xs"
+                      forceUppercase={false}
+                      className={cn(isSelected ? "!bg-gold !text-brown" : "")}
+                    >
+                      {isSelected ? "Selected" : "Use"}
+                    </Button>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {pass.resourceIds.length > 0 ? (
+                      pass.resourceIds.map((resourceId, index) => {
+                        const resourceLabel = resolveResourceLabel(resourceId);
+                        if (!resourceLabel) return null;
+                        return (
+                          <div
+                            key={`${pass.tokenId.toString()}-${resourceId}-${index}`}
+                            className="inline-flex items-center gap-1 rounded-md border border-gold/20 bg-black/25 px-1.5 py-1"
+                          >
+                            <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
+                            <span className="text-[10px] text-gold/70">{resourceLabel}</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <span className="text-[11px] text-gold/50">No allowed resources decoded.</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {seasonPasses.length === 0 && seasonPassBalance > 0n && (
+            <details className="rounded-md border border-gold/25 bg-black/25 p-3" open>
+              <summary className="cursor-pointer text-[11px] font-semibold text-gold/80">
+                Can&apos;t see my pass?
+              </summary>
+              <p className="mt-2 text-[11px] text-gold/65">
+                Token enumeration is unavailable for this contract. Enter a season pass token ID manually.
+              </p>
+              <label className="mt-2 block text-[11px] text-gold/70">
+                Season Pass Token ID (Realm ID)
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={manualSeasonPassTokenInput}
+                  onChange={(event) => {
+                    setManualSeasonPassTokenInput(event.target.value);
+                    setManualSeasonPassTokenError(null);
+                  }}
+                  className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+                  placeholder="e.g. 1"
+                />
+              </label>
+              <Button
+                onClick={() => {
+                  const value = manualSeasonPassTokenInput.trim();
+                  if (value.length === 0) {
+                    setManualSeasonPassTokenError("Enter a token ID.");
                     return;
                   }
-                  onSelectSeasonPass(parsed);
-                  setManualSeasonPassTokenError(null);
-                } catch {
-                  setManualSeasonPassTokenError("Token ID must be a valid integer.");
-                }
-              }}
-              className="w-full h-9 mt-2 !text-brown !bg-gold rounded-md"
-              forceUppercase={false}
-            >
-              Use Token ID
-            </Button>
-            {manualSeasonPassTokenError && (
-              <p className="mt-2 text-[11px] text-red-200/90">{manualSeasonPassTokenError}</p>
-            )}
+                  try {
+                    const parsed = BigInt(value);
+                    if (parsed < 0n) {
+                      setManualSeasonPassTokenError("Token ID cannot be negative.");
+                      return;
+                    }
+                    onSelectSeasonPass(parsed);
+                    setManualSeasonPassTokenError(null);
+                  } catch {
+                    setManualSeasonPassTokenError("Token ID must be a valid integer.");
+                  }
+                }}
+                className="mt-2 h-9 w-full !rounded-md !bg-gold !text-brown"
+                forceUppercase={false}
+              >
+                Use Token ID
+              </Button>
+              {manualSeasonPassTokenError && (
+                <p className="mt-2 text-[11px] text-red-200/90">{manualSeasonPassTokenError}</p>
+              )}
+            </details>
+          )}
+
+          <div className="rounded-md border border-gold/25 bg-black/25 px-2 py-1.5">
+            <p className="text-[11px] text-gold/60">Selected pass</p>
+            <p className="text-xs text-gold">{selectedPassDisplay}</p>
           </div>
-        )}
-      </div>
 
-      {selectedSeasonPass && (
-        <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5 mb-4">
-          <span className="text-xs text-gold/70">
-            Selected pass: <span className="text-gold">{selectedSeasonPass.realmName}</span> (Realm #
-            {selectedSeasonPass.realmId})
-          </span>
-        </div>
-      )}
-      {!selectedSeasonPass && selectedSeasonPassTokenId != null && (
-        <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5 mb-4">
-          <span className="text-xs text-gold/70">
-            Selected pass token: <span className="text-gold">#{selectedSeasonPassTokenId.toString()}</span>
-          </span>
-        </div>
-      )}
+          <div className="grid grid-cols-1 gap-2">
+            {checks.map((check) => (
+              <div
+                key={check.id}
+                className={cn(
+                  "flex items-center justify-between rounded-md border px-2 py-1.5",
+                  check.ok ? "border-emerald-500/30 bg-emerald-500/10" : "border-red-500/25 bg-red-500/10",
+                )}
+              >
+                <span className={cn("text-xs", check.ok ? "text-emerald-200" : "text-red-200")}>{check.label}</span>
+                {check.ok ? <Check className="h-4 w-4 text-emerald-400" /> : <X className="h-4 w-4 text-red-300" />}
+              </div>
+            ))}
+          </div>
 
-      <div className="mb-4">
-        <p className="text-sm text-gold mb-2">Map placement overlay</p>
-        <SeasonPlacementMap
-          slots={placementSlots}
-          selectedSlotId={selectedSlotId}
-          onSelectSlot={(slot) =>
-            onPlacementChange({
-              ...placement,
-              side: slot.side,
-              layer: slot.layer,
-              point: slot.point,
-            })
-          }
-        />
-        {selectedPlacementSlot && (
-          <div className="mt-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5">
-            <p className="text-xs text-emerald-200">
-              Selected hex: side {selectedPlacementSlot.side}, layer {selectedPlacementSlot.layer}, point{" "}
-              {selectedPlacementSlot.point}
-              {" · "}x {selectedPlacementSlot.x}, y {selectedPlacementSlot.y}
+          {seasonPassInventoryError && (
+            <p className="text-[11px] text-amber-200/80">
+              Could not refresh season pass metadata. Try reopening the modal.
             </p>
-          </div>
-        )}
-        {isLoadingOccupiedSlots && (
-          <p className="mt-2 text-[11px] text-gold/60">Loading occupied settlement slots...</p>
-        )}
-        {occupiedSlotsError && <p className="mt-2 text-[11px] text-amber-200/80">{occupiedSlotsError}</p>}
+          )}
+        </aside>
       </div>
-
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <label className="text-xs text-gold/60">
-          Side
-          <input
-            type="number"
-            min={0}
-            max={5}
-            value={placement.side}
-            onChange={(event) =>
-              onPlacementChange({
-                ...placement,
-                side: Number(event.target.value || 0),
-              })
-            }
-            className="mt-1 w-full rounded-md bg-black/20 border border-gold/20 px-2 py-1 text-sm text-gold"
-          />
-        </label>
-        <label className="text-xs text-gold/60">
-          Layer
-          <input
-            type="number"
-            min={minLayer}
-            max={layerMax ?? undefined}
-            value={placement.layer}
-            onChange={(event) =>
-              onPlacementChange({
-                ...placement,
-                layer: Number(event.target.value || 0),
-              })
-            }
-            className="mt-1 w-full rounded-md bg-black/20 border border-gold/20 px-2 py-1 text-sm text-gold"
-          />
-        </label>
-        <label className="text-xs text-gold/60">
-          Point
-          <input
-            type="number"
-            min={0}
-            max={maxPointForLayer}
-            value={placement.point}
-            onChange={(event) =>
-              onPlacementChange({
-                ...placement,
-                point: Number(event.target.value || 0),
-              })
-            }
-            className="mt-1 w-full rounded-md bg-black/20 border border-gold/20 px-2 py-1 text-sm text-gold"
-          />
-        </label>
-      </div>
-
-      <div className="space-y-2 mb-4">
-        {checks.map((check) => (
-          <div
-            key={check.id}
-            className="flex items-center justify-between rounded-md border border-gold/20 bg-black/20 px-2 py-1.5"
-          >
-            <span className="text-xs text-gold/70">{check.label}</span>
-            {check.ok ? <Check className="w-4 h-4 text-emerald-400" /> : <X className="w-4 h-4 text-red-300" />}
-          </div>
-        ))}
-      </div>
-
-      {targetCoordPreview && (
-        <div className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1.5 mb-4">
-          <p className="text-xs text-emerald-200">
-            Target coordinate preview: <span className="text-emerald-100">x {targetCoordPreview.x}</span>,{" "}
-            <span className="text-emerald-100">y {targetCoordPreview.y}</span>
-          </p>
-        </div>
-      )}
 
       {placementValidationErrors.length > 0 && (
-        <div className="rounded-md border border-red-400/20 bg-red-500/10 px-2 py-2 mb-3">
+        <div className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2">
           {placementValidationErrors.map((placementError, index) => (
             <p key={`${placementError}-${index}`} className="text-xs text-red-200">
               {placementError}
@@ -964,24 +1004,29 @@ const SeasonPlacementPhase = ({
         </div>
       )}
 
-      <Button
-        disabled={!canSubmit}
-        onClick={onConfirmSettlement}
-        className="w-full h-11 !text-brown !bg-gold rounded-md"
-        forceUppercase={false}
-      >
-        <div className="flex items-center justify-center gap-2">
-          {isSubmittingSettlement ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-          <span>{isSubmittingSettlement ? "Settling..." : "Settle Realm"}</span>
-        </div>
-      </Button>
+      {settlementError && <p className="text-[11px] text-red-200">{settlementError}</p>}
 
-      {seasonPassInventoryError && (
-        <p className="text-[11px] text-amber-200/80 mt-2">
-          Could not refresh season pass metadata. Try reopening the modal.
-        </p>
-      )}
-      {settlementError && <p className="text-[11px] text-red-200 mt-2">{settlementError}</p>}
+      <div className="sticky bottom-0 z-10 rounded-xl border border-gold/30 bg-gradient-to-r from-[#1a1309]/95 via-[#20170c]/95 to-[#120d07]/95 px-3 py-3 shadow-[0_-10px_25px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gold/75">
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Pass: {selectedPassDisplay}</span>
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Side {placement.side}</span>
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Layer {placement.layer}</span>
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Point {placement.point}</span>
+          </div>
+          <Button
+            disabled={!canSubmit}
+            onClick={onConfirmSettlement}
+            className="h-11 w-full min-w-[190px] !rounded-md !bg-gold !text-brown md:w-auto"
+            forceUppercase={false}
+          >
+            <div className="flex items-center justify-center gap-2">
+              {isSubmittingSettlement ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+              <span>{isSubmittingSettlement ? "Settling..." : "Settle Realm"}</span>
+            </div>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -2453,7 +2498,10 @@ export const GameEntryModal = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-md mx-4 bg-brown/95 backdrop-blur-sm rounded-xl border border-gold/40 shadow-2xl"
+        className={cn(
+          "relative mx-4 w-full rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm",
+          phase === "season-placement" ? "max-h-[88vh] max-w-6xl" : "max-w-md",
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -2480,7 +2528,13 @@ export const GameEntryModal = ({
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6">
+        <div
+          className={cn(
+            "px-6 pb-6",
+            phase === "season-placement" &&
+              "max-h-[calc(88vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+          )}
+        >
           <AnimatePresence mode="wait">
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
