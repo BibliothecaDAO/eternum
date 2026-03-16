@@ -2,7 +2,7 @@ import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import { resolveEligibleCosmeticIds } from "@/three/cosmetics/ownership";
 import type { BlitzGameLoadoutDraft } from "@/three/cosmetics/types";
 import { useAccount } from "@starknet-react/core";
-import { useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { CosmeticItem } from "../config/cosmetics.data";
 
 const DEFAULT_MAX_SELECTIONS = 8;
@@ -129,17 +129,24 @@ export const useCosmeticLoadoutStore = <T>(
 ): T => {
   const { address } = useAccount();
   const scopeKey = options?.scopeKey ?? "cosmetics:default";
-  const fallbackScopeKeys = options?.fallbackScopeKeys ?? [];
+  const fallbackScopeKeys = useMemo(() => options?.fallbackScopeKeys ?? [], [options?.fallbackScopeKeys]);
   const maxSelections = options?.maxSelections ?? DEFAULT_MAX_SELECTIONS;
+  const draft = useSyncExternalStore(
+    playerCosmeticsStore.subscribe.bind(playerCosmeticsStore),
+    () => resolveDraft(address ?? undefined, scopeKey, fallbackScopeKeys),
+  );
 
-  const getState = () => {
-    const draft = resolveDraft(address ?? undefined, scopeKey, fallbackScopeKeys);
-    const viewState = buildCosmeticLoadoutViewState({
-      draft,
-      maxSelections,
-    });
+  const viewState = useMemo(
+    () =>
+      buildCosmeticLoadoutViewState({
+        draft,
+        maxSelections,
+      }),
+    [draft, maxSelections],
+  );
 
-    const addCosmetic = (slot: string, item: CosmeticItem) => {
+  const addCosmetic = useCallback(
+    (slot: string, item: CosmeticItem) => {
       if (!address || !slot || !item.tokenId) {
         return;
       }
@@ -151,9 +158,12 @@ export const useCosmeticLoadoutStore = <T>(
         maxSelections,
       });
       playerCosmeticsStore.setPendingBlitzLoadout(scopeKey, address, nextDraft);
-    };
+    },
+    [address, fallbackScopeKeys, maxSelections, scopeKey],
+  );
 
-    const removeCosmetic = (slot: string) => {
+  const removeCosmetic = useCallback(
+    (slot: string) => {
       if (!address || !slot) {
         return;
       }
@@ -170,29 +180,36 @@ export const useCosmeticLoadoutStore = <T>(
         tokenIds,
         selectedBySlot,
       });
-    };
+    },
+    [address, fallbackScopeKeys, scopeKey],
+  );
 
-    const clearAll = () => {
-      if (!address) {
-        return;
-      }
+  const clearAll = useCallback(() => {
+    if (!address) {
+      return;
+    }
 
-      playerCosmeticsStore.setPendingBlitzLoadout(scopeKey, address, {
-        tokenIds: [],
-        selectedBySlot: {},
-      });
-    };
+    playerCosmeticsStore.setPendingBlitzLoadout(scopeKey, address, {
+      tokenIds: [],
+      selectedBySlot: {},
+    });
+  }, [address, scopeKey]);
 
-    const state: CosmeticLoadoutViewState = {
+  const isTokenSelected = useCallback(
+    (tokenId: string) => viewState.pendingTokenIds.includes(tokenId),
+    [viewState.pendingTokenIds],
+  );
+
+  const state = useMemo<CosmeticLoadoutViewState>(
+    () => ({
       ...viewState,
       addCosmetic,
       removeCosmetic,
       clearAll,
-      isTokenSelected: (tokenId: string) => viewState.pendingTokenIds.includes(tokenId),
-    };
+      isTokenSelected,
+    }),
+    [addCosmetic, clearAll, isTokenSelected, removeCosmetic, viewState],
+  );
 
-    return state;
-  };
-
-  return useSyncExternalStore(playerCosmeticsStore.subscribe.bind(playerCosmeticsStore), () => selector(getState()));
+  return selector(state);
 };
