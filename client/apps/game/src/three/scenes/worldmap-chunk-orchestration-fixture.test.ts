@@ -3,7 +3,7 @@ import { createWorldmapChunkOrchestrationFixture } from "./worldmap-chunk-orches
 import { flushMicrotasks } from "./worldmap-test-harness";
 
 describe("createWorldmapChunkOrchestrationFixture", () => {
-  it("commits chunk authority only after successful performChunkSwitch commit path", async () => {
+  it("keeps the previous chunk active until the prepared presentation is ready to commit", async () => {
     const fixture = createWorldmapChunkOrchestrationFixture();
 
     const switchPromise = fixture.runChunkSwitch({
@@ -22,12 +22,26 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     expect(fixture.getCurrentChunk()).toBe("0,0");
     expect(fixture.tileFetch.calls).toEqual([["24,24"]]);
     expect(fixture.boundsSwitch.calls).toEqual([["24,24", 7]]);
-    expect(fixture.gridUpdate.calls).toEqual([[24, 24]]);
+    expect(fixture.structureHydration.calls).toEqual([["24,24"]]);
+    expect(fixture.assetPrewarm.calls).toEqual([["24,24"]]);
+    expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.managerUpdate.calls).toEqual([]);
 
-    fixture.gridUpdate.resolveNext();
     fixture.tileFetch.resolveNext(true);
     fixture.boundsSwitch.resolveNext();
+    await flushMicrotasks(2);
+    expect(fixture.terrainPreparation.calls).toEqual([]);
+    expect(fixture.getCurrentChunk()).toBe("0,0");
+
+    fixture.structureHydration.resolveNext();
+    fixture.assetPrewarm.resolveNext();
+    await flushMicrotasks(2);
+
+    expect(fixture.terrainPreparation.calls).toEqual([[24, 24]]);
+    expect(fixture.getCurrentChunk()).toBe("0,0");
+    expect(fixture.managerUpdate.calls).toEqual([]);
+
+    fixture.terrainPreparation.resolveNext({ chunkKey: "24,24" });
 
     for (let i = 0; i < 5 && fixture.managerUpdate.pendingCount() === 0; i += 1) {
       await flushMicrotasks();
@@ -64,7 +78,8 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
 
     await flushMicrotasks(2);
     expect(fixture.getCurrentChunk()).toBe("0,0");
-    fixture.gridUpdate.resolveNext();
+    fixture.structureHydration.resolveNext();
+    fixture.assetPrewarm.resolveNext();
     fixture.tileFetch.resolveNext(false);
     fixture.boundsSwitch.resolveNext();
 
@@ -95,9 +110,12 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     });
 
     await flushMicrotasks(2);
-    fixture.gridUpdate.resolveNext();
+    fixture.structureHydration.resolveNext();
+    fixture.assetPrewarm.resolveNext();
     fixture.tileFetch.resolveNext(true);
     fixture.boundsSwitch.resolveNext();
+    await flushMicrotasks(2);
+    fixture.terrainPreparation.resolveNext({ chunkKey: "24,24" });
 
     const result = await switchPromise;
     expect(result).toEqual({

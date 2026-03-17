@@ -6,6 +6,11 @@ export type WorldmapRenderDurationMetric =
   | "updateManagersForChunk"
   | "executeRenderForChunk"
   | "performVisibleStructuresUpdate"
+  | "terrainPreparedMs"
+  | "structureHydrationDrainMs"
+  | "structureAssetPrewarmMs"
+  | "presentationCommittedMs"
+  | "presentationSkewMs"
   | "workerFindPath"
   | "createPath";
 
@@ -75,6 +80,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     updateManagersForChunk: createDurationStats(),
     executeRenderForChunk: createDurationStats(),
     performVisibleStructuresUpdate: createDurationStats(),
+    terrainPreparedMs: createDurationStats(),
+    structureHydrationDrainMs: createDurationStats(),
+    structureAssetPrewarmMs: createDurationStats(),
+    presentationCommittedMs: createDurationStats(),
+    presentationSkewMs: createDurationStats(),
     workerFindPath: createDurationStats(),
     createPath: createDurationStats(),
   },

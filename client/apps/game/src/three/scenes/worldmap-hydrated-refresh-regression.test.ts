@@ -17,4 +17,13 @@ describe("worldmap hydrated refresh regression", () => {
     expect(source).toMatch(/shouldScheduleHydratedChunkRefreshForFetch\s*\(\s*\{/);
     expect(source).toMatch(/suppressedAreaKeys/);
   });
+
+  it("routes hydrated refreshes through the chunk presentation readiness gate", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/waitForStructureHydrationIdle/);
+    expect(source).toMatch(/prewarmChunkAssets/);
+    expect(source).toMatch(/prepareTerrainChunk/);
+    expect(source).toMatch(/applyPreparedTerrainChunk/);
+  });
 });

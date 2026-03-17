@@ -170,6 +170,7 @@ export class StructureManager {
   private labelVisibilityIntervalMs = 66;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
+  private chunkAssetPrewarmPromises: Map<string, Promise<void>> = new Map();
   private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
@@ -602,6 +603,49 @@ export class StructureManager {
 
   getTotalStructures() {
     return Array.from(this.structures.getStructures().values()).reduce((acc, structures) => acc + structures.size, 0);
+  }
+
+  public prewarmChunkAssets(chunkKey: string): Promise<void> {
+    const existing = this.chunkAssetPrewarmPromises.get(chunkKey);
+    if (existing) {
+      return existing;
+    }
+
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      return Promise.resolve();
+    }
+
+    const prewarmPromise = (async () => {
+      const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+      const structureTypes = new Set<StructureType>();
+      const cosmeticAssets = new Map<string, string[]>();
+
+      visibleStructures.forEach((structure) => {
+        if (this.hasCosmeticSkin(structure)) {
+          const cosmeticId = structure.cosmeticId ?? "";
+          const assetPaths = structure.cosmeticAssetPaths ?? [];
+          if (cosmeticId && assetPaths.length > 0 && !cosmeticAssets.has(cosmeticId)) {
+            cosmeticAssets.set(cosmeticId, assetPaths);
+          }
+          return;
+        }
+
+        structureTypes.add(structure.structureType);
+      });
+
+      await Promise.all([
+        ...Array.from(structureTypes, (structureType) => this.ensureStructureModels(structureType)),
+        ...Array.from(cosmeticAssets.entries(), ([cosmeticId, assetPaths]) =>
+          this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
+        ),
+      ]);
+    })().finally(() => {
+      this.chunkAssetPrewarmPromises.delete(chunkKey);
+    });
+
+    this.chunkAssetPrewarmPromises.set(chunkKey, prewarmPromise);
+    return prewarmPromise;
   }
 
   private async ensureStructureModels(structureType: StructureType): Promise<InstancedModel[]> {

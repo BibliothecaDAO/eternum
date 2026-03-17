@@ -19,6 +19,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       [string, { force: boolean; transitionToken: number }],
       void
     >();
+    const applyPreparedTerrain = vi.fn();
     const updatePinnedChunks = vi.fn();
     const unregisterChunk = vi.fn();
     const clearSceneChunkBounds = vi.fn();
@@ -39,6 +40,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 11,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain,
       setCurrentChunk: vi.fn(),
       updatePinnedChunks,
       unregisterChunk,
@@ -59,6 +62,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(result).toEqual({
       status: "rolled_back",
     });
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
     expect(updateManagersForChunk.calls).toEqual([]);
     expect(clearSceneChunkBounds).not.toHaveBeenCalled();
@@ -69,6 +73,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       [string, { force: boolean; transitionToken: number }],
       void
     >();
+    const applyPreparedTerrain = vi.fn();
     const unregisterChunk = vi.fn();
 
     const result = await finalizeWarpTravelChunkSwitch({
@@ -84,6 +89,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 13,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain,
       setCurrentChunk: vi.fn(),
       updatePinnedChunks: vi.fn(),
       unregisterChunk,
@@ -98,15 +105,20 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(result).toEqual({
       status: "stale_dropped",
     });
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
     expect(unregisterChunk).toHaveBeenCalledWith("24,24");
     expect(updateManagersForChunk.calls).toEqual([]);
   });
 
-  it("commits the hydrated chunk, refreshes bounds, and fans out manager updates", async () => {
+  it("commits prepared terrain, refreshes bounds, and fans out manager updates through one gate", async () => {
     const updateManagersForChunk = createControlledAsyncCall<
       [string, { force: boolean; transitionToken: number }],
       void
     >();
+    const phaseOrder: string[] = [];
+    const applyPreparedTerrain = vi.fn(() => {
+      phaseOrder.push("terrain");
+    });
     const updateCurrentChunkBounds = vi.fn();
     const forceVisibilityUpdate = vi.fn();
     const unregisterPreviousChunkOnNextFrame = vi.fn();
@@ -124,13 +136,23 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: true,
       transitionToken: 17,
-      setCurrentChunk: vi.fn(),
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain,
+      setCurrentChunk: vi.fn(() => {
+        phaseOrder.push("authority");
+      }),
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
       clearSceneChunkBounds: vi.fn(),
-      forceVisibilityUpdate,
-      updateCurrentChunkBounds,
+      forceVisibilityUpdate: vi.fn(() => {
+        phaseOrder.push("visibility");
+        forceVisibilityUpdate();
+      }),
+      updateCurrentChunkBounds: vi.fn((startRow: number, startCol: number) => {
+        phaseOrder.push(`bounds:${startRow},${startCol}`);
+        updateCurrentChunkBounds(startRow, startCol);
+      }),
       updateManagersForChunk: updateManagersForChunk.fn,
       unregisterPreviousChunkOnNextFrame,
     });
@@ -138,6 +160,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(updateCurrentChunkBounds).toHaveBeenCalledWith(24, 24);
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
     expect(updateManagersForChunk.calls).toEqual([["24,24", { force: true, transitionToken: 17 }]]);
+    expect(phaseOrder).toEqual(["authority", "terrain", "bounds:24,24", "visibility"]);
     updateManagersForChunk.resolveNext();
 
     const result = await resultPromise;
@@ -169,6 +192,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 19,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain: vi.fn(),
       setCurrentChunk,
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),

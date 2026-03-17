@@ -219,6 +219,26 @@ interface CachedMatrixEntry {
   expectedExploredTerrainInstances?: number;
 }
 
+interface PreparedTerrainChunk {
+  chunkKey: string;
+  startRow: number;
+  startCol: number;
+  bounds: { box: Box3; sphere: Sphere };
+  expectedExploredTerrainInstances: number;
+  biomeEntries: Map<string, CachedMatrixEntry>;
+}
+
+interface StructureHydrationFetchState {
+  fetchGeneration: number;
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
+  pendingCount: number;
+  fetchSettled: boolean;
+  waiters: Array<() => void>;
+}
+
 type ToriiBoundsCounterKey =
   | "tiles"
   | "structureTiles"
@@ -550,6 +570,7 @@ export default class WorldmapScene extends WarpTravel {
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
   private pendingChunkFetchGeneration = 0;
+  private structureHydrationFetches: Map<string, StructureHydrationFetchState> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<
@@ -923,7 +944,7 @@ export default class WorldmapScene extends WarpTravel {
           this.structureManager.updateChunk(this.currentChunk);
         }
 
-        await this.structureManager.onUpdate(value);
+        await this.trackStructureHydrationUpdate(value, this.structureManager.onUpdate(value));
 
         const newCount = this.structureManager.getTotalStructures();
         const countChanged = this.totalStructures !== newCount;
@@ -3697,6 +3718,315 @@ export default class WorldmapScene extends WarpTravel {
     this.updateHexagonGridPromise = null;
   }
 
+  private cloneInstancedAttribute(attribute: InstancedBufferAttribute, count: number): InstancedBufferAttribute {
+    const clone = InstancedMatrixAttributePool.getInstance().acquire(count);
+    const requiredFloats = count * clone.itemSize;
+    (clone.array as Float32Array).set((attribute.array as Float32Array).subarray(0, requiredFloats));
+    return clone;
+  }
+
+  private cloneCachedMatrixEntry(entry: CachedMatrixEntry): CachedMatrixEntry {
+    return {
+      ...entry,
+      matrices: entry.matrices ? this.cloneInstancedAttribute(entry.matrices, entry.count) : null,
+      landColors: entry.landColors ? new Float32Array(entry.landColors) : null,
+      box: entry.box?.clone(),
+      sphere: entry.sphere?.clone(),
+    };
+  }
+
+  private createPreparedTerrainChunkFromCache(startRow: number, startCol: number): PreparedTerrainChunk | null {
+    const chunkKey = `${startRow},${startCol}`;
+    const cachedMatrices = this.cachedMatrices.get(chunkKey);
+    if (!cachedMatrices) {
+      return null;
+    }
+
+    let totalCachedTerrainInstances = 0;
+    let cachedExploredTerrainInstances = 0;
+    for (const [biome, entry] of cachedMatrices) {
+      if (biome === "__bounds__" || biome === "__meta__") {
+        continue;
+      }
+      const count = Math.max(0, Math.floor(entry.count ?? 0));
+      totalCachedTerrainInstances += count;
+      if (this.isExploredBiomeCacheKey(biome)) {
+        cachedExploredTerrainInstances += count;
+      }
+    }
+
+    const cachedMetadata = cachedMatrices.get("__meta__");
+    const expectedExploredTerrainInstances =
+      cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
+    if (
+      this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
+      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+    ) {
+      this.removeCachedMatricesForChunk(startRow, startCol);
+      return null;
+    }
+
+    const cachedBounds = cachedMatrices.get("__bounds__");
+    const biomeEntries = new Map<string, CachedMatrixEntry>();
+    for (const [biome, entry] of cachedMatrices) {
+      if (biome === "__bounds__" || biome === "__meta__") {
+        continue;
+      }
+      biomeEntries.set(biome, this.cloneCachedMatrixEntry(entry));
+    }
+
+    return {
+      chunkKey,
+      startRow,
+      startCol,
+      bounds: {
+        box: cachedBounds?.box?.clone() ?? this.computeChunkBounds(startRow, startCol).box,
+        sphere: cachedBounds?.sphere?.clone() ?? this.computeChunkBounds(startRow, startCol).sphere,
+      },
+      expectedExploredTerrainInstances,
+      biomeEntries,
+    };
+  }
+
+  private async prepareTerrainChunk(
+    startRow: number,
+    startCol: number,
+    rows: number,
+    cols: number,
+  ): Promise<PreparedTerrainChunk> {
+    const cachedChunk = this.createPreparedTerrainChunkFromCache(startRow, startCol);
+    if (cachedChunk) {
+      return cachedChunk;
+    }
+
+    await Promise.all(this.modelLoadPromises);
+
+    return new Promise<PreparedTerrainChunk>((resolve) => {
+      const matrixPool = MatrixPool.getInstance();
+      const totalHexes = rows * cols;
+      matrixPool.ensureCapacity(totalHexes + 512);
+
+      const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
+        None: [],
+        Ocean: [],
+        DeepOcean: [],
+        Beach: [],
+        Scorched: [],
+        Bare: [],
+        Tundra: [],
+        Snow: [],
+        TemperateDesert: [],
+        Shrubland: [],
+        ShrublandAlt: [],
+        Taiga: [],
+        Grassland: [],
+        GrasslandAlt: [],
+        TemperateDeciduousForest: [],
+        TemperateDeciduousForestAlt: [],
+        TemperateRainForest: [],
+        SubtropicalDesert: [],
+        TropicalSeasonalForest: [],
+        TropicalRainForest: [],
+        Outline: [],
+      };
+
+      const halfRows = rows / 2;
+      const halfCols = cols / 2;
+      const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
+      const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
+      const frameBudget = this.hexGridFrameBudgetMs;
+      const tempMatrix = new Matrix4();
+      const tempPosition = new Vector3();
+      const hexRadius = HEX_SIZE;
+      const hexHeight = hexRadius * 2;
+      const hexWidth = Math.sqrt(3) * hexRadius;
+      const vertDist = hexHeight * 0.75;
+      const horizDist = hexWidth;
+      const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
+      let currentIndex = 0;
+      let expectedExploredTerrainInstances = 0;
+      let frameHandle: number | null = null;
+
+      const releaseAllMatrices = () => {
+        Object.values(biomeHexes).forEach((matrices) => {
+          matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
+          matrices.length = 0;
+        });
+      };
+
+      const finalizeSuccess = () => {
+        const biomeEntries = new Map<string, CachedMatrixEntry>();
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          if (matrices.length === 0) {
+            biomeEntries.set(biome, { matrices: null, count: 0, landColors: null });
+            continue;
+          }
+
+          const attribute = InstancedMatrixAttributePool.getInstance().acquire(matrices.length);
+          const targetArray = attribute.array as Float32Array;
+          matrices.forEach((matrix, index) => {
+            targetArray.set(matrix.elements, index * 16);
+          });
+          biomeEntries.set(biome, {
+            matrices: attribute,
+            count: matrices.length,
+            landColors: null,
+          });
+        }
+
+        releaseAllMatrices();
+        if (frameHandle !== null) {
+          cancelAnimationFrame(frameHandle);
+        }
+        resolve({
+          chunkKey: `${startRow},${startCol}`,
+          startRow,
+          startCol,
+          bounds: this.computeChunkBounds(startRow, startCol),
+          expectedExploredTerrainInstances,
+          biomeEntries,
+        });
+      };
+
+      const processCell = (index: number) => {
+        const rowOffset = Math.floor(index / cols) - halfRows;
+        const colOffset = (index % cols) - halfCols;
+
+        const globalRow = chunkCenterRow + rowOffset;
+        const globalCol = chunkCenterCol + colOffset;
+
+        const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
+        const baseX = globalCol * horizDist - rowOffsetValue;
+        const baseZ = globalRow * vertDist;
+        tempPosition.set(baseX, 0, baseZ);
+
+        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+
+        if (isStructure) {
+          return;
+        }
+
+        tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+        tempPosition.y += 0.05;
+
+        const effectivelyExplored = isExplored || this.simulateAllExplored;
+        if (effectivelyExplored) {
+          expectedExploredTerrainInstances += 1;
+          const biome = isExplored
+            ? (isExplored as BiomeType)
+            : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
+          const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
+          tempMatrix.setPosition(tempPosition);
+
+          const pooledMatrix = matrixPool.getMatrix();
+          pooledMatrix.copy(tempMatrix);
+          biomeHexes[biomeVariant].push(pooledMatrix);
+          return;
+        }
+
+        tempPosition.y = 0.01;
+        tempMatrix.setPosition(tempPosition);
+
+        const pooledMatrix = matrixPool.getMatrix();
+        pooledMatrix.copy(tempMatrix);
+        biomeHexes.Outline.push(pooledMatrix);
+      };
+
+      const processFrame = () => {
+        const frameStart = performance.now();
+        let processedThisFrame = 0;
+
+        while (currentIndex < totalHexes) {
+          processCell(currentIndex);
+          currentIndex += 1;
+          processedThisFrame += 1;
+
+          if (currentIndex >= totalHexes) {
+            break;
+          }
+
+          if (processedThisFrame >= minBatch) {
+            const elapsed = performance.now() - frameStart;
+            if (elapsed >= frameBudget || processedThisFrame >= maxBatch) {
+              break;
+            }
+          }
+        }
+
+        if (currentIndex < totalHexes) {
+          frameHandle = requestAnimationFrame(processFrame);
+        } else {
+          finalizeSuccess();
+        }
+      };
+
+      frameHandle = requestAnimationFrame(processFrame);
+    });
+  }
+
+  private cachePreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
+    const chunkKey = preparedTerrain.chunkKey;
+    this.disposeCachedMatrices(chunkKey);
+
+    const cachedChunk = new Map<string, CachedMatrixEntry>();
+    preparedTerrain.biomeEntries.forEach((entry, biome) => {
+      cachedChunk.set(biome, {
+        matrices: entry.matrices,
+        count: entry.count,
+        landColors: entry.landColors ? new Float32Array(entry.landColors) : null,
+      });
+    });
+    cachedChunk.set("__bounds__", {
+      matrices: null,
+      count: 0,
+      box: preparedTerrain.bounds.box.clone(),
+      sphere: preparedTerrain.bounds.sphere.clone(),
+    });
+    cachedChunk.set("__meta__", {
+      matrices: null,
+      count: 0,
+      expectedExploredTerrainInstances: preparedTerrain.expectedExploredTerrainInstances,
+    });
+
+    this.cachedMatrices.set(chunkKey, cachedChunk);
+    this.touchMatrixCache(chunkKey);
+    this.ensureMatrixCacheLimit();
+  }
+
+  private applyPreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
+    this.biomeModels.forEach((hexMesh, biome) => {
+      const entry = preparedTerrain.biomeEntries.get(String(biome));
+      if (!entry) {
+        hexMesh.setCount(0);
+        hexMesh.updateMeshVisibility();
+        return;
+      }
+
+      if (entry.matrices) {
+        hexMesh.setMatricesAndCount(entry.matrices, entry.count);
+      } else {
+        hexMesh.setCount(entry.count);
+      }
+      hexMesh.updateMeshVisibility();
+
+      if (entry.landColors && entry.count > 0) {
+        const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
+        landMeshes.forEach((mesh) => {
+          if (!mesh.instanceColor || (mesh.instanceColor.array as Float32Array).length < entry.count * 3) {
+            mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(mesh.instanceMatrix.count * 3), 3);
+            mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
+          }
+          (mesh.instanceColor.array as Float32Array).set(entry.landColors!);
+          mesh.instanceColor.needsUpdate = true;
+        });
+      }
+    });
+
+    this.cachePreparedTerrainChunk(preparedTerrain);
+    this.computeInteractiveHexes(preparedTerrain.startRow, preparedTerrain.startCol, this.renderChunkSize.width, this.renderChunkSize.height);
+  }
+
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
@@ -3914,6 +4244,7 @@ export default class WorldmapScene extends WarpTravel {
       );
     }
 
+    this.beginStructureHydrationFetch(fetchKey, this.pendingChunkFetchGeneration, minCol, maxCol, minRow, maxRow);
     const fetchPromise = this.executeTileEntitiesFetch(
       fetchKey,
       minCol,
@@ -3933,6 +4264,114 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingChunks.set(fetchKey, ownedFetchPromise);
 
     return ownedFetchPromise;
+  }
+
+  private beginStructureHydrationFetch(
+    fetchKey: string,
+    fetchGeneration: number,
+    minCol: number,
+    maxCol: number,
+    minRow: number,
+    maxRow: number,
+  ): void {
+    this.structureHydrationFetches.set(fetchKey, {
+      fetchGeneration,
+      minCol,
+      maxCol,
+      minRow,
+      maxRow,
+      pendingCount: 0,
+      fetchSettled: false,
+      waiters: [],
+    });
+  }
+
+  private settleStructureHydrationFetch(fetchKey: string, fetchGeneration: number): void {
+    const state = this.structureHydrationFetches.get(fetchKey);
+    if (!state || state.fetchGeneration !== fetchGeneration) {
+      return;
+    }
+
+    state.fetchSettled = true;
+    this.flushStructureHydrationWaiters(fetchKey, state);
+  }
+
+  private flushStructureHydrationWaiters(fetchKey: string, state: StructureHydrationFetchState): void {
+    if (!state.fetchSettled || state.pendingCount > 0) {
+      return;
+    }
+
+    const waiters = [...state.waiters];
+    state.waiters.length = 0;
+    waiters.forEach((resolve) => resolve());
+    this.structureHydrationFetches.set(fetchKey, state);
+  }
+
+  private async waitForStructureHydrationIdle(chunkKey: string): Promise<void> {
+    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const state = this.structureHydrationFetches.get(fetchKey);
+    if (!state) {
+      return;
+    }
+
+    if (state.fetchSettled && state.pendingCount === 0) {
+      await Promise.resolve();
+      const refreshed = this.structureHydrationFetches.get(fetchKey);
+      if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
+        return;
+      }
+    }
+
+    await new Promise<void>((resolve) => {
+      const currentState = this.structureHydrationFetches.get(fetchKey);
+      if (!currentState) {
+        resolve();
+        return;
+      }
+      currentState.waiters.push(resolve);
+      this.flushStructureHydrationWaiters(fetchKey, currentState);
+    });
+
+    await Promise.resolve();
+    const refreshed = this.structureHydrationFetches.get(fetchKey);
+    if (refreshed && (!refreshed.fetchSettled || refreshed.pendingCount > 0)) {
+      await this.waitForStructureHydrationIdle(chunkKey);
+    }
+  }
+
+  private trackStructureHydrationUpdate(
+    update: { hexCoords: HexPosition },
+    work: Promise<void>,
+  ): Promise<void> {
+    const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+    const matchedFetchKeys: string[] = [];
+
+    this.structureHydrationFetches.forEach((state, fetchKey) => {
+      if (
+        normalized.x >= state.minCol &&
+        normalized.x <= state.maxCol &&
+        normalized.y >= state.minRow &&
+        normalized.y <= state.maxRow
+      ) {
+        state.pendingCount += 1;
+        matchedFetchKeys.push(fetchKey);
+      }
+    });
+
+    if (matchedFetchKeys.length === 0) {
+      return work;
+    }
+
+    return work.finally(() => {
+      matchedFetchKeys.forEach((fetchKey) => {
+        const state = this.structureHydrationFetches.get(fetchKey);
+        if (!state) {
+          return;
+        }
+        state.pendingCount = Math.max(0, state.pendingCount - 1);
+        this.flushStructureHydrationWaiters(fetchKey, state);
+      });
+    });
   }
 
   private async executeTileEntitiesFetch(
@@ -3981,6 +4420,7 @@ export default class WorldmapScene extends WarpTravel {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
+      this.settleStructureHydrationFetch(fetchKey, fetchGeneration);
       this.endToriiFetch();
     }
   }
@@ -4651,6 +5091,11 @@ export default class WorldmapScene extends WarpTravel {
     switchPosition?: Vector3,
   ) {
     const chunkSwitchStartedAt = performance.now();
+    const presentationPhaseDurations = {
+      terrainPreparedMs: 0,
+      structureHydrationDrainMs: 0,
+      structureAssetPrewarmMs: 0,
+    };
     // Track memory usage during chunk switch
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
@@ -4719,7 +5164,7 @@ export default class WorldmapScene extends WarpTravel {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
+      const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
       chunkKey,
       startRow,
       startCol,
@@ -4730,8 +5175,30 @@ export default class WorldmapScene extends WarpTravel {
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
       updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
         this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-      updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
-        this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
+      waitForStructureHydrationIdle: async (targetChunkKey) => {
+        const startedAt = performance.now();
+        await this.waitForStructureHydrationIdle(targetChunkKey);
+        presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
+        recordWorldmapRenderDuration(
+          "structureHydrationDrainMs",
+          presentationPhaseDurations.structureHydrationDrainMs,
+        );
+      },
+      prewarmChunkAssets: async (targetChunkKey) => {
+        await this.waitForStructureHydrationIdle(targetChunkKey);
+        const startedAt = performance.now();
+        await this.structureManager.prewarmChunkAssets(targetChunkKey);
+        presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+        recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+      },
+      prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
+        const startedAt = performance.now();
+        const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
+        this.cachePreparedTerrainChunk(preparedChunk);
+        presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
+        recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
+        return preparedChunk;
+      },
       onChunkHydrated: (hydratedChunkKey) => {
         this.hydratedChunkRefreshes.delete(hydratedChunkKey);
       },
@@ -4753,6 +5220,19 @@ export default class WorldmapScene extends WarpTravel {
       startCol,
       force: effectiveForce,
       transitionToken,
+      preparedTerrain,
+      applyPreparedTerrain: (nextPreparedTerrain) => {
+        this.applyPreparedTerrainChunk(nextPreparedTerrain as PreparedTerrainChunk);
+        const commitDurationMs = performance.now() - chunkSwitchStartedAt;
+        recordWorldmapRenderDuration("presentationCommittedMs", commitDurationMs);
+        const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
+        if (readinessDurations.length > 0) {
+          recordWorldmapRenderDuration(
+            "presentationSkewMs",
+            Math.max(...readinessDurations) - Math.min(...readinessDurations),
+          );
+        }
+      },
       setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
       unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
@@ -4800,6 +5280,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {
+    const presentationPhaseDurations = {
+      terrainPreparedMs: 0,
+      structureHydrationDrainMs: 0,
+      structureAssetPrewarmMs: 0,
+    };
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
@@ -4812,7 +5297,8 @@ export default class WorldmapScene extends WarpTravel {
     this.hydratedRefreshSuppressionAreaKeys.add(refreshAreaKey);
 
     try {
-      const { tileFetchSucceeded } = await hydrateWarpTravelChunk({
+      const refreshStartedAt = performance.now();
+      const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
         chunkKey,
         startRow,
         startCol,
@@ -4823,8 +5309,30 @@ export default class WorldmapScene extends WarpTravel {
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-        updateHexagonGrid: (targetStartRow, targetStartCol, height, width) =>
-          this.updateHexagonGrid(targetStartRow, targetStartCol, height, width),
+        waitForStructureHydrationIdle: async (targetChunkKey) => {
+          const startedAt = performance.now();
+          await this.waitForStructureHydrationIdle(targetChunkKey);
+          presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration(
+            "structureHydrationDrainMs",
+            presentationPhaseDurations.structureHydrationDrainMs,
+          );
+        },
+        prewarmChunkAssets: async (targetChunkKey) => {
+          await this.waitForStructureHydrationIdle(targetChunkKey);
+          const startedAt = performance.now();
+          await this.structureManager.prewarmChunkAssets(targetChunkKey);
+          presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+        },
+        prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
+          const startedAt = performance.now();
+          const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
+          this.cachePreparedTerrainChunk(preparedChunk);
+          presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
+          return preparedChunk;
+        },
         onChunkHydrated: (hydratedChunkKey) => {
           this.hydratedChunkRefreshes.delete(hydratedChunkKey);
         },
@@ -4833,6 +5341,17 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      if (preparedTerrain) {
+        this.applyPreparedTerrainChunk(preparedTerrain);
+        recordWorldmapRenderDuration("presentationCommittedMs", performance.now() - refreshStartedAt);
+        const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
+        if (readinessDurations.length > 0) {
+          recordWorldmapRenderDuration(
+            "presentationSkewMs",
+            Math.max(...readinessDurations) - Math.min(...readinessDurations),
+          );
+        }
+      }
       await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
     } finally {
       this.hydratedRefreshSuppressionAreaKeys.delete(refreshAreaKey);

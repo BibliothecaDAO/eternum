@@ -19,6 +19,11 @@ describe("worldmap-render-diagnostics", () => {
     recordWorldmapRenderDuration("updateVisibleChunks", 12.5);
     recordWorldmapRenderDuration("updateVisibleChunks", 7.5);
     recordWorldmapRenderDuration("workerFindPath", 5);
+    recordWorldmapRenderDuration("terrainPreparedMs", 14);
+    recordWorldmapRenderDuration("structureHydrationDrainMs", 9);
+    recordWorldmapRenderDuration("structureAssetPrewarmMs", 4);
+    recordWorldmapRenderDuration("presentationCommittedMs", 23);
+    recordWorldmapRenderDuration("presentationSkewMs", 0.5);
     setWorldmapRenderGauge("activePaths", 17);
     setWorldmapRenderGauge("visibleArmies", 301);
     incrementWorldmapRenderUploadBytes("cachedChunkReplay", 256);
@@ -41,6 +46,11 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations.updateVisibleChunks.maxMs).toBeCloseTo(12.5);
     expect(snapshot.durations.updateVisibleChunks.samples).toEqual([12.5, 7.5]);
     expect(snapshot.durations.workerFindPath.count).toBe(1);
+    expect(snapshot.durations.terrainPreparedMs.samples).toEqual([14]);
+    expect(snapshot.durations.structureHydrationDrainMs.samples).toEqual([9]);
+    expect(snapshot.durations.structureAssetPrewarmMs.samples).toEqual([4]);
+    expect(snapshot.durations.presentationCommittedMs.samples).toEqual([23]);
+    expect(snapshot.durations.presentationSkewMs.samples).toEqual([0.5]);
     expect(snapshot.gauges.activePaths).toBe(17);
     expect(snapshot.gauges.visibleArmies).toBe(301);
     expect(snapshot.uploadBytes.cachedChunkReplay).toBe(256);
