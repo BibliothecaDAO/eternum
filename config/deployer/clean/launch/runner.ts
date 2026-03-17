@@ -13,8 +13,8 @@ import {
   DEFAULT_VERSION,
   DEFAULT_VRF_PROVIDER_ADDRESS,
 } from "../constants";
+import { buildDefaultBanks, grantVillagePassRoleToRealmInternalSystems } from "../eternum";
 import { resolveDeploymentEnvironment } from "../environment";
-import { buildDefaultBanks } from "../factory/banks";
 import {
   isZeroAddress,
   patchManifestWithFactory,
@@ -22,11 +22,8 @@ import {
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
 import { createIndexer } from "../indexing/indexer";
-import { createProgressReporter, formatDuration } from "../progress";
-import { grantVillagePassRoleToRealmInternalSystems } from "../role-grants/village-pass-role";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
-import { parseStartTime, toIsoUtc } from "../time";
 import type {
   ConfigStepHooks,
   DeploymentEnvironment,
@@ -36,6 +33,8 @@ import type {
   LaunchGameSummary,
 } from "../types";
 import { writeLaunchSummary } from "./io";
+import { createProgressReporter, formatDuration } from "./progress";
+import { parseStartTime, toIsoUtc } from "./time";
 
 type StarknetAccountOptions = ConstructorParameters<typeof Account>[0];
 type ProviderSigner = Parameters<EternumProvider["create_banks"]>[0]["signer"];

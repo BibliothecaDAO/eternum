@@ -6,13 +6,13 @@ import {
   resolveFactoryWorldProfile,
   resolveRealmInternalSystemsAddress,
 } from "../factory/discovery";
-import type { GameManifestLike } from "../shared/manifest-types";
-import { ensureRepoDirectory, loadRepoJsonFile, writeRepoJsonFile, writeRepoTextFile } from "../shared/repo";
-import { MINTER_ROLE } from "../shared/roles";
-import { toSafeSlug } from "../shared/slug";
-import { resolveCommonAddressesPath } from "../shared/addresses";
+import { grantRole, type GrantRoleCall } from "../role-grants/grant-role";
 import { resolveEternumNetwork } from "../shared/chains";
-import { grantRole, type GrantRoleCall } from "./grant-role";
+import type { GameManifestLike } from "../shared/manifest-types";
+import { resolveCommonAddressesPath } from "../shared/addresses";
+import { ensureRepoDirectory, loadRepoJsonFile, writeRepoJsonFile, writeRepoTextFile } from "../shared/repo";
+import { toSafeSlug } from "../shared/slug";
+import { MINTER_ROLE } from "./roles";
 
 export interface GrantVillagePassMinterRoleRequest {
   chain: string;
@@ -106,7 +106,7 @@ function writeVillagePassRoleArtifacts(params: {
   call: GrantRoleCall;
   summary: Omit<GrantVillagePassMinterRoleSummary, "outputPath">;
 }): string {
-  const outputDir = ensureRepoDirectory(path.join(".context/village-pass-minter-role", params.chain));
+  ensureRepoDirectory(path.join(".context/village-pass-minter-role", params.chain));
   const baseFilename = toSafeSlug(params.gameName);
 
   const outputPath = writeRepoJsonFile(

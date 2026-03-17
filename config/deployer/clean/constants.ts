@@ -35,10 +35,6 @@ export function resolveDefaultRpcUrl(chain: string): string {
   return rpcUrl;
 }
 
-export const BANK_COUNT = 6;
-export const BANK_STEPS_FROM_CENTER = 15 * 21;
-export const BANK_NAME_PREFIX = "Central Bank";
-
 const SLOT_DEFAULTS = {
   factoryAddress: DEFAULT_SLOT_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_SLOT_RPC_URL,

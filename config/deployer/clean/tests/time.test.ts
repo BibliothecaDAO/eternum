@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseStartTime } from "../time";
+import { parseStartTime } from "../launch/time";
 
 describe("parseStartTime", () => {
   test("parses unix seconds", () => {
