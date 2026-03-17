@@ -511,6 +511,12 @@ class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
 }
 
 export function createWorldFxBackend(options: CreateWorldFxBackendOptions): WorldFxBackend {
+  // Prefer the billboard mesh path whenever it is available so travel/explore
+  // icon FX stay visually aligned across legacy WebGL and WebGPU renderers.
+  if (options.capabilities.supportsBillboardMeshFx) {
+    return new WebGpuBillboardWorldFxBackend(options.scene, options.capabilities);
+  }
+
   if (options.capabilities.supportsSpriteSceneFx) {
     return new LegacySpriteWorldFxBackend(options.scene, options.capabilities);
   }

@@ -137,7 +137,7 @@ export class HighlightHexManager {
       opacity: config.opacity,
       transparent: true,
       depthWrite: false,
-      toneMapped: config.toneMapped ?? true,
+      toneMapped: config.toneMapped ?? false,
       vertexColors: true,
     });
     hexGeometryDebugger.trackMaterialClone("HighlightHexManager.createLayer");

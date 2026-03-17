@@ -62,7 +62,7 @@ beforeEach(() => {
 });
 
 describe("createWorldFxBackend", () => {
-  it("selects the legacy sprite backend when sprite scene fx are supported", () => {
+  it("prefers the billboard backend in legacy webgl so icon fx match the webgpu lane", () => {
     const backend = createWorldFxBackend({
       capabilities: resolveRendererFxCapabilities({
         activeMode: "legacy-webgl",
@@ -70,7 +70,7 @@ describe("createWorldFxBackend", () => {
       scene: new THREE.Scene(),
     });
 
-    expect(backend.kind).toBe("legacy-sprite");
+    expect(backend.kind).toBe("webgpu-billboard");
   });
 
   it("selects the webgpu billboard backend when sprite scene fx are unavailable", () => {
@@ -143,8 +143,8 @@ describe("webgpu billboard sizing", () => {
   });
 });
 
-describe("legacy sprite sizing", () => {
-  it("keeps webgl sprite fx upright by flipping sprite scale on the y axis", () => {
+describe("legacy webgl billboard sizing", () => {
+  it("keeps legacy webgl icon fx on the billboard mesh path", () => {
     const scene = new THREE.Scene();
     const backend = createWorldFxBackend({
       capabilities: resolveRendererFxCapabilities({
@@ -170,18 +170,19 @@ describe("legacy sprite sizing", () => {
 
     backend.update(0.016);
 
-    const sprite = findFirstSprite(scene);
-    expect(sprite).toBeDefined();
-    expect(sprite?.scale.x).toBeCloseTo(2.5);
-    expect(sprite?.scale.y).toBeCloseTo(-1.25);
+    const mesh = findFirstMesh(scene);
+    expect(mesh).toBeDefined();
+    expect(findFirstSprite(scene)).toBeUndefined();
+    expect(mesh?.scale.x).toBeCloseTo(2.5);
+    expect(mesh?.scale.y).toBeCloseTo(1.25);
   });
 });
 
 describe.each([
   {
     activeMode: "legacy-webgl" as const,
-    expectedKind: "legacy-sprite",
-    expectedObjectType: "Sprite",
+    expectedKind: "webgpu-billboard",
+    expectedObjectType: "Mesh",
   },
   {
     activeMode: "webgpu" as const,
