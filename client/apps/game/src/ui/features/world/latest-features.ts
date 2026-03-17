@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-17",
+    title: "Spire and Mine Tile Actions",
+    description:
+      "Selected tile interactions now handle Spires with a direct Ethereal Layer travel action, show Holy Site devotion placeholders, and keep mine naming consistent across Blitz and Eternum views.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-17",
     title: "Eternum Settlement Card Stats",
     description:
       "Eternum game cards now show settled-player counts plus settled realm and village totals, so card stats stay meaningful for worlds that do not use player registration.",

@@ -11,6 +11,7 @@ export enum StructureType {
   Village = 5,
   HolySite = 6,
   Camp = 7,
+  BitcoinMine = 8,
 }
 
 export const EternumStructureTypeToNameMapping: Record<StructureType, string> = {
@@ -21,6 +22,7 @@ export const EternumStructureTypeToNameMapping: Record<StructureType, string> = 
   [StructureType.Village]: "Village",
   [StructureType.HolySite]: "Holy Site",
   [StructureType.Camp]: "Camp",
+  [StructureType.BitcoinMine]: "Bitcoin Mine",
 };
 
 export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
@@ -31,6 +33,7 @@ export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Village]: "Village",
   [StructureType.HolySite]: "Holy Site",
   [StructureType.Camp]: "Camp",
+  [StructureType.BitcoinMine]: "Bitcoin Mine",
 };
 
 export enum BuildingType {

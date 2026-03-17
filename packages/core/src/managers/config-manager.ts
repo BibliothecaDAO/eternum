@@ -672,6 +672,7 @@ export class ClientConfigManager {
       [StructureType.Bank]: 4,
       [StructureType.HolySite]: 1,
       [StructureType.Camp]: 1,
+      [StructureType.BitcoinMine]: 1,
     };
   }
 

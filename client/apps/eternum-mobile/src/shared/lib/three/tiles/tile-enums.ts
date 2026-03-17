@@ -69,6 +69,9 @@ export const structureTypeToBuildingTileIndex: Record<StructureType, BuildingTil
   [StructureType.FragmentMine]: BuildingTileIndex.EssenceRift,
   [StructureType.Hyperstructure]: BuildingTileIndex.Hyperstructure,
   [StructureType.Village]: BuildingTileIndex.Camp,
+  [StructureType.HolySite]: BuildingTileIndex.Camp,
+  [StructureType.Camp]: BuildingTileIndex.Camp,
+  [StructureType.BitcoinMine]: BuildingTileIndex.EssenceRift,
 };
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
@@ -77,6 +80,9 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
+  [StructureType.HolySite]: BuildingType.ResourceLabor,
+  [StructureType.Camp]: BuildingType.ResourceLabor,
+  [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
 };
 
 export function getStructureTileIndex(structureType: StructureType, level?: number): BuildingTileIndex {
