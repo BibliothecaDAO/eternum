@@ -219,6 +219,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
 class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
   private readonly material: THREE.SpriteMaterial;
   private readonly sprite: THREE.Sprite;
+  private readonly baseScale = new THREE.Vector3();
 
   constructor(scene: THREE.Scene, spec: IconFxSpec, labelEnabled: boolean) {
     super(scene, spec, labelEnabled);
@@ -231,7 +232,7 @@ class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
     });
 
     this.sprite = new THREE.Sprite(this.material);
-    this.sprite.scale.set(spec.size, spec.size, spec.size);
+    this.setScale(spec.size, spec.size, spec.size);
     this.group.add(this.sprite);
   }
 
@@ -244,7 +245,8 @@ class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
   }
 
   public setScale(x: number, y: number, z: number): void {
-    this.sprite.scale.set(x, y, z);
+    this.baseScale.set(x, y, z);
+    this.sprite.scale.set(this.baseScale.x, -this.baseScale.y, this.baseScale.z);
   }
 
   protected disposeVisuals(): void {

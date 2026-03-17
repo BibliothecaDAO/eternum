@@ -55,6 +55,8 @@ import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifec
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
+import { resolveArmyPointLabelSize } from "./army-point-label-policy";
+import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import { resolveMovementPath } from "./army-move-path";
@@ -70,6 +72,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
+import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -2520,14 +2523,14 @@ export class ArmyManager {
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.colorSpace = THREE.SRGBColorSpace;
-          texture.flipY = false;
+          texture.flipY = resolvePointLabelTextureFlipY(snapshotRendererDiagnostics().activeMode);
 
           loadedTextures[key as keyof typeof texturePaths] = texture;
           loadedCount++;
 
           // When all textures are loaded, create the renderers
           if (loadedCount === totalTextures) {
-            const scaledPointSize = 5 * 0.5;
+            const scaledPointSize = resolveArmyPointLabelSize();
             // Use player texture for agent as fallback
             this.pointsRenderers = {
               player: new PointsLabelRenderer(

@@ -14,6 +14,8 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
+import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import { resolveChestPointLabelSize } from "./chest-point-label-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import {
   isCommittedManagerChunk,
@@ -22,6 +24,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
+import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 
 const MAX_INSTANCES = 1000;
 
@@ -127,14 +130,14 @@ export class ChestManager {
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.flipY = false; // Prevent vertical flip for point sprites
+        texture.flipY = resolvePointLabelTextureFlipY(snapshotRendererDiagnostics().activeMode);
 
         // Create points renderer with loaded texture
         this.pointsRenderer = new PointsLabelRenderer(
           this.scene,
           texture,
           MAX_INSTANCES, // Max points same as max chest instances
-          5, // Point size in pixels (increased from 32)
+          resolveChestPointLabelSize(),
           0, // Hover scale multiplier
           1.3, // Hover brightness multiplier
           true, // sizeAttenuation: false = fixed screen size, true = scales with distance

@@ -31,6 +31,16 @@ function findFirstMesh(root: THREE.Object3D): THREE.Mesh | undefined {
   return mesh;
 }
 
+function findFirstSprite(root: THREE.Object3D): THREE.Sprite | undefined {
+  let sprite: THREE.Sprite | undefined;
+  root.traverse((node) => {
+    if (!sprite && node instanceof THREE.Sprite) {
+      sprite = node;
+    }
+  });
+  return sprite;
+}
+
 beforeEach(() => {
   class MockElement {}
   const ownerDocument = { defaultView: { Element: MockElement, HTMLElement: MockElement } };
@@ -130,6 +140,40 @@ describe("webgpu billboard sizing", () => {
     expect(mesh).toBeDefined();
     expect(mesh?.scale.x).toBeCloseTo(2.5);
     expect(mesh?.scale.y).toBeCloseTo(1.25);
+  });
+});
+
+describe("legacy sprite sizing", () => {
+  it("keeps webgl sprite fx upright by flipping sprite scale on the y axis", () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: resolveRendererFxCapabilities({
+        activeMode: "legacy-webgl",
+      }),
+      scene,
+    });
+
+    backend.spawnIconFx({
+      animate: (fx) => {
+        fx.setOpacity(1);
+        fx.setScale(2.5, 1.25, 1);
+        return true;
+      },
+      isInfinite: true,
+      size: 1.25,
+      texture: createTexture(),
+      type: "travel",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+
+    backend.update(0.016);
+
+    const sprite = findFirstSprite(scene);
+    expect(sprite).toBeDefined();
+    expect(sprite?.scale.x).toBeCloseTo(2.5);
+    expect(sprite?.scale.y).toBeCloseTo(-1.25);
   });
 });
 

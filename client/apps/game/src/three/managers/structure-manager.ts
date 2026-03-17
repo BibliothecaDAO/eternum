@@ -39,6 +39,7 @@ import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
+import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import {
   createCoalescedAsyncUpdateRunner,
@@ -48,6 +49,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
+import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import {
   resolveVisibleStructureUpdateMode,
@@ -335,7 +337,7 @@ export class StructureManager {
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.colorSpace = THREE.SRGBColorSpace;
-          texture.flipY = false;
+          texture.flipY = resolvePointLabelTextureFlipY(snapshotRendererDiagnostics().activeMode);
 
           loadedTextures[key as keyof typeof texturePaths] = texture;
           loadedCount++;
