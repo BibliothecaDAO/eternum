@@ -113,4 +113,45 @@ describe("worldmap-render-diagnostics", () => {
     expect(summary.zoomTransitions.completed).toBe(2);
     expect(summary.zoomTransitions.cancelled).toBe(0);
   });
+
+  it("tracks terrain visible commit count via dedicated counter", () => {
+    // Stage 0: new counter type for terrain commits to the visible scene.
+    // This counter is critical for verifying that biome deltas actually
+    // result in a terrain commit rather than being silently dropped.
+    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
+    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
+    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    // The counter type must be added to WorldmapRenderCounter union
+    expect(snapshot.counters).toHaveProperty("terrainVisibleCommits", 3);
+  });
+
+  it("tracks terrain commit with refresh reason breakdown", () => {
+    // Stage 0: each terrain commit should be attributable to a refresh reason.
+    // This enables diagnosing whether duplicate tile biome deltas actually
+    // trigger terrain commits.
+    incrementWorldmapForceRefreshReason("duplicate_tile");
+    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
+
+    incrementWorldmapForceRefreshReason("hydrated_chunk");
+    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.counters).toHaveProperty("terrainVisibleCommits", 2);
+    expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(1);
+    expect(snapshot.forceRefreshReasons.hydrated_chunk).toBe(1);
+  });
+
+  it("tracks duplicate tile authoritative state updates as a separate counter", () => {
+    // Stage 0: when a biome delta is written to authoritative state BEFORE
+    // reconcile scheduling, we need a counter to verify it happened.
+    incrementWorldmapRenderCounter("duplicateTileAuthoritativeUpdates" as any);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.counters).toHaveProperty("duplicateTileAuthoritativeUpdates", 1);
+  });
 });

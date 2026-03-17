@@ -165,6 +165,7 @@ import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
 } from "./worldmap-chunk-bounds";
+import { resolveTerrainPresentationWorldBounds } from "./worldmap-terrain-bounds-policy";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import { prunePrefetchQueueByFetchKey, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
@@ -207,6 +208,7 @@ import { drainWarpTravelPrefetchQueue } from "./warp-travel-prefetch-drain";
 import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
+import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
@@ -2977,8 +2979,28 @@ export default class WorldmapScene extends WarpTravel {
     const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
 
     if (duplicateTilePlan.shouldInvalidateCaches) {
+      // Critical fix (Stage 0): persist biome delta to authoritative state BEFORE
+      // early-returning for reconcile scheduling. Without this, incoming biome
+      // changes on already-known tiles are silently dropped from exploredTiles.
+      if (duplicateTilePlan.shouldUpdateAuthoritativeState) {
+        if (!this.exploredTiles.has(col)) {
+          this.exploredTiles.set(col, new Map());
+        }
+        this.exploredTiles.get(col)!.set(row, biome);
+        gameWorkerManager.updateExploredTile(col, row, biome);
+        incrementWorldmapRenderCounter("duplicateTileAuthoritativeUpdates");
+      }
+
       this.invalidateAllChunkCachesContainingHex(col, row);
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
+
+      if (duplicateTilePlan.reconcileMode === "invalidate_only") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_mode_invalidate_only");
+      } else if (duplicateTilePlan.reconcileMode === "local_terrain_patch") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_mode_local_reconcile");
+      } else if (duplicateTilePlan.reconcileMode === "atomic_chunk_refresh") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_mode_atomic_refresh");
+      }
 
       if (duplicateTilePlan.refreshStrategy !== "none") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
@@ -4655,10 +4677,6 @@ export default class WorldmapScene extends WarpTravel {
         return false;
       }
 
-      const bounds = cachedMatrices.get("__bounds__");
-      if (bounds?.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
-        return false;
-      }
       this.touchMatrixCache(chunkKey);
       for (const [biome, entry] of cachedMatrices) {
         if (biome === "__bounds__" || biome === "__meta__") {
@@ -4698,27 +4716,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private computeChunkBounds(startRow: number, startCol: number) {
-    const { minCol, maxCol, minRow, maxRow } = getRenderBounds(
+    return resolveTerrainPresentationWorldBounds({
       startRow,
       startCol,
-      this.renderChunkSize,
-      this.chunkSize,
-    );
-    const corners = [
-      getWorldPositionForHex({ col: minCol, row: minRow }),
-      getWorldPositionForHex({ col: minCol, row: maxRow }),
-      getWorldPositionForHex({ col: maxCol, row: minRow }),
-      getWorldPositionForHex({ col: maxCol, row: maxRow }),
-    ];
-
-    const box = new Box3().setFromPoints(corners);
-    box.min.y = -1;
-    box.max.y = 5;
-
-    const sphere = new Sphere();
-    box.getBoundingSphere(sphere);
-
-    return { box, sphere };
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+    });
   }
 
   private combineChunkBounds(
@@ -5341,9 +5344,25 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      if (preparedTerrain) {
+      // Verify the refresh is still valid before committing terrain
+      const commitDecision = resolveSameChunkRefreshCommit({
+        refreshToken: transitionToken,
+        currentRefreshToken: this.chunkTransitionToken,
+        currentChunk: this.currentChunk,
+        targetChunk: chunkKey,
+        preparedTerrain,
+      });
+
+      if (commitDecision.shouldDropAsStale) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "stale_terrain_refresh_dropped");
+        return;
+      }
+
+      if (commitDecision.shouldCommit && preparedTerrain) {
         this.applyPreparedTerrainChunk(preparedTerrain);
         recordWorldmapRenderDuration("presentationCommittedMs", performance.now() - refreshStartedAt);
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
+        incrementWorldmapRenderCounter("terrainVisibleCommits");
         const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
         if (readinessDurations.length > 0) {
           recordWorldmapRenderDuration(

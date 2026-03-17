@@ -26,7 +26,9 @@ export type WorldmapRenderCounter =
   | "updateVisibleChunksCalls"
   | "zoomTransitionsStarted"
   | "zoomTransitionsCompleted"
-  | "zoomTransitionsCancelled";
+  | "zoomTransitionsCancelled"
+  | "terrainVisibleCommits"
+  | "duplicateTileAuthoritativeUpdates";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -107,6 +109,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     zoomTransitionsStarted: 0,
     zoomTransitionsCompleted: 0,
     zoomTransitionsCancelled: 0,
+    terrainVisibleCommits: 0,
+    duplicateTileAuthoritativeUpdates: 0,
   },
   forceRefreshReasons: {
     default: 0,

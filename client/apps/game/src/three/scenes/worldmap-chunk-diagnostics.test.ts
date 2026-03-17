@@ -123,3 +123,75 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.switchDurationMsSamples[511]).toBe(600);
   });
 });
+
+describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh reason events", () => {
+  it("records terrain_visible_commit events", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    recordChunkDiagnosticsEvent(diagnostics, "terrain_visible_commit" as WorldmapChunkDiagnosticsEvent);
+    recordChunkDiagnosticsEvent(diagnostics, "terrain_visible_commit" as WorldmapChunkDiagnosticsEvent);
+
+    // Stage 0: new counter field for tracking terrain commits to visible scene
+    expect(diagnostics).toHaveProperty("terrainVisibleCommit", 2);
+  });
+
+  it("records refresh_reason breakdown events", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    const refreshReasonEvents = [
+      "refresh_reason_default",
+      "refresh_reason_hydrated_chunk",
+      "refresh_reason_duplicate_tile",
+    ] as WorldmapChunkDiagnosticsEvent[];
+
+    refreshReasonEvents.forEach((event) => recordChunkDiagnosticsEvent(diagnostics, event));
+    recordChunkDiagnosticsEvent(diagnostics, "refresh_reason_duplicate_tile" as WorldmapChunkDiagnosticsEvent);
+
+    // Stage 0: each refresh reason gets its own counter
+    expect(diagnostics).toHaveProperty("refreshReasonDefault", 1);
+    expect(diagnostics).toHaveProperty("refreshReasonHydratedChunk", 1);
+    expect(diagnostics).toHaveProperty("refreshReasonDuplicateTile", 2);
+  });
+
+  it("records duplicate tile reconcile mode breakdown events", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    recordChunkDiagnosticsEvent(
+      diagnostics,
+      "duplicate_tile_reconcile_mode_invalidate_only" as WorldmapChunkDiagnosticsEvent,
+    );
+    recordChunkDiagnosticsEvent(
+      diagnostics,
+      "duplicate_tile_reconcile_mode_local_reconcile" as WorldmapChunkDiagnosticsEvent,
+    );
+    recordChunkDiagnosticsEvent(
+      diagnostics,
+      "duplicate_tile_reconcile_mode_atomic_refresh" as WorldmapChunkDiagnosticsEvent,
+    );
+
+    // Stage 0: per-mode counters for duplicate tile reconciliation
+    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeInvalidateOnly", 1);
+    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeLocalReconcile", 1);
+    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeAtomicRefresh", 1);
+  });
+
+  it("records stale_terrain_refresh_dropped events", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    recordChunkDiagnosticsEvent(diagnostics, "stale_terrain_refresh_dropped" as WorldmapChunkDiagnosticsEvent);
+    recordChunkDiagnosticsEvent(diagnostics, "stale_terrain_refresh_dropped" as WorldmapChunkDiagnosticsEvent);
+    recordChunkDiagnosticsEvent(diagnostics, "stale_terrain_refresh_dropped" as WorldmapChunkDiagnosticsEvent);
+
+    // Stage 0: counter for stale terrain refreshes that were dropped
+    expect(diagnostics).toHaveProperty("staleTerrainRefreshDropped", 3);
+  });
+
+  it("records terrain_bounds_recovery events", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    recordChunkDiagnosticsEvent(diagnostics, "terrain_bounds_recovery" as WorldmapChunkDiagnosticsEvent);
+
+    // Stage 0: counter for terrain bounds recovery operations
+    expect(diagnostics).toHaveProperty("terrainBoundsRecovery", 1);
+  });
+});

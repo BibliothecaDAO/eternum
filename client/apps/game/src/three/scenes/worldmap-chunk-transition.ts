@@ -102,8 +102,12 @@ type DuplicateTileRefreshStrategy = "none" | "deferred" | "immediate";
 
 interface DuplicateTileReconcilePlan {
   shouldInvalidateCaches: boolean;
+  shouldUpdateAuthoritativeState: boolean;
   refreshStrategy: DuplicateTileRefreshStrategy;
+  reconcileMode: DuplicateTileReconcileMode;
 }
+
+type DuplicateTileReconcileMode = "none" | "invalidate_only" | "local_terrain_patch" | "atomic_chunk_refresh";
 
 type DuplicateTileUpdateMode = "none" | "invalidate_only" | "invalidate_and_refresh";
 
@@ -594,6 +598,8 @@ export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRef
     return false;
   }
 
+  // If the duplicate is currently visible, the runtime must converge through
+  // a shared refresh path until it can prove the tile is already present.
   return input.isVisibleInCurrentChunk;
 }
 
@@ -646,24 +652,35 @@ export function resolveDuplicateTileUpdateActions(
 export function resolveDuplicateTileReconcilePlan(
   input: DuplicateTileRefreshDecisionInput,
 ): DuplicateTileReconcilePlan {
+  const hasBiomeDelta = input.hasBiomeDelta === true;
   const actions = resolveDuplicateTileUpdateActions(input);
   if (!actions.shouldInvalidateCaches) {
     return {
       shouldInvalidateCaches: false,
+      shouldUpdateAuthoritativeState: false,
       refreshStrategy: "none",
+      reconcileMode: "none",
     };
   }
 
   if (!actions.shouldRequestRefresh) {
+    // Visible same-biome duplicates need a deferred refresh because the
+    // early-return in updateExploredHex skips the individual mesh add.
+    // Without this, water/ocean tiles in chunk overlap zones stay invisible.
+    const needsDeferredRefresh = input.isVisibleInCurrentChunk || (hasBiomeDelta && !input.isVisibleInCurrentChunk);
     return {
       shouldInvalidateCaches: true,
-      refreshStrategy: "none",
+      shouldUpdateAuthoritativeState: hasBiomeDelta,
+      refreshStrategy: needsDeferredRefresh ? "deferred" : "none",
+      reconcileMode: "invalidate_only",
     };
   }
 
   return {
     shouldInvalidateCaches: true,
+    shouldUpdateAuthoritativeState: hasBiomeDelta,
     refreshStrategy: shouldRunImmediateDuplicateTileRefresh(input) ? "immediate" : "deferred",
+    reconcileMode: "atomic_chunk_refresh",
   };
 }
 
