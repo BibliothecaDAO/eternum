@@ -75,6 +75,7 @@ export enum TileOccupier {
   //
   HolySite = 36,
   Camp = 37,
+  BitcoinMine = 38,
 }
 
 /**

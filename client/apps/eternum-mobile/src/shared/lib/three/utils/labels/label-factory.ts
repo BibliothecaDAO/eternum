@@ -19,17 +19,22 @@ import { LabelData, LabelTypeDefinition } from "./label-types";
 const STRUCTURE_ICONS = (isBlitz: boolean) => ({
   STRUCTURES: {
     [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Camp]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+    [StructureType.HolySite]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+    [StructureType.BitcoinMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Camp]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
   ALLY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Camp]: "/images/labels/allies_village.png",
     [StructureType.Realm]: "/images/labels/allies_realm.png",
   } as Record<StructureType, string>,
 });

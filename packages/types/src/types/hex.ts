@@ -188,6 +188,9 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
     tileOccupier === TileOccupier.RealmWonderLevel4 ||
     tileOccupier === TileOccupier.FragmentMine ||
     tileOccupier === TileOccupier.Village ||
-    tileOccupier === TileOccupier.Bank
+    tileOccupier === TileOccupier.Bank ||
+    tileOccupier === TileOccupier.HolySite ||
+    tileOccupier === TileOccupier.Camp ||
+    tileOccupier === TileOccupier.BitcoinMine
   );
 };

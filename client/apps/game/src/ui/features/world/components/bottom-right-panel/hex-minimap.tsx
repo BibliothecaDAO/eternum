@@ -113,6 +113,7 @@ const getBiomeColor = (biomeId?: number) => {
 const getOccupierColor = (tile: MinimapTile) => {
   if (!tile.occupier_id) return null;
   const type = tile.occupier_type ?? 0;
+  if (type === TileOccupier.Spire) return "#67e8f9";
   const isStructure = tile.occupier_is_structure || isTileOccupierStructure(type);
   return isStructure ? "#22d3ee" : "#f97316";
 };
@@ -447,10 +448,12 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
         switch (info.type) {
           case StructureType.FragmentMine:
+          case StructureType.BitcoinMine:
             return {
               iconSrc: mode.assets.labels.fragmentMine,
             } satisfies TileMarker;
           case StructureType.Village:
+          case StructureType.Camp:
             return {
               iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
                 ? LABEL_ICONS.villageMine
