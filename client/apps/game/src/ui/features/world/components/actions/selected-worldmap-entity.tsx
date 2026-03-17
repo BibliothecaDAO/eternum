@@ -68,6 +68,9 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const normalizedSelectedHex = useMemo(() => {
     return new Position({ x: selectedHex.col, y: selectedHex.row }).getNormalized();
   }, [selectedHex.col, selectedHex.row]);
+  const handleTravelToEtherealLayer = useCallback(() => {
+    handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
+  }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
 
   const renderUnexploredMessage = () => (
     <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
@@ -94,10 +97,6 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
 
   const occupierEntityId = tile.occupier_id;
-  const handleTravelToEtherealLayer = useCallback(() => {
-    handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
-  }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
-
   const sharedDetailProps = {
     compact: true,
     layoutVariant: "banner",
