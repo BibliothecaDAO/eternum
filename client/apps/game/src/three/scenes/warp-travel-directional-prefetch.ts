@@ -53,7 +53,7 @@ export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTrave
   const { row: forwardRow, col: forwardCol } = parseChunkKey(input.anchor.forwardChunkKey);
   const presentationChunkKeysToPrewarm: string[] = [];
 
-  for (let forwardStride = 0; forwardStride <= Math.min(1, input.forwardDepthStrides); forwardStride += 1) {
+  for (let forwardStride = 0; forwardStride <= input.forwardDepthStrides; forwardStride += 1) {
     const row =
       input.anchor.movementAxis === "z"
         ? forwardRow + forwardStride * input.anchor.movementSign * input.chunkSize
