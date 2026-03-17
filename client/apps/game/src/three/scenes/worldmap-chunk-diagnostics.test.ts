@@ -142,6 +142,7 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
       "refresh_reason_default",
       "refresh_reason_hydrated_chunk",
       "refresh_reason_duplicate_tile",
+      "refresh_reason_tile_overlap_repair" as WorldmapChunkDiagnosticsEvent,
     ] as WorldmapChunkDiagnosticsEvent[];
 
     refreshReasonEvents.forEach((event) => recordChunkDiagnosticsEvent(diagnostics, event));
@@ -151,6 +152,7 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
     expect(diagnostics).toHaveProperty("refreshReasonDefault", 1);
     expect(diagnostics).toHaveProperty("refreshReasonHydratedChunk", 1);
     expect(diagnostics).toHaveProperty("refreshReasonDuplicateTile", 2);
+    expect(diagnostics).toHaveProperty("refreshReasonTileOverlapRepair", 1);
   });
 
   it("records duplicate tile reconcile mode breakdown events", () => {
@@ -193,5 +195,16 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
 
     // Stage 0: counter for terrain bounds recovery operations
     expect(diagnostics).toHaveProperty("terrainBoundsRecovery", 1);
+  });
+
+  it("records tile hydration drain completion and cache fingerprint reject events", () => {
+    const diagnostics = createWorldmapChunkDiagnostics();
+
+    recordChunkDiagnosticsEvent(diagnostics, "tile_hydration_drain_completed" as WorldmapChunkDiagnosticsEvent);
+    recordChunkDiagnosticsEvent(diagnostics, "cache_reject_fingerprint" as WorldmapChunkDiagnosticsEvent);
+    recordChunkDiagnosticsEvent(diagnostics, "cache_reject_fingerprint" as WorldmapChunkDiagnosticsEvent);
+
+    expect(diagnostics).toHaveProperty("tileHydrationDrainCompleted", 1);
+    expect(diagnostics).toHaveProperty("cacheRejectFingerprint", 2);
   });
 });

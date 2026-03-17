@@ -21,6 +21,7 @@ describe("worldmap hydrated refresh regression", () => {
   it("routes hydrated refreshes through the chunk presentation readiness gate", () => {
     const source = readWorldmapSource();
 
+    expect(source).toMatch(/waitForTileHydrationIdle/);
     expect(source).toMatch(/waitForStructureHydrationIdle/);
     expect(source).toMatch(/prewarmChunkAssets/);
     expect(source).toMatch(/prepareTerrainChunk/);

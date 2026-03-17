@@ -11,6 +11,11 @@ interface CachedExploredTerrainSnapshotInput {
   minExpectedExploredInstances: number;
 }
 
+interface CachedTerrainFingerprintInput {
+  cachedTerrainFingerprint?: string | null;
+  currentTerrainFingerprint?: string | null;
+}
+
 export function shouldRejectCachedTerrainSnapshot(input: CachedTerrainSnapshotInput): boolean {
   const totalCachedTerrainInstances = Math.max(0, Math.floor(input.totalCachedTerrainInstances));
   const renderHexCapacity = Math.max(1, Math.floor(input.renderHexCapacity));
@@ -32,4 +37,15 @@ export function shouldRejectCachedExploredTerrainSnapshot(input: CachedExploredT
   const minRetentionFraction = Math.min(1, Math.max(0, input.minRetentionFraction));
   const minRetainedExploredInstances = Math.ceil(expectedExploredTerrainInstances * minRetentionFraction);
   return cachedExploredTerrainInstances < minRetainedExploredInstances;
+}
+
+export function shouldRejectCachedTerrainFingerprintMismatch(input: CachedTerrainFingerprintInput): boolean {
+  const cachedTerrainFingerprint = input.cachedTerrainFingerprint?.trim() ?? "";
+  const currentTerrainFingerprint = input.currentTerrainFingerprint?.trim() ?? "";
+
+  if (!cachedTerrainFingerprint || !currentTerrainFingerprint) {
+    return false;
+  }
+
+  return cachedTerrainFingerprint !== currentTerrainFingerprint;
 }

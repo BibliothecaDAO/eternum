@@ -20,6 +20,7 @@ describe("worldmap-render-diagnostics", () => {
     recordWorldmapRenderDuration("updateVisibleChunks", 7.5);
     recordWorldmapRenderDuration("workerFindPath", 5);
     recordWorldmapRenderDuration("terrainPreparedMs", 14);
+    recordWorldmapRenderDuration("tileHydrationDrainMs" as any, 11);
     recordWorldmapRenderDuration("structureHydrationDrainMs", 9);
     recordWorldmapRenderDuration("structureAssetPrewarmMs", 4);
     recordWorldmapRenderDuration("presentationCommittedMs", 23);
@@ -35,9 +36,15 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("zoomTransitionsCancelled");
     incrementWorldmapRenderCounter("workerFindPathCalls");
     incrementWorldmapRenderCounter("pathCreateCalls", 2);
+    incrementWorldmapRenderCounter("terrainVisibleOverlapRepairCount" as any);
+    incrementWorldmapRenderCounter("terrainVisibleReplaceCount" as any, 2);
+    incrementWorldmapRenderCounter("terrainVisibleAppendCount" as any, 3);
+    incrementWorldmapRenderCounter("terrainVisibleRebuildCount" as any, 4);
+    incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount" as any, 5);
     incrementWorldmapForceRefreshReason("duplicate_tile");
     incrementWorldmapForceRefreshReason("duplicate_tile");
     incrementWorldmapForceRefreshReason("structure_count_change");
+    incrementWorldmapForceRefreshReason("tile_overlap_repair" as any);
 
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
@@ -47,6 +54,8 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations.updateVisibleChunks.samples).toEqual([12.5, 7.5]);
     expect(snapshot.durations.workerFindPath.count).toBe(1);
     expect(snapshot.durations.terrainPreparedMs.samples).toEqual([14]);
+    expect(snapshot.durations).toHaveProperty("tileHydrationDrainMs");
+    expect((snapshot.durations as any).tileHydrationDrainMs.samples).toEqual([11]);
     expect(snapshot.durations.structureHydrationDrainMs.samples).toEqual([9]);
     expect(snapshot.durations.structureAssetPrewarmMs.samples).toEqual([4]);
     expect(snapshot.durations.presentationCommittedMs.samples).toEqual([23]);
@@ -62,8 +71,14 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters.zoomTransitionsCancelled).toBe(1);
     expect(snapshot.counters.workerFindPathCalls).toBe(1);
     expect(snapshot.counters.pathCreateCalls).toBe(2);
+    expect(snapshot.counters).toHaveProperty("terrainVisibleOverlapRepairCount", 1);
+    expect(snapshot.counters).toHaveProperty("terrainVisibleReplaceCount", 2);
+    expect(snapshot.counters).toHaveProperty("terrainVisibleAppendCount", 3);
+    expect(snapshot.counters).toHaveProperty("terrainVisibleRebuildCount", 4);
+    expect(snapshot.counters).toHaveProperty("staleTerrainCacheFingerprintRejectCount", 5);
     expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(2);
     expect(snapshot.forceRefreshReasons.structure_count_change).toBe(1);
+    expect(snapshot.forceRefreshReasons).toHaveProperty("tile_overlap_repair", 1);
   });
 
   it("resets back to zeroed state", () => {

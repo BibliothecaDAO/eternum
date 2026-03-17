@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
+import {
+  shouldRejectCachedExploredTerrainSnapshot,
+  shouldRejectCachedTerrainFingerprintMismatch,
+  shouldRejectCachedTerrainSnapshot,
+} from "./worldmap-cache-safety";
 import {
   isHexWithinTerrainPresentationBounds,
   resolveTerrainPresentationBounds,
@@ -94,6 +98,26 @@ describe("shouldRejectCachedExploredTerrainSnapshot", () => {
         expectedExploredTerrainInstances: 300,
         minRetentionFraction: 0.5,
         minExpectedExploredInstances: 64,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("shouldRejectCachedTerrainFingerprintMismatch", () => {
+  it("rejects cached terrain replay when terrain fingerprint differs despite matching explored count", () => {
+    expect(
+      shouldRejectCachedTerrainFingerprintMismatch({
+        cachedTerrainFingerprint: "10:10:Ocean|10:11:Ocean",
+        currentTerrainFingerprint: "10:10:Ocean|10:11:TemperateRainForest",
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts cached terrain replay when terrain fingerprint matches", () => {
+    expect(
+      shouldRejectCachedTerrainFingerprintMismatch({
+        cachedTerrainFingerprint: "10:10:Ocean|10:11:Ocean",
+        currentTerrainFingerprint: "10:10:Ocean|10:11:Ocean",
       }),
     ).toBe(false);
   });

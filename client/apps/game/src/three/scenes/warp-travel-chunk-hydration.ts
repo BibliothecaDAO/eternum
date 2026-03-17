@@ -13,6 +13,7 @@ export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   computeTileEntities: (chunkKey: string) => Promise<boolean>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
+  waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;
   waitForStructureHydrationIdle: (chunkKey: string) => Promise<void>;
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
@@ -38,6 +39,7 @@ export async function hydrateWarpTravelChunk<TPreparedTerrain>(
     startCol: input.startCol,
     renderSize: input.renderSize,
     tileFetchPromise,
+    tileHydrationReadyPromise: input.waitForTileHydrationIdle(input.chunkKey),
     boundsReadyPromise: boundsSwitchPromise,
     structureReadyPromise,
     assetPrewarmPromise,

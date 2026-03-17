@@ -8,6 +8,7 @@ describe("prepareWorldmapChunkPresentation", () => {
   it("does not prepare target terrain before the structure barrier and asset prewarm complete", async () => {
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const tileFetch = createControlledAsyncCall<[], boolean>();
+    const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
     const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
@@ -19,6 +20,7 @@ describe("prepareWorldmapChunkPresentation", () => {
       startCol: 24,
       renderSize: { height: 80, width: 90 },
       tileFetchPromise: tileFetch.fn(),
+      tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
       structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
@@ -34,6 +36,7 @@ describe("prepareWorldmapChunkPresentation", () => {
     expect(prepareTerrainChunk.calls).toEqual([]);
     expect(hydratedChunks).toEqual([]);
 
+    tileHydrationReady.resolveNext();
     structureReady.resolveNext();
     assetPrewarm.resolveNext();
     await flushMicrotasks(2);
@@ -51,6 +54,7 @@ describe("prepareWorldmapChunkPresentation", () => {
   it("returns without terrain preparation when tile fetch fails", async () => {
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const tileFetch = createControlledAsyncCall<[], boolean>();
+    const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
     const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
@@ -61,6 +65,7 @@ describe("prepareWorldmapChunkPresentation", () => {
       startCol: 24,
       renderSize: { height: 80, width: 90 },
       tileFetchPromise: tileFetch.fn(),
+      tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
       structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
@@ -68,6 +73,7 @@ describe("prepareWorldmapChunkPresentation", () => {
     });
 
     await flushMicrotasks(2);
+    tileHydrationReady.resolveNext();
     structureReady.resolveNext();
     assetPrewarm.resolveNext();
     tileFetch.resolveNext(false);
@@ -83,6 +89,7 @@ describe("prepareWorldmapChunkPresentation", () => {
   it("does not expose same-chunk prepared terrain before manager readiness completes", async () => {
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const tileFetch = createControlledAsyncCall<[], boolean>();
+    const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
     const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
@@ -93,6 +100,7 @@ describe("prepareWorldmapChunkPresentation", () => {
       startCol: 24,
       renderSize: { height: 80, width: 90 },
       tileFetchPromise: tileFetch.fn(),
+      tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
       structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
@@ -109,6 +117,7 @@ describe("prepareWorldmapChunkPresentation", () => {
     expect(prepareTerrainChunk.calls).toEqual([]);
 
     // Now resolve the manager readiness barriers
+    tileHydrationReady.resolveNext();
     structureReady.resolveNext();
     assetPrewarm.resolveNext();
     await flushMicrotasks(2);
@@ -119,6 +128,48 @@ describe("prepareWorldmapChunkPresentation", () => {
 
     const result = await presentationPromise;
     expect(result.preparedTerrain).toEqual({ chunkKey: "24,24" });
+  });
+
+  it("does not prepare terrain before tile hydration drain completes even after fetch succeeds", async () => {
+    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
+    const tileFetch = createControlledAsyncCall<[], boolean>();
+    const tileHydrationReady = createControlledAsyncCall<[], void>();
+    const boundsReady = createControlledAsyncCall<[], void>();
+    const structureReady = createControlledAsyncCall<[], void>();
+    const assetPrewarm = createControlledAsyncCall<[], void>();
+
+    const presentationPromise = prepareWorldmapChunkPresentation({
+      chunkKey: "24,24",
+      startRow: 24,
+      startCol: 24,
+      renderSize: { height: 80, width: 90 },
+      tileFetchPromise: tileFetch.fn(),
+      tileHydrationReadyPromise: tileHydrationReady.fn(),
+      boundsReadyPromise: boundsReady.fn(),
+      structureReadyPromise: structureReady.fn(),
+      assetPrewarmPromise: assetPrewarm.fn(),
+      prepareTerrainChunk: prepareTerrainChunk.fn,
+    });
+
+    await flushMicrotasks(2);
+    tileFetch.resolveNext(true);
+    boundsReady.resolveNext();
+    structureReady.resolveNext();
+    assetPrewarm.resolveNext();
+    await flushMicrotasks(2);
+
+    expect(prepareTerrainChunk.calls).toEqual([]);
+
+    tileHydrationReady.resolveNext();
+    await flushMicrotasks(2);
+
+    expect(prepareTerrainChunk.calls).toEqual([[24, 24, 80, 90]]);
+    prepareTerrainChunk.resolveNext({ chunkKey: "24,24" });
+
+    await expect(presentationPromise).resolves.toEqual({
+      tileFetchSucceeded: true,
+      preparedTerrain: { chunkKey: "24,24" },
+    });
   });
 
   it("commits same-chunk refresh terrain and managers through one gate", () => {

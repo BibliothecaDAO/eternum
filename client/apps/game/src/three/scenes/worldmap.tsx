@@ -160,7 +160,11 @@ import {
 } from "./worldmap-runtime-lifecycle";
 import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
 import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
-import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
+import {
+  shouldRejectCachedExploredTerrainSnapshot,
+  shouldRejectCachedTerrainFingerprintMismatch,
+  shouldRejectCachedTerrainSnapshot,
+} from "./worldmap-cache-safety";
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
@@ -187,6 +191,12 @@ import {
 } from "../perf/worldmap-render-diagnostics";
 import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
+import {
+  buildVisibleTerrainMembership,
+  type VisibleTerrainInstanceRef,
+} from "./worldmap-visible-terrain-membership";
+import { resolveVisibleTerrainReconcileMode } from "./worldmap-visible-terrain-reconcile-policy";
+import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
 import {
   captureChunkDiagnosticsBaseline,
   cloneChunkDiagnosticsBaselines,
@@ -219,6 +229,8 @@ interface CachedMatrixEntry {
   box?: Box3;
   sphere?: Sphere;
   expectedExploredTerrainInstances?: number;
+  terrainFingerprint?: string;
+  visibleTerrainOwnership?: Array<[string, VisibleTerrainInstanceRef]>;
 }
 
 interface PreparedTerrainChunk {
@@ -227,6 +239,8 @@ interface PreparedTerrainChunk {
   startCol: number;
   bounds: { box: Box3; sphere: Sphere };
   expectedExploredTerrainInstances: number;
+  terrainFingerprint: string;
+  visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]>;
   biomeEntries: Map<string, CachedMatrixEntry>;
 }
 
@@ -240,6 +254,8 @@ interface StructureHydrationFetchState {
   fetchSettled: boolean;
   waiters: Array<() => void>;
 }
+
+type TileHydrationFetchState = StructureHydrationFetchState;
 
 type ToriiBoundsCounterKey =
   | "tiles"
@@ -572,7 +588,9 @@ export default class WorldmapScene extends WarpTravel {
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<boolean>> = new Map();
   private pendingChunkFetchGeneration = 0;
+  private tileHydrationFetches: Map<string, TileHydrationFetchState> = new Map();
   private structureHydrationFetches: Map<string, StructureHydrationFetchState> = new Map();
+  private visibleTerrainMembership: Map<string, VisibleTerrainInstanceRef> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<
@@ -925,7 +943,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Tile.onTileUpdate((value) => {
         this.incrementToriiBoundsCounter("tiles");
-        this.updateExploredHex(value);
+        void this.trackTileHydrationUpdate(value, this.updateExploredHex(value));
       }),
     );
 
@@ -3074,6 +3092,27 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      const hexKey = `${col},${row}`;
+      const biomeVariant = getBiomeVariant(biome, col, row);
+      const visibleTerrainReconcileMode = resolveVisibleTerrainReconcileMode({
+        isVisibleInCurrentChunk: true,
+        currentOwner: this.visibleTerrainMembership.get(hexKey) ?? null,
+        nextBiomeKey: biomeVariant,
+        canDirectReplace: false,
+      });
+
+      if (visibleTerrainReconcileMode === "none") {
+        return;
+      }
+
+      if (visibleTerrainReconcileMode === "atomic_chunk_refresh") {
+        incrementWorldmapRenderCounter("terrainVisibleOverlapRepairCount");
+        incrementWorldmapRenderCounter("terrainVisibleRebuildCount");
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_tile_overlap_repair");
+        this.requestChunkRefresh(true, "tile_overlap_repair");
+        return;
+      }
+
       // Add hex to all interactive hexes
       this.interactiveHexManager.addHex({ col, row });
 
@@ -3090,11 +3129,16 @@ export default class WorldmapScene extends WarpTravel {
 
       dummy.updateMatrix();
 
-      const biomeVariant = getBiomeVariant(biome, col, row);
       const hexMesh = this.biomeModels.get(biomeVariant as BiomeType)!;
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
+      this.visibleTerrainMembership.set(hexKey, {
+        biomeKey: biomeVariant,
+        chunkKey: this.currentChunk,
+        instanceIndex: currentCount,
+      });
+      incrementWorldmapRenderCounter("terrainVisibleAppendCount");
 
       // Cache the updated matrices for the chunk
       const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(
@@ -3414,6 +3458,8 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
+    this.visibleTerrainMembership.clear();
+    this.tileHydrationFetches.clear();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
@@ -3557,6 +3603,8 @@ export default class WorldmapScene extends WarpTravel {
       let currentIndex = 0;
       let resolved = false;
       let expectedExploredTerrainInstances = 0;
+      const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
+      const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
 
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
@@ -3635,7 +3683,14 @@ export default class WorldmapScene extends WarpTravel {
           hexMesh.updateMeshVisibility(); // Show meshes that have instances
         }
 
-        this.cacheMatricesForChunk(startRow, startCol, expectedExploredTerrainInstances);
+        this.setVisibleTerrainMembership(visibleTerrainOwnership);
+        this.cacheMatricesForChunk(
+          startRow,
+          startCol,
+          expectedExploredTerrainInstances,
+          createWorldmapTerrainFingerprint(fingerprintEntries),
+          visibleTerrainOwnership,
+        );
         this.computeInteractiveHexes(startRow, startCol, cols, rows);
 
         releaseAllMatrices();
@@ -3685,11 +3740,22 @@ export default class WorldmapScene extends WarpTravel {
             ? (isExplored as BiomeType)
             : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
           const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
+          const hexKey = `${globalCol},${globalRow}`;
+          const instanceIndex = biomeHexes[biomeVariant].length;
           tempMatrix.setPosition(tempPosition);
 
           const pooledMatrix = matrixPool.getMatrix();
           pooledMatrix.copy(tempMatrix);
           biomeHexes[biomeVariant].push(pooledMatrix);
+          visibleTerrainOwnership.push([
+            hexKey,
+            {
+              biomeKey: biomeVariant,
+              chunkKey: `${startRow},${startCol}`,
+              instanceIndex,
+            },
+          ]);
+          fingerprintEntries.push({ hexKey, biomeKey: biomeVariant });
         } else {
           tempPosition.y = 0.01;
           tempMatrix.setPosition(tempPosition);
@@ -3780,10 +3846,24 @@ export default class WorldmapScene extends WarpTravel {
     const cachedMetadata = cachedMatrices.get("__meta__");
     const expectedExploredTerrainInstances =
       cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
+    const terrainFingerprint = this.getTerrainFingerprintForChunk(startRow, startCol);
     if (
       this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
+      shouldRejectCachedTerrainFingerprintMismatch({
+        cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
+        currentTerrainFingerprint: terrainFingerprint,
+      })
     ) {
+      if (
+        shouldRejectCachedTerrainFingerprintMismatch({
+          cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
+          currentTerrainFingerprint: terrainFingerprint,
+        })
+      ) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "cache_reject_fingerprint");
+        incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount");
+      }
       this.removeCachedMatricesForChunk(startRow, startCol);
       return null;
     }
@@ -3806,6 +3886,8 @@ export default class WorldmapScene extends WarpTravel {
         sphere: cachedBounds?.sphere?.clone() ?? this.computeChunkBounds(startRow, startCol).sphere,
       },
       expectedExploredTerrainInstances,
+      terrainFingerprint: cachedMetadata?.terrainFingerprint ?? terrainFingerprint,
+      visibleTerrainOwnership: cachedMetadata?.visibleTerrainOwnership ?? [],
       biomeEntries,
     };
   }
@@ -3868,6 +3950,8 @@ export default class WorldmapScene extends WarpTravel {
       let currentIndex = 0;
       let expectedExploredTerrainInstances = 0;
       let frameHandle: number | null = null;
+      const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
+      const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
 
       const releaseAllMatrices = () => {
         Object.values(biomeHexes).forEach((matrices) => {
@@ -3906,6 +3990,8 @@ export default class WorldmapScene extends WarpTravel {
           startCol,
           bounds: this.computeChunkBounds(startRow, startCol),
           expectedExploredTerrainInstances,
+          terrainFingerprint: createWorldmapTerrainFingerprint(fingerprintEntries),
+          visibleTerrainOwnership,
           biomeEntries,
         });
       };
@@ -3939,11 +4025,22 @@ export default class WorldmapScene extends WarpTravel {
             ? (isExplored as BiomeType)
             : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
           const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
+          const hexKey = `${globalCol},${globalRow}`;
+          const instanceIndex = biomeHexes[biomeVariant].length;
           tempMatrix.setPosition(tempPosition);
 
           const pooledMatrix = matrixPool.getMatrix();
           pooledMatrix.copy(tempMatrix);
           biomeHexes[biomeVariant].push(pooledMatrix);
+          visibleTerrainOwnership.push([
+            hexKey,
+            {
+              biomeKey: biomeVariant,
+              chunkKey: `${startRow},${startCol}`,
+              instanceIndex,
+            },
+          ]);
+          fingerprintEntries.push({ hexKey, biomeKey: biomeVariant });
           return;
         }
 
@@ -4009,6 +4106,8 @@ export default class WorldmapScene extends WarpTravel {
       matrices: null,
       count: 0,
       expectedExploredTerrainInstances: preparedTerrain.expectedExploredTerrainInstances,
+      terrainFingerprint: preparedTerrain.terrainFingerprint,
+      visibleTerrainOwnership: preparedTerrain.visibleTerrainOwnership,
     });
 
     this.cachedMatrices.set(chunkKey, cachedChunk);
@@ -4046,6 +4145,7 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     this.cachePreparedTerrainChunk(preparedTerrain);
+    this.setVisibleTerrainMembership(preparedTerrain.visibleTerrainOwnership);
     this.computeInteractiveHexes(preparedTerrain.startRow, preparedTerrain.startCol, this.renderChunkSize.width, this.renderChunkSize.height);
   }
 
@@ -4266,6 +4366,7 @@ export default class WorldmapScene extends WarpTravel {
       );
     }
 
+    this.beginTileHydrationFetch(fetchKey, this.pendingChunkFetchGeneration, minCol, maxCol, minRow, maxRow);
     this.beginStructureHydrationFetch(fetchKey, this.pendingChunkFetchGeneration, minCol, maxCol, minRow, maxRow);
     const fetchPromise = this.executeTileEntitiesFetch(
       fetchKey,
@@ -4308,6 +4409,26 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private beginTileHydrationFetch(
+    fetchKey: string,
+    fetchGeneration: number,
+    minCol: number,
+    maxCol: number,
+    minRow: number,
+    maxRow: number,
+  ): void {
+    this.tileHydrationFetches.set(fetchKey, {
+      fetchGeneration,
+      minCol,
+      maxCol,
+      minRow,
+      maxRow,
+      pendingCount: 0,
+      fetchSettled: false,
+      waiters: [],
+    });
+  }
+
   private settleStructureHydrationFetch(fetchKey: string, fetchGeneration: number): void {
     const state = this.structureHydrationFetches.get(fetchKey);
     if (!state || state.fetchGeneration !== fetchGeneration) {
@@ -4327,6 +4448,27 @@ export default class WorldmapScene extends WarpTravel {
     state.waiters.length = 0;
     waiters.forEach((resolve) => resolve());
     this.structureHydrationFetches.set(fetchKey, state);
+  }
+
+  private settleTileHydrationFetch(fetchKey: string, fetchGeneration: number): void {
+    const state = this.tileHydrationFetches.get(fetchKey);
+    if (!state || state.fetchGeneration !== fetchGeneration) {
+      return;
+    }
+
+    state.fetchSettled = true;
+    this.flushTileHydrationWaiters(fetchKey, state);
+  }
+
+  private flushTileHydrationWaiters(fetchKey: string, state: TileHydrationFetchState): void {
+    if (!state.fetchSettled || state.pendingCount > 0) {
+      return;
+    }
+
+    const waiters = [...state.waiters];
+    state.waiters.length = 0;
+    waiters.forEach((resolve) => resolve());
+    this.tileHydrationFetches.set(fetchKey, state);
   }
 
   private async waitForStructureHydrationIdle(chunkKey: string): Promise<void> {
@@ -4361,6 +4503,38 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private async waitForTileHydrationIdle(chunkKey: string): Promise<void> {
+    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const state = this.tileHydrationFetches.get(fetchKey);
+    if (!state) {
+      return;
+    }
+
+    if (state.fetchSettled && state.pendingCount === 0) {
+      await Promise.resolve();
+      const refreshed = this.tileHydrationFetches.get(fetchKey);
+      if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
+        return;
+      }
+    }
+
+    await new Promise<void>((resolve) => {
+      const currentState = this.tileHydrationFetches.get(fetchKey);
+      if (!currentState) {
+        resolve();
+        return;
+      }
+      currentState.waiters.push(resolve);
+      this.flushTileHydrationWaiters(fetchKey, currentState);
+    });
+
+    await Promise.resolve();
+    const refreshed = this.tileHydrationFetches.get(fetchKey);
+    if (refreshed && (!refreshed.fetchSettled || refreshed.pendingCount > 0)) {
+      await this.waitForTileHydrationIdle(chunkKey);
+    }
+  }
+
   private trackStructureHydrationUpdate(
     update: { hexCoords: HexPosition },
     work: Promise<void>,
@@ -4392,6 +4566,38 @@ export default class WorldmapScene extends WarpTravel {
         }
         state.pendingCount = Math.max(0, state.pendingCount - 1);
         this.flushStructureHydrationWaiters(fetchKey, state);
+      });
+    });
+  }
+
+  private trackTileHydrationUpdate(update: { hexCoords: HexPosition }, work: Promise<void>): Promise<void> {
+    const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+    const matchedFetchKeys: string[] = [];
+
+    this.tileHydrationFetches.forEach((state, fetchKey) => {
+      if (
+        normalized.x >= state.minCol &&
+        normalized.x <= state.maxCol &&
+        normalized.y >= state.minRow &&
+        normalized.y <= state.maxRow
+      ) {
+        state.pendingCount += 1;
+        matchedFetchKeys.push(fetchKey);
+      }
+    });
+
+    if (matchedFetchKeys.length === 0) {
+      return work;
+    }
+
+    return work.finally(() => {
+      matchedFetchKeys.forEach((fetchKey) => {
+        const state = this.tileHydrationFetches.get(fetchKey);
+        if (!state) {
+          return;
+        }
+        state.pendingCount = Math.max(0, state.pendingCount - 1);
+        this.flushTileHydrationWaiters(fetchKey, state);
       });
     });
   }
@@ -4442,6 +4648,7 @@ export default class WorldmapScene extends WarpTravel {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
+      this.settleTileHydrationFetch(fetchKey, fetchGeneration);
       this.settleStructureHydrationFetch(fetchKey, fetchGeneration);
       this.endToriiFetch();
     }
@@ -4528,6 +4735,46 @@ export default class WorldmapScene extends WarpTravel {
     return normalizedKey !== "outline" && normalizedKey !== "none";
   }
 
+  private setVisibleTerrainMembership(ownershipEntries: Array<[string, VisibleTerrainInstanceRef]>): void {
+    const membershipResult = buildVisibleTerrainMembership(
+      ownershipEntries.map(([hexKey, owner]) => ({
+        hexKey,
+        biomeKey: owner.biomeKey,
+        chunkKey: owner.chunkKey,
+        instanceIndex: owner.instanceIndex,
+      })),
+    );
+
+    this.visibleTerrainMembership = membershipResult.membership;
+  }
+
+  private getTerrainFingerprintForChunk(startRow: number, startCol: number): string {
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
+
+    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        if (isStructure) {
+          continue;
+        }
+
+        const exploredBiome = this.exploredTiles.get(col)?.get(row);
+        if (!exploredBiome && !this.simulateAllExplored) {
+          continue;
+        }
+
+        const biome = exploredBiome ?? this.perfSimulation!.getSimulatedBiome(col, row);
+        fingerprintEntries.push({
+          hexKey: `${col},${row}`,
+          biomeKey: getBiomeVariant(biome, col, row),
+        });
+      }
+    }
+
+    return createWorldmapTerrainFingerprint(fingerprintEntries);
+  }
+
   private getExpectedExploredTerrainInstances(startRow: number, startCol: number): number {
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     let expectedExploredTerrainInstances = 0;
@@ -4548,7 +4795,13 @@ export default class WorldmapScene extends WarpTravel {
     return expectedExploredTerrainInstances;
   }
 
-  private cacheMatricesForChunk(startRow: number, startCol: number, expectedExploredTerrainInstances: number) {
+  private cacheMatricesForChunk(
+    startRow: number,
+    startCol: number,
+    expectedExploredTerrainInstances: number,
+    terrainFingerprint: string = this.getTerrainFingerprintForChunk(startRow, startCol),
+    visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = Array.from(this.visibleTerrainMembership.entries()),
+  ) {
     const chunkKey = `${startRow},${startCol}`;
     if (!this.cachedMatrices.has(chunkKey)) {
       this.cachedMatrices.set(chunkKey, new Map());
@@ -4622,6 +4875,8 @@ export default class WorldmapScene extends WarpTravel {
       matrices: null,
       count: 0,
       expectedExploredTerrainInstances,
+      terrainFingerprint,
+      visibleTerrainOwnership,
     });
 
     this.touchMatrixCache(chunkKey);
@@ -4658,16 +4913,32 @@ export default class WorldmapScene extends WarpTravel {
       const cachedMetadata = cachedMatrices.get("__meta__");
       const expectedExploredTerrainInstances =
         cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
+      const terrainFingerprint = this.getTerrainFingerprintForChunk(startRow, startCol);
       if (
         this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
+        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
+        shouldRejectCachedTerrainFingerprintMismatch({
+          cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
+          currentTerrainFingerprint: terrainFingerprint,
+        })
       ) {
+        if (
+          shouldRejectCachedTerrainFingerprintMismatch({
+            cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
+            currentTerrainFingerprint: terrainFingerprint,
+          })
+        ) {
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "cache_reject_fingerprint");
+          incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount");
+        }
         if (import.meta.env.DEV) {
           console.warn("[CACHE] Evicting suspicious cached terrain before apply", {
             chunkKey,
             totalCachedTerrainInstances,
             cachedExploredTerrainInstances,
             expectedExploredTerrainInstances,
+            terrainFingerprint,
+            cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
             renderHexCapacity: this.getRenderHexCapacity(),
             minCoverageFraction: this.minCachedTerrainCoverageFraction,
             minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
@@ -4709,6 +4980,7 @@ export default class WorldmapScene extends WarpTravel {
           recordRendererColorUploadBytes(count, "worldmap-cache-replay");
         }
       }
+      this.setVisibleTerrainMembership(cachedMetadata?.visibleTerrainOwnership ?? []);
       this.ensureMatrixCacheLimit();
       return true;
     }
@@ -4859,6 +5131,15 @@ export default class WorldmapScene extends WarpTravel {
     if (force) {
       this.pendingChunkRefreshForce = true;
       incrementWorldmapForceRefreshReason(reason);
+      if (reason === "default") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_default");
+      } else if (reason === "hydrated_chunk") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_hydrated_chunk");
+      } else if (reason === "duplicate_tile") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_duplicate_tile");
+      } else if (reason === "tile_overlap_repair") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_tile_overlap_repair");
+      }
     }
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
@@ -5096,6 +5377,7 @@ export default class WorldmapScene extends WarpTravel {
     const chunkSwitchStartedAt = performance.now();
     const presentationPhaseDurations = {
       terrainPreparedMs: 0,
+      tileHydrationDrainMs: 0,
       structureHydrationDrainMs: 0,
       structureAssetPrewarmMs: 0,
     };
@@ -5178,6 +5460,13 @@ export default class WorldmapScene extends WarpTravel {
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
       updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
         this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+      waitForTileHydrationIdle: async (targetChunkKey) => {
+        const startedAt = performance.now();
+        await this.waitForTileHydrationIdle(targetChunkKey);
+        presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
+        recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+      },
       waitForStructureHydrationIdle: async (targetChunkKey) => {
         const startedAt = performance.now();
         await this.waitForStructureHydrationIdle(targetChunkKey);
@@ -5285,6 +5574,7 @@ export default class WorldmapScene extends WarpTravel {
   private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {
     const presentationPhaseDurations = {
       terrainPreparedMs: 0,
+      tileHydrationDrainMs: 0,
       structureHydrationDrainMs: 0,
       structureAssetPrewarmMs: 0,
     };
@@ -5312,6 +5602,13 @@ export default class WorldmapScene extends WarpTravel {
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+        waitForTileHydrationIdle: async (targetChunkKey) => {
+          const startedAt = performance.now();
+          await this.waitForTileHydrationIdle(targetChunkKey);
+          presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+        },
         waitForStructureHydrationIdle: async (targetChunkKey) => {
           const startedAt = performance.now();
           await this.waitForStructureHydrationIdle(targetChunkKey);

@@ -7,6 +7,7 @@ export interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
     width: number;
   };
   tileFetchPromise: Promise<boolean>;
+  tileHydrationReadyPromise: Promise<void>;
   boundsReadyPromise: Promise<void>;
   structureReadyPromise: Promise<void>;
   assetPrewarmPromise: Promise<void>;
@@ -24,6 +25,7 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
 ): Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>> {
   const [tileFetchSucceeded] = await Promise.all([
     input.tileFetchPromise,
+    input.tileHydrationReadyPromise,
     input.boundsReadyPromise,
     input.structureReadyPromise,
     input.assetPrewarmPromise,

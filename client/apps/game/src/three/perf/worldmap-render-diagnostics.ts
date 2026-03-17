@@ -7,6 +7,7 @@ export type WorldmapRenderDurationMetric =
   | "executeRenderForChunk"
   | "performVisibleStructuresUpdate"
   | "terrainPreparedMs"
+  | "tileHydrationDrainMs"
   | "structureHydrationDrainMs"
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
@@ -28,7 +29,12 @@ export type WorldmapRenderCounter =
   | "zoomTransitionsCompleted"
   | "zoomTransitionsCancelled"
   | "terrainVisibleCommits"
-  | "duplicateTileAuthoritativeUpdates";
+  | "duplicateTileAuthoritativeUpdates"
+  | "terrainVisibleOverlapRepairCount"
+  | "terrainVisibleReplaceCount"
+  | "terrainVisibleAppendCount"
+  | "terrainVisibleRebuildCount"
+  | "staleTerrainCacheFingerprintRejectCount";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -49,6 +55,7 @@ export type WorldmapForceRefreshReason =
   | "hydrated_chunk"
   | "terrain_self_heal"
   | "offscreen_chunk"
+  | "tile_overlap_repair"
   | "shortcut"
   | "army_dead";
 
@@ -83,6 +90,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     executeRenderForChunk: createDurationStats(),
     performVisibleStructuresUpdate: createDurationStats(),
     terrainPreparedMs: createDurationStats(),
+    tileHydrationDrainMs: createDurationStats(),
     structureHydrationDrainMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
@@ -111,6 +119,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     zoomTransitionsCancelled: 0,
     terrainVisibleCommits: 0,
     duplicateTileAuthoritativeUpdates: 0,
+    terrainVisibleOverlapRepairCount: 0,
+    terrainVisibleReplaceCount: 0,
+    terrainVisibleAppendCount: 0,
+    terrainVisibleRebuildCount: 0,
+    staleTerrainCacheFingerprintRejectCount: 0,
   },
   forceRefreshReasons: {
     default: 0,
@@ -120,6 +133,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     hydrated_chunk: 0,
     terrain_self_heal: 0,
     offscreen_chunk: 0,
+    tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
   },

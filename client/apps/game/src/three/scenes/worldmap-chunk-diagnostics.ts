@@ -29,11 +29,14 @@ export type WorldmapChunkDiagnosticsEvent =
   | "refresh_reason_default"
   | "refresh_reason_hydrated_chunk"
   | "refresh_reason_duplicate_tile"
+  | "refresh_reason_tile_overlap_repair"
   | "duplicate_tile_reconcile_mode_invalidate_only"
   | "duplicate_tile_reconcile_mode_local_reconcile"
   | "duplicate_tile_reconcile_mode_atomic_refresh"
   | "stale_terrain_refresh_dropped"
-  | "terrain_bounds_recovery";
+  | "terrain_bounds_recovery"
+  | "tile_hydration_drain_completed"
+  | "cache_reject_fingerprint";
 
 export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
@@ -64,11 +67,14 @@ export interface WorldmapChunkDiagnostics {
   refreshReasonDefault: number;
   refreshReasonHydratedChunk: number;
   refreshReasonDuplicateTile: number;
+  refreshReasonTileOverlapRepair: number;
   duplicateTileReconcileModeInvalidateOnly: number;
   duplicateTileReconcileModeLocalReconcile: number;
   duplicateTileReconcileModeAtomicRefresh: number;
   staleTerrainRefreshDropped: number;
   terrainBoundsRecovery: number;
+  tileHydrationDrainCompleted: number;
+  cacheRejectFingerprint: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   switchDurationMsSamples: number[];
@@ -114,11 +120,14 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     refreshReasonDefault: 0,
     refreshReasonHydratedChunk: 0,
     refreshReasonDuplicateTile: 0,
+    refreshReasonTileOverlapRepair: 0,
     duplicateTileReconcileModeInvalidateOnly: 0,
     duplicateTileReconcileModeLocalReconcile: 0,
     duplicateTileReconcileModeAtomicRefresh: 0,
     staleTerrainRefreshDropped: 0,
     terrainBoundsRecovery: 0,
+    tileHydrationDrainCompleted: 0,
+    cacheRejectFingerprint: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     switchDurationMsSamples: [],
@@ -221,6 +230,9 @@ export function recordChunkDiagnosticsEvent(
     case "refresh_reason_duplicate_tile":
       diagnostics.refreshReasonDuplicateTile += 1;
       break;
+    case "refresh_reason_tile_overlap_repair":
+      diagnostics.refreshReasonTileOverlapRepair += 1;
+      break;
     case "duplicate_tile_reconcile_mode_invalidate_only":
       diagnostics.duplicateTileReconcileModeInvalidateOnly += 1;
       break;
@@ -235,6 +247,12 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "terrain_bounds_recovery":
       diagnostics.terrainBoundsRecovery += 1;
+      break;
+    case "tile_hydration_drain_completed":
+      diagnostics.tileHydrationDrainCompleted += 1;
+      break;
+    case "cache_reject_fingerprint":
+      diagnostics.cacheRejectFingerprint += 1;
       break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;
