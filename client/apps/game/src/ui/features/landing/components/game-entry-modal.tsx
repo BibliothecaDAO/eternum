@@ -57,6 +57,7 @@ import { CallData, type Account, uint256 } from "starknet";
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
 const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
+const SPIRE_SYSTEMS_SELECTOR = "0x3c0936482acd769add8a662a6f1390e50b010607b2995892c17212e37c6afb3";
 const SETTLEMENT_PROGRESS_POLL_MS = 1000;
 const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 const CONTRACT_MAP_CENTER = 2147483646;
@@ -179,17 +180,56 @@ const computeSeasonPlacementPreview = ({
 const mapSeasonSettleError = (error: unknown): string => {
   const raw = error instanceof Error ? error.message : String(error ?? "");
   const message = raw.toLowerCase();
+  const failingAddressMatch = raw.match(/address\s*(?:\n|:)?\s*(0x[0-9a-f]+)/i);
+  const failingAddress = failingAddressMatch?.[1] ?? null;
+
+  if (message.includes("spire_systems contract not found")) {
+    return "Spire system contract not found for this world.";
+  }
+
+  if (
+    message.includes("unable to read spire settlement status") ||
+    message.includes("spire layer distance is unavailable") ||
+    message.includes("settlement layer max is unavailable") ||
+    message.includes("invalid spire config")
+  ) {
+    return "Spire config/status unavailable for this world. Refresh and try again.";
+  }
+
+  if (message.includes("spire")) {
+    return "Spire creation failed. Retry once and verify this world exposes the spire system.";
+  }
+
+  if (message.includes("unauthorized caller")) {
+    return "Season Pass approval missing. Retry to approve and settle in one transaction.";
+  }
+
+  if (message.includes("contract not deployed")) {
+    if (message.includes("0x2f0b3c571")) {
+      return failingAddress
+        ? `Village pass contract is not deployed at ${failingAddress}. Update village_pass_config.token_address on-chain.`
+        : "Village pass contract is not deployed at village_pass_config.token_address.";
+    }
+    if (message.includes("0x219209e08")) {
+      return failingAddress
+        ? `Season pass contract is not deployed at ${failingAddress}.`
+        : "Season pass contract is not deployed at the configured address.";
+    }
+    if (message.includes("0xa69ce1f5")) {
+      return failingAddress
+        ? `Realm systems contract is not deployed at ${failingAddress}.`
+        : "Realm systems contract is not deployed for this world.";
+    }
+    return failingAddress
+      ? `A required settlement contract is not deployed at ${failingAddress}.`
+      : "A required settlement contract is not deployed for this world.";
+  }
 
   if (message.includes("occupied")) {
     return "Destination occupied. Choose another side/layer/point.";
   }
 
-  if (
-    message.includes("season is over") ||
-    message.includes("settling") ||
-    message.includes("timing") ||
-    message.includes("spires")
-  ) {
+  if (message.includes("season is over") || message.includes("settling") || message.includes("timing")) {
     return "Season timing invalid. Settlement is currently unavailable.";
   }
 
@@ -209,9 +249,103 @@ const mapSeasonSettleError = (error: unknown): string => {
 const getNormalizedErrorMessage = (error: unknown): string =>
   (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
 
+type SpireSettlementPlacement = {
+  side: number;
+  layer: number;
+  point: number;
+};
+
+type PendingSpireCreationPlan = {
+  includeCenterSpire: boolean;
+  settlements: SpireSettlementPlacement[];
+  remainingCount: number;
+};
+
+const buildSpireSettlementPlacements = (maxSpireLayer: number): SpireSettlementPlacement[] => {
+  const placements: SpireSettlementPlacement[] = [];
+
+  for (let layer = 1; layer <= maxSpireLayer; layer += 1) {
+    for (let side = 0; side < 6; side += 1) {
+      for (let point = 0; point <= layer - 1; point += 1) {
+        placements.push({ side, layer, point });
+      }
+    }
+  }
+
+  return placements;
+};
+
+const buildPendingSpireCreationPlan = ({
+  spiresMaxCount,
+  spiresSettledCount,
+  spiresLayerDistance,
+  settlementLayerMax,
+}: {
+  spiresMaxCount: number | null;
+  spiresSettledCount: number | null;
+  spiresLayerDistance: number | null;
+  settlementLayerMax: number | null;
+}): PendingSpireCreationPlan => {
+  const totalSpires = Math.max(0, spiresMaxCount ?? 0);
+  const settledSpires = Math.max(0, Math.min(spiresSettledCount ?? 0, totalSpires));
+  const remainingCount = Math.max(0, totalSpires - settledSpires);
+
+  if (remainingCount === 0) {
+    return {
+      includeCenterSpire: false,
+      settlements: [],
+      remainingCount: 0,
+    };
+  }
+
+  if (totalSpires === 1) {
+    return {
+      includeCenterSpire: settledSpires === 0,
+      settlements: [],
+      remainingCount,
+    };
+  }
+
+  if (spiresLayerDistance == null || spiresLayerDistance <= 0) {
+    throw new Error("Spire layer distance is unavailable for this world.");
+  }
+
+  if (settlementLayerMax == null || settlementLayerMax <= 0) {
+    throw new Error("Settlement layer max is unavailable for this world.");
+  }
+
+  const maxSpireLayer = Math.floor(settlementLayerMax / spiresLayerDistance);
+  if (maxSpireLayer <= 0) {
+    throw new Error("Invalid spire config: settlement layer max is smaller than spire layer distance.");
+  }
+
+  const nonCenterPlacements = buildSpireSettlementPlacements(maxSpireLayer);
+  const maxRepresentableSpires = nonCenterPlacements.length + 1; // +1 center spire
+  if (totalSpires > maxRepresentableSpires) {
+    throw new Error("Invalid spire config: spire max count exceeds representable spire slots.");
+  }
+
+  const includeCenterSpire = settledSpires === 0;
+  const settledNonCenterCount = Math.max(0, settledSpires - 1);
+  const totalNonCenterCount = Math.max(0, totalSpires - 1);
+  const remainingNonCenterCount = Math.max(0, totalNonCenterCount - settledNonCenterCount);
+  const settlements = nonCenterPlacements.slice(settledNonCenterCount, settledNonCenterCount + remainingNonCenterCount);
+
+  return {
+    includeCenterSpire,
+    settlements,
+    remainingCount,
+  };
+};
+
 const isRealmAlreadyMintedError = (error: unknown): boolean => {
   const message = getNormalizedErrorMessage(error);
   return message.includes("already minted") || message.includes("already exists") || message.includes("token exists");
+};
+
+const isSpiresAlreadySatisfiedError = (error: unknown): boolean => {
+  const message = getNormalizedErrorMessage(error);
+  return message.includes("all spires have been created") || message.includes("center spire already created");
 };
 
 const mapSeasonPassMintError = (error: unknown): string => {
@@ -694,6 +828,13 @@ const SeasonPlacementPhase = ({
   const maxPointForLayer = Math.max(0, placement.layer - 1);
   const canSubmit =
     selectedSeasonPassTokenId != null && canSettle && placementValidationErrors.length === 0 && !isSubmittingSettlement;
+  const submitLabel = isSubmittingSettlement
+    ? spiresSettled
+      ? "Settling..."
+      : "Creating Spires + Settling..."
+    : spiresSettled
+      ? "Settle Realm"
+      : "Create Spires + Settle Realm";
   const spiresProgressLabel =
     spiresSettledCount != null && spiresMaxCount != null
       ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
@@ -1001,7 +1142,7 @@ const SeasonPlacementPhase = ({
           )}
           {!spiresSettled && (
             <p className="text-[11px] text-amber-200/85">
-              All required spires must be settled on-chain before realm settlement can proceed.
+              Spires are not settled yet. Settlement will submit spire creation first, then create your realm.
             </p>
           )}
         </aside>
@@ -1035,7 +1176,7 @@ const SeasonPlacementPhase = ({
           >
             <div className="flex items-center justify-center gap-2">
               {isSubmittingSettlement ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-              <span>{isSubmittingSettlement ? "Settling..." : "Settle Realm"}</span>
+              <span>{submitLabel}</span>
             </div>
           </Button>
         </div>
@@ -1395,7 +1536,9 @@ export const GameEntryModal = ({
   const activeWorldProfile = getActiveWorld();
   const selectedWorldRpcUrl = activeWorldProfile?.name === worldName ? (activeWorldProfile.rpcUrl ?? null) : null;
   const seasonAddresses = getSeasonAddresses(chain);
-  const seasonPassAddress = worldMeta?.seasonPassAddress ?? seasonAddresses.seasonPass;
+  // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
+  const seasonPassAddress = worldMeta?.seasonPassAddress || seasonAddresses.seasonPass || null;
+  const villagePassAddress = worldMeta?.villagePassAddress || seasonAddresses.villagePass || null;
   const realmsAddress = seasonAddresses.realms;
   const {
     seasonPassBalance,
@@ -1522,7 +1665,7 @@ export const GameEntryModal = ({
       ? spiresMaxCount === 0 || spiresSettledCount >= spiresMaxCount
       : (spiresSettledCount ?? 0) > 0;
   const hasSeasonPass = seasonPassBalance > 0n || seasonPasses.length > 0;
-  const canAttemptSeasonSettle = seasonTimingValid && spiresSettled && hasSeasonPass;
+  const canAttemptSeasonSettle = seasonTimingValid && hasSeasonPass;
   const isLoadingEternumPrereqs = isCheckingWorldAvailability || isLoadingSeasonPassInventory || !worldMeta;
   const seasonPlacementValidationErrors = useMemo(
     () =>
@@ -1627,6 +1770,7 @@ export const GameEntryModal = ({
       spiresMaxCount: worldMeta?.spiresMaxCount,
       spiresSettledCount: worldMeta?.spiresSettledCount,
       seasonPassAddress: worldMeta?.seasonPassAddress,
+      villagePassAddress: worldMeta?.villagePassAddress,
       settlementLayerMax: worldMeta?.settlementLayerMax,
       settlementLayersSkipped: worldMeta?.settlementLayersSkipped,
       mapCenterOffset: worldMeta?.mapCenterOffset,
@@ -2172,12 +2316,18 @@ export const GameEntryModal = ({
       setSeasonSettlementError("Season timing invalid. Settlement is currently unavailable.");
       return;
     }
-    if (!spiresSettled) {
-      setSeasonSettlementError("All spires must be settled before creating new realms.");
-      return;
-    }
     if (!hasSeasonPass) {
       setSeasonSettlementError("Season pass not found in this wallet.");
+      return;
+    }
+    if (!seasonPassAddress) {
+      setSeasonSettlementError("Season pass contract not configured for this world.");
+      return;
+    }
+    if (villagePassAddress && seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()) {
+      setSeasonSettlementError(
+        `World config mismatch: season pass address points to village pass (${seasonPassAddress}). Update season_addresses_config on-chain.`,
+      );
       return;
     }
 
@@ -2197,30 +2347,90 @@ export const GameEntryModal = ({
       }
 
       const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      const signer = account as unknown as Account;
+
+      if (!spiresSettled) {
+        if (worldMeta?.spiresMaxCount == null || worldMeta?.spiresSettledCount == null) {
+          throw new Error("Unable to read spire settlement status for this world.");
+        }
+
+        const spirePlan = buildPendingSpireCreationPlan({
+          spiresMaxCount: worldMeta.spiresMaxCount,
+          spiresSettledCount: worldMeta.spiresSettledCount,
+          spiresLayerDistance: worldMeta?.spiresLayerDistance ?? null,
+          settlementLayerMax: worldMeta?.settlementLayerMax ?? null,
+        });
+
+        if (spirePlan.remainingCount > 0) {
+          const spireSelector = normalizeSelector(SPIRE_SYSTEMS_SELECTOR);
+          const spireSystemsAddress = contracts[spireSelector];
+          if (!spireSystemsAddress) {
+            throw new Error("spire_systems contract not found for selected world");
+          }
+
+          debugLog(worldName, "Submitting create_spires call:", {
+            includeCenterSpire: spirePlan.includeCenterSpire,
+            settlementsCount: spirePlan.settlements.length,
+            remainingCount: spirePlan.remainingCount,
+          });
+
+          try {
+            const createSpiresResult = await signer.execute({
+              contractAddress: spireSystemsAddress,
+              entrypoint: "create_spires",
+              calldata: CallData.compile([
+                spirePlan.includeCenterSpire,
+                spirePlan.settlements.map((settlement) => ({
+                  side: settlement.side,
+                  layer: settlement.layer,
+                  point: settlement.point,
+                })),
+              ]),
+            });
+            await waitForSubmittedTransaction(createSpiresResult, "create_spires");
+          } catch (spireError) {
+            if (!isSpiresAlreadySatisfiedError(spireError)) {
+              throw spireError;
+            }
+            debugLog(worldName, "create_spires skipped - already satisfied", spireError);
+          }
+
+          const worldKey = getWorldKey({ name: worldName, chain });
+          await queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+        }
+      }
+
       const selector = normalizeSelector(REALM_SYSTEMS_SELECTOR);
       const realmSystemsAddress = contracts[selector];
       if (!realmSystemsAddress) {
         throw new Error("realm_systems contract not found for selected world");
       }
 
-      const signer = account as unknown as Account;
       const realmId = Number(realmIdBigInt);
       const owner = account.address;
       const frontend = account.address;
 
-      const executeResult = await signer.execute({
-        contractAddress: realmSystemsAddress,
-        entrypoint: "create",
-        calldata: CallData.compile([
-          owner,
-          realmId,
-          frontend,
-          seasonPlacement.side,
-          seasonPlacement.layer,
-          seasonPlacement.point,
-        ]),
-      });
-      await waitForSubmittedTransaction(executeResult, "season realm create");
+      const seasonPassTokenId = uint256.bnToUint256(realmIdBigInt);
+      const executeResult = await signer.execute([
+        {
+          contractAddress: seasonPassAddress,
+          entrypoint: "approve",
+          calldata: CallData.compile([realmSystemsAddress, seasonPassTokenId]),
+        },
+        {
+          contractAddress: realmSystemsAddress,
+          entrypoint: "create",
+          calldata: CallData.compile([
+            owner,
+            realmId,
+            frontend,
+            seasonPlacement.side,
+            seasonPlacement.layer,
+            seasonPlacement.point,
+          ]),
+        },
+      ]);
+      await waitForSubmittedTransaction(executeResult, "approve season pass + season realm create");
 
       setSeasonSettlementComplete(true);
       setSeasonSettlementError(null);
@@ -2240,13 +2450,20 @@ export const GameEntryModal = ({
     seasonTimingValid,
     spiresSettled,
     hasSeasonPass,
+    seasonPassAddress,
+    villagePassAddress,
     chain,
     worldName,
+    worldMeta?.spiresMaxCount,
+    worldMeta?.spiresSettledCount,
+    worldMeta?.spiresLayerDistance,
+    worldMeta?.settlementLayerMax,
     seasonPlacement.side,
     seasonPlacement.layer,
     seasonPlacement.point,
     waitForSubmittedTransaction,
     handleEnterGame,
+    queryClient,
   ]);
 
   // Settlement handler - calls actual Dojo system calls

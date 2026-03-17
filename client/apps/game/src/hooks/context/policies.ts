@@ -1,5 +1,6 @@
 import { getActiveWorld } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
+import { getSeasonAddresses } from "@contracts";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojo-config";
@@ -38,11 +39,36 @@ const feeTokenPolicies = feeTokenAddress
     }
   : {};
 
+const seasonPassMethodPolicies = [
+  {
+    name: "approve",
+    entrypoint: "approve",
+  },
+  {
+    name: "set_approval_for_all",
+    entrypoint: "set_approval_for_all",
+  },
+];
+
+const seasonPassAddresses = Array.from(new Set([getSeasonPassAddress(), getSeasonAddresses("slot").seasonPass])).filter(
+  (address): address is string => Boolean(address && address !== "0x0"),
+);
+
+const seasonPassPolicies = Object.fromEntries(
+  seasonPassAddresses.map((address) => [
+    address,
+    {
+      methods: seasonPassMethodPolicies,
+    },
+  ]),
+);
+
 export const buildPolicies = (manifest: any) =>
   toSessionPolicies({
     contracts: {
       ...entryTokenPolicies,
       ...feeTokenPolicies,
+      ...seasonPassPolicies,
       [getContractByName(manifest, "s1_eternum", "blitz_realm_systems").address]: {
         methods: [
           {
@@ -726,14 +752,6 @@ export const buildPolicies = (manifest: any) =>
             name: "VRF",
             description: "Verifiable Random Function",
             entrypoint: "request_random",
-          },
-        ],
-      },
-      [getSeasonPassAddress()]: {
-        methods: [
-          {
-            name: "set_approval_for_all",
-            entrypoint: "set_approval_for_all",
           },
         ],
       },
