@@ -67,7 +67,7 @@ export enum BuildingTileIndex {
   WorkersHut = 18,
 }
 
-export const structureTypeToBuildingTileIndex: Record<StructureType, BuildingTileIndex> = {
+export const structureTypeToBuildingTileIndex: Partial<Record<StructureType, BuildingTileIndex>> = {
   [StructureType.Bank]: BuildingTileIndex.Market,
   [StructureType.Realm]: BuildingTileIndex.Castle0,
   [StructureType.FragmentMine]: BuildingTileIndex.EssenceRift,
@@ -78,7 +78,7 @@ export const structureTypeToBuildingTileIndex: Record<StructureType, BuildingTil
   [BITCOIN_MINE_STRUCTURE_TYPE]: BuildingTileIndex.EssenceRift,
 };
 
-export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
+export const structureTypeToBuildingType: Partial<Record<StructureType, BuildingType>> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,
   [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
