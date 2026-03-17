@@ -13,6 +13,10 @@ import {
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
 
+// `@bibliothecadao/types` dist currently omits `StructureType.BitcoinMine` from enum typings.
+// Keep support for chain value `8` without depending on the missing enum member.
+const BITCOIN_MINE_STRUCTURE_TYPE = 8 as StructureType;
+
 /**
  * Structure icon paths
  */
@@ -25,7 +29,7 @@ const STRUCTURE_ICONS = (isBlitz: boolean) => ({
     [StructureType.HolySite]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
-    [StructureType.BitcoinMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+    [BITCOIN_MINE_STRUCTURE_TYPE]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",

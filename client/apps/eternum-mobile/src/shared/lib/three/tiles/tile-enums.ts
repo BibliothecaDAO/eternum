@@ -1,5 +1,9 @@
 import { BiomeType, BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
+// `@bibliothecadao/types` dist currently omits `StructureType.BitcoinMine` from enum typings.
+// Keep support for chain value `8` without depending on the missing enum member.
+const BITCOIN_MINE_STRUCTURE_TYPE = 8 as StructureType;
+
 export enum BiomeTileIndex {
   Outline = 0,
   Beach = 1,
@@ -71,7 +75,7 @@ export const structureTypeToBuildingTileIndex: Record<StructureType, BuildingTil
   [StructureType.Village]: BuildingTileIndex.Camp,
   [StructureType.HolySite]: BuildingTileIndex.Camp,
   [StructureType.Camp]: BuildingTileIndex.Camp,
-  [StructureType.BitcoinMine]: BuildingTileIndex.EssenceRift,
+  [BITCOIN_MINE_STRUCTURE_TYPE]: BuildingTileIndex.EssenceRift,
 };
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
@@ -82,7 +86,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Village]: BuildingType.ResourceLabor,
   [StructureType.HolySite]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
-  [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
+  [BITCOIN_MINE_STRUCTURE_TYPE]: BuildingType.ResourceLabor,
 };
 
 export function getStructureTileIndex(structureType: StructureType, level?: number): BuildingTileIndex {
@@ -161,6 +165,7 @@ export const BuildingTypeToTileIndex: Record<BuildingType, BuildingTileIndex> = 
   [BuildingType.ResourceWheat]: BuildingTileIndex.Farm,
   [BuildingType.ResourceFish]: BuildingTileIndex.FishingVillage,
   [BuildingType.ResourceEssence]: BuildingTileIndex.Mine,
+  [BuildingType.ResourceResearch]: BuildingTileIndex.Mine,
 };
 
 export enum UnitTileIndex {
