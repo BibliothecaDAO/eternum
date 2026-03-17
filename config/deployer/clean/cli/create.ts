@@ -7,10 +7,9 @@ import {
   DEFAULT_MAX_ACTIONS,
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
-  launchGame,
-  type ExecutionMode,
-  type LaunchGameRequest,
-} from "..";
+} from "../constants";
+import { launchGame } from "../launch/runner";
+import type { ExecutionMode, LaunchGameRequest } from "../types";
 
 function usage(): void {
   console.log(
