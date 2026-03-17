@@ -13,6 +13,27 @@ export interface WarpTravelManagerFanoutFailure {
   reason: unknown;
 }
 
+export function deferWarpTravelManagerFanout(input: {
+  shouldRun?: () => boolean;
+  run: () => Promise<void>;
+  schedule?: (callback: () => void) => void;
+}): Promise<{ status: "scheduled" | "skipped" }> {
+  return new Promise((resolve, reject) => {
+    const schedule = input.schedule ?? ((callback: () => void) => void setTimeout(callback, 0));
+    schedule(() => {
+      if (input.shouldRun && !input.shouldRun()) {
+        resolve({ status: "skipped" });
+        return;
+      }
+
+      void input.run().then(
+        () => resolve({ status: "scheduled" }),
+        (error) => reject(error),
+      );
+    });
+  });
+}
+
 export async function runWarpTravelManagerFanout(input: {
   chunkKey: string;
   options?: WarpTravelManagerFanoutOptions;

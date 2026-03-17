@@ -27,7 +27,7 @@ interface FinalizeWarpTravelChunkSwitchInput {
   clearSceneChunkBounds: () => void;
   forceVisibilityUpdate: () => void;
   updateCurrentChunkBounds: (startRow: number, startCol: number) => void;
-  updateManagersForChunk: (chunkKey: string, options: { force: boolean; transitionToken: number }) => Promise<void>;
+  scheduleManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => void;
   unregisterPreviousChunkOnNextFrame: (chunkKey: string) => void;
 }
 
@@ -84,7 +84,7 @@ export async function finalizeWarpTravelChunkSwitch(
   }
   input.updateCurrentChunkBounds(input.startRow, input.startCol);
   input.forceVisibilityUpdate();
-  await input.updateManagersForChunk(input.targetChunk, {
+  input.scheduleManagerCatchUp(input.targetChunk, {
     force: input.force,
     transitionToken: input.transitionToken,
   });

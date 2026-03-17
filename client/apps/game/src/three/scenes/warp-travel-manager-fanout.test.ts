@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
+import { deferWarpTravelManagerFanout, runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 
 describe("runWarpTravelManagerFanout", () => {
   it("runs all manager updates concurrently and reports no failures when all succeed", async () => {
@@ -47,5 +47,24 @@ describe("runWarpTravelManagerFanout", () => {
     });
     expect(onManagerFailed).toHaveBeenCalledTimes(1);
     expect(onManagerFailed).toHaveBeenCalledWith("structure", failure);
+  });
+});
+
+describe("deferWarpTravelManagerFanout", () => {
+  it("drops deferred manager work when ownership is stale by the time the scheduler runs", async () => {
+    let shouldRun = true;
+    const run = vi.fn(async () => undefined);
+
+    const resultPromise = deferWarpTravelManagerFanout({
+      shouldRun: () => shouldRun,
+      run,
+      schedule: (callback) => {
+        shouldRun = false;
+        callback();
+      },
+    });
+
+    await expect(resultPromise).resolves.toEqual({ status: "skipped" });
+    expect(run).not.toHaveBeenCalled();
   });
 });

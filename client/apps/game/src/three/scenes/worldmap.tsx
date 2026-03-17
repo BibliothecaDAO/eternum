@@ -225,7 +225,7 @@ import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
-import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
+import { deferWarpTravelManagerFanout, runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
@@ -3523,6 +3523,34 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private deferManagerCatchUpForChunk(
+    chunkKey: string,
+    options?: {
+      force?: boolean;
+      transitionToken?: number;
+    },
+  ): void {
+    void deferWarpTravelManagerFanout({
+      shouldRun: () =>
+        shouldRunManagerUpdate({
+          transitionToken: options?.transitionToken,
+          expectedTransitionToken: this.chunkTransitionToken,
+          currentChunk: this.currentChunk,
+          targetChunk: chunkKey,
+        }),
+      run: () => this.updateManagersForChunk(chunkKey, options),
+      schedule: (callback) => {
+        if (typeof window.requestAnimationFrame === "function") {
+          window.requestAnimationFrame(() => callback());
+          return;
+        }
+        window.setTimeout(callback, 0);
+      },
+    }).catch((error) => {
+      console.error("[WorldMap] Deferred manager catch-up failed:", error);
+    });
+  }
+
   private unregisterTrackedVisibilityChunks(): void {
     const trackedChunkKeys = new Set<string>(this.pinnedChunkKeys);
     if (this.currentChunk !== "null") {
@@ -5691,8 +5719,8 @@ export default class WorldmapScene extends WarpTravel {
       forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
       updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
         this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
-      updateManagersForChunk: (targetChunkKey, managerOptions) =>
-        this.updateManagersForChunk(targetChunkKey, managerOptions),
+      scheduleManagerCatchUp: (targetChunkKey, managerOptions) =>
+        this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions),
       unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
     });
 
@@ -5843,8 +5871,8 @@ export default class WorldmapScene extends WarpTravel {
             Math.max(...readinessDurations) - Math.min(...readinessDurations),
           );
         }
+        this.deferManagerCatchUpForChunk(chunkKey, { force: true, transitionToken });
       }
-      await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
     } finally {
       this.hydratedRefreshSuppressionAreaKeys.delete(refreshAreaKey);
     }
