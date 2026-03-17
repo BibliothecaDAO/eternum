@@ -389,6 +389,8 @@ export interface SetMapConfigProps extends SystemSigner {
   camp_find_fail_probability: BigNumberish;
   holysite_find_probability: BigNumberish;
   holysite_find_fail_probability: BigNumberish;
+  bitcoin_mine_win_probability: BigNumberish;
+  bitcoin_mine_fail_probability: BigNumberish;
   hyps_win_prob: BigNumberish;
   hyps_fail_prob: BigNumberish;
   hyps_fail_prob_increase_p_hex: BigNumberish;
@@ -456,6 +458,7 @@ export interface SetCapacityConfigProps extends SystemSigner {
   bank_structure_capacity: BigNumberish; // grams
   holysite_capacity: BigNumberish; // grams
   camp_capacity: BigNumberish; // grams
+  bitcoin_mine_capacity: BigNumberish; // grams
 }
 
 export interface SetAgentConfigProps extends SystemSigner {
@@ -486,6 +489,7 @@ export interface SetWeightConfigProps extends SystemSigner {
 export interface SetTickConfigProps extends SystemSigner {
   tick_interval_in_seconds: BigNumberish;
   delivery_tick_interval_in_seconds: BigNumberish;
+  bitcoin_phase_in_seconds: BigNumberish;
 }
 
 export interface SetResourceFactoryConfigProps extends SystemSigner {

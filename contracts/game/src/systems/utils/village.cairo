@@ -3,6 +3,7 @@ use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::ResourceTypes;
+use crate::models::config::WorldConfigUtilImpl;
 use crate::models::structure::{StructureMetadata, StructureOwnerStoreImpl};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::utils::cartridge::vrf::Source;
@@ -96,4 +97,5 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
 // Note: Village discovery has been replaced by Camp discovery.
 // Villages are no longer discoverable through exploration.
 // Use iCampDiscoveryImpl in systems/utils/camp.cairo instead.
+
 

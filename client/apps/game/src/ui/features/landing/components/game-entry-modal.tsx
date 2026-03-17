@@ -9,8 +9,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Eye, Loader2, Check, Castle, MapPin, Pickaxe, Sparkles } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  X,
+  Play,
+  Eye,
+  Loader2,
+  Check,
+  Castle,
+  MapPin,
+  Pickaxe,
+  Sparkles,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
@@ -20,15 +32,19 @@ import { applyWorldSelection } from "@/runtime/world";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { getActiveWorld } from "@/runtime/world/store";
+import { sqlApi } from "@/services/api";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getWorldKey } from "@/hooks/use-world-availability";
 import { useWorldPreviewEntry } from "@/hooks/use-world-preview-entry";
+import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import {
@@ -36,13 +52,26 @@ import {
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
-import type { Chain } from "@contracts";
-import type { Account } from "starknet";
+import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
+import { Coord, Direction, ResourcesIds } from "@bibliothecadao/types";
+import { getSeasonAddresses, type Chain } from "@contracts";
+import { CallData, type Account, uint256 } from "starknet";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
+const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
 const SETTLEMENT_PROGRESS_POLL_MS = 1000;
 const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
+const CONTRACT_MAP_CENTER = 2147483646;
+
+const START_DIRECTIONS: ReadonlyArray<readonly [Direction, Direction]> = [
+  [Direction.EAST, Direction.SOUTH_WEST],
+  [Direction.SOUTH_EAST, Direction.WEST],
+  [Direction.SOUTH_WEST, Direction.NORTH_WEST],
+  [Direction.WEST, Direction.NORTH_EAST],
+  [Direction.NORTH_WEST, Direction.EAST],
+  [Direction.NORTH_EAST, Direction.SOUTH_EAST],
+];
 
 const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
@@ -65,10 +94,230 @@ const extractTransactionHash = (value: unknown): string | null => {
   return null;
 };
 
+const resolveResourceLabel = (resourceId: number): string | null => {
+  const label = ResourcesIds[resourceId as ResourcesIds];
+  return typeof label === "string" ? label : null;
+};
+
+type SeasonPlacementValidationInput = {
+  side: number;
+  layer: number;
+  point: number;
+  layerMax: number | null;
+  layersSkipped: number | null;
+};
+
+type SeasonPlacementPreview = {
+  x: number;
+  y: number;
+};
+
+type SeasonPlacementSlot = SeasonPlacementMapSlot;
+
+const validateSeasonPlacement = ({
+  side,
+  layer,
+  point,
+  layerMax,
+  layersSkipped,
+}: SeasonPlacementValidationInput): string[] => {
+  const errors: string[] = [];
+
+  if (!Number.isInteger(side) || side < 0 || side > 5) {
+    errors.push("Side must be an integer between 0 and 5.");
+  }
+
+  if (!Number.isInteger(layer) || layer <= 0) {
+    errors.push("Layer must be an integer greater than 0.");
+  }
+
+  if (!Number.isInteger(point) || point < 0) {
+    errors.push("Point must be an integer greater than or equal to 0.");
+  }
+
+  if (layerMax == null) {
+    errors.push("Layer bounds are unavailable for this world.");
+  } else if (layer > layerMax) {
+    errors.push(`Layer must be less than or equal to ${layerMax}.`);
+  }
+
+  if (layersSkipped != null && layer <= layersSkipped) {
+    errors.push(`Layer must be greater than ${layersSkipped}.`);
+  }
+
+  if (Number.isInteger(layer) && Number.isInteger(point) && layer > 0 && point > layer - 1) {
+    errors.push(`Point must be less than or equal to ${layer - 1} for layer ${layer}.`);
+  }
+
+  return errors;
+};
+
+const computeSeasonPlacementPreview = ({
+  side,
+  layer,
+  point,
+  baseDistance,
+  mapCenterOffset,
+}: {
+  side: number;
+  layer: number;
+  point: number;
+  baseDistance: number;
+  mapCenterOffset: number;
+}): SeasonPlacementPreview => {
+  const [startDirection, triangleDirection] = START_DIRECTIONS[side] ?? START_DIRECTIONS[0];
+  const center = CONTRACT_MAP_CENTER - mapCenterOffset;
+  const mapCenter = new Coord(center, center);
+
+  const sideFirstLayerOne = mapCenter.travel(startDirection, baseDistance);
+  const sideFirstLayerTarget = sideFirstLayerOne.travel(startDirection, baseDistance * (layer - 1));
+  const destination = sideFirstLayerTarget.travel(triangleDirection, baseDistance * point);
+
+  return {
+    x: destination.x,
+    y: destination.y,
+  };
+};
+
+const mapSeasonSettleError = (error: unknown): string => {
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  const message = raw.toLowerCase();
+
+  if (message.includes("occupied")) {
+    return "Destination occupied. Choose another side/layer/point.";
+  }
+
+  if (
+    message.includes("season is over") ||
+    message.includes("settling") ||
+    message.includes("timing") ||
+    message.includes("spires")
+  ) {
+    return "Season timing invalid. Settlement is currently unavailable.";
+  }
+
+  if (
+    message.includes("season pass") ||
+    message.includes("erc721") ||
+    message.includes("owner") ||
+    message.includes("approved") ||
+    message.includes("transfer")
+  ) {
+    return "Season Pass already used or unavailable in this wallet.";
+  }
+
+  return "Settlement transaction failed. Please try another placement.";
+};
+
+const getNormalizedErrorMessage = (error: unknown): string =>
+  (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
+
+const isRealmAlreadyMintedError = (error: unknown): boolean => {
+  const message = getNormalizedErrorMessage(error);
+  return message.includes("already minted") || message.includes("already exists") || message.includes("token exists");
+};
+
+const mapSeasonPassMintError = (error: unknown): string => {
+  const message = getNormalizedErrorMessage(error);
+
+  if (message.includes("only realm owner")) {
+    return "You can only mint a season pass for a realm ID owned by your wallet.";
+  }
+
+  if (message.includes("already minted")) {
+    return "A season pass already exists for that realm ID in this wallet.";
+  }
+
+  return "Failed to mint realm/season pass. Try another realm ID.";
+};
+
+const SEASON_MAP_HEX_RADIUS = 8;
+const SEASON_MAP_SQRT3 = Math.sqrt(3);
+
+const toSeasonPlacementSlotId = (side: number, layer: number, point: number): string => `${side}:${layer}:${point}`;
+
+const seasonMapOffsetToPixel = (col: number, row: number): { x: number; y: number } => {
+  const hexHeight = SEASON_MAP_HEX_RADIUS * 2;
+  const hexWidth = SEASON_MAP_SQRT3 * SEASON_MAP_HEX_RADIUS;
+  const verticalDistance = hexHeight * 0.75;
+  const horizontalDistance = hexWidth;
+  const rowOffset = ((row % 2) * Math.sign(row) * horizontalDistance) / 2;
+
+  return {
+    x: col * horizontalDistance - rowOffset,
+    y: row * verticalDistance,
+  };
+};
+
+const buildSeasonPlacementSlots = ({
+  layerMax,
+  layersSkipped,
+  baseDistance,
+  mapCenterOffset,
+  occupiedCoordLookup,
+}: {
+  layerMax: number | null;
+  layersSkipped: number | null;
+  baseDistance: number | null;
+  mapCenterOffset: number;
+  occupiedCoordLookup: Set<string>;
+}): SeasonPlacementSlot[] => {
+  if (layerMax == null || layerMax <= 0 || baseDistance == null || baseDistance <= 0) {
+    return [];
+  }
+
+  const minLayer = Math.max(1, (layersSkipped ?? 0) + 1);
+  const center = CONTRACT_MAP_CENTER - mapCenterOffset;
+  const slots: SeasonPlacementSlot[] = [];
+
+  for (let layer = minLayer; layer <= layerMax; layer += 1) {
+    for (let side = 0; side < 6; side += 1) {
+      for (let point = 0; point <= layer - 1; point += 1) {
+        const target = computeSeasonPlacementPreview({
+          side,
+          layer,
+          point,
+          baseDistance,
+          mapCenterOffset,
+        });
+
+        const col = target.x - center;
+        const row = target.y - center;
+        const pixel = seasonMapOffsetToPixel(col, row);
+        const coordinateKey = `${target.x}:${target.y}`;
+
+        slots.push({
+          id: toSeasonPlacementSlotId(side, layer, point),
+          side,
+          layer,
+          point,
+          x: target.x,
+          y: target.y,
+          pixelX: pixel.x,
+          pixelY: pixel.y,
+          occupied: occupiedCoordLookup.has(coordinateKey),
+        });
+      }
+    }
+  }
+
+  return slots;
+};
+
+const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
+
 // Types
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
-type ModalPhase = "loading" | "forge" | "hyperstructure" | "settlement" | "ready" | "error";
+type ModalPhase =
+  | "loading"
+  | "forge"
+  | "hyperstructure"
+  | "settlement"
+  | "season-pass-required"
+  | "season-placement"
+  | "ready"
+  | "error";
 
 // Hyperstructure info type
 type HyperstructureInfo = {
@@ -279,6 +528,522 @@ const SettlementPhase = ({
       {stage === "error" && (
         <p className="text-xs text-red-300 text-center mt-2">Settlement failed. Please try again.</p>
       )}
+    </div>
+  );
+};
+
+type SeasonPlacement = {
+  side: number;
+  layer: number;
+  point: number;
+};
+
+const DEFAULT_SEASON_PLACEMENT: SeasonPlacement = {
+  side: 0,
+  layer: 1,
+  point: 0,
+};
+
+const SeasonPassRequiredPhase = ({
+  onGetSeasonPass,
+  canUseSandboxMintFlow,
+  mintRealmTokenIdInput,
+  onMintRealmTokenIdInputChange,
+  onMintRealmAndSeasonPass,
+  isMintingRealmAndSeasonPass,
+  mintRealmAndSeasonPassError,
+  onRefreshSeasonPassInventory,
+  isRefreshingSeasonPassInventory,
+  seasonPassInventoryError,
+}: {
+  onGetSeasonPass: () => void;
+  canUseSandboxMintFlow: boolean;
+  mintRealmTokenIdInput: string;
+  onMintRealmTokenIdInputChange: (value: string) => void;
+  onMintRealmAndSeasonPass: () => void;
+  isMintingRealmAndSeasonPass: boolean;
+  mintRealmAndSeasonPassError: string | null;
+  onRefreshSeasonPassInventory: () => void;
+  isRefreshingSeasonPassInventory: boolean;
+  seasonPassInventoryError: string | null;
+}) => {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
+        <AlertCircle className="w-8 h-8 text-red-300" />
+      </div>
+      <h2 className="text-lg font-semibold text-gold mb-2">Season Pass Required</h2>
+      <p className="text-xs text-gold/60 mb-4">
+        You need at least one Season Pass in your wallet before you can settle in Eternum Seasons.
+      </p>
+      <Button onClick={onGetSeasonPass} className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
+        <div className="flex items-center justify-center gap-2">
+          <ExternalLink className="w-4 h-4" />
+          <span>Get a Season Pass</span>
+        </div>
+      </Button>
+      <Button
+        onClick={onRefreshSeasonPassInventory}
+        disabled={isRefreshingSeasonPassInventory}
+        variant="outline"
+        className="w-full h-9 mt-2"
+        forceUppercase={false}
+      >
+        <div className="flex items-center justify-center gap-2">
+          {isRefreshingSeasonPassInventory ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <span>Refresh Pass Status</span>
+          )}
+        </div>
+      </Button>
+      {seasonPassInventoryError && <p className="mt-2 text-[11px] text-amber-200/80">{seasonPassInventoryError}</p>}
+      {canUseSandboxMintFlow && (
+        <div className="mt-3 w-full rounded-md border border-gold/25 bg-black/20 p-3 text-left">
+          <p className="text-[11px] text-gold/70 mb-2">
+            Sandbox shortcut: mint a mock realm and a season pass for the same realm ID.
+          </p>
+          <label className="block text-[11px] text-gold/70 mb-2">
+            Realm ID
+            <input
+              type="text"
+              inputMode="numeric"
+              value={mintRealmTokenIdInput}
+              onChange={(event) => onMintRealmTokenIdInputChange(event.target.value)}
+              className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+              placeholder="e.g. 1"
+            />
+          </label>
+          <Button
+            onClick={onMintRealmAndSeasonPass}
+            disabled={isMintingRealmAndSeasonPass}
+            className="w-full h-10 !text-brown !bg-emerald-400 rounded-md"
+            forceUppercase={false}
+          >
+            <div className="flex items-center justify-center gap-2">
+              {isMintingRealmAndSeasonPass ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Castle className="w-4 h-4" />
+              )}
+              <span>{isMintingRealmAndSeasonPass ? "Minting..." : "Mint Realm + Season Pass"}</span>
+            </div>
+          </Button>
+          {mintRealmAndSeasonPassError && (
+            <p className="mt-2 text-[11px] text-red-200/90">{mintRealmAndSeasonPassError}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SeasonPlacementPhase = ({
+  placement,
+  onPlacementChange,
+  canSettle,
+  seasonTimingValid,
+  spiresSettled,
+  spiresSettledCount,
+  spiresMaxCount,
+  hasSeasonPass,
+  seasonPassBalance,
+  seasonPasses,
+  selectedSeasonPassTokenId,
+  onSelectSeasonPass,
+  onConfirmSettlement,
+  isSubmittingSettlement,
+  placementValidationErrors,
+  targetCoordPreview,
+  settlementError,
+  layerMax,
+  layersSkipped,
+  settlementBaseDistance,
+  mapCenterOffset,
+  occupiedCoordKeys,
+  isLoadingOccupiedSlots,
+  occupiedSlotsError,
+  seasonPassInventoryError,
+}: {
+  placement: SeasonPlacement;
+  onPlacementChange: (next: SeasonPlacement) => void;
+  canSettle: boolean;
+  seasonTimingValid: boolean;
+  spiresSettled: boolean;
+  spiresSettledCount: number | null;
+  spiresMaxCount: number | null;
+  hasSeasonPass: boolean;
+  seasonPassBalance: bigint;
+  seasonPasses: SeasonPassInventoryItem[];
+  selectedSeasonPassTokenId: bigint | null;
+  onSelectSeasonPass: (tokenId: bigint | null) => void;
+  onConfirmSettlement: () => void;
+  isSubmittingSettlement: boolean;
+  placementValidationErrors: string[];
+  targetCoordPreview: SeasonPlacementPreview | null;
+  settlementError: string | null;
+  layerMax: number | null;
+  layersSkipped: number | null;
+  settlementBaseDistance: number | null;
+  mapCenterOffset: number | null;
+  occupiedCoordKeys: string[];
+  isLoadingOccupiedSlots: boolean;
+  occupiedSlotsError: string | null;
+  seasonPassInventoryError: string | null;
+}) => {
+  const selectedSeasonPass = seasonPasses.find((pass) => pass.tokenId === selectedSeasonPassTokenId) ?? null;
+  const [manualSeasonPassTokenInput, setManualSeasonPassTokenInput] = useState("");
+  const [manualSeasonPassTokenError, setManualSeasonPassTokenError] = useState<string | null>(null);
+  const minLayer = Math.max(1, (layersSkipped ?? 0) + 1);
+  const maxPointForLayer = Math.max(0, placement.layer - 1);
+  const canSubmit =
+    selectedSeasonPassTokenId != null && canSettle && placementValidationErrors.length === 0 && !isSubmittingSettlement;
+  const spiresProgressLabel =
+    spiresSettledCount != null && spiresMaxCount != null
+      ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
+      : "unknown";
+  const checks = [
+    { id: "season", label: "Season timing valid", ok: seasonTimingValid },
+    { id: "spires", label: `Spires settled (${spiresProgressLabel})`, ok: spiresSettled },
+    { id: "pass", label: "Season pass present", ok: hasSeasonPass },
+  ];
+  const occupiedCoordLookup = useMemo(() => new Set(occupiedCoordKeys), [occupiedCoordKeys]);
+  const placementSlots = useMemo(
+    () =>
+      buildSeasonPlacementSlots({
+        layerMax,
+        layersSkipped,
+        baseDistance: settlementBaseDistance,
+        mapCenterOffset: mapCenterOffset ?? 0,
+        occupiedCoordLookup,
+      }),
+    [layerMax, layersSkipped, settlementBaseDistance, mapCenterOffset, occupiedCoordLookup],
+  );
+  const selectedSlotId = toSeasonPlacementSlotId(placement.side, placement.layer, placement.point);
+  const selectedPlacementSlot = useMemo(
+    () => placementSlots.find((slot) => slot.id === selectedSlotId) ?? null,
+    [placementSlots, selectedSlotId],
+  );
+
+  useEffect(() => {
+    if (selectedSeasonPassTokenId == null) return;
+    setManualSeasonPassTokenInput(selectedSeasonPassTokenId.toString());
+    setManualSeasonPassTokenError(null);
+  }, [selectedSeasonPassTokenId]);
+
+  const selectedPassDisplay = selectedSeasonPass
+    ? `${selectedSeasonPass.realmName} (Realm #${selectedSeasonPass.realmId})`
+    : selectedSeasonPassTokenId != null
+      ? `Token #${selectedSeasonPassTokenId.toString()}`
+      : "No pass selected";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <img src="/images/logos/eternum-loader.png" className="w-12" alt="Season settlement" />
+          <div>
+            <h2 className="text-lg font-semibold text-gold">Choose Settlement Placement</h2>
+            <p className="text-xs text-gold/65">Claim your realm position and settle with the selected season pass.</p>
+          </div>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[11px] text-gold/85">
+          <span className="font-semibold">Step 2 / 3</span>
+          <span className="text-gold/60">Pass + Placement</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <section className="rounded-xl border border-gold/25 bg-gradient-to-b from-[#1a140b]/95 via-[#100d08]/95 to-[#0b0906]/95 p-3 md:p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-gold">War Map Placement</p>
+              <p className="text-[11px] text-gold/60">
+                Click any valid hex to populate <span className="text-gold/85">side / layer / point</span>.
+              </p>
+            </div>
+            <span className="rounded-full border border-gold/25 bg-black/25 px-2 py-1 text-[10px] text-gold/70">
+              side (0-5), layer (ring), point (0..layer-1)
+            </span>
+          </div>
+
+          <SeasonPlacementMap
+            slots={placementSlots}
+            selectedSlotId={selectedSlotId}
+            onSelectSlot={(slot) =>
+              onPlacementChange({
+                ...placement,
+                side: slot.side,
+                layer: slot.layer,
+                point: slot.point,
+              })
+            }
+            showInstructions={false}
+            tone="gold"
+            mapHeightClassName="h-[320px] md:h-[430px]"
+          />
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <label className="text-xs text-gold/70">
+              Side
+              <input
+                type="number"
+                min={0}
+                max={5}
+                value={placement.side}
+                onChange={(event) =>
+                  onPlacementChange({
+                    ...placement,
+                    side: Number(event.target.value || 0),
+                  })
+                }
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1 text-sm text-gold"
+              />
+            </label>
+            <label className="text-xs text-gold/70">
+              Layer
+              <input
+                type="number"
+                min={minLayer}
+                max={layerMax ?? undefined}
+                value={placement.layer}
+                onChange={(event) =>
+                  onPlacementChange({
+                    ...placement,
+                    layer: Number(event.target.value || 0),
+                  })
+                }
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1 text-sm text-gold"
+              />
+            </label>
+            <label className="text-xs text-gold/70">
+              Point
+              <input
+                type="number"
+                min={0}
+                max={maxPointForLayer}
+                value={placement.point}
+                onChange={(event) =>
+                  onPlacementChange({
+                    ...placement,
+                    point: Number(event.target.value || 0),
+                  })
+                }
+                className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1 text-sm text-gold"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+            {selectedPlacementSlot ? (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5">
+                <p className="text-xs text-emerald-200">
+                  Selected hex: side {selectedPlacementSlot.side}, layer {selectedPlacementSlot.layer}, point{" "}
+                  {selectedPlacementSlot.point}
+                  {" · "}x {selectedPlacementSlot.x}, y {selectedPlacementSlot.y}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-md border border-gold/20 bg-black/20 px-2 py-1.5">
+                <p className="text-xs text-gold/65">No hex selected yet.</p>
+              </div>
+            )}
+            <div className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1.5">
+              <p className="text-xs text-emerald-200">
+                Target coordinate:{" "}
+                {targetCoordPreview ? (
+                  <>
+                    <span className="text-emerald-100">x {targetCoordPreview.x}</span>,{" "}
+                    <span className="text-emerald-100">y {targetCoordPreview.y}</span>
+                  </>
+                ) : (
+                  <span className="text-emerald-100/80">waiting for valid side/layer/point</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {isLoadingOccupiedSlots && (
+            <p className="mt-2 text-[11px] text-gold/60">Loading occupied settlement slots...</p>
+          )}
+          {occupiedSlotsError && <p className="mt-2 text-[11px] text-amber-200/80">{occupiedSlotsError}</p>}
+        </section>
+
+        <aside className="flex flex-col gap-3 rounded-xl border border-gold/25 bg-gradient-to-b from-black/45 to-black/25 p-3 md:p-4">
+          <div>
+            <p className="text-sm font-semibold text-gold">Season Pass Selection</p>
+            <p className="text-[11px] text-gold/60">Pick the pass bound to the realm you want to settle.</p>
+          </div>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            {seasonPasses.map((pass) => {
+              const isSelected = selectedSeasonPassTokenId === pass.tokenId;
+              return (
+                <div
+                  key={pass.tokenId.toString()}
+                  className={cn(
+                    "rounded-lg border p-2 transition-colors",
+                    isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/25 hover:border-gold/35",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gold truncate">{pass.realmName}</p>
+                      <p className="text-[11px] text-gold/50">Realm #{pass.realmId}</p>
+                    </div>
+                    <Button
+                      onClick={() => onSelectSeasonPass(pass.tokenId)}
+                      variant={isSelected ? "default" : "outline"}
+                      size="xs"
+                      forceUppercase={false}
+                      className={cn(isSelected ? "!bg-gold !text-brown" : "")}
+                    >
+                      {isSelected ? "Selected" : "Use"}
+                    </Button>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {pass.resourceIds.length > 0 ? (
+                      pass.resourceIds.map((resourceId, index) => {
+                        const resourceLabel = resolveResourceLabel(resourceId);
+                        if (!resourceLabel) return null;
+                        return (
+                          <div
+                            key={`${pass.tokenId.toString()}-${resourceId}-${index}`}
+                            className="inline-flex items-center gap-1 rounded-md border border-gold/20 bg-black/25 px-1.5 py-1"
+                          >
+                            <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
+                            <span className="text-[10px] text-gold/70">{resourceLabel}</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <span className="text-[11px] text-gold/50">No allowed resources decoded.</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {seasonPasses.length === 0 && seasonPassBalance > 0n && (
+            <details className="rounded-md border border-gold/25 bg-black/25 p-3" open>
+              <summary className="cursor-pointer text-[11px] font-semibold text-gold/80">
+                Can&apos;t see my pass?
+              </summary>
+              <p className="mt-2 text-[11px] text-gold/65">
+                Token enumeration is unavailable for this contract. Enter a season pass token ID manually.
+              </p>
+              <label className="mt-2 block text-[11px] text-gold/70">
+                Season Pass Token ID (Realm ID)
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={manualSeasonPassTokenInput}
+                  onChange={(event) => {
+                    setManualSeasonPassTokenInput(event.target.value);
+                    setManualSeasonPassTokenError(null);
+                  }}
+                  className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+                  placeholder="e.g. 1"
+                />
+              </label>
+              <Button
+                onClick={() => {
+                  const value = manualSeasonPassTokenInput.trim();
+                  if (value.length === 0) {
+                    setManualSeasonPassTokenError("Enter a token ID.");
+                    return;
+                  }
+                  try {
+                    const parsed = BigInt(value);
+                    if (parsed < 0n) {
+                      setManualSeasonPassTokenError("Token ID cannot be negative.");
+                      return;
+                    }
+                    onSelectSeasonPass(parsed);
+                    setManualSeasonPassTokenError(null);
+                  } catch {
+                    setManualSeasonPassTokenError("Token ID must be a valid integer.");
+                  }
+                }}
+                className="mt-2 h-9 w-full !rounded-md !bg-gold !text-brown"
+                forceUppercase={false}
+              >
+                Use Token ID
+              </Button>
+              {manualSeasonPassTokenError && (
+                <p className="mt-2 text-[11px] text-red-200/90">{manualSeasonPassTokenError}</p>
+              )}
+            </details>
+          )}
+
+          <div className="rounded-md border border-gold/25 bg-black/25 px-2 py-1.5">
+            <p className="text-[11px] text-gold/60">Selected pass</p>
+            <p className="text-xs text-gold">{selectedPassDisplay}</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            {checks.map((check) => (
+              <div
+                key={check.id}
+                className={cn(
+                  "flex items-center justify-between rounded-md border px-2 py-1.5",
+                  check.ok ? "border-emerald-500/30 bg-emerald-500/10" : "border-red-500/25 bg-red-500/10",
+                )}
+              >
+                <span className={cn("text-xs", check.ok ? "text-emerald-200" : "text-red-200")}>{check.label}</span>
+                {check.ok ? <Check className="h-4 w-4 text-emerald-400" /> : <X className="h-4 w-4 text-red-300" />}
+              </div>
+            ))}
+          </div>
+
+          {seasonPassInventoryError && (
+            <p className="text-[11px] text-amber-200/80">
+              Could not refresh season pass metadata. Try reopening the modal.
+            </p>
+          )}
+          {!spiresSettled && (
+            <p className="text-[11px] text-amber-200/85">
+              All required spires must be settled on-chain before realm settlement can proceed.
+            </p>
+          )}
+        </aside>
+      </div>
+
+      {placementValidationErrors.length > 0 && (
+        <div className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2">
+          {placementValidationErrors.map((placementError, index) => (
+            <p key={`${placementError}-${index}`} className="text-xs text-red-200">
+              {placementError}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {settlementError && <p className="text-[11px] text-red-200">{settlementError}</p>}
+
+      <div className="sticky bottom-0 z-10 rounded-xl border border-gold/30 bg-gradient-to-r from-[#1a1309]/95 via-[#20170c]/95 to-[#120d07]/95 px-3 py-3 shadow-[0_-10px_25px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gold/75">
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Pass: {selectedPassDisplay}</span>
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Side {placement.side}</span>
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Layer {placement.layer}</span>
+            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">Point {placement.point}</span>
+          </div>
+          <Button
+            disabled={!canSubmit}
+            onClick={onConfirmSettlement}
+            className="h-11 w-full min-w-[190px] !rounded-md !bg-gold !text-brown md:w-auto"
+            forceUppercase={false}
+          >
+            <div className="flex items-center justify-center gap-2">
+              {isSubmittingSettlement ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+              <span>{isSubmittingSettlement ? "Settling..." : "Settle Realm"}</span>
+            </div>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -576,6 +1341,26 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
+  const playerFeltAddress = useMemo(() => {
+    if (!account?.address) return null;
+    try {
+      return toPaddedFeltAddress(account.address);
+    } catch {
+      return null;
+    }
+  }, [account?.address]);
+
+  const worldAvailabilityInputs = useMemo(() => [{ name: worldName, chain }], [worldName, chain]);
+  const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailability } = useWorldsAvailability(
+    worldAvailabilityInputs,
+    isOpen && Boolean(worldName),
+    playerFeltAddress,
+  );
+  const worldAvailability = worldAvailabilityResults.get(getWorldKey({ name: worldName, chain }));
+  const worldMeta = worldAvailability?.meta ?? null;
+  const worldMode = worldMeta?.mode ?? "unknown";
+  const isBlitzMode = worldMode === "blitz";
+  const isEternumMode = worldMode === "eternum";
   const loadoutScopeKey = `blitz:${chain}:${worldName}`;
   const pendingLoadout = useCosmeticLoadoutStore(
     (state) => ({
@@ -600,7 +1385,7 @@ export const GameEntryModal = ({
   const { clearPreview } = useWorldPreviewEntry({
     worldName,
     chain,
-    enabled: isPreviewMode && isOpen,
+    enabled: isPreviewMode && isOpen && isBlitzMode,
   });
 
   // Bootstrap state
@@ -628,13 +1413,111 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
+  const [seasonPlacement, setSeasonPlacement] = useState<SeasonPlacement>(DEFAULT_SEASON_PLACEMENT);
+  const [selectedSeasonPassTokenId, setSelectedSeasonPassTokenId] = useState<bigint | null>(null);
+  const [isSubmittingSeasonSettlement, setIsSubmittingSeasonSettlement] = useState(false);
+  const [seasonSettlementError, setSeasonSettlementError] = useState<string | null>(null);
+  const [seasonSettlementComplete, setSeasonSettlementComplete] = useState(false);
+  const [mintRealmTokenIdInput, setMintRealmTokenIdInput] = useState("1");
+  const [isMintingRealmAndSeasonPass, setIsMintingRealmAndSeasonPass] = useState(false);
+  const [mintRealmAndSeasonPassError, setMintRealmAndSeasonPassError] = useState<string | null>(null);
   const hasEnteredGameRef = useRef(false);
+
+  const activeWorldProfile = getActiveWorld();
+  const selectedWorldRpcUrl = activeWorldProfile?.name === worldName ? (activeWorldProfile.rpcUrl ?? null) : null;
+  const seasonAddresses = getSeasonAddresses(chain);
+  const seasonPassAddress = worldMeta?.seasonPassAddress ?? seasonAddresses.seasonPass;
+  const realmsAddress = seasonAddresses.realms;
+  const {
+    seasonPassBalance,
+    seasonPasses,
+    isLoading: isLoadingSeasonPassInventory,
+    error: seasonPassInventoryError,
+    refetch: refetchSeasonPassInventory,
+  } = useSeasonPassInventory({
+    chain,
+    ownerAddress: account?.address,
+    seasonPassAddress,
+    rpcUrl: selectedWorldRpcUrl,
+    enabled: isOpen && isEternumMode,
+    refetchIntervalMs: 0,
+  });
+  const {
+    data: seasonOccupiedCoordKeys = [],
+    isLoading: isLoadingSeasonOccupiedSlots,
+    error: seasonOccupiedSlotsErrorRaw,
+  } = useQuery({
+    queryKey: ["seasonPlacementOccupiedSlots", chain, worldName],
+    enabled:
+      isOpen &&
+      isEternumMode &&
+      bootstrapStatus === "ready" &&
+      (worldMeta?.settlementLayerMax ?? null) != null &&
+      (worldMeta?.settlementBaseDistance ?? null) != null,
+    queryFn: async () => {
+      const settlements = await sqlApi.fetchRealmSettlements();
+      const coordKeys = new Set<string>();
+      for (const settlement of settlements) {
+        coordKeys.add(`${settlement.coord_x}:${settlement.coord_y}`);
+      }
+      return Array.from(coordKeys);
+    },
+    staleTime: 10_000,
+    refetchInterval: 15_000,
+  });
+  const seasonOccupiedSlotsError =
+    seasonOccupiedSlotsErrorRaw instanceof Error ? seasonOccupiedSlotsErrorRaw.message : null;
+  const seasonPassInventoryWarning = useMemo(() => {
+    if (!seasonPassInventoryError) return null;
+    const normalized = seasonPassInventoryError.toLowerCase();
+    if (normalized.includes("does not expose token enumeration")) {
+      return null;
+    }
+    return seasonPassInventoryError;
+  }, [seasonPassInventoryError]);
 
   useEffect(() => {
     if (!isOpen) {
       hasEnteredGameRef.current = false;
+      setIsSubmittingSeasonSettlement(false);
+      setSeasonSettlementError(null);
+      setSeasonSettlementComplete(false);
+      setIsMintingRealmAndSeasonPass(false);
+      setMintRealmAndSeasonPassError(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isEternumMode) {
+      setSelectedSeasonPassTokenId(null);
+      return;
+    }
+    if (seasonPasses.length === 0) return;
+
+    setSelectedSeasonPassTokenId((current) => {
+      if (current != null && seasonPasses.some((pass) => pass.tokenId === current)) {
+        return current;
+      }
+      return seasonPasses[0]?.tokenId ?? null;
+    });
+  }, [isEternumMode, seasonPasses]);
+
+  useEffect(() => {
+    if (!isEternumMode) return;
+    const minimumLayer = Math.max(1, (worldMeta?.settlementLayersSkipped ?? 0) + 1);
+    setSeasonPlacement((current) => {
+      if (current.layer >= minimumLayer) return current;
+      return {
+        ...current,
+        layer: minimumLayer,
+        point: 0,
+      };
+    });
+  }, [isEternumMode, worldMeta?.settlementLayersSkipped]);
+
+  useEffect(() => {
+    setSeasonSettlementError(null);
+  }, [selectedSeasonPassTokenId, seasonPlacement.side, seasonPlacement.layer, seasonPlacement.point]);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -658,21 +1541,93 @@ export const GameEntryModal = ({
     return Math.min(99, Math.round(completed));
   }, [bootstrapStatus, tasks, syncProgress]);
 
+  const nowSeconds = Date.now() / 1000;
+  const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
+  const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
+  const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
+  const seasonTimingValid = seasonHasStarted && seasonNotEnded;
+  const spiresSettledCount = worldMeta?.spiresSettledCount ?? null;
+  const spiresMaxCount = worldMeta?.spiresMaxCount ?? null;
+  const spiresSettled =
+    spiresSettledCount != null && spiresMaxCount != null
+      ? spiresMaxCount === 0 || spiresSettledCount >= spiresMaxCount
+      : (spiresSettledCount ?? 0) > 0;
+  const hasSeasonPass = seasonPassBalance > 0n || seasonPasses.length > 0;
+  const canAttemptSeasonSettle = seasonTimingValid && spiresSettled && hasSeasonPass;
+  const isLoadingEternumPrereqs = isCheckingWorldAvailability || isLoadingSeasonPassInventory || !worldMeta;
+  const seasonPlacementValidationErrors = useMemo(
+    () =>
+      validateSeasonPlacement({
+        side: seasonPlacement.side,
+        layer: seasonPlacement.layer,
+        point: seasonPlacement.point,
+        layerMax: worldMeta?.settlementLayerMax ?? null,
+        layersSkipped: worldMeta?.settlementLayersSkipped ?? null,
+      }),
+    [
+      seasonPlacement.side,
+      seasonPlacement.layer,
+      seasonPlacement.point,
+      worldMeta?.settlementLayerMax,
+      worldMeta?.settlementLayersSkipped,
+    ],
+  );
+  const targetCoordPreview = useMemo(() => {
+    if (seasonPlacementValidationErrors.length > 0) return null;
+    const baseDistance = worldMeta?.settlementBaseDistance;
+    if (baseDistance == null || baseDistance <= 0) return null;
+    return computeSeasonPlacementPreview({
+      side: seasonPlacement.side,
+      layer: seasonPlacement.layer,
+      point: seasonPlacement.point,
+      baseDistance,
+      mapCenterOffset: worldMeta?.mapCenterOffset ?? 0,
+    });
+  }, [
+    seasonPlacementValidationErrors,
+    seasonPlacement.side,
+    seasonPlacement.layer,
+    seasonPlacement.point,
+    worldMeta?.settlementBaseDistance,
+    worldMeta?.mapCenterOffset,
+  ]);
+  const seasonOccupiedCoordLookup = useMemo(() => new Set(seasonOccupiedCoordKeys), [seasonOccupiedCoordKeys]);
+  const selectedSeasonPlacementIsOccupied = useMemo(() => {
+    if (!targetCoordPreview) return false;
+    return seasonOccupiedCoordLookup.has(`${targetCoordPreview.x}:${targetCoordPreview.y}`);
+  }, [targetCoordPreview, seasonOccupiedCoordLookup]);
+  const seasonPlacementErrors = useMemo(() => {
+    if (!selectedSeasonPlacementIsOccupied) return seasonPlacementValidationErrors;
+    return [...seasonPlacementValidationErrors, "Destination occupied. Choose another side/layer/point."];
+  }, [seasonPlacementValidationErrors, selectedSeasonPlacementIsOccupied]);
+
   // Both checks must complete before we can determine the final phase
   const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
 
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
     let result: ModalPhase;
-    if (isForgeMode) {
+    if (isForgeMode && isBlitzMode) {
       // Forge mode does not require game bootstrap or settlement checks
       result = "forge";
     } else if (bootstrapError || bootstrapStatus === "error") {
       result = "error";
     } else if (bootstrapStatus !== "ready") {
       result = "loading";
-    } else if (isSpectateMode || isPreviewMode) {
+    } else if (isSpectateMode || (isPreviewMode && isBlitzMode)) {
       result = "ready";
+    } else if (worldMode === "unknown" || isCheckingWorldAvailability || !worldMeta) {
+      result = "loading";
+    } else if (isEternumMode) {
+      if (isLoadingEternumPrereqs) {
+        result = "loading";
+      } else if (!hasSeasonPass) {
+        result = "season-pass-required";
+      } else if (seasonSettlementComplete) {
+        result = "ready";
+      } else {
+        result = "season-placement";
+      }
     } else if (!checksComplete) {
       // Still checking settlement/hyperstructure status - stay in loading
       result = "loading";
@@ -689,6 +1644,7 @@ export const GameEntryModal = ({
       bootstrapStatus,
       hasError: !!bootstrapError,
       isForgeMode,
+      isBlitzMode,
       isSpectateMode,
       isPreviewMode,
       checksComplete,
@@ -696,6 +1652,25 @@ export const GameEntryModal = ({
       hyperstructureCheckComplete,
       needsHyperstructureInit,
       needsSettlement,
+      worldMode,
+      startSettlingAt: worldMeta?.startSettlingAt,
+      startMainAt: worldMeta?.startMainAt,
+      endAt: worldMeta?.endAt,
+      spiresMaxCount: worldMeta?.spiresMaxCount,
+      spiresSettledCount: worldMeta?.spiresSettledCount,
+      seasonPassAddress: worldMeta?.seasonPassAddress,
+      settlementLayerMax: worldMeta?.settlementLayerMax,
+      settlementLayersSkipped: worldMeta?.settlementLayersSkipped,
+      mapCenterOffset: worldMeta?.mapCenterOffset,
+      seasonPassCount: seasonPasses.length,
+      selectedSeasonPassTokenId: selectedSeasonPassTokenId?.toString() ?? null,
+      seasonPlacement,
+      seasonPlacementErrors,
+      selectedSeasonPlacementIsOccupied,
+      targetCoordPreview,
+      seasonSettlementComplete,
+      hasSeasonPass,
+      canAttemptSeasonSettle,
     });
 
     return result;
@@ -703,6 +1678,7 @@ export const GameEntryModal = ({
     bootstrapStatus,
     bootstrapError,
     isForgeMode,
+    isBlitzMode,
     isSpectateMode,
     isPreviewMode,
     checksComplete,
@@ -710,6 +1686,20 @@ export const GameEntryModal = ({
     hyperstructureCheckComplete,
     needsHyperstructureInit,
     needsSettlement,
+    isEternumMode,
+    isLoadingEternumPrereqs,
+    isCheckingWorldAvailability,
+    seasonSettlementComplete,
+    hasSeasonPass,
+    worldMode,
+    worldMeta,
+    seasonPasses,
+    selectedSeasonPassTokenId,
+    seasonPlacement,
+    seasonPlacementErrors,
+    selectedSeasonPlacementIsOccupied,
+    targetCoordPreview,
+    canAttemptSeasonSettle,
     worldName,
   ]);
 
@@ -826,7 +1816,19 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || isPreviewMode || isForgeMode) {
+    if (isEternumMode) {
+      debugLog(worldName, "Skipping settlement check - Eternum mode");
+      setNeedsSettlement(false);
+      setSettlementCheckComplete(true);
+      return;
+    }
+
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping settlement check - world mode unresolved");
+      return;
+    }
+
+    if (isSpectateMode || (isPreviewMode && isBlitzMode) || (isForgeMode && isBlitzMode)) {
       debugLog(worldName, "Skipping settlement check - spectate or forge mode");
       setSettlementCheckComplete(true);
       return;
@@ -877,6 +1879,8 @@ export const GameEntryModal = ({
     bootstrapStatus,
     setupResult,
     account,
+    isBlitzMode,
+    isEternumMode,
     isSpectateMode,
     isPreviewMode,
     isForgeMode,
@@ -904,7 +1908,19 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || isPreviewMode || isForgeMode) {
+    if (isEternumMode) {
+      debugLog(worldName, "Skipping hyperstructure check - Eternum mode");
+      setNeedsHyperstructureInit(false);
+      setHyperstructureCheckComplete(true);
+      return;
+    }
+
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping hyperstructure check - world mode unresolved");
+      return;
+    }
+
+    if (isSpectateMode || (isPreviewMode && isBlitzMode) || (isForgeMode && isBlitzMode)) {
       debugLog(worldName, "Skipping hyperstructure check - spectate or forge mode");
       setHyperstructureCheckComplete(true);
       return;
@@ -969,7 +1985,7 @@ export const GameEntryModal = ({
     };
 
     checkHyperstructures();
-  }, [bootstrapStatus, setupResult, isSpectateMode, isPreviewMode, isForgeMode, worldName]);
+  }, [bootstrapStatus, setupResult, isBlitzMode, isEternumMode, isSpectateMode, isPreviewMode, isForgeMode, worldName]);
 
   // Start bootstrap when modal opens
   useEffect(() => {
@@ -977,7 +1993,7 @@ export const GameEntryModal = ({
       debugLog(worldName, "Modal not open, skipping bootstrap");
       return;
     }
-    if (isForgeMode) {
+    if (isForgeMode && isBlitzMode) {
       debugLog(worldName, "Forge mode active, skipping game bootstrap");
       return;
     }
@@ -995,6 +2011,11 @@ export const GameEntryModal = ({
         setHyperstructures([]);
         setNeedsHyperstructureInit(false);
         setHyperstructureCheckComplete(false);
+        setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
+        setSelectedSeasonPassTokenId(null);
+        setIsSubmittingSeasonSettlement(false);
+        setSeasonSettlementError(null);
+        setSeasonSettlementComplete(false);
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
@@ -1035,7 +2056,7 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [isOpen, isForgeMode, worldName, chain, updateTask]);
+  }, [isOpen, isForgeMode, isBlitzMode, worldName, chain, updateTask]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -1065,11 +2086,94 @@ export const GameEntryModal = ({
     setHyperstructureCheckComplete(false);
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
+    setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
+    setSelectedSeasonPassTokenId(null);
+    setIsSubmittingSeasonSettlement(false);
+    setSeasonSettlementError(null);
+    setSeasonSettlementComplete(false);
     // Trigger re-bootstrap
     setTimeout(() => {
       setBootstrapStatus("loading");
     }, 100);
   }, []);
+
+  const handleGetSeasonPass = useCallback(() => {
+    window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
+  }, []);
+
+  const canUseSandboxMintFlow = isEternumMode && (chain === "slot" || chain === "slottest");
+
+  const handleMintRealmAndSeasonPass = useCallback(async () => {
+    if (!account?.address) {
+      setMintRealmAndSeasonPassError("Connect your wallet first.");
+      return;
+    }
+    if (!seasonPassAddress || !realmsAddress) {
+      setMintRealmAndSeasonPassError("Season contracts are not configured for this world.");
+      return;
+    }
+
+    const tokenInput = mintRealmTokenIdInput.trim();
+    if (tokenInput.length === 0) {
+      setMintRealmAndSeasonPassError("Enter a realm ID to mint.");
+      return;
+    }
+
+    let realmId: bigint;
+    try {
+      realmId = BigInt(tokenInput);
+    } catch {
+      setMintRealmAndSeasonPassError("Realm ID must be a valid integer.");
+      return;
+    }
+
+    if (realmId < 0n) {
+      setMintRealmAndSeasonPassError("Realm ID cannot be negative.");
+      return;
+    }
+
+    setIsMintingRealmAndSeasonPass(true);
+    setMintRealmAndSeasonPassError(null);
+
+    try {
+      const signer = account as unknown as Account;
+
+      try {
+        const mintRealmResult = await signer.execute({
+          contractAddress: realmsAddress,
+          entrypoint: "mint",
+          calldata: CallData.compile([uint256.bnToUint256(realmId)]),
+        });
+        await waitForSubmittedTransaction(mintRealmResult, "mint test realm");
+      } catch (realmMintError) {
+        if (!isRealmAlreadyMintedError(realmMintError)) {
+          throw realmMintError;
+        }
+      }
+
+      const mintSeasonPassResult = await signer.execute({
+        contractAddress: seasonPassAddress,
+        entrypoint: "mint",
+        calldata: CallData.compile([account.address, uint256.bnToUint256(realmId)]),
+      });
+      await waitForSubmittedTransaction(mintSeasonPassResult, "mint season pass");
+
+      await refetchSeasonPassInventory();
+      setSelectedSeasonPassTokenId(realmId);
+      setMintRealmAndSeasonPassError(null);
+    } catch (error) {
+      setMintRealmAndSeasonPassError(mapSeasonPassMintError(error));
+    } finally {
+      setIsMintingRealmAndSeasonPass(false);
+    }
+  }, [
+    account,
+    seasonPassAddress,
+    realmsAddress,
+    mintRealmTokenIdInput,
+    waitForSubmittedTransaction,
+    refetchSeasonPassInventory,
+  ]);
 
   // Enter game handler - navigates to the game.
   // Does NOT prefetch structures from SQL — the GameLoadingOverlay will wait for
@@ -1093,9 +2197,104 @@ export const GameEntryModal = ({
     window.dispatchEvent(new Event("urlChanged"));
   }, [navigate, isSpectateMode]);
 
+  const handleSeasonSettle = useCallback(async () => {
+    if (!account?.address) return;
+    if (!selectedSeasonPassTokenId) {
+      setSeasonSettlementError("Select a season pass before settling.");
+      return;
+    }
+    if (seasonPlacementErrors.length > 0) {
+      setSeasonSettlementError(seasonPlacementErrors[0] ?? "Invalid settlement placement.");
+      return;
+    }
+    if (!seasonTimingValid) {
+      setSeasonSettlementError("Season timing invalid. Settlement is currently unavailable.");
+      return;
+    }
+    if (!spiresSettled) {
+      setSeasonSettlementError("All spires must be settled before creating new realms.");
+      return;
+    }
+    if (!hasSeasonPass) {
+      setSeasonSettlementError("Season pass not found in this wallet.");
+      return;
+    }
+
+    const realmIdBigInt = selectedSeasonPassTokenId;
+    if (realmIdBigInt < 0n || realmIdBigInt > 4_294_967_295n) {
+      setSeasonSettlementError("Season pass realm id is out of bounds.");
+      return;
+    }
+
+    setIsSubmittingSeasonSettlement(true);
+    setSeasonSettlementError(null);
+
+    try {
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+      if (!factorySqlBaseUrl) {
+        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
+      }
+
+      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      const selector = normalizeSelector(REALM_SYSTEMS_SELECTOR);
+      const realmSystemsAddress = contracts[selector];
+      if (!realmSystemsAddress) {
+        throw new Error("realm_systems contract not found for selected world");
+      }
+
+      const signer = account as unknown as Account;
+      const realmId = Number(realmIdBigInt);
+      const owner = account.address;
+      const frontend = account.address;
+
+      const executeResult = await signer.execute({
+        contractAddress: realmSystemsAddress,
+        entrypoint: "create",
+        calldata: CallData.compile([
+          owner,
+          realmId,
+          frontend,
+          seasonPlacement.side,
+          seasonPlacement.layer,
+          seasonPlacement.point,
+        ]),
+      });
+      await waitForSubmittedTransaction(executeResult, "season realm create");
+
+      setSeasonSettlementComplete(true);
+      setSeasonSettlementError(null);
+      setTimeout(() => {
+        handleEnterGame();
+      }, 500);
+    } catch (error) {
+      debugLog(worldName, "Season settlement failed:", error);
+      setSeasonSettlementError(mapSeasonSettleError(error));
+    } finally {
+      setIsSubmittingSeasonSettlement(false);
+    }
+  }, [
+    account,
+    selectedSeasonPassTokenId,
+    seasonPlacementErrors,
+    seasonTimingValid,
+    spiresSettled,
+    hasSeasonPass,
+    chain,
+    worldName,
+    seasonPlacement.side,
+    seasonPlacement.layer,
+    seasonPlacement.point,
+    waitForSubmittedTransaction,
+    handleEnterGame,
+  ]);
+
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
     debugLog(worldName, "handleSettle called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping blitz settlement call outside blitz mode");
+      return;
+    }
     if (!setupResult || !account) return;
 
     setIsSettling(true);
@@ -1178,6 +2377,7 @@ export const GameEntryModal = ({
   }, [
     setupResult,
     account,
+    isBlitzMode,
     handleEnterGame,
     worldName,
     readSettlementSnapshot,
@@ -1189,6 +2389,10 @@ export const GameEntryModal = ({
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
     debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
+    if (!isBlitzMode) {
+      debugLog(worldName, "Skipping blitz forge flow outside blitz mode");
+      return;
+    }
     if (!account) return;
 
     setIsForging(true);
@@ -1242,7 +2446,7 @@ export const GameEntryModal = ({
     } finally {
       setIsForging(false);
     }
-  }, [account, worldName, chain, queryClient, numHyperstructuresLeft]);
+  }, [account, isBlitzMode, worldName, chain, queryClient, numHyperstructuresLeft]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
@@ -1360,7 +2564,10 @@ export const GameEntryModal = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-md mx-4 bg-brown/95 backdrop-blur-sm rounded-xl border border-gold/40 shadow-2xl"
+        className={cn(
+          "relative mx-4 w-full rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm",
+          phase === "season-placement" ? "max-h-[88vh] max-w-6xl" : "max-w-md",
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -1392,7 +2599,7 @@ export const GameEntryModal = ({
             </span>
           </div>
           <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
-          {isPreviewMode && (
+          {isPreviewMode && isBlitzMode && (
             <div className="mt-3 rounded-xl border border-amber-300/25 bg-amber-500/10 px-3 py-2">
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-amber-100">Local Dev Preview</p>
               <p className="mt-1 text-xs text-amber-50/90">This enters the world without a registration transaction.</p>
@@ -1405,7 +2612,7 @@ export const GameEntryModal = ({
               </div>
             </div>
           )}
-          {!isForgeMode && !isSpectateMode && (
+          {!isForgeMode && !isSpectateMode && isBlitzMode && (
             <div className="mt-3 rounded-xl border border-gold/15 bg-black/30 px-3 py-2">
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-gold/60">
                 {isPreviewMode ? "Preview Blitz Loadout" : "Next Blitz Loadout"}
@@ -1417,7 +2624,13 @@ export const GameEntryModal = ({
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6">
+        <div
+          className={cn(
+            "px-6 pb-6",
+            phase === "season-placement" &&
+              "max-h-[calc(88vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+          )}
+        >
           <AnimatePresence mode="wait">
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -1454,6 +2667,63 @@ export const GameEntryModal = ({
                   isSettling={isSettling}
                   onSettle={handleSettle}
                   onEnterGame={handleEnterGame}
+                />
+              </motion.div>
+            )}
+            {phase === "season-pass-required" && (
+              <motion.div
+                key="season-pass-required"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <SeasonPassRequiredPhase
+                  onGetSeasonPass={handleGetSeasonPass}
+                  canUseSandboxMintFlow={canUseSandboxMintFlow}
+                  mintRealmTokenIdInput={mintRealmTokenIdInput}
+                  onMintRealmTokenIdInputChange={setMintRealmTokenIdInput}
+                  onMintRealmAndSeasonPass={handleMintRealmAndSeasonPass}
+                  isMintingRealmAndSeasonPass={isMintingRealmAndSeasonPass}
+                  mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
+                  onRefreshSeasonPassInventory={refetchSeasonPassInventory}
+                  isRefreshingSeasonPassInventory={isLoadingSeasonPassInventory}
+                  seasonPassInventoryError={seasonPassInventoryWarning}
+                />
+              </motion.div>
+            )}
+            {phase === "season-placement" && (
+              <motion.div
+                key="season-placement"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <SeasonPlacementPhase
+                  placement={seasonPlacement}
+                  onPlacementChange={setSeasonPlacement}
+                  canSettle={canAttemptSeasonSettle}
+                  seasonTimingValid={seasonTimingValid}
+                  spiresSettled={spiresSettled}
+                  spiresSettledCount={spiresSettledCount}
+                  spiresMaxCount={spiresMaxCount}
+                  hasSeasonPass={hasSeasonPass}
+                  seasonPassBalance={seasonPassBalance}
+                  seasonPasses={seasonPasses}
+                  selectedSeasonPassTokenId={selectedSeasonPassTokenId}
+                  onSelectSeasonPass={setSelectedSeasonPassTokenId}
+                  onConfirmSettlement={handleSeasonSettle}
+                  isSubmittingSettlement={isSubmittingSeasonSettlement}
+                  placementValidationErrors={seasonPlacementErrors}
+                  targetCoordPreview={targetCoordPreview}
+                  settlementError={seasonSettlementError}
+                  layerMax={worldMeta?.settlementLayerMax ?? null}
+                  layersSkipped={worldMeta?.settlementLayersSkipped ?? null}
+                  settlementBaseDistance={worldMeta?.settlementBaseDistance ?? null}
+                  mapCenterOffset={worldMeta?.mapCenterOffset ?? null}
+                  occupiedCoordKeys={seasonOccupiedCoordKeys}
+                  isLoadingOccupiedSlots={isLoadingSeasonOccupiedSlots}
+                  occupiedSlotsError={seasonOccupiedSlotsError}
+                  seasonPassInventoryError={seasonPassInventoryWarning}
                 />
               </motion.div>
             )}

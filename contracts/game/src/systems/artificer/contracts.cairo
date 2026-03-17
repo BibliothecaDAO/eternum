@@ -22,6 +22,7 @@ pub mod artificer_systems {
     };
     use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::utils::cartridge::vrf::Source;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -67,7 +68,7 @@ pub mod artificer_systems {
             // Select random relic using existing chest drop weights
             let (relic_ids, chances) = InternalImpl::_relic_chances(RELICS_RESOURCE_START_ID, RELICS_RESOURCE_END_ID);
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(structure_owner, world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(Source::Nonce(structure_owner), world);
             let chosen_relics: Span<u8> = rng_library_dispatcher
                 .get_weighted_choice_u8(relic_ids, chances, 1, true, vrf_seed);
             let relic_type: u8 = *chosen_relics.at(0);

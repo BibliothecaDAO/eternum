@@ -11,7 +11,7 @@ describe("Game card dev preview entry visibility", () => {
     );
 
     expect(source).toContain(
-      "const showPreviewButton = import.meta.env.DEV && isOngoing && Boolean(playerAddress) && canPreviewEnter;",
+      "const showPreviewButton = import.meta.env.DEV && isBlitzMode && isOngoing && Boolean(playerAddress) && canPreviewEnter;",
     );
     expect(source).toContain("Local Preview");
     expect(source).toContain("onPreviewEnter");

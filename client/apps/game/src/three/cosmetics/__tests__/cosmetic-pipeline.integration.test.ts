@@ -36,6 +36,7 @@ vi.mock("../asset-cache", () => ({
 import { buildBlitzRegisterCalls } from "@/hooks/blitz-registration";
 import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
+import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import { ModelType } from "../../types/army";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { playerCosmeticsStore } from "../player-cosmetics-store";
@@ -87,7 +88,7 @@ describe("cosmetic pipeline integration", () => {
   });
 
   it("flows from a pending draft through preview entry into applied army and structure cosmetics", async () => {
-    playerCosmeticsStore.setPendingBlitzLoadout("cosmetics:slot", "0x123", {
+    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("slot"), "0x123", {
       tokenIds: ["0xaaa", "0xbbb", "0xccc"],
       selectedBySlot: {
         armor: {
@@ -144,7 +145,7 @@ describe("cosmetic pipeline integration", () => {
   });
 
   it("clears preview state and reapplies a changed draft on the next explicit preview entry", async () => {
-    playerCosmeticsStore.setPendingBlitzLoadout("cosmetics:slot", "0x123", {
+    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("slot"), "0x123", {
       tokenIds: ["0xaaa"],
       selectedBySlot: {
         armor: {
@@ -181,7 +182,7 @@ describe("cosmetic pipeline integration", () => {
     });
     useDevPreviewEntryStore.getState().clearPreviewEntry(previewWorldKey);
 
-    playerCosmeticsStore.setPendingBlitzLoadout("cosmetics:slot", "0x123", {
+    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("slot"), "0x123", {
       tokenIds: [],
       selectedBySlot: {},
     });

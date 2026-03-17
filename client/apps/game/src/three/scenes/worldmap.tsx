@@ -98,7 +98,6 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
-import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {

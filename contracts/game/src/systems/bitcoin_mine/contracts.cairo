@@ -34,6 +34,7 @@ pub mod bitcoin_mine_systems {
     use crate::models::structure::{StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::models::weight::Weight;
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::utils::cartridge::vrf::Source;
 
     #[abi(embed_v0)]
     impl BitcoinMineSystemsImpl of super::IBitcoinMineSystems<ContractState> {
@@ -163,7 +164,7 @@ pub mod bitcoin_mine_systems {
             // Get VRF for lottery
             let caller = starknet::get_caller_address();
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(Source::Nonce(caller), world);
 
             let now = starknet::get_block_timestamp();
 

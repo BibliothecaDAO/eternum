@@ -149,7 +149,7 @@ function SimpleSelect({ className, clearable, items, label, onValueChange, value
       <div className="relative">
         <select
           id={id}
-          className="peer block w-full appearance-none rounded-md border border-gold/30 bg-white/5 px-3 py-2.5 pr-10 text-white shadow-sm outline-none transition hover:border-gold/50 focus:border-gold focus:ring-2 focus:ring-gold/20"
+          className="peer block w-full appearance-none rounded-md border border-gold/30 bg-brown/60 px-3 py-2.5 pr-10 text-gold shadow-sm outline-none transition hover:border-gold/50 hover:bg-brown/70 focus:border-gold focus:bg-brown/70 focus:ring-2 focus:ring-gold/20"
           value={value ?? ""}
           onChange={(event) => onValueChange(event.target.value)}
         >

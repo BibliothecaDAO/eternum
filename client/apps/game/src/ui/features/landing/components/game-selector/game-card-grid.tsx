@@ -274,6 +274,8 @@ const GameCard = ({
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
+  const isEternumMode = game.config?.mode === "eternum";
+  const isBlitzMode = game.config?.mode !== "eternum";
   const devModeOn = game.config?.devModeOn ?? false;
   const {
     enterPreview,
@@ -285,14 +287,16 @@ const GameCard = ({
   } = useWorldPreviewEntry({
     worldName: game.name,
     chain: game.chain,
-    enabled: game.status === "ok" && isOngoing && Boolean(playerAddress),
+    enabled: isBlitzMode && game.status === "ok" && isOngoing && Boolean(playerAddress),
   });
   const hasPreviewEntry = previewEntry?.previewEntered === true;
-  const canPlay = isOngoing && (game.isRegistered || hasPreviewEntry);
+  const canPlayBlitz = isBlitzMode && isOngoing && (game.isRegistered || hasPreviewEntry);
+  const canOpenEternumEntry = isEternumMode && !isEnded;
+  const canPlay = canPlayBlitz || canOpenEternumEntry;
   // Can spectate ongoing or ended games
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
-  const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);
+  const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));
   // Forge hyperstructures button shown during registration period
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
   // Show forge button when we have config (even if 0 left, show disabled)
@@ -344,7 +348,7 @@ const GameCard = ({
     chain: game.chain,
     config: game.config,
     isRegistered: game.isRegistered === true,
-    enabled: game.status === "ok" && canRegisterPeriod,
+    enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
 
   // Handle registration with toast notification
@@ -430,7 +434,7 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
-  const showPreviewButton = import.meta.env.DEV && isOngoing && Boolean(playerAddress) && canPreviewEnter;
+  const showPreviewButton = import.meta.env.DEV && isBlitzMode && isOngoing && Boolean(playerAddress) && canPreviewEnter;
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
   const previewActionLabel = hasPreviewEntry ? "Reapply Preview" : "Local Preview";
 
@@ -607,18 +611,20 @@ const GameCard = ({
               onClick={() => runWithNetworkGuard(handlePlayAction)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
+                canOpenEternumEntry
+                  ? "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
+                  : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
               )}
             >
               <Play className="w-3 h-3" />
-              Play
+              {canOpenEternumEntry ? "Settle" : "Play"}
             </button>
-          ) : game.isRegistered === null && playerAddress ? (
+          ) : isBlitzMode && game.isRegistered === null && playerAddress ? (
             // Loading state while checking registration status
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
               <Loader2 className="w-3 h-3 animate-spin" />
             </div>
-          ) : game.isRegistered === false && canRegisterPeriod && playerAddress ? (
+          ) : isBlitzMode && game.isRegistered === false && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
@@ -654,7 +660,7 @@ const GameCard = ({
                 </div>
               ) : null}
             </>
-          ) : !playerAddress && !showRegistered && canRegisterPeriod ? (
+          ) : isBlitzMode && !playerAddress && !showRegistered && canRegisterPeriod ? (
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           ) : null}
 
@@ -835,6 +841,8 @@ interface UnifiedGameGridProps {
   onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
   className?: string;
+  /** Filter games by mode */
+  modeFilter?: "blitz" | "eternum";
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
   devModeFilter?: boolean;
   /** Custom title for the grid */
@@ -869,6 +877,7 @@ export const UnifiedGameGrid = ({
   onForgeHyperstructures,
   onRegistrationComplete,
   className,
+  modeFilter,
   devModeFilter,
   title = "Games",
   statusFilter,
@@ -972,6 +981,11 @@ export const UnifiedGameGrid = ({
         if (!statusFilter) return true;
         const statuses = Array.isArray(statusFilter) ? statusFilter : [statusFilter];
         return statuses.includes(game.gameStatus);
+      })
+      // Filter by mode if specified
+      .filter((game) => {
+        if (!modeFilter) return true;
+        return game.config?.mode === modeFilter;
       });
 
     // Sort: optionally registered first, then by status, then by start time
@@ -1000,6 +1014,7 @@ export const UnifiedGameGrid = ({
     isOngoing,
     isEnded,
     isUpcoming,
+    modeFilter,
     devModeFilter,
     statusFilter,
     sortRegisteredFirst,
