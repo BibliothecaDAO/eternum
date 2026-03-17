@@ -19,9 +19,14 @@ describe("worldmap render diagnostics wiring", () => {
 
     expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("updateVisibleChunks"/);
     expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("performChunkSwitch"/);
+    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("chunkTerrainReadyMs"/);
+    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("chunkTerrainCommitMs"/);
+    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("chunkManagerCatchUpMs"/);
     expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("updateManagersForChunk"/);
     expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("chunkRefreshRequests"/);
     expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("updateVisibleChunksCalls"/);
+    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("preparedChunkPrewarmHits"/);
+    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("preparedChunkPrewarmMisses"/);
     expect(worldmapSource).toMatch(/incrementWorldmapRenderUploadBytes\("cachedChunkReplay"/);
     expect(armyManagerSource).toMatch(/recordWorldmapRenderDuration\("executeRenderForChunk"/);
     expect(structureManagerSource).toMatch(/recordWorldmapRenderDuration\("performVisibleStructuresUpdate"/);

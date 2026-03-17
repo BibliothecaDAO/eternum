@@ -19,6 +19,7 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     ).toEqual({
       desiredAreaKeys: [],
       chunkKeysToEnqueue: [],
+      presentationChunkKeyToPrewarm: null,
       nextPrefetchedAhead: [],
     });
   });
@@ -43,6 +44,7 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     expect(result).toEqual({
       desiredAreaKeys: ["96,24:area"],
       chunkKeysToEnqueue: [],
+      presentationChunkKeyToPrewarm: null,
       nextPrefetchedAhead: ["96,24"],
     });
   });
@@ -67,6 +69,7 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     expect(result).toEqual({
       desiredAreaKeys: ["48,24:area", "72,24:area"],
       chunkKeysToEnqueue: ["72,24"],
+      presentationChunkKeyToPrewarm: "48,24",
       nextPrefetchedAhead: ["48,24", "72,24"],
     });
   });

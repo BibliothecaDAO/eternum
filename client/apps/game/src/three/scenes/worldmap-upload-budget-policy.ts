@@ -1,6 +1,27 @@
 const MATRIX_UPLOAD_BYTES_PER_INSTANCE = Float32Array.BYTES_PER_ELEMENT * 16;
 const COLOR_UPLOAD_BYTES_PER_INSTANCE = Float32Array.BYTES_PER_ELEMENT * 3;
 
+export type WorldmapUploadWorkStage = "presentation_prewarm" | "visible_commit";
+
+export function classifyWorldmapUploadWork(input: {
+  colorInstanceCount: number;
+  matrixInstanceCount: number;
+  isCachedReplay: boolean;
+  stage: WorldmapUploadWorkStage;
+}): {
+  stage: WorldmapUploadWorkStage;
+  estimatedUploadBytes: number;
+} {
+  const estimatedUploadBytes = input.isCachedReplay
+    ? estimateWorldmapCachedReplayUploadBytes(input)
+    : estimateWorldmapColdBuildUploadBytes(input);
+
+  return {
+    stage: input.stage,
+    estimatedUploadBytes,
+  };
+}
+
 export function estimateWorldmapCachedReplayUploadBytes(input: {
   colorInstanceCount: number;
   matrixInstanceCount: number;

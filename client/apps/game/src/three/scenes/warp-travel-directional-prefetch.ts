@@ -21,12 +21,14 @@ interface ResolveWarpTravelDirectionalPrefetchPlanInput {
 export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTravelDirectionalPrefetchPlanInput): {
   desiredAreaKeys: string[];
   chunkKeysToEnqueue: string[];
+  presentationChunkKeyToPrewarm: string | null;
   nextPrefetchedAhead: string[];
 } {
   if (!input.anchor) {
     return {
       desiredAreaKeys: [],
       chunkKeysToEnqueue: [],
+      presentationChunkKeyToPrewarm: null,
       nextPrefetchedAhead: [],
     };
   }
@@ -43,6 +45,10 @@ export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTrave
   const desiredAreaKeys: string[] = [];
   const nextPrefetchedAhead = [...input.prefetchedAhead];
   const chunkKeysToEnqueue: string[] = [];
+  const presentationChunkKeyToPrewarm =
+    input.pinnedChunkKeys.has(input.anchor.forwardChunkKey) || input.anchor.forwardChunkKey === input.currentChunk
+      ? null
+      : input.anchor.forwardChunkKey;
 
   prefetchTargets.forEach((chunkKey) => {
     if (input.pinnedChunkKeys.has(chunkKey) || chunkKey === input.currentChunk) {
@@ -64,6 +70,7 @@ export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTrave
   return {
     desiredAreaKeys,
     chunkKeysToEnqueue,
+    presentationChunkKeyToPrewarm,
     nextPrefetchedAhead,
   };
 }

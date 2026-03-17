@@ -149,7 +149,12 @@ import {
 } from "./worldmap-zoom-controller";
 import { flushDeferredWorldmapZoomRefresh, resolveWorldmapZoomRefreshPlan } from "./worldmap-zoom-refresh-policy";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
-import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
+import {
+  WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS,
+  resolveWorldmapChunkRefreshDebounceMs,
+  resolveWorldmapChunkRefreshSchedule,
+  shouldDelayWorldmapChunkSwitch,
+} from "./worldmap-chunk-switch-delay-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
@@ -205,6 +210,7 @@ import {
 } from "./worldmap-chunk-diagnostics-baseline";
 import {
   evaluateChunkSwitchP95Regression,
+  type ChunkSwitchP95RegressionMetric,
   type ChunkSwitchP95RegressionResult,
 } from "./worldmap-chunk-latency-regression";
 import {
@@ -221,6 +227,12 @@ import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
+import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
+import {
+  prepareWorldmapChunkPresentation,
+  prewarmWorldmapChunkPresentation,
+} from "./worldmap-chunk-presentation";
+import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -270,6 +282,11 @@ type WorldmapChunkSwitchP95RegressionDebugResult = {
   result: ChunkSwitchP95RegressionResult;
 };
 
+type WorldmapChunkFirstVisibleCommitP95RegressionDebugResult = {
+  baselineLabel: string | null;
+  result: ChunkSwitchP95RegressionResult;
+};
+
 type WorldmapTileFetchVolumeRegressionDebugResult = {
   baselineLabel: string | null;
   result: TileFetchVolumeRegressionResult;
@@ -290,6 +307,10 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     baselineLabel?: string,
     allowedRegressionFraction?: number,
   ) => WorldmapChunkSwitchP95RegressionDebugResult;
+  evaluateWorldmapChunkFirstVisibleCommitP95Regression?: (
+    baselineLabel?: string,
+    allowedRegressionFraction?: number,
+  ) => WorldmapChunkFirstVisibleCommitP95RegressionDebugResult;
   evaluateWorldmapTileFetchVolumeRegression?: (
     baselineLabel?: string,
     allowedIncreaseFraction?: number,
@@ -338,6 +359,8 @@ export default class WorldmapScene extends WarpTravel {
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
   private readonly maxPrefetchedAhead = WORLDMAP_CHUNK_POLICY.prefetch.maxAhead;
+  private directionalPresentationChunkKey: string | null = null;
+  private activeDirectionalPresentationPrewarms: Set<string> = new Set();
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
@@ -355,13 +378,13 @@ export default class WorldmapScene extends WarpTravel {
   private currentChunk: string = "null";
   private isChunkTransitioning: boolean = false;
   private chunkRefreshTimeout: number | null = null;
+  private chunkRefreshDeadlineAtMs: number | null = null;
   private pendingChunkRefreshForce = false;
   private pendingChunkRefreshUiReason: "default" | "shortcut" = "default";
   private chunkRefreshRequestToken = 0;
   private chunkRefreshAppliedToken = 0;
   private chunkRefreshRunning = false;
   private chunkRefreshRerunRequested = false;
-  private readonly chunkRefreshDebounceMs = 140;
   private isShortcutArmySelectionInFlight = false;
   private lastControlsCameraDistance: number | null = null;
   private readonly zoomForceRefreshDistanceThreshold = 0.75;
@@ -2515,6 +2538,7 @@ export default class WorldmapScene extends WarpTravel {
     );
 
     this.chunkRefreshTimeout = resetState.chunkRefreshTimeout;
+    this.chunkRefreshDeadlineAtMs = null;
     this.chunkRefreshRequestToken = resetState.chunkRefreshRequestToken;
     this.chunkRefreshAppliedToken = resetState.chunkRefreshAppliedToken;
     this.chunkRefreshRunning = resetState.chunkRefreshRunning;
@@ -3358,6 +3382,7 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     this.directionalPrefetchAreaKeys = new Set(prefetchPlan.desiredAreaKeys);
+    this.directionalPresentationChunkKey = prefetchPlan.presentationChunkKeyToPrewarm;
     this.pruneQueuedDirectionalPrefetches();
     this.prefetchedAhead.splice(0, this.prefetchedAhead.length, ...prefetchPlan.nextPrefetchedAhead);
 
@@ -3365,6 +3390,13 @@ export default class WorldmapScene extends WarpTravel {
       // Directional prefetch is lowest priority compared to pinned neighborhood.
       this.enqueueChunkPrefetch(chunkKey, 2);
     });
+
+    if (this.directionalPresentationChunkKey !== null) {
+      const presentationFetchKey = this.getRenderAreaKeyForChunk(this.directionalPresentationChunkKey);
+      if (this.fetchedChunks.has(presentationFetchKey)) {
+        void this.prewarmDirectionalPresentationChunk(this.directionalPresentationChunkKey);
+      }
+    }
   }
 
   private pruneQueuedDirectionalPrefetches(): void {
@@ -3376,6 +3408,7 @@ export default class WorldmapScene extends WarpTravel {
     this.prefetchQueue = [];
     this.queuedPrefetchAreaKeys.clear();
     this.directionalPrefetchAreaKeys.clear();
+    this.directionalPresentationChunkKey = null;
     this.prefetchedAhead.length = 0;
   }
 
@@ -3426,7 +3459,10 @@ export default class WorldmapScene extends WarpTravel {
         try {
           if (item.fetchTiles) {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_executed");
-            await this.computeTileEntities(item.chunkKey);
+            const tileFetchSucceeded = await this.computeTileEntities(item.chunkKey);
+            if (tileFetchSucceeded && item.chunkKey === this.directionalPresentationChunkKey) {
+              await this.prewarmDirectionalPresentationChunk(item.chunkKey);
+            }
           }
         } catch (error) {
           if (import.meta.env.DEV) {
@@ -3438,6 +3474,53 @@ export default class WorldmapScene extends WarpTravel {
         }
       })();
     });
+  }
+
+  private async prewarmDirectionalPresentationChunk(chunkKey: string): Promise<void> {
+    if (
+      !chunkKey ||
+      chunkKey !== this.directionalPresentationChunkKey ||
+      this.activeDirectionalPresentationPrewarms.has(chunkKey) ||
+      this.cachedMatrices.has(chunkKey)
+    ) {
+      return;
+    }
+
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      return;
+    }
+
+    this.activeDirectionalPresentationPrewarms.add(chunkKey);
+    try {
+      const prewarmToken = this.chunkTransitionToken;
+      await prewarmWorldmapChunkPresentation({
+        chunkKey,
+        prewarmToken,
+        isLatestToken: (token) =>
+          token === this.chunkTransitionToken &&
+          this.directionalPresentationChunkKey === chunkKey &&
+          !this.isSwitchedOff,
+        isPresentationHot: (targetChunkKey) => this.cachedMatrices.has(targetChunkKey),
+        preparePresentation: () =>
+          prepareWorldmapChunkPresentation({
+            chunkKey,
+            startRow,
+            startCol,
+            renderSize: this.renderChunkSize,
+            tileFetchPromise: Promise.resolve(true),
+            tileHydrationReadyPromise: this.waitForTileHydrationIdle(chunkKey),
+            boundsReadyPromise: Promise.resolve(),
+            structureReadyPromise: this.waitForStructureHydrationIdle(chunkKey),
+            assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
+            prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
+              this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
+          }),
+        cachePreparedTerrain: (preparedTerrain) => this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
+      });
+    } finally {
+      this.activeDirectionalPresentationPrewarms.delete(chunkKey);
+    }
   }
 
   private unregisterTrackedVisibilityChunks(): void {
@@ -3900,9 +3983,13 @@ export default class WorldmapScene extends WarpTravel {
   ): Promise<PreparedTerrainChunk> {
     const cachedChunk = this.createPreparedTerrainChunkFromCache(startRow, startCol);
     if (cachedChunk) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_hit");
+      incrementWorldmapRenderCounter("preparedChunkPrewarmHits");
       return cachedChunk;
     }
 
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_miss");
+    incrementWorldmapRenderCounter("preparedChunkPrewarmMisses");
     await Promise.all(this.modelLoadPromises);
 
     return new Promise<PreparedTerrainChunk>((resolve) => {
@@ -5028,6 +5115,32 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
+    if (this.currentChunk !== "null") {
+      const [currentChunkStartRow, currentChunkStartCol] = this.currentChunk.split(",").map(Number);
+      if (Number.isFinite(currentChunkStartRow) && Number.isFinite(currentChunkStartCol)) {
+        const focusChunkSelection = resolveWorldmapChunkFromWorldPosition({
+          worldX: cameraPosition.x,
+          worldZ: cameraPosition.z,
+          chunkSize: this.chunkSize,
+        });
+
+        if (focusChunkSelection.chunkKey !== this.currentChunk) {
+          const hysteresisDecision = resolveWorldmapChunkHysteresis({
+            focusCol: focusChunkSelection.focusCol,
+            focusRow: focusChunkSelection.focusRow,
+            currentChunkStartRow,
+            currentChunkStartCol,
+            chunkSize: this.chunkSize,
+            renderSize: this.renderChunkSize,
+          });
+
+          if (hysteresisDecision.shouldStayInCurrentChunk) {
+            return true;
+          }
+        }
+      }
+    }
+
     return shouldDelayWorldmapChunkSwitch({
       hasChunkSwitchAnchor: this.hasChunkSwitchAnchor,
       lastChunkSwitchPosition: this.lastChunkSwitchPosition,
@@ -5143,11 +5256,13 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
-      this.scheduleLegacyChunkRefresh();
+      const debounceMs = resolveWorldmapChunkRefreshDebounceMs({ force, reason });
+      this.scheduleLegacyChunkRefresh(debounceMs);
       return this.chunkRefreshRequestToken;
     }
 
-    this.scheduleChunkRefreshExecution();
+    const debounceMs = resolveWorldmapChunkRefreshDebounceMs({ force, reason });
+    this.scheduleChunkRefreshExecution(debounceMs);
     return this.chunkRefreshRequestToken;
   }
 
@@ -5157,7 +5272,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
-      return new Promise((resolve) => window.setTimeout(resolve, this.chunkRefreshDebounceMs));
+      return new Promise((resolve) => window.setTimeout(resolve, WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS));
     }
 
     return new Promise((resolve) => {
@@ -5177,10 +5292,21 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private scheduleLegacyChunkRefresh(): void {
-    if (this.chunkRefreshTimeout !== null) {
+  private scheduleLegacyChunkRefresh(requestedDelayMs: number): void {
+    const scheduleDecision = resolveWorldmapChunkRefreshSchedule({
+      existingDeadlineAtMs: this.chunkRefreshDeadlineAtMs,
+      nowMs: performance.now(),
+      requestedDelayMs,
+    });
+    if (!scheduleDecision.shouldScheduleTimer) {
       return;
     }
+
+    if (this.chunkRefreshTimeout !== null) {
+      window.clearTimeout(this.chunkRefreshTimeout);
+    }
+
+    this.chunkRefreshDeadlineAtMs = scheduleDecision.deadlineAtMs;
 
     this.chunkRefreshTimeout = window.setTimeout(() => {
       const shouldForce = this.pendingChunkRefreshForce;
@@ -5188,23 +5314,34 @@ export default class WorldmapScene extends WarpTravel {
       this.pendingChunkRefreshForce = false;
       this.pendingChunkRefreshUiReason = "default";
       this.chunkRefreshTimeout = null;
+      this.chunkRefreshDeadlineAtMs = null;
       void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
         console.error("[WorldMap] Legacy chunk refresh failed:", error);
       });
-    }, this.chunkRefreshDebounceMs);
+    }, scheduleDecision.delayMs);
   }
 
-  private scheduleChunkRefreshExecution(): void {
-    // Keep one pending timer to avoid starvation from continuous camera changes.
-    if (this.chunkRefreshTimeout !== null) {
+  private scheduleChunkRefreshExecution(requestedDelayMs: number): void {
+    const scheduleDecision = resolveWorldmapChunkRefreshSchedule({
+      existingDeadlineAtMs: this.chunkRefreshDeadlineAtMs,
+      nowMs: performance.now(),
+      requestedDelayMs,
+    });
+    if (!scheduleDecision.shouldScheduleTimer) {
       return;
     }
 
+    if (this.chunkRefreshTimeout !== null) {
+      window.clearTimeout(this.chunkRefreshTimeout);
+    }
+
     const scheduledToken = this.chunkRefreshRequestToken;
+    this.chunkRefreshDeadlineAtMs = scheduleDecision.deadlineAtMs;
     this.chunkRefreshTimeout = window.setTimeout(() => {
       this.chunkRefreshTimeout = null;
+      this.chunkRefreshDeadlineAtMs = null;
       void this.flushChunkRefresh(scheduledToken);
-    }, this.chunkRefreshDebounceMs);
+    }, scheduleDecision.delayMs);
   }
 
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
@@ -5496,6 +5633,14 @@ export default class WorldmapScene extends WarpTravel {
       },
     });
 
+    if (tileFetchSucceeded && preparedTerrain) {
+      const terrainReadyDurationMs = performance.now() - chunkSwitchStartedAt;
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
+        durationMs: terrainReadyDurationMs,
+      });
+      recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
+    }
+
     const finalizeResult = await finalizeWarpTravelChunkSwitch({
       fetchSucceeded: tileFetchSucceeded,
       isCurrentTransition: transitionToken === this.chunkTransitionToken,
@@ -5514,9 +5659,21 @@ export default class WorldmapScene extends WarpTravel {
       transitionToken,
       preparedTerrain,
       applyPreparedTerrain: (nextPreparedTerrain) => {
+        const terrainCommitStartedAt = performance.now();
         this.applyPreparedTerrainChunk(nextPreparedTerrain as PreparedTerrainChunk);
-        const commitDurationMs = performance.now() - chunkSwitchStartedAt;
-        recordWorldmapRenderDuration("presentationCommittedMs", commitDurationMs);
+        const commitCompletedAt = performance.now();
+        const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
+        const firstVisibleCommitDurationMs = commitCompletedAt - chunkSwitchStartedAt;
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_commit_duration_recorded", {
+          durationMs: terrainCommitDurationMs,
+        });
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "first_visible_commit_duration_recorded", {
+          durationMs: firstVisibleCommitDurationMs,
+        });
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
+        recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
+        recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
+        incrementWorldmapRenderCounter("terrainVisibleCommits");
         const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
         if (readinessDurations.length > 0) {
           recordWorldmapRenderDuration(
@@ -5641,6 +5798,14 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      if (preparedTerrain) {
+        const terrainReadyDurationMs = performance.now() - refreshStartedAt;
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
+          durationMs: terrainReadyDurationMs,
+        });
+        recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
+      }
+
       // Verify the refresh is still valid before committing terrain
       const commitDecision = resolveSameChunkRefreshCommit({
         refreshToken: transitionToken,
@@ -5656,8 +5821,19 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (commitDecision.shouldCommit && preparedTerrain) {
+        const terrainCommitStartedAt = performance.now();
         this.applyPreparedTerrainChunk(preparedTerrain);
-        recordWorldmapRenderDuration("presentationCommittedMs", performance.now() - refreshStartedAt);
+        const commitCompletedAt = performance.now();
+        const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
+        const firstVisibleCommitDurationMs = commitCompletedAt - refreshStartedAt;
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_commit_duration_recorded", {
+          durationMs: terrainCommitDurationMs,
+        });
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "first_visible_commit_duration_recorded", {
+          durationMs: firstVisibleCommitDurationMs,
+        });
+        recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
+        recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
         incrementWorldmapRenderCounter("terrainVisibleCommits");
         const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
@@ -5728,6 +5904,10 @@ export default class WorldmapScene extends WarpTravel {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
         durationMs,
       });
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_catch_up_duration_recorded", {
+        durationMs,
+      });
+      recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
       recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
       setWorldmapRenderGauge("visibleArmies", this.armyManager.getVisibleCount());
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
@@ -5816,22 +5996,26 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private evaluateChunkSwitchP95RegressionAgainstBaseline(
-    baselineLabel?: string,
-    allowedRegressionFraction: number = 0.1,
-  ): WorldmapChunkSwitchP95RegressionDebugResult {
-    let selectedBaseline: WorldmapChunkDiagnosticsBaselineEntry | undefined;
+  private findChunkDiagnosticsBaseline(baselineLabel?: string): WorldmapChunkDiagnosticsBaselineEntry | undefined {
     if (baselineLabel) {
       for (let i = this.chunkDiagnosticsBaselines.length - 1; i >= 0; i--) {
         const candidate = this.chunkDiagnosticsBaselines[i];
         if (candidate?.label === baselineLabel) {
-          selectedBaseline = candidate;
-          break;
+          return candidate;
         }
       }
-    } else {
-      selectedBaseline = this.chunkDiagnosticsBaselines[this.chunkDiagnosticsBaselines.length - 1];
+      return undefined;
     }
+
+    return this.chunkDiagnosticsBaselines[this.chunkDiagnosticsBaselines.length - 1];
+  }
+
+  private evaluateChunkP95RegressionAgainstBaseline(
+    metric: ChunkSwitchP95RegressionMetric,
+    baselineLabel?: string,
+    allowedRegressionFraction: number = 0.1,
+  ): WorldmapChunkSwitchP95RegressionDebugResult {
+    const selectedBaseline = this.findChunkDiagnosticsBaseline(baselineLabel);
 
     if (!selectedBaseline) {
       return {
@@ -5839,6 +6023,7 @@ export default class WorldmapScene extends WarpTravel {
         result: {
           status: "pending",
           reason: "No baseline found. Capture one first with captureWorldmapChunkBaseline(label).",
+          metric,
           baselineP95Ms: null,
           currentP95Ms: null,
           allowedRegressionFraction: Math.max(0, allowedRegressionFraction),
@@ -5852,9 +6037,28 @@ export default class WorldmapScene extends WarpTravel {
       result: evaluateChunkSwitchP95Regression({
         baseline: selectedBaseline.diagnostics,
         current: this.chunkDiagnostics,
+        metric,
         allowedRegressionFraction,
       }),
     };
+  }
+
+  private evaluateChunkSwitchP95RegressionAgainstBaseline(
+    baselineLabel?: string,
+    allowedRegressionFraction: number = 0.1,
+  ): WorldmapChunkSwitchP95RegressionDebugResult {
+    return this.evaluateChunkP95RegressionAgainstBaseline("switch_duration", baselineLabel, allowedRegressionFraction);
+  }
+
+  private evaluateChunkFirstVisibleCommitP95RegressionAgainstBaseline(
+    baselineLabel?: string,
+    allowedRegressionFraction: number = 0.1,
+  ): WorldmapChunkFirstVisibleCommitP95RegressionDebugResult {
+    return this.evaluateChunkP95RegressionAgainstBaseline(
+      "first_visible_commit",
+      baselineLabel,
+      allowedRegressionFraction,
+    );
   }
 
   private evaluateTileFetchVolumeRegressionAgainstBaseline(
@@ -5913,6 +6117,10 @@ export default class WorldmapScene extends WarpTravel {
       baselineLabel?: string,
       allowedRegressionFraction?: number,
     ) => this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
+    debugWindow.evaluateWorldmapChunkFirstVisibleCommitP95Regression = (
+      baselineLabel?: string,
+      allowedRegressionFraction?: number,
+    ) => this.evaluateChunkFirstVisibleCommitP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
     debugWindow.evaluateWorldmapTileFetchVolumeRegression = (
       baselineLabel?: string,
       allowedIncreaseFraction?: number,
@@ -5931,6 +6139,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
+    debugWindow.evaluateWorldmapChunkFirstVisibleCommitP95Regression = undefined;
     debugWindow.evaluateWorldmapTileFetchVolumeRegression = undefined;
   }
 

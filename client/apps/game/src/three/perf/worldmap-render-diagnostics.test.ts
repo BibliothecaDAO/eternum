@@ -20,6 +20,9 @@ describe("worldmap-render-diagnostics", () => {
     recordWorldmapRenderDuration("updateVisibleChunks", 7.5);
     recordWorldmapRenderDuration("workerFindPath", 5);
     recordWorldmapRenderDuration("terrainPreparedMs", 14);
+    recordWorldmapRenderDuration("chunkTerrainReadyMs" as any, 18);
+    recordWorldmapRenderDuration("chunkTerrainCommitMs" as any, 2);
+    recordWorldmapRenderDuration("chunkManagerCatchUpMs" as any, 7);
     recordWorldmapRenderDuration("tileHydrationDrainMs" as any, 11);
     recordWorldmapRenderDuration("structureHydrationDrainMs", 9);
     recordWorldmapRenderDuration("structureAssetPrewarmMs", 4);
@@ -41,6 +44,8 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("terrainVisibleAppendCount" as any, 3);
     incrementWorldmapRenderCounter("terrainVisibleRebuildCount" as any, 4);
     incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount" as any, 5);
+    incrementWorldmapRenderCounter("preparedChunkPrewarmHits" as any, 6);
+    incrementWorldmapRenderCounter("preparedChunkPrewarmMisses" as any, 2);
     incrementWorldmapForceRefreshReason("duplicate_tile");
     incrementWorldmapForceRefreshReason("duplicate_tile");
     incrementWorldmapForceRefreshReason("structure_count_change");
@@ -54,6 +59,12 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations.updateVisibleChunks.samples).toEqual([12.5, 7.5]);
     expect(snapshot.durations.workerFindPath.count).toBe(1);
     expect(snapshot.durations.terrainPreparedMs.samples).toEqual([14]);
+    expect(snapshot.durations).toHaveProperty("chunkTerrainReadyMs");
+    expect((snapshot.durations as any).chunkTerrainReadyMs.samples).toEqual([18]);
+    expect(snapshot.durations).toHaveProperty("chunkTerrainCommitMs");
+    expect((snapshot.durations as any).chunkTerrainCommitMs.samples).toEqual([2]);
+    expect(snapshot.durations).toHaveProperty("chunkManagerCatchUpMs");
+    expect((snapshot.durations as any).chunkManagerCatchUpMs.samples).toEqual([7]);
     expect(snapshot.durations).toHaveProperty("tileHydrationDrainMs");
     expect((snapshot.durations as any).tileHydrationDrainMs.samples).toEqual([11]);
     expect(snapshot.durations.structureHydrationDrainMs.samples).toEqual([9]);
@@ -76,6 +87,8 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters).toHaveProperty("terrainVisibleAppendCount", 3);
     expect(snapshot.counters).toHaveProperty("terrainVisibleRebuildCount", 4);
     expect(snapshot.counters).toHaveProperty("staleTerrainCacheFingerprintRejectCount", 5);
+    expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmHits", 6);
+    expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmMisses", 2);
     expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(2);
     expect(snapshot.forceRefreshReasons.structure_count_change).toBe(1);
     expect(snapshot.forceRefreshReasons).toHaveProperty("tile_overlap_repair", 1);

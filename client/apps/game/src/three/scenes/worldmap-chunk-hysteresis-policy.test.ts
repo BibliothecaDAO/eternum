@@ -40,6 +40,22 @@ describe("resolveWorldmapChunkHysteresis", () => {
     expect(result.targetChunkKey).not.toBeNull();
   });
 
+  it("keeps the current chunk even when focus enters the adjacent authority chunk but remains inside the hold band", () => {
+    const result = resolveWorldmapChunkHysteresis({
+      focusCol: 25,
+      focusRow: 12,
+      currentChunkStartRow: 0,
+      currentChunkStartCol: 0,
+      chunkSize,
+      renderSize,
+      holdBandFraction: 0.25,
+    });
+
+    expect(result.shouldStayInCurrentChunk).toBe(true);
+    expect(result.shouldSwitchToTargetChunk).toBe(false);
+    expect(result.targetChunkKey).toBeNull();
+  });
+
   it("does not flap when focus oscillates near the switch boundary", () => {
     // Get the hold band boundary: render bounds center is at (12,12) for chunk (0,0) with chunkSize=24
     // Render bounds half-width = 60/2 = 30, so minCol = 12-30 = -18, maxCol = 12+29 = 41

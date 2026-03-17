@@ -7,6 +7,9 @@ export type WorldmapRenderDurationMetric =
   | "executeRenderForChunk"
   | "performVisibleStructuresUpdate"
   | "terrainPreparedMs"
+  | "chunkTerrainReadyMs"
+  | "chunkTerrainCommitMs"
+  | "chunkManagerCatchUpMs"
   | "tileHydrationDrainMs"
   | "structureHydrationDrainMs"
   | "structureAssetPrewarmMs"
@@ -34,7 +37,9 @@ export type WorldmapRenderCounter =
   | "terrainVisibleReplaceCount"
   | "terrainVisibleAppendCount"
   | "terrainVisibleRebuildCount"
-  | "staleTerrainCacheFingerprintRejectCount";
+  | "staleTerrainCacheFingerprintRejectCount"
+  | "preparedChunkPrewarmHits"
+  | "preparedChunkPrewarmMisses";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -90,6 +95,9 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     executeRenderForChunk: createDurationStats(),
     performVisibleStructuresUpdate: createDurationStats(),
     terrainPreparedMs: createDurationStats(),
+    chunkTerrainReadyMs: createDurationStats(),
+    chunkTerrainCommitMs: createDurationStats(),
+    chunkManagerCatchUpMs: createDurationStats(),
     tileHydrationDrainMs: createDurationStats(),
     structureHydrationDrainMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
@@ -124,6 +132,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     terrainVisibleAppendCount: 0,
     terrainVisibleRebuildCount: 0,
     staleTerrainCacheFingerprintRejectCount: 0,
+    preparedChunkPrewarmHits: 0,
+    preparedChunkPrewarmMisses: 0,
   },
   forceRefreshReasons: {
     default: 0,

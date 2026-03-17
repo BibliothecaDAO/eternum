@@ -1,12 +1,16 @@
 import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 
+export type ChunkSwitchP95RegressionMetric = "switch_duration" | "first_visible_commit";
+
 interface EvaluateChunkSwitchP95RegressionInput {
   baseline: WorldmapChunkDiagnostics;
   current: WorldmapChunkDiagnostics;
   allowedRegressionFraction?: number;
+  metric?: ChunkSwitchP95RegressionMetric;
 }
 
 interface ChunkSwitchP95RegressionBaseResult {
+  metric: ChunkSwitchP95RegressionMetric;
   baselineP95Ms: number | null;
   currentP95Ms: number | null;
   allowedRegressionFraction: number;
@@ -50,17 +54,37 @@ function getP95(samples: number[]): number | null {
   return getNearestRankPercentile(toSortedFiniteSamples(samples), 0.95);
 }
 
+function resolveRegressionSamples(
+  diagnostics: WorldmapChunkDiagnostics,
+  metric: ChunkSwitchP95RegressionMetric,
+): number[] {
+  switch (metric) {
+    case "first_visible_commit":
+      return diagnostics.firstVisibleCommitDurationMsSamples;
+    case "switch_duration":
+    default:
+      return diagnostics.switchDurationMsSamples;
+  }
+}
+
+function getMetricLabel(metric: ChunkSwitchP95RegressionMetric): string {
+  return metric === "first_visible_commit" ? "first-visible-commit" : "chunk-switch";
+}
+
 export function evaluateChunkSwitchP95Regression(
   input: EvaluateChunkSwitchP95RegressionInput,
 ): ChunkSwitchP95RegressionResult {
+  const metric = input.metric ?? "switch_duration";
   const allowedRegressionFraction = Math.max(0, input.allowedRegressionFraction ?? 0.1);
-  const baselineP95Ms = getP95(input.baseline.switchDurationMsSamples);
-  const currentP95Ms = getP95(input.current.switchDurationMsSamples);
+  const baselineP95Ms = getP95(resolveRegressionSamples(input.baseline, metric));
+  const currentP95Ms = getP95(resolveRegressionSamples(input.current, metric));
+  const metricLabel = getMetricLabel(metric);
 
   if (baselineP95Ms === null || currentP95Ms === null) {
     return {
       status: "pending",
-      reason: "Insufficient chunk-switch samples for p95 comparison.",
+      reason: `Insufficient ${metricLabel} samples for p95 comparison.`,
+      metric,
       baselineP95Ms,
       currentP95Ms,
       allowedRegressionFraction,
@@ -72,6 +96,7 @@ export function evaluateChunkSwitchP95Regression(
     if (currentP95Ms <= 0) {
       return {
         status: "pass",
+        metric,
         baselineP95Ms,
         currentP95Ms,
         allowedRegressionFraction,
@@ -81,6 +106,7 @@ export function evaluateChunkSwitchP95Regression(
 
     return {
       status: "fail",
+      metric,
       reason: "Baseline p95 is zero; current p95 must also be zero to avoid regression ambiguity.",
       baselineP95Ms,
       currentP95Ms,
@@ -93,6 +119,7 @@ export function evaluateChunkSwitchP95Regression(
   if (regressionFraction <= allowedRegressionFraction) {
     return {
       status: "pass",
+      metric,
       baselineP95Ms,
       currentP95Ms,
       allowedRegressionFraction,
@@ -102,7 +129,8 @@ export function evaluateChunkSwitchP95Regression(
 
   return {
     status: "fail",
-    reason: `Chunk-switch p95 regression ${Math.round(regressionFraction * 1000) / 10}% exceeds allowed ${Math.round(allowedRegressionFraction * 1000) / 10}% threshold.`,
+    metric,
+    reason: `${metricLabel} p95 regression ${Math.round(regressionFraction * 1000) / 10}% exceeds allowed ${Math.round(allowedRegressionFraction * 1000) / 10}% threshold.`,
     baselineP95Ms,
     currentP95Ms,
     allowedRegressionFraction,
