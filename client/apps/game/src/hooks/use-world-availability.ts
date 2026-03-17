@@ -254,6 +254,7 @@ const fetchWorldConfigMeta = async (
     entryTokenAddress: null,
     feeTokenAddress: null,
     feeAmount: 0n,
+    collectiblesCosmeticsMax: null,
     registrationStartAt: null,
     registrationEndAt: null,
     mmrEnabled: false,

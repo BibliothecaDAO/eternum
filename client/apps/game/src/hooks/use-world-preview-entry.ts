@@ -2,6 +2,7 @@ import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo, useState } from "react";
 import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
+import type { BlitzGameLoadoutDraft } from "@/three/cosmetics/types";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import {
   useDevPreviewEntryStore,
@@ -15,14 +16,9 @@ export interface DevPreviewEntryStateAdapter {
 }
 
 interface DevPreviewCosmeticsAdapter {
-  getPendingBlitzLoadout: (worldKey: string, owner: string) => unknown;
-  setPendingBlitzLoadout: (worldKey: string, owner: string, draft: unknown) => void;
+  getPendingBlitzLoadout: (worldKey: string, owner: string) => BlitzGameLoadoutDraft | undefined;
+  setPendingBlitzLoadout: (worldKey: string, owner: string, draft: BlitzGameLoadoutDraft) => void;
   markAppliedBlitzLoadout: (worldKey: string, owner: string) => void;
-}
-
-interface DevPreviewBlitzLoadoutDraft {
-  tokenIds?: string[];
-  selectedBySlot?: Record<string, unknown>;
 }
 
 interface CreateWorldPreviewEntryControllerOptions {
@@ -38,8 +34,8 @@ interface CreateWorldPreviewEntryControllerOptions {
 
 const normalizePreviewAddress = (address: string): string => address.trim().toLowerCase();
 const arePreviewDraftsEqual = (
-  left: DevPreviewBlitzLoadoutDraft | null | undefined,
-  right: DevPreviewBlitzLoadoutDraft | null | undefined,
+  left: BlitzGameLoadoutDraft | null | undefined,
+  right: BlitzGameLoadoutDraft | null | undefined,
 ): boolean => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 
 export const buildDevPreviewWorldKey = ({
@@ -84,11 +80,11 @@ export const createWorldPreviewEntryController = ({
       const worldDraft = cosmeticsStore.getPendingBlitzLoadout(
         worldLoadoutKey,
         normalizedAddress,
-      ) as DevPreviewBlitzLoadoutDraft | undefined;
+      );
       const fallbackDraft = cosmeticsStore.getPendingBlitzLoadout(
         fallbackLoadoutKey,
         normalizedAddress,
-      ) as DevPreviewBlitzLoadoutDraft | undefined;
+      );
 
       if (fallbackDraft != null && !arePreviewDraftsEqual(worldDraft, fallbackDraft)) {
         cosmeticsStore.setPendingBlitzLoadout(worldLoadoutKey, normalizedAddress, fallbackDraft);
