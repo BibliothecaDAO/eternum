@@ -223,6 +223,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
     registrationValue,
     config?.devModeOn ? "1" : "0",
     config?.mmrEnabled ? "1" : "0",
+    config?.registrationCountMax ?? "",
     config?.numHyperstructuresLeft ?? "",
     config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
@@ -326,6 +327,7 @@ const GameCard = ({
     isRegistering,
     error,
     canRegister,
+    isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
   } = useWorldRegistration({
@@ -420,6 +422,12 @@ const GameCard = ({
 
   const showRegistered = game.isRegistered || registrationStage === "done";
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
+  const registrationCount = game.registrationCount ?? 0;
+  const registrationCountMax = game.config?.registrationCountMax ?? null;
+  const registrationLabel =
+    registrationCountMax !== null
+      ? `${registrationCount}/${registrationCountMax} players`
+      : `${registrationCount} players`;
 
   return (
     <div
@@ -460,7 +468,7 @@ const GameCard = ({
         <div className="flex items-center justify-between text-xs text-white/60">
           <div className="flex items-center gap-1">
             <Users className="w-3 h-3" />
-            <span>{game.registrationCount ?? 0} players</span>
+            <span>{registrationLabel}</span>
           </div>
           {showRegistered && (
             <div className="flex items-center gap-1 text-emerald-400">
@@ -610,6 +618,10 @@ const GameCard = ({
                   <UserPlus className="w-3 h-3" />
                   Register
                 </button>
+              ) : isRegistrationFull ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+                  Registration full
+                </div>
               ) : isCheckingFeeBalance ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
                   <Loader2 className="w-3 h-3 animate-spin" />
