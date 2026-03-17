@@ -23,4 +23,18 @@ describe("Game card registration capacity", () => {
     expect(source).toContain("const registrationCountMax = game.config?.registrationCountMax ?? null;");
     expect(source).toContain("`${registrationCount}/${registrationCountMax} players`");
   });
+
+  it("shows settled counts for eternum cards", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("const settledPlayersCount = game.config?.settledPlayersCount ?? 0;");
+    expect(source).toContain("const settledRealmsCount = game.config?.settledRealmsCount ?? 0;");
+    expect(source).toContain("const settledVillagesCount = game.config?.settledVillagesCount ?? 0;");
+    expect(source).toContain("settled players");
+    expect(source).toContain("realms ·");
+    expect(source).toContain("villages");
+  });
 });

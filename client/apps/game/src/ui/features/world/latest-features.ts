@@ -16,6 +16,20 @@ export const latestFeatures: LatestFeature[] = [
     type: "feature",
   },
   {
+    date: "2026-03-17",
+    title: "Eternum Settlement Card Stats",
+    description:
+      "Eternum game cards now show settled-player counts plus settled realm and village totals, so card stats stay meaningful for worlds that do not use player registration.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-17",
+    title: "Infinite Season Timer Fix",
+    description:
+      "Fixed infinite sandbox worlds so the header no longer shows a 0h end countdown or urgent red flashing, and the End season leaderboard action is now hidden when a season has no end timestamp.",
+    type: "fix",
+  },
+  {
     date: "2026-03-06",
     title: "Tournament Leaderboard Table Cleanup",
     description:

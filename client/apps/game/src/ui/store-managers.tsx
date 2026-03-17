@@ -5,6 +5,7 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
+import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
@@ -567,14 +568,11 @@ const SeasonTimerStoreManager = () => {
   useEffect(() => {
     // Try to get season_config.end_at from WorldConfig
     const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    const endAt = worldConfig?.season_config?.end_at;
-    if (endAt && typeof endAt === "number") {
-      setGameEndAt(endAt);
-    }
-    const startMainAt = worldConfig?.season_config?.start_main_at;
-    if (startMainAt && typeof startMainAt === "number") {
-      setSeasonStartMainAt(startMainAt);
-    }
+    const seasonEndAt = resolveFiniteSeasonEndAt(worldConfig?.season_config?.end_at);
+    setGameEndAt(seasonEndAt);
+
+    const seasonStartMainAt = resolveSeasonStartTimestamp(worldConfig?.season_config?.start_main_at);
+    setSeasonStartMainAt(seasonStartMainAt);
   }, [components, setGameEndAt, setSeasonStartMainAt]);
   return null;
 };

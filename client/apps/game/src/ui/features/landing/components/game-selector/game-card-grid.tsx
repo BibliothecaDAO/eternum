@@ -434,6 +434,12 @@ const GameCard = ({
     registrationCountMax !== null
       ? `${registrationCount}/${registrationCountMax} players`
       : `${registrationCount} players`;
+  const settledPlayersCount = game.config?.settledPlayersCount ?? 0;
+  const settledRealmsCount = game.config?.settledRealmsCount ?? 0;
+  const settledVillagesCount = game.config?.settledVillagesCount ?? 0;
+  const eternumPlayersLabel = `${settledPlayersCount} settled players`;
+  const eternumSettlementLabel = `${settledRealmsCount} realms · ${settledVillagesCount} villages`;
+  const playersLabel = isEternumMode ? eternumPlayersLabel : registrationLabel;
 
   return (
     <div
@@ -472,9 +478,16 @@ const GameCard = ({
 
         {/* Stats row with registration indicator */}
         <div className="flex items-center justify-between text-xs text-white/60">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 min-w-0">
             <Users className="w-3 h-3" />
-            <span>{registrationLabel}</span>
+            <span className="truncate" title={playersLabel}>
+              {playersLabel}
+            </span>
+            {isEternumMode && (
+              <span className="truncate text-white/45" title={eternumSettlementLabel}>
+                · {eternumSettlementLabel}
+              </span>
+            )}
           </div>
           {showRegistered && (
             <div className="flex items-center gap-1 text-emerald-400">
