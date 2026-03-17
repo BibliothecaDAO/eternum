@@ -234,7 +234,10 @@ export const SeasonPlacementMap = ({
     startCamera: SeasonPlacementMapCamera;
     hasMoved: boolean;
   } | null>(null);
-  const mapViewBox = useMemo(() => seasonMapCameraToViewBox(mapCamera ?? defaultMapCamera), [defaultMapCamera, mapCamera]);
+  const mapViewBox = useMemo(
+    () => seasonMapCameraToViewBox(mapCamera ?? defaultMapCamera),
+    [defaultMapCamera, mapCamera],
+  );
 
   const handleSlotSelect = useCallback(
     (slot: SeasonPlacementMapSlot) => {

@@ -583,7 +583,6 @@ const PlayTabContent = ({
               </div>
             </div>
           </div>
-
         </div>
       )}
 
