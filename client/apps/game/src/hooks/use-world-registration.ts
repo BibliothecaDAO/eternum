@@ -106,6 +106,8 @@ interface UseWorldRegistrationReturn {
   feeAmount: bigint;
   /** Whether registration is currently possible */
   canRegister: boolean;
+  /** Whether registration capacity has been reached */
+  isRegistrationFull: boolean;
   /** Whether fee balance is being checked */
   isCheckingFeeBalance: boolean;
   /** Whether wallet has enough fee token balance for registration */
@@ -179,6 +181,9 @@ export const useWorldRegistration = ({
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
+  const registrationCount = config?.registrationCount ?? 0;
+  const registrationCountMax = config?.registrationCountMax ?? null;
+  const isRegistrationFull = registrationCountMax !== null && registrationCount >= registrationCountMax;
   const requiresFeeBalanceForRegistration = chain === "mainnet";
   const needsFeeBalanceCheck = requiresFeeBalanceForRegistration && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
@@ -205,6 +210,7 @@ export const useWorldRegistration = ({
     !!usernameFelt &&
     !isCheckingFeeBalance &&
     hasSufficientFeeBalance &&
+    !isRegistrationFull &&
     registrationStage === "idle";
 
   const isRegistering = registrationStage !== "idle" && registrationStage !== "done" && registrationStage !== "error";
@@ -518,6 +524,7 @@ export const useWorldRegistration = ({
     requiresEntryToken,
     feeAmount,
     canRegister,
+    isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
   };
