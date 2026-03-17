@@ -92,8 +92,12 @@ export function normalizeRendererDiagnosticsSnapshot(snapshot) {
 
 export function evaluateRendererParitySummary(diagnosticsSnapshot) {
   const diagnostics = normalizeRendererDiagnosticsSnapshot(diagnosticsSnapshot);
-  const blocking = diagnostics.degradations.filter((degradation) => REQUIRED_RENDERER_PARITY_FEATURES.has(degradation.feature));
-  const advisory = diagnostics.degradations.filter((degradation) => !REQUIRED_RENDERER_PARITY_FEATURES.has(degradation.feature));
+  const blocking = diagnostics.degradations.filter((degradation) =>
+    REQUIRED_RENDERER_PARITY_FEATURES.has(degradation.feature),
+  );
+  const advisory = diagnostics.degradations.filter(
+    (degradation) => !REQUIRED_RENDERER_PARITY_FEATURES.has(degradation.feature),
+  );
 
   return {
     advisory,
