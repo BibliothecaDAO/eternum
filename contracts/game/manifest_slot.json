@@ -9683,6 +9683,17 @@
       ]
     },
     {
+      "address": "0x37ae29b0fae55f67a057984c2730c6ce71c5d02c1705fbf44c4745f7ae02adc",
+      "class_hash": "0x33d9d9fa4675b595964e9ee5d43696d40bab1e2b86ca9d569deba2d36cfa3f4",
+      "init_calldata": [],
+      "tag": "s1_eternum-spire_systems",
+      "selector": "0x3c0936482acd769add8a662a6f1390e50b010607b2995892c17212e37c6afb3",
+      "systems": [
+        "create_spires",
+        "upgrade"
+      ]
+    },
+    {
       "address": "0x2aab3983b1616c7c2556d657d5dff3f8759c75dcf7f0ce6a761a9ca135a98fb",
       "class_hash": "0x17f49826362d65646944c6510582260f690221cc372cff553ee45d6dd42fb55",
       "init_calldata": [],
@@ -16832,6 +16843,16 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<eternum::systems::bank::contracts::bank::BankCreateParams>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<eternum::systems::spire::contracts::SpireSettlement>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<eternum::systems::spire::contracts::SpireSettlement>"
         }
       ]
     },
@@ -31192,6 +31213,63 @@
       "name": "eternum::systems::season::contracts::season_systems::e_SeasonEnded::Event",
       "kind": "enum",
       "variants": []
+    },
+    {
+      "type": "interface",
+      "name": "eternum::systems::spire::contracts::ISpireSystems",
+      "items": [
+        {
+          "type": "function",
+          "name": "create_spires",
+          "inputs": [
+            {
+              "name": "is_center",
+              "type": "core::bool"
+            },
+            {
+              "name": "settlements",
+              "type": "core::array::Span::<eternum::systems::spire::contracts::SpireSettlement>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "eternum::systems::spire::contracts::SpireSettlement",
+      "members": [
+        {
+          "name": "side",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "layer",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "point",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "eternum::systems::spire::contracts::spire_systems::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "UpgradeableEvent",
+          "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "WorldProviderEvent",
+          "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "nested"
+        }
+      ]
     },
     {
       "type": "interface",

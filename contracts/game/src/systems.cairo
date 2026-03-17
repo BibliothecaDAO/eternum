@@ -157,3 +157,7 @@ pub mod bitcoin_mine {
     #[cfg(test)]
     mod tests;
 }
+
+pub mod spire {
+    pub mod contracts;
+}
