@@ -27,17 +27,22 @@ import { resolveCameraView } from "./label-view";
 const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
   STRUCTURES: {
     [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Camp]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+    [StructureType.HolySite]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`, // Lords resource ID
     [StructureType.FragmentMine]: fragmentMineIcon,
+    [StructureType.BitcoinMine]: fragmentMineIcon,
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Camp]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
   ALLY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Camp]: "/images/labels/allies_village.png",
     [StructureType.Realm]: "/images/labels/allies_realm.png",
   } as Record<StructureType, string>,
 });
