@@ -39,7 +39,9 @@ export type WorldmapRenderCounter =
   | "terrainVisibleRebuildCount"
   | "staleTerrainCacheFingerprintRejectCount"
   | "preparedChunkPrewarmHits"
-  | "preparedChunkPrewarmMisses";
+  | "preparedChunkPrewarmMisses"
+  | "postCommitManagerCatchUpImmediate"
+  | "postCommitManagerCatchUpDeferred";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -134,6 +136,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     staleTerrainCacheFingerprintRejectCount: 0,
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
+    postCommitManagerCatchUpImmediate: 0,
+    postCommitManagerCatchUpDeferred: 0,
   },
   forceRefreshReasons: {
     default: 0,

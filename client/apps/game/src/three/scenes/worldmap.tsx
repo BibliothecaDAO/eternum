@@ -155,6 +155,10 @@ import {
   resolveWorldmapChunkRefreshSchedule,
   shouldDelayWorldmapChunkSwitch,
 } from "./worldmap-chunk-switch-delay-policy";
+import {
+  classifyWorldmapUploadWork,
+  resolveWorldmapPostCommitWorkAction,
+} from "./worldmap-upload-budget-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
@@ -225,7 +229,11 @@ import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
-import { deferWarpTravelManagerFanout, runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
+import {
+  deferWarpTravelManagerFanout,
+  drainBudgetedDeferredManagerCatchUpQueue,
+  runWarpTravelManagerFanout,
+} from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
@@ -359,6 +367,14 @@ export default class WorldmapScene extends WarpTravel {
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
   private readonly maxPrefetchedAhead = WORLDMAP_CHUNK_POLICY.prefetch.maxAhead;
+  private postCommitManagerCatchUpQueue: Array<{
+    chunkKey: string;
+    options?: { force?: boolean; transitionToken?: number };
+    estimatedUploadBytes: number;
+    deferredCount?: number;
+  }> = [];
+  private postCommitManagerCatchUpFrameHandle: number | null = null;
+  private readonly postCommitManagerCatchUpBudgetBytes = 256 * 1024;
   private directionalPresentationChunkKey: string | null = null;
   private activeDirectionalPresentationPrewarms: Set<string> = new Set();
   private prefetchQueue: PrefetchQueueItem[] = [];
@@ -3530,25 +3546,88 @@ export default class WorldmapScene extends WarpTravel {
       transitionToken?: number;
     },
   ): void {
+    const uploadWork = classifyWorldmapUploadWork({
+      matrixInstanceCount:
+        this.armyManager.getVisibleCount() + this.structureManager.getVisibleCount() + this.chestManager.getVisibleCount(),
+      colorInstanceCount: 0,
+      isCachedReplay: false,
+      stage: "visible_commit",
+    });
+    const postCommitWorkAction = resolveWorldmapPostCommitWorkAction({
+      estimatedUploadBytes: uploadWork.estimatedUploadBytes,
+      budgetBytes: this.postCommitManagerCatchUpBudgetBytes,
+    });
+
+    this.postCommitManagerCatchUpQueue.push({
+      chunkKey,
+      options,
+      estimatedUploadBytes: uploadWork.estimatedUploadBytes,
+      deferredCount: postCommitWorkAction === "deferred" ? 0 : undefined,
+    });
+    this.schedulePostCommitManagerCatchUpDrain();
+  }
+
+  private schedulePostCommitManagerCatchUpDrain(): void {
+    if (this.postCommitManagerCatchUpFrameHandle !== null) {
+      return;
+    }
+
+    const schedule = (callback: () => void) => {
+      if (typeof window.requestAnimationFrame === "function") {
+        this.postCommitManagerCatchUpFrameHandle = window.requestAnimationFrame(() => callback());
+        return;
+      }
+
+      this.postCommitManagerCatchUpFrameHandle = window.setTimeout(callback, 0) as unknown as number;
+    };
+
+    schedule(() => {
+      this.postCommitManagerCatchUpFrameHandle = null;
+      this.drainPostCommitManagerCatchUpQueue();
+    });
+  }
+
+  private drainPostCommitManagerCatchUpQueue(): void {
+    const drainResult = drainBudgetedDeferredManagerCatchUpQueue({
+      queue: this.postCommitManagerCatchUpQueue,
+      budgetBytes: this.postCommitManagerCatchUpBudgetBytes,
+    });
+    this.postCommitManagerCatchUpQueue = drainResult.remainingQueue;
+
+    if (drainResult.didDeferHeadTask) {
+      incrementWorldmapRenderCounter("postCommitManagerCatchUpDeferred");
+      this.schedulePostCommitManagerCatchUpDrain();
+      return;
+    }
+
+    const task = drainResult.taskToRun;
+    if (!task) {
+      return;
+    }
+
+    if ((task.deferredCount ?? 0) === 0) {
+      incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate");
+    }
+
     void deferWarpTravelManagerFanout({
       shouldRun: () =>
         shouldRunManagerUpdate({
-          transitionToken: options?.transitionToken,
+          transitionToken: task.options?.transitionToken,
           expectedTransitionToken: this.chunkTransitionToken,
           currentChunk: this.currentChunk,
-          targetChunk: chunkKey,
+          targetChunk: task.chunkKey,
         }),
-      run: () => this.updateManagersForChunk(chunkKey, options),
-      schedule: (callback) => {
-        if (typeof window.requestAnimationFrame === "function") {
-          window.requestAnimationFrame(() => callback());
-          return;
+      run: () => this.updateManagersForChunk(task.chunkKey, task.options),
+      schedule: (callback) => callback(),
+    })
+      .catch((error) => {
+        console.error("[WorldMap] Deferred manager catch-up failed:", error);
+      })
+      .finally(() => {
+        if (this.postCommitManagerCatchUpQueue.length > 0) {
+          this.schedulePostCommitManagerCatchUpDrain();
         }
-        window.setTimeout(callback, 0);
-      },
-    }).catch((error) => {
-      console.error("[WorldMap] Deferred manager catch-up failed:", error);
-    });
+      });
   }
 
   private unregisterTrackedVisibilityChunks(): void {

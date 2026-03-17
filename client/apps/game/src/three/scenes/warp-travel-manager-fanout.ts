@@ -13,6 +13,12 @@ export interface WarpTravelManagerFanoutFailure {
   reason: unknown;
 }
 
+export interface BudgetedDeferredManagerCatchUpTask {
+  chunkKey: string;
+  estimatedUploadBytes: number;
+  deferredCount?: number;
+}
+
 export function deferWarpTravelManagerFanout(input: {
   shouldRun?: () => boolean;
   run: () => Promise<void>;
@@ -32,6 +38,38 @@ export function deferWarpTravelManagerFanout(input: {
       );
     });
   });
+}
+
+export function drainBudgetedDeferredManagerCatchUpQueue<T extends BudgetedDeferredManagerCatchUpTask>(input: {
+  queue: T[];
+  budgetBytes: number;
+}): {
+  taskToRun: T | null;
+  remainingQueue: T[];
+  didDeferHeadTask: boolean;
+} {
+  const [headTask, ...remainingQueue] = input.queue;
+  if (!headTask) {
+    return {
+      taskToRun: null,
+      remainingQueue: [],
+      didDeferHeadTask: false,
+    };
+  }
+
+  if (headTask.estimatedUploadBytes > input.budgetBytes && (headTask.deferredCount ?? 0) === 0) {
+    return {
+      taskToRun: null,
+      remainingQueue: [{ ...headTask, deferredCount: 1 }, ...remainingQueue],
+      didDeferHeadTask: true,
+    };
+  }
+
+  return {
+    taskToRun: headTask,
+    remainingQueue,
+    didDeferHeadTask: false,
+  };
 }
 
 export async function runWarpTravelManagerFanout(input: {

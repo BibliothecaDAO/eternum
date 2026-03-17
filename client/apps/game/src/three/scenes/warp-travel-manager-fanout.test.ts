@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { deferWarpTravelManagerFanout, runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
+import {
+  deferWarpTravelManagerFanout,
+  drainBudgetedDeferredManagerCatchUpQueue,
+  runWarpTravelManagerFanout,
+} from "./warp-travel-manager-fanout";
 
 describe("runWarpTravelManagerFanout", () => {
   it("runs all manager updates concurrently and reports no failures when all succeed", async () => {
@@ -66,5 +70,52 @@ describe("deferWarpTravelManagerFanout", () => {
 
     await expect(resultPromise).resolves.toEqual({ status: "skipped" });
     expect(run).not.toHaveBeenCalled();
+  });
+});
+
+describe("drainBudgetedDeferredManagerCatchUpQueue", () => {
+  it("defers an oversized head task for one frame before allowing it to run", () => {
+    const firstPass = drainBudgetedDeferredManagerCatchUpQueue({
+      queue: [{ chunkKey: "24,24", estimatedUploadBytes: 4096 }],
+      budgetBytes: 1024,
+    });
+
+    expect(firstPass).toEqual({
+      taskToRun: null,
+      remainingQueue: [{ chunkKey: "24,24", estimatedUploadBytes: 4096, deferredCount: 1 }],
+      didDeferHeadTask: true,
+    });
+
+    const secondPass = drainBudgetedDeferredManagerCatchUpQueue({
+      queue: firstPass.remainingQueue,
+      budgetBytes: 1024,
+    });
+
+    expect(secondPass).toEqual({
+      taskToRun: { chunkKey: "24,24", estimatedUploadBytes: 4096, deferredCount: 1 },
+      remainingQueue: [],
+      didDeferHeadTask: false,
+    });
+  });
+
+  it("keeps manager catch-up ordering deterministic under budgeting", () => {
+    const result = drainBudgetedDeferredManagerCatchUpQueue({
+      queue: [
+        { chunkKey: "24,24", estimatedUploadBytes: 512 },
+        { chunkKey: "48,24", estimatedUploadBytes: 512 },
+      ],
+      budgetBytes: 1024,
+    });
+
+    expect(result.taskToRun).toEqual({
+      chunkKey: "24,24",
+      estimatedUploadBytes: 512,
+    });
+    expect(result.remainingQueue).toEqual([
+      {
+        chunkKey: "48,24",
+        estimatedUploadBytes: 512,
+      },
+    ]);
   });
 });

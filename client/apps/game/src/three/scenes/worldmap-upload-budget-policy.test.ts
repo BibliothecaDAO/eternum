@@ -4,6 +4,7 @@ import {
   classifyWorldmapUploadWork,
   estimateWorldmapCachedReplayUploadBytes,
   estimateWorldmapColdBuildUploadBytes,
+  resolveWorldmapPostCommitWorkAction,
 } from "./worldmap-upload-budget-policy";
 
 describe("worldmap-upload-budget-policy", () => {
@@ -37,5 +38,14 @@ describe("worldmap-upload-budget-policy", () => {
     expect(prewarm.stage).toBe("presentation_prewarm");
     expect(visibleCommit.stage).toBe("visible_commit");
     expect(prewarm.estimatedUploadBytes).toBe(visibleCommit.estimatedUploadBytes);
+  });
+
+  it("defers oversized post-commit work when it exceeds the frame budget", () => {
+    expect(
+      resolveWorldmapPostCommitWorkAction({
+        estimatedUploadBytes: 4096,
+        budgetBytes: 1024,
+      }),
+    ).toBe("deferred");
   });
 });

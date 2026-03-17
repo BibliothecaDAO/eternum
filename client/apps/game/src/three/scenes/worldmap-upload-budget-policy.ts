@@ -22,6 +22,13 @@ export function classifyWorldmapUploadWork(input: {
   };
 }
 
+export function resolveWorldmapPostCommitWorkAction(input: {
+  estimatedUploadBytes: number;
+  budgetBytes: number;
+}): "immediate" | "deferred" {
+  return input.estimatedUploadBytes > input.budgetBytes ? "deferred" : "immediate";
+}
+
 export function estimateWorldmapCachedReplayUploadBytes(input: {
   colorInstanceCount: number;
   matrixInstanceCount: number;

@@ -46,6 +46,8 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount" as any, 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits" as any, 6);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses" as any, 2);
+    incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate" as any, 3);
+    incrementWorldmapRenderCounter("postCommitManagerCatchUpDeferred" as any, 1);
     incrementWorldmapForceRefreshReason("duplicate_tile");
     incrementWorldmapForceRefreshReason("duplicate_tile");
     incrementWorldmapForceRefreshReason("structure_count_change");
@@ -89,6 +91,8 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters).toHaveProperty("staleTerrainCacheFingerprintRejectCount", 5);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmHits", 6);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmMisses", 2);
+    expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpImmediate", 3);
+    expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpDeferred", 1);
     expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(2);
     expect(snapshot.forceRefreshReasons.structure_count_change).toBe(1);
     expect(snapshot.forceRefreshReasons).toHaveProperty("tile_overlap_repair", 1);
