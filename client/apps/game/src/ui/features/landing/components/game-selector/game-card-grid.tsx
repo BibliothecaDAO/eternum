@@ -232,6 +232,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
 interface GameCardProps {
   game: GameData;
   onPlay: () => void;
+  onSettle?: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
   onClaimRewards?: () => void;
@@ -249,6 +250,7 @@ interface GameCardProps {
 const GameCard = ({
   game,
   onPlay,
+  onSettle,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -274,10 +276,14 @@ const GameCard = ({
   const isEnded = game.gameStatus === "ended";
   const isEternumMode = game.config?.mode === "eternum";
   const isBlitzMode = game.config?.mode !== "eternum";
+  const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
   const devModeOn = game.config?.devModeOn ?? false;
   const canPlayBlitz = isBlitzMode && isOngoing && game.isRegistered;
   const canOpenEternumEntry = isEternumMode && !isEnded;
   const canPlay = canPlayBlitz || canOpenEternumEntry;
+  const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
+  const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
+  const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
   // Can spectate ongoing or ended games
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
@@ -577,16 +583,32 @@ const GameCard = ({
           {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
-              onClick={() => runWithNetworkGuard(onPlay)}
+              onClick={() =>
+                runWithNetworkGuard(() => {
+                  if (canOpenEternumEntry) {
+                    if (canPlayEternumDirect) {
+                      onPlay();
+                    } else if (onSettle) {
+                      onSettle();
+                    } else {
+                      onPlay();
+                    }
+                    return;
+                  }
+                  onPlay();
+                })
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 canOpenEternumEntry
-                  ? "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
+                  ? canPlayEternumDirect
+                    ? "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors"
+                    : "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
                   : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
               )}
             >
               <Play className="w-3 h-3" />
-              {canOpenEternumEntry ? "Settle" : "Play"}
+              {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
             </button>
           ) : isBlitzMode && game.isRegistered === null && playerAddress ? (
             // Loading state while checking registration status
@@ -636,6 +658,19 @@ const GameCard = ({
           ) : isBlitzMode && !playerAddress && !showRegistered && canRegisterPeriod ? (
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           ) : null}
+
+          {showEternumSettleShortcut && (
+            <button
+              onClick={() => runWithNetworkGuard(onSettle ?? onPlay)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                "bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition-colors",
+              )}
+            >
+              <Play className="w-3 h-3" />
+              Settle
+            </button>
+          )}
 
           {/* See Score button for ended games where player participated */}
           {isEnded && showRegistered && onSeeScore && (
@@ -775,6 +810,7 @@ const GameCard = ({
 };
 
 interface UnifiedGameGridProps {
+  onPlayGame?: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
@@ -811,6 +847,7 @@ interface UnifiedGameGridProps {
  * Unified game grid - combines games from mainnet and slot into a single view
  */
 export const UnifiedGameGrid = ({
+  onPlayGame,
   onSelectGame,
   onSpectate,
   onSeeScore,
@@ -1238,6 +1275,13 @@ export const UnifiedGameGrid = ({
                   key={game.worldKey}
                   game={game}
                   onPlay={() =>
+                    (onPlayGame ?? onSelectGame)({
+                      name: game.name,
+                      chain: game.chain,
+                      worldAddress: game.worldAddress ?? undefined,
+                    })
+                  }
+                  onSettle={() =>
                     onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                   }
                   onSpectate={() =>
@@ -1292,6 +1336,13 @@ export const UnifiedGameGrid = ({
                   <GameCard
                     game={game}
                     onPlay={() =>
+                      (onPlayGame ?? onSelectGame)({
+                        name: game.name,
+                        chain: game.chain,
+                        worldAddress: game.worldAddress ?? undefined,
+                      })
+                    }
+                    onSettle={() =>
                       onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                     }
                     onSpectate={() =>

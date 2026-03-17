@@ -92,6 +92,7 @@ const WRITTEN_GUIDES = [
  * Row 2: Practice Games (full width)
  */
 const LearnContent = ({
+  onPlayGame,
   onSelectGame,
   onSpectate,
   onForgeHyperstructures,
@@ -99,6 +100,7 @@ const LearnContent = ({
   onClaimRewards,
   onRegistrationComplete,
 }: {
+  onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
@@ -193,6 +195,7 @@ const LearnContent = ({
         </div>
       </div>
       <UnifiedGameGrid
+        onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
         onSpectate={onSpectate}
         onForgeHyperstructures={onForgeHyperstructures}
@@ -450,6 +453,7 @@ const ModeCoexistenceHero = ({
  * - Vertical scroll within each column
  */
 const PlayTabContent = ({
+  onPlayGame,
   onSelectGame,
   onSpectate,
   onSeeScore,
@@ -461,6 +465,7 @@ const PlayTabContent = ({
   disabled = false,
   onEndedGamesResolved,
 }: {
+  onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
@@ -506,6 +511,7 @@ const PlayTabContent = ({
                 </div>
                 <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
                   <UnifiedGameGrid
+                    onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
                     onSpectate={onSpectate}
                     onForgeHyperstructures={onForgeHyperstructures}
@@ -540,6 +546,7 @@ const PlayTabContent = ({
                 </div>
                 <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
                   <UnifiedGameGrid
+                    onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
                     onSpectate={onSpectate}
                     onForgeHyperstructures={onForgeHyperstructures}
@@ -565,6 +572,7 @@ const PlayTabContent = ({
                 </div>
                 <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
                   <UnifiedGameGrid
+                    onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
                     onSpectate={onSpectate}
                     onSeeScore={onSeeScore}
@@ -613,6 +621,7 @@ const PlayTabContent = ({
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
                 <UnifiedGameGrid
+                  onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
@@ -647,6 +656,7 @@ const PlayTabContent = ({
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
                 <UnifiedGameGrid
+                  onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
@@ -672,6 +682,7 @@ const PlayTabContent = ({
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
                 <UnifiedGameGrid
+                  onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
                   onSpectate={onSpectate}
                   onSeeScore={onSeeScore}
@@ -710,6 +721,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const [selectedWorld, setSelectedWorld] = useState<WorldSelection | null>(null);
   const [isSpectateMode, setIsSpectateMode] = useState(false);
   const [isForgeMode, setIsForgeMode] = useState(false);
+  const [eternumEntryIntent, setEternumEntryIntent] = useState<"play" | "settle">("play");
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
 
   // Review flow state
@@ -725,6 +737,14 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
 
+  const openGameEntryModal = useCallback((selection: WorldSelection, intent: "play" | "settle") => {
+    setSelectedWorld(selection);
+    setIsSpectateMode(false);
+    setIsForgeMode(false);
+    setEternumEntryIntent(intent);
+    setEntryModalOpen(true);
+  }, []);
+
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
       const hasAccount = Boolean(account) || isConnected;
@@ -735,13 +755,25 @@ export const PlayView = ({ className }: PlayViewProps) => {
         return;
       }
 
-      // Open game entry modal - handles bootstrap, settlement, and game entry
-      setSelectedWorld(selection);
-      setIsSpectateMode(false);
-      setIsForgeMode(false);
-      setEntryModalOpen(true);
+      // Open settle flow
+      openGameEntryModal(selection, "settle");
     },
-    [account, isConnected, setModal],
+    [account, isConnected, setModal, openGameEntryModal],
+  );
+
+  const handlePlayGame = useCallback(
+    (selection: WorldSelection) => {
+      const hasAccount = Boolean(account) || isConnected;
+
+      if (!hasAccount) {
+        setModal(<SignInPromptModal />, true);
+        return;
+      }
+
+      // Open direct play flow
+      openGameEntryModal(selection, "play");
+    },
+    [account, isConnected, setModal, openGameEntryModal],
   );
 
   const handleSpectate = useCallback((selection: WorldSelection) => {
@@ -749,6 +781,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setSelectedWorld(selection);
     setIsSpectateMode(true);
     setIsForgeMode(false);
+    setEternumEntryIntent("play");
     setEntryModalOpen(true);
   }, []);
 
@@ -766,6 +799,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       setSelectedWorld(selection);
       setIsSpectateMode(false);
       setIsForgeMode(true);
+      setEternumEntryIntent("play");
       setNumHyperstructuresLeft(numLeft);
       setEntryModalOpen(true);
     },
@@ -776,6 +810,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setEntryModalOpen(false);
     setSelectedWorld(null);
     setIsForgeMode(false);
+    setEternumEntryIntent("play");
     setNumHyperstructuresLeft(0);
   }, []);
 
@@ -844,6 +879,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       case "learn":
         return (
           <LearnContent
+            onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
             onForgeHyperstructures={handleForgeHyperstructures}
@@ -860,6 +896,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       default:
         return (
           <PlayTabContent
+            onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
@@ -891,6 +928,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
           chain={selectedWorld.chain}
           isSpectateMode={isSpectateMode}
           isForgeMode={isForgeMode}
+          eternumEntryIntent={eternumEntryIntent}
           numHyperstructuresLeft={numHyperstructuresLeft}
         />
       )}

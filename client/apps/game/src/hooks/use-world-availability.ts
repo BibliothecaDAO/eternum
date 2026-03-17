@@ -135,6 +135,8 @@ export interface WorldConfigMeta {
   devModeOn: boolean;
   // Player registration status (null if not checked or no player)
   isPlayerRegistered: boolean | null;
+  // Eternum-only: whether the connected player already has at least one settled realm.
+  hasPlayerSettledRealm: boolean | null;
   // Number of hyperstructures left to create (for forging)
   numHyperstructuresLeft: number | null;
   // Reward distribution contract for this world
@@ -193,6 +195,23 @@ const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: stri
     return false;
   } catch {
     // Silently fail - registration check is best-effort
+  }
+  return null;
+};
+
+const fetchPlayerHasSettledRealm = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
+  try {
+    const query = `SELECT COUNT(*) AS realm_count FROM "s1_eternum-Structure" WHERE owner = "${playerAddress}" AND category = 1 LIMIT 1;`;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = (await response.json()) as Record<string, unknown>[];
+    const [row] = data;
+    const realmCount = parseMaybeHexToNumber(row?.realm_count);
+    if (realmCount == null) return null;
+    return realmCount > 0;
+  } catch {
+    // Silently fail - settled realm check is best-effort
   }
   return null;
 };
@@ -262,6 +281,7 @@ const fetchWorldConfigMeta = async (
     mmrEnabled: false,
     devModeOn: false,
     isPlayerRegistered: null,
+    hasPlayerSettledRealm: null,
     numHyperstructuresLeft: null,
     prizeDistributionAddress: null,
     winnerJackpotAmount: 0n,
@@ -373,6 +393,13 @@ const fetchWorldConfigMeta = async (
       sideFetches.push(
         fetchPlayerRegistration(toriiBaseUrl, playerAddress).then((isRegistered) => {
           meta.isPlayerRegistered = isRegistered;
+        }),
+      );
+    }
+    if (playerAddress && meta.mode === "eternum") {
+      sideFetches.push(
+        fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress).then((hasSettledRealm) => {
+          meta.hasPlayerSettledRealm = hasSettledRealm;
         }),
       );
     }
