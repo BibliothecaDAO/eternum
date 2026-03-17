@@ -378,7 +378,7 @@ export default class WorldmapScene extends WarpTravel {
   }> = [];
   private postCommitManagerCatchUpFrameHandle: number | null = null;
   private readonly postCommitManagerCatchUpBudgetBytes = 256 * 1024;
-  private directionalPresentationChunkKey: string | null = null;
+  private directionalPresentationChunkKeys: Set<string> = new Set();
   private activeDirectionalPresentationPrewarms: Set<string> = new Set();
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
@@ -3402,9 +3402,9 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     this.directionalPrefetchAreaKeys = new Set(prefetchPlan.desiredAreaKeys);
-    this.directionalPresentationChunkKey = WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled
-      ? prefetchPlan.presentationChunkKeyToPrewarm
-      : null;
+    this.directionalPresentationChunkKeys = WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled
+      ? new Set(prefetchPlan.presentationChunkKeysToPrewarm)
+      : new Set();
     this.pruneQueuedDirectionalPrefetches();
     this.prefetchedAhead.splice(0, this.prefetchedAhead.length, ...prefetchPlan.nextPrefetchedAhead);
 
@@ -3413,11 +3413,13 @@ export default class WorldmapScene extends WarpTravel {
       this.enqueueChunkPrefetch(chunkKey, 2);
     });
 
-    if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled && this.directionalPresentationChunkKey !== null) {
-      const presentationFetchKey = this.getRenderAreaKeyForChunk(this.directionalPresentationChunkKey);
-      if (this.fetchedChunks.has(presentationFetchKey)) {
-        void this.prewarmDirectionalPresentationChunk(this.directionalPresentationChunkKey);
-      }
+    if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
+      this.directionalPresentationChunkKeys.forEach((chunkKey) => {
+        const presentationFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+        if (this.fetchedChunks.has(presentationFetchKey)) {
+          void this.prewarmDirectionalPresentationChunk(chunkKey);
+        }
+      });
     }
   }
 
@@ -3430,7 +3432,7 @@ export default class WorldmapScene extends WarpTravel {
     this.prefetchQueue = [];
     this.queuedPrefetchAreaKeys.clear();
     this.directionalPrefetchAreaKeys.clear();
-    this.directionalPresentationChunkKey = null;
+    this.directionalPresentationChunkKeys.clear();
     this.prefetchedAhead.length = 0;
   }
 
@@ -3482,7 +3484,7 @@ export default class WorldmapScene extends WarpTravel {
           if (item.fetchTiles) {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_executed");
             const tileFetchSucceeded = await this.computeTileEntities(item.chunkKey);
-            if (tileFetchSucceeded && item.chunkKey === this.directionalPresentationChunkKey) {
+            if (tileFetchSucceeded && this.directionalPresentationChunkKeys.has(item.chunkKey)) {
               await this.prewarmDirectionalPresentationChunk(item.chunkKey);
             }
           }
@@ -3501,7 +3503,7 @@ export default class WorldmapScene extends WarpTravel {
   private async prewarmDirectionalPresentationChunk(chunkKey: string): Promise<void> {
     if (
       !chunkKey ||
-      chunkKey !== this.directionalPresentationChunkKey ||
+      !this.directionalPresentationChunkKeys.has(chunkKey) ||
       this.activeDirectionalPresentationPrewarms.has(chunkKey) ||
       this.cachedMatrices.has(chunkKey)
     ) {
@@ -3521,7 +3523,7 @@ export default class WorldmapScene extends WarpTravel {
         prewarmToken,
         isLatestToken: (token) =>
           token === this.chunkTransitionToken &&
-          this.directionalPresentationChunkKey === chunkKey &&
+          this.directionalPresentationChunkKeys.has(chunkKey) &&
           !this.isSwitchedOff,
         isPresentationHot: (targetChunkKey) => this.cachedMatrices.has(targetChunkKey),
         preparePresentation: () =>
@@ -3654,7 +3656,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.postCommitManagerCatchUpQueue = [];
-    this.directionalPresentationChunkKey = null;
+    this.directionalPresentationChunkKeys.clear();
     this.activeDirectionalPresentationPrewarms.clear();
   }
 

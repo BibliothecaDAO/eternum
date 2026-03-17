@@ -82,7 +82,8 @@ describe("worldmap presentation prewarm wiring", () => {
   it("routes the directional forward chunk through presentation prewarm after tile prefetch settles", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/presentationChunkKeyToPrewarm/);
+    expect(source).toMatch(/presentationChunkKeysToPrewarm/);
+    expect(source).toMatch(/directionalPresentationChunkKeys/);
     expect(source).toMatch(/prewarmDirectionalPresentationChunk\(/);
   });
 });
