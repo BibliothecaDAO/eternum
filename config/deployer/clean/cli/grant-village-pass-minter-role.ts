@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs, resolveOptionalArg } from "./args";
-import { grantVillagePassRoleToRealmInternalSystems } from "..";
+import { grantVillagePassRoleToRealmInternalSystems } from "../eternum/village-pass-role";
 
 function usage(): void {
   console.log(
