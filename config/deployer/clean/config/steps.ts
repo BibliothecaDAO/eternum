@@ -1,5 +1,5 @@
 import type { Config as EternumConfig } from "@bibliothecadao/types";
-import type { ConfigStep, DeploymentEnvironmentId } from "./types";
+import type { ConfigStep, DeploymentEnvironmentId } from "../types";
 import {
   setAgentConfig,
   setBattleConfig,
@@ -33,7 +33,7 @@ import {
   setWeightConfig,
   setWorldAdminConfig,
   type NativeConfigProvider,
-} from "./native-config-steps";
+} from "./native-steps";
 
 interface StepSelectionInput {
   environmentId: DeploymentEnvironmentId;
@@ -78,6 +78,22 @@ function defineStep(
   options: Omit<ConfigStepDefinition<NativeConfigProvider>, "id" | "description" | "execute"> = {},
 ): ConfigStepDefinition<NativeConfigProvider> {
   return { id, description, execute, ...options };
+}
+
+function matchesEnvironment(
+  step: ConfigStepDefinition<NativeConfigProvider>,
+  environmentId: DeploymentEnvironmentId,
+): boolean {
+  return !step.environments || step.environments.includes(environmentId);
+}
+
+function shouldRunStep(step: ConfigStepDefinition<NativeConfigProvider>, input: StepSelectionInput): boolean {
+  return step.shouldRun ? step.shouldRun(input) : true;
+}
+
+function toExecutableStep(step: ConfigStepDefinition<NativeConfigProvider>): ConfigStep<NativeConfigProvider> {
+  const { environments: _environments, shouldRun: _shouldRun, ...executableStep } = step;
+  return executableStep;
 }
 
 // The registry order is the contract between CI, the admin UI, and the onchain
@@ -128,19 +144,14 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
   defineStep("resource-factory", "Set resource factory config", setResourceFactoryConfig),
 ];
 
-export const FACTORY_WORLD_CONFIG_STEPS: ConfigStep<NativeConfigProvider>[] = FACTORY_WORLD_CONFIG_STEP_DEFINITIONS.map(
-  ({ environments: _environments, shouldRun: _shouldRun, ...step }) => step,
-);
+export const FACTORY_WORLD_CONFIG_STEPS: ConfigStep<NativeConfigProvider>[] =
+  FACTORY_WORLD_CONFIG_STEP_DEFINITIONS.map(toExecutableStep);
 
 export function resolveFactoryWorldConfigSteps({
   environmentId,
   config,
 }: StepSelectionInput): ConfigStep<NativeConfigProvider>[] {
-  return FACTORY_WORLD_CONFIG_STEP_DEFINITIONS.filter((step) => {
-    if (step.environments && !step.environments.includes(environmentId)) {
-      return false;
-    }
-
-    return step.shouldRun ? step.shouldRun({ environmentId, config }) : true;
-  }).map(({ environments: _environments, shouldRun: _shouldRun, ...step }) => step);
+  return FACTORY_WORLD_CONFIG_STEP_DEFINITIONS.filter(
+    (step) => matchesEnvironment(step, environmentId) && shouldRunStep(step, { environmentId, config }),
+  ).map(toExecutableStep);
 }

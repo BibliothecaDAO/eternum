@@ -19,17 +19,32 @@ on:
       dev_mode_on:
         description: 'Optional override for dev mode ("true" or "false"). Leave blank to use the environment config.'
         required: false
-        type: string
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
       single_realm_mode:
         description:
           'Optional override for single realm mode ("true" or "false"). Leave blank to use the environment config.'
         required: false
-        type: string
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
       two_player_mode:
         description:
           'Optional override for two player mode ("true" or "false"). Leave blank to use the environment config.'
         required: false
-        type: string
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
       duration_seconds:
         description:
           "Optional override for duration in seconds. Leave blank to use the environment config. Used by blitz season

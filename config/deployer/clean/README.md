@@ -74,6 +74,26 @@ Whenever one of those fallbacks is used, it logs the reason to stderr.
 
 Artifacts are written to `.context/game-launch/`.
 
+For `slot.eternum`, the launch flow also runs the village pass role grant automatically after world configuration. It
+grants `MINTER_ROLE` on the chain's `villagePass` contract to the deployed `realm_internal_systems` contract for the new
+game, using the same admin account as the rest of the launch.
+
+## Village Pass Role Grant
+
+For `{network}.eternum` worlds, the clean deployer also exposes a dedicated command to grant `MINTER_ROLE` on the
+chain's `villagePass` contract to the deployed `realm_internal_systems` contract for one game:
+
+```bash
+bun config/deployer/clean/cli/grant-village-pass-minter-role.ts \
+  --chain slot.eternum \
+  --game etrn-iron-mist-11
+```
+
+It resolves the live world addresses from factory SQL, patches the game manifest in memory, finds
+`s1_eternum-realm_internal_systems`, loads `villagePass` from `contracts/common/addresses/{chain}.json`, and submits a
+single `grant_role(MINTER_ROLE, realm_internal_systems)` transaction. Artifacts are written to
+`.context/village-pass-minter-role/`.
+
 Progress output is written to stderr during execution so CI logs show the current stage and elapsed time without
 breaking the final JSON written to stdout.
 

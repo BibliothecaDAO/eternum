@@ -3,8 +3,8 @@ import {
   DEFAULT_INDEXER_WORKFLOW_POLL_MS,
   DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS,
   DEFAULT_TORII_WORKFLOW_FILE,
-} from "./constants";
-import type { IndexerCreationResult, IndexerRequest, IndexerWorkflowRun } from "./types";
+} from "../constants";
+import type { IndexerCreationResult, IndexerRequest, IndexerWorkflowRun } from "../types";
 
 interface CreateIndexerOptions {
   onProgress?: (message: string) => void;
@@ -22,6 +22,12 @@ interface GitHubWorkflowDispatchConfig {
   sha?: string;
   timeoutMs: number;
   pollIntervalMs: number;
+}
+
+interface WorkflowExecutionDependencies {
+  fetchImpl: typeof fetch;
+  wait: (ms: number) => Promise<void>;
+  onProgress?: (message: string) => void;
 }
 
 interface GitHubWorkflowRunResponse {
@@ -94,6 +100,7 @@ function resolveGitHubToken(
   if (token) {
     onProgress?.("Using GitHub token from gh auth token because GITHUB_TOKEN is not set");
   }
+
   return token || undefined;
 }
 
@@ -113,6 +120,7 @@ function resolveGitHubRepository(
   if (repository) {
     onProgress?.("Using GitHub repository from gh repo view because GITHUB_REPOSITORY is not set");
   }
+
   return repository || undefined;
 }
 
@@ -121,9 +129,9 @@ function resolveGitReference(
   onProgress: ((message: string) => void) | undefined,
   commandRunner: (command: string, args: string[]) => string | null,
 ): string | undefined {
-  const fromRequest = request.ref || process.env.GITHUB_REF_NAME || extractRefName(process.env.GITHUB_REF);
-  if (fromRequest) {
-    return fromRequest;
+  const explicitRef = request.ref || process.env.GITHUB_REF_NAME || extractRefName(process.env.GITHUB_REF);
+  if (explicitRef) {
+    return explicitRef;
   }
 
   if (process.env.GITHUB_ACTIONS === "true") {
@@ -146,9 +154,7 @@ function resolveGitHubWorkflowDispatchConfig(
   const commandRunner = options.commandRunner || runCommand;
   const token = resolveGitHubToken(options.onProgress, commandRunner);
   const repo = resolveGitHubRepository(options.onProgress, commandRunner);
-  const apiBaseUrl = process.env.GITHUB_API_URL || "https://api.github.com";
   const ref = resolveGitReference(request, options.onProgress, commandRunner);
-  const workflowFile = request.workflowFile || DEFAULT_TORII_WORKFLOW_FILE;
 
   if (!token || !repo || !ref) {
     return null;
@@ -157,12 +163,34 @@ function resolveGitHubWorkflowDispatchConfig(
   return {
     token,
     repo,
-    apiBaseUrl,
+    apiBaseUrl: process.env.GITHUB_API_URL || "https://api.github.com",
     ref,
-    workflowFile,
+    workflowFile: request.workflowFile || DEFAULT_TORII_WORKFLOW_FILE,
     sha: process.env.GITHUB_SHA,
     timeoutMs: DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS,
     pollIntervalMs: DEFAULT_INDEXER_WORKFLOW_POLL_MS,
+  };
+}
+
+function requireGitHubWorkflowDispatchConfig(
+  request: IndexerRequest,
+  options: Pick<CreateIndexerOptions, "onProgress" | "commandRunner">,
+): GitHubWorkflowDispatchConfig {
+  const githubConfig = resolveGitHubWorkflowDispatchConfig(request, options);
+  if (!githubConfig) {
+    throw new Error(
+      "Indexer creation requires direct GitHub workflow dispatch. Set GITHUB_TOKEN and GITHUB_REPOSITORY, and provide a ref via --ref or GITHUB_REF_NAME when not running inside GitHub Actions.",
+    );
+  }
+
+  return githubConfig;
+}
+
+function resolveWorkflowExecutionDependencies(options: CreateIndexerOptions): WorkflowExecutionDependencies {
+  return {
+    fetchImpl: options.fetchImpl || fetch,
+    wait: options.sleep || sleep,
+    onProgress: options.onProgress,
   };
 }
 
@@ -186,6 +214,21 @@ function buildGitHubHeaders(token: string): Record<string, string> {
     "Content-Type": "application/json",
     "X-GitHub-Api-Version": GITHUB_API_VERSION,
   };
+}
+
+function buildWorkflowDispatchBody(request: IndexerRequest, dispatchId: string, ref: string) {
+  return JSON.stringify({
+    ref,
+    inputs: {
+      env: request.env,
+      torii_prefix: request.worldName,
+      rpc_url: request.rpcUrl,
+      torii_world_address: request.worldAddress,
+      torii_namespaces: request.namespaces,
+      torii_external_contracts: (request.externalContracts || []).join("\n"),
+      launch_request_id: dispatchId,
+    },
+  });
 }
 
 function matchesDispatch(
@@ -217,7 +260,7 @@ function matchesDispatch(
 function toWorkflowRun(
   run: GitHubWorkflowRunResponse,
   config: Pick<GitHubWorkflowDispatchConfig, "workflowFile" | "ref">,
-) {
+): IndexerWorkflowRun {
   return {
     workflowFile: config.workflowFile,
     ref: config.ref,
@@ -226,7 +269,7 @@ function toWorkflowRun(
     htmlUrl: run.html_url,
     status: run.status,
     conclusion: run.conclusion || "unknown",
-  } satisfies IndexerWorkflowRun;
+  };
 }
 
 async function findWorkflowRun(
@@ -279,74 +322,93 @@ async function getWorkflowRun(
   return parseJson<GitHubWorkflowRunResponse>(response);
 }
 
-async function createIndexerViaGitHubActions(
+async function dispatchIndexerWorkflow(
   request: IndexerRequest,
   config: GitHubWorkflowDispatchConfig,
-  options: Pick<CreateIndexerOptions, "fetchImpl" | "onProgress" | "sleep">,
-): Promise<IndexerCreationResult> {
-  const fetchImpl = options.fetchImpl || fetch;
-  const wait = options.sleep || sleep;
-  const dispatchId = crypto.randomUUID();
+  dependencies: WorkflowExecutionDependencies,
+  dispatchId: string,
+): Promise<number> {
+  dependencies.onProgress?.(`Dispatching ${config.workflowFile} on ref ${config.ref}`);
+
   const dispatchStartedAtMs = Date.now();
-
-  options.onProgress?.(`Dispatching ${config.workflowFile} on ref ${config.ref}`);
-
-  const dispatchResponse = await fetchImpl(
+  const response = await dependencies.fetchImpl(
     `${config.apiBaseUrl}/repos/${config.repo}/actions/workflows/${encodeURIComponent(config.workflowFile)}/dispatches`,
     {
       method: "POST",
       headers: buildGitHubHeaders(config.token),
-      body: JSON.stringify({
-        ref: config.ref,
-        inputs: {
-          env: request.env,
-          torii_prefix: request.worldName,
-          rpc_url: request.rpcUrl,
-          torii_world_address: request.worldAddress,
-          torii_namespaces: request.namespaces,
-          torii_external_contracts: (request.externalContracts || []).join("\n"),
-          launch_request_id: dispatchId,
-        },
-      }),
+      body: buildWorkflowDispatchBody(request, dispatchId, config.ref),
     },
   );
 
-  if (!dispatchResponse.ok) {
-    const body = await readErrorBody(dispatchResponse);
+  if (!response.ok) {
+    const body = await readErrorBody(response);
     throw new Error(
-      `Failed to dispatch ${config.workflowFile}: ${dispatchResponse.status} ${dispatchResponse.statusText}${body ? ` - ${body}` : ""}`,
+      `Failed to dispatch ${config.workflowFile}: ${response.status} ${response.statusText}${body ? ` - ${body}` : ""}`,
     );
   }
 
-  options.onProgress?.(`Waiting for ${config.workflowFile} run to appear`);
+  return dispatchStartedAtMs;
+}
+
+async function waitForWorkflowRunToAppear(
+  config: GitHubWorkflowDispatchConfig,
+  dependencies: WorkflowExecutionDependencies,
+  dispatchId: string,
+  dispatchStartedAtMs: number,
+): Promise<GitHubWorkflowRunResponse> {
+  dependencies.onProgress?.(`Waiting for ${config.workflowFile} run to appear`);
 
   const deadlineAtMs = dispatchStartedAtMs + config.timeoutMs;
-  let matchedRun = await findWorkflowRun(config, dispatchId, dispatchStartedAtMs, fetchImpl);
+  let matchedRun = await findWorkflowRun(config, dispatchId, dispatchStartedAtMs, dependencies.fetchImpl);
 
   while (!matchedRun && Date.now() < deadlineAtMs) {
-    await wait(config.pollIntervalMs);
-    matchedRun = await findWorkflowRun(config, dispatchId, dispatchStartedAtMs, fetchImpl);
+    await dependencies.wait(config.pollIntervalMs);
+    matchedRun = await findWorkflowRun(config, dispatchId, dispatchStartedAtMs, dependencies.fetchImpl);
   }
 
   if (!matchedRun) {
     throw new Error(`Timed out waiting for ${config.workflowFile} run to start for dispatch ${dispatchId}`);
   }
 
-  options.onProgress?.(`Tracking ${config.workflowFile} run #${matchedRun.run_number}: ${matchedRun.html_url}`);
+  dependencies.onProgress?.(`Tracking ${config.workflowFile} run #${matchedRun.run_number}: ${matchedRun.html_url}`);
+  return matchedRun;
+}
 
+function logWorkflowRunStateIfChanged(params: {
+  onProgress?: (message: string) => void;
+  workflowFile: string;
+  currentRun: GitHubWorkflowRunResponse;
+  previousState: string;
+}): string {
+  const currentState = `${params.currentRun.status}:${params.currentRun.conclusion || "pending"}`;
+  if (currentState !== params.previousState) {
+    params.onProgress?.(
+      `${params.workflowFile} run #${params.currentRun.run_number} status: ${params.currentRun.status}${
+        params.currentRun.conclusion ? ` (${params.currentRun.conclusion})` : ""
+      }`,
+    );
+  }
+
+  return currentState;
+}
+
+async function waitForWorkflowRunToComplete(
+  config: GitHubWorkflowDispatchConfig,
+  dependencies: WorkflowExecutionDependencies,
+  matchedRun: GitHubWorkflowRunResponse,
+  dispatchStartedAtMs: number,
+): Promise<IndexerCreationResult> {
+  const deadlineAtMs = dispatchStartedAtMs + config.timeoutMs;
   let lastState = "";
-  while (Date.now() < deadlineAtMs) {
-    const currentRun = await getWorkflowRun(config, matchedRun.id, fetchImpl);
-    const currentState = `${currentRun.status}:${currentRun.conclusion || "pending"}`;
 
-    if (currentState !== lastState) {
-      options.onProgress?.(
-        `${config.workflowFile} run #${currentRun.run_number} status: ${currentRun.status}${
-          currentRun.conclusion ? ` (${currentRun.conclusion})` : ""
-        }`,
-      );
-      lastState = currentState;
-    }
+  while (Date.now() < deadlineAtMs) {
+    const currentRun = await getWorkflowRun(config, matchedRun.id, dependencies.fetchImpl);
+    lastState = logWorkflowRunStateIfChanged({
+      onProgress: dependencies.onProgress,
+      workflowFile: config.workflowFile,
+      currentRun,
+      previousState: lastState,
+    });
 
     if (currentRun.status === "completed") {
       if (currentRun.conclusion !== "success") {
@@ -361,22 +423,28 @@ async function createIndexerViaGitHubActions(
       };
     }
 
-    await wait(config.pollIntervalMs);
+    await dependencies.wait(config.pollIntervalMs);
   }
 
   throw new Error(`Timed out waiting for ${config.workflowFile} run #${matchedRun.run_number} to complete`);
+}
+
+async function createIndexerViaGitHubActions(
+  request: IndexerRequest,
+  config: GitHubWorkflowDispatchConfig,
+  options: CreateIndexerOptions,
+): Promise<IndexerCreationResult> {
+  const dependencies = resolveWorkflowExecutionDependencies(options);
+  const dispatchId = crypto.randomUUID();
+  const dispatchStartedAtMs = await dispatchIndexerWorkflow(request, config, dependencies, dispatchId);
+  const matchedRun = await waitForWorkflowRunToAppear(config, dependencies, dispatchId, dispatchStartedAtMs);
+  return waitForWorkflowRunToComplete(config, dependencies, matchedRun, dispatchStartedAtMs);
 }
 
 export async function createIndexer(
   request: IndexerRequest,
   options: CreateIndexerOptions = {},
 ): Promise<IndexerCreationResult> {
-  const githubConfig = resolveGitHubWorkflowDispatchConfig(request, options);
-  if (!githubConfig) {
-    throw new Error(
-      "Indexer creation requires direct GitHub workflow dispatch. Set GITHUB_TOKEN and GITHUB_REPOSITORY, and provide a ref via --ref or GITHUB_REF_NAME when not running inside GitHub Actions.",
-    );
-  }
-
+  const githubConfig = requireGitHubWorkflowDispatchConfig(request, options);
   return createIndexerViaGitHubActions(request, githubConfig, options);
 }
