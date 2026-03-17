@@ -11,9 +11,29 @@ export const DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS = 20 * 60 * 1000;
 export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
 export const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 export const DEFAULT_SLOT_FACTORY_ADDRESS = "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb";
+export const DEFAULT_MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9";
+export const DEFAULT_SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9";
 export const DEFAULT_SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9";
+export const DEFAULT_SLOTTEST_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana/rpc/v0_9";
+export const DEFAULT_LOCAL_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9";
 export const DEFAULT_SLOT_ACCOUNT_ADDRESS = "0x6677fe62ee39c7b07401f754138502bab7fac99d2d3c5d37df7d1c6fab10819";
 export const DEFAULT_SLOT_PRIVATE_KEY = "0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4";
+
+export const DEFAULT_CHAIN_RPC_URLS: Record<string, string> = {
+  mainnet: DEFAULT_MAINNET_RPC_URL,
+  sepolia: DEFAULT_SEPOLIA_RPC_URL,
+  slot: DEFAULT_SLOT_RPC_URL,
+  slottest: DEFAULT_SLOTTEST_RPC_URL,
+  local: DEFAULT_LOCAL_RPC_URL,
+};
+
+export function resolveDefaultRpcUrl(chain: string): string {
+  const rpcUrl = DEFAULT_CHAIN_RPC_URLS[chain];
+  if (!rpcUrl) {
+    throw new Error(`No default RPC URL configured for chain "${chain}"`);
+  }
+  return rpcUrl;
+}
 
 export const BANK_COUNT = 6;
 export const BANK_STEPS_FROM_CENTER = 15 * 21;

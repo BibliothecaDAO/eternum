@@ -127,6 +127,7 @@ export interface LaunchGameSummary {
   createGameTxHash?: string;
   configureTxHash?: string;
   lootChestRoleTxHash?: string;
+  villagePassRoleTxHash?: string;
   createBanksTxHash?: string;
   indexerCreated: boolean;
   indexerMode?: IndexerCreationResult["mode"];

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { getGameManifest } from "../../../../contracts/utils/utils";
-import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config-steps";
-import { loadEnvironmentConfiguration } from "../config-loader";
-import { setBlitzRegistrationParametersConfig, setSeasonConfig } from "../native-config-steps";
+import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config/steps";
+import { loadEnvironmentConfiguration } from "../config/config-loader";
+import { setBlitzRegistrationParametersConfig, setSeasonConfig } from "../config/native-steps";
 
 describe("native config steps", () => {
   test("keeps the registry atomic instead of grouped", () => {

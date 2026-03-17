@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { executeConfigSteps } from "../config-executor";
+import { executeConfigSteps } from "../config/executor";
 import type { ConfigStep } from "../types";
 
 describe("executeConfigSteps", () => {

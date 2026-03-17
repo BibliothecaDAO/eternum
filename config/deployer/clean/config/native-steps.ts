@@ -7,7 +7,7 @@ import {
   scaleResourceOutputs,
 } from "@bibliothecadao/types";
 import { byteArray } from "starknet";
-import type { CleanConfigContext } from "./types";
+import type { CleanConfigContext } from "../types";
 
 type NativeConfigProvider = Pick<
   EternumProvider,
@@ -227,7 +227,7 @@ export const setWorldConfig: NativeStep = async (context) => {
   await setMercenariesNameConfig(context);
 };
 
-export const setResourceFactoryConfig: NativeStep = async ({ account, provider, config }) => {
+function buildResourceFactoryCalls(config: NativeConfig) {
   const precision = config.resources.resourcePrecision;
   const complexInputsByResource = scaleResourceInputs(config.resources.productionByComplexRecipe, precision);
   const complexOutputsByResource = scaleResourceOutputs(config.resources.productionByComplexRecipeOutputs, precision);
@@ -235,7 +235,7 @@ export const setResourceFactoryConfig: NativeStep = async ({ account, provider, 
   const simpleOutputsByResource = scaleResourceOutputs(config.resources.productionBySimpleRecipeOutputs, precision);
   const laborOutputsByResource = scaleResourceOutputs(config.resources.laborOutputPerResource, precision);
 
-  const calls = numericEntries(complexInputsByResource).map(([resourceType, complexInputResourcesList]) => ({
+  return numericEntries(complexInputsByResource).map(([resourceType, complexInputResourcesList]) => ({
     resource_type: resourceType,
     realm_output_per_second: getNumericRecordValue(complexOutputsByResource, resourceType),
     village_output_per_second: getNumericRecordValue(complexOutputsByResource, resourceType) / 2,
@@ -245,10 +245,12 @@ export const setResourceFactoryConfig: NativeStep = async ({ account, provider, 
     resource_output_per_complex_input: getNumericRecordValue(complexOutputsByResource, resourceType),
     complex_input_resources_list: complexInputResourcesList,
   }));
+}
 
+export const setResourceFactoryConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_resource_factory_config(
     withSigner(account, {
-      calls,
+      calls: buildResourceFactoryCalls(config),
     }),
   );
 };
@@ -270,19 +272,22 @@ export const setBaseBuildingConfig: NativeStep = async ({ account, provider, con
   );
 };
 
-export const setBuildingCategoryConfig: NativeStep = async ({ account, provider, config }) => {
+function buildBuildingCategoryCalls(config: NativeConfig) {
   const { scaledComplexBuildingCosts, scaledSimpleBuildingCosts } = getScaledBuildingInputs(config);
-  const calls = numericEntries(scaledComplexBuildingCosts).map(([buildingCategory, complexBuildingCost]) => ({
+
+  return numericEntries(scaledComplexBuildingCosts).map(([buildingCategory, complexBuildingCost]) => ({
     building_category: buildingCategory,
     complex_building_cost: complexBuildingCost,
     simple_building_cost: getNumericRecordValue(scaledSimpleBuildingCosts, buildingCategory),
     population_cost: getOptionalNumericRecordValue(config.buildings.buildingPopulation, buildingCategory) ?? 0,
     capacity_grant: getOptionalNumericRecordValue(config.buildings.buildingCapacity, buildingCategory) ?? 0,
   }));
+}
 
+export const setBuildingCategoryConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_building_category_config(
     withSigner(account, {
-      calls,
+      calls: buildBuildingCategoryCalls(config),
     }),
   );
 };
@@ -292,9 +297,10 @@ export const setBuildingConfig: NativeStep = async (context) => {
   await setBuildingCategoryConfig(context);
 };
 
-export const setRealmUpgradeConfig: NativeStep = async ({ account, provider, config }) => {
+function buildRealmUpgradeCalls(config: NativeConfig) {
   const scaledRealmUpgradeCosts = scaleResourceInputs(config.realmUpgradeCosts, config.resources.resourcePrecision);
-  const calls = numericEntries(scaledRealmUpgradeCosts)
+
+  return numericEntries(scaledRealmUpgradeCosts)
     .filter(([, costs]) => costs.length > 0)
     .map(([level, costOfLevel]) => ({
       level,
@@ -303,10 +309,12 @@ export const setRealmUpgradeConfig: NativeStep = async ({ account, provider, con
         amount: cost.amount,
       })),
     }));
+}
 
+export const setRealmUpgradeConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_structure_level_config(
     withSigner(account, {
-      calls,
+      calls: buildRealmUpgradeCalls(config),
     }),
   );
 };
@@ -320,15 +328,17 @@ export const setStructureMaxLevelConfig: NativeStep = async ({ account, provider
   );
 };
 
-export const setWeightConfig: NativeStep = async ({ account, provider, config }) => {
-  const calls = numericEntries(config.resources.resourceWeightsGrams).map(([entityType, weightNanogram]) => ({
+function buildResourceWeightCalls(config: NativeConfig) {
+  return numericEntries(config.resources.resourceWeightsGrams).map(([entityType, weightNanogram]) => ({
     entity_type: entityType,
     weight_nanogram: weightNanogram,
   }));
+}
 
+export const setWeightConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_resource_weight_config(
     withSigner(account, {
-      calls,
+      calls: buildResourceWeightCalls(config),
     }),
   );
 };
@@ -343,58 +353,72 @@ export const setBattleConfig: NativeStep = async ({ account, provider, config })
   );
 };
 
-export const setTroopConfig: NativeStep = async ({ account, provider, config }) => {
+function buildTroopDamageConfig(config: NativeConfig) {
+  return {
+    t1_damage_value: config.troop.damage.t1DamageValue,
+    t2_damage_multiplier: config.troop.damage.t2DamageMultiplier,
+    t3_damage_multiplier: config.troop.damage.t3DamageMultiplier,
+    damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
+    damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
+    damage_scaling_factor: config.troop.damage.damageScalingFactor,
+    damage_beta_small: config.troop.damage.damageBetaSmall,
+    damage_beta_large: config.troop.damage.damageBetaLarge,
+    damage_c0: config.troop.damage.damageC0,
+    damage_delta: config.troop.damage.damageDelta,
+  };
+}
+
+function buildTroopStaminaConfig(config: NativeConfig) {
   const precision = config.resources.resourcePrecision;
 
-  await provider.set_troop_config(
-    withSigner(account, {
-      damage_config: {
-        t1_damage_value: config.troop.damage.t1DamageValue,
-        t2_damage_multiplier: config.troop.damage.t2DamageMultiplier,
-        t3_damage_multiplier: config.troop.damage.t3DamageMultiplier,
-        damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
-        damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
-        damage_scaling_factor: config.troop.damage.damageScalingFactor,
-        damage_beta_small: config.troop.damage.damageBetaSmall,
-        damage_beta_large: config.troop.damage.damageBetaLarge,
-        damage_c0: config.troop.damage.damageC0,
-        damage_delta: config.troop.damage.damageDelta,
-      },
-      stamina_config: {
-        stamina_gain_per_tick: config.troop.stamina.staminaGainPerTick,
-        stamina_initial: config.troop.stamina.staminaInitial,
-        stamina_bonus_value: config.troop.stamina.staminaBonusValue,
-        stamina_knight_max: config.troop.stamina.staminaKnightMax,
-        stamina_paladin_max: config.troop.stamina.staminaPaladinMax,
-        stamina_crossbowman_max: config.troop.stamina.staminaCrossbowmanMax,
-        stamina_attack_req: config.troop.stamina.staminaAttackReq,
-        stamina_defense_req: config.troop.stamina.staminaDefenseReq,
-        stamina_explore_wheat_cost: scaleAmount(config.troop.stamina.staminaExploreWheatCost, precision),
-        stamina_explore_fish_cost: scaleAmount(config.troop.stamina.staminaExploreFishCost, precision),
-        stamina_explore_stamina_cost: config.troop.stamina.staminaExploreStaminaCost,
-        stamina_travel_wheat_cost: scaleAmount(config.troop.stamina.staminaTravelWheatCost, precision),
-        stamina_travel_fish_cost: scaleAmount(config.troop.stamina.staminaTravelFishCost, precision),
-        stamina_travel_stamina_cost: config.troop.stamina.staminaTravelStaminaCost,
-      },
-      limit_config: {
-        guard_resurrection_delay: config.troop.limit.guardResurrectionDelay,
-        mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
-        mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,
-        agent_troop_lower_bound: config.troop.limit.agentTroopLowerBound,
-        agent_troop_upper_bound: config.troop.limit.agentTroopUpperBound,
-        settlement_deployment_cap: config.troop.limit.settlementDeploymentCap,
-        city_deployment_cap: config.troop.limit.cityDeploymentCap,
-        kingdom_deployment_cap: config.troop.limit.kingdomDeploymentCap,
-        empire_deployment_cap: config.troop.limit.empireDeploymentCap,
-        t1_tier_strength: config.troop.limit.t1TierStrength,
-        t2_tier_strength: config.troop.limit.t2TierStrength,
-        t3_tier_strength: config.troop.limit.t3TierStrength,
-        t1_tier_modifier: config.troop.limit.t1TierModifier,
-        t2_tier_modifier: config.troop.limit.t2TierModifier,
-        t3_tier_modifier: config.troop.limit.t3TierModifier,
-      },
-    }),
-  );
+  return {
+    stamina_gain_per_tick: config.troop.stamina.staminaGainPerTick,
+    stamina_initial: config.troop.stamina.staminaInitial,
+    stamina_bonus_value: config.troop.stamina.staminaBonusValue,
+    stamina_knight_max: config.troop.stamina.staminaKnightMax,
+    stamina_paladin_max: config.troop.stamina.staminaPaladinMax,
+    stamina_crossbowman_max: config.troop.stamina.staminaCrossbowmanMax,
+    stamina_attack_req: config.troop.stamina.staminaAttackReq,
+    stamina_defense_req: config.troop.stamina.staminaDefenseReq,
+    stamina_explore_wheat_cost: scaleAmount(config.troop.stamina.staminaExploreWheatCost, precision),
+    stamina_explore_fish_cost: scaleAmount(config.troop.stamina.staminaExploreFishCost, precision),
+    stamina_explore_stamina_cost: config.troop.stamina.staminaExploreStaminaCost,
+    stamina_travel_wheat_cost: scaleAmount(config.troop.stamina.staminaTravelWheatCost, precision),
+    stamina_travel_fish_cost: scaleAmount(config.troop.stamina.staminaTravelFishCost, precision),
+    stamina_travel_stamina_cost: config.troop.stamina.staminaTravelStaminaCost,
+  };
+}
+
+function buildTroopLimitConfig(config: NativeConfig) {
+  return {
+    guard_resurrection_delay: config.troop.limit.guardResurrectionDelay,
+    mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
+    mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,
+    agent_troop_lower_bound: config.troop.limit.agentTroopLowerBound,
+    agent_troop_upper_bound: config.troop.limit.agentTroopUpperBound,
+    settlement_deployment_cap: config.troop.limit.settlementDeploymentCap,
+    city_deployment_cap: config.troop.limit.cityDeploymentCap,
+    kingdom_deployment_cap: config.troop.limit.kingdomDeploymentCap,
+    empire_deployment_cap: config.troop.limit.empireDeploymentCap,
+    t1_tier_strength: config.troop.limit.t1TierStrength,
+    t2_tier_strength: config.troop.limit.t2TierStrength,
+    t3_tier_strength: config.troop.limit.t3TierStrength,
+    t1_tier_modifier: config.troop.limit.t1TierModifier,
+    t2_tier_modifier: config.troop.limit.t2TierModifier,
+    t3_tier_modifier: config.troop.limit.t3TierModifier,
+  };
+}
+
+function buildTroopConfigPayload(config: NativeConfig) {
+  return {
+    damage_config: buildTroopDamageConfig(config),
+    stamina_config: buildTroopStaminaConfig(config),
+    limit_config: buildTroopLimitConfig(config),
+  };
+}
+
+export const setTroopConfig: NativeStep = async ({ account, provider, config }) => {
+  await provider.set_troop_config(withSigner(account, buildTroopConfigPayload(config)));
 };
 
 export const setBankConfig: NativeStep = async ({ account, provider, config }) => {
@@ -480,22 +504,24 @@ export const setVillageControllersConfig: NativeStep = async ({ account, provide
   );
 };
 
+function buildCapacityConfigPayload(config: NativeConfig) {
+  return {
+    realm_capacity: config.carryCapacityGram[CapacityConfig.RealmStructure],
+    village_capacity: config.carryCapacityGram[CapacityConfig.VillageStructure],
+    hyperstructure_capacity: config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
+    fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
+    bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
+    holysite_capacity: config.carryCapacityGram[CapacityConfig.HolySiteStructure],
+    camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
+    bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
+    troop_capacity: config.carryCapacityGram[CapacityConfig.Army],
+    donkey_capacity: config.carryCapacityGram[CapacityConfig.Donkey],
+    storehouse_boost_capacity: config.carryCapacityGram[CapacityConfig.Storehouse],
+  };
+}
+
 export const setCapacityConfig: NativeStep = async ({ account, provider, config }) => {
-  await provider.set_capacity_config(
-    withSigner(account, {
-      realm_capacity: config.carryCapacityGram[CapacityConfig.RealmStructure],
-      village_capacity: config.carryCapacityGram[CapacityConfig.VillageStructure],
-      hyperstructure_capacity: config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
-      fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
-      bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
-      holysite_capacity: config.carryCapacityGram[CapacityConfig.HolySiteStructure],
-      camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
-      bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
-      troop_capacity: config.carryCapacityGram[CapacityConfig.Army],
-      donkey_capacity: config.carryCapacityGram[CapacityConfig.Donkey],
-      storehouse_boost_capacity: config.carryCapacityGram[CapacityConfig.Storehouse],
-    }),
-  );
+  await provider.set_capacity_config(withSigner(account, buildCapacityConfigPayload(config)));
 };
 
 export const setTradeConfig: NativeStep = async ({ account, provider, config }) => {
@@ -506,60 +532,71 @@ export const setTradeConfig: NativeStep = async ({ account, provider, config }) 
   );
 };
 
-export const setSeasonConfig: NativeStep = async ({ account, provider, config }) => {
+function buildBlitzSeasonConfigPayload(config: NativeConfig) {
   const addresses = getSetupAddresses(config);
+  const { registrationStartAt, registrationEndAt } = getBlitzRegistrationWindow(config);
 
-  if (config.blitz.mode.on) {
-    const { registrationStartAt, registrationEndAt } = getBlitzRegistrationWindow(config);
+  return {
+    dev_mode_on: config.dev.mode.on,
+    season_pass_address: "0x0",
+    realms_address: "0x0",
+    lords_address: addresses.lords,
+    start_settling_at: registrationStartAt,
+    start_main_at: registrationEndAt,
+    end_at: registrationEndAt + config.season.durationSeconds,
+    bridge_close_end_grace_seconds: 0,
+    point_registration_grace_seconds: config.season.pointRegistrationCloseAfterEndSeconds,
+  };
+}
 
-    // Blitz seasons still use an explicit wall-clock end after registration closes.
-    await provider.set_season_config(
-      withSigner(account, {
-        dev_mode_on: config.dev.mode.on,
-        season_pass_address: "0x0",
-        realms_address: "0x0",
-        lords_address: addresses.lords,
-        start_settling_at: registrationStartAt,
-        start_main_at: registrationEndAt,
-        end_at: registrationEndAt + config.season.durationSeconds,
-        bridge_close_end_grace_seconds: 0,
-        point_registration_grace_seconds: config.season.pointRegistrationCloseAfterEndSeconds,
-      }),
-    );
-    return;
-  }
-
+function buildStandardSeasonConfigPayload(config: NativeConfig) {
+  const addresses = getSetupAddresses(config);
   const { startMainAt, startSettlingAt } = resolveSeasonTiming(config);
 
-  await provider.set_season_config(
-    withSigner(account, {
-      dev_mode_on: config.dev.mode.on,
-      season_pass_address: addresses.seasonPass,
-      realms_address: addresses.realms,
-      lords_address: addresses.lords,
-      start_settling_at: startSettlingAt,
-      start_main_at: startMainAt,
-      end_at: 0,
-      bridge_close_end_grace_seconds: config.season.bridgeCloseAfterEndSeconds,
-      point_registration_grace_seconds: config.season.pointRegistrationCloseAfterEndSeconds,
-    }),
-  );
+  return {
+    dev_mode_on: config.dev.mode.on,
+    season_pass_address: addresses.seasonPass,
+    realms_address: addresses.realms,
+    lords_address: addresses.lords,
+    start_settling_at: startSettlingAt,
+    start_main_at: startMainAt,
+    end_at: 0,
+    bridge_close_end_grace_seconds: config.season.bridgeCloseAfterEndSeconds,
+    point_registration_grace_seconds: config.season.pointRegistrationCloseAfterEndSeconds,
+  };
+}
+
+function buildSeasonConfigPayload(config: NativeConfig) {
+  if (config.blitz.mode.on) {
+    return buildBlitzSeasonConfigPayload(config);
+  }
+
+  return buildStandardSeasonConfigPayload(config);
+}
+
+export const setSeasonConfig: NativeStep = async ({ account, provider, config }) => {
+  await provider.set_season_config(withSigner(account, buildSeasonConfigPayload(config)));
 };
 
-export const setVRFConfig: NativeStep = async ({ account, provider, config }) => {
-  if (config.setup?.chain !== "mainnet" && config.setup?.chain !== "sepolia" && config.setup?.chain !== "slot") {
-    return;
-  }
-
-  if (BigInt(config.vrf.vrfProviderAddress) === 0n) {
-    return;
-  }
-
-  await provider.set_vrf_config(
-    withSigner(account, {
-      vrf_provider_address: config.vrf.vrfProviderAddress,
-    }),
+function shouldConfigureVRF(config: NativeConfig): boolean {
+  return (
+    (config.setup?.chain === "mainnet" || config.setup?.chain === "sepolia" || config.setup?.chain === "slot") &&
+    BigInt(config.vrf.vrfProviderAddress) !== 0n
   );
+}
+
+function buildVRFConfigPayload(config: NativeConfig) {
+  return {
+    vrf_provider_address: config.vrf.vrfProviderAddress,
+  };
+}
+
+export const setVRFConfig: NativeStep = async ({ account, provider, config }) => {
+  if (!shouldConfigureVRF(config)) {
+    return;
+  }
+
+  await provider.set_vrf_config(withSigner(account, buildVRFConfigPayload(config)));
 };
 
 export const setResourceBridgeFeesConfig: NativeStep = async ({ account, provider, config }) => {
@@ -638,26 +675,33 @@ export const setFactoryAddress: NativeStep = async ({ account, provider, config 
   );
 };
 
-export const setMMRConfig: NativeStep = async ({ account, provider, config }) => {
+function buildMMRConfigPayload(config: NativeConfig) {
   // MMR exists in the live JSON configuration but is not represented in the generated type.
   const mmrConfig = getInternalConfig(config).mmr;
   if (!mmrConfig) {
+    return null;
+  }
+
+  return {
+    enabled: mmrConfig.enabled ?? false,
+    mmr_token_address: mmrConfig.mmr_token_address ?? "0x0",
+    distribution_mean: mmrConfig.distribution_mean ?? 1500,
+    spread_factor: mmrConfig.spread_factor ?? 450,
+    max_delta: mmrConfig.max_delta ?? 45,
+    k_factor: mmrConfig.k_factor ?? 50,
+    lobby_split_weight_scaled: mmrConfig.lobby_split_weight_scaled ?? 2500,
+    mean_regression_scaled: mmrConfig.mean_regression_scaled ?? 150,
+    min_players: mmrConfig.min_players ?? 6,
+  };
+}
+
+export const setMMRConfig: NativeStep = async ({ account, provider, config }) => {
+  const payload = buildMMRConfigPayload(config);
+  if (!payload) {
     return;
   }
 
-  await provider.set_mmr_config(
-    withSigner(account, {
-      enabled: mmrConfig.enabled ?? false,
-      mmr_token_address: mmrConfig.mmr_token_address ?? "0x0",
-      distribution_mean: mmrConfig.distribution_mean ?? 1500,
-      spread_factor: mmrConfig.spread_factor ?? 450,
-      max_delta: mmrConfig.max_delta ?? 45,
-      k_factor: mmrConfig.k_factor ?? 50,
-      lobby_split_weight_scaled: mmrConfig.lobby_split_weight_scaled ?? 2500,
-      mean_regression_scaled: mmrConfig.mean_regression_scaled ?? 150,
-      min_players: mmrConfig.min_players ?? 6,
-    }),
-  );
+  await provider.set_mmr_config(withSigner(account, payload));
 };
 
 export const setVictoryPointsConfig: NativeStep = async ({ account, provider, config }) => {
@@ -674,42 +718,53 @@ export const setVictoryPointsConfig: NativeStep = async ({ account, provider, co
   );
 };
 
+function buildDiscoverableVillageSpawnResourcesPayload(config: NativeConfig) {
+  return {
+    resources: config.discoverableVillageStartingResources.map((resource) => ({
+      resource: resource.resource,
+      min_amount: resource.min_amount * RESOURCE_PRECISION,
+      max_amount: resource.max_amount * RESOURCE_PRECISION,
+    })),
+  };
+}
+
 export const setDiscoverableVillageSpawnResourcesConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_discoverable_village_starting_resources_config(
-    withSigner(account, {
-      resources: config.discoverableVillageStartingResources.map((resource) => ({
-        resource: resource.resource,
-        min_amount: resource.min_amount * RESOURCE_PRECISION,
-        max_amount: resource.max_amount * RESOURCE_PRECISION,
-      })),
-    }),
+    withSigner(account, buildDiscoverableVillageSpawnResourcesPayload(config)),
   );
 };
 
-export const setBlitzRegistrationParametersConfig: NativeStep = async ({ account, provider, config }) => {
+function buildBlitzRegistrationConfigPayload(provider: NativeConfigProvider, config: NativeConfig) {
   if (!config.blitz.mode.on) {
-    return;
+    return null;
   }
 
   const { registrationStartAt } = getBlitzRegistrationWindow(config);
 
-  await provider.set_blitz_registration_config(
-    withSigner(account, {
-      fee_token: config.blitz.registration.fee_token,
-      fee_recipient: config.blitz.registration.fee_recipient,
-      fee_amount: config.blitz.registration.fee_amount,
-      registration_count_max: config.blitz.registration.registration_count_max,
-      registration_start_at: registrationStartAt,
-      entry_token_class_hash: config.blitz.registration.entry_token_class_hash,
-      entry_token_ipfs_cid: byteArray.byteArrayFromString(config.blitz.registration.entry_token_ipfs_cid),
-      entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider),
-      collectibles_cosmetics_max: config.blitz.registration.collectible_cosmetics_max_items,
-      collectibles_cosmetics_address: config.blitz.registration.collectible_cosmetics_address,
-      collectibles_timelock_address: config.blitz.registration.collectible_timelock_address,
-      collectibles_lootchest_address: config.blitz.registration.collectibles_lootchest_address,
-      collectibles_elitenft_address: config.blitz.registration.collectibles_elitenft_address,
-    }),
-  );
+  return {
+    fee_token: config.blitz.registration.fee_token,
+    fee_recipient: config.blitz.registration.fee_recipient,
+    fee_amount: config.blitz.registration.fee_amount,
+    registration_count_max: config.blitz.registration.registration_count_max,
+    registration_start_at: registrationStartAt,
+    entry_token_class_hash: config.blitz.registration.entry_token_class_hash,
+    entry_token_ipfs_cid: byteArray.byteArrayFromString(config.blitz.registration.entry_token_ipfs_cid),
+    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider),
+    collectibles_cosmetics_max: config.blitz.registration.collectible_cosmetics_max_items,
+    collectibles_cosmetics_address: config.blitz.registration.collectible_cosmetics_address,
+    collectibles_timelock_address: config.blitz.registration.collectible_timelock_address,
+    collectibles_lootchest_address: config.blitz.registration.collectibles_lootchest_address,
+    collectibles_elitenft_address: config.blitz.registration.collectibles_elitenft_address,
+  };
+}
+
+export const setBlitzRegistrationParametersConfig: NativeStep = async ({ account, provider, config }) => {
+  const payload = buildBlitzRegistrationConfigPayload(provider, config);
+  if (!payload) {
+    return;
+  }
+
+  await provider.set_blitz_registration_config(withSigner(account, payload));
 };
 
 export const setBlitzSeasonConfig: NativeStep = async ({ account, provider, config }) => {

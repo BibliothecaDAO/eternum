@@ -1,6 +1,6 @@
 import { HexGrid } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import { BANK_COUNT, BANK_NAME_PREFIX, BANK_STEPS_FROM_CENTER } from "./constants";
+import { BANK_COUNT, BANK_NAME_PREFIX, BANK_STEPS_FROM_CENTER } from "../constants";
 
 export interface BankDefinition {
   name: string;

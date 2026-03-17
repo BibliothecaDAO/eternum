@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
 import {
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
@@ -10,21 +11,6 @@ import {
   type ExecutionMode,
   type LaunchGameRequest,
 } from "..";
-
-type Args = Record<string, string>;
-
-function parseArgs(argv: string[]): Args {
-  const out: Args = {};
-  for (let index = 0; index < argv.length; index++) {
-    const token = argv[index];
-    if (!token.startsWith("--")) continue;
-    const key = token.slice(2);
-    const next = argv[index + 1];
-    const value = next && !next.startsWith("--") ? argv[++index] : "true";
-    out[key] = value;
-  }
-  return out;
-}
 
 function usage(): void {
   console.log(
@@ -73,16 +59,6 @@ function usage(): void {
   );
 }
 
-function resolveOptionalArg(args: Args, flag: string, envKeys: string[]): string | undefined {
-  const fromFlag = args[flag];
-  if (fromFlag) return fromFlag;
-
-  for (const envKey of envKeys) {
-    const value = process.env[envKey];
-    if (value) return value;
-  }
-}
-
 function parseBoolean(value: string, label: string): boolean {
   if (value === "true") return true;
   if (value === "false") return false;
@@ -104,29 +80,35 @@ function resolveOptionalBooleanArg(args: Args, flag: string, envKeys: string[]):
 }
 
 function resolveExecutionMode(value?: string): ExecutionMode {
-  if (!value) return "batched";
+  if (!value) {
+    return "batched";
+  }
+
   if (value === "batched" || value === "sequential") {
     return value;
   }
+
   throw new Error(`Unsupported execution mode "${value}". Expected "batched" or "sequential"`);
 }
 
 function resolveOptionalNumber(value: string | undefined, label: string): number | undefined {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
+
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     throw new Error(`${label} must be a number`);
   }
+
   return parsed;
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.help === "true") {
-    usage();
-    return;
-  }
-
+function requireLaunchArgs(args: Args): {
+  environmentId: LaunchGameRequest["environmentId"];
+  gameName: string;
+  startTime: string;
+} {
   const environmentId = args.environment;
   const gameName = args.game;
   const startTime = args["start-time"];
@@ -136,10 +118,20 @@ async function main() {
     throw new Error("--environment, --game, and --start-time are required");
   }
 
-  const request: LaunchGameRequest = {
+  return {
     environmentId: environmentId as LaunchGameRequest["environmentId"],
     gameName,
     startTime,
+  };
+}
+
+function buildLaunchGameRequest(args: Args): LaunchGameRequest {
+  const requiredArgs = requireLaunchArgs(args);
+
+  return {
+    environmentId: requiredArgs.environmentId,
+    gameName: requiredArgs.gameName,
+    startTime: requiredArgs.startTime,
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
     factoryAddress: args["factory-address"] || process.env.FACTORY_ADDRESS,
     accountAddress: resolveOptionalArg(args, "account-address", ["DOJO_ACCOUNT_ADDRESS", "VITE_PUBLIC_MASTER_ADDRESS"]),
@@ -175,8 +167,16 @@ async function main() {
     workflowFile: args["workflow-file"],
     ref: args.ref,
   };
+}
 
-  const summary = await launchGame(request);
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help === "true") {
+    usage();
+    return;
+  }
+
+  const summary = await launchGame(buildLaunchGameRequest(args));
   console.log(JSON.stringify(summary, null, 2));
 }
 
