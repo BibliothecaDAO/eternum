@@ -20,6 +20,6 @@ describe("worldmap fast commit manager catch-up wiring", () => {
     const worldmapSource = readSceneSource("./worldmap.tsx");
 
     expect(worldmapSource).toMatch(/deferManagerCatchUpForChunk\(/);
-    expect(worldmapSource).not.toMatch(/await this\.updateManagersForChunk\(chunkKey, \{ force: true, transitionToken \}\)/);
+    expect(worldmapSource).toMatch(/WORLDMAP_STREAMING_ROLLOUT\.stagedPathEnabled/);
   });
 });

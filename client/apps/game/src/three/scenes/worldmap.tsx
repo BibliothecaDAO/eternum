@@ -333,6 +333,9 @@ const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
+const WORLDMAP_STREAMING_ROLLOUT = {
+  stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
+};
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
   telemetry: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING_TELEMETRY === true,
@@ -2626,6 +2629,7 @@ export default class WorldmapScene extends WarpTravel {
       nextSceneName: nextSceneName,
       clearTimeout: (timeoutId) => clearTimeout(timeoutId),
       clearPendingArmyMovement: (entityId) => this.clearPendingArmyMovement(entityId),
+      clearStreamingWork: () => this.clearStreamingWorkState(),
       clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
       releaseInactiveResources: () => this.clearCache(),
       invalidatePendingFetches: () => {
@@ -3398,7 +3402,9 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     this.directionalPrefetchAreaKeys = new Set(prefetchPlan.desiredAreaKeys);
-    this.directionalPresentationChunkKey = prefetchPlan.presentationChunkKeyToPrewarm;
+    this.directionalPresentationChunkKey = WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled
+      ? prefetchPlan.presentationChunkKeyToPrewarm
+      : null;
     this.pruneQueuedDirectionalPrefetches();
     this.prefetchedAhead.splice(0, this.prefetchedAhead.length, ...prefetchPlan.nextPrefetchedAhead);
 
@@ -3407,7 +3413,7 @@ export default class WorldmapScene extends WarpTravel {
       this.enqueueChunkPrefetch(chunkKey, 2);
     });
 
-    if (this.directionalPresentationChunkKey !== null) {
+    if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled && this.directionalPresentationChunkKey !== null) {
       const presentationFetchKey = this.getRenderAreaKeyForChunk(this.directionalPresentationChunkKey);
       if (this.fetchedChunks.has(presentationFetchKey)) {
         void this.prewarmDirectionalPresentationChunk(this.directionalPresentationChunkKey);
@@ -3546,6 +3552,13 @@ export default class WorldmapScene extends WarpTravel {
       transitionToken?: number;
     },
   ): void {
+    if (!WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
+      void this.updateManagersForChunk(chunkKey, options).catch((error) => {
+        console.error("[WorldMap] Legacy manager catch-up failed:", error);
+      });
+      return;
+    }
+
     const uploadWork = classifyWorldmapUploadWork({
       matrixInstanceCount:
         this.armyManager.getVisibleCount() + this.structureManager.getVisibleCount() + this.chestManager.getVisibleCount(),
@@ -3628,6 +3641,21 @@ export default class WorldmapScene extends WarpTravel {
           this.schedulePostCommitManagerCatchUpDrain();
         }
       });
+  }
+
+  private clearStreamingWorkState(): void {
+    if (this.postCommitManagerCatchUpFrameHandle !== null) {
+      if (typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(this.postCommitManagerCatchUpFrameHandle);
+      } else {
+        window.clearTimeout(this.postCommitManagerCatchUpFrameHandle);
+      }
+      this.postCommitManagerCatchUpFrameHandle = null;
+    }
+
+    this.postCommitManagerCatchUpQueue = [];
+    this.directionalPresentationChunkKey = null;
+    this.activeDirectionalPresentationPrewarms.clear();
   }
 
   private unregisterTrackedVisibilityChunks(): void {
@@ -5748,6 +5776,7 @@ export default class WorldmapScene extends WarpTravel {
       recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
     }
 
+    let managerCatchUpPromise: Promise<void> | null = null;
     const finalizeResult = await finalizeWarpTravelChunkSwitch({
       fetchSucceeded: tileFetchSucceeded,
       isCurrentTransition: transitionToken === this.chunkTransitionToken,
@@ -5798,8 +5827,14 @@ export default class WorldmapScene extends WarpTravel {
       forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
       updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
         this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
-      scheduleManagerCatchUp: (targetChunkKey, managerOptions) =>
-        this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions),
+      scheduleManagerCatchUp: (targetChunkKey, managerOptions) => {
+        if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
+          this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions);
+          return;
+        }
+
+        managerCatchUpPromise = this.updateManagersForChunk(targetChunkKey, managerOptions);
+      },
       unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
     });
 
@@ -5814,6 +5849,10 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
+
+    if (managerCatchUpPromise) {
+      await managerCatchUpPromise;
+    }
 
     // Track memory usage after chunk switch
     if (memoryMonitor) {
@@ -5950,7 +5989,11 @@ export default class WorldmapScene extends WarpTravel {
             Math.max(...readinessDurations) - Math.min(...readinessDurations),
           );
         }
-        this.deferManagerCatchUpForChunk(chunkKey, { force: true, transitionToken });
+        if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
+          this.deferManagerCatchUpForChunk(chunkKey, { force: true, transitionToken });
+        } else {
+          await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
+        }
       }
     } finally {
       this.hydratedRefreshSuppressionAreaKeys.delete(refreshAreaKey);

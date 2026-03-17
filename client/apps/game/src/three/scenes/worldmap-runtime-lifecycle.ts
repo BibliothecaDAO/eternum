@@ -18,6 +18,7 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>
   nextSceneName?: SceneName;
   clearTimeout: (timeoutId: TTimeout) => void;
   clearPendingArmyMovement: (entityId: TEntityId) => void;
+  clearStreamingWork: () => void;
   clearQueuedPrefetchState: () => void;
   releaseInactiveResources: () => void;
   invalidatePendingFetches: () => void;
@@ -73,6 +74,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   nextSceneName,
   clearTimeout,
   clearPendingArmyMovement,
+  clearStreamingWork,
   clearQueuedPrefetchState,
   releaseInactiveResources,
   invalidatePendingFetches,
@@ -88,6 +90,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovementFallbackTimeouts.clear();
   armyStructureOwners.clear();
 
+  clearStreamingWork();
   clearQueuedPrefetchState();
   invalidatePendingFetches();
   fetchedChunks.clear();
