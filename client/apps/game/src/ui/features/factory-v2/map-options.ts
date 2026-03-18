@@ -1,9 +1,5 @@
 import { getConfigFromNetwork } from "@config";
-import type {
-  Config,
-  FactoryBlitzRegistrationOverrides,
-  FactoryMapConfigOverrides,
-} from "@bibliothecadao/types";
+import type { Config, FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
 import type { FactoryGameMode, FactoryLaunchChain } from "./types";
 
 type ExplorationConfig = Config["exploration"];
@@ -343,8 +339,7 @@ const FIELD_DEFINITIONS: FactoryMoreOptionDefinition[] = [
 
 const getFieldDefinitionsForMode = (mode: FactoryGameMode, visibility: FactoryMoreOptionsVisibility = {}) =>
   FIELD_DEFINITIONS.filter(
-    (definition) =>
-      definition.modes.includes(mode) && (definition.isVisible ? definition.isVisible(visibility) : true),
+    (definition) => definition.modes.includes(mode) && (definition.isVisible ? definition.isVisible(visibility) : true),
   );
 
 const matchesFactoryMoreOptionPlacement = (
@@ -400,9 +395,7 @@ const resolveFieldUnitLabel = (definition: FactoryMoreOptionDefinition): string 
 const resolveFieldHelperText = (definition: FactoryMoreOptionDefinition, mode: FactoryGameMode): string => {
   switch (definition.id) {
     case "shards":
-      return mode === "blitz"
-        ? "Percent chance to find an Essence Rift."
-        : "Percent chance to find a Shard Mine.";
+      return mode === "blitz" ? "Percent chance to find an Essence Rift." : "Percent chance to find a Shard Mine.";
     case "camp":
       return "Percent chance to find a Camp.";
     case "agent":
@@ -479,10 +472,7 @@ const resolveDefaultFieldValue = (
         return String(blitzRegistrationConfig[definition.rawKey]);
       }
 
-      return formatDisplayValue(
-        explorationConfig[definition.rawKey] / (definition.displayScale ?? 1),
-        definition.step,
-      );
+      return formatDisplayValue(explorationConfig[definition.rawKey] / (definition.displayScale ?? 1), definition.step);
   }
 };
 
@@ -661,7 +651,9 @@ export const validateFactoryMoreOptions = (
       return;
     }
 
-    const defaultValue = parseNumericInput(resolveDefaultFieldValue(definition, explorationConfig, blitzRegistrationConfig));
+    const defaultValue = parseNumericInput(
+      resolveDefaultFieldValue(definition, explorationConfig, blitzRegistrationConfig),
+    );
     if (defaultValue === parsedValue) {
       return;
     }

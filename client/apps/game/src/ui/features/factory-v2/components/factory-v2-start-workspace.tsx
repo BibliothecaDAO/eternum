@@ -127,7 +127,9 @@ export const FactoryV2StartWorkspace = ({
     selectedPreset.name,
     environmentLabel,
     showsDuration && durationMinutes !== null ? formatFactoryDurationLabel(durationMinutes) : null,
-    showsBlitzModes ? blitzPlayStyleOptions.find((playStyle) => playStyle.id === selectedBlitzPlayStyleId)?.label ?? null : null,
+    showsBlitzModes
+      ? (blitzPlayStyleOptions.find((playStyle) => playStyle.id === selectedBlitzPlayStyleId)?.label ?? null)
+      : null,
   ].filter(Boolean) as string[];
 
   const selectBlitzPlayStyle = (playStyleId: BlitzPlayStyleId) => {
@@ -358,7 +360,12 @@ const FactoryV2StartSectionCard = ({
   appearanceClassName: string;
   children: ReactNode;
 }) => (
-  <section className={cn("space-y-4 rounded-[24px] border border-black/8 px-4 py-4 text-left sm:px-5 sm:py-5", appearanceClassName)}>
+  <section
+    className={cn(
+      "space-y-4 rounded-[24px] border border-black/8 px-4 py-4 text-left sm:px-5 sm:py-5",
+      appearanceClassName,
+    )}
+  >
     <div className="mx-auto max-w-sm space-y-1 text-center">
       <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{title}</div>
       <p className="text-sm leading-5 text-black/50">{description}</p>
