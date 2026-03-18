@@ -45,6 +45,7 @@ export interface RendererBackendV2 {
   applyEnvironment?(targets: unknown): Promise<void>;
   applyPostProcessPlan?(plan: RendererPostProcessPlan): RendererPostProcessController;
   applyQuality?(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  dispose?(): void;
   initialize(): Promise<RendererInitDiagnostics>;
   renderFrame?(pipeline: RendererFramePipeline): void;
   resize?(width: number, height: number): void;

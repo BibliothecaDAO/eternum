@@ -27,6 +27,9 @@ import {
   Raycaster,
   ReinhardToneMapping,
   Vector2,
+  type Camera,
+  type Object3D,
+  type Object3DEventMap,
 } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -1538,8 +1541,8 @@ export default class GameRenderer {
   private async requestScenePrewarm(
     scene:
       | {
-          getCamera(): unknown;
-          getScene(): unknown;
+          getCamera(): Camera;
+          getScene(): Object3D<Object3DEventMap>;
         }
       | undefined,
   ): Promise<void> {

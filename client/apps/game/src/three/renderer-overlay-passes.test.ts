@@ -9,8 +9,6 @@ describe("renderer overlay passes", () => {
     ];
 
     const result = getRendererOverlayPasses({
-      mainCamera: { id: "main-camera" } as never,
-      mainScene: { id: "main-scene" } as never,
       overlayPasses,
     });
 
@@ -21,8 +19,6 @@ describe("renderer overlay passes", () => {
   it("returns an empty list when no overlays are configured", () => {
     expect(
       getRendererOverlayPasses({
-        mainCamera: { id: "main-camera" } as never,
-        mainScene: { id: "main-scene" } as never,
       }),
     ).toEqual([]);
   });

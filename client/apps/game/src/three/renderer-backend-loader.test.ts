@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRendererInitDiagnostics } from "./renderer-backend-v2";
+import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 
 describe("initializeSelectedRendererBackend", () => {
   it("uses the legacy backend directly for the shipping lane", async () => {
-    const legacyBackend = { initialize: vi.fn() };
+    const legacyBackend = {
+      capabilities: createRendererBackendCapabilities(),
+      initialize: vi.fn(),
+    };
     const legacyFactory = vi.fn(async () => ({
       backend: legacyBackend,
       diagnostics: createRendererInitDiagnostics({
@@ -35,7 +38,10 @@ describe("initializeSelectedRendererBackend", () => {
   it("falls back to the legacy backend when experimental init fails", async () => {
     const error = new Error("webgpu init failed");
     const legacyFactory = vi.fn(async () => ({
-      backend: { initialize: vi.fn() },
+      backend: {
+        capabilities: createRendererBackendCapabilities(),
+        initialize: vi.fn(),
+      },
       diagnostics: createRendererInitDiagnostics({
         activeMode: "legacy-webgl",
         buildMode: "legacy-webgl",

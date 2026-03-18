@@ -42,7 +42,7 @@ describe("ResourceFXManager", () => {
 
   it("routes resource fx through the webgpu-safe backend and cleans up active effects", async () => {
     vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation((_, onLoad) => {
-      const texture = new THREE.Texture();
+      const texture = new THREE.Texture() as THREE.Texture<HTMLImageElement>;
       onLoad?.(texture);
       return texture;
     });

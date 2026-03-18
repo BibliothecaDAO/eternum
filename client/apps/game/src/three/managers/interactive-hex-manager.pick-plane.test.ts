@@ -73,7 +73,7 @@ type PickHexFromRaycasterCallable = {
 
 describe("InteractiveHexManager pickHexFromRaycaster", () => {
   it("projects picks onto the ground plane instead of the elevated interaction surface", () => {
-    const resolveHexFromPoint = vi.fn(() => null);
+    const resolveHexFromPoint = vi.fn((_intersection: THREE.Vector3) => null);
     const subject = {
       instanceMesh: {},
       pickIntersection: new THREE.Vector3(),
@@ -89,7 +89,7 @@ describe("InteractiveHexManager pickHexFromRaycaster", () => {
     callable.pickHexFromRaycaster(raycaster);
 
     expect(resolveHexFromPoint).toHaveBeenCalledTimes(1);
-    const intersection = resolveHexFromPoint.mock.calls[0][0] as THREE.Vector3;
+    const [intersection] = resolveHexFromPoint.mock.calls[0] as [THREE.Vector3];
     const t = -raycaster.ray.origin.y / raycaster.ray.direction.y;
     const expected = raycaster.ray.direction.clone().multiplyScalar(t).add(raycaster.ray.origin);
 

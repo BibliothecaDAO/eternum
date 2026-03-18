@@ -40,7 +40,7 @@ describe("FXManager", () => {
     let capturedTexture: THREE.Texture | null = null;
 
     vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation((_url: string) => {
-      const tex = new THREE.Texture();
+      const tex = new THREE.Texture() as THREE.Texture<HTMLImageElement>;
       capturedTexture = tex;
       // The onLoad callback is NOT called synchronously — it fires later.
       // The fix sets properties on the returned texture before storing it.

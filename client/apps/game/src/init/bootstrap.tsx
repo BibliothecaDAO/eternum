@@ -125,33 +125,34 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   if (!profile) profile = getActiveWorld();
   let shouldReloadAfterProfileRefresh = false;
   if (profile) {
-    const previousRpcUrl = profile.rpcUrl;
-    const previousChain = profile.chain;
-    const shouldRefreshProfile = () => {
-      if (profile.chain && profile.chain !== chain) return true;
-      if (!profile.rpcUrl) return true;
+    const existingProfile = profile;
+    const previousRpcUrl = existingProfile.rpcUrl;
+    const previousChain = existingProfile.chain;
+    const shouldRefreshProfile = (candidate: WorldProfile) => {
+      if (candidate.chain && candidate.chain !== chain) return true;
+      if (!candidate.rpcUrl) return true;
       const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
       if (canUseEnvRpc) {
-        if (!profile.rpcUrl) return true;
-        const normalizedProfileRpc = normalizeRpcUrl(profile.rpcUrl);
+        if (!candidate.rpcUrl) return true;
+        const normalizedProfileRpc = normalizeRpcUrl(candidate.rpcUrl);
         const normalizedEnvRpc = normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL);
-        if (normalizedProfileRpc !== normalizedEnvRpc && normalizedProfileRpc.includes(`/x/${profile.name}/katana`)) {
+        if (normalizedProfileRpc !== normalizedEnvRpc && normalizedProfileRpc.includes(`/x/${candidate.name}/katana`)) {
           return true;
         }
         return false;
       }
       if (chain === "slot" || chain === "slottest") {
-        return !profile.rpcUrl.includes(`/x/${profile.name}/katana`);
+        return !candidate.rpcUrl.includes(`/x/${candidate.name}/katana`);
       }
       if (chain === "mainnet" || chain === "sepolia") {
-        return profile.rpcUrl.includes("/katana") || !profile.rpcUrl.includes(`/x/starknet/${chain}`);
+        return candidate.rpcUrl.includes("/katana") || !candidate.rpcUrl.includes(`/x/starknet/${chain}`);
       }
       return false;
     };
 
-    if (shouldRefreshProfile()) {
+    if (shouldRefreshProfile(existingProfile)) {
       try {
-        profile = await buildWorldProfile(chain, profile.name);
+        profile = await buildWorldProfile(chain, existingProfile.name);
         shouldReloadAfterProfileRefresh =
           !profile ||
           !previousRpcUrl ||

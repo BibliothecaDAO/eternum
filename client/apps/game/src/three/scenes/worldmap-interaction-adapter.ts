@@ -1,8 +1,9 @@
 import { AudioManager } from "@/audio/core/AudioManager";
-import { type SetupResult } from "@bibliothecadao/dojo";
-import type { ID, HexPosition } from "@bibliothecadao/types";
+import type { HexEntityInfo, HexPosition, ID } from "@bibliothecadao/types";
 import { navigateToStructure } from "../utils/navigation";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
+
+type OpenStructureContextMenuInput = Parameters<typeof openStructureContextMenu>[0];
 
 interface WorldmapInteractionState {
   selectedHex?: { col: number; row: number } | null;
@@ -24,7 +25,7 @@ interface SelectedHexManagerLike {
 interface CreateWorldmapInteractionAdapterInput {
   state: WorldmapInteractionState;
   selectedHexManager?: SelectedHexManagerLike;
-  dojoComponents?: SetupResult["components"];
+  dojoComponents?: OpenStructureContextMenuInput["components"];
 }
 
 export function createWorldmapInteractionAdapter({
@@ -72,8 +73,11 @@ export function createWorldmapInteractionAdapter({
     openOwnedStructureContextMenu(input: {
       event: MouseEvent;
       hexCoords: HexPosition;
-      structure: unknown;
+      structure: HexEntityInfo;
     }) {
+      if (!dojoComponents) {
+        return;
+      }
       openStructureContextMenu({
         event: input.event,
         structure: input.structure,

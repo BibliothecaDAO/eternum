@@ -132,7 +132,9 @@ describe("cosmetic asset cache", () => {
       assetPaths: ["units/example.glb", "/images/example.png"],
     });
 
-    const texture = new threeMocks.MockTexture() as threeMocks.MockTexture & { dispose: ReturnType<typeof vi.fn> };
+    const texture = new threeMocks.MockTexture() as InstanceType<typeof threeMocks.MockTexture> & {
+      dispose: ReturnType<typeof vi.fn>;
+    };
     (texture as any).dispose = vi.fn();
     testMocks.textureLoadAsyncMock.mockResolvedValue(texture);
     testMocks.gltfLoadMock.mockImplementation((_path, onLoad) => {

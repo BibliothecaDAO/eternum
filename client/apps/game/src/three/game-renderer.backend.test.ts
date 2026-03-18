@@ -259,7 +259,7 @@ describe("GameRenderer backend seam", () => {
       },
     };
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.resolveRendererToneMappingMode = GameRenderer.prototype.resolveRendererToneMappingMode.bind(subject);
+    subject.resolveRendererToneMappingMode = (GameRenderer.prototype as any).resolveRendererToneMappingMode.bind(subject);
     Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
 
     subject.applyQualityFeatures({

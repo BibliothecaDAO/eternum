@@ -5517,7 +5517,7 @@ export default class WorldmapScene extends WarpTravel {
           scheduledToken,
           latestToken: this.chunkRefreshRequestToken,
         });
-        this.scheduleChunkRefreshExecution();
+        this.scheduleChunkRefreshExecution(0);
       }
       return;
     }
@@ -5551,7 +5551,7 @@ export default class WorldmapScene extends WarpTravel {
         this.chunkRefreshRerunRequested = false;
       }
       if (completionActions.shouldScheduleRerun) {
-        this.scheduleChunkRefreshExecution();
+        this.scheduleChunkRefreshExecution(0);
       }
     }
   }

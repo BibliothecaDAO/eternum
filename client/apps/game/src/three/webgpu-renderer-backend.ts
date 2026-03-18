@@ -82,9 +82,7 @@ async function createDefaultWebGPURenderer(input: {
   } = threeWebGPUModule as typeof import("three/webgpu");
 
   const renderer = new WebGPURenderer({
-    antialias: false,
     forceWebGL: input.forceWebGL,
-    powerPreference: "high-performance",
   }) as WebGPURendererSurface;
 
   renderer.autoClear = false;

@@ -190,7 +190,7 @@ describe("StructureManager.prewarmChunkAssets", () => {
 
   it("dedupes concurrent prewarm requests for the same chunk assets", async () => {
     const subject = createSubject();
-    let resolveStructureModels: (() => void) | null = null;
+    let resolveStructureModels!: () => void;
     subject.getVisibleStructuresForChunk.mockReturnValue([{ structureType: "Village" }]);
     subject.ensureStructureModels.mockImplementation(
       () =>
@@ -205,7 +205,7 @@ describe("StructureManager.prewarmChunkAssets", () => {
     expect(subject.ensureStructureModels).toHaveBeenCalledTimes(1);
     expect(first).toBe(second);
 
-    resolveStructureModels?.();
+    resolveStructureModels();
     await Promise.all([first, second]);
     expect(subject.chunkAssetPrewarmPromises.size).toBe(0);
   });

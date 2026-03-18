@@ -63,9 +63,9 @@ describe("createWebGPUPostProcessRuntime", () => {
     };
     const sceneColorNode = { id: "scene-color-node" };
     const scenePass = {
-      camera: null,
+      camera: { id: "scene-pass-camera" } as never,
       getTextureNode: vi.fn(() => sceneColorNode),
-      scene: null,
+      scene: { id: "scene-pass-scene" } as never,
       setMRT: vi.fn(),
     };
     const createPass = vi.fn(() => scenePass);
@@ -75,6 +75,8 @@ describe("createWebGPUPostProcessRuntime", () => {
         renderer: renderer as never,
       },
       {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
         createPass,
         createPostProcessing: vi.fn(() => postProcessing as never),
       },
@@ -130,9 +132,9 @@ describe("createWebGPUPostProcessRuntime", () => {
     };
     const sceneColorNode = { id: "scene-color-node" };
     const scenePass = {
-      camera: null,
+      camera: { id: "scene-pass-camera" } as never,
       getTextureNode: vi.fn(() => sceneColorNode),
-      scene: null,
+      scene: { id: "scene-pass-scene" } as never,
       setMRT: vi.fn(),
     };
     const runtime = createWebGPUPostProcessRuntime(
@@ -140,6 +142,8 @@ describe("createWebGPUPostProcessRuntime", () => {
         renderer: renderer as never,
       },
       {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
         createPass: vi.fn(() => scenePass),
         createPostProcessing: vi.fn(() => postProcessing as never),
       },
@@ -181,9 +185,9 @@ describe("createWebGPUPostProcessRuntime", () => {
       id: "scene-color-node",
     };
     const scenePass = {
-      camera: null,
+      camera: { id: "scene-pass-camera" } as never,
       getTextureNode: vi.fn((name?: string) => (name === "emissive" ? emissiveNode : sceneColorNode)),
-      scene: null,
+      scene: { id: "scene-pass-scene" } as never,
       setMRT: vi.fn(),
     };
     const mrtNode = { id: "mrt-node" };
@@ -274,9 +278,9 @@ describe("createWebGPUPostProcessRuntime", () => {
       render: vi.fn(),
     };
     const scenePass = {
-      camera: null,
+      camera: { id: "scene-pass-camera" } as never,
       getTextureNode: vi.fn(() => ({ id: "node" })),
-      scene: null,
+      scene: { id: "scene-pass-scene" } as never,
       setMRT: vi.fn(),
     };
 
@@ -318,9 +322,9 @@ describe("createWebGPUPostProcessRuntime", () => {
       render: vi.fn(),
     };
     const scenePass = {
-      camera: null,
+      camera: { id: "scene-pass-camera" } as never,
       getTextureNode: vi.fn(() => ({ id: "node" })),
-      scene: null,
+      scene: { id: "scene-pass-scene" } as never,
       setMRT: vi.fn(),
     };
 

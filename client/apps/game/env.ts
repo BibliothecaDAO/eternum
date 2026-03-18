@@ -173,6 +173,11 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_WORLDMAP_STREAMING_STAGED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
   VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING: z
     .string()
     .transform((v) => v === "true")

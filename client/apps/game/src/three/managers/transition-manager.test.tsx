@@ -22,7 +22,7 @@ describe("TransitionManager lifecycle", () => {
   });
 
   it("cancels a pending fade-out callback during destroy", () => {
-    const manager = new TransitionManager({} as never);
+    const manager = new TransitionManager();
     const onComplete = vi.fn();
 
     manager.fadeOut(onComplete);

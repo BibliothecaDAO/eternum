@@ -43,7 +43,7 @@ export function resolveWorldmapHexClickPlan({
 
   const isMine = accountAddress !== undefined && (army?.owner === accountAddress || structure?.owner === accountAddress);
 
-  if (army?.owner === accountAddress) {
+  if (army && army.owner === accountAddress) {
     return {
       kind: "select",
       isMine: true,
@@ -54,7 +54,7 @@ export function resolveWorldmapHexClickPlan({
     };
   }
 
-  if (structure?.owner === accountAddress) {
+  if (structure && structure.owner === accountAddress) {
     return {
       kind: "select",
       isMine: true,

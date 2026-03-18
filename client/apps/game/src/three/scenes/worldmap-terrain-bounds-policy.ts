@@ -1,4 +1,4 @@
-import { Box3, Sphere } from "three";
+import { Box3, Sphere, Vector3 } from "three";
 
 import { getRenderBounds } from "../utils/chunk-geometry";
 
@@ -28,17 +28,13 @@ const DEFAULT_HEX_PADDING = 2;
 const DEFAULT_HEIGHT_RANGE: [number, number] = [-1, 10];
 const HEX_RADIUS = 1;
 
-function getTerrainWorldPosition(col: number, row: number): { x: number; y: number; z: number } {
+function getTerrainWorldPosition(col: number, row: number): Vector3 {
   const hexHeight = HEX_RADIUS * 2;
   const hexWidth = Math.sqrt(3) * HEX_RADIUS;
   const vertDist = hexHeight * 0.75;
   const rowOffset = ((row % 2) * Math.sign(row) * hexWidth) / 2;
 
-  return {
-    x: col * hexWidth - rowOffset,
-    y: 0,
-    z: row * vertDist,
-  };
+  return new Vector3(col * hexWidth - rowOffset, 0, row * vertDist);
 }
 
 /**
