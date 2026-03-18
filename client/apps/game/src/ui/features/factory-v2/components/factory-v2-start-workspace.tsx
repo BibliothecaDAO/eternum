@@ -101,7 +101,7 @@ export const FactoryV2StartWorkspace = ({
   if (!selectedPreset) {
     return (
       <article className="w-full md:mx-auto md:max-w-xl">
-        <div className={cn("rounded-[28px] border p-6 md:p-7", appearance.featureSurfaceClassName)}>
+        <div className={cn("px-4 py-5 md:rounded-[28px] md:border md:p-7", appearance.featureSurfaceClassName)}>
           <div className="text-sm leading-6 text-black/58">Pick a preset first.</div>
         </div>
       </article>
@@ -157,7 +157,7 @@ export const FactoryV2StartWorkspace = ({
 
   return (
     <article className="w-full md:mx-auto md:max-w-lg">
-      <div className={cn("rounded-[28px] border px-4 py-5 sm:px-5 sm:py-6 md:px-7 md:py-8", appearance.featureSurfaceClassName)}>
+      <div className={cn("px-0 py-0 md:rounded-[28px] md:border md:px-7 md:py-8", appearance.featureSurfaceClassName)}>
         <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
           <FactoryV2StartSectionCard
             title="Launch basics"
@@ -359,7 +359,7 @@ const FactoryV2StartSectionCard = ({
   children: ReactNode;
 }) => (
   <section className={cn("space-y-4 rounded-[24px] border border-black/8 px-4 py-4 text-left sm:px-5 sm:py-5", appearanceClassName)}>
-    <div className="space-y-1">
+    <div className="mx-auto max-w-sm space-y-1 text-center">
       <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{title}</div>
       <p className="text-sm leading-5 text-black/50">{description}</p>
     </div>
@@ -473,7 +473,7 @@ const FactoryV2LaunchActionBar = ({
       appearanceClassName,
     )}
   >
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap justify-center gap-2">
       {launchSummaryItems.map((item) => (
         <span
           key={item}

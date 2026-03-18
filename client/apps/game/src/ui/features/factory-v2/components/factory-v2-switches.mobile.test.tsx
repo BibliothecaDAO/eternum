@@ -66,11 +66,13 @@ describe("Factory V2 mobile switches", () => {
 
     const networkSwitch = container.querySelector('[data-testid="factory-network-switch"]');
     const gameSwitch = container.querySelector('[data-testid="factory-game-switch"]');
+    const rootGroup = container.querySelector("section > div");
 
     expect(networkSwitch?.className).toContain("w-full");
     expect(networkSwitch?.className).toContain("md:max-w-[18rem]");
     expect(gameSwitch?.className).toContain("w-full");
     expect(gameSwitch?.className).toContain("md:max-w-[18rem]");
+    expect(rootGroup?.className).toContain("text-center");
   });
 
   it("renders a full-width workflow switch on mobile", async () => {
@@ -80,8 +82,10 @@ describe("Factory V2 mobile switches", () => {
     });
 
     const workflowSwitch = container.querySelector('[data-testid="factory-workflow-switch"]');
+    const rootGroup = container.querySelector("section > div");
 
     expect(workflowSwitch?.className).toContain("w-full");
     expect(workflowSwitch?.className).toContain("md:max-w-[20rem]");
+    expect(rootGroup?.className).toContain("text-center");
   });
 });

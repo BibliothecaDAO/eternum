@@ -38,6 +38,8 @@ interface PlayViewProps {
 
 type PlayTab = "play" | "learn" | "news" | "factory";
 type LandingModeFilter = "blitz" | "season";
+const FACTORY_TAB_BLEED_CLASS_NAME = "-mx-6 lg:-mx-10";
+const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
 
 const FactoryV2Content = lazy(() =>
   import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
@@ -281,22 +283,51 @@ const FactoryTabContent = () => {
   const [selectedFactoryVersion, setSelectedFactoryVersion] = useState<FactoryVersion>("v2");
 
   return (
-    <div className="rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/20">
+    <div className="flex flex-col gap-4">
+      <Suspense
+        fallback={
+          <div className={FACTORY_TAB_HEADER_INSET_CLASS_NAME}>
+            <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">
+              Loading factory...
+            </div>
+          </div>
+        }
+      >
+        {selectedFactoryVersion === "v2" ? <FactoryV2Content /> : <FactoryPage embedded />}
+      </Suspense>
+
+      <FactoryVersionChooser
+        selectedFactoryVersion={selectedFactoryVersion}
+        onSelectFactoryVersion={setSelectedFactoryVersion}
+      />
+    </div>
+  );
+};
+
+const FactoryVersionChooser = ({
+  selectedFactoryVersion,
+  onSelectFactoryVersion,
+}: {
+  selectedFactoryVersion: FactoryVersion;
+  onSelectFactoryVersion: (version: FactoryVersion) => void;
+}) => (
+  <div className={FACTORY_TAB_HEADER_INSET_CLASS_NAME}>
+    <div className="rounded-[22px] border border-gold/15 bg-black/45 px-4 py-4 backdrop-blur-xl">
+      <div className="flex flex-col items-center gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
+        <div className="flex flex-col items-center gap-3 md:flex-row md:items-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/15">
             <Factory className="h-5 w-5 text-gold" />
           </div>
           <div>
-            <h2 className="font-serif text-xl text-gold">Factory</h2>
+            <h2 className="font-serif text-lg text-gold">Factory versions</h2>
             <p className="text-sm text-gold/60">Choose the legacy factory or the new Factory V2.</p>
           </div>
         </div>
 
-        <div className="inline-flex rounded-full border border-gold/15 bg-black/35 p-1">
+        <div className="inline-flex rounded-full border border-gold/12 bg-black/30 p-1">
           <button
             type="button"
-            onClick={() => setSelectedFactoryVersion("v2")}
+            onClick={() => onSelectFactoryVersion("v2")}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
               selectedFactoryVersion === "v2" ? "bg-gold text-black" : "text-gold/70 hover:bg-gold/10 hover:text-gold",
@@ -306,7 +337,7 @@ const FactoryTabContent = () => {
           </button>
           <button
             type="button"
-            onClick={() => setSelectedFactoryVersion("v1")}
+            onClick={() => onSelectFactoryVersion("v1")}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
               selectedFactoryVersion === "v1" ? "bg-gold text-black" : "text-gold/70 hover:bg-gold/10 hover:text-gold",
@@ -316,19 +347,9 @@ const FactoryTabContent = () => {
           </button>
         </div>
       </div>
-
-      <Suspense
-        fallback={
-          <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">
-            Loading factory...
-          </div>
-        }
-      >
-        {selectedFactoryVersion === "v2" ? <FactoryV2Content /> : <FactoryPage embedded />}
-      </Suspense>
     </div>
-  );
-};
+  </div>
+);
 
 const MODE_FILTER_OPTIONS: Array<{ id: LandingModeFilter; label: string }> = [
   { id: "season", label: "Eternum Seasons" },
@@ -950,7 +971,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   return (
     <MarketsProviders>
-      <div className={cn("flex flex-col gap-6", className)}>
+      <div
+        className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}
+      >
         {/* Tab content */}
         {renderContent()}
       </div>
