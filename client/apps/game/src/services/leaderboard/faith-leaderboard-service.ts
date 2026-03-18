@@ -1,16 +1,13 @@
-import { getRealmNameById } from "@bibliothecadao/eternum";
 import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 
 import { getSqlApiBaseUrl } from "@/services/api";
 
 interface FaithLeaderboardRow {
   wonder_id?: unknown;
-  realm_id?: unknown;
-  owner_address?: unknown;
-  owner_name?: unknown;
-  total_fp?: unknown;
-  fp_per_sec?: unknown;
-  follower_count?: unknown;
+  last_recorded_owner?: unknown;
+  claimed_points?: unknown;
+  claim_per_sec?: unknown;
+  num_structures_pledged?: unknown;
 }
 
 export interface FaithLeaderboardEntry {
@@ -25,51 +22,15 @@ export interface FaithLeaderboardEntry {
 }
 
 const WONDER_FAITH_LEADERBOARD_QUERY = `
-  WITH wonder_data AS (
-    SELECT
-      wf.wonder_id AS wonder_id,
-      wf.claimed_points AS total_fp,
-      wf.claim_per_sec AS fp_per_sec,
-      s.owner AS owner_address,
-      sos.name AS owner_name,
-      s.\`metadata.realm_id\` AS realm_id
-    FROM [s1_eternum-WonderFaith] wf
-    INNER JOIN [s1_eternum-Structure] s ON s.entity_id = wf.wonder_id
-    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-    WHERE s.\`metadata.has_wonder\` = true
-  ),
-  follower_counts AS (
-    SELECT
-      faith_rows.wonder_id AS wonder_id,
-      COUNT(
-        DISTINCT CASE
-          WHEN faith_rows.pledger_owner_norm = faith_rows.wonder_owner_norm THEN NULL
-          ELSE faith_rows.pledger_owner_norm
-        END
-      ) AS follower_count
-    FROM (
-      SELECT
-        fs.wonder_id AS wonder_id,
-        REPLACE(LOWER(CAST(pledged.owner AS TEXT)), '0x', '') AS pledger_owner_norm,
-        REPLACE(LOWER(CAST(wonder.owner AS TEXT)), '0x', '') AS wonder_owner_norm
-      FROM [s1_eternum-FaithfulStructure] fs
-      INNER JOIN [s1_eternum-Structure] pledged ON pledged.entity_id = fs.structure_id
-      INNER JOIN [s1_eternum-Structure] wonder ON wonder.entity_id = fs.wonder_id
-      WHERE fs.wonder_id > 0
-    ) faith_rows
-    GROUP BY faith_rows.wonder_id
-  )
   SELECT
-    wd.wonder_id,
-    wd.realm_id,
-    wd.owner_address,
-    wd.owner_name,
-    wd.total_fp,
-    wd.fp_per_sec,
-    COALESCE(fc.follower_count, 0) AS follower_count
-  FROM wonder_data wd
-  LEFT JOIN follower_counts fc ON fc.wonder_id = wd.wonder_id
-  ORDER BY wd.total_fp DESC, wd.fp_per_sec DESC, wd.wonder_id ASC;
+    wf.wonder_id,
+    wf.last_recorded_owner,
+    wf.claimed_points,
+    wf.claim_per_sec,
+    wf.num_structures_pledged
+  FROM [s1_eternum-WonderFaith] wf
+  WHERE wf.wonder_id > 0
+  ORDER BY wf.claimed_points DESC, wf.claim_per_sec DESC, wf.wonder_id ASC;
 `;
 
 const ensureSqlSuffix = (baseUrl: string): string => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
@@ -119,27 +80,7 @@ const formatOwnerAddress = (value: unknown): string => {
   return `0x${parsed.toString(16).padStart(64, "0")}`;
 };
 
-const buildWonderName = (wonderId: bigint, realmId: number): string => {
-  if (realmId > 0) {
-    const realmName = getRealmNameById(realmId);
-    if (realmName) {
-      return `Wonder - ${realmName}`;
-    }
-
-    return `Wonder #${realmId}`;
-  }
-
-  return `Wonder #${wonderId.toString()}`;
-};
-
-const parseOwnerName = (value: unknown): string | null => {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length ? trimmed : null;
-};
+const buildWonderName = (wonderId: bigint): string => `Wonder #${wonderId.toString()}`;
 
 const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeaderboardEntry[] => {
   const entries = rows
@@ -149,17 +90,16 @@ const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeader
         return null;
       }
 
-      const realmId = parseIntNumber(row.realm_id);
-      const totalFaithPoints = parseBigInt(row.total_fp) ?? 0n;
-      const faithPointsPerSecond = parseIntNumber(row.fp_per_sec);
-      const followerCount = parseIntNumber(row.follower_count);
+      const totalFaithPoints = parseBigInt(row.claimed_points) ?? 0n;
+      const faithPointsPerSecond = parseIntNumber(row.claim_per_sec);
+      const followerCount = parseIntNumber(row.num_structures_pledged);
 
       return {
         rank: 0,
         wonderId,
-        wonderName: buildWonderName(wonderId, realmId),
-        ownerAddress: formatOwnerAddress(row.owner_address),
-        ownerName: parseOwnerName(row.owner_name),
+        wonderName: buildWonderName(wonderId),
+        ownerAddress: formatOwnerAddress(row.last_recorded_owner),
+        ownerName: null,
         totalFaithPoints,
         faithPointsPerSecond,
         followerCount,
