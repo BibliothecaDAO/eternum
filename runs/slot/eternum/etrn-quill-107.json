@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23232042297-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-18T06:27:02.391Z",
-  "updatedAt": "2026-03-18T06:28:02.013Z",
+  "updatedAt": "2026-03-18T06:28:03.166Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Wait for factory index",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Wait for factory index",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Wait for factory index started",
+      "startedAt": "2026-03-18T06:28:03.166Z"
     },
     {
       "id": "configure-world",
@@ -78,5 +79,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-eternum-etrn-quill-107.json",
     "createGameTxHash": "0x2bfebf7bc9f1cbdb17eba74fd2141693af19b351e574fc953e94b1eab615e1a"
+  },
+  "activeLease": {
+    "launchRequestId": "23232042297-1",
+    "workflowRunId": 23232042297,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-18T06:28:03.166Z",
+    "expiresAt": "2026-03-18T07:13:03.166Z"
   }
 }
