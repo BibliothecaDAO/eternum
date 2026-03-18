@@ -5,6 +5,7 @@ export * from "./environment";
 export * from "./factory";
 export * from "./indexing";
 export * from "./launch";
+export * from "./run-store";
 export * from "./role-grants";
 export * from "./shared";
 export * from "./types";

@@ -30,9 +30,11 @@ import type {
   FactoryWorldProfile,
   IndexerRequest,
   LaunchGameRequest,
+  LaunchGameStepId,
+  LaunchGameStepRequest,
   LaunchGameSummary,
 } from "../types";
-import { writeLaunchSummary } from "./io";
+import { loadLaunchSummaryIfPresent, writeLaunchSummary } from "./io";
 import { createProgressReporter, formatDuration } from "./progress";
 import { parseStartTime, toIsoUtc } from "./time";
 
@@ -69,6 +71,19 @@ interface ConfiguredWorldContext {
   worldProfile: FactoryWorldProfile;
   patchedManifest: GameManifestLike;
   patchedProvider: ConfiguredWorldProvider;
+}
+
+interface PreparedLaunchExecution {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  summary: LaunchGameSummary;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+}
+
+interface ConfiguredLaunchDependencies {
+  accountContext: LaunchAccountContext;
+  worldContext: ConfiguredWorldContext;
 }
 
 function asProviderSigner(account: Account): ProviderSigner {
@@ -175,6 +190,45 @@ function createLaunchSummary(runtime: LaunchRuntime, request: LaunchGameRequest)
   };
 }
 
+function hydrateExistingLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
+  const existingSummary = loadLaunchSummaryIfPresent(summary.environment, summary.gameName);
+  if (!existingSummary) {
+    return summary;
+  }
+
+  return {
+    ...existingSummary,
+    environment: summary.environment,
+    chain: summary.chain,
+    gameType: summary.gameType,
+    gameName: summary.gameName,
+    startTime: summary.startTime,
+    startTimeIso: summary.startTimeIso,
+    rpcUrl: summary.rpcUrl,
+    factoryAddress: summary.factoryAddress,
+    configMode: summary.configMode,
+    dryRun: summary.dryRun,
+    outputPath: summary.outputPath || existingSummary.outputPath,
+  };
+}
+
+function prepareLaunchExecution(request: LaunchGameRequest): PreparedLaunchExecution {
+  const runtime = createLaunchRuntime(request, createProgressReporter());
+
+  validateWorldName(request.gameName);
+  logLaunchPreparation(runtime, request.gameName);
+
+  const { deploymentConfig, configSteps } = resolveLaunchConfiguration(runtime, request);
+
+  return {
+    runtime,
+    request,
+    summary: hydrateExistingLaunchSummary(createLaunchSummary(runtime, request)),
+    deploymentConfig,
+    configSteps,
+  };
+}
+
 function buildIndexerRequest(options: {
   env: string;
   rpcUrl: string;
@@ -197,28 +251,25 @@ function buildIndexerRequest(options: {
 }
 
 function buildDryRunSummary(
-  runtime: LaunchRuntime,
-  request: LaunchGameRequest,
-  summary: LaunchGameSummary,
-  configSteps: LaunchConfigSteps,
+  execution: PreparedLaunchExecution,
 ): LaunchGameSummary {
-  runtime.progress.log("Dry run enabled; no transactions will be sent");
-  summary.configSteps = configSteps.map((step) => ({
+  execution.runtime.progress.log("Dry run enabled; no transactions will be sent");
+  execution.summary.configSteps = execution.configSteps.map((step) => ({
     id: step.id,
     description: step.description,
   }));
-  summary.indexerRequest = buildIndexerRequest({
-    env: runtime.environment.toriiEnv,
-    rpcUrl: runtime.rpcUrl,
-    namespaces: runtime.toriiNamespaces,
-    worldName: request.gameName,
+  execution.summary.indexerRequest = buildIndexerRequest({
+    env: execution.runtime.environment.toriiEnv,
+    rpcUrl: execution.runtime.rpcUrl,
+    namespaces: execution.runtime.toriiNamespaces,
+    worldName: execution.request.gameName,
     worldAddress: "<pending>",
-    workflowFile: request.workflowFile,
-    ref: request.ref,
+    workflowFile: execution.request.workflowFile,
+    ref: execution.request.ref,
   });
-  summary.outputPath = writeLaunchSummary(summary);
-  runtime.progress.log(`Dry run summary written to ${summary.outputPath}`);
-  return summary;
+  execution.summary.outputPath = writeLaunchSummary(execution.summary);
+  execution.runtime.progress.log(`Dry run summary written to ${execution.summary.outputPath}`);
+  return execution.summary;
 }
 
 function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGameRequest): LaunchAccountContext {
@@ -237,6 +288,25 @@ function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGame
     account,
     providerSigner: asProviderSigner(account),
   };
+}
+
+async function resolveIndexedWorldContext(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<ConfiguredWorldContext> {
+  return createConfiguredWorldContext(runtime, await waitForIndexedWorld(runtime, request));
+}
+
+function updateWorldAddress(summary: LaunchGameSummary, worldContext: ConfiguredWorldContext): void {
+  summary.worldAddress = worldContext.worldProfile.worldAddress;
+}
+
+async function resolveConfiguredLaunchDependencies(
+  execution: PreparedLaunchExecution,
+): Promise<ConfiguredLaunchDependencies> {
+  const accountContext = resolveLaunchAccountContext(execution.runtime, execution.request);
+  const worldContext = await resolveIndexedWorldContext(execution.runtime, execution.request);
+
+  updateWorldAddress(execution.summary, worldContext);
+
+  return { accountContext, worldContext };
 }
 
 function buildCreateGameCalldata(runtime: LaunchRuntime, request: LaunchGameRequest): Array<string | number> {
@@ -528,64 +598,167 @@ async function createIndexerIfNeeded(
   };
 }
 
-function finalizeLaunchSummary(runtime: LaunchRuntime, summary: LaunchGameSummary): LaunchGameSummary {
-  summary.outputPath = writeLaunchSummary(summary);
-  runtime.progress.log(`Launch summary written to ${summary.outputPath}`);
-  return summary;
+function finalizeLaunchSummary(execution: PreparedLaunchExecution): LaunchGameSummary {
+  execution.summary.outputPath = writeLaunchSummary(execution.summary);
+  execution.runtime.progress.log(`Launch summary written to ${execution.summary.outputPath}`);
+  return execution.summary;
 }
 
-export async function launchGame(request: LaunchGameRequest): Promise<LaunchGameSummary> {
-  const runtime = createLaunchRuntime(request, createProgressReporter());
+async function runCreateWorldStep(
+  execution: PreparedLaunchExecution,
+  accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
+): Promise<LaunchAccountContext> {
+  execution.summary.createGameTxHash = await createGame(execution.runtime, execution.request, accountContext.account);
+  await waitForCreateGameConfirmation(
+    execution.runtime.progress,
+    accountContext.account,
+    execution.summary.createGameTxHash,
+  );
 
-  validateWorldName(request.gameName);
-  logLaunchPreparation(runtime, request.gameName);
+  return accountContext;
+}
 
-  const { deploymentConfig, configSteps } = resolveLaunchConfiguration(runtime, request);
-  const summary = createLaunchSummary(runtime, request);
+async function runWaitForFactoryIndexStep(execution: PreparedLaunchExecution): Promise<ConfiguredWorldContext> {
+  const worldContext = await resolveIndexedWorldContext(execution.runtime, execution.request);
+  updateWorldAddress(execution.summary, worldContext);
+  return worldContext;
+}
 
-  if (request.dryRun) {
-    return buildDryRunSummary(runtime, request, summary, configSteps);
-  }
-
-  const accountContext = resolveLaunchAccountContext(runtime, request);
-  summary.createGameTxHash = await createGame(runtime, request, accountContext.account);
-  await waitForCreateGameConfirmation(runtime.progress, accountContext.account, summary.createGameTxHash);
-
-  const worldContext = createConfiguredWorldContext(runtime, await waitForIndexedWorld(runtime, request));
-  summary.worldAddress = worldContext.worldProfile.worldAddress;
-
+async function runConfigureWorldStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
   const configResult = await configureWorld({
-    runtime,
-    request,
-    deploymentConfig,
-    configSteps,
-    account: accountContext.account,
-    patchedProvider: worldContext.patchedProvider,
+    runtime: execution.runtime,
+    request: execution.request,
+    deploymentConfig: execution.deploymentConfig,
+    configSteps: execution.configSteps,
+    account: resolvedDependencies.accountContext.account,
+    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
   });
-  summary.configureTxHash = configResult.transactionHash;
-  summary.configSteps = configResult.steps;
 
-  summary.lootChestRoleTxHash = await grantLootChestMinterRoleIfNeeded({
-    runtime,
-    request,
-    deploymentConfig,
-    patchedManifest: worldContext.patchedManifest,
-    patchedProvider: worldContext.patchedProvider,
-    providerSigner: accountContext.providerSigner,
+  execution.summary.configureTxHash = configResult.transactionHash;
+  execution.summary.configSteps = configResult.steps;
+
+  return resolvedDependencies;
+}
+
+async function runGrantLootChestRoleStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
+  execution.summary.lootChestRoleTxHash = await grantLootChestMinterRoleIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
+    deploymentConfig: execution.deploymentConfig,
+    patchedManifest: resolvedDependencies.worldContext.patchedManifest,
+    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
+    providerSigner: resolvedDependencies.accountContext.providerSigner,
   });
-  summary.villagePassRoleTxHash = await grantVillagePassRoleToRealmInternalSystemsIfNeeded({
-    runtime,
-    request,
+
+  return resolvedDependencies;
+}
+
+async function runGrantVillagePassRoleStep(
+  execution: PreparedLaunchExecution,
+  accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
+): Promise<LaunchAccountContext> {
+  execution.summary.villagePassRoleTxHash = await grantVillagePassRoleToRealmInternalSystemsIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
     accountAddress: accountContext.accountAddress,
     privateKey: accountContext.privateKey,
   });
-  summary.createBanksTxHash = await createBanksIfNeeded({
-    runtime,
-    request,
-    patchedProvider: worldContext.patchedProvider,
-    providerSigner: accountContext.providerSigner,
+
+  return accountContext;
+}
+
+async function runCreateBanksStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
+  execution.summary.createBanksTxHash = await createBanksIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
+    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
+    providerSigner: resolvedDependencies.accountContext.providerSigner,
   });
 
-  Object.assign(summary, await createIndexerIfNeeded(runtime, request, worldContext.worldProfile.worldAddress));
-  return finalizeLaunchSummary(runtime, summary);
+  return resolvedDependencies;
+}
+
+async function runCreateIndexerStep(
+  execution: PreparedLaunchExecution,
+  worldContext?: ConfiguredWorldContext,
+): Promise<ConfiguredWorldContext> {
+  const resolvedWorldContext = worldContext ?? (await resolveIndexedWorldContext(execution.runtime, execution.request));
+  updateWorldAddress(execution.summary, resolvedWorldContext);
+  Object.assign(
+    execution.summary,
+    await createIndexerIfNeeded(execution.runtime, execution.request, resolvedWorldContext.worldProfile.worldAddress),
+  );
+
+  return resolvedWorldContext;
+}
+
+async function executeLaunchStep(execution: PreparedLaunchExecution, stepId: LaunchGameStepId): Promise<void> {
+  switch (stepId) {
+    case "create-world":
+      await runCreateWorldStep(execution);
+      return;
+    case "wait-for-factory-index":
+      await runWaitForFactoryIndexStep(execution);
+      return;
+    case "configure-world":
+      await runConfigureWorldStep(execution);
+      return;
+    case "grant-lootchest-role":
+      await runGrantLootChestRoleStep(execution);
+      return;
+    case "grant-village-pass-role":
+      await runGrantVillagePassRoleStep(execution);
+      return;
+    case "create-banks":
+      await runCreateBanksStep(execution);
+      return;
+    case "create-indexer":
+      await runCreateIndexerStep(execution);
+      return;
+  }
+}
+
+export async function runLaunchStep(request: LaunchGameStepRequest): Promise<LaunchGameSummary> {
+  const execution = prepareLaunchExecution(request);
+
+  if (request.dryRun) {
+    return buildDryRunSummary(execution);
+  }
+
+  await executeLaunchStep(execution, request.stepId);
+  return finalizeLaunchSummary(execution);
+}
+
+export async function launchGame(request: LaunchGameRequest): Promise<LaunchGameSummary> {
+  const execution = prepareLaunchExecution(request);
+
+  if (request.dryRun) {
+    return buildDryRunSummary(execution);
+  }
+
+  const accountContext = await runCreateWorldStep(execution);
+  const worldContext = await runWaitForFactoryIndexStep(execution);
+  const configuredDependencies = await runConfigureWorldStep(execution, {
+    accountContext,
+    worldContext,
+  });
+
+  await runGrantLootChestRoleStep(execution, configuredDependencies);
+  await runGrantVillagePassRoleStep(execution, accountContext);
+  await runCreateBanksStep(execution, configuredDependencies);
+  await runCreateIndexerStep(execution, worldContext);
+
+  return finalizeLaunchSummary(execution);
 }

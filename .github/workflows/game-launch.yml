@@ -51,6 +51,20 @@ on:
           end_at."
         required: false
         type: string
+      launch_step:
+        description: "Launch scope. Use full for the first trial, or target one step for recovery."
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - create-world
+          - wait-for-factory-index
+          - configure-world
+          - grant-lootchest-role
+          - grant-village-pass-role
+          - create-banks
+          - create-indexer
 
 jobs:
   launch:
@@ -59,7 +73,20 @@ jobs:
     environment: ${{ github.event.inputs.environment }}
     permissions:
       actions: write
-      contents: read
+      contents: write
+    env:
+      GAME_LAUNCH_ENVIRONMENT: ${{ github.event.inputs.environment }}
+      GAME_LAUNCH_GAME_NAME: ${{ github.event.inputs.game_name }}
+      GAME_LAUNCH_START_TIME: ${{ github.event.inputs.game_start_time }}
+      GAME_LAUNCH_DEV_MODE_ON: ${{ github.event.inputs.dev_mode_on }}
+      GAME_LAUNCH_SINGLE_REALM_MODE: ${{ github.event.inputs.single_realm_mode }}
+      GAME_LAUNCH_TWO_PLAYER_MODE: ${{ github.event.inputs.two_player_mode }}
+      GAME_LAUNCH_DURATION_SECONDS: ${{ github.event.inputs.duration_seconds }}
+      GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
+      FACTORY_RUN_STORE_BRANCH: factory-runs
+      DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
+      DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -88,47 +115,144 @@ jobs:
           pnpm --dir packages/types build
           pnpm --dir packages/provider build
 
-      - name: Launch game
-        env:
-          DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
-          DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Prepare launch arguments
         run: |
           set -euo pipefail
 
           if [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; then
-            echo "Missing DOJO credentials for ${{ github.event.inputs.environment }}" >&2
+            echo "Missing DOJO credentials for ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
 
+          mkdir -p .context/game-launch
+
+          cat > .context/game-launch/launch-env.sh <<'EOF'
           args=(
-            --environment "${{ github.event.inputs.environment }}"
-            --game "${{ github.event.inputs.game_name }}"
-            --start-time "${{ github.event.inputs.game_start_time }}"
+            --environment "${GAME_LAUNCH_ENVIRONMENT}"
+            --game "${GAME_LAUNCH_GAME_NAME}"
+            --start-time "${GAME_LAUNCH_START_TIME}"
             --mode batched
           )
 
-          if [ -n "${{ github.event.inputs.dev_mode_on }}" ]; then
-            args+=(--dev-mode-on "${{ github.event.inputs.dev_mode_on }}")
+          if [ -n "${GAME_LAUNCH_DEV_MODE_ON}" ]; then
+            args+=(--dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON}")
           fi
 
-          if [ -n "${{ github.event.inputs.single_realm_mode }}" ]; then
-            args+=(--single-realm-mode "${{ github.event.inputs.single_realm_mode }}")
+          if [ -n "${GAME_LAUNCH_SINGLE_REALM_MODE}" ]; then
+            args+=(--single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE}")
           fi
 
-          if [ -n "${{ github.event.inputs.two_player_mode }}" ]; then
-            args+=(--two-player-mode "${{ github.event.inputs.two_player_mode }}")
+          if [ -n "${GAME_LAUNCH_TWO_PLAYER_MODE}" ]; then
+            args+=(--two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE}")
           fi
 
-          if [ -n "${{ github.event.inputs.duration_seconds }}" ]; then
-            args+=(--duration-seconds "${{ github.event.inputs.duration_seconds }}")
+          if [ -n "${GAME_LAUNCH_DURATION_SECONDS}" ]; then
+            args+=(--duration-seconds "${GAME_LAUNCH_DURATION_SECONDS}")
           fi
 
-          bun config/deployer/clean/cli/create.ts "${args[@]}"
+          run_store_args=(
+            --environment "${GAME_LAUNCH_ENVIRONMENT}"
+            --game "${GAME_LAUNCH_GAME_NAME}"
+            --start-time "${GAME_LAUNCH_START_TIME}"
+            --launch-step "${GAME_LAUNCH_STEP}"
+          )
+
+          if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then
+            run_store_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
+          fi
+
+          run_launch_step() {
+            local step_id="$1"
+            local step_log=".context/game-launch/${step_id}.log"
+            local exit_code=0
+
+            bun config/deployer/clean/cli/launch-run-store.ts \
+              --event step-started \
+              --step "${step_id}" \
+              "${run_store_args[@]}"
+
+            set +e
+            bun config/deployer/clean/cli/launch-step.ts --step "${step_id}" "${args[@]}" 2>&1 | tee "${step_log}"
+            exit_code=${PIPESTATUS[0]}
+            set -e
+
+            if [ "${exit_code}" -eq 0 ]; then
+              bun config/deployer/clean/cli/launch-run-store.ts \
+                --event step-succeeded \
+                --step "${step_id}" \
+                "${run_store_args[@]}"
+              return 0
+            fi
+
+            bun config/deployer/clean/cli/launch-run-store.ts \
+              --event step-failed \
+              --step "${step_id}" \
+              --error-message-file "${step_log}" \
+              "${run_store_args[@]}"
+
+            return "${exit_code}"
+          }
+          EOF
+
+      - name: Record launch input
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          bun config/deployer/clean/cli/launch-run-store.ts --event launch-started "${run_store_args[@]}"
+
+      - name: Create world
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step create-world
+
+      - name: Wait for factory index
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'wait-for-factory-index' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step wait-for-factory-index
+
+      - name: Configure world
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'configure-world' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step configure-world
+
+      - name: Grant loot chest role
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-lootchest-role' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step grant-lootchest-role
+
+      - name: Grant village pass role
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-role' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step grant-village-pass-role
+
+      - name: Create banks
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-banks' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step create-banks
+
+      - name: Create indexer
+        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-indexer' }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step create-indexer
 
       - name: Upload launch summary
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: game-launch-summary
           path: .context/game-launch/*.json
-          if-no-files-found: error
+          if-no-files-found: warn

@@ -2,6 +2,9 @@
 
 Creates and configures a single world using the clean deployer module in `config/deployer/clean`.
 
+The full launcher still exists for one-shot local runs, but the GitHub workflow now executes the launch through
+individual clean deployer steps so GitHub Actions can expose launch progress directly.
+
 ## Usage
 
 ```bash
@@ -73,6 +76,77 @@ When running locally, the clean deployer can fill in missing GitHub dispatch inp
 Whenever one of those fallbacks is used, it logs the reason to stderr.
 
 Artifacts are written to `.context/game-launch/`.
+
+## Step Runner
+
+Each launch step can also be executed directly:
+
+```bash
+bun config/deployer/clean/cli/launch-step.ts \
+  --step configure-world \
+  --environment slot.blitz \
+  --game bltz-fire-gate-42 \
+  --start-time 1763112600
+```
+
+Supported step ids:
+
+- `create-world`
+- `wait-for-factory-index`
+- `configure-world`
+- `grant-lootchest-role`
+- `grant-village-pass-role`
+- `create-banks`
+- `create-indexer`
+
+The step runner uses the same request shape and env defaults as the full launcher. This is the script boundary the
+workflow uses now, and it is also the intended recovery boundary for browser-driven reruns.
+
+## GitHub Workflow
+
+`.github/workflows/game-launch.yml` now exposes `launch_step`:
+
+- `full` for the normal first trial
+- one explicit step id for targeted recovery
+
+When `launch_step=full`, the workflow still behaves like one click from the operator's point of view, but GitHub now
+shows each launch step separately:
+
+- Create world
+- Wait for factory index
+- Configure world
+- Grant loot chest role
+- Grant village pass role
+- Create banks
+- Create indexer
+
+The launch summary artifact upload now runs with `always()` so partial summaries still upload when a later step fails.
+
+The workflow also writes launch state to the dedicated `factory-runs` branch:
+
+- immutable launch input records under `inputs/<chain>/<game-type>/<game-name>/<run-id>.json`
+- mutable run state under `runs/<chain>/<game-type>/<game-name>.json`
+
+The input record captures what the operator asked for. The run record captures what the launch is doing now, which
+steps are done, and the latest artifacts written by the clean deployer. This means another browser or a recovery flow
+can look up the same game and see the current state without rerunning CI just to discover that the launch already
+completed.
+
+The branch writes are driven by `config/deployer/clean/cli/launch-run-store.ts`. The workflow records:
+
+- launch started
+- step started
+- step succeeded
+- step failed
+
+Each single-step launch still writes the same local `.context/game-launch/<environment>-<game>.json` summary, and that
+summary now accumulates across steps so the branch-backed run record can publish one coherent view of the launch.
+
+The run record also carries a lease while a step is actively running. `launch-started` checks for a fresh conflicting
+lease before a new workflow takes ownership, `step-started` acquires the lease for the current logical step, and
+`step-succeeded` / `step-failed` release it again. That keeps the locking rules local to the run-store layer instead of
+burying conflict logic inside the workflow YAML. Stale leases are ignored after their expiry window so canceled runs do
+not block recovery forever.
 
 For `slot.eternum`, the launch flow also runs the village pass role grant automatically after world configuration. It
 grants `MINTER_ROLE` on the chain's `villagePass` contract to the deployed `realm_internal_systems` contract for the new

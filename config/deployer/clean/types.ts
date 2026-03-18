@@ -5,6 +5,14 @@ export type DeploymentChain = "slot";
 export type DeploymentGameType = "blitz" | "eternum";
 export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum";
 export type ExecutionMode = "batched" | "sequential";
+export type LaunchGameStepId =
+  | "create-world"
+  | "wait-for-factory-index"
+  | "configure-world"
+  | "grant-lootchest-role"
+  | "grant-village-pass-role"
+  | "create-banks"
+  | "create-indexer";
 
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
@@ -112,6 +120,10 @@ export interface LaunchGameRequest {
   dryRun?: boolean;
   workflowFile?: string;
   ref?: string;
+}
+
+export interface LaunchGameStepRequest extends LaunchGameRequest {
+  stepId: LaunchGameStepId;
 }
 
 export interface LaunchGameSummary {
