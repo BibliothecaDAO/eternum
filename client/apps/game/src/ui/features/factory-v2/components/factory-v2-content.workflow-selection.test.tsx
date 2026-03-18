@@ -30,17 +30,27 @@ vi.mock("./factory-v2-mode-switch", () => ({
 }));
 
 vi.mock("./factory-v2-start-workspace", () => ({
-  FactoryV2StartWorkspace: ({ onLaunch }: { onLaunch: () => void }) => <button onClick={onLaunch}>Launch</button>,
+  FactoryV2StartWorkspace: () => <div>Start workspace</div>,
 }));
 
 vi.mock("./factory-v2-watch-workspace", () => ({
-  FactoryV2WatchWorkspace: ({ onContinue }: { onContinue: () => void }) => (
-    <button onClick={onContinue}>Continue</button>
-  ),
+  FactoryV2WatchWorkspace: () => <div>Watch workspace</div>,
 }));
 
 vi.mock("./factory-v2-workflow-switch", () => ({
-  FactoryV2WorkflowSwitch: () => <div>Workflow switch</div>,
+  FactoryV2WorkflowSwitch: ({
+    selectedView,
+    onSelect,
+  }: {
+    selectedView: "start" | "watch";
+    onSelect: (view: "start" | "watch") => void;
+  }) => (
+    <div>
+      <div data-testid="selected-workflow">{selectedView}</div>
+      <button onClick={() => onSelect("start")}>Start a game</button>
+      <button onClick={() => onSelect("watch")}>Check a game</button>
+    </div>
+  ),
 }));
 
 const waitForAsyncWork = async () => {
@@ -52,8 +62,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   selectedMode: "eternum",
   modeDefinition: { label: "Eternum" },
   environmentOptions: [],
-  selectedEnvironmentId: "mainnet",
-  selectedEnvironment: { id: "mainnet", label: "Mainnet", chain: "mainnet" },
+  selectedEnvironmentId: "slot.eternum",
+  selectedEnvironment: { id: "slot.eternum", label: "Slot", chain: "slot" },
   presets: [],
   selectedPresetId: "preset-1",
   selectedPreset: { id: "preset-1", defaults: {} },
@@ -107,7 +117,7 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-describe("FactoryV2Content network handling", () => {
+describe("FactoryV2Content workflow selection", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -130,33 +140,22 @@ describe("FactoryV2Content network handling", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("launches immediately without opening the switch prompt when the wallet is on another network", async () => {
-    const factory = buildFactoryState();
-    vi.mocked(useFactoryV2).mockReturnValue(factory as unknown as ReturnType<typeof useFactoryV2>);
+  it("keeps the start panel selected when the same deploying game refreshes", async () => {
+    const run = {
+      id: "run-1",
+      name: "etrn-sunrise-01",
+      environment: "slot.eternum",
+      status: "running",
+    };
 
-    await act(async () => {
-      root.render(<FactoryV2Content />);
-      await waitForAsyncWork();
-    });
-
-    const launchButton = container.querySelector("button");
-    expect(launchButton?.textContent).toContain("Launch");
-
-    await act(async () => {
-      (launchButton as HTMLButtonElement).click();
-      await waitForAsyncWork();
-    });
-
-    expect(factory.launchSelectedPreset).toHaveBeenCalledTimes(1);
-  });
-
-  it("continues immediately without opening a network switch prompt", async () => {
-    const factory = buildFactoryState({
-      shouldPreferWatchView: true,
-      activeRunName: "etrn-sunrise-01",
-      selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "mainnet" },
-    });
-    vi.mocked(useFactoryV2).mockReturnValue(factory as unknown as ReturnType<typeof useFactoryV2>);
+    vi.mocked(useFactoryV2).mockReturnValue(
+      buildFactoryState({
+        activeRunName: "etrn-sunrise-01",
+        matchingRun: { id: "run-1", name: "etrn-sunrise-01" },
+        selectedRun: run,
+        shouldPreferWatchView: true,
+      }) as unknown as ReturnType<typeof useFactoryV2>,
+    );
 
     await act(async () => {
       root.render(<FactoryV2Content />);
@@ -164,18 +163,77 @@ describe("FactoryV2Content network handling", () => {
     });
 
     await vi.waitFor(() => {
-      expect(container.textContent).toContain("Continue");
+      expect(container.textContent).toContain("Watch workspace");
     });
 
-    const continueButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Continue"),
+    const startButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Start a game"),
     );
 
     await act(async () => {
-      (continueButton as HTMLButtonElement).click();
+      (startButton as HTMLButtonElement).click();
       await waitForAsyncWork();
     });
 
-    expect(factory.continueSelectedRun).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Start workspace");
+
+    vi.mocked(useFactoryV2).mockReturnValue(
+      buildFactoryState({
+        activeRunName: "etrn-sunrise-01",
+        matchingRun: { id: "run-1-updated", name: "etrn-sunrise-01" },
+        selectedRun: { ...run, id: "run-1-updated" },
+        shouldPreferWatchView: true,
+      }) as unknown as ReturnType<typeof useFactoryV2>,
+    );
+
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Start workspace");
+    expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
+  });
+
+  it("still auto-opens watch for a different game after the user dismissed the previous one", async () => {
+    vi.mocked(useFactoryV2).mockReturnValue(
+      buildFactoryState({
+        activeRunName: "etrn-sunrise-01",
+        matchingRun: { id: "run-1", name: "etrn-sunrise-01" },
+        selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "slot.eternum", status: "running" },
+        shouldPreferWatchView: true,
+      }) as unknown as ReturnType<typeof useFactoryV2>,
+    );
+
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+      await waitForAsyncWork();
+    });
+
+    const startButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Start a game"),
+    );
+
+    await act(async () => {
+      (startButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    vi.mocked(useFactoryV2).mockReturnValue(
+      buildFactoryState({
+        activeRunName: "etrn-sunrise-02",
+        matchingRun: { id: "run-2", name: "etrn-sunrise-02" },
+        selectedRun: { id: "run-2", name: "etrn-sunrise-02", environment: "slot.eternum", status: "running" },
+        shouldPreferWatchView: true,
+      }) as unknown as ReturnType<typeof useFactoryV2>,
+    );
+
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Watch workspace");
+    expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });
 });

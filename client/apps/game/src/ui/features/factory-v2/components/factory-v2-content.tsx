@@ -1,13 +1,4 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import type { Chain } from "@contracts";
-import { useAccount } from "@starknet-react/core";
-import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
 import { useEffect, useState } from "react";
 import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
@@ -17,35 +8,24 @@ import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
 import { FactoryV2WorkflowSwitch, type FactoryWorkflowView } from "./factory-v2-workflow-switch";
 
-type FactoryNetworkGuardedAction = "continue" | "retry" | "reindex";
-
 export const FactoryV2Content = () => {
-  const { chainId, connector } = useAccount();
   const factory = useFactoryV2();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
   const appearance = resolveFactoryModeAppearance(factory.selectedMode);
   const [selectedWorkflow, setSelectedWorkflow] = useState<FactoryWorkflowView>("start");
-  const [pendingWatchAction, setPendingWatchAction] = useState<FactoryNetworkGuardedAction | null>(null);
-  const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
+  const [dismissedWatchSessionKey, setDismissedWatchSessionKey] = useState<string | null>(null);
+  const watchSessionKey = resolveWatchSessionKey(factory);
+  const hasAutoWatchPreference = Boolean(factory.matchingRun) || factory.shouldPreferWatchView;
 
   useEffect(() => {
-    if (!factory.matchingRun) {
+    if (!shouldAutoOpenWatch(hasAutoWatchPreference, watchSessionKey, dismissedWatchSessionKey)) {
       return;
     }
 
     setSelectedWorkflow("watch");
-  }, [factory.matchingRun]);
-
-  useEffect(() => {
-    if (!factory.shouldPreferWatchView) {
-      return;
-    }
-
-    setSelectedWorkflow("watch");
-  }, [factory.shouldPreferWatchView]);
+  }, [dismissedWatchSessionKey, hasAutoWatchPreference, watchSessionKey]);
 
   const launchSelectedPreset = async () => {
+    setDismissedWatchSessionKey(null);
     setSelectedWorkflow("watch");
     const launched = await factory.launchSelectedPreset();
 
@@ -54,64 +34,9 @@ export const FactoryV2Content = () => {
     }
   };
 
-  const runWatchAction = async (action: FactoryNetworkGuardedAction) => {
-    switch (action) {
-      case "continue":
-        await factory.continueSelectedRun();
-        return;
-      case "retry":
-        await factory.retrySelectedRun();
-        return;
-      case "reindex":
-        await factory.bringIndexerLiveForSelectedRun();
-        return;
-    }
-  };
-
-  const runNetworkGuardedWatchAction = async (action: FactoryNetworkGuardedAction) => {
-    if (factory.environmentUnavailableReason) {
-      await runWatchAction(action);
-      return;
-    }
-
-    const targetChain = factory.selectedEnvironment?.chain ?? null;
-
-    if (!targetChain || connectedTxChain === targetChain) {
-      await runWatchAction(action);
-      return;
-    }
-
-    setPendingWatchAction(action);
-    setSwitchTargetChain(targetChain);
-  };
-
-  const handleSwitchNetwork = async () => {
-    if (!switchTargetChain) {
-      return;
-    }
-
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: switchTargetChain,
-    });
-
-    if (!switched) {
-      return;
-    }
-
-    const action = pendingWatchAction;
-
-    setPendingWatchAction(null);
-    setSwitchTargetChain(null);
-
-    if (action) {
-      await runWatchAction(action);
-    }
-  };
-
-  const closeSwitchNetworkPrompt = () => {
-    setPendingWatchAction(null);
-    setSwitchTargetChain(null);
+  const selectWorkflow = (nextWorkflow: FactoryWorkflowView) => {
+    setSelectedWorkflow(nextWorkflow);
+    setDismissedWatchSessionKey(nextWorkflow === "start" ? watchSessionKey : null);
   };
 
   return (
@@ -133,7 +58,7 @@ export const FactoryV2Content = () => {
                 mode={factory.selectedMode}
                 selectedView={selectedWorkflow}
                 canWatch
-                onSelect={setSelectedWorkflow}
+                onSelect={selectWorkflow}
               />
             </div>
           </div>
@@ -197,13 +122,13 @@ export const FactoryV2Content = () => {
               onSelectRun={factory.selectRun}
               onResolveRunByName={factory.resolveRunByName}
               onContinue={() => {
-                void runNetworkGuardedWatchAction("continue");
+                void factory.continueSelectedRun();
               }}
               onRetry={() => {
-                void runNetworkGuardedWatchAction("retry");
+                void factory.retrySelectedRun();
               }}
               onBringIndexerLive={() => {
-                void runNetworkGuardedWatchAction("reindex");
+                void factory.bringIndexerLiveForSelectedRun();
               }}
               onRefresh={() => {
                 void factory.refreshSelectedRun();
@@ -212,18 +137,33 @@ export const FactoryV2Content = () => {
           </div>
         ) : null}
       </div>
-      <SwitchNetworkPrompt
-        open={switchTargetChain !== null}
-        description="This game is attached to another network."
-        hint={
-          switchTargetChain
-            ? `Switch your wallet to ${getChainLabel(switchTargetChain)} to continue.`
-            : "Switch network to continue."
-        }
-        switchLabel={switchTargetChain ? `Switch To ${getChainLabel(switchTargetChain)}` : "Switch Network"}
-        onClose={closeSwitchNetworkPrompt}
-        onSwitch={handleSwitchNetwork}
-      />
     </section>
   );
+};
+
+const shouldAutoOpenWatch = (
+  hasAutoWatchPreference: boolean,
+  watchSessionKey: string | null,
+  dismissedWatchSessionKey: string | null,
+) => {
+  if (!watchSessionKey) {
+    return false;
+  }
+
+  if (!hasAutoWatchPreference) {
+    return false;
+  }
+
+  return dismissedWatchSessionKey !== watchSessionKey;
+};
+
+const resolveWatchSessionKey = (factory: ReturnType<typeof useFactoryV2>) => {
+  const sessionName = factory.activeRunName ?? factory.matchingRun?.name ?? null;
+  const sessionEnvironment = factory.selectedRun?.environment ?? factory.selectedEnvironmentId ?? null;
+
+  if (!sessionName || !sessionEnvironment) {
+    return null;
+  }
+
+  return `${sessionEnvironment}:${sessionName}`;
 };
