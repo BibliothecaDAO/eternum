@@ -72,7 +72,7 @@ export const FactoryV2StartWorkspace = ({
 
   if (!selectedPreset) {
     return (
-      <article className="mx-auto max-w-xl">
+      <article className="mx-auto max-w-md sm:max-w-xl">
         <div className={cn("rounded-[28px] border p-6 md:p-7", appearance.featureSurfaceClassName)}>
           <div className="text-sm leading-6 text-black/58">Pick a preset first.</div>
         </div>
@@ -89,7 +89,7 @@ export const FactoryV2StartWorkspace = ({
     : appearance.primaryButtonClassName;
 
   return (
-    <article className="mx-auto max-w-lg">
+    <article className="mx-auto max-w-md sm:max-w-lg">
       <div
         className={cn(
           "rounded-[28px] border px-6 py-7 text-center md:px-7 md:py-8",
@@ -216,7 +216,7 @@ export const FactoryV2StartWorkspace = ({
           {showsBlitzModes ? (
             <div className={cn("space-y-2 rounded-[22px] px-4 py-4", appearance.quietSurfaceClassName)}>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Play style</div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <FactoryV2LaunchToggle
                   label="Two player"
                   isEnabled={twoPlayerMode}

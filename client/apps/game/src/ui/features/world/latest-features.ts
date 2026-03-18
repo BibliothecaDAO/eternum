@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Factory Mobile Layout Pass",
+    description:
+      "The new Factory now holds up better on smaller screens, with cleaner top toggles, roomier touch targets, and watch-state cards that no longer feel cramped on mobile.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Clearer Factory Timeline Cards",
     description:
       "The new Factory now gives its Done, Now, and Next timeline cards different emphasis, making it easier to see what already happened, what matters most, and what comes next.",
