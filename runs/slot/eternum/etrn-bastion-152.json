@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-bastion-152/23237963187-1.json",
   "latestLaunchRequestId": "23237963187-1",
-  "currentStepId": "grant-lootchest-role",
+  "currentStepId": "grant-village-pass-role",
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:31:46.581Z",
+  "updatedAt": "2026-03-18T09:31:51.646Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -53,10 +53,11 @@
     {
       "id": "grant-lootchest-role",
       "title": "Grant loot chest role",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Grant loot chest role",
-      "latestEvent": "Grant loot chest role started",
-      "startedAt": "2026-03-18T09:31:46.581Z"
+      "latestEvent": "Grant loot chest role succeeded",
+      "startedAt": "2026-03-18T09:31:46.581Z",
+      "finishedAt": "2026-03-18T09:31:51.646Z"
     },
     {
       "id": "grant-village-pass-role",
@@ -84,14 +85,7 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-bastion-152.json",
     "createGameTxHash": "0x587a81d9613901c4cd7a474f82dd93c2fb1b7204d07c70050895de1a2ef8e37",
     "worldAddress": "0x01dfd27eea976a4d9dde1475849950300eca271557b117f2835834e24fa57a76",
-    "configureTxHash": "0x124372f1006893806772ca1345712fd5eeb32204de583ecd5a6c091992a26e4"
-  },
-  "activeLease": {
-    "launchRequestId": "23237963187-1",
-    "workflowRunId": 23237963187,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "acquiredAt": "2026-03-18T09:31:46.581Z",
-    "expiresAt": "2026-03-18T10:16:46.581Z"
+    "configureTxHash": "0x124372f1006893806772ca1345712fd5eeb32204de583ecd5a6c091992a26e4",
+    "lootChestRoleTxHash": "0xc01cfcd3ed2a12df7e9de90908e242e69a6d1467abd8b28fd102c8c5025485"
   }
 }
