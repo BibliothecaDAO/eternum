@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-blink-120",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/bltz-blink-120/23261609221-1.json",
   "latestLaunchRequestId": "23261609221-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T18:45:18.759Z",
-  "updatedAt": "2026-03-18T18:54:00.625Z",
+  "updatedAt": "2026-03-18T19:04:31.716Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,11 +62,12 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer started",
+      "latestEvent": "Create indexer failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-blink-120\" on slot.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 32 config steps for slot.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-blink-120\"\n\u001b[2m[+237ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-blink-120\" in 221ms (0x00617902...06c3fc)\n\u001b[2m[+244ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x00617902...06c3fc\n\u001b[2m[+244ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref credence0x/factory-v2-polish\n\u001b[2m[+1.7s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+8.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #757: https://github.com/BibliothecaDAO/eternum/actions/runs/23261720186\n\u001b[2m[+8.8s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #757 status: in_progress\n\u001b[2m[+10m 29s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #757 status: completed (failure)\n\u001b[2m[+10m 29s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 10m 29s: factory-torii-deployer.yml run #757 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23261720186\nError: factory-torii-deployer.yml run #757 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23261720186\n    at waitForWorkflowRunToComplete (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/indexer.ts:341:19)\n    at processTicksAndRejections (native:7:39)",
       "startedAt": "2026-03-18T18:54:00.625Z",
-      "finishedAt": "2026-03-18T18:50:22.715Z"
+      "finishedAt": "2026-03-18T19:04:31.716Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-blink-120\" on slot.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 32 config steps for slot.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-blink-120\"\n\u001b[2m[+237ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-blink-120\" in 221ms (0x00617902...06c3fc)\n\u001b[2m[+244ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x00617902...06c3fc\n\u001b[2m[+244ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref credence0x/factory-v2-polish\n\u001b[2m[+1.7s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+8.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #757: https://github.com/BibliothecaDAO/eternum/actions/runs/23261720186\n\u001b[2m[+8.8s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #757 status: in_progress\n\u001b[2m[+10m 29s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #757 status: completed (failure)\n\u001b[2m[+10m 29s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 10m 29s: factory-torii-deployer.yml run #757 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23261720186\nError: factory-torii-deployer.yml run #757 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23261720186\n    at waitForWorkflowRunToComplete (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/indexer.ts:341:19)\n    at processTicksAndRejections (native:7:39)"
     }
   ],
   "artifacts": {
@@ -75,13 +76,5 @@
     "worldAddress": "0x00617902398a3372a77b65c5b474558e48648171456a24fc65627366bb06c3fc",
     "configureTxHash": "0x3f8f6744be6f0e0d19fb974876d6fc32df178cde510db7393cfb47ccc567d7a",
     "lootChestRoleTxHash": "0x3c26f5f3fd9bc32c54e706561f8a6ff222115d780ce2ee10cfb57e81a23cfe1"
-  },
-  "activeLease": {
-    "launchRequestId": "23261609221-1",
-    "workflowRunId": 23261609221,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-18T18:54:00.625Z",
-    "expiresAt": "2026-03-18T19:39:00.625Z"
   }
 }
