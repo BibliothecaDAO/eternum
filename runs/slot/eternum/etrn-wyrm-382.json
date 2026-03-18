@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-wyrm-382",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-wyrm-382/23247703896-1.json",
   "latestLaunchRequestId": "23247703896-1",
   "currentStepId": "create-world",
   "createdAt": "2026-03-18T13:44:39.674Z",
-  "updatedAt": "2026-03-18T13:44:43.750Z",
+  "updatedAt": "2026-03-18T13:44:45.126Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -26,10 +26,12 @@
     {
       "id": "create-world",
       "title": "Create world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Create world",
-      "latestEvent": "Create world started",
-      "startedAt": "2026-03-18T13:44:43.750Z"
+      "latestEvent": "Create world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-wyrm-382\" on slot.eternum\nError: durationSeconds must be an integer greater than or equal to 60\n    at resolveDurationSeconds (/home/runner/work/eternum/eternum/config/deployer/clean/config/config-loader.ts:42:15)\n    at resolveBooleanOverrides (/home/runner/work/eternum/eternum/config/deployer/clean/config/config-loader.ts:60:22)\n    at applyDeploymentConfigOverrides (/home/runner/work/eternum/eternum/config/deployer/clean/config/config-loader.ts:99:29)\n    at resolveLaunchConfiguration (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:151:28)\n    at prepareLaunchExecution (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:221:45)\n    at runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:735:21)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:54:25)\n    at /home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:61\n    at moduleEvaluation (native:1:11)\n    at moduleEvaluation (native:1:11)",
+      "startedAt": "2026-03-18T13:44:43.750Z",
+      "finishedAt": "2026-03-18T13:44:45.126Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-wyrm-382\" on slot.eternum\nError: durationSeconds must be an integer greater than or equal to 60\n    at resolveDurationSeconds (/home/runner/work/eternum/eternum/config/deployer/clean/config/config-loader.ts:42:15)\n    at resolveBooleanOverrides (/home/runner/work/eternum/eternum/config/deployer/clean/config/config-loader.ts:60:22)\n    at applyDeploymentConfigOverrides (/home/runner/work/eternum/eternum/config/deployer/clean/config/config-loader.ts:99:29)\n    at resolveLaunchConfiguration (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:151:28)\n    at prepareLaunchExecution (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:221:45)\n    at runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:735:21)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:54:25)\n    at /home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:61\n    at moduleEvaluation (native:1:11)\n    at moduleEvaluation (native:1:11)"
     },
     {
       "id": "wait-for-factory-index",
@@ -74,13 +76,5 @@
       "latestEvent": "Waiting to run"
     }
   ],
-  "artifacts": {},
-  "activeLease": {
-    "launchRequestId": "23247703896-1",
-    "workflowRunId": 23247703896,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-18T13:44:43.750Z",
-    "expiresAt": "2026-03-18T14:29:43.750Z"
-  }
+  "artifacts": {}
 }
