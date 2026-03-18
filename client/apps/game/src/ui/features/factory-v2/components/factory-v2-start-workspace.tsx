@@ -18,6 +18,7 @@ import {
   type FactoryMoreOptionsErrors,
 } from "../map-options";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
+import { buildFactoryStartAtValue, resolveFactoryStartDatePart, resolveFactoryStartTimePart } from "../start-time";
 import type { FactoryDurationOption, FactoryGameMode, FactoryLaunchPreset } from "../types";
 import { FactoryV2MoreOptions } from "./factory-v2-more-options";
 
@@ -34,7 +35,9 @@ const FACTORY_FIELD_CONTROL_CLASS_NAME =
 
 const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} appearance-none pr-11 font-medium`;
 
-const FACTORY_DATETIME_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} overflow-hidden pr-2 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-2 [&::-webkit-calendar-picker-indicator]:flex-shrink-0 [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:text-left md:[&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0`;
+const FACTORY_DATE_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} [color-scheme:light]`;
+
+const FACTORY_TIME_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} [color-scheme:light]`;
 
 export const FactoryV2StartWorkspace = ({
   mode,
@@ -240,21 +243,7 @@ export const FactoryV2StartWorkspace = ({
             </div>
 
             <div className={cn("grid min-w-0 gap-4", showsDuration ? "sm:grid-cols-2" : "")}>
-              <div className="min-w-0">
-                <label
-                  htmlFor="factory-start-at"
-                  className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
-                >
-                  Start time
-                </label>
-                <input
-                  id="factory-start-at"
-                  type="datetime-local"
-                  value={startAt}
-                  onChange={(event) => onStartAtChange(event.target.value)}
-                  className={FACTORY_DATETIME_CONTROL_CLASS_NAME}
-                />
-              </div>
+              <FactoryV2StartTimeField startAt={startAt} onChange={onStartAtChange} />
 
               {showsDuration && durationMinutes !== null ? (
                 <div className="min-w-0">
@@ -374,6 +363,52 @@ const FactoryV2StartSectionCard = ({
     {children}
   </section>
 );
+
+const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onChange: (value: string) => void }) => {
+  const startDate = resolveFactoryStartDatePart(startAt);
+  const startTime = resolveFactoryStartTimePart(startAt);
+
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center justify-between gap-3">
+        <label
+          htmlFor="factory-start-date"
+          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+        >
+          Start time
+        </label>
+        <span className="text-[11px] leading-5 text-black/38">Your local time</span>
+      </div>
+      <div className="grid min-w-0 grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-2">
+        <div className="min-w-0">
+          <label htmlFor="factory-start-date" className="sr-only">
+            Start date
+          </label>
+          <input
+            id="factory-start-date"
+            type="date"
+            value={startDate}
+            onChange={(event) => onChange(buildFactoryStartAtValue(event.target.value, startTime, startAt))}
+            className={FACTORY_DATE_CONTROL_CLASS_NAME}
+          />
+        </div>
+        <div className="min-w-0">
+          <label htmlFor="factory-start-time" className="sr-only">
+            Start time
+          </label>
+          <input
+            id="factory-start-time"
+            type="time"
+            value={startTime}
+            onChange={(event) => onChange(buildFactoryStartAtValue(startDate, event.target.value, startAt))}
+            className={FACTORY_TIME_CONTROL_CLASS_NAME}
+          />
+        </div>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-black/48">Choose the day and local time when this game should begin.</p>
+    </div>
+  );
+};
 
 const FactoryV2InlineOptionField = ({
   field,

@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Cleaner Factory Start Time",
+    description:
+      "The new Factory start form now uses separate date and time pickers, so the schedule control feels cleaner and easier to use on both Eternum and Blitz.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Factory Progress Feels Active",
     description:
       "The Check a game view in the new Factory now gives the current step a clearer in-progress treatment, with a stronger active card and progress track that make setup feel visibly underway.",
