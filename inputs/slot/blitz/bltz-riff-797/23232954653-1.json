@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "runId": "slot.blitz:bltz-riff-797",
+  "launchRequestId": "23232954653-1",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-riff-797",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-18T07:01:16.166Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23232954653,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23232954653",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "fa373c6dc7f48d916a9c86251aef18f275402e59"
+  }
+}
