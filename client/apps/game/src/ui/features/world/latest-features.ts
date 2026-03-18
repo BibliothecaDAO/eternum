@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-18",
+    title: "Faith Wonder Leaderboard Tab",
+    description:
+      "Added a new Faith tab to the in-game leaderboard that ranks all Wonders by accumulated Faith Points, including FP/sec, follower counts, and owner details.",
+    type: "feature",
+  },
+  {
     date: "2026-03-17",
     title: "Spire and Mine Tile Actions",
     description:

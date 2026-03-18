@@ -9,7 +9,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
+import { FaithLeaderboardPanel, GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
@@ -17,7 +17,7 @@ import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { Shapes, TrendingUp, Users } from "lucide-react";
+import { Shapes, Sparkles, TrendingUp, Users } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
@@ -215,6 +215,20 @@ export const Social = () => {
         ) : (
           <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
+      });
+    }
+
+    if (mode.id === "eternum") {
+      baseTabs.push({
+        key: "Faith",
+        label: (
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} />
+            <span>Faith</span>
+          </div>
+        ),
+        component: <FaithLeaderboardPanel />,
+        expandedContent: null,
       });
     }
 
