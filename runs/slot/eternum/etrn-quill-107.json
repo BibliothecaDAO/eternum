@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23232042297-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T06:27:02.391Z",
-  "updatedAt": "2026-03-18T06:28:04.792Z",
+  "updatedAt": "2026-03-18T06:28:05.899Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T06:28:05.899Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -81,5 +82,13 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-quill-107.json",
     "createGameTxHash": "0x2bfebf7bc9f1cbdb17eba74fd2141693af19b351e574fc953e94b1eab615e1a",
     "worldAddress": "0x012c38c97e2632dafc02c1667e11f96ed06bba18d27a13d75c5ade6026ade3bf"
+  },
+  "activeLease": {
+    "launchRequestId": "23232042297-1",
+    "workflowRunId": 23232042297,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T06:28:05.899Z",
+    "expiresAt": "2026-03-18T07:13:05.899Z"
   }
 }
