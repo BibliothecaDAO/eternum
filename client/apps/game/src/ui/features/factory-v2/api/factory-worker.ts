@@ -90,10 +90,7 @@ interface ContinueFactoryRunRequest {
 
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
-const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
-  "slot.eternum",
-  "slot.blitz",
-]);
+const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>(["slot.eternum", "slot.blitz"]);
 
 export class FactoryWorkerApiError extends Error {
   constructor(
