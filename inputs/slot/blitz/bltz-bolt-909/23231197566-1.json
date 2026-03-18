@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "runId": "slot.blitz:bltz-bolt-909",
+  "launchRequestId": "23231197566-1",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-bolt-909",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-18T05:54:55.906Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23231197566,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23231197566",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "fa1b16e6fc6af4121c530bcdc0961403a218ccb6"
+  }
+}
