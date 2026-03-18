@@ -158,8 +158,11 @@ async function handleContinueFactoryRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRequest = buildContinueWorkflowRequest(route, inputRecord, body.launchStep);
-  const workflowRun = await dispatchGameLaunchWorkflow(resolveWorkflowGitHubClient(github, inputRecord, body), workflowRequest);
+  const workflowRequest = buildContinueWorkflowRequest(route, run, inputRecord, body.launchStep);
+  const workflowRun = await dispatchGameLaunchWorkflow(
+    resolveWorkflowGitHubClient(github, inputRecord, body),
+    workflowRequest,
+  );
 
   return buildJsonResponse(
     request,
@@ -200,15 +203,16 @@ function validateCreateFactoryRunBody(body) {
 
 function validateContinueFactoryRunBody(body) {
   if (!body.launchStep) {
-    throw new HttpError(400, "launchStep must be a recovery step");
+    throw new HttpError(400, "launchStep must be provided");
   }
 
   validateLaunchWorkflowScope(body.launchStep);
   validateWorkflowRef(body.workflowRef);
 }
 
-function buildContinueWorkflowRequest(route, inputRecord, launchStep) {
+function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
   const rawRequest = resolveLaunchInputRequest(inputRecord);
+  const normalizedLaunchStep = resolveRecoveryLaunchScope(run, launchStep);
   const environment = inputRecord.environment || rawRequest.environmentId || route.environment;
   const gameName = inputRecord.gameName || rawRequest.gameName || route.gameName;
   const gameStartTime = rawRequest.startTime ?? inputRecord.startTime;
@@ -232,8 +236,22 @@ function buildContinueWorkflowRequest(route, inputRecord, launchStep) {
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
-    launchStep,
+    launchStep: normalizedLaunchStep,
   };
+}
+
+function resolveRecoveryLaunchScope(run, requestedLaunchStep) {
+  if (requestedLaunchStep === "full") {
+    return requestedLaunchStep;
+  }
+
+  const firstStep = run?.steps?.[0];
+
+  if (firstStep?.id === requestedLaunchStep && firstStep.status === "failed") {
+    return "full";
+  }
+
+  return requestedLaunchStep;
 }
 
 function resolveLaunchInputRequest(inputRecord) {
@@ -330,9 +348,12 @@ function matchFactoryRunRoute(pathname) {
 
 async function readFactoryRunsForEnvironment(github, environment, branch) {
   const directoryPath = resolveFactoryRunDirectoryPath(environment);
-  const response = await github.fetch(`/repos/${github.repo}/contents/${directoryPath}?ref=${encodeURIComponent(branch)}`, {
-    method: "GET",
-  });
+  const response = await github.fetch(
+    `/repos/${github.repo}/contents/${directoryPath}?ref=${encodeURIComponent(branch)}`,
+    {
+      method: "GET",
+    },
+  );
 
   if (response.status === 404) {
     return [];

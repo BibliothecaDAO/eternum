@@ -3,12 +3,7 @@ import {
   DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS,
   DEFAULT_TORII_WORKFLOW_FILE,
 } from "../constants";
-import {
-  buildGitHubHeaders,
-  readErrorBody,
-  resolveGitHubRepositoryContext,
-  runCommand,
-} from "../shared/github";
+import { buildGitHubHeaders, readErrorBody, resolveGitHubRepositoryContext, runCommand } from "../shared/github";
 import type { IndexerCreationResult, IndexerRequest, IndexerWorkflowRun } from "../types";
 
 interface CreateIndexerOptions {

@@ -1,4 +1,11 @@
-import type { DeploymentChain, DeploymentEnvironmentId, DeploymentGameType, IndexerWorkflowRun, LaunchGameRequest, LaunchGameStepId } from "../types";
+import type {
+  DeploymentChain,
+  DeploymentEnvironmentId,
+  DeploymentGameType,
+  IndexerWorkflowRun,
+  LaunchGameRequest,
+  LaunchGameStepId,
+} from "../types";
 
 export type LaunchWorkflowScope = "full" | LaunchGameStepId;
 export type FactoryRunExecutionMode = "fast_trial" | "guided_recovery";

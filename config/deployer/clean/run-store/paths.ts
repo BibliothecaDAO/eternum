@@ -13,7 +13,11 @@ export function resolveFactoryRunId(identity: FactoryRunIdentity): string {
 }
 
 export function resolveFactoryRunRecordPath(identity: FactoryRunIdentity): string {
-  return path.join("runs", ...resolveEnvironmentSegments(identity.environmentId), `${toSafeSlug(identity.gameName)}.json`);
+  return path.join(
+    "runs",
+    ...resolveEnvironmentSegments(identity.environmentId),
+    `${toSafeSlug(identity.gameName)}.json`,
+  );
 }
 
 export function resolveFactoryLaunchInputPath(identity: FactoryRunIdentity, launchRequestId: string): string {

@@ -121,7 +121,10 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
   };
 }
 
-export function buildFactoryRunRequestContext(args: Args, requestedLaunchStep: LaunchWorkflowScope): FactoryRunRequestContext {
+export function buildFactoryRunRequestContext(
+  args: Args,
+  requestedLaunchStep: LaunchWorkflowScope,
+): FactoryRunRequestContext {
   const request = buildLaunchGameRequest(args);
 
   return {

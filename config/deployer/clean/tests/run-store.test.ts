@@ -380,7 +380,5 @@ function createBranchStoreFetch() {
 }
 
 function decodeContentsPath(url: string): string {
-  return url
-    .replace(/^.+\/contents\//, "")
-    .replace(/\?ref=.*$/, "");
+  return url.replace(/^.+\/contents\//, "").replace(/\?ref=.*$/, "");
 }

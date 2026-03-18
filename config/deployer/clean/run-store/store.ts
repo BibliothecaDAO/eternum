@@ -2,7 +2,11 @@ import { DEFAULT_FACTORY_RUN_LEASE_DURATION_MS, DEFAULT_GAME_LAUNCH_WORKFLOW_FIL
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadLaunchSummaryIfPresent, resolveLaunchSummaryRelativePath } from "../launch/io";
 import type { LaunchGameStepId, LaunchGameSummary } from "../types";
-import { updateGitHubBranchJsonFile, requireGitHubBranchStoreConfig, type ResolveGitHubBranchStoreConfigOptions } from "./github";
+import {
+  updateGitHubBranchJsonFile,
+  requireGitHubBranchStoreConfig,
+  type ResolveGitHubBranchStoreConfigOptions,
+} from "./github";
 import { resolveFactoryLaunchInputPath, resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
 import type {
   FactoryLaunchInputRecord,
@@ -236,7 +240,8 @@ function ensureFactoryRunLeaseAvailable(run: FactoryRunRecord, context: FactoryR
     return normalizedRun;
   }
 
-  const conflictTarget = normalizedRun.workflow.workflowUrl || normalizedRun.workflow.workflowName || "unknown workflow";
+  const conflictTarget =
+    normalizedRun.workflow.workflowUrl || normalizedRun.workflow.workflowName || "unknown workflow";
   throw new Error(
     `Another launch is already running for ${context.environmentId}/${context.gameName} during ${resolveStepTitle(
       activeLease.stepId,
@@ -338,7 +343,9 @@ function buildStepSucceededEvent(stepId: LaunchGameStepId): string {
 }
 
 function buildStepFailedEvent(stepId: LaunchGameStepId, errorMessage: string | undefined): string {
-  return errorMessage?.trim() ? `${resolveStepTitle(stepId)} failed: ${errorMessage.trim()}` : `${resolveStepTitle(stepId)} failed`;
+  return errorMessage?.trim()
+    ? `${resolveStepTitle(stepId)} failed: ${errorMessage.trim()}`
+    : `${resolveStepTitle(stepId)} failed`;
 }
 
 function resolveStepTitle(stepId: LaunchGameStepId): string {

@@ -1,5 +1,11 @@
 import { DEFAULT_FACTORY_RUN_STORE_BRANCH } from "../constants";
-import { buildGitHubHeaders, readErrorBody, resolveGitHubRepositoryContext, type GitHubRepositoryContext, type ResolveGitHubRepositoryContextOptions } from "../shared/github";
+import {
+  buildGitHubHeaders,
+  readErrorBody,
+  resolveGitHubRepositoryContext,
+  type GitHubRepositoryContext,
+  type ResolveGitHubRepositoryContextOptions,
+} from "../shared/github";
 
 interface GitHubBranchStoreConfig extends GitHubRepositoryContext {
   branch: string;
@@ -79,10 +85,7 @@ export async function ensureGitHubBranchExists(config: GitHubBranchStoreConfig):
   await createBranch(config);
 }
 
-async function readBranchFile<T>(
-  config: GitHubBranchStoreConfig,
-  path: string,
-): Promise<{ sha?: string; value?: T }> {
+async function readBranchFile<T>(config: GitHubBranchStoreConfig, path: string): Promise<{ sha?: string; value?: T }> {
   const response = await fetch(`${config.apiBaseUrl}/repos/${config.repo}/contents/${path}?ref=${config.branch}`, {
     headers: buildGitHubHeaders(config.token),
   });
