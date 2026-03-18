@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23232954653-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-18T07:01:16.166Z",
-  "updatedAt": "2026-03-18T07:02:18.576Z",
+  "updatedAt": "2026-03-18T07:02:19.755Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Wait for factory index",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Wait for factory index",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Wait for factory index started",
+      "startedAt": "2026-03-18T07:02:19.755Z"
     },
     {
       "id": "configure-world",
@@ -64,5 +65,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-blitz-bltz-riff-797.json",
     "createGameTxHash": "0x4404c48b222f723b631b7311065aef7fc742085822e27df3b9fd30560ff587b"
+  },
+  "activeLease": {
+    "launchRequestId": "23232954653-1",
+    "workflowRunId": 23232954653,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-18T07:02:19.755Z",
+    "expiresAt": "2026-03-18T07:47:19.755Z"
   }
 }
