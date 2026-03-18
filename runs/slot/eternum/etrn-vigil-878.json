@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-vigil-878",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-vigil-878/23248220652-1.json",
   "latestLaunchRequestId": "23248220652-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-18T13:54:41.217Z",
-  "updatedAt": "2026-03-18T13:57:51.035Z",
+  "updatedAt": "2026-03-18T13:59:02.834Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,10 +80,11 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer started",
-      "startedAt": "2026-03-18T13:57:51.035Z"
+      "latestEvent": "Create indexer succeeded",
+      "startedAt": "2026-03-18T13:57:51.035Z",
+      "finishedAt": "2026-03-18T13:59:02.834Z"
     }
   ],
   "artifacts": {
@@ -93,14 +94,17 @@
     "configureTxHash": "0x755303f2b873bd262d36786eb55a2399ca1a6ab099ef09e609993594515fc9a",
     "lootChestRoleTxHash": "0x3f1208a0554fdd6800079a8337b865d50f487e08eacc723ad3f0ef1b7b9e14",
     "villagePassRoleTxHash": "0x61242a0fdcf508085fc51a3cb385c7d57dcb349adde7a7672d286bf7cbbe1d8",
-    "createBanksTxHash": "0x7c73a4ab685077c12d36ffcd4061eaba9ac5ce1802833014d4712a0860e4da"
+    "createBanksTxHash": "0x7c73a4ab685077c12d36ffcd4061eaba9ac5ce1802833014d4712a0860e4da",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "credence0x/factory-v2-polish",
+      "runId": 23248337683,
+      "runNumber": 753,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23248337683",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
-  "activeLease": {
-    "launchRequestId": "23248220652-1",
-    "workflowRunId": 23248220652,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-18T13:57:51.035Z",
-    "expiresAt": "2026-03-18T14:42:51.035Z"
-  }
+  "completedAt": "2026-03-18T13:59:02.834Z"
 }
