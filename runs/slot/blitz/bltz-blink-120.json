@@ -8,19 +8,19 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
-  "inputPath": "inputs/slot/blitz/bltz-blink-120/23261609221-1.json",
-  "latestLaunchRequestId": "23261609221-1",
+  "inputPath": "inputs/slot/blitz/bltz-blink-120/23263319650-1.json",
+  "latestLaunchRequestId": "23263319650-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T18:45:18.759Z",
-  "updatedAt": "2026-03-18T19:04:31.716Z",
+  "updatedAt": "2026-03-18T19:34:45.894Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23261609221,
+    "workflowRunId": 23263319650,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23261609221",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23263319650",
     "ref": "credence0x/factory-v2-polish",
-    "sha": "71fa3bf231aa68e6234476156fba6ea31c8fd9a7"
+    "sha": "66b043043437049fadf969e530789d09d1a35ece"
   },
   "steps": [
     {
