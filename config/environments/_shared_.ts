@@ -227,7 +227,7 @@ export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 0;
 
 // catridge address should go here
-export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83";
+export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
 
