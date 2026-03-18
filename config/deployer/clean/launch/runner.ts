@@ -155,6 +155,8 @@ function resolveLaunchConfiguration(
     singleRealmMode: request.singleRealmMode,
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
+    mapConfigOverrides: request.mapConfigOverrides,
+    blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   });
   const configSteps = resolveFactoryWorldConfigSteps({
     environmentId: runtime.environment.id,

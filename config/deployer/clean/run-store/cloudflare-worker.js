@@ -98,6 +98,8 @@ async function handleCreateFactoryRun(request, env) {
     singleRealmMode: body.singleRealmMode,
     twoPlayerMode: body.twoPlayerMode,
     durationSeconds: body.durationSeconds,
+    mapConfigOverrides: body.mapConfigOverrides,
+    blitzRegistrationOverrides: body.blitzRegistrationOverrides,
     launchStep: "full",
   });
 
@@ -195,6 +197,8 @@ function validateCreateFactoryRunBody(body) {
   validateEnvironment(body.environment);
   validateGameName(body.gameName);
   validateWorkflowRef(body.workflowRef);
+  validateMapConfigOverrides(body.mapConfigOverrides);
+  validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
 
   if (!body.gameStartTime?.trim()) {
     throw new HttpError(400, "gameStartTime is required");
@@ -236,6 +240,8 @@ function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
+    mapConfigOverrides: rawRequest.mapConfigOverrides,
+    blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
     launchStep: normalizedLaunchStep,
   };
 }
@@ -416,6 +422,10 @@ async function dispatchGameLaunchWorkflow(github, request) {
         single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
         two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
         duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
+        map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
+        blitz_registration_overrides_json: request.blitzRegistrationOverrides
+          ? JSON.stringify(request.blitzRegistrationOverrides)
+          : "",
         launch_step: request.launchStep,
       },
     }),
@@ -428,6 +438,30 @@ async function dispatchGameLaunchWorkflow(github, request) {
   return {
     workflowFile: github.workflowFile,
   };
+}
+
+function validateMapConfigOverrides(value) {
+  validateNumericOverrideObject(value, "mapConfigOverrides");
+}
+
+function validateBlitzRegistrationOverrides(value) {
+  validateNumericOverrideObject(value, "blitzRegistrationOverrides");
+}
+
+function validateNumericOverrideObject(value, label) {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new HttpError(400, `${label} must be an object`);
+  }
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (typeof entryValue !== "number" || !Number.isFinite(entryValue)) {
+      throw new HttpError(400, `${label}.${key} must be a finite number`);
+    }
+  }
 }
 
 function toWorkflowBooleanInput(value) {

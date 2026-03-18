@@ -31,6 +31,8 @@ function usage(): void {
       "  TWO_PLAYER_MODE=true|false / --two-player-mode true|false",
       "  DURATION_SECONDS=<integer> / --duration-seconds <integer>",
       "                               overrides config duration; used by blitz season end_at",
+      "  MAP_CONFIG_OVERRIDES_JSON=<json> / --map-config-overrides-json <json>",
+      "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
       "  --mode <batched|sequential>",
       `  --version <felt>              default: ${DEFAULT_VERSION}`,
       `  --max-actions <number>        default: ${DEFAULT_MAX_ACTIONS}`,

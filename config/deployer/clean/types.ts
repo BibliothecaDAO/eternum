@@ -1,4 +1,8 @@
-import type { Config as EternumConfig } from "@bibliothecadao/types";
+import type {
+  Config as EternumConfig,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
 export type DeploymentChain = "slot";
@@ -103,6 +107,8 @@ export interface LaunchGameRequest {
   singleRealmMode?: boolean;
   twoPlayerMode?: boolean;
   durationSeconds?: number;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
   vrfProviderAddress?: string;

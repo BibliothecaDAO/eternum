@@ -20,8 +20,10 @@ import {
   getFactoryPresetById,
   getPresetStartAtValue,
 } from "../catalog";
+import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
 import { buildFandomizedGameName } from "../funny-names";
+import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import { resolveRunPrimaryAction } from "../presenters";
 import type {
@@ -113,6 +115,12 @@ export const useFactoryV2 = () => {
     selectedRun && acceptedRunState?.runId === selectedRun.id ? acceptedRunState.latestEvent : null;
   const shouldPreferWatchView = Boolean(watcher) || Boolean(selectedRun && isFactoryRunActive(selectedRun));
   const environmentUnavailableReason = resolveEnvironmentUnavailableReason(selectedEnvironment?.id);
+  const moreOptions = useFactoryV2MoreOptions({
+    mode: selectedMode,
+    chain: selectedEnvironment?.chain ?? "slot",
+    presetId: selectedPreset?.id ?? null,
+    twoPlayerMode,
+  });
 
   useEffect(() => {
     runsByEnvironmentRef.current = runsByEnvironment;
@@ -763,6 +771,7 @@ export const useFactoryV2 = () => {
     notice,
     shouldPreferWatchView,
     environmentUnavailableReason,
+    moreOptions,
     selectMode,
     selectEnvironment,
     selectPreset,
@@ -991,15 +1000,19 @@ export const useFactoryV2 = () => {
   }
 
   function buildCreateRunRequest(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
-    return {
-      environment: environmentId,
+    return buildFactoryCreateRunRequest({
+      environmentId,
       gameName,
       gameStartTime: resolveStartTimeValue(draftStartAt),
-      devModeOn: selectedPreset?.defaults.devMode ?? false,
-      twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
-      singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
-      durationSeconds: showsDuration && draftDurationMinutes ? draftDurationMinutes * 60 : undefined,
-    };
+      selectedMode,
+      selectedPreset,
+      twoPlayerMode,
+      singleRealmMode,
+      durationMinutes: draftDurationMinutes,
+      showsDuration,
+      mapConfigOverrides: moreOptions.mapConfigOverrides,
+      blitzRegistrationOverrides: moreOptions.blitzRegistrationOverrides,
+    });
   }
 };
 

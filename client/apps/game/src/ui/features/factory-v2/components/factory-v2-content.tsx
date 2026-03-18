@@ -17,7 +17,7 @@ import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
 import { FactoryV2WorkflowSwitch, type FactoryWorkflowView } from "./factory-v2-workflow-switch";
 
-type FactoryNetworkAction = "launch" | "continue" | "retry" | "reindex";
+type FactoryNetworkGuardedAction = "continue" | "retry" | "reindex";
 
 export const FactoryV2Content = () => {
   const { chainId, connector } = useAccount();
@@ -26,12 +26,8 @@ export const FactoryV2Content = () => {
   const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
   const appearance = resolveFactoryModeAppearance(factory.selectedMode);
   const [selectedWorkflow, setSelectedWorkflow] = useState<FactoryWorkflowView>("start");
-  const [pendingNetworkAction, setPendingNetworkAction] = useState<FactoryNetworkAction | null>(null);
+  const [pendingWatchAction, setPendingWatchAction] = useState<FactoryNetworkGuardedAction | null>(null);
   const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
-
-  useEffect(() => {
-    setSelectedWorkflow("start");
-  }, [factory.selectedMode]);
 
   useEffect(() => {
     if (!factory.matchingRun) {
@@ -58,11 +54,8 @@ export const FactoryV2Content = () => {
     }
   };
 
-  const runFactoryAction = async (action: FactoryNetworkAction) => {
+  const runWatchAction = async (action: FactoryNetworkGuardedAction) => {
     switch (action) {
-      case "launch":
-        await launchSelectedPreset();
-        return;
       case "continue":
         await factory.continueSelectedRun();
         return;
@@ -75,20 +68,20 @@ export const FactoryV2Content = () => {
     }
   };
 
-  const runFactoryActionWithNetworkGuard = async (action: FactoryNetworkAction) => {
+  const runNetworkGuardedWatchAction = async (action: FactoryNetworkGuardedAction) => {
     if (factory.environmentUnavailableReason) {
-      await runFactoryAction(action);
+      await runWatchAction(action);
       return;
     }
 
     const targetChain = factory.selectedEnvironment?.chain ?? null;
 
     if (!targetChain || connectedTxChain === targetChain) {
-      await runFactoryAction(action);
+      await runWatchAction(action);
       return;
     }
 
-    setPendingNetworkAction(action);
+    setPendingWatchAction(action);
     setSwitchTargetChain(targetChain);
   };
 
@@ -106,18 +99,18 @@ export const FactoryV2Content = () => {
       return;
     }
 
-    const action = pendingNetworkAction;
+    const action = pendingWatchAction;
 
-    setPendingNetworkAction(null);
+    setPendingWatchAction(null);
     setSwitchTargetChain(null);
 
     if (action) {
-      await runFactoryAction(action);
+      await runWatchAction(action);
     }
   };
 
   const closeSwitchNetworkPrompt = () => {
-    setPendingNetworkAction(null);
+    setPendingWatchAction(null);
     setSwitchTargetChain(null);
   };
 
@@ -167,15 +160,22 @@ export const FactoryV2Content = () => {
             existingGameName={factory.matchingRun?.name ?? null}
             notice={factory.notice}
             launchDisabledReason={factory.environmentUnavailableReason}
+            moreOptionsOpen={factory.moreOptions.isOpen}
+            moreOptionSections={factory.moreOptions.sections}
+            moreOptionDraft={factory.moreOptions.draft}
+            moreOptionErrors={factory.moreOptions.errors}
+            moreOptionsDisabledReason={factory.moreOptions.launchDisabledReason}
             onSelectPreset={factory.selectPreset}
             onGameNameChange={factory.setDraftGameName}
             onStartAtChange={factory.setDraftStartAt}
             onDurationChange={factory.setDraftDurationMinutes}
+            onToggleMapOptions={factory.moreOptions.toggleOpen}
+            onMapOptionValueChange={factory.moreOptions.setValue}
             onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
             onToggleSingleRealmMode={factory.toggleSingleRealmMode}
             onFandomizeGameName={factory.fandomizeGameName}
             onLaunch={() => {
-              void runFactoryActionWithNetworkGuard("launch");
+              void launchSelectedPreset();
             }}
             isWatcherBusy={factory.isWatcherBusy}
           />
@@ -197,13 +197,13 @@ export const FactoryV2Content = () => {
             onSelectRun={factory.selectRun}
             onResolveRunByName={factory.resolveRunByName}
             onContinue={() => {
-              void runFactoryActionWithNetworkGuard("continue");
+              void runNetworkGuardedWatchAction("continue");
             }}
             onRetry={() => {
-              void runFactoryActionWithNetworkGuard("retry");
+              void runNetworkGuardedWatchAction("retry");
             }}
             onBringIndexerLive={() => {
-              void runFactoryActionWithNetworkGuard("reindex");
+              void runNetworkGuardedWatchAction("reindex");
             }}
             onRefresh={() => {
               void factory.refreshSelectedRun();
@@ -213,11 +213,7 @@ export const FactoryV2Content = () => {
       </div>
       <SwitchNetworkPrompt
         open={switchTargetChain !== null}
-        description={
-          pendingNetworkAction === "launch"
-            ? "This launch is set for another network."
-            : "This game is attached to another network."
-        }
+        description="This game is attached to another network."
         hint={
           switchTargetChain
             ? `Switch your wallet to ${getChainLabel(switchTargetChain)} to continue.`

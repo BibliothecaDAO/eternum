@@ -1,6 +1,7 @@
 import type { Chain } from "@contracts";
 
 export type FactoryGameMode = "eternum" | "blitz";
+export type FactoryLaunchChain = Extract<Chain, "mainnet" | "slot">;
 export type FactoryRunStepId =
   | "create-world"
   | "wait-factory-index"
@@ -47,7 +48,7 @@ export interface FactoryEnvironmentOption {
   id: string;
   label: string;
   mode: FactoryGameMode;
-  chain: Chain;
+  chain: FactoryLaunchChain;
 }
 
 export interface FactoryLaunchPresetDefaults {

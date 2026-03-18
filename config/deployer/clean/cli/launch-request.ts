@@ -7,6 +7,7 @@ import {
   DEFAULT_VERSION,
 } from "../constants";
 import type { ExecutionMode, LaunchGameRequest, LaunchGameStepId } from "../types";
+import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
 import type { FactoryRunRequestContext, LaunchWorkflowScope } from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
 
@@ -57,6 +58,44 @@ function resolveOptionalNumber(value: string | undefined, label: string): number
   return parsed;
 }
 
+function resolveNumericOverrideObject(value: string | undefined, label: string): Record<string, number> | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(value);
+  } catch {
+    throw new Error(`${label} must be valid JSON`);
+  }
+
+  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    throw new Error(`${label} must be a JSON object`);
+  }
+
+  const overrides = parsedValue as Record<string, unknown>;
+
+  Object.entries(overrides).forEach(([key, entryValue]) => {
+    if (typeof entryValue !== "number" || !Number.isFinite(entryValue)) {
+      throw new Error(`${label} entry "${key}" must be a finite number`);
+    }
+  });
+
+  return overrides as Record<string, number>;
+}
+
+function resolveMapConfigOverrides(value?: string): FactoryMapConfigOverrides | undefined {
+  return resolveNumericOverrideObject(value, "map config overrides") as FactoryMapConfigOverrides | undefined;
+}
+
+function resolveBlitzRegistrationOverrides(value?: string): FactoryBlitzRegistrationOverrides | undefined {
+  return resolveNumericOverrideObject(value, "blitz registration overrides") as
+    | FactoryBlitzRegistrationOverrides
+    | undefined;
+}
+
 function requireLaunchArgs(args: Args): {
   environmentId: LaunchGameRequest["environmentId"];
   gameName: string;
@@ -94,6 +133,18 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     durationSeconds: resolveOptionalNumber(
       args["duration-seconds"] || process.env.DURATION_SECONDS,
       "duration seconds",
+    ),
+    mapConfigOverrides: resolveMapConfigOverrides(
+      resolveOptionalArg(args, "map-config-overrides-json", [
+        "MAP_CONFIG_OVERRIDES_JSON",
+        "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
+      ]),
+    ),
+    blitzRegistrationOverrides: resolveBlitzRegistrationOverrides(
+      resolveOptionalArg(args, "blitz-registration-overrides-json", [
+        "BLITZ_REGISTRATION_OVERRIDES_JSON",
+        "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
+      ]),
     ),
     cartridgeApiBase: args["cartridge-api-base"] || process.env.CARTRIDGE_API_BASE || DEFAULT_CARTRIDGE_API_BASE,
     toriiNamespaces: args["torii-namespaces"] || process.env.TORII_NAMESPACES || DEFAULT_NAMESPACE,

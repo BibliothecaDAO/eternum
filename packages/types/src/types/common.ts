@@ -704,6 +704,31 @@ export interface Config {
   prev_prize_distribution_address?: string | null;
 }
 
+export type FactoryMapConfigOverrides = Partial<
+  Pick<
+    Config["exploration"],
+    | "shardsMinesWinProbability"
+    | "shardsMinesFailProbability"
+    | "agentFindProbability"
+    | "agentFindFailProbability"
+    | "campFindProbability"
+    | "campFindFailProbability"
+    | "holysiteFindProbability"
+    | "holysiteFindFailProbability"
+    | "bitcoinMineWinProbability"
+    | "bitcoinMineFailProbability"
+    | "hyperstructureWinProbAtCenter"
+    | "hyperstructureFailProbAtCenter"
+    | "hyperstructureFailProbIncreasePerHexDistance"
+    | "hyperstructureFailProbIncreasePerHyperstructureFound"
+    | "relicDiscoveryIntervalSeconds"
+    | "relicHexDistanceFromCenter"
+    | "relicChestRelicsPerChest"
+  >
+>;
+
+export type FactoryBlitzRegistrationOverrides = Partial<Pick<Config["blitz"]["registration"], "registration_count_max">>;
+
 export interface RealmInfo {
   realmId: ID;
   entityId: ID;
