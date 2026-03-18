@@ -136,19 +136,6 @@ describe("Bug 0b – ground mesh texture disposal", () => {
     expect(state.groundMeshTexture).toBeNull();
   });
 
-  it("createGroundMesh stores texture reference in groundMeshTexture field", () => {
-    // The fix requires that when a texture is created, it is stored as a class field.
-    // We verify the contract: after createGroundMesh, groundMeshTexture is not null.
-    const mockTexture = { colorSpace: "", wrapS: 0, wrapT: 0, repeat: { set: vi.fn() }, anisotropy: 0 };
-    const state = {
-      groundMeshTexture: null as any,
-    };
-
-    // Simulate the fixed createGroundMesh storing the texture
-    state.groundMeshTexture = mockTexture;
-
-    expect(state.groundMeshTexture).toBe(mockTexture);
-  });
 });
 
 // ---------------------------------------------------------------------------

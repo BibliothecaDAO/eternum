@@ -67,3 +67,14 @@ export function getContactShadowResources(): ContactShadowResources {
   cachedResources = { geometry, material };
   return cachedResources;
 }
+
+export function disposeContactShadowResources(): void {
+  if (!cachedResources) {
+    return;
+  }
+
+  cachedResources.geometry.dispose();
+  cachedResources.material.map?.dispose();
+  cachedResources.material.dispose();
+  cachedResources = null;
+}

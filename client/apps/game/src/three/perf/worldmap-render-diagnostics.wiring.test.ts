@@ -1,38 +1,82 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-function readSource(relativePath: string): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, "..", relativePath), "utf8");
-}
+import {
+  incrementWorldmapRenderCounter,
+  incrementWorldmapRenderUploadBytes,
+  recordWorldmapRenderDuration,
+  resetWorldmapRenderDiagnostics,
+  snapshotWorldmapRenderDiagnostics,
+} from "./worldmap-render-diagnostics";
 
 describe("worldmap render diagnostics wiring", () => {
-  it("instruments the targeted PRD render hot paths", () => {
-    const worldmapSource = readSource("scenes/worldmap.tsx");
-    const armyManagerSource = readSource("managers/army-manager.ts");
-    const structureManagerSource = readSource("managers/structure-manager.ts");
-    const workerManagerSource = readSource("../managers/game-worker-manager.ts");
-    const pathRendererSource = readSource("managers/path-renderer.ts");
-    const hexagonSceneSource = readSource("scenes/hexagon-scene.ts");
+  beforeEach(() => {
+    resetWorldmapRenderDiagnostics();
+  });
 
-    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("updateVisibleChunks"/);
-    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("performChunkSwitch"/);
-    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("chunkTerrainReadyMs"/);
-    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("chunkTerrainCommitMs"/);
-    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("chunkManagerCatchUpMs"/);
-    expect(worldmapSource).toMatch(/recordWorldmapRenderDuration\("updateManagersForChunk"/);
-    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("chunkRefreshRequests"/);
-    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("updateVisibleChunksCalls"/);
-    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("preparedChunkPrewarmHits"/);
-    expect(worldmapSource).toMatch(/incrementWorldmapRenderCounter\("preparedChunkPrewarmMisses"/);
-    expect(worldmapSource).toMatch(/incrementWorldmapRenderUploadBytes\("cachedChunkReplay"/);
-    expect(armyManagerSource).toMatch(/recordWorldmapRenderDuration\("executeRenderForChunk"/);
-    expect(structureManagerSource).toMatch(/recordWorldmapRenderDuration\("performVisibleStructuresUpdate"/);
-    expect(workerManagerSource).toMatch(/recordWorldmapRenderDuration\("workerFindPath"/);
-    expect(pathRendererSource).toMatch(/recordWorldmapRenderDuration\("createPath"/);
-    expect(hexagonSceneSource).toMatch(/incrementWorldmapRenderCounter\("controlsChangeEvents"/);
-    expect(hexagonSceneSource).toMatch(/incrementWorldmapRenderCounter\("zoomTransitionsStarted"/);
+  it("records duration metrics and reflects them in the snapshot", () => {
+    recordWorldmapRenderDuration("updateVisibleChunks", 12.5);
+    recordWorldmapRenderDuration("performChunkSwitch", 3.0);
+    recordWorldmapRenderDuration("chunkTerrainReadyMs", 8.0);
+    recordWorldmapRenderDuration("chunkTerrainCommitMs", 5.0);
+    recordWorldmapRenderDuration("chunkManagerCatchUpMs", 2.0);
+    recordWorldmapRenderDuration("updateManagersForChunk", 1.5);
+    recordWorldmapRenderDuration("executeRenderForChunk", 7.0);
+    recordWorldmapRenderDuration("performVisibleStructuresUpdate", 4.0);
+    recordWorldmapRenderDuration("workerFindPath", 6.0);
+    recordWorldmapRenderDuration("createPath", 9.0);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.durations.updateVisibleChunks.count).toBe(1);
+    expect(snapshot.durations.updateVisibleChunks.totalMs).toBe(12.5);
+    expect(snapshot.durations.performChunkSwitch.count).toBe(1);
+    expect(snapshot.durations.chunkTerrainReadyMs.count).toBe(1);
+    expect(snapshot.durations.chunkTerrainCommitMs.count).toBe(1);
+    expect(snapshot.durations.chunkManagerCatchUpMs.count).toBe(1);
+    expect(snapshot.durations.updateManagersForChunk.count).toBe(1);
+    expect(snapshot.durations.executeRenderForChunk.count).toBe(1);
+    expect(snapshot.durations.performVisibleStructuresUpdate.count).toBe(1);
+    expect(snapshot.durations.workerFindPath.count).toBe(1);
+    expect(snapshot.durations.createPath.count).toBe(1);
+  });
+
+  it("records counter metrics and reflects them in the snapshot", () => {
+    incrementWorldmapRenderCounter("chunkRefreshRequests", 3);
+    incrementWorldmapRenderCounter("updateVisibleChunksCalls", 1);
+    incrementWorldmapRenderCounter("preparedChunkPrewarmHits", 5);
+    incrementWorldmapRenderCounter("preparedChunkPrewarmMisses", 2);
+    incrementWorldmapRenderCounter("controlsChangeEvents", 10);
+    incrementWorldmapRenderCounter("zoomTransitionsStarted", 1);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.counters.chunkRefreshRequests).toBe(3);
+    expect(snapshot.counters.updateVisibleChunksCalls).toBe(1);
+    expect(snapshot.counters.preparedChunkPrewarmHits).toBe(5);
+    expect(snapshot.counters.preparedChunkPrewarmMisses).toBe(2);
+    expect(snapshot.counters.controlsChangeEvents).toBe(10);
+    expect(snapshot.counters.zoomTransitionsStarted).toBe(1);
+  });
+
+  it("records upload byte metrics", () => {
+    incrementWorldmapRenderUploadBytes("cachedChunkReplay", 1024);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.uploadBytes.cachedChunkReplay).toBe(1024);
+  });
+
+  it("reset clears all recorded state", () => {
+    recordWorldmapRenderDuration("updateVisibleChunks", 10);
+    incrementWorldmapRenderCounter("chunkRefreshRequests", 5);
+    incrementWorldmapRenderUploadBytes("cachedChunkReplay", 512);
+
+    resetWorldmapRenderDiagnostics();
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.durations.updateVisibleChunks.count).toBe(0);
+    expect(snapshot.counters.chunkRefreshRequests).toBe(0);
+    expect(snapshot.uploadBytes.cachedChunkReplay).toBe(0);
   });
 });

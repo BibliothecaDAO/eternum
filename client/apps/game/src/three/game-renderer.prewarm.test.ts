@@ -1,19 +1,31 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-function readSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, "game-renderer.ts"), "utf8");
-}
+import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 
-describe("GameRenderer prewarm hook", () => {
-  it("requests async scene prewarm for the primary scene surfaces during setup", () => {
-    const source = readSource();
+describe("requestRendererScenePrewarm runtime behavior", () => {
+  it("calls compileAsync on the renderer with the scene and camera", async () => {
+    const compileAsync = vi.fn().mockResolvedValue(undefined);
+    const renderer = { compileAsync };
+    const scene = { id: "scene" };
+    const camera = { id: "camera" };
 
-    expect(source).toMatch(/requestRendererScenePrewarm/);
-    expect(source).toMatch(/this\.requestScenePrewarm\(this\.worldmapScene\)/);
-    expect(source).toMatch(/this\.requestScenePrewarm\(this\.hexceptionScene\)/);
+    await requestRendererScenePrewarm(renderer as never, scene as never, camera as never);
+
+    expect(compileAsync).toHaveBeenCalledTimes(1);
+    expect(compileAsync).toHaveBeenCalledWith(scene, camera);
+  });
+
+  it("no-ops safely when renderer is undefined", async () => {
+    await expect(
+      requestRendererScenePrewarm(undefined, { id: "scene" } as never, { id: "camera" } as never),
+    ).resolves.toBeUndefined();
+  });
+
+  it("no-ops safely when renderer lacks compileAsync", async () => {
+    const renderer = { render: vi.fn() };
+
+    await expect(
+      requestRendererScenePrewarm(renderer as never, { id: "scene" } as never, { id: "camera" } as never),
+    ).resolves.toBeUndefined();
   });
 });

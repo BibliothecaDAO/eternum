@@ -6,6 +6,7 @@ import {
   EffectPass,
   FXAAEffect,
   HueSaturationEffect,
+  Pass,
   RenderPass,
   ToneMappingEffect,
   ToneMappingMode,
@@ -223,15 +224,7 @@ class WebGLPostProcessRuntime implements RendererPostProcessRuntime {
   }
 
   private removeComposerPass(pass: unknown): void {
-    const passes = (this.composer as unknown as { passes?: unknown[] }).passes;
-    if (!passes) {
-      return;
-    }
-
-    const index = passes.indexOf(pass);
-    if (index !== -1) {
-      passes.splice(index, 1);
-    }
+    this.composer.removePass(pass as Pass);
   }
 
   private resolveToneMappingMode(mode: RendererPostProcessPlan["toneMapping"]["mode"]): ToneMappingMode {

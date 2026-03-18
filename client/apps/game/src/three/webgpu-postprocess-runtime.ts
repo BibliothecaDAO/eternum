@@ -34,8 +34,15 @@ interface WebGPUPostProcessRuntimeDependencies {
   createPostProcessing(renderer: RendererSurfaceLike): WebGPUPostProcessing;
 }
 
+let weatherNoopWarned = false;
+
 const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
-  setColorGrade: () => {},
+  setColorGrade: () => {
+    if (!weatherNoopWarned) {
+      weatherNoopWarned = true;
+      console.debug("[WebGPUPostProcessRuntime] Weather color grading is not implemented on this controller");
+    }
+  },
   setVignette: () => {},
 };
 

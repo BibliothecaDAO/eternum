@@ -67,7 +67,7 @@ import {
 } from "./renderer-backend-compat";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 import { transitionDB } from "./utils/";
-import { getContactShadowResources } from "./utils/contact-shadow";
+import { disposeContactShadowResources, getContactShadowResources } from "./utils/contact-shadow";
 import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
@@ -763,6 +763,9 @@ export default class GameRenderer {
 
   async initScene() {
     await this.backendInitializationPromise;
+    if (this.isDestroyed) {
+      return;
+    }
     this.setupGUIControls();
     this.setupListeners();
 
@@ -1432,7 +1435,11 @@ export default class GameRenderer {
       }
       if (this.labelRendererElement) {
         this.labelRendererElement.replaceChildren();
+        this.labelRenderer = undefined!;
+        this.labelRendererElement = undefined!;
       }
+
+      disposeContactShadowResources();
 
       // Clean up stats recording
       if (this.statsRecordingIndicator) {

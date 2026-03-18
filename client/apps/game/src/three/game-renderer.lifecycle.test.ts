@@ -1,5 +1,123 @@
-// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Minimal DOM shims for node environment (jsdom has ESM compat issues).
+function createMockElement(tag: string) {
+  const children: any[] = [];
+  const el: any = {
+    tagName: tag.toUpperCase(),
+    id: "",
+    childElementCount: 0,
+    children,
+    isConnected: true,
+    parentNode: null as any,
+    parentElement: null as any,
+    appendChild(child: any) {
+      children.push(child);
+      child.parentNode = el;
+      child.parentElement = el;
+      child.isConnected = true;
+      el.childElementCount = children.length;
+      return child;
+    },
+    removeChild(child: any) {
+      const idx = children.indexOf(child);
+      if (idx !== -1) children.splice(idx, 1);
+      child.parentNode = null;
+      child.parentElement = null;
+      child.isConnected = false;
+      el.childElementCount = children.length;
+      return child;
+    },
+    replaceChildren() {
+      for (const c of [...children]) {
+        c.parentNode = null;
+        c.parentElement = null;
+        c.isConnected = false;
+      }
+      children.length = 0;
+      el.childElementCount = 0;
+    },
+    remove() {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      el.isConnected = false;
+    },
+    innerHTML: "",
+  };
+  return el;
+}
+
+const bodyEl = createMockElement("body");
+const mockDocument = {
+  body: bodyEl,
+  createElement: (tag: string) => createMockElement(tag),
+  getElementById: (id: string) => {
+    // Search body children
+    for (const c of bodyEl.children) {
+      if (c.id === id) return c;
+    }
+    return null;
+  },
+  removeEventListener: vi.fn(),
+};
+
+const mockWindow = {
+  innerHeight: 720,
+  innerWidth: 1280,
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+};
+
+const mockNavigator = {
+  getBattery: vi.fn(async () => ({ charging: true })),
+  userAgent: "test",
+};
+
+const storage = new Map<string, string>();
+const mockLocalStorage = {
+  getItem: (k: string) => storage.get(k) ?? null,
+  setItem: (k: string, v: string) => storage.set(k, v),
+  removeItem: (k: string) => storage.delete(k),
+  clear: () => storage.clear(),
+  get length() { return storage.size; },
+  key: () => null,
+};
+
+vi.stubGlobal("document", mockDocument);
+vi.stubGlobal("window", mockWindow);
+vi.stubGlobal("navigator", mockNavigator);
+vi.stubGlobal("localStorage", mockLocalStorage);
+vi.stubGlobal("sessionStorage", mockLocalStorage);
+vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
+vi.stubGlobal("cancelAnimationFrame", clearTimeout);
+vi.stubGlobal("matchMedia", () => ({ matches: false, addListener: vi.fn(), removeListener: vi.fn() }));
+vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+vi.stubGlobal("IntersectionObserver", class { observe() {} unobserve() {} disconnect() {} });
+vi.stubGlobal("MutationObserver", class { observe() {} disconnect() {} });
+vi.stubGlobal("performance", { now: () => Date.now(), mark: vi.fn(), measure: vi.fn() });
+
+class MockGUI {
+  domElement = createMockElement("div");
+  add() { return this; }
+  addFolder() { return new MockGUI(); }
+  addColor() { return this; }
+  close() {}
+  open() {}
+  destroy() {}
+  onChange() { return this; }
+  onFinishChange() { return this; }
+  name() { return this; }
+  min() { return this; }
+  max() { return this; }
+  step() { return this; }
+  listen() { return this; }
+  title() { return this; }
+  show() { return this; }
+  hide() { return this; }
+}
+vi.mock("lil-gui", () => ({
+  default: MockGUI,
+  GUI: MockGUI,
+}));
 
 vi.mock("@bibliothecadao/eternum", () => {
   const scalar = new Proxy(
@@ -69,11 +187,6 @@ vi.mock("@/three/scenes/hexagon-scene", () => ({
   },
 }));
 
-Object.defineProperty(navigator, "getBattery", {
-  configurable: true,
-  value: vi.fn(async () => ({ charging: true })),
-});
-
 const { default: GameRenderer } = await import("./game-renderer");
 
 function createGameRendererSubject() {
@@ -126,6 +239,7 @@ function createGameRendererSubject() {
   subject.guiFolders = [];
   subject.memoryStatsElement = memoryStatsElement;
   subject.statsDomElement = statsDomElement;
+  subject.labelRenderer = { domElement: document.createElement("div") };
   subject.labelRendererElement = labelRendererElement;
   subject.statsRecordingIndicator = statsRecordingIndicator;
   subject.handleURLChange = vi.fn();
@@ -192,7 +306,8 @@ describe("GameRenderer destroy lifecycle", () => {
 
     expect(fixture.subject.memoryStatsElement.isConnected).toBe(false);
     expect(fixture.subject.statsDomElement).toBeUndefined();
-    expect(fixture.subject.labelRendererElement.childElementCount).toBe(0);
+    expect(fixture.subject.labelRenderer).toBeUndefined();
+    expect(fixture.subject.labelRendererElement).toBeUndefined();
     expect(document.getElementById("stats-recording-pulse")).toBeNull();
     expect(fixture.subject.statsRecordingIndicator.isConnected).toBe(false);
   });
@@ -219,5 +334,103 @@ describe("GameRenderer destroy lifecycle", () => {
     fixture.subject.destroy();
 
     expect(transitionDestroy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("initScene destruction guard", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("skips all setup when destroyed during backend initialization wait", async () => {
+    const subject = Object.create(GameRenderer.prototype) as any;
+    let resolveBackend!: () => void;
+    subject.backendInitializationPromise = new Promise<void>((r) => {
+      resolveBackend = r;
+    });
+    subject.isDestroyed = false;
+    subject.setupGUIControls = vi.fn();
+    subject.setupListeners = vi.fn();
+
+    const initPromise = subject.initScene();
+
+    // Destroy while backend promise is pending
+    subject.isDestroyed = true;
+    resolveBackend();
+    await initPromise;
+
+    expect(subject.setupGUIControls).not.toHaveBeenCalled();
+    expect(subject.setupListeners).not.toHaveBeenCalled();
+  });
+
+  it("does not append a canvas after destroy during backend wait", async () => {
+    const subject = Object.create(GameRenderer.prototype) as any;
+    let resolveBackend!: () => void;
+    subject.backendInitializationPromise = new Promise<void>((r) => {
+      resolveBackend = r;
+    });
+    subject.isDestroyed = false;
+    subject.setupGUIControls = vi.fn();
+    subject.setupListeners = vi.fn();
+    subject.renderer = { domElement: document.createElement("canvas") };
+
+    const initPromise = subject.initScene();
+    subject.isDestroyed = true;
+    resolveBackend();
+    await initPromise;
+
+    expect(subject.renderer.domElement.parentElement).toBeNull();
+  });
+
+  it("does not register cleanup intervals after destroy during backend wait", async () => {
+    const subject = Object.create(GameRenderer.prototype) as any;
+    let resolveBackend!: () => void;
+    subject.backendInitializationPromise = new Promise<void>((r) => {
+      resolveBackend = r;
+    });
+    subject.isDestroyed = false;
+    subject.setupGUIControls = vi.fn();
+    subject.setupListeners = vi.fn();
+    subject.cleanupIntervals = [];
+
+    const initPromise = subject.initScene();
+    subject.isDestroyed = true;
+    resolveBackend();
+    await initPromise;
+
+    expect(subject.cleanupIntervals).toEqual([]);
+  });
+
+  it("proceeds with normal setup when not destroyed", async () => {
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.backendInitializationPromise = Promise.resolve();
+    subject.isDestroyed = false;
+    subject.setupGUIControls = vi.fn();
+    subject.setupListeners = vi.fn();
+    subject.camera = {};
+    subject.graphicsSetting = "HIGH";
+    subject.cleanupIntervals = [];
+    subject.renderer = {
+      domElement: document.createElement("canvas"),
+      compileAsync: vi.fn(),
+    };
+
+    // Stub out the downstream calls that initScene makes
+    const origInitScene = GameRenderer.prototype.initScene;
+    // We just verify setupGUIControls and setupListeners are called
+    // by letting it run until it hits the first thing that would throw
+    try {
+      await subject.initScene();
+    } catch {
+      // Expected: will fail on MapControls or other deps, but setup fns should have been called
+    }
+
+    expect(subject.setupGUIControls).toHaveBeenCalledTimes(1);
+    expect(subject.setupListeners).toHaveBeenCalledTimes(1);
   });
 });

@@ -346,4 +346,94 @@ describe("createWebGPUPostProcessRuntime", () => {
 
     expect(renderer.toneMapping).toBe(ACESFilmicToneMapping);
   });
+
+  it("emits console.debug exactly once on the first setColorGrade call", () => {
+    const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+    const renderer = {
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      info: { reset: vi.fn() },
+      outputColorSpace: "srgb",
+      render: vi.fn(),
+      toneMapping: 0,
+      toneMappingExposure: 0,
+    };
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const scenePass = {
+      camera: null,
+      getTextureNode: vi.fn(() => ({ id: "node" })),
+      scene: null,
+      setMRT: vi.fn(),
+    };
+
+    const runtime = createWebGPUPostProcessRuntime(
+      { renderer: renderer as never },
+      {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
+        createPass: vi.fn(() => scenePass),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+      },
+    );
+
+    const controller = runtime.setPlan(createPlan());
+    controller.setColorGrade({ brightness: 0.1, contrast: 0, hue: 0, saturation: 0 });
+    controller.setColorGrade({ brightness: 0.2, contrast: 0, hue: 0, saturation: 0 });
+    controller.setColorGrade({ brightness: 0.3, contrast: 0, hue: 0, saturation: 0 });
+
+    expect(debugSpy).toHaveBeenCalledTimes(1);
+    expect(debugSpy).toHaveBeenCalledWith(
+      "[WebGPUPostProcessRuntime] Weather color grading is not implemented on this controller",
+    );
+    debugSpy.mockRestore();
+  });
+
+  it("setVignette does not emit debug output", () => {
+    const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+    const renderer = {
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      info: { reset: vi.fn() },
+      outputColorSpace: "srgb",
+      render: vi.fn(),
+      toneMapping: 0,
+      toneMappingExposure: 0,
+    };
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const scenePass = {
+      camera: null,
+      getTextureNode: vi.fn(() => ({ id: "node" })),
+      scene: null,
+      setMRT: vi.fn(),
+    };
+
+    const runtime = createWebGPUPostProcessRuntime(
+      { renderer: renderer as never },
+      {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
+        createPass: vi.fn(() => scenePass),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+      },
+    );
+
+    const controller = runtime.setPlan(createPlan());
+    controller.setVignette({ darkness: 0.5, offset: 0.3 });
+    controller.setVignette({ darkness: 0.8, offset: 0.1 });
+
+    expect(debugSpy).not.toHaveBeenCalled();
+    debugSpy.mockRestore();
+  });
 });
