@@ -2,7 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import {
   getCompletedStep,
@@ -123,6 +123,7 @@ export const FactoryV2WatchWorkspace = ({
   const showsManualRefresh =
     !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
   const secondaryNotice = notice && notice !== detailMessage && !watcher ? notice : null;
+  const showsActionBar = Boolean(visiblePrimaryAction || showsManualRefresh);
   const selectRunByName = (value: string) => {
     setWatchGameName(value);
     setIsFilteringRuns(true);
@@ -164,87 +165,33 @@ export const FactoryV2WatchWorkspace = ({
   };
 
   return (
-    <article className="mx-auto max-w-md space-y-3 sm:space-y-4">
-      <div>
-        <label
-          htmlFor="factory-watch-game"
-          className="block text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
-        >
-          Game name
-        </label>
-        <div ref={pickerRef} className="relative mt-2">
-          <input
-            id="factory-watch-game"
-            value={watchGameName}
-            onChange={(event) => selectRunByName(event.target.value)}
-            onFocus={() => {
-              setIsFilteringRuns(false);
-              setIsPickerOpen(true);
-            }}
-            onKeyDown={handleGameNameEnter}
-            placeholder="Type a game name"
-            disabled={Boolean(lookupDisabledReason)}
-            className={cn(
-              "h-10 w-full rounded-[16px] border border-black/10 bg-white/78 px-4 pr-10 text-center text-sm font-medium text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25",
-              lookupDisabledReason ? "cursor-not-allowed opacity-60" : "",
-              appearance.listItemClassName,
-            )}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setIsFilteringRuns(false);
-              setIsPickerOpen((open) => !open);
-            }}
-            disabled={Boolean(lookupDisabledReason)}
-            className="absolute right-3 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-black/45 transition-colors hover:bg-black/[0.04] hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isPickerOpen ? "rotate-180" : "")} />
-          </button>
-          {isPickerOpen && matchingRuns.length > 0 ? (
-            <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[18px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl">
-              <div className="border-b border-black/6 px-4 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34">
-                Choose a game
-              </div>
-              <div className="max-h-60 overflow-y-auto p-1.5">
-                {matchingRuns.slice(0, 6).map((run) => (
-                  <button
-                    key={run.id}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => chooseRun(run)}
-                    className="flex w-full flex-col items-start gap-1.5 rounded-[14px] border border-transparent bg-white/48 px-3 py-2.5 text-left text-[13px] text-black transition-colors hover:border-black/6 hover:bg-black/[0.035] sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate font-semibold text-black">{run.name}</div>
-                      <div className="mt-0.5 text-[11px] text-black/42">{getEnvironmentLabel(run.environment)}</div>
-                    </div>
-                    <div
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em]",
-                        getRunStatusMeta(run.status).className,
-                      )}
-                    >
-                      {getRunStatusMeta(run.status).label}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-        {lookupDisabledReason ? (
-          <p className="mt-2 text-center text-sm leading-6 text-black/50">{lookupDisabledReason}</p>
-        ) : null}
-        {isResolvingRunName ? (
-          <p className="mt-2 text-center text-sm leading-6 text-black/50">Looking for that game.</p>
-        ) : null}
-      </div>
+    <article className="w-full space-y-3 pb-24 md:mx-auto md:max-w-4xl md:space-y-4 md:pb-0">
+      <FactoryV2WatchSearchPanel
+        appearanceClassName={appearance.quietSurfaceClassName}
+        inputClassName={appearance.listItemClassName}
+        pickerRef={pickerRef}
+        watchGameName={watchGameName}
+        matchingRuns={matchingRuns}
+        isPickerOpen={isPickerOpen}
+        lookupDisabledReason={lookupDisabledReason}
+        isResolvingRunName={isResolvingRunName}
+        onSelectRun={chooseRun}
+        onTogglePicker={() => {
+          setIsFilteringRuns(false);
+          setIsPickerOpen((open) => !open);
+        }}
+        onFocusInput={() => {
+          setIsFilteringRuns(false);
+          setIsPickerOpen(true);
+        }}
+        onChangeInput={selectRunByName}
+        onKeyDownInput={handleGameNameEnter}
+      />
 
       {selectedRun ? (
         <div
           className={cn(
-            "relative overflow-hidden rounded-[26px] border px-4 py-5 text-center sm:px-5 sm:py-6 md:px-6 md:py-7",
+            "relative overflow-hidden rounded-[28px] border px-4 py-5 text-left sm:px-5 sm:py-6 md:px-6 md:py-7 md:text-center",
             appearance.featureSurfaceClassName,
           )}
         >
@@ -258,17 +205,17 @@ export const FactoryV2WatchWorkspace = ({
           <div className="relative space-y-4">
             <div className="space-y-2">
               {showsInFlightState ? (
-                <div className="flex justify-center">
+                <div className="flex justify-start md:justify-center">
                   <FactoryV2LoaderHalo pollingState={pollingState} />
                 </div>
               ) : null}
-              <div className="flex flex-col items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42 sm:flex-row sm:justify-center sm:gap-2">
+              <div className="flex flex-col items-start gap-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42 sm:flex-row sm:items-center md:justify-center">
                 <span className="max-w-full truncate">{selectedRun.name}</span>
                 <span className="hidden sm:inline">on</span>
                 <span>{environmentLabel}</span>
               </div>
               {!showsInFlightState ? (
-                <div className="flex justify-center">
+                <div className="flex justify-start md:justify-center">
                   <div
                     className={cn(
                       "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]",
@@ -313,39 +260,19 @@ export const FactoryV2WatchWorkspace = ({
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              {visiblePrimaryAction ? (
-                <button
-                  type="button"
-                  onClick={visiblePrimaryAction.kind === "retry" ? onRetry : onContinue}
-                  disabled={isWatcherBusy || Boolean(lookupDisabledReason)}
-                  className={cn(
-                    "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                    visiblePrimaryAction.kind === "retry"
-                      ? "bg-rose-600 text-white hover:bg-rose-700"
-                      : appearance.primaryButtonClassName,
-                  )}
-                >
-                  {visiblePrimaryAction.kind === "retry" ? <RotateCcw className="h-4 w-4" /> : null}
-                  {visiblePrimaryAction.label}
-                </button>
-              ) : null}
-
-              {showsManualRefresh ? (
-                <button
-                  type="button"
-                  onClick={onRefresh}
-                  disabled={isWatcherBusy || Boolean(lookupDisabledReason)}
-                  className={cn(
-                    "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                    appearance.secondaryButtonClassName,
-                  )}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Check again
-                </button>
-              ) : null}
-            </div>
+            {showsActionBar ? (
+              <FactoryV2WatchActionBar
+                visiblePrimaryAction={visiblePrimaryAction}
+                showsManualRefresh={showsManualRefresh}
+                isWatcherBusy={isWatcherBusy}
+                isBlocked={Boolean(lookupDisabledReason)}
+                primaryButtonClassName={appearance.primaryButtonClassName}
+                secondaryButtonClassName={appearance.secondaryButtonClassName}
+                onContinue={onContinue}
+                onRetry={onRetry}
+                onRefresh={onRefresh}
+              />
+            ) : null}
 
             {secondaryNotice ? <p className="text-sm leading-6 text-black/52">{secondaryNotice}</p> : null}
 
@@ -377,15 +304,17 @@ export const FactoryV2WatchWorkspace = ({
       ) : showsPendingRunState ? (
         <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
           <div className="space-y-3">
-            <div className="flex justify-center">
+            <div className="flex justify-start md:justify-center">
               <FactoryV2LoaderHalo pollingState={pollingState} />
             </div>
-            <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">
+            <h3 className="text-left text-[1.2rem] font-semibold tracking-tight text-black md:text-center">
               {watcher?.title ?? `Opening ${launchPlaceholderName}`}
             </h3>
-            <p className="text-sm leading-6 text-black/56">{watcher?.detail ?? notice ?? FIRST_UPDATE_WAIT_MESSAGE}</p>
+            <p className="text-left text-sm leading-6 text-black/56 md:text-center">
+              {watcher?.detail ?? notice ?? FIRST_UPDATE_WAIT_MESSAGE}
+            </p>
             {notice && notice !== (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE) ? (
-              <p className="text-sm leading-6 text-black/52">{notice}</p>
+              <p className="text-left text-sm leading-6 text-black/52 md:text-center">{notice}</p>
             ) : null}
             <div className={cn("rounded-[18px] px-4 py-3 text-left", appearance.quietSurfaceClassName)}>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
@@ -395,7 +324,7 @@ export const FactoryV2WatchWorkspace = ({
           </div>
         </div>
       ) : (
-        <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
+        <div className={cn("rounded-[26px] border p-5 text-left md:p-6 md:text-center", appearance.featureSurfaceClassName)}>
           <div className="text-sm leading-6 text-black/58">Type a game name and press Enter.</div>
         </div>
       )}
@@ -410,7 +339,7 @@ const FactoryV2LiveStatus = ({
   pollingState: FactoryPollingState;
   liveStatusLabel: string;
 }) => (
-  <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-black/8 bg-white/45 px-3 py-1.5 text-[12px] text-black/52">
+  <div className="flex flex-wrap items-center justify-start gap-2 rounded-full border border-black/8 bg-white/45 px-3 py-1.5 text-[12px] text-black/52 md:justify-center">
     <div className="relative flex h-3.5 w-3.5 items-center justify-center">
       {pollingState.status === "live" ? (
         <div className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-emerald-400/55" />
@@ -449,6 +378,156 @@ const FactoryV2LoaderHalo = ({ pollingState }: { pollingState: FactoryPollingSta
       )}
     />
     <div className={cn("h-3 w-3 rounded-full", pollingState.status === "paused" ? "bg-rose-400" : "bg-amber-400")} />
+  </div>
+);
+
+const FactoryV2WatchSearchPanel = ({
+  appearanceClassName,
+  inputClassName,
+  pickerRef,
+  watchGameName,
+  matchingRuns,
+  isPickerOpen,
+  lookupDisabledReason,
+  isResolvingRunName,
+  onSelectRun,
+  onTogglePicker,
+  onFocusInput,
+  onChangeInput,
+  onKeyDownInput,
+}: {
+  appearanceClassName: string;
+  inputClassName: string;
+  pickerRef: RefObject<HTMLDivElement | null>;
+  watchGameName: string;
+  matchingRuns: FactoryRun[];
+  isPickerOpen: boolean;
+  lookupDisabledReason: string | null;
+  isResolvingRunName: boolean;
+  onSelectRun: (run: FactoryRun) => void;
+  onTogglePicker: () => void;
+  onFocusInput: () => void;
+  onChangeInput: (value: string) => void;
+  onKeyDownInput: (event: KeyboardEvent<HTMLInputElement>) => void;
+}) => (
+  <div className={cn("rounded-[24px] border border-black/8 px-4 py-4 text-left sm:px-5", appearanceClassName)}>
+    <label htmlFor="factory-watch-game" className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+      Game name
+    </label>
+    <div ref={pickerRef} className="relative mt-2">
+      <input
+        id="factory-watch-game"
+        value={watchGameName}
+        onChange={(event) => onChangeInput(event.target.value)}
+        onFocus={onFocusInput}
+        onKeyDown={onKeyDownInput}
+        placeholder="Type a game name"
+        disabled={Boolean(lookupDisabledReason)}
+        className={cn(
+          "h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 pr-10 text-left text-sm font-medium text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25 md:text-center",
+          lookupDisabledReason ? "cursor-not-allowed opacity-60" : "",
+          inputClassName,
+        )}
+      />
+      <button
+        type="button"
+        onClick={onTogglePicker}
+        disabled={Boolean(lookupDisabledReason)}
+        className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-black/45 transition-colors hover:bg-black/[0.04] hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <ChevronDown className={cn("h-4 w-4 transition-transform", isPickerOpen ? "rotate-180" : "")} />
+      </button>
+      {isPickerOpen && matchingRuns.length > 0 ? (
+        <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[20px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl">
+          <div className="border-b border-black/6 px-4 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34 md:text-center">
+            Choose a game
+          </div>
+          <div className="max-h-60 overflow-y-auto p-1.5">
+            {matchingRuns.slice(0, 6).map((run) => (
+              <button
+                key={run.id}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onSelectRun(run)}
+                className="flex w-full flex-col items-start gap-1.5 rounded-[14px] border border-transparent bg-white/48 px-3 py-2.5 text-left text-[13px] text-black transition-colors hover:border-black/6 hover:bg-black/[0.035] sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-semibold text-black">{run.name}</div>
+                  <div className="mt-0.5 text-[11px] text-black/42">{getEnvironmentLabel(run.environment)}</div>
+                </div>
+                <div
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em]",
+                    getRunStatusMeta(run.status).className,
+                  )}
+                >
+                  {getRunStatusMeta(run.status).label}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+    {lookupDisabledReason ? <p className="mt-2 text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
+    {isResolvingRunName ? <p className="mt-2 text-sm leading-6 text-black/50">Looking for that game.</p> : null}
+  </div>
+);
+
+const FactoryV2WatchActionBar = ({
+  visiblePrimaryAction,
+  showsManualRefresh,
+  isWatcherBusy,
+  isBlocked,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  onContinue,
+  onRetry,
+  onRefresh,
+}: {
+  visiblePrimaryAction: ReturnType<typeof resolveRunPrimaryAction> | null;
+  showsManualRefresh: boolean;
+  isWatcherBusy: boolean;
+  isBlocked: boolean;
+  primaryButtonClassName: string;
+  secondaryButtonClassName: string;
+  onContinue: () => void;
+  onRetry: () => void;
+  onRefresh: () => void;
+}) => (
+  <div
+    data-testid="factory-watch-action-bar"
+    className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-[24px] border border-black/10 bg-white/72 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_18px_42px_rgba(23,15,8,0.14)] backdrop-blur-xl md:static md:flex-row md:rounded-[20px] md:border-black/8 md:bg-transparent md:px-0 md:py-0 md:shadow-none md:backdrop-blur-0"
+  >
+    {visiblePrimaryAction ? (
+      <button
+        type="button"
+        onClick={visiblePrimaryAction.kind === "retry" ? onRetry : onContinue}
+        disabled={isWatcherBusy || isBlocked}
+        className={cn(
+          "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+          visiblePrimaryAction.kind === "retry" ? "bg-rose-600 text-white hover:bg-rose-700" : primaryButtonClassName,
+        )}
+      >
+        {visiblePrimaryAction.kind === "retry" ? <RotateCcw className="h-4 w-4" /> : null}
+        {visiblePrimaryAction.label}
+      </button>
+    ) : null}
+
+    {showsManualRefresh ? (
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={isWatcherBusy || isBlocked}
+        className={cn(
+          "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+          secondaryButtonClassName,
+        )}
+      >
+        <RefreshCw className="h-4 w-4" />
+        Check again
+      </button>
+    ) : null}
   </div>
 );
 

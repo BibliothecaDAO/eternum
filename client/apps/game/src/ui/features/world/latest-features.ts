@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Static Blitz Play Style Labels",
+    description:
+      "Blitz play-style choices in the new Factory now stay on the same three labels again, so changing More options like max players no longer rewrites the section into player-cap wording.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Feels Native On Mobile",
+    description:
+      "The new Factory now uses much more of the phone screen, with wider controls, cleaner section bands, and sticky action bars that make starting or checking a game feel far more natural on mobile.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Cleaner Factory Start Card",
     description:
       "The Factory start card now separates launch basics, Blitz setup, and advanced tuning, so the main launch choices are easier to scan and the player-cap control sits with the play-style options it affects.",

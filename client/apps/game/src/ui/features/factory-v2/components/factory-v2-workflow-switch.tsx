@@ -19,14 +19,17 @@ export const FactoryV2WorkflowSwitch = ({
 
   return (
     <section className="animate-fade-in-up" style={{ animationDelay: "120ms" }}>
-      <div className="flex flex-col items-center gap-2 text-center">
+      <div className="space-y-2 text-left md:text-center">
         <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-black/42">What you want to do</div>
-        <div className="grid w-full max-w-[20rem] grid-cols-2 gap-1.5 rounded-[20px] border border-black/8 bg-white/40 p-1">
+        <div
+          data-testid="factory-workflow-switch"
+          className="grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/40 p-1.5 md:mx-auto md:max-w-[20rem]"
+        >
           <button
             type="button"
             onClick={() => onSelect("start")}
             className={cn(
-              "min-w-0 rounded-full px-3 py-2 text-[12px] font-semibold transition-all duration-200 sm:px-4 sm:text-[13px]",
+              "min-h-11 min-w-0 rounded-[16px] px-3 py-2 text-[13px] font-semibold transition-all duration-200",
               selectedView === "start" ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
             )}
           >
@@ -38,7 +41,7 @@ export const FactoryV2WorkflowSwitch = ({
             onClick={() => onSelect("watch")}
             disabled={!canWatch}
             className={cn(
-              "min-w-0 rounded-full px-3 py-2 text-[12px] font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-[13px]",
+              "min-h-11 min-w-0 rounded-[16px] px-3 py-2 text-[13px] font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
               selectedView === "watch" ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
             )}
           >
