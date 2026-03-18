@@ -118,7 +118,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     const actionBar = container.querySelector('[data-testid="factory-watch-action-bar"]');
 
     expect(article?.className).toContain("w-full");
-    expect(article?.className).not.toContain("max-w-md");
+    expect(article?.className).toContain("md:max-w-md");
     expect(actionBar?.className).toContain("sticky");
   });
 });

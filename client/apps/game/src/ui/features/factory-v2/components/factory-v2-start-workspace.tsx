@@ -100,7 +100,7 @@ export const FactoryV2StartWorkspace = ({
 
   if (!selectedPreset) {
     return (
-      <article className="w-full md:mx-auto md:max-w-3xl">
+      <article className="w-full md:mx-auto md:max-w-xl">
         <div className={cn("rounded-[28px] border p-6 md:p-7", appearance.featureSurfaceClassName)}>
           <div className="text-sm leading-6 text-black/58">Pick a preset first.</div>
         </div>
@@ -156,7 +156,7 @@ export const FactoryV2StartWorkspace = ({
   };
 
   return (
-    <article className="w-full md:mx-auto md:max-w-3xl">
+    <article className="w-full md:mx-auto md:max-w-lg">
       <div className={cn("rounded-[28px] border px-4 py-5 sm:px-5 sm:py-6 md:px-7 md:py-8", appearance.featureSurfaceClassName)}>
         <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
           <FactoryV2StartSectionCard

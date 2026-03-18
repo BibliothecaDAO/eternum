@@ -165,7 +165,7 @@ export const FactoryV2WatchWorkspace = ({
   };
 
   return (
-    <article className="w-full space-y-3 pb-24 md:mx-auto md:max-w-4xl md:space-y-4 md:pb-0">
+    <article className="w-full space-y-3 pb-24 md:mx-auto md:max-w-md md:space-y-4 md:pb-0">
       <FactoryV2WatchSearchPanel
         appearanceClassName={appearance.quietSurfaceClassName}
         inputClassName={appearance.listItemClassName}
