@@ -2,7 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 import {
@@ -56,6 +56,8 @@ export const FactoryV2WatchWorkspace = ({
   const [showAllSteps, setShowAllSteps] = useState(false);
   const [watchGameName, setWatchGameName] = useState(selectedRun?.name ?? "");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isFilteringRuns, setIsFilteringRuns] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setShowAllSteps(selectedRun?.status === "attention");
@@ -63,23 +65,51 @@ export const FactoryV2WatchWorkspace = ({
 
   useEffect(() => {
     setWatchGameName(selectedRun?.name ?? activeRunName ?? "");
+    setIsFilteringRuns(false);
   }, [activeRunName, selectedRun?.id, selectedRun?.name]);
 
-  const matchingRuns = resolveMatchingRunsByName(runs, watchGameName);
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!pickerRef.current?.contains(event.target as Node)) {
+        setIsPickerOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, []);
+
+  const matchingRuns = resolveMatchingRunsByName(runs, isFilteringRuns ? watchGameName : "");
+  const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
+  const isPendingSelectedRun = Boolean(selectedRun && selectedRun.id.startsWith("pending:"));
   const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
   const currentStep = selectedRun ? getCurrentStep(selectedRun) : null;
   const completedStep = selectedRun ? getCompletedStep(selectedRun) : null;
   const nextStep = selectedRun ? getNextStep(selectedRun) : null;
   const primaryAction = selectedRun ? resolveRunPrimaryAction(selectedRun) : null;
   const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
-  const currentStepLabel = currentStep ? getSimpleStepTitle(currentStep) : "Everything is done";
-  const detailMessage = selectedRun ? watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun) : "Type a game name to check it.";
-  const headline = selectedRun ? getRunHeadline(selectedRun) : watcher?.title ?? "Looking for your game";
-  const liveStatusLabel = buildLiveStatusLabel(pollingState);
+  const currentStepLabel = isPendingSelectedRun
+    ? `Starting ${selectedRun?.name ?? "your game"}`
+    : currentStep
+      ? getSimpleStepTitle(currentStep)
+      : "Everything is done";
+  const detailMessage = selectedRun
+    ? isPendingSelectedRun
+      ? watcher?.detail ?? "We are waiting for the first live status update from the launcher."
+      : watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun)
+    : "Type a game name to check it.";
+  const headline = selectedRun
+    ? isPendingSelectedRun
+      ? `Launching ${selectedRun.name}`
+      : getRunHeadline(selectedRun)
+    : watcher?.title ?? "Looking for your game";
+  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
-  const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
   const selectRunByName = (value: string) => {
     setWatchGameName(value);
+    setIsFilteringRuns(true);
     setIsPickerOpen(true);
 
     const matchingRun = resolveMatchingRunByName(runs, value);
@@ -91,6 +121,7 @@ export const FactoryV2WatchWorkspace = ({
   };
   const chooseRun = (run: FactoryRun) => {
     setWatchGameName(run.name);
+    setIsFilteringRuns(false);
     setIsPickerOpen(false);
 
     if (run.id !== selectedRun?.id) {
@@ -125,13 +156,15 @@ export const FactoryV2WatchWorkspace = ({
         >
           Game name
         </label>
-        <div className="relative mt-2">
+        <div ref={pickerRef} className="relative mt-2">
           <input
             id="factory-watch-game"
             value={watchGameName}
             onChange={(event) => selectRunByName(event.target.value)}
-            onFocus={() => setIsPickerOpen(true)}
-            onBlur={() => window.setTimeout(() => setIsPickerOpen(false), 120)}
+            onFocus={() => {
+              setIsFilteringRuns(false);
+              setIsPickerOpen(true);
+            }}
             onKeyDown={handleGameNameEnter}
             placeholder="Type a game name"
             disabled={Boolean(lookupDisabledReason)}
@@ -141,28 +174,53 @@ export const FactoryV2WatchWorkspace = ({
               appearance.listItemClassName,
             )}
           />
-          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+          <button
+            type="button"
+            onClick={() => {
+              setIsFilteringRuns(false);
+              setIsPickerOpen((open) => !open);
+            }}
+            disabled={Boolean(lookupDisabledReason)}
+            className="absolute right-3 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-black/45 transition-colors hover:bg-black/[0.04] hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isPickerOpen ? "rotate-180" : "")} />
+          </button>
+          {isPickerOpen && matchingRuns.length > 0 ? (
+            <div
+              className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[18px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl"
+            >
+              <div className="border-b border-black/6 px-4 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34">
+                Choose a game
+              </div>
+              <div className="max-h-60 overflow-y-auto p-1.5">
+                {matchingRuns.slice(0, 6).map((run) => (
+                  <button
+                    key={run.id}
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => chooseRun(run)}
+                    className="flex w-full items-center justify-between rounded-[14px] border border-transparent bg-white/48 px-3 py-2.5 text-left text-[13px] text-black transition-colors hover:border-black/6 hover:bg-black/[0.035]"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-black">{run.name}</div>
+                      <div className="mt-0.5 text-[11px] text-black/42">{getEnvironmentLabel(run.environment)}</div>
+                    </div>
+                    <div
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em]",
+                        getRunStatusMeta(run.status).className,
+                      )}
+                    >
+                      {getRunStatusMeta(run.status).label}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
         {lookupDisabledReason ? <p className="mt-2 text-center text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
         {isResolvingRunName ? <p className="mt-2 text-center text-sm leading-6 text-black/50">Looking for that game.</p> : null}
-        {isPickerOpen && matchingRuns.length > 0 ? (
-          <div className={cn("mt-2 overflow-hidden rounded-[16px] border", appearance.featureSurfaceClassName)}>
-            {matchingRuns.slice(0, 6).map((run) => (
-              <button
-                key={run.id}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => chooseRun(run)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-black transition-colors hover:bg-black/[0.04]"
-              >
-                <span className="font-medium">{run.name}</span>
-                <span className="text-xs uppercase tracking-[0.18em] text-black/36">
-                  {getRunStatusMeta(run.status).label}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
       </div>
 
       {selectedRun ? (
@@ -181,6 +239,11 @@ export const FactoryV2WatchWorkspace = ({
 
           <div className="relative space-y-4">
             <div className="space-y-2">
+              {isPendingSelectedRun ? (
+                <div className="flex justify-center">
+                  <FactoryV2LoaderHalo pollingState={pollingState} />
+                </div>
+              ) : null}
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
                 {selectedRun.name} on {environmentLabel}
               </div>
@@ -410,9 +473,13 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
   );
 };
 
-function buildLiveStatusLabel(pollingState: FactoryPollingState) {
+function buildLiveStatusLabel(pollingState: FactoryPollingState, isPendingRun: boolean) {
   if (pollingState.status === "paused") {
     return pollingState.detail;
+  }
+
+  if (isPendingRun) {
+    return "Waiting for first live update";
   }
 
   if (pollingState.status === "checking") {

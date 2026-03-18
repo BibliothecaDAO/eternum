@@ -54,6 +54,8 @@ export const useFactoryV2 = () => {
   const [singleRealmMode, setSingleRealmMode] = useState(initialPreset?.defaults.singleRealmMode ?? false);
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
   const [pendingRunName, setPendingRunName] = useState<string | null>(null);
+  const [pendingRunEnvironmentId, setPendingRunEnvironmentId] = useState<string | null>(null);
+  const [pendingRunMode, setPendingRunMode] = useState<FactoryGameMode | null>(null);
   const [pollingState, setPollingState] = useState<FactoryPollingState>({
     status: "idle",
     detail: "Live updates will appear here.",
@@ -69,7 +71,16 @@ export const useFactoryV2 = () => {
   const selectedEnvironment =
     environmentOptions.find((environment) => environment.id === selectedEnvironmentId) ?? environmentOptions[0] ?? null;
   const presets = getFactoryLaunchPresetsForMode(selectedMode);
-  const modeRuns = runsByEnvironment[selectedEnvironment?.id ?? ""] ?? [];
+  const environmentRuns = runsByEnvironment[selectedEnvironment?.id ?? ""] ?? [];
+  const pendingRun = buildPendingRun({
+    pendingRunName,
+    pendingRunEnvironmentId,
+    pendingRunMode,
+    selectedEnvironmentId,
+    watcher,
+    pollingState,
+  });
+  const modeRuns = mergePendingRunIntoEnvironment(environmentRuns, pendingRun);
   const selectedRun = modeRuns.find((run) => run.id === selectedRunId) ?? modeRuns[0] ?? null;
   const selectedPreset = presets.find((preset) => preset.id === selectedPresetId) ?? presets[0] ?? null;
   const matchingRun = resolveMatchingRunByName(modeRuns, draftGameName);
@@ -164,6 +175,13 @@ export const useFactoryV2 = () => {
       return;
     }
 
+    if (isPendingRun(selectedRun)) {
+      if (!watcher) {
+        setPollingState((currentState) => resolvePendingPollingState(currentState));
+      }
+      return;
+    }
+
     let isActive = true;
 
     const pollSelectedRun = async () => {
@@ -210,6 +228,61 @@ export const useFactoryV2 = () => {
     };
   }, [selectedRun?.environment, selectedRun?.id, selectedRun?.name, selectedRun?.status, watcher]);
 
+  useEffect(() => {
+    const environmentId = assertSupportedEnvironment(selectedRun?.environment);
+
+    if (!environmentId || !selectedRun || !isPendingRun(selectedRun) || watcher) {
+      return;
+    }
+
+    let isActive = true;
+
+    const pollPendingRunRecord = async () => {
+      setPollingState((currentState) => resolvePendingPollingState(currentState));
+
+      try {
+        const record = await readFactoryRunIfPresent(environmentId, selectedRun.name);
+
+        if (!isActive) {
+          return;
+        }
+
+        if (record) {
+          selectFetchedRun(environmentId, record);
+          setPollingState({
+            status: "live",
+            detail: "Watching live.",
+            lastCheckedAt: Date.now(),
+          });
+          return;
+        }
+
+        setPollingState((currentState) => resolvePendingPollingState(currentState, Date.now()));
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setPollingState((currentState) => ({
+          status: "paused",
+          detail: resolvePollingPauseMessage(error),
+          lastCheckedAt: currentState.lastCheckedAt,
+        }));
+      }
+    };
+
+    void pollPendingRunRecord();
+
+    const intervalId = window.setInterval(() => {
+      void pollPendingRunRecord();
+    }, RUN_POLL_INTERVAL_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [selectedRun?.environment, selectedRun?.id, selectedRun?.name, watcher]);
+
   const selectMode = (mode: FactoryGameMode) => {
     const nextEnvironmentId = getDefaultEnvironmentIdForMode(mode);
     const nextPresetId = getDefaultPresetIdForModeSelection(mode);
@@ -233,7 +306,6 @@ export const useFactoryV2 = () => {
 
   const selectRun = (runId: string) => {
     setSelectedRunId(runId);
-    setPendingRunName(null);
     setNotice(null);
   };
 
@@ -277,6 +349,8 @@ export const useFactoryV2 = () => {
     if (matchingRun) {
       setSelectedRunId(matchingRun.id);
       setPendingRunName(null);
+      setPendingRunEnvironmentId(null);
+      setPendingRunMode(null);
       setNotice(null);
       return true;
     }
@@ -299,6 +373,9 @@ export const useFactoryV2 = () => {
     }
 
     setPendingRunName(requestedGameName);
+    setPendingRunEnvironmentId(environmentId);
+    setPendingRunMode(selectedMode);
+    setSelectedRunId(buildPendingRunId(environmentId, requestedGameName));
     setPollingState({
       status: "checking",
       detail: "Starting the launch and waiting for the first live update.",
@@ -556,6 +633,8 @@ export const useFactoryV2 = () => {
   function clearTransientState() {
     setNotice(null);
     setPendingRunName(null);
+    setPendingRunEnvironmentId(null);
+    setPendingRunMode(null);
     setWatcher(null);
     setPollingState({
       status: "idle",
@@ -578,6 +657,8 @@ export const useFactoryV2 = () => {
     commitEnvironmentRuns(environmentId, nextRuns);
     setSelectedRunId(nextRun.id);
     setPendingRunName(null);
+    setPendingRunEnvironmentId(null);
+    setPendingRunMode(null);
     setNotice(null);
   }
 
@@ -707,6 +788,90 @@ function buildSuggestedGameName(mode: FactoryGameMode, runs: FactoryRun[]) {
   return buildFandomizedGameName(mode, runs.length + 1);
 }
 
+function buildPendingRunId(environmentId: string, gameName: string) {
+  return `pending:${environmentId}:${gameName}`;
+}
+
+function isPendingRun(run: FactoryRun) {
+  return run.id.startsWith("pending:");
+}
+
+function buildPendingRun({
+  pendingRunName,
+  pendingRunEnvironmentId,
+  pendingRunMode,
+  selectedEnvironmentId,
+  watcher,
+  pollingState,
+}: {
+  pendingRunName: string | null;
+  pendingRunEnvironmentId: string | null;
+  pendingRunMode: FactoryGameMode | null;
+  selectedEnvironmentId: string | null;
+  watcher: FactoryWatcherState | null;
+  pollingState: FactoryPollingState;
+}) {
+  if (!pendingRunName || !pendingRunEnvironmentId || !pendingRunMode || pendingRunEnvironmentId !== selectedEnvironmentId) {
+    return null;
+  }
+
+  return {
+    id: buildPendingRunId(pendingRunEnvironmentId, pendingRunName),
+    mode: pendingRunMode,
+    name: pendingRunName,
+    environment: pendingRunEnvironmentId,
+    owner: "Factory",
+    presetId: "pending",
+    status: "running" as const,
+    summary: watcher?.detail ?? pollingState.detail,
+    updatedAt: "Starting now",
+    steps: buildPendingRunSteps(pendingRunMode),
+  };
+}
+
+function buildPendingRunSteps(mode: FactoryGameMode): FactoryRun["steps"] {
+  return (mode === "eternum"
+    ? [
+        createPendingStep("create-world", "Create world", "Creating the world right now.", "running"),
+        createPendingStep("wait-for-factory-index", "Wait for factory index", "Waiting for the world to appear.", "pending"),
+        createPendingStep("configure-world", "Configure world", "Game rules will apply after the world appears.", "pending"),
+        createPendingStep("grant-village-pass-role", "Grant village pass role", "Village pass will open after config.", "pending"),
+        createPendingStep("create-banks", "Create banks", "Banks will place after the role grant clears.", "pending"),
+        createPendingStep("create-indexer", "Create indexer", "Live data will connect before the launch finishes.", "pending"),
+      ]
+    : [
+        createPendingStep("create-world", "Create world", "Creating the world right now.", "running"),
+        createPendingStep("wait-for-factory-index", "Wait for factory index", "Waiting for the world to appear.", "pending"),
+        createPendingStep("configure-world", "Configure world", "Game rules will apply after the world appears.", "pending"),
+        createPendingStep("create-indexer", "Create indexer", "Live data will connect after config.", "pending"),
+      ]) satisfies FactoryRun["steps"];
+}
+
+function createPendingStep(
+  id: FactoryWorkerLaunchStepId,
+  title: string,
+  latestEvent: string,
+  status: FactoryRun["steps"][number]["status"],
+): FactoryRun["steps"][number] {
+  return {
+    id,
+    title,
+    summary: latestEvent,
+    workflowName: id,
+    status,
+    verification: latestEvent,
+    latestEvent,
+  };
+}
+
+function mergePendingRunIntoEnvironment(runs: FactoryRun[], pendingRun: FactoryRun | null) {
+  if (!pendingRun) {
+    return runs;
+  }
+
+  return [pendingRun, ...runs.filter((run) => run.id !== pendingRun.id && run.name !== pendingRun.name)];
+}
+
 function replaceRunInEnvironment(runs: FactoryRun[], nextRun: FactoryRun) {
   const remainingRuns = runs.filter((run) => run.id !== nextRun.id && run.name !== nextRun.name);
   return [nextRun, ...remainingRuns];
@@ -737,6 +902,18 @@ function resolveActionableStepId(run: FactoryRun, statuses: Array<FactoryRun["st
 
 function isFactoryRunActive(run: FactoryRun) {
   return run.status !== "complete";
+}
+
+function resolvePendingPollingState(currentState: FactoryPollingState, nextCheckedAt = currentState.lastCheckedAt ?? Date.now()): FactoryPollingState {
+  if (currentState.status === "paused") {
+    return currentState;
+  }
+
+  return {
+    status: "checking",
+    detail: "Waiting for the first live update.",
+    lastCheckedAt: nextCheckedAt,
+  };
 }
 
 function resolveStartTimeValue(startAt: string) {
