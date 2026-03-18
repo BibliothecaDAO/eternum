@@ -21,6 +21,18 @@ export const SlotEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
+
+    bitcoinMineWinProbability: 30,
+    bitcoinMineFailProbability: 70,
+
+    shardsMinesWinProbability: 40,
+    shardsMinesFailProbability: 60,
+
+    campFindProbability: 50,
+    campFindFailProbability: 50,
+
+    holysiteFindProbability: 60,
+    holysiteFindFailProbability: 40,
   },
   // cheap hyperstructures
   hyperstructures: {
