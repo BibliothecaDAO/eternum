@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-moss-211/23248126401-1.json",
   "latestLaunchRequestId": "23248126401-1",
-  "currentStepId": "create-banks",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T13:48:21.646Z",
-  "updatedAt": "2026-03-18T13:55:50.084Z",
+  "updatedAt": "2026-03-18T13:56:02.072Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -71,10 +71,11 @@
     {
       "id": "create-banks",
       "title": "Create banks",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create banks",
-      "latestEvent": "Create banks started",
-      "startedAt": "2026-03-18T13:55:50.084Z"
+      "latestEvent": "Create banks succeeded",
+      "startedAt": "2026-03-18T13:55:50.084Z",
+      "finishedAt": "2026-03-18T13:56:02.072Z"
     },
     {
       "id": "create-indexer",
@@ -90,14 +91,7 @@
     "worldAddress": "0x044dc3fd516be5fe1b7bdc085ccd482f2b06dfb892f4c6d044174eb7ca2312f9",
     "configureTxHash": "0x7a613e9f10ea86491f6aad666dc7e9b207b43fbc7d119ca80547dc9226e9a0e",
     "lootChestRoleTxHash": "0x3afe2a97de362ed3cd7e9aa2da62887942d09a40cdb6024fcc180ed7257fcb0",
-    "villagePassRoleTxHash": "0x14b7e50a0b3b669205db1d05f537e387c1f9b5f2590d144b868fee63adf182a"
-  },
-  "activeLease": {
-    "launchRequestId": "23248126401-1",
-    "workflowRunId": 23248126401,
-    "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "acquiredAt": "2026-03-18T13:55:50.084Z",
-    "expiresAt": "2026-03-18T14:40:50.084Z"
+    "villagePassRoleTxHash": "0x14b7e50a0b3b669205db1d05f537e387c1f9b5f2590d144b868fee63adf182a",
+    "createBanksTxHash": "0x63f7aa5de8f965e4f300ad4081bc9d2b0f4f3fe0da71571df117c05f60bae1b"
   }
 }
