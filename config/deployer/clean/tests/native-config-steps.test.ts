@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { getGameManifest } from "../../../../contracts/utils/utils";
 import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config/steps";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
-import { setBlitzRegistrationParametersConfig, setSeasonConfig } from "../config/native-steps";
+import { setBlitzRegistrationParametersConfig, setFaithConfig, setSeasonConfig } from "../config/native-steps";
 
 describe("native config steps", () => {
   test("keeps the registry atomic instead of grouped", () => {
@@ -18,6 +18,7 @@ describe("native config steps", () => {
     expect(stepIds).toContain("building-categories");
     expect(stepIds).toContain("blitz-registration");
     expect(stepIds).toContain("season");
+    expect(stepIds).toContain("faith");
 
     expect(stepIds).not.toContain("world");
     expect(stepIds).not.toContain("globals");
@@ -41,12 +42,43 @@ describe("native config steps", () => {
     }).map((step) => step.id);
 
     expect(blitzStepIds).toContain("blitz-registration");
+    expect(blitzStepIds).toContain("faith");
     expect(blitzStepIds).toContain("season");
     expect(blitzStepIds).not.toContain("blitz-season");
 
+    expect(eternumStepIds).toContain("faith");
     expect(eternumStepIds).toContain("season");
     expect(eternumStepIds).not.toContain("blitz-registration");
     expect(eternumStepIds).not.toContain("blitz-season");
+  });
+
+  test("applies faith config with the expected payload scaling", async () => {
+    const config = loadEnvironmentConfiguration("slot.eternum");
+    const capturedCalls: Array<Record<string, unknown>> = [];
+    const provider = {
+      manifest: getGameManifest("slot") as any,
+      set_faith_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push(payload);
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    await setFaithConfig({
+      account: { address: "0x1" } as any,
+      provider: provider as any,
+      config,
+    });
+
+    expect(capturedCalls).toHaveLength(1);
+    expect(capturedCalls[0]).toMatchObject({
+      enabled: config.faith?.enabled,
+      wonder_base_fp_per_sec: config.faith?.wonder_base_fp_per_sec,
+      holy_site_fp_per_sec: config.faith?.holy_site_fp_per_sec,
+      realm_fp_per_sec: config.faith?.realm_fp_per_sec,
+      village_fp_per_sec: config.faith?.village_fp_per_sec,
+      owner_share_percent: (config.faith?.owner_share_percent || 0) * 100,
+      reward_token: config.faith?.reward_token,
+    });
   });
 
   test("reuses the same blitz timing across split registration steps", async () => {

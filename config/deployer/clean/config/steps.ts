@@ -10,6 +10,7 @@ import {
   setCapacityConfig,
   setDiscoverableVillageSpawnResourcesConfig,
   setFactoryAddress,
+  setFaithConfig,
   setGameModeConfig,
   setHyperstructureConfig,
   setMapConfig,
@@ -51,6 +52,10 @@ function hasFactoryAddress(config: EternumConfig): boolean {
 
 function hasMmrConfig(config: EternumConfig): boolean {
   return Boolean((config as EternumConfig & { mmr?: unknown }).mmr);
+}
+
+function hasFaithConfig(config: EternumConfig): boolean {
+  return Boolean(config.faith);
 }
 
 function hasSupportedVrfConfig(config: EternumConfig): boolean {
@@ -135,6 +140,9 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
   defineStep("speed", "Set speed config", setSpeedConfig),
   defineStep("hyperstructure", "Set hyperstructure config", setHyperstructureConfig),
   defineStep("settlement", "Set settlement config", setSettlementConfig),
+  defineStep("faith", "Set faith config", setFaithConfig, {
+    shouldRun: ({ config }) => hasFaithConfig(config),
+  }),
   defineStep("starting-resources", "Set starting resources config", setStartingResourcesConfig),
   defineStep("weight", "Set weight config", setWeightConfig),
   defineStep("realm-upgrade", "Set realm upgrade config", setRealmUpgradeConfig),

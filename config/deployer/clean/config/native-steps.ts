@@ -37,6 +37,7 @@ type NativeConfigProvider = Pick<
   | "set_donkey_speed_config"
   | "set_hyperstructure_config"
   | "set_settlement_config"
+  | "set_faith_config"
   | "set_game_mode_config"
   | "set_factory_address"
   | "set_mmr_config"
@@ -654,6 +655,31 @@ export const setSettlementConfig: NativeStep = async ({ account, provider, confi
   );
 };
 
+function buildFaithConfigPayload(config: NativeConfig) {
+  if (!config.faith) {
+    return null;
+  }
+
+  return {
+    enabled: config.faith.enabled,
+    wonder_base_fp_per_sec: config.faith.wonder_base_fp_per_sec,
+    holy_site_fp_per_sec: config.faith.holy_site_fp_per_sec,
+    realm_fp_per_sec: config.faith.realm_fp_per_sec,
+    village_fp_per_sec: config.faith.village_fp_per_sec,
+    owner_share_percent: config.faith.owner_share_percent * 100,
+    reward_token: config.faith.reward_token,
+  };
+}
+
+export const setFaithConfig: NativeStep = async ({ account, provider, config }) => {
+  const payload = buildFaithConfigPayload(config);
+  if (!payload) {
+    return;
+  }
+
+  await provider.set_faith_config(withSigner(account, payload));
+};
+
 export const setGameModeConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_game_mode_config(
     withSigner(account, {
@@ -809,6 +835,7 @@ export const NATIVE_FACTORY_WORLD_CONFIG_IMPLEMENTATIONS = {
   setSpeedConfig,
   setHyperstructureConfig,
   setSettlementConfig,
+  setFaithConfig,
   setGameModeConfig,
   setFactoryAddress,
   setMMRConfig,
