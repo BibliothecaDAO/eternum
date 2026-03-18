@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-lore-450",
-  "status": "complete",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-world",
   "inputPath": "inputs/slot/eternum/etrn-lore-450/23238493771-1.json",
   "latestLaunchRequestId": "23238493771-1",
-  "currentStepId": null,
+  "currentStepId": "configure-world",
   "createdAt": "2026-03-18T09:41:21.090Z",
-  "updatedAt": "2026-03-18T09:51:58.078Z",
+  "updatedAt": "2026-03-18T09:52:01.809Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,10 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Configure world succeeded",
-      "startedAt": "2026-03-18T09:43:06.002Z",
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T09:52:01.809Z",
       "finishedAt": "2026-03-18T09:43:18.153Z"
     },
     {
@@ -106,5 +106,12 @@
       "conclusion": "success"
     }
   },
-  "completedAt": "2026-03-18T09:51:58.078Z"
+  "activeLease": {
+    "launchRequestId": "23238493771-1",
+    "workflowRunId": 23238493771,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T09:52:01.809Z",
+    "expiresAt": "2026-03-18T10:37:01.809Z"
+  }
 }
