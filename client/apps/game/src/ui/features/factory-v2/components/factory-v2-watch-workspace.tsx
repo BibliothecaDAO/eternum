@@ -56,7 +56,6 @@ export const FactoryV2WatchWorkspace = ({
   const [showAllSteps, setShowAllSteps] = useState(false);
   const [watchGameName, setWatchGameName] = useState(selectedRun?.name ?? "");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [clockNow, setClockNow] = useState(() => Date.now());
 
   useEffect(() => {
     setShowAllSteps(selectedRun?.status === "attention");
@@ -65,20 +64,6 @@ export const FactoryV2WatchWorkspace = ({
   useEffect(() => {
     setWatchGameName(selectedRun?.name ?? activeRunName ?? "");
   }, [activeRunName, selectedRun?.id, selectedRun?.name]);
-
-  useEffect(() => {
-    if (!pollingState.lastCheckedAt) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setClockNow(Date.now());
-    }, 1_000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [pollingState.lastCheckedAt]);
 
   const matchingRuns = resolveMatchingRunsByName(runs, watchGameName);
   const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
@@ -90,7 +75,7 @@ export const FactoryV2WatchWorkspace = ({
   const currentStepLabel = currentStep ? getSimpleStepTitle(currentStep) : "Everything is done";
   const detailMessage = selectedRun ? watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun) : "Type a game name to check it.";
   const headline = selectedRun ? getRunHeadline(selectedRun) : watcher?.title ?? "Looking for your game";
-  const liveStatusLabel = buildLiveStatusLabel(pollingState, clockNow);
+  const liveStatusLabel = buildLiveStatusLabel(pollingState);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
   const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
   const selectRunByName = (value: string) => {
@@ -292,6 +277,9 @@ export const FactoryV2WatchWorkspace = ({
         <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
           <div className="space-y-3">
             <div className="flex justify-center">
+              <FactoryV2LoaderHalo pollingState={pollingState} />
+            </div>
+            <div className="flex justify-center">
               <div className="rounded-full border border-amber-300/50 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
                 {watcher?.statusLabel ?? "Watching"}
               </div>
@@ -329,7 +317,7 @@ const FactoryV2LiveStatus = ({
   pollingState: FactoryPollingState;
   liveStatusLabel: string;
 }) => (
-  <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-black/52">
+  <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-black/8 bg-white/45 px-3 py-1.5 text-[12px] text-black/52">
     <div
       className={cn(
         "h-2.5 w-2.5 rounded-full",
@@ -343,6 +331,31 @@ const FactoryV2LiveStatus = ({
       )}
     />
     <span>{liveStatusLabel}</span>
+  </div>
+);
+
+const FactoryV2LoaderHalo = ({ pollingState }: { pollingState: FactoryPollingState }) => (
+  <div className="relative flex h-14 w-14 items-center justify-center">
+    <div
+      className={cn(
+        "absolute h-14 w-14 rounded-full border",
+        pollingState.status === "paused" ? "border-rose-300/55" : "border-amber-300/45",
+      )}
+    />
+    <div
+      className={cn(
+        "absolute h-10 w-10 rounded-full border-2 border-transparent",
+        pollingState.status === "paused"
+          ? "border-t-rose-400"
+          : "animate-spin border-t-amber-500 border-r-amber-300/70",
+      )}
+    />
+    <div
+      className={cn(
+        "h-3 w-3 rounded-full",
+        pollingState.status === "paused" ? "bg-rose-400" : "bg-amber-400",
+      )}
+    />
   </div>
 );
 
@@ -397,21 +410,18 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
   );
 };
 
-function buildLiveStatusLabel(pollingState: FactoryPollingState, now: number) {
+function buildLiveStatusLabel(pollingState: FactoryPollingState) {
   if (pollingState.status === "paused") {
     return pollingState.detail;
   }
 
-  if (!pollingState.lastCheckedAt) {
-    return pollingState.detail;
-  }
-
-  const elapsedSeconds = Math.max(0, Math.floor((now - pollingState.lastCheckedAt) / 1_000));
-  const ageLabel = elapsedSeconds < 2 ? "just now" : `${elapsedSeconds}s ago`;
-
   if (pollingState.status === "checking") {
-    return `Checking live status · last checked ${ageLabel}`;
+    return "Checking live status";
   }
 
-  return `Checking every few seconds · last checked ${ageLabel}`;
+  if (pollingState.lastCheckedAt) {
+    return "Watching live";
+  }
+
+  return pollingState.detail;
 }
