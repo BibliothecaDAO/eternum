@@ -294,7 +294,9 @@ export const FactoryV2WatchWorkspace = ({
                 <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} tone="done" />
               ) : null}
               {currentStep ? <FactoryV2StepMoment label="Now" stepLabel={currentStepLabel} tone="now" /> : null}
-              {nextStep ? <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} tone="next" /> : null}
+              {nextStep ? (
+                <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} tone="next" />
+              ) : null}
             </div>
 
             <div className="space-y-2">
