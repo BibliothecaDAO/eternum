@@ -1,14 +1,17 @@
 #!/usr/bin/env bun
-import { buildLaunchGameRequest, parseArgs } from "./launch-request";
-import { DEFAULT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
-import { launchGame } from "../launch/runner";
+import {
+  DEFAULT_MAX_ACTIONS,
+  DEFAULT_VERSION,
+} from "../constants";
+import { runLaunchStep } from "../launch/runner";
+import { buildLaunchGameRequest, parseArgs, resolveLaunchGameStepId } from "./launch-request";
 
 function usage(): void {
   console.log(
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/create.ts --environment <slot.blitz|slot.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/launch-step.ts --step <create-world|wait-for-factory-index|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks|create-indexer> --environment <slot.blitz|slot.eternum> --game <world-name> --start-time <unix|iso>",
       "",
       "Optional env or flags:",
       "  RPC_URL / --rpc-url",
@@ -22,9 +25,6 @@ function usage(): void {
       "  GITHUB_REPOSITORY",
       "  --workflow-file <factory-torii-deployer.yml>",
       "  --ref <git-ref>",
-      "  Local fallback: if GITHUB_TOKEN is unset, the clean deployer will try gh auth token",
-      "                  and log that it did so. If GITHUB_REPOSITORY is unset, it will try",
-      "                  gh repo view. If ref is unset, it will try the current git branch.",
       "  VERBOSE_CONFIG_LOGS=true / --verbose-config-logs",
       "  DEV_MODE_ON=true|false / --dev-mode-on true|false",
       "  SINGLE_REALM_MODE=true|false / --single-realm-mode true|false",
@@ -42,10 +42,6 @@ function usage(): void {
       "  --skip-banks",
       "  --dry-run",
       "",
-      "Examples:",
-      "  bun config/deployer/clean/cli/create.ts --environment slot.blitz --game bltz-fire-gate-42 --start-time 1763112600",
-      "  bun config/deployer/clean/cli/create.ts --environment slot.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
-      "",
     ].join("\n"),
   );
 }
@@ -57,13 +53,20 @@ async function main() {
     return;
   }
 
-  const summary = await launchGame(buildLaunchGameRequest(args));
+  const stepId = resolveLaunchGameStepId(args.step);
+  const summary = await runLaunchStep({
+    ...buildLaunchGameRequest(args),
+    stepId,
+  });
   console.log(JSON.stringify(summary, null, 2));
 }
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.stack || error.message : String(error);
-  if (message.includes("--environment, --game, and --start-time are required")) {
+  if (
+    message.includes("--environment, --game, and --start-time are required") ||
+    message.includes('Unsupported launch step "')
+  ) {
     usage();
   }
   console.error(message);
