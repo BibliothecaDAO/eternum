@@ -9,6 +9,34 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-18",
+    title: "Tighter Factory Picker",
+    description:
+      "The Factory game picker now uses a smaller floating menu, so switching games feels lighter and takes up less space on the page.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Picker Contrast",
+    description:
+      "The Factory game picker now uses a clearer floating surface, making the chooser easier to distinguish from the rest of the page while you switch between games.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Cleaner Factory Game Picker",
+    description:
+      "The Factory game picker now opens as a floating chooser instead of pushing the page around, making it easier to switch between games without losing your place.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Smoother Factory Launch Tracking",
+    description:
+      "Factory launch tracking now keeps a new game visible as soon as you start it and stays in a steady waiting state until the first live deployment update arrives.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-06",
     title: "Tournament Leaderboard Table Cleanup",
     description:
