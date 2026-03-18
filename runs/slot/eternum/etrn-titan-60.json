@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-titan-60",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-titan-60/23252696502-1.json",
   "latestLaunchRequestId": "23252696502-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-18T15:30:49.983Z",
-  "updatedAt": "2026-03-18T15:32:29.136Z",
+  "updatedAt": "2026-03-18T15:33:46.618Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,10 +80,11 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer started",
-      "startedAt": "2026-03-18T15:32:29.136Z"
+      "latestEvent": "Create indexer succeeded",
+      "startedAt": "2026-03-18T15:32:29.136Z",
+      "finishedAt": "2026-03-18T15:33:46.618Z"
     }
   ],
   "artifacts": {
@@ -93,14 +94,17 @@
     "configureTxHash": "0x4cabfe3c5209e14033c38f023ba732319a295b1877939b39782811ef8c66c6c",
     "lootChestRoleTxHash": "0xeef31552a8c78a24c6e134a64ac30526fe1e386158948df13abac1547933ec",
     "villagePassRoleTxHash": "0x21761cc8cbb040a4f218b0d8d53038d0433c728aa465aec398897e7a264246",
-    "createBanksTxHash": "0x437f19343a4ed261ad21372222f4a49cd86e3a3f9cd377975ed3d565087c688"
+    "createBanksTxHash": "0x437f19343a4ed261ad21372222f4a49cd86e3a3f9cd377975ed3d565087c688",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "credence0x/factory-v2-polish",
+      "runId": 23252835603,
+      "runNumber": 755,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23252835603",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
-  "activeLease": {
-    "launchRequestId": "23252696502-1",
-    "workflowRunId": 23252696502,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-18T15:32:29.136Z",
-    "expiresAt": "2026-03-18T16:17:29.136Z"
-  }
+  "completedAt": "2026-03-18T15:33:46.618Z"
 }
