@@ -250,9 +250,7 @@ function buildIndexerRequest(options: {
   };
 }
 
-function buildDryRunSummary(
-  execution: PreparedLaunchExecution,
-): LaunchGameSummary {
+function buildDryRunSummary(execution: PreparedLaunchExecution): LaunchGameSummary {
   execution.runtime.progress.log("Dry run enabled; no transactions will be sent");
   execution.summary.configSteps = execution.configSteps.map((step) => ({
     id: step.id,
@@ -290,7 +288,10 @@ function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGame
   };
 }
 
-async function resolveIndexedWorldContext(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<ConfiguredWorldContext> {
+async function resolveIndexedWorldContext(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+): Promise<ConfiguredWorldContext> {
   return createConfiguredWorldContext(runtime, await waitForIndexedWorld(runtime, request));
 }
 

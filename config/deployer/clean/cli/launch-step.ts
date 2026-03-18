@@ -1,8 +1,5 @@
 #!/usr/bin/env bun
-import {
-  DEFAULT_MAX_ACTIONS,
-  DEFAULT_VERSION,
-} from "../constants";
+import { DEFAULT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
 import { runLaunchStep } from "../launch/runner";
 import { buildLaunchGameRequest, parseArgs, resolveLaunchGameStepId } from "./launch-request";
 

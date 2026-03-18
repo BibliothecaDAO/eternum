@@ -161,36 +161,90 @@ jobs:
             run_store_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
           fi
 
-          run_launch_step() {
+          run_launch_step_command() {
             local step_id="$1"
             local step_log=".context/game-launch/${step_id}.log"
             local exit_code=0
-
-            bun config/deployer/clean/cli/launch-run-store.ts \
-              --event step-started \
-              --step "${step_id}" \
-              "${run_store_args[@]}"
 
             set +e
             bun config/deployer/clean/cli/launch-step.ts --step "${step_id}" "${args[@]}" 2>&1 | tee "${step_log}"
             exit_code=${PIPESTATUS[0]}
             set -e
 
-            if [ "${exit_code}" -eq 0 ]; then
-              bun config/deployer/clean/cli/launch-run-store.ts \
-                --event step-succeeded \
-                --step "${step_id}" \
-                "${run_store_args[@]}"
-              return 0
-            fi
+            return "${exit_code}"
+          }
+
+          record_launch_step_started() {
+            local step_id="$1"
+
+            bun config/deployer/clean/cli/launch-run-store.ts \
+              --event step-started \
+              --step "${step_id}" \
+              "${run_store_args[@]}"
+          }
+
+          record_launch_step_succeeded() {
+            local step_id="$1"
+
+            bun config/deployer/clean/cli/launch-run-store.ts \
+              --event step-succeeded \
+              --step "${step_id}" \
+              "${run_store_args[@]}"
+          }
+
+          record_launch_step_failed() {
+            local step_id="$1"
+            local step_log=".context/game-launch/${step_id}.log"
 
             bun config/deployer/clean/cli/launch-run-store.ts \
               --event step-failed \
               --step "${step_id}" \
               --error-message-file "${step_log}" \
               "${run_store_args[@]}"
+          }
 
-            return "${exit_code}"
+          step_log_contains_client_timeout() {
+            local step_id="$1"
+            local step_log=".context/game-launch/${step_id}.log"
+
+            grep -q "Client.Timeout exceeded" "${step_log}"
+          }
+
+          run_launch_step() {
+            local step_id="$1"
+
+            record_launch_step_started "${step_id}"
+
+            if run_launch_step_command "${step_id}"; then
+              record_launch_step_succeeded "${step_id}"
+              return 0
+            fi
+
+            record_launch_step_failed "${step_id}"
+            return 1
+          }
+
+          run_create_world_step_with_timeout_retry() {
+            local step_id="create-world"
+            local max_attempts=5
+            local attempt=1
+
+            record_launch_step_started "${step_id}"
+
+            while true; do
+              if run_launch_step_command "${step_id}"; then
+                record_launch_step_succeeded "${step_id}"
+                return 0
+              fi
+
+              if [ "${attempt}" -ge "${max_attempts}" ] || ! step_log_contains_client_timeout "${step_id}"; then
+                record_launch_step_failed "${step_id}"
+                return 1
+              fi
+
+              echo "Create world timed out with Client.Timeout exceeded. Retrying (${attempt}/${max_attempts})..."
+              attempt=$((attempt + 1))
+            done
           }
           EOF
 
@@ -205,10 +259,12 @@ jobs:
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
-          run_launch_step create-world
+          run_create_world_step_with_timeout_retry
 
       - name: Wait for factory index
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'wait-for-factory-index' }}
+        if:
+          ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'wait-for-factory-index'
+          }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -222,14 +278,17 @@ jobs:
           run_launch_step configure-world
 
       - name: Grant loot chest role
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-lootchest-role' }}
+        if:
+          ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-lootchest-role' }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step grant-lootchest-role
 
       - name: Grant village pass role
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-role' }}
+        if:
+          ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-role'
+          }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh

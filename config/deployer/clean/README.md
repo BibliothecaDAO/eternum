@@ -127,10 +127,9 @@ The workflow also writes launch state to the dedicated `factory-runs` branch:
 - immutable launch input records under `inputs/<chain>/<game-type>/<game-name>/<run-id>.json`
 - mutable run state under `runs/<chain>/<game-type>/<game-name>.json`
 
-The input record captures what the operator asked for. The run record captures what the launch is doing now, which
-steps are done, and the latest artifacts written by the clean deployer. This means another browser or a recovery flow
-can look up the same game and see the current state without rerunning CI just to discover that the launch already
-completed.
+The input record captures what the operator asked for. The run record captures what the launch is doing now, which steps
+are done, and the latest artifacts written by the clean deployer. This means another browser or a recovery flow can look
+up the same game and see the current state without rerunning CI just to discover that the launch already completed.
 
 The branch writes are driven by `config/deployer/clean/cli/launch-run-store.ts`. The workflow records:
 
