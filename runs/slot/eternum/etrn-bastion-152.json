@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23237963187-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:31:31.233Z",
+  "updatedAt": "2026-03-18T09:31:32.543Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T09:31:32.543Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -81,5 +82,13 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-bastion-152.json",
     "createGameTxHash": "0x587a81d9613901c4cd7a474f82dd93c2fb1b7204d07c70050895de1a2ef8e37",
     "worldAddress": "0x01dfd27eea976a4d9dde1475849950300eca271557b117f2835834e24fa57a76"
+  },
+  "activeLease": {
+    "launchRequestId": "23237963187-1",
+    "workflowRunId": 23237963187,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T09:31:32.543Z",
+    "expiresAt": "2026-03-18T10:16:32.543Z"
   }
 }
