@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "chain": "slot",
+  "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "owner": {
+    "environment": "slot.blitz",
+    "gameName": "bltz-blink-120",
+    "launchRequestId": "23261304987-1",
+    "workflowName": "Game Launch",
+    "workflowRunId": 23261304987,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "leaseId": "d780b32a-9ca4-48ca-bfb9-56a0e75a19a6"
+  },
+  "acquiredAt": "2026-03-18T18:45:21.570Z",
+  "heartbeatAt": "2026-03-18T18:45:21.570Z",
+  "expiresAt": "2026-03-18T18:55:21.570Z"
+}
