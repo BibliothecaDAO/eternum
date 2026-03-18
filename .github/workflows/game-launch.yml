@@ -51,6 +51,14 @@ on:
           end_at."
         required: false
         type: string
+      map_config_overrides_json:
+        description: "Optional JSON object with raw map config overrides."
+        required: false
+        type: string
+      blitz_registration_overrides_json:
+        description: "Optional JSON object with raw Blitz registration overrides."
+        required: false
+        type: string
       launch_step:
         description: "Launch scope. Use full for the first trial, or target one step for recovery."
         required: false
@@ -82,6 +90,8 @@ jobs:
       GAME_LAUNCH_SINGLE_REALM_MODE: ${{ github.event.inputs.single_realm_mode }}
       GAME_LAUNCH_TWO_PLAYER_MODE: ${{ github.event.inputs.two_player_mode }}
       GAME_LAUNCH_DURATION_SECONDS: ${{ github.event.inputs.duration_seconds }}
+      GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON: ${{ github.event.inputs.map_config_overrides_json }}
+      GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
@@ -150,12 +160,28 @@ jobs:
             args+=(--duration-seconds "${GAME_LAUNCH_DURATION_SECONDS}")
           fi
 
+          if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
+            args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
+          fi
+
+          if [ -n "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}" ]; then
+            args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
+          fi
+
           run_store_args=(
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
             --game "${GAME_LAUNCH_GAME_NAME}"
             --start-time "${GAME_LAUNCH_START_TIME}"
             --launch-step "${GAME_LAUNCH_STEP}"
           )
+
+          if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
+            run_store_args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
+          fi
+
+          if [ -n "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}" ]; then
+            run_store_args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
+          fi
 
           if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then
             run_store_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")

@@ -1,4 +1,5 @@
 import { env } from "../../../../../env";
+import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
 
 export type FactoryWorkerEnvironmentId = "slot.eternum" | "mainnet.eternum" | "slot.blitz" | "mainnet.blitz";
 export type FactoryWorkerLaunchStepId =
@@ -72,7 +73,7 @@ interface FactoryWorkerRunListResponse {
   runs: FactoryWorkerRunRecord[];
 }
 
-interface CreateFactoryRunRequest {
+export interface CreateFactoryRunRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
   gameStartTime: string;
@@ -80,6 +81,8 @@ interface CreateFactoryRunRequest {
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }
 
 interface ContinueFactoryRunRequest {

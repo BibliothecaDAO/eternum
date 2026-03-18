@@ -98,6 +98,58 @@ describe("factory run store", () => {
     ]);
   });
 
+  test("persists map config overrides inside the stored launch request", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryLaunchStarted({
+      environmentId: "slot.eternum",
+      gameName: "etrn-flux-730",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.eternum",
+        gameName: "etrn-flux-730",
+        startTime: "2026-03-18T10:00:00Z",
+        mapConfigOverrides: {
+          bitcoinMineWinProbability: 1638,
+          bitcoinMineFailProbability: 63897,
+        },
+      },
+    });
+
+    const inputRecord = branchStore.readJson("inputs/slot/eternum/etrn-flux-730/101-1.json");
+
+    expect(inputRecord.request.mapConfigOverrides).toEqual({
+      bitcoinMineWinProbability: 1638,
+      bitcoinMineFailProbability: 63897,
+    });
+  });
+
+  test("persists blitz registration overrides inside the stored launch request", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryLaunchStarted({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-731",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.blitz",
+        gameName: "bltz-flux-731",
+        startTime: "2026-03-18T10:00:00Z",
+        blitzRegistrationOverrides: {
+          registration_count_max: 12,
+        },
+      },
+    });
+
+    const inputRecord = branchStore.readJson("inputs/slot/blitz/bltz-flux-731/101-1.json");
+
+    expect(inputRecord.request.blitzRegistrationOverrides).toEqual({
+      registration_count_max: 12,
+    });
+  });
+
   test("records successful step output into the run artifacts", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;

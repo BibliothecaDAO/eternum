@@ -30,6 +30,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@config": path.resolve(__dirname, "../../../config/utils/utils"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../../packages/core/src/index.ts"),
       "@bibliothecadao/react": path.resolve(__dirname, "../../../packages/react/src/index.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../../packages/types/src/index.ts"),

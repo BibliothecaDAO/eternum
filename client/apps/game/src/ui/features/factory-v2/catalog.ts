@@ -1,7 +1,7 @@
-import type { Chain } from "@contracts";
 import type {
   FactoryEnvironmentOption,
   FactoryGameMode,
+  FactoryLaunchChain,
   FactoryLaunchPreset,
   FactoryLaunchStartRule,
   FactoryModeDefinition,
@@ -138,7 +138,7 @@ const formatDateTimeLocalValue = (date: Date) => {
   );
 };
 
-const resolveFactoryEnvironmentChain = (environment: string): Chain => {
+const resolveFactoryEnvironmentChain = (environment: string): FactoryLaunchChain => {
   const [chain] = environment.split(".");
   return chain === "mainnet" ? "mainnet" : "slot";
 };

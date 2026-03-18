@@ -10,6 +10,13 @@ describe("launch request helpers", () => {
         "start-time": "2026-03-18T10:00:00Z",
         "two-player-mode": "true",
         "duration-seconds": "3600",
+        "map-config-overrides-json": JSON.stringify({
+          campFindProbability: 16384,
+          campFindFailProbability: 49151,
+        }),
+        "blitz-registration-overrides-json": JSON.stringify({
+          registration_count_max: 12,
+        }),
       }),
     ).toMatchObject({
       environmentId: "slot.blitz",
@@ -17,6 +24,13 @@ describe("launch request helpers", () => {
       startTime: "2026-03-18T10:00:00Z",
       twoPlayerMode: true,
       durationSeconds: 3600,
+      mapConfigOverrides: {
+        campFindProbability: 16384,
+        campFindFailProbability: 49151,
+      },
+      blitzRegistrationOverrides: {
+        registration_count_max: 12,
+      },
     });
   });
 

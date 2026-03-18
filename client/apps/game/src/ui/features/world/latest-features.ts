@@ -10,6 +10,111 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Cleaner Factory Start Card",
+    description:
+      "The Factory start card now separates launch basics, Blitz setup, and advanced tuning, so the main launch choices are easier to scan and the player-cap control sits with the play-style options it affects.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Fixed Blitz Play Style Labels",
+    description:
+      "Blitz play-style choices in the new Factory now stay on the same three preset labels again, so changing More options like max players no longer rewrites the section into numbered player-cap text.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Steadier Factory More Options",
+    description:
+      "Factory More options now keeps the section you opened in place while you type, so adjusting values like Blitz max players no longer snaps the drawer back closed.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-18",
+    title: "Player Cap In Blitz Styles",
+    description:
+      "The Blitz play-style section in Factory now shows the current player cap directly in each multiplayer option, so it is easier to see the actual setup before you launch.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Smarter Factory Blitz Controls",
+    description:
+      "Factory More options now shows Blitz-specific launch controls more clearly, including minute-based relic timing and a max-player cap that only appears for multiplayer Blitz setups.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Refined Blitz Play Style Copy",
+    description:
+      "Blitz play-style labels in the new Factory now use cleaner player-and-realm wording, so the default setup, the 2-player variant, and the single-realm option read more naturally at a glance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Cleaner Factory Finish",
+    description:
+      "Blitz play-style copy in the new Factory now reads as clearer title-case presets, and the page ends with more bottom space so the final controls do not feel jammed against the edge.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Softer Blitz Play Style Copy",
+    description:
+      "Blitz play-style options in the new Factory now use calmer one-line labels, making the default multi-player setup, the 2-player variant, and the single-realm option easier to scan without feeling as shouty.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Cleaner Blitz Selector",
+    description:
+      "The Blitz play-style section now uses a lighter choice list instead of chunky option buttons, making the player-and-realm presets feel cleaner and easier to scan.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Blitz Play Style Copy",
+    description:
+      "Blitz play-style options in the new Factory now read as clear player-and-realm combinations, so it is easier to scan the default setup, the 2-player variant, and the single-realm option at a glance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Smoother Factory Finish",
+    description:
+      "The new Factory now uses more compact Blitz play-style cards and adds extra space at the bottom of the page, so the controls feel lighter and the layout no longer ends so abruptly.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Sticky Factory Workflow",
+    description:
+      "Changing game type in the new Factory now keeps your current workflow section selected, so switching between Eternum and Blitz no longer kicks you out of Start or Watch unexpectedly.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Clearer Blitz Play Styles",
+    description:
+      "Blitz factory play styles now describe player and realm counts directly, making it easier to tell whether you are launching the default multi-player setup, a 2-player run, or a single-realm match.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Launch More Options",
+    description:
+      "Factory start cards now include mode-aware More options controls for map tuning, so you can adjust launch-time discovery and relic settings without leaving the new flow.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Launch Without Switching",
+    description:
+      "Starting a game in the new Factory no longer forces a wallet network switch first, so you can kick off launches for another environment without interrupting your current wallet session.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Factory Guided Recovery",
     description:
       "Factory recovery now waits for you to press Continue or Retry first, then carries on through later successful steps without forcing extra clicks.",

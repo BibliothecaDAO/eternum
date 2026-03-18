@@ -28,6 +28,8 @@ function usage(): void {
       "",
       "Optional flags:",
       "  --launch-step <full|create-world|wait-for-factory-index|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks|create-indexer>",
+      "  --map-config-overrides-json <json>",
+      "  --blitz-registration-overrides-json <json>",
       "  --error-message <message>",
       "  --error-message-file <path>",
       "  --branch <factory-runs>",
