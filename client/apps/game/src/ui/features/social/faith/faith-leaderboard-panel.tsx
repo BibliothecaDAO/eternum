@@ -14,9 +14,17 @@ const formatBigIntWithCommas = (value: bigint): string => {
   return `${sign}${grouped}`;
 };
 
+const isZeroAddress = (address: string): boolean => {
+  return /^0x0+$/i.test(address.trim());
+};
+
 const buildOwnerLabel = (entry: FaithLeaderboardEntry): string => {
   if (entry.ownerName?.trim()) {
     return entry.ownerName.trim();
+  }
+
+  if (isZeroAddress(entry.ownerAddress)) {
+    return "Unclaimed";
   }
 
   return displayAddress(entry.ownerAddress);
@@ -142,7 +150,9 @@ export const FaithLeaderboardPanel = () => {
                   <td className="px-3 py-2">
                     <div className="flex flex-col">
                       <span className="font-medium text-gold">{buildOwnerLabel(entry)}</span>
-                      <span className="text-[11px] text-gold/60">{displayAddress(entry.ownerAddress)}</span>
+                      <span className="text-[11px] text-gold/60">
+                        {isZeroAddress(entry.ownerAddress) ? "No owner recorded" : displayAddress(entry.ownerAddress)}
+                      </span>
                     </div>
                   </td>
                   <td className="px-3 py-2 text-right font-mono">{formatBigIntWithCommas(entry.totalFaithPoints)}</td>

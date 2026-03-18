@@ -3,6 +3,7 @@ import Coins from "lucide-react/dist/esm/icons/coins";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import Shield from "lucide-react/dist/esm/icons/shield";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useCallback, useMemo } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -22,6 +23,7 @@ import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { StructureProductionPanel } from "../structure-production-panel";
+import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -103,6 +105,9 @@ const StructureBannerEntityDetailContent = memo(
     const isCamp = [StructureType.Village, StructureType.Camp].includes(Number(rawCategory) as StructureType);
     const showBalanceInline = isFragmentMine || isCamp;
     const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
+    const showFaithTab =
+      rawCategory !== undefined &&
+      [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
     const canOpenTransferPopup =
       isMine &&
       rawCategory !== undefined &&
@@ -226,6 +231,12 @@ const StructureBannerEntityDetailContent = memo(
               </Tabs.Panel>
             )}
 
+            {showFaithTab && (
+              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
+                <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
+              </Tabs.Panel>
+            )}
+
             {!showBalanceInline && (
               <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
                 {resources ? (
@@ -253,6 +264,11 @@ const StructureBannerEntityDetailContent = memo(
             {showProductionTab && (
               <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
                 <Factory className="h-4 w-4 text-gold" />
+              </Tabs.Tab>
+            )}
+            {showFaithTab && (
+              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
+                <Sparkles className="h-4 w-4 text-gold" />
               </Tabs.Tab>
             )}
             {!showBalanceInline && (

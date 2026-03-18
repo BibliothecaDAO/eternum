@@ -114,6 +114,10 @@ export enum TransactionType {
   CLAIM_SHARE_POINTS = "claim_share_points",
   ALLOCATE_SHARES = "allocate_shares",
   CLAIM_WONDER_PRODUCTION_BONUS = "claim_wonder_production_bonus",
+  PLEDGE_FAITH = "pledge_faith",
+  REMOVE_FAITH = "remove_faith",
+  UPDATE_WONDER_OWNERSHIP = "update_wonder_ownership",
+  UPDATE_STRUCTURE_OWNERSHIP = "update_structure_ownership",
 
   // Realms & Settlement
   SETTLE_REALMS = "settle_realms",

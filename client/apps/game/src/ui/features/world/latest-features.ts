@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Wonder Devotion Actions",
+    description:
+      "Realm and Village panels now let you view current faith allegiance and devote to a Wonder directly in-game, including wonder FP/sec and follower stats before confirming.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-18",
     title: "Faith Wonder Leaderboard Tab",
     description:
       "Added a new Faith tab to the in-game leaderboard that ranks all Wonders by accumulated Faith Points, including FP/sec, follower counts, and owner details.",

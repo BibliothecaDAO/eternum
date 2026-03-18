@@ -456,6 +456,26 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.claim_wonder_production_bonus(props);
   };
 
+  const pledge_faith = async (props: SystemProps.PledgeFaithProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.pledge_faith(props);
+  };
+
+  const remove_faith = async (props: SystemProps.RemoveFaithProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.remove_faith(props);
+  };
+
+  const update_wonder_ownership = async (
+    props: SystemProps.UpdateWonderOwnershipProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.update_wonder_ownership(props);
+  };
+
+  const update_structure_ownership = async (
+    props: SystemProps.UpdateStructureOwnershipProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.update_structure_ownership(props);
+  };
+
   const start_quest = async (props: SystemProps.StartQuestProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.start_quest(props);
   };
@@ -529,6 +549,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     execute_realm_production_plan: withAuth(execute_realm_production_plan),
     create_building: withAuth(create_building),
     claim_wonder_production_bonus: withAuth(claim_wonder_production_bonus),
+    pledge_faith: withAuth(pledge_faith),
+    remove_faith: withAuth(remove_faith),
+    update_wonder_ownership: withAuth(update_wonder_ownership),
+    update_structure_ownership: withAuth(update_structure_ownership),
 
     uuid: uuid,
 

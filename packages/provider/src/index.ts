@@ -2730,6 +2730,87 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call, TransactionType.CLAIM_WONDER_PRODUCTION_BONUS);
   }
 
+  /**
+   * Pledge a structure's faith to a wonder.
+   *
+   * @param props - Properties for faith pledge
+   * @param props.structure_id - ID of the structure pledging faith
+   * @param props.wonder_id - ID of the wonder receiving faith
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async pledge_faith(props: SystemProps.PledgeFaithProps) {
+    const { structure_id, wonder_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+      entrypoint: "pledge_faith",
+      calldata: [structure_id, wonder_id],
+    });
+
+    return await this.promiseQueue.enqueue(call, TransactionType.PLEDGE_FAITH);
+  }
+
+  /**
+   * Remove a structure's faith from its currently pledged wonder.
+   *
+   * @param props - Properties for removing faith
+   * @param props.structure_id - ID of the structure to remove from faith
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async remove_faith(props: SystemProps.RemoveFaithProps) {
+    const { structure_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+      entrypoint: "remove_faith",
+      calldata: [structure_id],
+    });
+
+    return await this.promiseQueue.enqueue(call, TransactionType.REMOVE_FAITH);
+  }
+
+  /**
+   * Synchronize wonder ownership in the faith system.
+   *
+   * @param props - Properties for wonder ownership synchronization
+   * @param props.wonder_id - Wonder ID to synchronize
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async update_wonder_ownership(props: SystemProps.UpdateWonderOwnershipProps) {
+    const { wonder_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+      entrypoint: "update_wonder_ownership",
+      calldata: [wonder_id],
+    });
+
+    return await this.promiseQueue.enqueue(call, TransactionType.UPDATE_WONDER_OWNERSHIP);
+  }
+
+  /**
+   * Synchronize structure ownership in the faith system.
+   *
+   * @param props - Properties for structure ownership synchronization
+   * @param props.structure_id - Structure ID to synchronize
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async update_structure_ownership(props: SystemProps.UpdateStructureOwnershipProps) {
+    const { structure_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+      entrypoint: "update_structure_ownership",
+      calldata: [structure_id],
+    });
+
+    return await this.promiseQueue.enqueue(call, TransactionType.UPDATE_STRUCTURE_OWNERSHIP);
+  }
+
   public async mint_starting_resources(props: SystemProps.MintStartingResources) {
     const { realm_entity_id, config_ids, signer } = props;
 

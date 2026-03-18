@@ -13,6 +13,14 @@ interface FaithLeaderboardRow {
   num_structures_pledged?: unknown;
 }
 
+interface FaithfulStructureRow {
+  structure_id?: unknown;
+  wonder_id?: unknown;
+  faithful_since?: unknown;
+  fp_to_wonder_owner_per_sec?: unknown;
+  fp_to_struct_owner_per_sec?: unknown;
+}
+
 export interface FaithLeaderboardEntry {
   rank: number;
   wonderId: bigint;
@@ -22,6 +30,14 @@ export interface FaithLeaderboardEntry {
   totalFaithPoints: bigint;
   faithPointsPerSecond: number;
   followerCount: number;
+}
+
+export interface FaithfulStructureStatus {
+  structureId: bigint;
+  wonderId: bigint;
+  faithfulSince: number;
+  fpToWonderOwnerPerSec: number;
+  fpToStructureOwnerPerSec: number;
 }
 
 const WONDER_FAITH_LEADERBOARD_QUERY = `
@@ -38,6 +54,18 @@ const WONDER_FAITH_LEADERBOARD_QUERY = `
   LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
   WHERE s.\`metadata.has_wonder\` = true
   ORDER BY COALESCE(wf.claimed_points, 0) DESC, COALESCE(wf.claim_per_sec, 0) DESC, s.entity_id ASC;
+`;
+
+const buildFaithfulStructureStatusQuery = (structureId: bigint): string => `
+  SELECT
+    fs.structure_id AS structure_id,
+    fs.wonder_id AS wonder_id,
+    fs.faithful_since AS faithful_since,
+    fs.fp_to_wonder_owner_per_sec AS fp_to_wonder_owner_per_sec,
+    fs.fp_to_struct_owner_per_sec AS fp_to_struct_owner_per_sec
+  FROM [s1_eternum-FaithfulStructure] fs
+  WHERE fs.structure_id = ${structureId.toString()}
+  LIMIT 1;
 `;
 
 const ensureSqlSuffix = (baseUrl: string): string => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
@@ -106,7 +134,21 @@ const parseOwnerName = (value: unknown): string | null => {
   }
 
   const trimmed = value.trim();
-  return trimmed.length ? trimmed : null;
+  if (!trimmed.length) {
+    return null;
+  }
+
+  const normalized = trimmed.toLowerCase();
+  if (/^0x\.{3}0+$/.test(normalized)) {
+    return null;
+  }
+
+  const withoutDots = normalized.replace(/\./g, "");
+  if (/^0x0+$/.test(withoutDots)) {
+    return null;
+  }
+
+  return trimmed;
 };
 
 const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeaderboardEntry[] => {
@@ -156,6 +198,44 @@ const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeader
   }));
 };
 
+const transformFaithfulStructureRows = (rows: FaithfulStructureRow[]): FaithfulStructureStatus | null => {
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  const structureId = parseBigInt(row.structure_id);
+  const wonderId = parseBigInt(row.wonder_id);
+
+  if (structureId == null || structureId <= 0n || wonderId == null || wonderId <= 0n) {
+    return null;
+  }
+
+  return {
+    structureId,
+    wonderId,
+    faithfulSince: parseIntNumber(row.faithful_since),
+    fpToWonderOwnerPerSec: parseIntNumber(row.fp_to_wonder_owner_per_sec),
+    fpToStructureOwnerPerSec: parseIntNumber(row.fp_to_struct_owner_per_sec),
+  };
+};
+
+const isFaithfulStructureMissingTableError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const normalizedMessage = error.message.toLowerCase();
+  const hasFaithfulStructureReference = normalizedMessage.includes("faithfulstructure");
+  const isMissingTableError =
+    normalizedMessage.includes("no such table") ||
+    normalizedMessage.includes("does not exist") ||
+    normalizedMessage.includes("not found") ||
+    normalizedMessage.includes("unknown table");
+
+  return hasFaithfulStructureReference && isMissingTableError;
+};
+
 export const fetchFaithLeaderboard = async (toriiBaseUrl?: string): Promise<FaithLeaderboardEntry[]> => {
   const explicitUrl = toriiBaseUrl?.trim();
   const baseUrl = explicitUrl?.length ? explicitUrl : getSqlApiBaseUrl();
@@ -168,4 +248,35 @@ export const fetchFaithLeaderboard = async (toriiBaseUrl?: string): Promise<Fait
   const url = buildApiUrl(sqlBaseUrl, WONDER_FAITH_LEADERBOARD_QUERY);
   const rows = await fetchWithErrorHandling<FaithLeaderboardRow>(url, "Failed to fetch faith leaderboard");
   return transformFaithLeaderboardRows(rows);
+};
+
+export const fetchFaithfulStructureStatus = async (
+  structureIdInput: bigint | number | string,
+  toriiBaseUrl?: string,
+): Promise<FaithfulStructureStatus | null> => {
+  const structureId = parseBigInt(structureIdInput);
+  if (structureId == null || structureId <= 0n) {
+    return null;
+  }
+
+  const explicitUrl = toriiBaseUrl?.trim();
+  const baseUrl = explicitUrl?.length ? explicitUrl : getSqlApiBaseUrl();
+
+  if (!baseUrl?.trim()) {
+    return null;
+  }
+
+  const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
+  const url = buildApiUrl(sqlBaseUrl, buildFaithfulStructureStatusQuery(structureId));
+
+  try {
+    const rows = await fetchWithErrorHandling<FaithfulStructureRow>(url, "Failed to fetch faith devotion status");
+    return transformFaithfulStructureRows(rows);
+  } catch (error) {
+    if (isFaithfulStructureMissingTableError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 };
