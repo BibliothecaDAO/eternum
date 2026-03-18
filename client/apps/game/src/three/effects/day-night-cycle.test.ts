@@ -103,6 +103,49 @@ describe("DayNightCycleManager", () => {
     expect(fixture.fog.far).toBe(81);
   });
 
+  it("applyWeatherModulation does not compound — calling twice without update yields same sky color", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(37.5);
+
+    fixture.manager.applyWeatherModulation(0.5, 0, 0);
+    const skyAfterFirst = (fixture.scene.background as Color).clone();
+
+    // Call again WITHOUT update() in between — should NOT darken further
+    fixture.manager.applyWeatherModulation(0.5, 0, 0);
+    const skyAfterSecond = (fixture.scene.background as Color).clone();
+
+    expect(skyAfterSecond.getHex()).toBe(skyAfterFirst.getHex());
+  });
+
+  it("sky color recovers after update following applyWeatherModulation", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(37.5);
+    const skyBeforeWeather = (fixture.scene.background as Color).getHex();
+
+    fixture.manager.applyWeatherModulation(0.8, 0, 0);
+    const skyDuringWeather = (fixture.scene.background as Color).getHex();
+    expect(skyDuringWeather).not.toBe(skyBeforeWeather);
+
+    // Next update() should restore the canonical sky color
+    fixture.manager.update(37.5);
+    const skyAfterRecovery = (fixture.scene.background as Color).getHex();
+    expect(skyAfterRecovery).toBe(skyBeforeWeather);
+  });
+
+  it("applyWeatherModulation with skyDarkness=0 does not modify sky color", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(37.5);
+    const skyBefore = (fixture.scene.background as Color).getHex();
+
+    fixture.manager.applyWeatherModulation(0, 0, 0);
+    const skyAfter = (fixture.scene.background as Color).getHex();
+
+    expect(skyAfter).toBe(skyBefore);
+  });
+
   it("is idempotent on dispose", () => {
     const fixture = createFixture();
     const restoreSpy = vi.spyOn(fixture.manager as any, "restoreOriginalLighting");

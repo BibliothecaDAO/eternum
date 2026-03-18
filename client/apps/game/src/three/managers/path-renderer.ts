@@ -50,6 +50,11 @@ export class PathRenderer {
 
   private isDisposed = false;
 
+  // Dirty-flag deferred rebuild: coalesce multiple state changes into a single
+  // rebuildPathBatches call on the next animation frame.
+  private _batchesDirty = false;
+  private _rebuildFrameHandle: number | null = null;
+
   constructor(config: Partial<PathRenderConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CONFIG, ...config };
   }
@@ -118,7 +123,7 @@ export class PathRenderer {
 
     this.activePaths.set(entityId, path);
     this.culledPaths.delete(entityId);
-    this.rebuildPathBatches();
+    this.markBatchesDirty();
 
     incrementWorldmapRenderCounter("pathCreateCalls");
     recordWorldmapRenderDuration("createPath", performance.now() - createStartedAt);
@@ -165,7 +170,7 @@ export class PathRenderer {
 
     path.displayState = state;
 
-    this.rebuildPathBatches();
+    this.markBatchesDirty();
   }
 
   /**
@@ -182,7 +187,7 @@ export class PathRenderer {
       this.selectedEntityId = null;
     }
 
-    this.rebuildPathBatches();
+    this.markBatchesDirty();
 
     setWorldmapRenderGauge("activePaths", this.activePaths.size);
   }
@@ -205,6 +210,8 @@ export class PathRenderer {
    * Update animation and frustum culling (call each frame)
    */
   public update(_deltaTime: number): void {
+    this.flushDirtyBatches();
+
     this.lastCullFrame++;
     if (this.lastCullFrame >= this.cullCheckInterval) {
       this.lastCullFrame = 0;
@@ -263,7 +270,17 @@ export class PathRenderer {
     }
     this.isDisposed = true;
 
+    // Cancel any pending deferred rebuild before clearAll re-marks dirty.
+    if (this._rebuildFrameHandle !== null) {
+      cancelAnimationFrame(this._rebuildFrameHandle);
+      this._rebuildFrameHandle = null;
+    }
+
     this.clearAll();
+
+    // clearAll -> removePath -> markBatchesDirty sets the flag again.
+    // Flush synchronously so geometry/materials are disposed immediately.
+    this.flushDirtyBatches();
 
     if (this.mesh) {
       this.mesh.parent?.remove(this.mesh);
@@ -317,6 +334,38 @@ export class PathRenderer {
       selectedEntityId: this.selectedEntityId,
       memoryUsageKB,
     };
+  }
+
+  /**
+   * Mark batches as dirty and schedule a deferred rebuild via rAF.
+   * Multiple calls within the same frame are coalesced into a single rebuild.
+   */
+  private markBatchesDirty(): void {
+    this._batchesDirty = true;
+
+    if (this._rebuildFrameHandle === null && typeof requestAnimationFrame !== "undefined") {
+      this._rebuildFrameHandle = requestAnimationFrame(() => {
+        this._rebuildFrameHandle = null;
+        this.flushDirtyBatches();
+      });
+    }
+  }
+
+  /**
+   * If batches are dirty, perform the rebuild and reset the flag.
+   * Called from update() and from the rAF callback.
+   */
+  private flushDirtyBatches(): void {
+    if (!this._batchesDirty) return;
+    this._batchesDirty = false;
+
+    // Cancel any pending rAF since we are rebuilding now
+    if (this._rebuildFrameHandle !== null) {
+      cancelAnimationFrame(this._rebuildFrameHandle);
+      this._rebuildFrameHandle = null;
+    }
+
+    this.rebuildPathBatches();
   }
 
   private rebuildPathBatches(): void {

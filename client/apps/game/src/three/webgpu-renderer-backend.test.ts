@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, CineonToneMapping, ReinhardToneMapping } from "three";
+import { ACESFilmicToneMapping, CineonToneMapping, NeutralToneMapping, ReinhardToneMapping } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetRendererDiagnostics, snapshotRendererDiagnostics, syncRendererBackendDiagnostics } from "./renderer-diagnostics";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
@@ -262,7 +262,7 @@ describe("createWebGPURendererBackend", () => {
       },
     });
 
-    expect(renderer.toneMapping).toBe(ACESFilmicToneMapping);
+    expect(renderer.toneMapping).toBe(NeutralToneMapping);
     expect(renderer.toneMappingExposure).toBe(0.9);
 
     backend.applyPostProcessPlan?.({
@@ -342,5 +342,51 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.render).toHaveBeenCalledTimes(2);
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
     expect(backend.renderer).toBeUndefined();
+  });
+
+  it("resolves neutral tone mapping to NeutralToneMapping, distinct from aces-filmic", async () => {
+    const renderer = createRendererSurface();
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgpu" as const,
+          renderer: Object.assign(renderer, {
+            init: vi.fn(async () => {}),
+          }),
+        })),
+        now: vi.fn(() => 0),
+      },
+    );
+
+    await backend.initialize();
+
+    backend.applyPostProcessPlan?.({
+      antiAlias: "none",
+      bloom: { enabled: false, intensity: 0 },
+      chromaticAberration: { enabled: false },
+      colorGrade: { brightness: 0, contrast: 0, hue: 0, saturation: 0 },
+      toneMapping: { exposure: 1, mode: "neutral", whitePoint: 1 },
+      vignette: { darkness: 0, enabled: false, offset: 0 },
+    });
+
+    expect(renderer.toneMapping).toBe(NeutralToneMapping);
+    expect(renderer.toneMapping).not.toBe(ACESFilmicToneMapping);
+
+    backend.applyPostProcessPlan?.({
+      antiAlias: "none",
+      bloom: { enabled: false, intensity: 0 },
+      chromaticAberration: { enabled: false },
+      colorGrade: { brightness: 0, contrast: 0, hue: 0, saturation: 0 },
+      toneMapping: { exposure: 1, mode: "aces-filmic", whitePoint: 1 },
+      vignette: { darkness: 0, enabled: false, offset: 0 },
+    });
+
+    expect(renderer.toneMapping).toBe(ACESFilmicToneMapping);
   });
 });

@@ -183,11 +183,10 @@ export class FXManager {
 
   private registerFX(type: FXType, config: FXConfig): void {
     if (!this.textures.has(config.textureUrl)) {
-      const texture = new THREE.TextureLoader().load(config.textureUrl, (loadedTexture) => {
-        loadedTexture.colorSpace = THREE.SRGBColorSpace;
-        loadedTexture.minFilter = THREE.LinearFilter;
-        loadedTexture.magFilter = THREE.LinearFilter;
-      });
+      const texture = new THREE.TextureLoader().load(config.textureUrl);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
       this.textures.set(config.textureUrl, texture);
     }
 

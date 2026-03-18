@@ -99,6 +99,7 @@ export abstract class HexagonScene {
   private weatherAtmosphereState?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">;
 
   private groundMesh!: Mesh;
+  private groundMeshTexture: Texture | null = null;
   private uiStateUnsubscribe?: () => void;
   private lightningEndTime: number = 0;
   private originalLightningIntensity: number = 0;
@@ -108,6 +109,7 @@ export abstract class HexagonScene {
   private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
   private lastLightningTriggerProgress: number = -1;
   private lightningSequenceTimeout: NodeJS.Timeout | null = null;
+  private lightningTriggerTimeout: ReturnType<typeof setTimeout> | null = null;
   private currentStrikeIndex: number = 0;
   private lightningStrikes: Array<{ delay: number; duration: number }> = [
     { delay: 0, duration: 80 },
@@ -774,8 +776,6 @@ export abstract class HexagonScene {
 
     const { row, col } = this.getHexFromWorldPosition(position);
 
-    console.log("row", row, col);
-
     // Release matrix back to pool
     matrixPool.releaseMatrix(matrix);
 
@@ -962,6 +962,7 @@ export abstract class HexagonScene {
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
+    this.groundMeshTexture = texture;
     this.setupGroundMeshGUI();
   }
 
@@ -1221,7 +1222,7 @@ export abstract class HexagonScene {
     if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
       this.lastLightningTriggerProgress = 0;
       // Add 0.5 second delay before starting lightning sequence
-      setTimeout(() => {
+      this.lightningTriggerTimeout = setTimeout(() => {
         this.startLightningSequence();
       }, 2000);
       return false; // Don't trigger immediately
@@ -1246,6 +1247,10 @@ export abstract class HexagonScene {
 
   // Cleanup method for lightning sequence
   protected cleanupLightning(): void {
+    if (this.lightningTriggerTimeout) {
+      clearTimeout(this.lightningTriggerTimeout);
+      this.lightningTriggerTimeout = null;
+    }
     if (this.lightningSequenceTimeout) {
       clearTimeout(this.lightningSequenceTimeout);
       this.lightningSequenceTimeout = null;
@@ -1282,6 +1287,12 @@ export abstract class HexagonScene {
       }
       // @ts-ignore
       this.groundMesh = null;
+    }
+
+    // Dispose of ground mesh texture (MeshStandardMaterial.dispose() does NOT auto-dispose textures)
+    if (this.groundMeshTexture) {
+      this.groundMeshTexture.dispose();
+      this.groundMeshTexture = null;
     }
 
     // Clean up managers

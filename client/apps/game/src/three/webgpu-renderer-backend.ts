@@ -1,5 +1,5 @@
 import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping } from "three";
+import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NeutralToneMapping, ReinhardToneMapping } from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -180,8 +180,9 @@ function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]
       return ReinhardToneMapping;
     case "cineon":
       return CineonToneMapping;
-    case "aces-filmic":
     case "neutral":
+      return NeutralToneMapping;
+    case "aces-filmic":
     default:
       return ACESFilmicToneMapping;
   }

@@ -241,6 +241,7 @@ import {
   prewarmWorldmapChunkPresentation,
 } from "./worldmap-chunk-presentation";
 import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
+import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -2642,6 +2643,17 @@ export default class WorldmapScene extends WarpTravel {
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
 
+    // Clear follow camera timeout to prevent callback firing on destroyed UI store state
+    if (this.followCameraTimeout) {
+      clearTimeout(this.followCameraTimeout);
+      this.followCameraTimeout = null;
+    }
+
+    // Cancel all travel effects and their internal timeouts (maxLifetimeTimeout up to 90s)
+    this.travelEffects.forEach((cleanup) => cleanup());
+    this.travelEffects.clear();
+    this.travelEffectsByEntity.clear();
+
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
   }
@@ -3532,7 +3544,7 @@ export default class WorldmapScene extends WarpTravel {
             startRow,
             startCol,
             renderSize: this.renderChunkSize,
-            tileFetchPromise: Promise.resolve(true),
+            tileFetchPromise: this.computeTileEntities(chunkKey),
             tileHydrationReadyPromise: this.waitForTileHydrationIdle(chunkKey),
             boundsReadyPromise: Promise.resolve(),
             structureReadyPromise: this.waitForStructureHydrationIdle(chunkKey),
@@ -4697,65 +4709,71 @@ export default class WorldmapScene extends WarpTravel {
 
   private async waitForStructureHydrationIdle(chunkKey: string): Promise<void> {
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-    const state = this.structureHydrationFetches.get(fetchKey);
-    if (!state) {
-      return;
-    }
 
-    if (state.fetchSettled && state.pendingCount === 0) {
+    while (true) {
+      const state = this.structureHydrationFetches.get(fetchKey);
+      if (!state) {
+        return;
+      }
+
+      if (state.fetchSettled && state.pendingCount === 0) {
+        await Promise.resolve();
+        const refreshed = this.structureHydrationFetches.get(fetchKey);
+        if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
+          return;
+        }
+      }
+
+      await new Promise<void>((resolve) => {
+        const currentState = this.structureHydrationFetches.get(fetchKey);
+        if (!currentState) {
+          resolve();
+          return;
+        }
+        currentState.waiters.push(resolve);
+        this.flushStructureHydrationWaiters(fetchKey, currentState);
+      });
+
       await Promise.resolve();
       const refreshed = this.structureHydrationFetches.get(fetchKey);
       if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
         return;
       }
     }
-
-    await new Promise<void>((resolve) => {
-      const currentState = this.structureHydrationFetches.get(fetchKey);
-      if (!currentState) {
-        resolve();
-        return;
-      }
-      currentState.waiters.push(resolve);
-      this.flushStructureHydrationWaiters(fetchKey, currentState);
-    });
-
-    await Promise.resolve();
-    const refreshed = this.structureHydrationFetches.get(fetchKey);
-    if (refreshed && (!refreshed.fetchSettled || refreshed.pendingCount > 0)) {
-      await this.waitForStructureHydrationIdle(chunkKey);
-    }
   }
 
   private async waitForTileHydrationIdle(chunkKey: string): Promise<void> {
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-    const state = this.tileHydrationFetches.get(fetchKey);
-    if (!state) {
-      return;
-    }
 
-    if (state.fetchSettled && state.pendingCount === 0) {
+    while (true) {
+      const state = this.tileHydrationFetches.get(fetchKey);
+      if (!state) {
+        return;
+      }
+
+      if (state.fetchSettled && state.pendingCount === 0) {
+        await Promise.resolve();
+        const refreshed = this.tileHydrationFetches.get(fetchKey);
+        if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
+          return;
+        }
+      }
+
+      await new Promise<void>((resolve) => {
+        const currentState = this.tileHydrationFetches.get(fetchKey);
+        if (!currentState) {
+          resolve();
+          return;
+        }
+        currentState.waiters.push(resolve);
+        this.flushTileHydrationWaiters(fetchKey, currentState);
+      });
+
       await Promise.resolve();
       const refreshed = this.tileHydrationFetches.get(fetchKey);
       if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
         return;
       }
-    }
-
-    await new Promise<void>((resolve) => {
-      const currentState = this.tileHydrationFetches.get(fetchKey);
-      if (!currentState) {
-        resolve();
-        return;
-      }
-      currentState.waiters.push(resolve);
-      this.flushTileHydrationWaiters(fetchKey, currentState);
-    });
-
-    await Promise.resolve();
-    const refreshed = this.tileHydrationFetches.get(fetchKey);
-    if (refreshed && (!refreshed.fetchSettled || refreshed.pendingCount > 0)) {
-      await this.waitForTileHydrationIdle(chunkKey);
     }
   }
 
@@ -4902,28 +4920,24 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private ensureMatrixCacheLimit() {
-    if (this.cachedMatrixOrder.length <= this.maxMatrixCacheSize) {
-      return;
+    const { evictedKeys, limitedByPinning } = computeMatrixCacheEvictions(
+      this.cachedMatrixOrder,
+      this.pinnedChunkKeys,
+      this.maxMatrixCacheSize,
+    );
+
+    for (const key of evictedKeys) {
+      this.disposeCachedMatrices(key);
+      this.cachedMatrices.delete(key);
     }
 
-    let safetyCounter = this.cachedMatrixOrder.length;
-    while (this.cachedMatrixOrder.length > this.maxMatrixCacheSize && safetyCounter > 0) {
-      safetyCounter--;
-      const oldestKey = this.cachedMatrixOrder.shift();
-      if (!oldestKey) {
-        break;
-      }
-
-      if (this.pinnedChunkKeys.has(oldestKey)) {
-        this.cachedMatrixOrder.push(oldestKey);
-        continue;
-      }
-
-      this.disposeCachedMatrices(oldestKey);
-      this.cachedMatrices.delete(oldestKey);
+    // Rebuild the order array without evicted keys (preserves relative order).
+    if (evictedKeys.length > 0) {
+      const evictedSet = new Set(evictedKeys);
+      this.cachedMatrixOrder = this.cachedMatrixOrder.filter((k) => !evictedSet.has(k));
     }
 
-    if (this.cachedMatrixOrder.length > this.maxMatrixCacheSize) {
+    if (limitedByPinning) {
       console.warn(
         `[CACHE] Unable to evict matrices below limit because pinned chunks exceed capacity (${this.maxMatrixCacheSize})`,
       );
@@ -5553,6 +5567,7 @@ export default class WorldmapScene extends WarpTravel {
       await waitForChunkTransitionToSettle(
         () => this.globalChunkSwitchPromise,
         (error) => console.warn(`Previous global chunk switch failed:`, error),
+        { isSwitchedOff: () => this.isSwitchedOff },
       );
 
       const focusPoint = this.getCameraGroundIntersection().clone();
@@ -6513,6 +6528,10 @@ export default class WorldmapScene extends WarpTravel {
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
+
+    // Dispose hover label and selected hex managers to release Three.js resources
+    this.hoverLabelManager.dispose();
+    this.selectedHexManager.dispose();
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);

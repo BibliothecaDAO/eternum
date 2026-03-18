@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, ReinhardToneMapping, type Camera, type Scene } from "three";
+import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NeutralToneMapping, ReinhardToneMapping, type Camera, type Scene } from "three";
 import { PostProcessing } from "three/webgpu";
 import { pass, emissive, mrt, output } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
@@ -96,7 +96,7 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
     renderRendererOverlayPasses(this.renderer, pipeline);
   }
 
-  setSize(): void {
+  setSize(_width: number, _height: number): void {
     this.postProcessing.needsUpdate = true;
   }
 
@@ -145,8 +145,9 @@ function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]
       return ReinhardToneMapping;
     case "cineon":
       return CineonToneMapping;
-    case "aces-filmic":
     case "neutral":
+      return NeutralToneMapping;
+    case "aces-filmic":
     default:
       return ACESFilmicToneMapping;
   }

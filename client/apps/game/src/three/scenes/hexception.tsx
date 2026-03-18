@@ -157,6 +157,7 @@ export default class HexceptionScene extends HexagonScene {
   private playerStructures: Structure[] = [];
   private mode: GameModeConfig;
   private structureUpdateSubscription: any | null = null;
+  private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
   // Store Zustand unsubscribe functions to clean up on destroy
@@ -447,8 +448,11 @@ export default class HexceptionScene extends HexagonScene {
       // clear all animation mixers
       this.buildingMixers.clear();
 
+      // Unsubscribe previous building update listener before re-registering
+      this.buildingUpdateUnsubscribe?.();
+
       // subscribe to building updates (create and destroy)
-      this.worldUpdateListener.Buildings.onBuildingUpdate(
+      this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
@@ -505,6 +509,11 @@ export default class HexceptionScene extends HexagonScene {
 
   destroy() {
     this.clearHoverLabel();
+    this.hoverLabelManager.dispose();
+
+    // Clean up building update subscription
+    this.buildingUpdateUnsubscribe?.();
+    this.buildingUpdateUnsubscribe = null;
 
     // CRITICAL: Clean up all Zustand store subscriptions to prevent memory leaks
     console.log("🧹 Cleaning up Zustand subscriptions:", this.storeUnsubscribes.length);

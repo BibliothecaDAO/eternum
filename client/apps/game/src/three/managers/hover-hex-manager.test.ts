@@ -114,6 +114,33 @@ describe("HoverHexManager material ownership", () => {
     expect(hoverHalo.parent).not.toBeNull();
   });
 
+  it("disposes the intermediate ShapeGeometry used to build the outline EdgesGeometry", () => {
+    const disposeSpy = vi.spyOn(THREE.ShapeGeometry.prototype, "dispose");
+    disposeSpy.mockClear();
+
+    new HoverHexManager(new THREE.Scene());
+
+    // createHoverHex builds two ShapeGeometries via createRingGeometry (glow + halo)
+    // and one more for the outline source. The outline source must be disposed immediately
+    // after the EdgesGeometry copies its data.
+    // The two ring geometries are NOT disposed during construction (they stay attached to meshes).
+    // So at least one dispose call must come from the outline source geometry.
+    expect(disposeSpy).toHaveBeenCalled();
+
+    disposeSpy.mockRestore();
+  });
+
+  it("produces a valid EdgesGeometry for the outline after disposing the source", () => {
+    const manager = new HoverHexManager(new THREE.Scene());
+    const hoverOutline = (manager as any).hoverOutline as THREE.LineSegments;
+
+    // The EdgesGeometry should still have valid position data even though
+    // the source ShapeGeometry was disposed after construction
+    const posAttr = hoverOutline.geometry.getAttribute("position");
+    expect(posAttr).toBeDefined();
+    expect(posAttr.count).toBeGreaterThan(0);
+  });
+
   it("disposes shader material and geometry ownership", () => {
     const manager = new HoverHexManager(new THREE.Scene());
     const hoverHex = (manager as any).hoverHex as THREE.Mesh;

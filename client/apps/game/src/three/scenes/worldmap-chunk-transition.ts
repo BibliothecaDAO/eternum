@@ -691,8 +691,17 @@ export function resolveDuplicateTileReconcilePlan(
 export async function waitForChunkTransitionToSettle(
   getTransitionPromise: () => Promise<unknown> | null,
   onTransitionError?: (error: unknown) => void,
+  options?: { isSwitchedOff?: () => boolean; maxIterations?: number },
 ): Promise<void> {
-  while (true) {
+  const maxIterations = options?.maxIterations ?? 100;
+  const isSwitchedOff = options?.isSwitchedOff;
+  let iterations = 0;
+
+  while (iterations < maxIterations) {
+    if (isSwitchedOff?.()) {
+      return;
+    }
+
     const transitionPromise = getTransitionPromise();
     if (!transitionPromise) {
       return;
@@ -703,5 +712,7 @@ export async function waitForChunkTransitionToSettle(
     } catch (error) {
       onTransitionError?.(error);
     }
+
+    iterations++;
   }
 }

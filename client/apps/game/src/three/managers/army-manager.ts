@@ -191,6 +191,7 @@ export class ArmyManager {
   // Reusable objects for memory optimization
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
+  private readonly tempWorldPosition: Vector3 = new Vector3();
   private readonly tempColor: Color = new Color();
 
   private pruneTransitionChunkHistory(): void {
@@ -1803,7 +1804,7 @@ export class ArmyManager {
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
 
     // Convert path to world positions
-    const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
+    const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
 
     // Track source bucket so army remains visible during movement animation.
     // The spatial index will have the army in BOTH source and destination buckets
@@ -2274,7 +2275,7 @@ export class ArmyManager {
   }
 
   private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
-    return this.getArmyWorldPositionInto(new Vector3(), hexCoords);
+    return this.getArmyWorldPositionInto(this.tempWorldPosition, hexCoords);
   };
 
   private toNumericId(entityId: ID): number {
@@ -2942,6 +2943,11 @@ ${
     }
     this.isDestroyed = true;
 
+    if (this.unsubscribeVisibility) {
+      this.unsubscribeVisibility();
+      this.unsubscribeVisibility = undefined;
+    }
+
     if (this.unsubscribeFrustum) {
       this.unsubscribeFrustum();
       this.unsubscribeFrustum = undefined;
@@ -3020,11 +3026,6 @@ ${
       this.pointsRenderers.enemy.dispose();
       this.pointsRenderers.ally.dispose();
       this.pointsRenderers.agent.dispose();
-    }
-
-    if (this.unsubscribeVisibility) {
-      this.unsubscribeVisibility();
-      this.unsubscribeVisibility = undefined;
     }
 
     // Clean up any other resources...

@@ -54,6 +54,10 @@ export class HexHoverLabel {
     this.element = null;
   }
 
+  dispose(): void {
+    this.clear();
+  }
+
   public hasActiveLabel(): boolean {
     return this.label !== null;
   }

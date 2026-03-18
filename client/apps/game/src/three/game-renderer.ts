@@ -284,6 +284,9 @@ export default class GameRenderer {
   }
 
   private setupRendererGUI() {
+    if (!this.renderer) {
+      return;
+    }
     const rendererFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Renderer"));
     rendererFolder
       .add(this.renderer, "toneMapping", {
@@ -315,12 +318,13 @@ export default class GameRenderer {
   }
 
   private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const WARN_AFTER_ATTEMPTS = 300; // ~5 seconds at 60fps
       let attempts = 0;
 
       const checkElement = () => {
         if (this.isDestroyed) {
+          reject(new Error("GameRenderer destroyed while waiting for label renderer element"));
           return;
         }
 

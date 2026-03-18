@@ -35,4 +35,27 @@ describe("FXManager", () => {
     expect(source).not.toMatch(/new THREE\.ShaderMaterial\(/);
     expect(source).not.toMatch(/batchedSystems: Map/);
   });
+
+  it("sets colorSpace to SRGBColorSpace on texture immediately (before async load callback)", () => {
+    let capturedTexture: THREE.Texture | null = null;
+
+    vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation((_url: string) => {
+      const tex = new THREE.Texture();
+      capturedTexture = tex;
+      // The onLoad callback is NOT called synchronously — it fires later.
+      // The fix sets properties on the returned texture before storing it.
+      return tex;
+    });
+
+    const scene = new THREE.Scene();
+    const _fxManager = new FXManager(scene, 1);
+
+    // The texture should have correct properties set synchronously
+    expect(capturedTexture).not.toBeNull();
+    expect(capturedTexture!.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(capturedTexture!.minFilter).toBe(THREE.LinearFilter);
+    expect(capturedTexture!.magFilter).toBe(THREE.LinearFilter);
+
+    _fxManager.destroy();
+  });
 });

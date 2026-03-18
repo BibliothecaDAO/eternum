@@ -72,6 +72,71 @@ export function drainBudgetedDeferredManagerCatchUpQueue<T extends BudgetedDefer
   };
 }
 
+export function drainMultiBudgetedDeferredManagerCatchUpQueue<T extends BudgetedDeferredManagerCatchUpTask>(input: {
+  queue: T[];
+  budgetBytes: number;
+}): {
+  tasksToRun: T[];
+  remainingQueue: T[];
+  didDeferHeadTask: boolean;
+} {
+  if (input.queue.length === 0) {
+    return { tasksToRun: [], remainingQueue: [], didDeferHeadTask: false };
+  }
+
+  // Check if the head task needs deferral (oversized, first encounter)
+  const headTask = input.queue[0];
+  if (headTask.estimatedUploadBytes > input.budgetBytes && (headTask.deferredCount ?? 0) === 0) {
+    return {
+      tasksToRun: [],
+      remainingQueue: [{ ...headTask, deferredCount: 1 }, ...input.queue.slice(1)],
+      didDeferHeadTask: true,
+    };
+  }
+
+  const tasksToRun: T[] = [];
+  let budgetRemaining = input.budgetBytes;
+  let idx = 0;
+
+  while (idx < input.queue.length) {
+    const task = input.queue[idx];
+
+    // Previously-deferred oversized tasks always run (they already waited one frame)
+    const isDeferred = (task.deferredCount ?? 0) > 0;
+
+    if (!isDeferred && task.estimatedUploadBytes > budgetRemaining) {
+      // No more budget for non-deferred tasks
+      break;
+    }
+
+    tasksToRun.push(task);
+    budgetRemaining -= task.estimatedUploadBytes;
+    idx++;
+
+    // After running a deferred oversized task, stop to avoid frame hitching
+    if (isDeferred) {
+      break;
+    }
+  }
+
+  return {
+    tasksToRun,
+    remainingQueue: input.queue.slice(idx),
+    didDeferHeadTask: false,
+  };
+}
+
+export function trimPostCommitManagerCatchUpQueue<T extends BudgetedDeferredManagerCatchUpTask>(input: {
+  queue: T[];
+  maxQueueLength: number;
+}): T[] {
+  if (input.queue.length <= input.maxQueueLength) {
+    return input.queue;
+  }
+  // Trim oldest entries from the front
+  return input.queue.slice(input.queue.length - input.maxQueueLength);
+}
+
 export async function runWarpTravelManagerFanout(input: {
   chunkKey: string;
   options?: WarpTravelManagerFanoutOptions;

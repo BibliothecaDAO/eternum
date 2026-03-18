@@ -86,7 +86,9 @@ export class HoverHexManager {
   private createHoverHex(): void {
     const glowGeometry = this.createRingGeometry(HEX_SIZE * 1.08, HEX_SIZE * 0.96);
     const haloGeometry = this.createRingGeometry(HEX_SIZE * 1.14, HEX_SIZE * 0.9);
-    const outlineGeometry = new THREE.EdgesGeometry(new THREE.ShapeGeometry(createHexagonShape(HEX_SIZE * 1.02)));
+    const outlineSourceGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_SIZE * 1.02));
+    const outlineGeometry = new THREE.EdgesGeometry(outlineSourceGeometry);
+    outlineSourceGeometry.dispose();
 
     this.hoverHex = new THREE.Mesh(glowGeometry, this.hoverMaterial);
     this.hoverHex.position.y = HOVER_FILL_Y; // Lifted off the terrain enough to survive dense ground detail.

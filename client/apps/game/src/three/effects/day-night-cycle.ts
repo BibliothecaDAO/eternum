@@ -63,6 +63,9 @@ export class DayNightCycleManager {
   private readonly tempColor1: Color = new Color();
   private readonly tempColor2: Color = new Color();
   private readonly stormTint: Color = new Color(0x606880);
+  private readonly lastUpdateSkyColor: Color = new Color();
+  private lastUpdateDirIntensity: number = 0;
+  private lastUpdateHemiIntensity: number = 0;
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
@@ -210,6 +213,11 @@ export class DayNightCycleManager {
 
     // Update lighting with smoothed colors
     this.updateLighting(this.currentColors);
+
+    // Store baseline values so applyWeatherModulation can darken non-destructively
+    this.lastUpdateSkyColor.copy(this.scene.background as Color);
+    this.lastUpdateDirIntensity = this.directionalLight.intensity;
+    this.lastUpdateHemiIntensity = this.hemisphereLight.intensity;
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(smoothedProgress, cameraTarget);
@@ -397,19 +405,18 @@ export class DayNightCycleManager {
   applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0): void {
     if (!this.params.enabled) return;
 
-    // Darken sky color based on weather
+    // Darken sky color based on weather — apply to baseline from update(), not current value
     if (skyDarkness > 0) {
-      const currentSky = this.scene.background as Color;
       const darkenFactor = 1 - skyDarkness * 0.5; // Max 50% darkening
-      currentSky.multiplyScalar(darkenFactor);
+      (this.scene.background as Color).copy(this.lastUpdateSkyColor).multiplyScalar(darkenFactor);
     }
 
-    // Reduce sun intensity (clouds blocking light)
+    // Reduce sun intensity (clouds blocking light) — apply to baseline from update()
     if (sunOcclusion > 0) {
       const reductionFactor = 1 - sunOcclusion * 0.4; // Max 40% reduction
-      this.directionalLight.intensity *= reductionFactor;
+      this.directionalLight.intensity = this.lastUpdateDirIntensity * reductionFactor;
       // Also soften shadows by reducing contrast
-      this.hemisphereLight.intensity *= 1 + sunOcclusion * 0.3; // Increase ambient to fill shadows
+      this.hemisphereLight.intensity = this.lastUpdateHemiIntensity * (1 + sunOcclusion * 0.3); // Increase ambient to fill shadows
     }
 
     // Increase fog density for storm atmosphere

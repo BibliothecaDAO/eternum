@@ -521,7 +521,8 @@ export class ThunderBoltManager {
             // Core layers (index 0) stay brighter, outer layers fade more
             const layerFade = layerIndex === 0 ? 1.0 : 0.7 + layerIndex * 0.1;
             const opacity = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade, 0.02, 1);
-            layer.material.opacity = opacity * (layer.material.opacity > 0.5 ? 1.0 : 0.8);
+            const layerBrightness = layerIndex === 0 ? 1.0 : 0.8;
+            layer.material.opacity = THREE.MathUtils.clamp(opacity * layerBrightness, 0.02, 1);
 
             // Only tint non-white layers
             if (layerIndex > 0) {

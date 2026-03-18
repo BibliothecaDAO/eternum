@@ -97,6 +97,12 @@ interface WebGLRendererBackendDependencies {
 let cachedHDRTarget: WebGLRenderTarget | null = null;
 let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
 
+/** @internal Exposed for testing only — resets the module-level HDR cache. */
+export function _resetHDRCache(): void {
+  cachedHDRTarget = null;
+  cachedHDRPromise = null;
+}
+
 const WEBGL_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsBloom: true,
   supportsChromaticAberration: true,
@@ -183,6 +189,8 @@ class WebGLRendererBackend implements RendererBackend {
       }
       this.setEnvironmentFromTarget(target, targets);
     } catch (error) {
+      // fallbackTarget remains as this.environmentTarget and will be disposed
+      // in dispose() since it is not cachedHDRTarget. No additional cleanup needed here.
       console.error("Failed to load HDR environment map", error);
     } finally {
       pmremGenerator.dispose();
@@ -192,8 +200,17 @@ class WebGLRendererBackend implements RendererBackend {
   dispose(): void {
     this.isDisposed = true;
 
-    if (this.environmentTarget && this.environmentTarget !== cachedHDRTarget) {
-      this.environmentTarget.dispose();
+    if (this.environmentTarget) {
+      if (this.environmentTarget === cachedHDRTarget) {
+        // This backend owns the cached HDR target. Dispose and clear the module
+        // cache so a subsequent backend performs a fresh load instead of reusing
+        // a GPU resource bound to a now-disposed WebGL context.
+        cachedHDRTarget.dispose();
+        cachedHDRTarget = null;
+        cachedHDRPromise = null;
+      } else {
+        this.environmentTarget.dispose();
+      }
     }
     this.environmentTarget = undefined;
 

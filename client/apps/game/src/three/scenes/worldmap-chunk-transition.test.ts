@@ -1337,6 +1337,52 @@ describe("waitForChunkTransitionToSettle", () => {
     resolveSecond?.();
     await waitPromise;
   });
+
+  it("returns after max iterations when getTransitionPromise always returns a new promise", async () => {
+    let iterations = 0;
+    const getTransitionPromise = () => {
+      iterations++;
+      return Promise.resolve();
+    };
+
+    await waitForChunkTransitionToSettle(getTransitionPromise, undefined, { maxIterations: 50 });
+    expect(iterations).toBeLessThanOrEqual(51);
+  });
+
+  it("returns immediately when isSwitchedOff returns true before the first iteration", async () => {
+    let reads = 0;
+    const getTransitionPromise = () => {
+      reads++;
+      return Promise.resolve();
+    };
+
+    await waitForChunkTransitionToSettle(getTransitionPromise, undefined, {
+      isSwitchedOff: () => true,
+    });
+    expect(reads).toBe(0);
+  });
+
+  it("returns when isSwitchedOff becomes true mid-loop", async () => {
+    let iterations = 0;
+    const getTransitionPromise = () => {
+      iterations++;
+      return Promise.resolve();
+    };
+
+    await waitForChunkTransitionToSettle(getTransitionPromise, undefined, {
+      isSwitchedOff: () => iterations >= 5,
+      maxIterations: 100,
+    });
+    expect(iterations).toBeGreaterThanOrEqual(5);
+    expect(iterations).toBeLessThan(100);
+  });
+
+  it("still returns on first iteration when getTransitionPromise returns null", async () => {
+    await waitForChunkTransitionToSettle(() => null, undefined, {
+      isSwitchedOff: () => false,
+      maxIterations: 50,
+    });
+  });
 });
 
 describe("shouldScheduleHydratedChunkRefreshForFetch", () => {

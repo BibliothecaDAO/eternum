@@ -1,3 +1,4 @@
+import { ACESFilmicToneMapping, NeutralToneMapping } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
@@ -220,5 +221,125 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(sceneColorNode.add).toHaveBeenCalledWith(bloomNode);
     expect(postProcessing.outputColorTransform).toBe(true);
     expect(postProcessing.outputNode).toBe(combinedOutputNode);
+  });
+
+  it("setSize accepts width and height parameters and marks needsUpdate", () => {
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const runtime = createWebGPUPostProcessRuntime(
+      {
+        renderer: {
+          clear: vi.fn(),
+          clearDepth: vi.fn(),
+          info: { reset: vi.fn() },
+          outputColorSpace: "srgb",
+          render: vi.fn(),
+          toneMapping: 0,
+          toneMappingExposure: 0,
+        } as never,
+      },
+      {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
+        createPass: vi.fn(),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+      },
+    );
+
+    runtime.setSize(1920, 1080);
+
+    expect(postProcessing.needsUpdate).toBe(true);
+  });
+
+  it("resolves neutral tone mapping to NeutralToneMapping, not ACESFilmicToneMapping", () => {
+    const renderer = {
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      info: { reset: vi.fn() },
+      outputColorSpace: "srgb",
+      render: vi.fn(),
+      toneMapping: 0,
+      toneMappingExposure: 0,
+    };
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const scenePass = {
+      camera: null,
+      getTextureNode: vi.fn(() => ({ id: "node" })),
+      scene: null,
+      setMRT: vi.fn(),
+    };
+
+    const runtime = createWebGPUPostProcessRuntime(
+      { renderer: renderer as never },
+      {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
+        createPass: vi.fn(() => scenePass),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+      },
+    );
+
+    runtime.setPlan(createPlan({ toneMapping: { exposure: 1, mode: "neutral", whitePoint: 1 } }));
+    runtime.renderFrame({
+      mainCamera: { id: "cam" } as never,
+      mainScene: { id: "scene" } as never,
+    });
+
+    expect(renderer.toneMapping).toBe(NeutralToneMapping);
+    expect(renderer.toneMapping).not.toBe(ACESFilmicToneMapping);
+  });
+
+  it("still resolves aces-filmic tone mapping to ACESFilmicToneMapping", () => {
+    const renderer = {
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      info: { reset: vi.fn() },
+      outputColorSpace: "srgb",
+      render: vi.fn(),
+      toneMapping: 0,
+      toneMappingExposure: 0,
+    };
+    const postProcessing = {
+      dispose: vi.fn(),
+      needsUpdate: false,
+      outputColorTransform: true,
+      outputNode: null,
+      render: vi.fn(),
+    };
+    const scenePass = {
+      camera: null,
+      getTextureNode: vi.fn(() => ({ id: "node" })),
+      scene: null,
+      setMRT: vi.fn(),
+    };
+
+    const runtime = createWebGPUPostProcessRuntime(
+      { renderer: renderer as never },
+      {
+        createBloom: vi.fn(),
+        createBloomMrt: vi.fn(),
+        createPass: vi.fn(() => scenePass),
+        createPostProcessing: vi.fn(() => postProcessing as never),
+      },
+    );
+
+    runtime.setPlan(createPlan({ toneMapping: { exposure: 1, mode: "aces-filmic", whitePoint: 1 } }));
+    runtime.renderFrame({
+      mainCamera: { id: "cam" } as never,
+      mainScene: { id: "scene" } as never,
+    });
+
+    expect(renderer.toneMapping).toBe(ACESFilmicToneMapping);
   });
 });
