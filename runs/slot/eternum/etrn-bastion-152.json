@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23237963187-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:31:27.943Z",
+  "updatedAt": "2026-03-18T09:31:29.433Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Wait for factory index",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Wait for factory index",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Wait for factory index started",
+      "startedAt": "2026-03-18T09:31:29.433Z"
     },
     {
       "id": "configure-world",
@@ -78,5 +79,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-eternum-etrn-bastion-152.json",
     "createGameTxHash": "0x587a81d9613901c4cd7a474f82dd93c2fb1b7204d07c70050895de1a2ef8e37"
+  },
+  "activeLease": {
+    "launchRequestId": "23237963187-1",
+    "workflowRunId": 23237963187,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-18T09:31:29.433Z",
+    "expiresAt": "2026-03-18T10:16:29.433Z"
   }
 }
