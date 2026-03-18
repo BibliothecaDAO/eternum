@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-lore-450",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-world",
   "inputPath": "inputs/slot/eternum/etrn-lore-450/23238493771-1.json",
   "latestLaunchRequestId": "23238493771-1",
-  "currentStepId": "configure-world",
+  "currentStepId": null,
   "createdAt": "2026-03-18T09:41:21.090Z",
-  "updatedAt": "2026-03-18T09:52:01.809Z",
+  "updatedAt": "2026-03-18T09:52:15.602Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,11 +44,11 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Configure world",
-      "latestEvent": "Configure world started",
+      "latestEvent": "Configure world succeeded",
       "startedAt": "2026-03-18T09:52:01.809Z",
-      "finishedAt": "2026-03-18T09:43:18.153Z"
+      "finishedAt": "2026-03-18T09:52:15.602Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -91,7 +91,7 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-lore-450.json",
     "createGameTxHash": "0x6a3dff6e9cc15174427398f0715afb42665e90d4224e1c4b7d4fef1b03910c6",
     "worldAddress": "0x059383cd6952ad29d0f42d1dcf83d8a2cf4e9df784ef7d7dd4ea9adbadb0c4dc",
-    "configureTxHash": "0x2b669cd866b61683a087e744dd95c0c52f1b056ddc9ad3b9696c71ca7b25a24",
+    "configureTxHash": "0x6569a4f9ddf9b6d6c26d6e627e20eabadaa77f1ec56f66399bb1eac0b3607a2",
     "lootChestRoleTxHash": "0x2a99ee48f2cdeddd299a8f890f9cb8561433b45af9a14890273210aa7b0c349",
     "villagePassRoleTxHash": "0x1cf4e2b86a363e584eacf0a848d51797197c65b13b1ac21382c3c11f800023b",
     "createBanksTxHash": "0x9daff252c1853689e84c23160eee8cc0500bef37564ecc0f1ea6e30db6c67f",
@@ -106,12 +106,5 @@
       "conclusion": "success"
     }
   },
-  "activeLease": {
-    "launchRequestId": "23238493771-1",
-    "workflowRunId": 23238493771,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-03-18T09:52:01.809Z",
-    "expiresAt": "2026-03-18T10:37:01.809Z"
-  }
+  "completedAt": "2026-03-18T09:52:15.602Z"
 }
