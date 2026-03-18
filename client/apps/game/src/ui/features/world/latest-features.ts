@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Clearer Factory Timeline Cards",
+    description:
+      "The new Factory now gives its Done, Now, and Next timeline cards different emphasis, making it easier to see what already happened, what matters most, and what comes next.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Softer Blitz Factory Divider",
+    description:
+      "The new Factory now uses a calmer separator in Blitz mode, so the top controls no longer cut too sharply into the cards below.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Calmer Factory Done State",
     description:
       "Completed games in the new Factory no longer keep saying they are updating automatically, making the finished state feel clearer and less noisy.",

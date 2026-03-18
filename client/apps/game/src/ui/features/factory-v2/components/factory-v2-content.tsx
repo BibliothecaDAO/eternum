@@ -125,7 +125,7 @@ export const FactoryV2Content = () => {
     <section className={cn("relative overflow-hidden rounded-[36px] border p-5 md:p-8", appearance.canvasClassName)}>
       <div className={cn("pointer-events-none absolute inset-0", appearance.backdropClassName)} />
       <div className="relative mx-auto max-w-6xl space-y-6">
-        <div className="space-y-4 border-b border-black/8 pb-6">
+        <div className={cn("space-y-4 border-b pb-6", appearance.sectionDividerClassName)}>
           <FactoryV2ModeSwitch
             modes={factoryModeDefinitions}
             selectedMode={factory.selectedMode}

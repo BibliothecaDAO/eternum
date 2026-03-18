@@ -3,6 +3,7 @@ import type { FactoryGameMode } from "./types";
 interface FactoryModeAppearance {
   canvasClassName: string;
   backdropClassName: string;
+  sectionDividerClassName: string;
   accentTextClassName: string;
   mainSurfaceClassName: string;
   featureSurfaceClassName: string;
@@ -22,6 +23,7 @@ const MODE_APPEARANCES: Record<FactoryGameMode, FactoryModeAppearance> = {
       "border-[#d9c8ae] bg-[linear-gradient(180deg,rgba(246,239,227,0.98),rgba(241,232,217,0.98))] text-[#1d1712] shadow-[0_28px_80px_rgba(0,0,0,0.18)]",
     backdropClassName:
       "bg-[radial-gradient(circle_at_12%_14%,rgba(245,158,11,0.16),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(180,83,9,0.12),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.18),transparent_48%)]",
+    sectionDividerClassName: "border-[#d8c7b0]",
     accentTextClassName: "text-[#9a5807]",
     mainSurfaceClassName:
       "border border-[#e3d6c5] bg-[linear-gradient(180deg,rgba(255,252,247,0.95),rgba(248,239,226,0.92))] shadow-[0_24px_60px_rgba(81,54,24,0.08)]",
@@ -44,6 +46,7 @@ const MODE_APPEARANCES: Record<FactoryGameMode, FactoryModeAppearance> = {
       "border-[#b49973] bg-[linear-gradient(180deg,rgba(224,206,177,0.98),rgba(191,162,122,0.98))] text-[#17100b] shadow-[0_28px_80px_rgba(0,0,0,0.22)]",
     backdropClassName:
       "bg-[radial-gradient(circle_at_14%_16%,rgba(180,83,9,0.22),transparent_24%),radial-gradient(circle_at_86%_18%,rgba(92,41,13,0.18),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_48%)]",
+    sectionDividerClassName: "border-[rgba(86,56,31,0.18)]",
     accentTextClassName: "text-[#7a3d09]",
     mainSurfaceClassName:
       "border border-[#c5aa85] bg-[linear-gradient(180deg,rgba(244,233,216,0.95),rgba(216,189,151,0.92))] shadow-[0_24px_60px_rgba(70,44,20,0.12)]",

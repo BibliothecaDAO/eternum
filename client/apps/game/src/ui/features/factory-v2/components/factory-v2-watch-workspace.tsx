@@ -291,10 +291,10 @@ export const FactoryV2WatchWorkspace = ({
 
             <div className="grid gap-2 text-left">
               {completedStep ? (
-                <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} />
+                <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} tone="done" />
               ) : null}
-              {currentStep ? <FactoryV2StepMoment label="Now" stepLabel={currentStepLabel} /> : null}
-              {nextStep ? <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} /> : null}
+              {currentStep ? <FactoryV2StepMoment label="Now" stepLabel={currentStepLabel} tone="now" /> : null}
+              {nextStep ? <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} tone="next" /> : null}
             </div>
 
             <div className="space-y-2">
@@ -448,12 +448,36 @@ const FactoryV2LoaderHalo = ({ pollingState }: { pollingState: FactoryPollingSta
   </div>
 );
 
-const FactoryV2StepMoment = ({ label, stepLabel }: { label: string; stepLabel: string }) => (
-  <div className="flex items-center justify-between rounded-[16px] border border-black/8 bg-black/[0.03] px-4 py-2.5">
-    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{label}</span>
-    <span className="text-sm font-medium text-black/72">{stepLabel}</span>
-  </div>
-);
+const FactoryV2StepMoment = ({
+  label,
+  stepLabel,
+  tone,
+}: {
+  label: string;
+  stepLabel: string;
+  tone: "done" | "now" | "next";
+}) => {
+  const toneClassName = resolveStepMomentToneClassName(tone);
+
+  return (
+    <div className={cn("flex items-center justify-between rounded-[16px] border px-4 py-2.5", toneClassName)}>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{label}</span>
+      <span className="text-sm font-medium text-black/72">{stepLabel}</span>
+    </div>
+  );
+};
+
+function resolveStepMomentToneClassName(tone: "done" | "now" | "next") {
+  switch (tone) {
+    case "done":
+      return "border-emerald-200/80 bg-emerald-50/70 shadow-[0_10px_24px_rgba(16,185,129,0.08)]";
+    case "now":
+      return "border-amber-300/80 bg-[linear-gradient(180deg,rgba(255,247,237,0.94),rgba(254,215,170,0.78))] shadow-[0_14px_34px_rgba(217,119,6,0.16)]";
+    case "next":
+    default:
+      return "border-black/8 bg-white/52 shadow-[0_8px_18px_rgba(15,23,42,0.05)]";
+  }
+}
 
 const resolveMatchingRunByName = (runs: FactoryRun[], requestedName: string) => {
   const normalizedName = requestedName.trim().toLowerCase();
