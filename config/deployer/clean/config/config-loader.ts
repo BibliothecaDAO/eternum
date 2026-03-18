@@ -20,7 +20,7 @@ interface ResolvedConfigOverrides {
   devModeOn: boolean;
   singleRealmMode: boolean;
   twoPlayerMode: boolean;
-  durationSeconds: number;
+  durationSeconds?: number;
 }
 
 function loadStoredConfiguration(configPath: string): StoredConfiguration {
@@ -35,7 +35,15 @@ function requireConfigurationObject(configPath: string, parsed: StoredConfigurat
   return parsed.configuration;
 }
 
-function resolveDurationSeconds(baseConfig: EternumConfig, overrides: ConfigOverrides): number {
+function requiresSeasonDurationOverride(baseConfig: EternumConfig): boolean {
+  return Boolean(baseConfig.blitz?.mode?.on);
+}
+
+function resolveDurationSeconds(baseConfig: EternumConfig, overrides: ConfigOverrides): number | undefined {
+  if (!requiresSeasonDurationOverride(baseConfig)) {
+    return undefined;
+  }
+
   const durationSeconds = overrides.durationSeconds ?? baseConfig.season?.durationSeconds;
 
   if (!Number.isFinite(durationSeconds) || !Number.isInteger(durationSeconds) || durationSeconds < 60) {
@@ -76,7 +84,7 @@ function applyModeOverrides(
   config.season = {
     ...(config.season ?? {}),
     startMainAt: overrides.startMainAt,
-    durationSeconds: resolvedOverrides.durationSeconds,
+    ...(resolvedOverrides.durationSeconds !== undefined ? { durationSeconds: resolvedOverrides.durationSeconds } : {}),
   };
   config.settlement = {
     ...(config.settlement ?? {}),

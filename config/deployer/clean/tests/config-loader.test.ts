@@ -45,4 +45,18 @@ describe("applyDeploymentConfigOverrides", () => {
       }),
     ).toThrow("durationSeconds must be an integer greater than or equal to 60");
   });
+
+  test("ignores duration overrides for eternum environments", () => {
+    const baseConfig = loadEnvironmentConfiguration("slot.eternum");
+
+    const result = applyDeploymentConfigOverrides(baseConfig, {
+      startMainAt: 1_763_112_600,
+      factoryAddress: "0xabc",
+      durationSeconds: 0,
+    });
+
+    expect(result.season.startMainAt).toBe(1_763_112_600);
+    expect(result.season.durationSeconds).toBe(0);
+    expect(result.blitz.mode.on).toBe(false);
+  });
 });
