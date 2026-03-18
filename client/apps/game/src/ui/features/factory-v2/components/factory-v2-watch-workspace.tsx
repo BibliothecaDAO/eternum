@@ -92,6 +92,7 @@ export const FactoryV2WatchWorkspace = ({
   const headline = selectedRun ? getRunHeadline(selectedRun) : watcher?.title ?? "Looking for your game";
   const liveStatusLabel = buildLiveStatusLabel(pollingState, clockNow);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
+  const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
   const selectRunByName = (value: string) => {
     setWatchGameName(value);
     setIsPickerOpen(true);
@@ -287,16 +288,20 @@ export const FactoryV2WatchWorkspace = ({
             ) : null}
           </div>
         </div>
-      ) : watcher ? (
+      ) : showsPendingRunState ? (
         <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
           <div className="space-y-3">
             <div className="flex justify-center">
               <div className="rounded-full border border-amber-300/50 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
-                {watcher.statusLabel}
+                {watcher?.statusLabel ?? "Watching"}
               </div>
             </div>
-            <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">{watcher.title}</h3>
-            <p className="text-sm leading-6 text-black/56">{watcher.detail}</p>
+            <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">
+              {watcher?.title ?? `Watching ${launchPlaceholderName}`}
+            </h3>
+            <p className="text-sm leading-6 text-black/56">
+              {watcher?.detail ?? notice ?? "We are still waiting for the first live status update from the launcher."}
+            </p>
             <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
             {notice ? <p className="text-sm leading-6 text-black/52">{notice}</p> : null}
             <div className={cn("rounded-[18px] px-4 py-3 text-left", appearance.quietSurfaceClassName)}>
