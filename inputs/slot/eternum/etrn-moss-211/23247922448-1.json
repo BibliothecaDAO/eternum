@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "runId": "slot.eternum:etrn-moss-211",
+  "launchRequestId": "23247922448-1",
+  "environment": "slot.eternum",
+  "chain": "slot",
+  "gameType": "eternum",
+  "gameName": "etrn-moss-211",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-18T13:49:44.745Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23247922448,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23247922448",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "0008aad4fbb3f935d055b1bb33fa630e55cf6c2b"
+  },
+  "request": {
+    "environmentId": "slot.eternum",
+    "gameName": "etrn-moss-211",
+    "startTime": "2026-03-18T14:00:00.000Z",
+    "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+    "privateKey": "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912",
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "maxActions": 300,
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false
+  }
+}
