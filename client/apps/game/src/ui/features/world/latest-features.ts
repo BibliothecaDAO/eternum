@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Factory Guided Recovery",
+    description:
+      "Factory recovery now waits for you to press Continue or Retry first, then carries on through later successful steps without forcing extra clicks.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Factory Mobile Layout Pass",
     description:
       "The new Factory now holds up better on smaller screens, with cleaner top toggles, roomier touch targets, and watch-state cards that no longer feel cramped on mobile.",
@@ -55,13 +62,6 @@ export const latestFeatures: LatestFeature[] = [
     title: "Cleaner Factory Waiting State",
     description:
       "The new Factory now shows one clear loading state while a game is starting or recovering, removing the extra repeated badges so it is easier to understand what is happening.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-18",
-    title: "Factory Auto Recovery",
-    description:
-      "The new Factory now retries failed parts automatically, moves on by itself after a recovery step works, and only stops asking for help after ten automatic tries.",
     type: "improvement",
   },
   {
