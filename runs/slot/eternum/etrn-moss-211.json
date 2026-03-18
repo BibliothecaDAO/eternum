@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-moss-211/23248126401-1.json",
   "latestLaunchRequestId": "23248126401-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": "configure-world",
   "createdAt": "2026-03-18T13:48:21.646Z",
-  "updatedAt": "2026-03-18T13:55:16.658Z",
+  "updatedAt": "2026-03-18T13:55:18.380Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,10 +35,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Wait for factory index",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Wait for factory index",
-      "latestEvent": "Wait for factory index started",
-      "startedAt": "2026-03-18T13:55:16.658Z"
+      "latestEvent": "Wait for factory index succeeded",
+      "startedAt": "2026-03-18T13:55:16.658Z",
+      "finishedAt": "2026-03-18T13:55:18.380Z"
     },
     {
       "id": "configure-world",
@@ -78,14 +79,7 @@
   ],
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-eternum-etrn-moss-211.json",
-    "createGameTxHash": "0x7584b3aa889ffe48aa2ea4d4b26561f0191fa959fa4b38d74b97dc3f9369ecd"
-  },
-  "activeLease": {
-    "launchRequestId": "23248126401-1",
-    "workflowRunId": 23248126401,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-03-18T13:55:16.658Z",
-    "expiresAt": "2026-03-18T14:40:16.658Z"
+    "createGameTxHash": "0x7584b3aa889ffe48aa2ea4d4b26561f0191fa959fa4b38d74b97dc3f9369ecd",
+    "worldAddress": "0x044dc3fd516be5fe1b7bdc085ccd482f2b06dfb892f4c6d044174eb7ca2312f9"
   }
 }
