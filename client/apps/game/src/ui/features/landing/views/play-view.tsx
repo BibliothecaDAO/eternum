@@ -39,6 +39,9 @@ interface PlayViewProps {
 type PlayTab = "play" | "learn" | "news" | "factory";
 type LandingModeFilter = "blitz" | "season";
 
+const FactoryV2Content = lazy(() =>
+  import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
+);
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
 
 // Video guide data - ordered from basic to advanced
@@ -272,27 +275,62 @@ const NewsContent = () => (
   </div>
 );
 
-const FactoryTabContent = () => (
-  <div className="rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
-    <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/20">
-        <Factory className="h-5 w-5 text-gold" />
-      </div>
-      <div>
-        <h2 className="font-serif text-xl text-gold">Factory</h2>
-        <p className="text-sm text-gold/60">Deploy and configure worlds from the main dashboard.</p>
-      </div>
-    </div>
+type FactoryVersion = "v2" | "v1";
 
-    <Suspense
-      fallback={
-        <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">Loading factory...</div>
-      }
-    >
-      <FactoryPage embedded />
-    </Suspense>
-  </div>
-);
+const FactoryTabContent = () => {
+  const [selectedFactoryVersion, setSelectedFactoryVersion] = useState<FactoryVersion>("v2");
+
+  return (
+    <div className="rounded-2xl border border-gold/20 bg-black/60 p-4 backdrop-blur-xl">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/20">
+            <Factory className="h-5 w-5 text-gold" />
+          </div>
+          <div>
+            <h2 className="font-serif text-xl text-gold">Factory</h2>
+            <p className="text-sm text-gold/60">Choose the legacy factory or the new Factory V2.</p>
+          </div>
+        </div>
+
+        <div className="inline-flex rounded-full border border-gold/15 bg-black/35 p-1">
+          <button
+            type="button"
+            onClick={() => setSelectedFactoryVersion("v2")}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+              selectedFactoryVersion === "v2"
+                ? "bg-gold text-black"
+                : "text-gold/70 hover:bg-gold/10 hover:text-gold",
+            )}
+          >
+            Factory V2
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedFactoryVersion("v1")}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+              selectedFactoryVersion === "v1"
+                ? "bg-gold text-black"
+                : "text-gold/70 hover:bg-gold/10 hover:text-gold",
+            )}
+          >
+            Factory V1
+          </button>
+        </div>
+      </div>
+
+      <Suspense
+        fallback={
+          <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">Loading factory...</div>
+        }
+      >
+        {selectedFactoryVersion === "v2" ? <FactoryV2Content /> : <FactoryPage embedded />}
+      </Suspense>
+    </div>
+  );
+};
 
 const MODE_FILTER_OPTIONS: Array<{ id: LandingModeFilter; label: string }> = [
   { id: "season", label: "Eternum Seasons" },

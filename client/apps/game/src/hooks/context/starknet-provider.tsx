@@ -205,8 +205,8 @@ const useBootstrapPrefetch = () => {
   const hasPrefetchedRef = useRef(false);
 
   useEffect(() => {
-    // Skip bootstrap entirely on factory route so it can operate without sync
-    if (typeof window !== "undefined" && window.location.pathname.startsWith("/factory")) {
+    // Skip bootstrap on standalone factory routes and on the home factory tab.
+    if (isFactoryNavigationSurface()) {
       return;
     }
 
@@ -237,4 +237,16 @@ const useBootstrapPrefetch = () => {
       hasPrefetchedRef.current = false;
     });
   }, [account]);
+};
+
+const isFactoryNavigationSurface = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  if (window.location.pathname.startsWith("/factory")) {
+    return true;
+  }
+
+  return window.location.pathname === "/" && new URLSearchParams(window.location.search).get("tab") === "factory";
 };
