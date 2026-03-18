@@ -20,8 +20,14 @@ import {
 } from "../presenters";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 
-const FIRST_UPDATE_WAIT_MESSAGE = "We just started this game. Please wait a moment.";
+const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
 const AUTO_UPDATE_LABEL = "Updating automatically";
+const WATCH_SEARCH_EYEBROW = "Check a game";
+const WATCH_SEARCH_TITLE = "Find a game";
+const WATCH_SEARCH_DESCRIPTION = "Type the exact game name or choose one from your recent games.";
+const WATCH_EMPTY_DESCRIPTION = "Type a game name and press Enter to check its status.";
+const WATCH_TIMELINE_TITLE = "Setup progress";
+const WATCH_TIMELINE_DESCRIPTION = "See what is done, what is happening now, and what comes next.";
 
 export const FactoryV2WatchWorkspace = ({
   mode,
@@ -109,14 +115,14 @@ export const FactoryV2WatchWorkspace = ({
     ? isPendingSelectedRun
       ? (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE)
       : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun))
-    : "Type a game name to open it.";
+    : WATCH_EMPTY_DESCRIPTION;
   const headline = selectedRun
     ? isPendingSelectedRun
       ? `Launching ${selectedRun.name}`
       : isAwaitingAcceptedUpdate
         ? "Got it"
         : getRunHeadline(selectedRun)
-    : (watcher?.title ?? "Find a game");
+    : (watcher?.title ?? "Check a game");
   const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
   const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
@@ -324,43 +330,35 @@ const FactoryV2WatchRunCard = ({
         ) : null}
       </div>
 
-      <div
-        className={cn(
-          "rounded-[24px] border border-black/8 px-4 py-4 text-center shadow-[0_16px_36px_rgba(30,20,10,0.08)]",
-          appearance.quietSurfaceClassName,
-        )}
-      >
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
-        <div className="mt-2 text-[15px] font-semibold text-black">{currentStepLabel}</div>
-        <p className="mt-2 text-sm leading-6 text-black/56">{detailMessage}</p>
-      </div>
+      <FactoryV2CurrentStepCard
+        appearanceClassName={appearance.quietSurfaceClassName}
+        selectedRun={selectedRun}
+        currentStep={currentStep}
+        currentStepLabel={currentStepLabel}
+        detailMessage={detailMessage}
+      />
 
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Recent steps</div>
-          <p className="text-[13px] leading-5 text-black/52">
-            See what finished, what is running, and what comes next.
-          </p>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+            {WATCH_TIMELINE_TITLE}
+          </div>
+          <p className="text-[13px] leading-5 text-black/52">{WATCH_TIMELINE_DESCRIPTION}</p>
         </div>
         <div className="grid gap-2">
           {completedStep ? (
             <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} tone="done" />
           ) : null}
           {currentStep ? <FactoryV2StepMoment label="Now" stepLabel={currentStepLabel} tone="now" /> : null}
-          {nextStep ? <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} tone="next" /> : null}
+          {nextStep ? (
+            <FactoryV2StepMoment label="Up next" stepLabel={getSimpleStepTitle(nextStep)} tone="next" />
+          ) : null}
         </div>
       </div>
 
       <div className="space-y-2">
         <div className="text-center text-[13px] text-black/54">{getRunProgressLabel(selectedRun)}</div>
-        <div className="flex gap-2">
-          {selectedRun.steps.map((step) => (
-            <div
-              key={step.id}
-              className={cn("h-1.5 flex-1 rounded-full", getStepStatusMeta(step.status).railClassName)}
-            />
-          ))}
-        </div>
+        <FactoryV2SegmentedProgressTrack steps={selectedRun.steps} />
       </div>
 
       {actionBarProps ? <FactoryV2WatchActionBar {...actionBarProps} /> : null}
@@ -390,6 +388,75 @@ const FactoryV2WatchRunCard = ({
   </FactoryV2WatchSurfaceCard>
 );
 
+const FactoryV2CurrentStepCard = ({
+  appearanceClassName,
+  selectedRun,
+  currentStep,
+  currentStepLabel,
+  detailMessage,
+}: {
+  appearanceClassName: string;
+  selectedRun: FactoryRun;
+  currentStep: FactoryRun["steps"][number] | null;
+  currentStepLabel: string;
+  detailMessage: string;
+}) => {
+  const progress = resolveWatchProgressMetrics(selectedRun, currentStep);
+  const isRunningStep = currentStep?.status === "running";
+  const statusLabel = resolveCurrentStepStatusLabel(currentStep, selectedRun.status);
+
+  return (
+    <div
+      className={cn(
+        "rounded-[24px] border border-black/8 px-4 py-4 text-center shadow-[0_16px_36px_rgba(30,20,10,0.08)]",
+        appearanceClassName,
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em]">
+        <span
+          className={cn(
+            "inline-flex items-center gap-2 rounded-full border px-3 py-1",
+            isRunningStep
+              ? "border-[#cfb48d]/85 bg-[rgba(255,249,239,0.95)] text-[#8a5416] shadow-[0_8px_18px_rgba(186,129,44,0.14)]"
+              : "border-black/8 bg-white/60 text-black/44",
+          )}
+        >
+          <span className="relative flex h-2.5 w-2.5 items-center justify-center">
+            {isRunningStep ? <span className="absolute h-2.5 w-2.5 animate-ping rounded-full bg-[#d6a458]/55" /> : null}
+            <span className={cn("relative h-2.5 w-2.5 rounded-full", isRunningStep ? "bg-[#b9771f]" : "bg-black/28")} />
+          </span>
+          {statusLabel}
+        </span>
+        <span className="text-black/42">{progress.stepLabel}</span>
+      </div>
+      <div className="mt-3 text-[15px] font-semibold text-black">{currentStepLabel}</div>
+      <p className="mt-2 text-sm leading-6 text-black/56">{detailMessage}</p>
+      <div className="mt-4 space-y-2">
+        <div className="flex items-center justify-between gap-3 text-[11px] font-medium text-black/46">
+          <span>{progress.progressLabel}</span>
+          <span>{progress.percentLabel}</span>
+        </div>
+        <div
+          data-testid="factory-watch-current-progress-track"
+          className="relative h-2.5 overflow-hidden rounded-full bg-black/8"
+        >
+          <div
+            className={cn(
+              "relative h-full rounded-full transition-[width] duration-300",
+              isRunningStep ? "bg-[linear-gradient(90deg,#b9771f_0%,#d6a458_58%,#edd9b3_100%)]" : "bg-black/26",
+            )}
+            style={{ width: `${progress.completionPercent}%` }}
+          >
+            {isRunningStep ? (
+              <span className="absolute inset-y-0 right-0 w-12 -translate-x-1/2 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)] opacity-80" />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const FactoryV2WatchPendingCard = ({
   appearance,
   launchPlaceholderName,
@@ -414,7 +481,9 @@ const FactoryV2WatchPendingCard = ({
         <FactoryV2LoaderHalo pollingState={pollingState} />
       </div>
       <div className="space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">Checking a game</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">
+          {WATCH_SEARCH_EYEBROW}
+        </div>
         <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">{headline}</h3>
       </div>
       <p className="text-sm leading-6 text-black/56">{primaryNotice}</p>
@@ -426,7 +495,7 @@ const FactoryV2WatchPendingCard = ({
         )}
       >
         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
-        <div className="mt-2 text-[15px] font-semibold text-black">Starting {launchPlaceholderName}</div>
+        <div className="mt-2 text-[15px] font-semibold text-black">Opening {launchPlaceholderName}</div>
         <p className="mt-2 text-sm leading-6 text-black/56">{FIRST_UPDATE_WAIT_MESSAGE}</p>
       </div>
     </div>
@@ -436,9 +505,9 @@ const FactoryV2WatchPendingCard = ({
 const FactoryV2WatchEmptyCard = ({ appearanceClassName }: { appearanceClassName: string }) => (
   <FactoryV2WatchSurfaceCard appearanceClassName={appearanceClassName} dataTestId="factory-watch-empty-panel">
     <div className="mx-auto max-w-sm space-y-3 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">Check a game</div>
-      <h3 className="text-[1.15rem] font-semibold tracking-tight text-black">Open an existing run</h3>
-      <p className="text-sm leading-6 text-black/56">Type a game name and press Enter to check its progress.</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">{WATCH_SEARCH_EYEBROW}</div>
+      <h3 className="text-[1.15rem] font-semibold tracking-tight text-black">{WATCH_SEARCH_TITLE}</h3>
+      <p className="text-sm leading-6 text-black/56">{WATCH_EMPTY_DESCRIPTION}</p>
     </div>
   </FactoryV2WatchSurfaceCard>
 );
@@ -559,9 +628,9 @@ const FactoryV2WatchSearchPanel = ({
     )}
   >
     <div className="mx-auto max-w-sm space-y-2 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">Check a game</div>
-      <h3 className="text-[1.15rem] font-semibold tracking-tight text-black">Open an existing run</h3>
-      <p className="text-sm leading-6 text-black/54">Type the exact game name or choose one from your recent runs.</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">{WATCH_SEARCH_EYEBROW}</div>
+      <h3 className="text-[1.15rem] font-semibold tracking-tight text-black">{WATCH_SEARCH_TITLE}</h3>
+      <p className="text-sm leading-6 text-black/54">{WATCH_SEARCH_DESCRIPTION}</p>
     </div>
     <div className="mx-auto mt-4 max-w-sm space-y-2 text-center">
       <label
@@ -596,7 +665,7 @@ const FactoryV2WatchSearchPanel = ({
         {isPickerOpen && matchingRuns.length > 0 ? (
           <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[20px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl">
             <div className="border-b border-black/6 px-4 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34">
-              Choose a game
+              Recent games
             </div>
             <div className="max-h-60 overflow-y-auto p-1.5">
               {matchingRuns.slice(0, 6).map((run) => (
@@ -628,7 +697,7 @@ const FactoryV2WatchSearchPanel = ({
       {lookupDisabledReason ? <p className="text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
       {isResolvingRunName ? <p className="text-sm leading-6 text-black/50">Looking for that game.</p> : null}
       {!lookupDisabledReason && !isResolvingRunName ? (
-        <p className="text-sm leading-6 text-black/46">Press Enter to check it instantly.</p>
+        <p className="text-sm leading-6 text-black/46">Press Enter to check its status.</p>
       ) : null}
     </div>
   </div>
@@ -690,31 +759,126 @@ const FactoryV2StepMoment = ({
   stepLabel: string;
   tone: "done" | "now" | "next";
 }) => {
-  const toneClassName = resolveStepMomentToneClassName(tone);
+  const toneAppearance = resolveStepMomentToneAppearance(tone);
 
   return (
     <div
+      data-step-tone={tone}
       className={cn(
-        "flex flex-col items-center gap-1.5 rounded-[18px] border px-4 py-3 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left",
-        toneClassName,
+        "relative overflow-hidden grid grid-cols-[auto,1fr] items-start gap-3 rounded-[20px] border px-4 py-3 text-left transition-colors",
+        toneAppearance.containerClassName,
       )}
     >
-      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{label}</span>
-      <span className="text-sm font-medium text-black/72">{stepLabel}</span>
+      {toneAppearance.accentBarClassName ? (
+        <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-0.5", toneAppearance.accentBarClassName)} />
+      ) : null}
+      <span className="relative mt-1.5 flex h-2.5 w-2.5 items-center justify-center">
+        {toneAppearance.pulseClassName ? (
+          <span aria-hidden="true" className={cn("absolute h-2.5 w-2.5 rounded-full", toneAppearance.pulseClassName)} />
+        ) : null}
+        <span className={cn("relative h-2.5 w-2.5 rounded-full", toneAppearance.dotClassName)} />
+      </span>
+      <div className="min-w-0 space-y-1">
+        <div className={cn("text-[11px] font-semibold uppercase tracking-[0.22em]", toneAppearance.labelClassName)}>
+          {label}
+        </div>
+        <div className={cn("text-sm", toneAppearance.stepLabelClassName)}>{stepLabel}</div>
+      </div>
     </div>
   );
 };
 
-function resolveStepMomentToneClassName(tone: "done" | "now" | "next") {
+function resolveStepMomentToneAppearance(tone: "done" | "now" | "next") {
   switch (tone) {
     case "done":
-      return "border-emerald-200/80 bg-emerald-50/70 shadow-[0_10px_24px_rgba(16,185,129,0.08)]";
+      return {
+        containerClassName: "border-black/8 bg-black/[0.025] opacity-45 shadow-none",
+        dotClassName: "bg-black/18",
+        labelClassName: "text-black/34",
+        stepLabelClassName: "font-medium text-black/50",
+        accentBarClassName: null,
+        pulseClassName: null,
+      };
     case "now":
-      return "border-amber-300/80 bg-[linear-gradient(180deg,rgba(255,247,237,0.94),rgba(254,215,170,0.78))] shadow-[0_14px_34px_rgba(217,119,6,0.16)]";
+      return {
+        containerClassName:
+          "border-[#d4b487]/65 bg-[linear-gradient(180deg,rgba(255,253,249,0.98),rgba(245,235,219,0.98))] shadow-[0_20px_40px_rgba(157,107,36,0.14)]",
+        dotClassName: "bg-[#b9771f] shadow-[0_0_0_4px_rgba(255,248,236,0.92)]",
+        labelClassName: "text-[#8a5416]",
+        stepLabelClassName: "font-semibold text-black",
+        accentBarClassName:
+          "bg-[linear-gradient(90deg,rgba(185,119,31,0.92),rgba(233,190,118,0.88),rgba(255,246,230,0.88))]",
+        pulseClassName: "animate-ping bg-[#d6a458]/45",
+      };
     case "next":
     default:
-      return "border-black/8 bg-white/52 shadow-[0_8px_18px_rgba(15,23,42,0.05)]";
+      return {
+        containerClassName: "border-dashed border-black/10 bg-white/36 opacity-70 shadow-none",
+        dotClassName: "bg-black/24",
+        labelClassName: "text-black/34",
+        stepLabelClassName: "font-medium text-black/56",
+        accentBarClassName: null,
+        pulseClassName: null,
+      };
   }
+}
+
+const FactoryV2SegmentedProgressTrack = ({ steps }: { steps: FactoryRun["steps"] }) => (
+  <div className="flex gap-2">
+    {steps.map((step) => (
+      <div
+        key={step.id}
+        className={cn(
+          "relative h-1.5 flex-1 overflow-hidden rounded-full",
+          step.status === "running" ? "bg-[#ead8b7]" : getStepStatusMeta(step.status).railClassName,
+        )}
+      >
+        {step.status === "running" ? (
+          <span className="absolute inset-y-0 left-0 w-3/4 rounded-full bg-[linear-gradient(90deg,#b9771f_0%,#d6a458_60%,#f5e5c5_100%)]" />
+        ) : null}
+      </div>
+    ))}
+  </div>
+);
+
+function resolveWatchProgressMetrics(run: FactoryRun, currentStep: FactoryRun["steps"][number] | null) {
+  const totalSteps = Math.max(run.steps.length, 1);
+  const currentStepIndex = currentStep ? run.steps.findIndex((step) => step.id === currentStep.id) : -1;
+  const settledSteps = run.steps.filter((step) => step.status === "succeeded" || step.status === "already_done").length;
+  const activeStepNumber = currentStepIndex >= 0 ? currentStepIndex + 1 : totalSteps;
+  const completionFraction =
+    currentStep?.status === "running"
+      ? (currentStepIndex + 0.55) / totalSteps
+      : currentStepIndex >= 0
+        ? currentStepIndex / totalSteps
+        : settledSteps / totalSteps;
+  const completionPercent = Math.max(12, Math.min(100, Math.round(completionFraction * 100)));
+
+  return {
+    completionPercent,
+    progressLabel: `${settledSteps} complete`,
+    percentLabel: `${completionPercent}%`,
+    stepLabel: `Step ${activeStepNumber} of ${totalSteps}`,
+  };
+}
+
+function resolveCurrentStepStatusLabel(
+  currentStep: FactoryRun["steps"][number] | null,
+  runStatus: FactoryRun["status"],
+) {
+  if (currentStep?.status === "running") {
+    return "In progress";
+  }
+
+  if (currentStep?.status === "failed" || currentStep?.status === "blocked" || runStatus === "attention") {
+    return "Needs attention";
+  }
+
+  if (runStatus === "complete") {
+    return "Ready";
+  }
+
+  return "Up next";
 }
 
 const resolveMatchingRunByName = (runs: FactoryRun[], requestedName: string) => {
@@ -816,8 +980,8 @@ function resolveStepSummaryAction(
   }
 
   return {
-    label: "Bring indexer live",
-    description: "Use this if the indexer was deleted or needs to be started again.",
+    label: "Restart live updates",
+    description: "Use this if live updates disappeared or need to start again.",
     onPress: options.onBringIndexerLive,
   };
 }

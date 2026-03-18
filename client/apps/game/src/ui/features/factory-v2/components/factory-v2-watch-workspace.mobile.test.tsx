@@ -23,7 +23,12 @@ const waitForAsyncWork = async () => {
   await Promise.resolve();
 };
 
-const buildRun = () => ({
+const buildRun = (overrides: Partial<ReturnType<typeof buildRunBase>> = {}) => ({
+  ...buildRunBase(),
+  ...overrides,
+});
+
+const buildRunBase = () => ({
   id: "run-1",
   syncKey: "sync-1",
   mode: "blitz" as const,
@@ -31,8 +36,8 @@ const buildRun = () => ({
   environment: "slot.blitz",
   owner: "0x1",
   presetId: "preset-1",
-  status: "attention" as const,
-  summary: "Needs help",
+  status: "running" as const,
+  summary: "In progress",
   updatedAt: "2026-03-18T12:00:00Z",
   steps: [
     {
@@ -49,9 +54,9 @@ const buildRun = () => ({
       title: "Configure world",
       summary: "Configure world",
       workflowName: "configure-world",
-      status: "failed" as const,
-      verification: "failed",
-      latestEvent: "failed",
+      status: "running" as const,
+      verification: "running",
+      latestEvent: "running",
     },
     {
       id: "create-indexer" as const,
@@ -119,12 +124,24 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
     const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
     const gameNameInput = container.querySelector("#factory-watch-game") as HTMLInputElement | null;
+    const currentProgressTrack = container.querySelector('[data-testid="factory-watch-current-progress-track"]');
+    const doneMoment = container.querySelector('[data-step-tone="done"]');
+    const nowMoment = container.querySelector('[data-step-tone="now"]');
+    const nextMoment = container.querySelector('[data-step-tone="next"]');
 
     expect(article?.className).toContain("w-full");
     expect(article?.className).toContain("md:max-w-md");
-    expect(searchPanel?.textContent).toContain("Open an existing run");
-    expect(selectedPanel?.textContent).toContain("Recent steps");
+    expect(searchPanel?.textContent).toContain("Find a game");
+    expect(searchPanel?.textContent).toContain("recent games");
+    expect(selectedPanel?.textContent).toContain("Setup progress");
+    expect(selectedPanel?.textContent).toContain("In progress");
+    expect(selectedPanel?.textContent).toContain("Step 2 of 3");
     expect(gameNameInput?.className).toContain("text-center");
+    expect(doneMoment?.className).toContain("opacity-45");
+    expect(nowMoment?.className).toContain("shadow-[0_20px_40px_rgba(157,107,36,0.14)]");
+    expect(nextMoment?.className).toContain("border-dashed");
+    expect(nextMoment?.className).toContain("opacity-70");
+    expect(currentProgressTrack?.textContent).toBe("");
     expect(actionBar?.className).toContain("sticky");
   });
 });
