@@ -161,6 +161,16 @@ jobs:
             run_store_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
           fi
 
+          account_lease_args=(
+            --environment "${GAME_LAUNCH_ENVIRONMENT}"
+            --game "${GAME_LAUNCH_GAME_NAME}"
+            --account-address "${DOJO_ACCOUNT_ADDRESS}"
+          )
+
+          if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then
+            account_lease_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
+          fi
+
           run_launch_step_command() {
             local step_id="$1"
             local step_log=".context/game-launch/${step_id}.log"
@@ -210,41 +220,198 @@ jobs:
             grep -q "Client.Timeout exceeded" "${step_log}"
           }
 
+          step_requires_account_lease() {
+            local step_id="$1"
+
+            case "${step_id}" in
+              create-world|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks)
+                return 0
+                ;;
+              *)
+                return 1
+                ;;
+            esac
+          }
+
+          acquire_account_lease_if_needed() {
+            local step_id="$1"
+            local lease_output=""
+            local exit_code=0
+            local did_wait="false"
+
+            if ! step_requires_account_lease "${step_id}"; then
+              return 0
+            fi
+
+            while true; do
+              set +e
+              lease_output=$(
+                bun config/deployer/clean/cli/launch-account-lease.ts \
+                  --event acquire \
+                  --step "${step_id}" \
+                  "${account_lease_args[@]}" 2>&1
+              )
+              exit_code=$?
+              set -e
+
+              if [ "${exit_code}" -eq 0 ]; then
+                FACTORY_ACCOUNT_LEASE_ID="$(printf '%s\n' "${lease_output}" | tail -n 1 | tr -d '\r')"
+                export FACTORY_ACCOUNT_LEASE_ID
+
+                if [ "${did_wait}" = "true" ]; then
+                  echo "Deployment account lease acquired for ${step_id}."
+                fi
+
+                return 0
+              fi
+
+              if [ "${exit_code}" -ne 2 ]; then
+                printf '%s\n' "${lease_output}" > ".context/game-launch/${step_id}.log"
+                printf '%s\n' "${lease_output}" >&2
+                return "${exit_code}"
+              fi
+
+              if [ "${did_wait}" = "false" ]; then
+                printf '%s\n' "${lease_output}"
+                echo "Waiting for the deployment account before ${step_id}..."
+                did_wait="true"
+              fi
+
+              sleep 10
+            done
+          }
+
+          start_account_lease_heartbeat() {
+            local step_id="$1"
+            local heartbeat_seconds="${FACTORY_ACCOUNT_LEASE_HEARTBEAT_SECONDS:-30}"
+
+            if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ]; then
+              return 0
+            fi
+
+            (
+              while true; do
+                sleep "${heartbeat_seconds}"
+                bun config/deployer/clean/cli/launch-account-lease.ts \
+                  --event heartbeat \
+                  --step "${step_id}" \
+                  --lease-id "${FACTORY_ACCOUNT_LEASE_ID}" \
+                  "${account_lease_args[@]}" >/dev/null 2>&1 || true
+              done
+            ) &
+
+            FACTORY_ACCOUNT_LEASE_HEARTBEAT_PID=$!
+            export FACTORY_ACCOUNT_LEASE_HEARTBEAT_PID
+          }
+
+          stop_account_lease_heartbeat() {
+            if [ -z "${FACTORY_ACCOUNT_LEASE_HEARTBEAT_PID:-}" ]; then
+              return 0
+            fi
+
+            kill "${FACTORY_ACCOUNT_LEASE_HEARTBEAT_PID}" >/dev/null 2>&1 || true
+            wait "${FACTORY_ACCOUNT_LEASE_HEARTBEAT_PID}" >/dev/null 2>&1 || true
+            unset FACTORY_ACCOUNT_LEASE_HEARTBEAT_PID
+          }
+
+          release_account_lease_if_needed() {
+            local step_id="$1"
+
+            if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ]; then
+              return 0
+            fi
+
+            bun config/deployer/clean/cli/launch-account-lease.ts \
+              --event release \
+              --step "${step_id}" \
+              --lease-id "${FACTORY_ACCOUNT_LEASE_ID}" \
+              "${account_lease_args[@]}" >/dev/null 2>&1 || true
+
+            unset FACTORY_ACCOUNT_LEASE_ID
+          }
+
+          prepare_account_lease_for_step() {
+            local step_id="$1"
+
+            if ! acquire_account_lease_if_needed "${step_id}"; then
+              return 1
+            fi
+
+            start_account_lease_heartbeat "${step_id}"
+          }
+
+          finish_account_lease_for_step() {
+            local step_id="$1"
+
+            stop_account_lease_heartbeat
+            release_account_lease_if_needed "${step_id}"
+          }
+
           run_launch_step() {
             local step_id="$1"
+            local exit_code=0
 
             record_launch_step_started "${step_id}"
 
+            if ! prepare_account_lease_for_step "${step_id}"; then
+              record_launch_step_failed "${step_id}"
+              return 1
+            fi
+
             if run_launch_step_command "${step_id}"; then
+              exit_code=0
+            else
+              exit_code=$?
+            fi
+
+            finish_account_lease_for_step "${step_id}"
+
+            if [ "${exit_code}" -eq 0 ]; then
               record_launch_step_succeeded "${step_id}"
               return 0
             fi
 
             record_launch_step_failed "${step_id}"
-            return 1
+            return "${exit_code}"
           }
 
           run_create_world_step_with_timeout_retry() {
             local step_id="create-world"
             local max_attempts=5
             local attempt=1
+            local exit_code=1
 
             record_launch_step_started "${step_id}"
 
+            if ! prepare_account_lease_for_step "${step_id}"; then
+              record_launch_step_failed "${step_id}"
+              return 1
+            fi
+
             while true; do
               if run_launch_step_command "${step_id}"; then
-                record_launch_step_succeeded "${step_id}"
-                return 0
+                exit_code=0
+                break
               fi
 
               if [ "${attempt}" -ge "${max_attempts}" ] || ! step_log_contains_client_timeout "${step_id}"; then
-                record_launch_step_failed "${step_id}"
-                return 1
+                exit_code=1
+                break
               fi
 
               echo "Create world timed out with Client.Timeout exceeded. Retrying (${attempt}/${max_attempts})..."
               attempt=$((attempt + 1))
             done
+
+            finish_account_lease_for_step "${step_id}"
+
+            if [ "${exit_code}" -eq 0 ]; then
+              record_launch_step_succeeded "${step_id}"
+              return 0
+            fi
+
+            record_launch_step_failed "${step_id}"
+            return 1
           }
           EOF
 
