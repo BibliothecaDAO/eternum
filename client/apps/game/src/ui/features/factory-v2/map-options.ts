@@ -96,8 +96,24 @@ type FactoryMoreOptionDefinition =
       displayScale?: number;
       unitLabel?: string;
       placement?: FactoryMoreOptionPlacement;
-      destination: "map-config" | "blitz-registration";
-      rawKey: DirectOverrideKey | BlitzRegistrationOverrideKey;
+      destination: "map-config";
+      rawKey: DirectOverrideKey;
+    }
+  | {
+      id: FactoryMoreOptionFieldId;
+      section: FactoryMoreOptionSectionId;
+      modes: FactoryGameMode[];
+      isVisible?: (visibility: FactoryMoreOptionsVisibility) => boolean;
+      kind: "integer";
+      label: string;
+      step: string;
+      min: number;
+      max: number;
+      displayScale?: number;
+      unitLabel?: string;
+      placement?: FactoryMoreOptionPlacement;
+      destination: "blitz-registration";
+      rawKey: BlitzRegistrationOverrideKey;
     };
 
 export interface FactoryMoreOptionField {

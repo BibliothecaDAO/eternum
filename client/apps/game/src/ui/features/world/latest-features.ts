@@ -10,6 +10,48 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Aligned Factory Watch Search",
+    description:
+      "The Check a game panel in Factory now keeps its title, field, helper copy, and recent-game picker on one centered mobile column, so the search flow feels properly aligned on phones.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Cleaner Factory Watch",
+    description:
+      "Checking a game in Factory now feels much calmer on mobile, with a clearer search lead, a more readable live-status card, and softer pending and empty states.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Control Deck Polish",
+    description:
+      "The top of Factory now reads as a cleaner centered control deck, with calmer switch groups, tidier section headers, and a softer version chooser footer that feels less bolted on.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Starts Higher",
+    description:
+      "The Factory chooser now sits below the main Factory surface, so the tab starts much closer to the main landing header and gets into the actual launch flow sooner.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Escapes Landing Gutter",
+    description:
+      "The Factory tab on the landing page now breaks out of the shared page margins, so Factory can use much more horizontal space than the Play, Learn, and News sections.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Mobile Goes Edge To Edge",
+    description:
+      "The new Factory now drops its extra outer mobile frame so the launch and watch sections can use far more of the phone screen, making the flow feel much less boxed in on smaller devices.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Static Blitz Play Style Labels",
     description:
       "Blitz play-style choices in the new Factory now stay on the same three labels again, so changing More options like max players no longer rewrites the section into player-cap wording.",

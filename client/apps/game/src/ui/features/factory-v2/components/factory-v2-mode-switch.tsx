@@ -33,11 +33,11 @@ export const FactoryV2ModeSwitch = ({
 
   return (
     <section className="animate-fade-in-up" style={{ animationDelay: "80ms" }}>
-      <div className="space-y-4 text-left md:text-center">
+      <div className="space-y-4 text-center">
         <FactoryV2ToggleGroup title="Network">
           <div
             data-testid="factory-network-switch"
-            className="grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/50 p-1.5 md:mx-auto md:max-w-[18rem]"
+            className="mx-auto grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/55 p-1.5 shadow-[0_10px_24px_rgba(34,24,14,0.06)] md:max-w-[18rem]"
           >
             {environmentOptions.map((environment) => {
               const isSelected = environment.id === selectedEnvironmentId;
@@ -48,7 +48,7 @@ export const FactoryV2ModeSwitch = ({
                   type="button"
                   aria-pressed={isSelected}
                   className={cn(
-                    "min-h-11 min-w-0 rounded-[16px] px-3 py-2 text-[13px] font-semibold transition-all duration-200",
+                    "min-h-11 min-w-0 rounded-[18px] px-3 py-2 text-[13px] font-semibold transition-all duration-200",
                     isSelected ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
                   )}
                   onClick={() => onSelectEnvironment(environment.id)}
@@ -63,7 +63,7 @@ export const FactoryV2ModeSwitch = ({
         <FactoryV2ToggleGroup title="Game">
           <div
             data-testid="factory-game-switch"
-            className="grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/40 p-1.5 md:mx-auto md:max-w-[18rem]"
+            className="mx-auto grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/45 p-1.5 shadow-[0_10px_24px_rgba(34,24,14,0.05)] md:max-w-[18rem]"
           >
             {modes.map((mode) => {
               const isSelected = mode.id === selectedMode;
@@ -74,7 +74,7 @@ export const FactoryV2ModeSwitch = ({
                   type="button"
                   aria-pressed={isSelected}
                   className={cn(
-                    "min-h-11 min-w-0 rounded-[16px] px-3 py-2 text-[13px] font-semibold transition-all duration-200",
+                    "min-h-11 min-w-0 rounded-[18px] px-3 py-2 text-[13px] font-semibold transition-all duration-200",
                     isSelected ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
                   )}
                   onClick={() => onSelectMode(mode.id)}
@@ -97,8 +97,8 @@ const FactoryV2ToggleGroup = ({
   title: string;
   children: ReactNode;
 }) => (
-  <div className="space-y-2 text-left md:text-center">
-    <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-black/42">{title}</div>
+  <div className="space-y-2 text-center">
+    <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/42">{title}</div>
     {children}
   </div>
 );

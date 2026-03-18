@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,11 +27,19 @@ const waitForAsyncWork = async () => {
 const createPreset = () => ({
   id: "preset-1",
   name: "Preset 1",
+  mode: "blitz" as const,
   description: "Preset description",
-  defaults: {},
+  defaults: {
+    startRule: "next_hour" as const,
+    devMode: false,
+    twoPlayerMode: false,
+    singleRealmMode: false,
+  },
 });
 
-const buildProps = (overrides: Record<string, unknown> = {}) => ({
+const buildProps = (
+  overrides: Partial<ComponentProps<typeof FactoryV2StartWorkspace>> = {},
+): ComponentProps<typeof FactoryV2StartWorkspace> => ({
   mode: "blitz",
   modeLabel: "Blitz",
   environmentLabel: "Slot",
@@ -105,7 +113,7 @@ describe("FactoryV2StartWorkspace play style", () => {
 
   it("splits the start card into clear launch sections", async () => {
     await act(async () => {
-      root.render(<FactoryV2StartWorkspace {...(buildProps() as never)} />);
+      root.render(<FactoryV2StartWorkspace {...buildProps()} />);
       await waitForAsyncWork();
     });
 
@@ -117,7 +125,7 @@ describe("FactoryV2StartWorkspace play style", () => {
 
   it("uses a wide layout with a sticky mobile launch bar", async () => {
     await act(async () => {
-      root.render(<FactoryV2StartWorkspace {...(buildProps() as never)} />);
+      root.render(<FactoryV2StartWorkspace {...buildProps()} />);
       await waitForAsyncWork();
     });
 
@@ -131,7 +139,7 @@ describe("FactoryV2StartWorkspace play style", () => {
 
   it("shows the three fixed blitz play style options", async () => {
     await act(async () => {
-      root.render(<FactoryV2StartWorkspace {...(buildProps() as never)} />);
+      root.render(<FactoryV2StartWorkspace {...buildProps()} />);
       await waitForAsyncWork();
     });
 
@@ -146,7 +154,7 @@ describe("FactoryV2StartWorkspace play style", () => {
 
   it("hides the max player control while two-player mode is chosen", async () => {
     await act(async () => {
-      root.render(<FactoryV2StartWorkspace {...(buildProps({ twoPlayerMode: true }) as never)} />);
+      root.render(<FactoryV2StartWorkspace {...buildProps({ twoPlayerMode: true })} />);
       await waitForAsyncWork();
     });
 
@@ -160,10 +168,10 @@ describe("FactoryV2StartWorkspace play style", () => {
     await act(async () => {
       root.render(
         <FactoryV2StartWorkspace
-          {...(buildProps({
+          {...buildProps({
             onToggleTwoPlayerMode,
             onToggleSingleRealmMode,
-          }) as never)}
+          })}
         />,
       );
       await waitForAsyncWork();

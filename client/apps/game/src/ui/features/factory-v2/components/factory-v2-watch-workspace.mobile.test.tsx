@@ -116,9 +116,15 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     const article = container.querySelector("article");
     const actionBar = container.querySelector('[data-testid="factory-watch-action-bar"]');
+    const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
+    const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+    const gameNameInput = container.querySelector("#factory-watch-game") as HTMLInputElement | null;
 
     expect(article?.className).toContain("w-full");
     expect(article?.className).toContain("md:max-w-md");
+    expect(searchPanel?.textContent).toContain("Open an existing run");
+    expect(selectedPanel?.textContent).toContain("Recent steps");
+    expect(gameNameInput?.className).toContain("text-center");
     expect(actionBar?.className).toContain("sticky");
   });
 });
