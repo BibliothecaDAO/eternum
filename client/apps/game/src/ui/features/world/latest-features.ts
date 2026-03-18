@@ -10,6 +10,34 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Factory Actions Stay Inline",
+    description:
+      "Retry, continue, and indexer actions in the new Factory now stay in the Factory flow instead of interrupting you with a network-switch prompt unless you choose to switch networks yourself.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Workflow Stays Put",
+    description:
+      "The new Factory now keeps you on Start if you switch away from Check while the same game is still deploying, so background updates no longer yank you back to the watch panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-18",
+    title: "Friendlier Factory Status Copy",
+    description:
+      "Factory V2 now talks about games and status in plain language instead of internal run jargon, and the watch timeline keeps older and upcoming steps softer so the current step is easier to focus on.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Clearer Factory Watch States",
+    description:
+      "Factory V2 now uses clearer watch-state wording and a calmer progress stack, so setup steps read like real status updates and only the current step stays visually in focus.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Aligned Factory Watch Search",
     description:
       "The Check a game panel in Factory now keeps its title, field, helper copy, and recent-game picker on one centered mobile column, so the search flow feels properly aligned on phones.",
