@@ -1,10 +1,13 @@
 import * as fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
+  acquireFactoryAccountLease,
+  heartbeatFactoryAccountLease,
   recordFactoryLaunchStarted,
   recordFactoryLaunchStepFailed,
   recordFactoryLaunchStepStarted,
   recordFactoryLaunchStepSucceeded,
+  releaseFactoryAccountLeaseRecord,
 } from "../run-store";
 import { resolveRepoPath } from "../shared/repo";
 import type { LaunchGameSummary } from "../types";
@@ -23,6 +26,7 @@ const ENV_KEYS = [
   "GITHUB_REF_NAME",
   "FACTORY_RUN_STORE_BRANCH",
   "FACTORY_RUN_LEASE_DURATION_SECONDS",
+  "FACTORY_ACCOUNT_LEASE_DURATION_SECONDS",
 ] as const;
 
 const originalEnv = new Map<string, string | undefined>(ENV_KEYS.map((key) => [key, process.env[key]]));
@@ -293,6 +297,123 @@ describe("factory run store", () => {
 
     expect(runRecord.latestLaunchRequestId).toBe("202-1");
     expect(runRecord.activeLease).toBeUndefined();
+  });
+
+  test("acquires an account lease for nonce-writing steps", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    const lease = await acquireFactoryAccountLease({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "create-world",
+    });
+
+    const leaseRecord = branchStore.readJson("locks/accounts/slot/0xabc123.json");
+
+    expect(lease.owner.stepId).toBe("create-world");
+    expect(leaseRecord.owner.gameName).toBe("bltz-flux-730");
+    expect(leaseRecord.releasedAt).toBeUndefined();
+  });
+
+  test("blocks a conflicting account lease while the current owner is active", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await acquireFactoryAccountLease({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "create-world",
+    });
+
+    process.env.GITHUB_RUN_ID = "202";
+
+    await expect(
+      acquireFactoryAccountLease({
+        environmentId: "slot.eternum",
+        gameName: "etrn-flux-730",
+        accountAddress: "0xabc123",
+        stepId: "configure-world",
+      }),
+    ).rejects.toThrow("Account 0xabc123 is already in use");
+  });
+
+  test("allows a stale account lease to be taken over", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+    process.env.FACTORY_ACCOUNT_LEASE_DURATION_SECONDS = "1";
+
+    await acquireFactoryAccountLease({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "create-world",
+    });
+
+    const staleLease = branchStore.readJson("locks/accounts/slot/0xabc123.json");
+    branchStore.writeJson("locks/accounts/slot/0xabc123.json", {
+      ...staleLease,
+      expiresAt: "2000-01-01T00:00:00.000Z",
+    });
+
+    process.env.GITHUB_RUN_ID = "202";
+
+    const refreshedLease = await acquireFactoryAccountLease({
+      environmentId: "slot.eternum",
+      gameName: "etrn-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "configure-world",
+    });
+
+    expect(refreshedLease.owner.gameName).toBe("etrn-flux-730");
+    expect(refreshedLease.owner.launchRequestId).toBe("202-1");
+  });
+
+  test("heartbeats and releases the active account lease", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+    process.env.FACTORY_ACCOUNT_LEASE_DURATION_SECONDS = "60";
+
+    const lease = await acquireFactoryAccountLease({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "create-world",
+    });
+
+    const originalLease = branchStore.readJson("locks/accounts/slot/0xabc123.json");
+    branchStore.writeJson("locks/accounts/slot/0xabc123.json", {
+      ...originalLease,
+      heartbeatAt: "2000-01-01T00:00:00.000Z",
+      expiresAt: "2000-01-01T00:01:00.000Z",
+    });
+    const staleLease = branchStore.readJson("locks/accounts/slot/0xabc123.json");
+
+    await heartbeatFactoryAccountLease({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "create-world",
+      leaseId: lease.owner.leaseId,
+    });
+
+    const heartbeatedLease = branchStore.readJson("locks/accounts/slot/0xabc123.json");
+
+    await releaseFactoryAccountLeaseRecord({
+      environmentId: "slot.blitz",
+      gameName: "bltz-flux-730",
+      accountAddress: "0xabc123",
+      stepId: "create-world",
+      leaseId: lease.owner.leaseId,
+    });
+
+    const releasedLease = branchStore.readJson("locks/accounts/slot/0xabc123.json");
+
+    expect(Date.parse(heartbeatedLease.expiresAt)).toBeGreaterThan(Date.parse(staleLease.expiresAt));
+    expect(releasedLease.releasedAt).toBeTruthy();
+    expect(releasedLease.expiresAt).toBe(releasedLease.releasedAt);
   });
 });
 

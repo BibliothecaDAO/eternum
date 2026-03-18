@@ -85,7 +85,10 @@ export async function ensureGitHubBranchExists(config: GitHubBranchStoreConfig):
   await createBranch(config);
 }
 
-async function readBranchFile<T>(config: GitHubBranchStoreConfig, path: string): Promise<{ sha?: string; value?: T }> {
+export async function readGitHubBranchJsonFile<T>(
+  config: GitHubBranchStoreConfig,
+  path: string,
+): Promise<{ sha?: string; value?: T }> {
   const response = await fetch(`${config.apiBaseUrl}/repos/${config.repo}/contents/${path}?ref=${config.branch}`, {
     headers: buildGitHubHeaders(config.token),
   });
@@ -145,7 +148,7 @@ export async function updateGitHubBranchJsonFile<T>(
   await ensureGitHubBranchExists(config);
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const current = await readBranchFile<T>(config, path);
+    const current = await readGitHubBranchJsonFile<T>(config, path);
     const nextValue = buildValue(current.value);
     const didWrite = await tryWriteBranchFile(
       config,

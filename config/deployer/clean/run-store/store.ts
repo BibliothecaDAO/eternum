@@ -1,24 +1,24 @@
-import { DEFAULT_FACTORY_RUN_LEASE_DURATION_MS, DEFAULT_GAME_LAUNCH_WORKFLOW_FILE } from "../constants";
+import { DEFAULT_FACTORY_RUN_LEASE_DURATION_MS } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadLaunchSummaryIfPresent, resolveLaunchSummaryRelativePath } from "../launch/io";
 import type { LaunchGameStepId, LaunchGameSummary } from "../types";
+import { createFactoryRunStoreEventContext } from "./context";
 import {
   updateGitHubBranchJsonFile,
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
-import { resolveFactoryLaunchInputPath, resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
+import { resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
+import { resolveLaunchStepTitle } from "./steps";
 import type {
   FactoryLaunchInputRecord,
   FactoryRunArtifacts,
-  FactoryRunExecutionMode,
   FactoryRunRecord,
   FactoryRunRequestContext,
   FactoryRunStepRecord,
   FactoryRunStoreEventContext,
   FactoryRunStatus,
   FactoryRunStepStatus,
-  LaunchWorkflowScope,
 } from "./types";
 
 interface RecordFactoryLaunchOptions extends ResolveGitHubBranchStoreConfigOptions {}
@@ -26,59 +26,6 @@ interface RecordFactoryLaunchOptions extends ResolveGitHubBranchStoreConfigOptio
 interface FactoryLaunchEventRequest extends FactoryRunRequestContext {
   stepId?: LaunchGameStepId;
   errorMessage?: string;
-}
-
-export function resolveFactoryRunExecutionMode(scope: LaunchWorkflowScope): FactoryRunExecutionMode {
-  return scope === "full" ? "fast_trial" : "guided_recovery";
-}
-
-function resolveWorkflowContext() {
-  const workflowRunId = resolveOptionalNumber(process.env.GITHUB_RUN_ID);
-  const workflowRunAttempt = resolveOptionalNumber(process.env.GITHUB_RUN_ATTEMPT);
-  const workflowUrl =
-    workflowRunId && process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY
-      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${workflowRunId}`
-      : undefined;
-
-  return {
-    workflowName: process.env.GITHUB_WORKFLOW || DEFAULT_GAME_LAUNCH_WORKFLOW_FILE,
-    workflowJob: process.env.GITHUB_JOB,
-    workflowRunId,
-    workflowRunAttempt,
-    workflowUrl,
-    ref: process.env.GITHUB_REF_NAME || process.env.GITHUB_REF,
-    sha: process.env.GITHUB_SHA,
-  };
-}
-
-function resolveOptionalNumber(value: string | undefined): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function createLaunchRequestId(): string {
-  if (process.env.GITHUB_RUN_ID) {
-    return `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || "1"}`;
-  }
-
-  return `local-${Date.now()}`;
-}
-
-function createEventContext(request: FactoryRunRequestContext): FactoryRunStoreEventContext {
-  const launchRequestId = createLaunchRequestId();
-
-  return {
-    ...request,
-    launchRequestId,
-    inputPath: resolveFactoryLaunchInputPath(request, launchRequestId),
-    executionMode: resolveFactoryRunExecutionMode(request.requestedLaunchStep),
-    timestamp: new Date().toISOString(),
-    workflow: resolveWorkflowContext(),
-  };
 }
 
 function resolveFactoryRunLeaseDurationMs(): number {
@@ -243,7 +190,7 @@ function ensureFactoryRunLeaseAvailable(run: FactoryRunRecord, context: FactoryR
   const conflictTarget =
     normalizedRun.workflow.workflowUrl || normalizedRun.workflow.workflowName || "unknown workflow";
   throw new Error(
-    `Another launch is already running for ${context.environmentId}/${context.gameName} during ${resolveStepTitle(
+    `Another launch is already running for ${context.environmentId}/${context.gameName} during ${resolveLaunchStepTitle(
       activeLease.stepId,
     )}. Active workflow: ${conflictTarget}`,
   );
@@ -335,29 +282,17 @@ function readLaunchArtifacts(request: FactoryRunRequestContext): FactoryRunArtif
 }
 
 function buildStepStartedEvent(stepId: LaunchGameStepId): string {
-  return `${resolveStepTitle(stepId)} started`;
+  return `${resolveLaunchStepTitle(stepId)} started`;
 }
 
 function buildStepSucceededEvent(stepId: LaunchGameStepId): string {
-  return `${resolveStepTitle(stepId)} succeeded`;
+  return `${resolveLaunchStepTitle(stepId)} succeeded`;
 }
 
 function buildStepFailedEvent(stepId: LaunchGameStepId, errorMessage: string | undefined): string {
   return errorMessage?.trim()
-    ? `${resolveStepTitle(stepId)} failed: ${errorMessage.trim()}`
-    : `${resolveStepTitle(stepId)} failed`;
-}
-
-function resolveStepTitle(stepId: LaunchGameStepId): string {
-  return {
-    "create-world": "Create world",
-    "wait-for-factory-index": "Wait for factory index",
-    "configure-world": "Configure world",
-    "grant-lootchest-role": "Grant loot chest role",
-    "grant-village-pass-role": "Grant village pass role",
-    "create-banks": "Create banks",
-    "create-indexer": "Create indexer",
-  }[stepId];
+    ? `${resolveLaunchStepTitle(stepId)} failed: ${errorMessage.trim()}`
+    : `${resolveLaunchStepTitle(stepId)} failed`;
 }
 
 function buildCommitMessage(action: string, request: FactoryRunRequestContext): string {
@@ -400,7 +335,7 @@ export async function recordFactoryLaunchStarted(
   request: FactoryRunRequestContext,
   options: RecordFactoryLaunchOptions = {},
 ): Promise<FactoryRunRecord> {
-  const context = createEventContext(request);
+  const context = createFactoryRunStoreEventContext(request);
   await writeLaunchInputRecord(context, options);
 
   return updateRunRecord(
@@ -429,7 +364,7 @@ export async function recordFactoryLaunchStepStarted(
     throw new Error("stepId is required to record a started step");
   }
 
-  const context = createEventContext(request);
+  const context = createFactoryRunStoreEventContext(request);
 
   return updateRunRecord(
     context,
@@ -461,7 +396,7 @@ export async function recordFactoryLaunchStepSucceeded(
     throw new Error("stepId is required to record a successful step");
   }
 
-  const context = createEventContext(request);
+  const context = createFactoryRunStoreEventContext(request);
 
   return updateRunRecord(
     context,
@@ -497,7 +432,7 @@ export async function recordFactoryLaunchStepFailed(
     throw new Error("stepId is required to record a failed step");
   }
 
-  const context = createEventContext(request);
+  const context = createFactoryRunStoreEventContext(request);
 
   return updateRunRecord(
     context,

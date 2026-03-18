@@ -22,6 +22,28 @@ export interface FactoryRunWorkflowContext {
   sha?: string;
 }
 
+export interface FactoryAccountLeaseOwner {
+  environment: DeploymentEnvironmentId;
+  gameName: string;
+  launchRequestId: string;
+  workflowName: string;
+  workflowRunId?: number;
+  workflowRunAttempt?: number;
+  stepId: LaunchGameStepId;
+  leaseId: string;
+}
+
+export interface FactoryAccountLeaseRecord {
+  version: 1;
+  chain: DeploymentChain;
+  accountAddress: string;
+  owner: FactoryAccountLeaseOwner;
+  acquiredAt: string;
+  heartbeatAt: string;
+  expiresAt: string;
+  releasedAt?: string;
+}
+
 export interface FactoryRunLease {
   launchRequestId: string;
   workflowRunId?: number;
@@ -96,6 +118,11 @@ export interface FactoryRunIdentity {
   gameName: string;
 }
 
+export interface FactoryAccountLeaseIdentity {
+  environmentId: DeploymentEnvironmentId;
+  accountAddress: string;
+}
+
 export interface FactoryRunRequestContext extends FactoryRunIdentity {
   request: LaunchGameRequest;
   requestedLaunchStep: LaunchWorkflowScope;
@@ -107,4 +134,10 @@ export interface FactoryRunStoreEventContext extends FactoryRunRequestContext {
   executionMode: FactoryRunExecutionMode;
   timestamp: string;
   workflow: FactoryRunWorkflowContext;
+}
+
+export interface FactoryAccountLeaseRequestContext extends FactoryRunIdentity {
+  accountAddress: string;
+  stepId: LaunchGameStepId;
+  leaseId?: string;
 }
