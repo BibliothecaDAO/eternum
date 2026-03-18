@@ -1,7 +1,7 @@
 const MATRIX_UPLOAD_BYTES_PER_INSTANCE = Float32Array.BYTES_PER_ELEMENT * 16;
 const COLOR_UPLOAD_BYTES_PER_INSTANCE = Float32Array.BYTES_PER_ELEMENT * 3;
 
-export type WorldmapUploadWorkStage = "presentation_prewarm" | "visible_commit";
+type WorldmapUploadWorkStage = "presentation_prewarm" | "visible_commit";
 
 export function classifyWorldmapUploadWork(input: {
   colorInstanceCount: number;

@@ -1,4 +1,4 @@
-export interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
+interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
   chunkKey: string;
   startRow: number;
   startCol: number;
@@ -15,12 +15,12 @@ export interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
   onChunkReady?: (chunkKey: string) => void;
 }
 
-export interface PreparedWorldmapChunkPresentation<TPreparedTerrain> {
+interface PreparedWorldmapChunkPresentation<TPreparedTerrain> {
   tileFetchSucceeded: boolean;
   preparedTerrain: TPreparedTerrain | null;
 }
 
-export interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
+interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
   chunkKey: string;
   prewarmToken: number;
   isLatestToken: (token: number) => boolean;
@@ -29,7 +29,7 @@ export interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
   cachePreparedTerrain: (preparedTerrain: TPreparedTerrain) => void;
 }
 
-export interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
+interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
   status: "prepared" | "skipped_hot" | "stale_dropped" | "fetch_failed";
   preparedTerrain: TPreparedTerrain | null;
 }

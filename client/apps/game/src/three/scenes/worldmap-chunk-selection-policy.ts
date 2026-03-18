@@ -22,13 +22,13 @@ function getRowOffset(row: number): number {
 
 // ── public interfaces ───────────────────────────────────────────────────────
 
-export interface WorldmapChunkSelectionInput {
+interface WorldmapChunkSelectionInput {
   worldX: number;
   worldZ: number;
   chunkSize: number;
 }
 
-export interface WorldmapChunkSelectionResult {
+interface WorldmapChunkSelectionResult {
   focusCol: number;
   focusRow: number;
   startCol: number;

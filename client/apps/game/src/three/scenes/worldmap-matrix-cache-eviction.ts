@@ -5,7 +5,7 @@
  * independently testable without instantiating the full scene graph.
  */
 
-export interface MatrixCacheEvictionResult {
+interface MatrixCacheEvictionResult {
   /** Keys that were evicted (in eviction order). */
   evictedKeys: string[];
   /** Whether eviction was limited by all remaining entries being pinned. */

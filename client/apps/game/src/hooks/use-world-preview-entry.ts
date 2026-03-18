@@ -116,7 +116,7 @@ interface UseWorldPreviewEntryOptions {
   enabled?: boolean;
 }
 
-export const useWorldPreviewEntry = ({ worldName, chain, enabled = true }: UseWorldPreviewEntryOptions) => {
+const useWorldPreviewEntry = ({ worldName, chain, enabled = true }: UseWorldPreviewEntryOptions) => {
   const { address } = useAccount();
   const [previewEntryStage, setPreviewEntryStage] = useState<PreviewEntryStage>("idle");
   const [error, setError] = useState<string | null>(null);

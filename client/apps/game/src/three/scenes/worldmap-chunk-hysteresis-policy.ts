@@ -11,7 +11,7 @@ import { resolveChunkKeyFromHex } from "./worldmap-chunk-selection-policy";
 
 // ── public interfaces ───────────────────────────────────────────────────────
 
-export interface WorldmapChunkHysteresisInput {
+interface WorldmapChunkHysteresisInput {
   focusCol: number;
   focusRow: number;
   currentChunkStartRow: number;
@@ -22,7 +22,7 @@ export interface WorldmapChunkHysteresisInput {
   holdBandFraction?: number;
 }
 
-export interface WorldmapChunkHysteresisDecision {
+interface WorldmapChunkHysteresisDecision {
   shouldStayInCurrentChunk: boolean;
   shouldSwitchToTargetChunk: boolean;
   targetChunkKey: string | null;

@@ -1,6 +1,6 @@
 import type { VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
 
-export type VisibleTerrainReconcileMode =
+type VisibleTerrainReconcileMode =
   | "none"
   | "append_if_absent"
   | "replace_same_hex"

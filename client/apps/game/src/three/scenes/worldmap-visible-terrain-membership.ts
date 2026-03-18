@@ -4,11 +4,11 @@ export interface VisibleTerrainInstanceRef {
   instanceIndex: number;
 }
 
-export interface VisibleTerrainMembershipEntry extends VisibleTerrainInstanceRef {
+interface VisibleTerrainMembershipEntry extends VisibleTerrainInstanceRef {
   hexKey: string;
 }
 
-export interface VisibleTerrainMembershipBuildResult {
+interface VisibleTerrainMembershipBuildResult {
   membership: Map<string, VisibleTerrainInstanceRef>;
   conflicts: string[];
 }

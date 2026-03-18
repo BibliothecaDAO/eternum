@@ -1,4 +1,4 @@
-export interface SameChunkRefreshCommitInput {
+interface SameChunkRefreshCommitInput {
   refreshToken: number;
   currentRefreshToken: number;
   currentChunk: string;
@@ -6,7 +6,7 @@ export interface SameChunkRefreshCommitInput {
   preparedTerrain: unknown;
 }
 
-export interface SameChunkRefreshCommitDecision {
+interface SameChunkRefreshCommitDecision {
   shouldCommit: boolean;
   shouldDropAsStale: boolean;
 }
