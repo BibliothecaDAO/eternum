@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "runId": "slot.eternum:etrn-titan-60",
+  "environment": "slot.eternum",
+  "chain": "slot",
+  "gameType": "eternum",
+  "gameName": "etrn-titan-60",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/eternum/etrn-titan-60/23252696502-1.json",
+  "latestLaunchRequestId": "23252696502-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-18T15:30:49.983Z",
+  "updatedAt": "2026-03-18T15:30:49.983Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23252696502,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23252696502",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "5a128ad487f6a707a10fdd99ee1594905f34fe97"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Create world",
+      "status": "pending",
+      "workflowStepName": "Create world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Wait for factory index",
+      "status": "pending",
+      "workflowStepName": "Wait for factory index",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Configure world",
+      "status": "pending",
+      "workflowStepName": "Configure world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Grant loot chest role",
+      "status": "pending",
+      "workflowStepName": "Grant loot chest role",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-village-pass-role",
+      "title": "Grant village pass role",
+      "status": "pending",
+      "workflowStepName": "Grant village pass role",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-banks",
+      "title": "Create banks",
+      "status": "pending",
+      "workflowStepName": "Create banks",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Create indexer",
+      "status": "pending",
+      "workflowStepName": "Create indexer",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {}
+}
