@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-titan-60/23252696502-1.json",
   "latestLaunchRequestId": "23252696502-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-18T15:30:49.983Z",
-  "updatedAt": "2026-03-18T15:30:52.972Z",
+  "updatedAt": "2026-03-18T15:31:44.630Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -26,10 +26,11 @@
     {
       "id": "create-world",
       "title": "Create world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create world",
-      "latestEvent": "Create world started",
-      "startedAt": "2026-03-18T15:30:52.972Z"
+      "latestEvent": "Create world succeeded",
+      "startedAt": "2026-03-18T15:30:52.972Z",
+      "finishedAt": "2026-03-18T15:31:44.630Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -74,13 +75,8 @@
       "latestEvent": "Waiting to run"
     }
   ],
-  "artifacts": {},
-  "activeLease": {
-    "launchRequestId": "23252696502-1",
-    "workflowRunId": 23252696502,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-18T15:30:52.972Z",
-    "expiresAt": "2026-03-18T16:15:52.972Z"
+  "artifacts": {
+    "summaryPath": ".context/game-launch/slot-eternum-etrn-titan-60.json",
+    "createGameTxHash": "0x5e71c476ad8637d4091a7e6d33b10b2e3a7fa5ad57df1b49c756068ac8a8d09"
   }
 }
