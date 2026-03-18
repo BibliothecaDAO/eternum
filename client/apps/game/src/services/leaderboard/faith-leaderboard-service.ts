@@ -1,10 +1,13 @@
+import { getRealmNameById } from "@bibliothecadao/eternum";
 import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 
 import { getSqlApiBaseUrl } from "@/services/api";
 
 interface FaithLeaderboardRow {
   wonder_id?: unknown;
-  last_recorded_owner?: unknown;
+  owner_address?: unknown;
+  owner_name?: unknown;
+  realm_id?: unknown;
   claimed_points?: unknown;
   claim_per_sec?: unknown;
   num_structures_pledged?: unknown;
@@ -23,14 +26,18 @@ export interface FaithLeaderboardEntry {
 
 const WONDER_FAITH_LEADERBOARD_QUERY = `
   SELECT
-    wf.wonder_id,
-    wf.last_recorded_owner,
-    wf.claimed_points,
-    wf.claim_per_sec,
-    wf.num_structures_pledged
-  FROM [s1_eternum-WonderFaith] wf
-  WHERE wf.wonder_id > 0
-  ORDER BY wf.claimed_points DESC, wf.claim_per_sec DESC, wf.wonder_id ASC;
+    s.entity_id AS wonder_id,
+    s.owner AS owner_address,
+    sos.name AS owner_name,
+    s.\`metadata.realm_id\` AS realm_id,
+    COALESCE(wf.claimed_points, 0) AS claimed_points,
+    COALESCE(wf.claim_per_sec, 0) AS claim_per_sec,
+    COALESCE(wf.num_structures_pledged, 0) AS num_structures_pledged
+  FROM [s1_eternum-Structure] s
+  LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id
+  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+  WHERE s.\`metadata.has_wonder\` = true
+  ORDER BY COALESCE(wf.claimed_points, 0) DESC, COALESCE(wf.claim_per_sec, 0) DESC, s.entity_id ASC;
 `;
 
 const ensureSqlSuffix = (baseUrl: string): string => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
@@ -80,7 +87,27 @@ const formatOwnerAddress = (value: unknown): string => {
   return `0x${parsed.toString(16).padStart(64, "0")}`;
 };
 
-const buildWonderName = (wonderId: bigint): string => `Wonder #${wonderId.toString()}`;
+const buildWonderName = (wonderId: bigint, realmId: number): string => {
+  if (realmId > 0) {
+    const realmName = getRealmNameById(realmId);
+    if (realmName) {
+      return `Wonder - ${realmName}`;
+    }
+
+    return `Wonder #${realmId}`;
+  }
+
+  return `Wonder #${wonderId.toString()}`;
+};
+
+const parseOwnerName = (value: unknown): string | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+};
 
 const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeaderboardEntry[] => {
   const entries = rows
@@ -90,6 +117,7 @@ const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeader
         return null;
       }
 
+      const realmId = parseIntNumber(row.realm_id);
       const totalFaithPoints = parseBigInt(row.claimed_points) ?? 0n;
       const faithPointsPerSecond = parseIntNumber(row.claim_per_sec);
       const followerCount = parseIntNumber(row.num_structures_pledged);
@@ -97,9 +125,9 @@ const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeader
       return {
         rank: 0,
         wonderId,
-        wonderName: buildWonderName(wonderId),
-        ownerAddress: formatOwnerAddress(row.last_recorded_owner),
-        ownerName: null,
+        wonderName: buildWonderName(wonderId, realmId),
+        ownerAddress: formatOwnerAddress(row.owner_address),
+        ownerName: parseOwnerName(row.owner_name),
         totalFaithPoints,
         faithPointsPerSecond,
         followerCount,
