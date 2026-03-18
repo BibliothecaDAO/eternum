@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23234161333-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T07:41:18.682Z",
-  "updatedAt": "2026-03-18T07:42:58.309Z",
+  "updatedAt": "2026-03-18T07:42:59.206Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -73,5 +73,13 @@
     "worldAddress": "0x07f8f7466a05a39c0494375fe6f483898870e4a37ae2dc376c924fe87472d29f",
     "configureTxHash": "0x85573c21506eed2bf1616bcbc9a694d4a0d44d63660f4a16ff007bb2032f8d",
     "lootChestRoleTxHash": "0x5ec34a5e93a832848d6d7bd99df8f73a453d3ed1a01f90e13ea5379045d31b4"
+  },
+  "activeLease": {
+    "launchRequestId": "23234161333-1",
+    "workflowRunId": 23234161333,
+    "workflowRunAttempt": 1,
+    "stepId": "grant-village-pass-role",
+    "acquiredAt": "2026-03-18T07:42:59.206Z",
+    "expiresAt": "2026-03-18T08:27:59.206Z"
   }
 }
