@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23238375328-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-18T09:41:21.090Z",
-  "updatedAt": "2026-03-18T09:43:01.618Z",
+  "updatedAt": "2026-03-18T09:43:02.873Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Wait for factory index",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Wait for factory index",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Wait for factory index started",
+      "startedAt": "2026-03-18T09:43:02.873Z"
     },
     {
       "id": "configure-world",
@@ -78,5 +79,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-eternum-etrn-lore-450.json",
     "createGameTxHash": "0x6a3dff6e9cc15174427398f0715afb42665e90d4224e1c4b7d4fef1b03910c6"
+  },
+  "activeLease": {
+    "launchRequestId": "23238375328-1",
+    "workflowRunId": 23238375328,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-18T09:43:02.873Z",
+    "expiresAt": "2026-03-18T10:28:02.873Z"
   }
 }
