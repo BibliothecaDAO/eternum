@@ -64,6 +64,25 @@ const toErrorMessage = (error: unknown): string => {
   return "Unknown data source error";
 };
 
+const normalizeHexAddress = (value: unknown): string | null => {
+  if (value == null) return null;
+
+  try {
+    const normalized = `0x${BigInt(String(value)).toString(16)}`.toLowerCase();
+    return normalized;
+  } catch {
+    return null;
+  }
+};
+
+const getMarketPrizeAddress = (market: MarketClass): string | null => {
+  if (!Array.isArray(market.oracle_params) || market.oracle_params.length < 2) {
+    return null;
+  }
+
+  return normalizeHexAddress(market.oracle_params[1]);
+};
+
 const getSelectedChains = (chainFilter: MarketChainFilter): MarketDataChain[] =>
   chainFilter === "all" ? CHAIN_ORDER : [chainFilter];
 
@@ -389,22 +408,37 @@ export function useMultiChainMarkets({
   chainFilter,
   limit,
   offset,
+  blockedOracleAddresses = [],
 }: {
   status: MarketStatusKey;
   chainFilter: MarketChainFilter;
   limit: number;
   offset: number;
+  blockedOracleAddresses?: string[];
 }) {
   const { getRegisteredToken } = useConfig();
   const queryClient = useQueryClient();
   const selectedChains = useMemo(() => getSelectedChains(chainFilter), [chainFilter]);
+  const blockedOracleAddressesKey = useMemo(
+    () =>
+      blockedOracleAddresses
+        .map((address) => address.toLowerCase())
+        .toSorted()
+        .join(","),
+    [blockedOracleAddresses],
+  );
 
   const query = useQuery({
-    queryKey: ["pm", "multi-chain", "markets", status, chainFilter],
+    queryKey: ["pm", "multi-chain", "markets", status, chainFilter, blockedOracleAddressesKey],
     queryFn: async () => {
       const now = Math.ceil(Date.now() / 1000);
       const sourceStatus = createEmptySourceStatus(selectedChains);
       const statusFilter = STATUS_TO_FILTER[status];
+      const blockedOracleSet = new Set(
+        blockedOracleAddresses
+          .map((address) => normalizeHexAddress(address))
+          .filter((address): address is string => !!address),
+      );
 
       const results = await Promise.allSettled(
         selectedChains.map((chain) =>
@@ -429,8 +463,25 @@ export function useMultiChainMarkets({
         sourceStatus[chain] = { ok: false, error: toErrorMessage(result.reason) };
       });
 
+      const filteredMarkets =
+        blockedOracleSet.size === 0
+          ? merged
+          : merged.filter((entry) => {
+              const oracle = normalizeHexAddress(entry.market.oracle);
+              if (oracle && blockedOracleSet.has(oracle)) {
+                return false;
+              }
+
+              const marketPrizeAddress = getMarketPrizeAddress(entry.market);
+              if (marketPrizeAddress && blockedOracleSet.has(marketPrizeAddress)) {
+                return false;
+              }
+
+              return true;
+            });
+
       return {
-        markets: mergeAndSortMarkets(merged, status),
+        markets: mergeAndSortMarkets(filteredMarkets, status),
         sourceStatus,
       };
     },

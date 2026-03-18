@@ -100,13 +100,13 @@ const StructureBannerEntityDetailContent = memo(
     const structureName = mode.structure.getName(structure).name;
     const structureCategory = rawCategory === undefined ? undefined : (rawCategory as StructureType);
     const isFragmentMine = Number(rawCategory) === StructureType.FragmentMine;
-    const isCamp = Number(rawCategory) === StructureType.Village;
+    const isCamp = [StructureType.Village, StructureType.Camp].includes(Number(rawCategory) as StructureType);
     const showBalanceInline = isFragmentMine || isCamp;
     const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
     const canOpenTransferPopup =
       isMine &&
       rawCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.FragmentMine].includes(
+      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.FragmentMine].includes(
         Number(rawCategory) as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
@@ -218,7 +218,9 @@ const StructureBannerEntityDetailContent = memo(
                   />
                 ) : (
                   <p className="text-xxs text-gold/60 italic">
-                    {isFragmentMine ? "Essence Rifts do not produce resources." : "Production data unavailable."}
+                    {isFragmentMine
+                      ? `${mode.labels.fragmentMines} do not produce resources.`
+                      : "Production data unavailable."}
                   </p>
                 )}
               </Tabs.Panel>

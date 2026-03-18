@@ -6,22 +6,19 @@
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
-import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
+import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { env } from "../../env";
-import { buildBlitzRegisterCalls } from "./blitz-registration";
-import { resolveRegistrationCosmeticTokenIds } from "./registration-cosmetic-token-ids";
+import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
 // Known contract selectors
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
-const DEFAULT_COSMETIC_SELECTION_LIMIT = 8;
 const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
 
 export interface SeasonRegistrationParams {
@@ -110,6 +107,8 @@ interface UseWorldRegistrationReturn {
   feeAmount: bigint;
   /** Whether registration is currently possible */
   canRegister: boolean;
+  /** Whether registration capacity has been reached */
+  isRegistrationFull: boolean;
   /** Whether fee balance is being checked */
   isCheckingFeeBalance: boolean;
   /** Whether wallet has enough fee token balance for registration */
@@ -183,6 +182,9 @@ export const useWorldRegistration = ({
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
+  const registrationCount = config?.registrationCount ?? 0;
+  const registrationCountMax = resolveEffectiveRegistrationCountMax(config);
+  const isRegistrationFull = isRegistrationCapacityReached(registrationCount, registrationCountMax);
   const requiresFeeBalanceForRegistration = chain === "mainnet";
   const needsFeeBalanceCheck = requiresFeeBalanceForRegistration && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
@@ -209,6 +211,7 @@ export const useWorldRegistration = ({
     !!usernameFelt &&
     !isCheckingFeeBalance &&
     hasSufficientFeeBalance &&
+    !isRegistrationFull &&
     registrationStage === "idle";
 
   const isRegistering = registrationStage !== "idle" && registrationStage !== "done" && registrationStage !== "error";
@@ -271,28 +274,6 @@ export const useWorldRegistration = ({
     return contracts;
   }, [chain, worldName]);
 
-  const worldLoadoutKey = `blitz:${chain}:${worldName}`;
-  const fallbackLoadoutKeys = useMemo(() => [resolveCosmeticsLoadoutScopeKeyForChain(chain)], [chain]);
-
-  const resolvePendingCosmeticTokenIds = useCallback((): string[] => {
-    if (!address) {
-      return [];
-    }
-
-    const draft =
-      playerCosmeticsStore.getPendingBlitzLoadout(worldLoadoutKey, address) ??
-      fallbackLoadoutKeys
-        .map((fallbackKey) => playerCosmeticsStore.getPendingBlitzLoadout(fallbackKey, address))
-        .find(Boolean);
-
-    if (!draft) {
-      return [];
-    }
-
-    const maxSelections = config?.collectiblesCosmeticsMax ?? DEFAULT_COSMETIC_SELECTION_LIMIT;
-    return resolveRegistrationCosmeticTokenIds({ draft, maxSelections });
-  }, [address, config?.collectiblesCosmeticsMax, fallbackLoadoutKeys, worldLoadoutKey]);
-
   /**
    * Get the blitz_realm_systems contract address
    */
@@ -348,14 +329,27 @@ export const useWorldRegistration = ({
    * Build calls to register with token lock
    */
   const buildRegisterCalls = useCallback(
-    (blitzSystemsAddress: string, tokenId: bigint, cosmeticTokenIds: readonly string[]): Call[] => {
-      return buildBlitzRegisterCalls({
-        blitzSystemsAddress,
-        entryTokenAddress: config?.entryTokenAddress,
-        usernameFelt,
-        tokenId,
-        cosmeticTokenIds,
+    (blitzSystemsAddress: string, tokenId: bigint): Call[] => {
+      const calls: Call[] = [];
+
+      // Lock entry token if required
+      if (config?.entryTokenAddress && tokenId > 0n) {
+        const tokenIdUint256 = uint256.bnToUint256(tokenId);
+        calls.push({
+          contractAddress: config.entryTokenAddress,
+          entrypoint: "token_lock",
+          calldata: CallData.compile([tokenIdUint256, ENTRY_TOKEN_LOCK_ID]),
+        });
+      }
+
+      // Register
+      calls.push({
+        contractAddress: blitzSystemsAddress,
+        entrypoint: "register",
+        calldata: [usernameFelt, tokenId.toString(), "0"],
       });
+
+      return calls;
     },
     [config, usernameFelt],
   );
@@ -434,7 +428,6 @@ export const useWorldRegistration = ({
           return;
         }
 
-        const cosmeticTokenIds = resolvePendingCosmeticTokenIds();
         const blitzSystemsAddress = await getBlitzRealmSystemsAddress(contracts);
 
         if (requiresEntryToken && config?.entryTokenAddress && config?.feeTokenAddress) {
@@ -490,28 +483,13 @@ export const useWorldRegistration = ({
 
           // Step 3: Register with token
           setRegistrationStage("registering");
-          const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId, cosmeticTokenIds);
+          const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId);
           await starknetAccount.execute(registerCalls);
         } else {
           // No entry token required - direct registration
           setRegistrationStage("registering");
-          const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n, cosmeticTokenIds);
+          const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n);
           await starknetAccount.execute(registerCalls);
-        }
-
-        if (address) {
-          const pendingLoadout = playerCosmeticsStore.getPendingBlitzLoadout(worldLoadoutKey, address);
-          if (!pendingLoadout) {
-            const fallbackDraft = fallbackLoadoutKeys
-              .map((fallbackKey) => playerCosmeticsStore.getPendingBlitzLoadout(fallbackKey, address))
-              .find(Boolean);
-
-            if (fallbackDraft) {
-              playerCosmeticsStore.setPendingBlitzLoadout(worldLoadoutKey, address, fallbackDraft);
-            }
-          }
-
-          playerCosmeticsStore.markAppliedBlitzLoadout(worldLoadoutKey, address);
         }
 
         setRegistrationStage("done");
@@ -526,17 +504,15 @@ export const useWorldRegistration = ({
       account,
       address,
       config,
+      worldName,
       chain,
       feeAmount,
       requiresEntryToken,
       resolveContracts,
       getBlitzRealmSystemsAddress,
       getRealmSystemsAddress,
-      fallbackLoadoutKeys,
       buildObtainTokenCalls,
       buildRegisterCalls,
-      worldLoadoutKey,
-      resolvePendingCosmeticTokenIds,
       waitForEntryToken,
     ],
   );
@@ -549,6 +525,7 @@ export const useWorldRegistration = ({
     requiresEntryToken,
     feeAmount,
     canRegister,
+    isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
   };

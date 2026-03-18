@@ -44,6 +44,20 @@ const InGameMarketContent = () => {
     const seasonConfig = configManager.getSeasonConfig();
     return seasonConfig?.endAt ?? null;
   }, []);
+  const isDevModeGame = useMemo(() => {
+    const devModeConfig = configManager.getDevModeConfig();
+    return Boolean(devModeConfig?.dev_mode_on);
+  }, []);
+
+  if (isDevModeGame) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <Panel tone="wood" padding="md" radius="lg" border="subtle" className="w-full max-w-sm text-center">
+          <p className="text-sm text-gold/80">Prediction markets are disabled for dev mode games.</p>
+        </Panel>
+      </div>
+    );
+  }
 
   // Render loading state
   if (isLoading) {

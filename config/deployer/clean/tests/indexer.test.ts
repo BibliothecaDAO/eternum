@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createIndexer } from "../indexer";
+import { createIndexer } from "../indexing/indexer";
 
 const ENV_KEYS = [
   "GITHUB_ACTIONS",

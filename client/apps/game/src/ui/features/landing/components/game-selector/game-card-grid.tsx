@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
+import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
 import {
   getAvailabilityStatus,
   getWorldKey,
@@ -28,7 +29,6 @@ import {
   switchWalletToChain,
   type WalletChainControllerLike,
 } from "@/ui/utils/network-switch";
-import { useWorldPreviewEntry } from "@/hooks/use-world-preview-entry";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -224,6 +224,8 @@ const buildGameResolutionSignature = (game: GameData): string => {
     registrationValue,
     config?.devModeOn ? "1" : "0",
     config?.mmrEnabled ? "1" : "0",
+    config?.registrationCountMax ?? "",
+    config?.twoPlayerMode ? "1" : "0",
     config?.numHyperstructuresLeft ?? "",
     config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
@@ -232,7 +234,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
 interface GameCardProps {
   game: GameData;
   onPlay: () => void;
-  onPreviewEnter?: () => void;
+  onSettle?: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
   onClaimRewards?: () => void;
@@ -250,7 +252,7 @@ interface GameCardProps {
 const GameCard = ({
   game,
   onPlay,
-  onPreviewEnter,
+  onSettle,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -276,23 +278,14 @@ const GameCard = ({
   const isEnded = game.gameStatus === "ended";
   const isEternumMode = game.config?.mode === "eternum";
   const isBlitzMode = game.config?.mode !== "eternum";
+  const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
   const devModeOn = game.config?.devModeOn ?? false;
-  const {
-    enterPreview,
-    clearPreview,
-    previewEntry,
-    previewEntryStage,
-    error: previewError,
-    canPreviewEnter,
-  } = useWorldPreviewEntry({
-    worldName: game.name,
-    chain: game.chain,
-    enabled: isBlitzMode && game.status === "ok" && isOngoing && Boolean(playerAddress),
-  });
-  const hasPreviewEntry = previewEntry?.previewEntered === true;
-  const canPlayBlitz = isBlitzMode && isOngoing && (game.isRegistered || hasPreviewEntry);
+  const canPlayBlitz = isBlitzMode && isOngoing && game.isRegistered;
   const canOpenEternumEntry = isEternumMode && !isEnded;
   const canPlay = canPlayBlitz || canOpenEternumEntry;
+  const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
+  const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
+  const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
   // Can spectate ongoing or ended games
   const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
@@ -307,6 +300,7 @@ const GameCard = ({
   const isMainnetGame = game.chain === "mainnet";
   const marketSnapshot = marketState?.data ?? null;
   const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
+  const showPredictionMarket = hasPrizeAddress && !devModeOn;
   const marketChain = marketSnapshot?.chain;
   const marketCanTrade = marketChain ? canInteractOnChain(marketChain) : true;
   const { claimableDisplay: marketClaimableDisplay, hasAnythingToClaim: hasMarketWinningsToClaim } = useMarketRedeem(
@@ -341,6 +335,7 @@ const GameCard = ({
     isRegistering,
     error,
     canRegister,
+    isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
   } = useWorldRegistration({
@@ -434,31 +429,19 @@ const GameCard = ({
   };
 
   const showRegistered = game.isRegistered || registrationStage === "done";
-  const showPreviewButton = import.meta.env.DEV && isBlitzMode && isOngoing && Boolean(playerAddress) && canPreviewEnter;
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
-  const previewActionLabel = hasPreviewEntry ? "Reapply Preview" : "Local Preview";
-
-  const handlePreviewEnter = useCallback(() => {
-    if (!onPreviewEnter) {
-      return;
-    }
-
-    runWithNetworkGuard(() => {
-      void enterPreview()
-        .then(() => {
-          onPreviewEnter();
-        })
-        .catch((err) => {
-          console.error("Preview entry failed:", err);
-        });
-    });
-  }, [enterPreview, onPreviewEnter, runWithNetworkGuard]);
-
-  const handleClearPreview = useCallback(() => {
-    clearPreview();
-  }, [clearPreview]);
-
-  const handlePlayAction = hasPreviewEntry && !game.isRegistered && onPreviewEnter ? onPreviewEnter : onPlay;
+  const registrationCount = game.registrationCount ?? 0;
+  const registrationCountMax = resolveEffectiveRegistrationCountMax(game.config);
+  const registrationLabel =
+    registrationCountMax !== null
+      ? `${registrationCount}/${registrationCountMax} players`
+      : `${registrationCount} players`;
+  const settledPlayersCount = game.config?.settledPlayersCount ?? 0;
+  const settledRealmsCount = game.config?.settledRealmsCount ?? 0;
+  const settledVillagesCount = game.config?.settledVillagesCount ?? 0;
+  const eternumPlayersLabel = `${settledPlayersCount} settled players`;
+  const eternumSettlementLabel = `${settledRealmsCount} realms · ${settledVillagesCount} villages`;
+  const playersLabel = isEternumMode ? eternumPlayersLabel : registrationLabel;
 
   return (
     <div
@@ -497,9 +480,16 @@ const GameCard = ({
 
         {/* Stats row with registration indicator */}
         <div className="flex items-center justify-between text-xs text-white/60">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 min-w-0">
             <Users className="w-3 h-3" />
-            <span>{game.registrationCount ?? 0} players</span>
+            <span className="truncate" title={playersLabel}>
+              {playersLabel}
+            </span>
+            {isEternumMode && (
+              <span className="truncate text-white/45" title={eternumSettlementLabel}>
+                · {eternumSettlementLabel}
+              </span>
+            )}
           </div>
           {showRegistered && (
             <div className="flex items-center gap-1 text-emerald-400">
@@ -519,7 +509,7 @@ const GameCard = ({
           />
         </div>
 
-        {marketSnapshot ? (
+        {showPredictionMarket && marketSnapshot ? (
           <div className="rounded-lg border border-emerald-400/35 bg-gradient-to-br from-emerald-500/10 via-black/40 to-black/20 p-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -586,7 +576,7 @@ const GameCard = ({
               </p>
             ) : null}
           </div>
-        ) : hasPrizeAddress ? (
+        ) : showPredictionMarket ? (
           <div className="rounded-lg border border-white/15 bg-white/[0.04] px-2 py-1.5 text-[10px] text-white/55">
             {marketState?.isLoading
               ? "Loading prediction market..."
@@ -608,16 +598,32 @@ const GameCard = ({
           {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
-              onClick={() => runWithNetworkGuard(handlePlayAction)}
+              onClick={() =>
+                runWithNetworkGuard(() => {
+                  if (canOpenEternumEntry) {
+                    if (canPlayEternumDirect) {
+                      onPlay();
+                    } else if (onSettle) {
+                      onSettle();
+                    } else {
+                      onPlay();
+                    }
+                    return;
+                  }
+                  onPlay();
+                })
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 canOpenEternumEntry
-                  ? "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
+                  ? canPlayEternumDirect
+                    ? "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors"
+                    : "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
                   : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
               )}
             >
               <Play className="w-3 h-3" />
-              {canOpenEternumEntry ? "Settle" : "Play"}
+              {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
             </button>
           ) : isBlitzMode && game.isRegistered === null && playerAddress ? (
             // Loading state while checking registration status
@@ -649,6 +655,10 @@ const GameCard = ({
                   <UserPlus className="w-3 h-3" />
                   Register
                 </button>
+              ) : isRegistrationFull ? (
+                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+                  Registration full
+                </div>
               ) : isCheckingFeeBalance ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -664,28 +674,16 @@ const GameCard = ({
             <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
           ) : null}
 
-          {showPreviewButton && onPreviewEnter && (
+          {showEternumSettleShortcut && (
             <button
-              onClick={handlePreviewEnter}
+              onClick={() => runWithNetworkGuard(onSettle ?? onPlay)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                "bg-amber-500/15 text-amber-200 border border-amber-400/35 hover:bg-amber-500/25 transition-colors",
+                "bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition-colors",
               )}
             >
-              <Sparkles className="w-3 h-3" />
-              {previewActionLabel}
-            </button>
-          )}
-
-          {hasPreviewEntry && (
-            <button
-              onClick={handleClearPreview}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
-                "bg-white/5 text-white/70 border border-white/15 hover:bg-white/10 transition-colors",
-              )}
-            >
-              Clear Preview
+              <Play className="w-3 h-3" />
+              Settle
             </button>
           )}
 
@@ -809,11 +807,6 @@ const GameCard = ({
             {error}
           </div>
         )}
-        {previewEntryStage === "error" && previewError && !showRegistered && (
-          <div className="text-[10px] text-red-400 text-center truncate" title={previewError}>
-            {previewError}
-          </div>
-        )}
       </div>
       <SwitchNetworkPrompt
         open={switchTargetChain !== null}
@@ -832,8 +825,8 @@ const GameCard = ({
 };
 
 interface UnifiedGameGridProps {
+  onPlayGame?: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
-  onPreviewEnter?: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
   onClaimRewards?: (selection: WorldSelection) => void;
@@ -869,8 +862,8 @@ interface UnifiedGameGridProps {
  * Unified game grid - combines games from mainnet and slot into a single view
  */
 export const UnifiedGameGrid = ({
+  onPlayGame,
   onSelectGame,
-  onPreviewEnter,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -1105,15 +1098,16 @@ export const UnifiedGameGrid = ({
     queries: resolvedGames.map((game) => {
       const preferredChain = toMarketChain(game.chain);
       const paddedPrizeAddress = normalizeHexAddress(game.config?.prizeDistributionAddress);
+      const showPredictionMarket = Boolean(paddedPrizeAddress) && !(game.config?.devModeOn ?? false);
 
       return {
         queryKey: ["landing", "game-market", game.worldKey, preferredChain, paddedPrizeAddress ?? "none"],
-        enabled: Boolean(paddedPrizeAddress),
+        enabled: showPredictionMarket,
         staleTime: 30 * 1000,
         gcTime: 5 * 60 * 1000,
         retry: 1,
         queryFn: async (): Promise<GameMarketSnapshot | null> => {
-          if (!paddedPrizeAddress) return null;
+          if (!showPredictionMarket || !paddedPrizeAddress) return null;
           const chainsToCheck: MarketDataChain[] =
             preferredChain === "mainnet" ? ["mainnet", "slot"] : ["slot", "mainnet"];
 
@@ -1296,17 +1290,14 @@ export const UnifiedGameGrid = ({
                   key={game.worldKey}
                   game={game}
                   onPlay={() =>
-                    onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                    (onPlayGame ?? onSelectGame)({
+                      name: game.name,
+                      chain: game.chain,
+                      worldAddress: game.worldAddress ?? undefined,
+                    })
                   }
-                  onPreviewEnter={
-                    onPreviewEnter
-                      ? () =>
-                          onPreviewEnter({
-                            name: game.name,
-                            chain: game.chain,
-                            worldAddress: game.worldAddress ?? undefined,
-                          })
-                      : undefined
+                  onSettle={() =>
+                    onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                   }
                   onSpectate={() =>
                     onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
@@ -1360,17 +1351,14 @@ export const UnifiedGameGrid = ({
                   <GameCard
                     game={game}
                     onPlay={() =>
-                      onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                      (onPlayGame ?? onSelectGame)({
+                        name: game.name,
+                        chain: game.chain,
+                        worldAddress: game.worldAddress ?? undefined,
+                      })
                     }
-                    onPreviewEnter={
-                      onPreviewEnter
-                        ? () =>
-                            onPreviewEnter({
-                              name: game.name,
-                              chain: game.chain,
-                              worldAddress: game.worldAddress ?? undefined,
-                            })
-                        : undefined
+                    onSettle={() =>
+                      onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
                     }
                     onSpectate={() =>
                       onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })

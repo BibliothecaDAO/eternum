@@ -82,6 +82,7 @@ const REVIEW_MMR_CONFIG_QUERY = `
 
 const REVIEW_SEASON_TIMING_QUERY = `
   SELECT
+    "season_config.dev_mode_on" AS dev_mode_on,
     "season_config.end_at" AS season_end_at,
     "season_config.registration_grace_seconds" AS registration_grace_seconds,
     "blitz_registration_config.registration_count" AS registration_count
@@ -563,6 +564,7 @@ interface MmrConfigRow {
 }
 
 interface SeasonTimingRow {
+  dev_mode_on?: unknown;
   season_end_at?: unknown;
   registration_grace_seconds?: unknown;
   registration_count?: unknown;
@@ -613,10 +615,13 @@ interface ReviewFinalizationMeta {
   registrationCount: number;
   finalTrialId: bigint | null;
   rankingFinalized: boolean;
+  devModeOn: boolean;
   mmrCommitted: boolean;
   mmrEnabled: boolean;
   mmrMinPlayers: number;
   mmrTokenAddress: string | null;
+  seasonEndAt: number | null;
+  registrationGraceSeconds: number;
   scoreSubmissionOpensAt: number | null;
 }
 
@@ -759,24 +764,29 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
         : registeredPlayers.length;
   const finalTrialId = parseBigIntValue(rankFinalRows[0]?.trial_id);
   const rankingFinalized = finalTrialId != null && finalTrialId > 0n;
+  const devModeOn = parseBoolean(seasonTimingRows[0]?.dev_mode_on);
   const mmrCommitted = parseNumeric(mmrMetaRows[0]?.game_median) > 0;
 
   const mmrEnabled = parseNumeric(mmrConfigRows[0]?.mmr_enabled) !== 0;
   const mmrMinPlayers = Math.max(1, parseNumeric(mmrConfigRows[0]?.mmr_min_players) || 6);
   const mmrTokenAddress = parseAddress(mmrConfigRows[0]?.mmr_token_address);
-  const seasonEndAt = parseNumeric(seasonTimingRows[0]?.season_end_at);
+  const seasonEndAtRaw = parseNumeric(seasonTimingRows[0]?.season_end_at);
+  const seasonEndAt = seasonEndAtRaw > 0 ? seasonEndAtRaw : null;
   const registrationGraceSeconds = Math.max(0, parseNumeric(seasonTimingRows[0]?.registration_grace_seconds));
-  const scoreSubmissionOpensAt = seasonEndAt > 0 ? seasonEndAt + registrationGraceSeconds : null;
+  const scoreSubmissionOpensAt = seasonEndAt != null ? seasonEndAt + registrationGraceSeconds : null;
 
   return {
     registeredPlayers,
     registrationCount,
     finalTrialId,
     rankingFinalized,
+    devModeOn,
     mmrCommitted,
     mmrEnabled,
     mmrMinPlayers,
     mmrTokenAddress,
+    seasonEndAt,
+    registrationGraceSeconds,
     scoreSubmissionOpensAt,
   };
 };

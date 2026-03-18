@@ -9,32 +9,32 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
-    date: "2026-03-13",
-    title: "Smoother World Icons",
+    date: "2026-03-18",
+    title: "1v1 Capacity Display Fix",
     description:
-      "Army, structure, and chest map icons now render through a more stable material path, and movement path indicators use owned stock line materials, improving compatibility with the upcoming WebGPU renderer work while keeping hover feedback intact.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-06",
-    title: "Tournament Leaderboard Table Cleanup",
-    description:
-      "The Tournaments Score to Beat table now consistently shows only Rank, Player, and Score in the main leaderboard view, removing extra per-game columns from the grid.",
+      "Blitz 1v1 game cards and registration checks now use the true two-player cap, so the lobby count and Register availability stay aligned with onchain settlement limits.",
     type: "fix",
   },
   {
-    date: "2026-03-06",
-    title: "Proving Grounds Static Leaderboard",
+    date: "2026-03-17",
+    title: "Spire and Mine Tile Actions",
     description:
-      "The Tournaments Score to Beat leaderboard now supports static proving-grounds data for s0-game-1 through s0-game-4, including per-game points and chest counts for each player when live Torii endpoints are unavailable.",
+      "Selected tile interactions now handle Spires with a direct Ethereal Layer travel action, show Holy Site devotion placeholders, and keep mine naming consistent across Blitz and Eternum views.",
     type: "feature",
   },
   {
-    date: "2026-03-06",
-    title: "Tournament Series Selection",
+    date: "2026-03-17",
+    title: "Eternum Settlement Card Stats",
     description:
-      "Score to Beat in the Tournaments tab now lets you select either individual games or full series, automatically expanding each series into its indexed games for faster multi-game leaderboard setup.",
-    type: "feature",
+      "Eternum game cards now show settled-player counts plus settled realm and village totals, so card stats stay meaningful for worlds that do not use player registration.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-17",
+    title: "Infinite Season Timer Fix",
+    description:
+      "Fixed infinite sandbox worlds so the header no longer shows a 0h end countdown or urgent red flashing, and the End season leaderboard action is now hidden when a season has no end timestamp.",
+    type: "fix",
   },
   {
     date: "2026-03-06",

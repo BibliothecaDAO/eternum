@@ -13,19 +13,23 @@ export const getStructureDefenseSlotLimit = (
     return null;
   }
 
-  const config = configManager.getWorldStructureDefenseSlotsConfig();
+  const config = configManager.getWorldStructureDefenseSlotsConfig() as Partial<Record<StructureType, number>>;
   const level = levelRaw !== null && levelRaw !== undefined ? Number(levelRaw) : undefined;
 
   switch (category) {
     case StructureType.FragmentMine:
     case StructureType.Hyperstructure:
     case StructureType.Bank:
+    case StructureType.HolySite:
+    case StructureType.Camp:
       return config[category] ?? 0;
+    case StructureType.BitcoinMine:
+      return 1;
     case StructureType.Village:
     case StructureType.Realm:
       return typeof level === "number" && Number.isFinite(level) ? level + 1 : 0;
     default:
-      return config[category] ?? 0;
+      return 0;
   }
 };
 

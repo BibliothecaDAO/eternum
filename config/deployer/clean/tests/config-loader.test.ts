@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config-loader";
+import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 
 describe("applyDeploymentConfigOverrides", () => {
   test("applies launch-time boolean overrides", () => {
