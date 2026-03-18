@@ -9,6 +9,7 @@ export type FactoryWorkerLaunchStepId =
   | "grant-village-pass-role"
   | "create-banks"
   | "create-indexer";
+export type FactoryWorkerLaunchScope = "full" | FactoryWorkerLaunchStepId;
 export type FactoryWorkerRunStatus = "running" | "attention" | "complete";
 export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "failed";
 
@@ -21,7 +22,7 @@ export interface FactoryWorkerRunRecord {
   gameName: string;
   status: FactoryWorkerRunStatus;
   executionMode: "fast_trial" | "guided_recovery";
-  requestedLaunchStep: "full" | FactoryWorkerLaunchStepId;
+  requestedLaunchStep: FactoryWorkerLaunchScope;
   inputPath: string;
   latestLaunchRequestId: string;
   currentStepId: FactoryWorkerLaunchStepId | null;
@@ -84,12 +85,15 @@ interface CreateFactoryRunRequest {
 interface ContinueFactoryRunRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
-  launchStep: FactoryWorkerLaunchStepId;
+  launchStep: FactoryWorkerLaunchScope;
 }
 
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
-export const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>(["slot.eternum", "slot.blitz"]);
+const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
+  "slot.eternum",
+  "slot.blitz",
+]);
 
 export class FactoryWorkerApiError extends Error {
   constructor(
@@ -102,10 +106,14 @@ export class FactoryWorkerApiError extends Error {
   }
 }
 
-export const isFactoryWorkerEnvironmentSupported = (environmentId: string): environmentId is FactoryWorkerEnvironmentId =>
+export const isFactoryWorkerEnvironmentSupported = (
+  environmentId: string,
+): environmentId is FactoryWorkerEnvironmentId =>
   SUPPORTED_FACTORY_WORKER_ENVIRONMENTS.has(environmentId as FactoryWorkerEnvironmentId);
 
-export async function listFactoryRuns(environment: FactoryWorkerEnvironmentId): Promise<FactoryWorkerRunRecord[] | null> {
+export async function listFactoryRuns(
+  environment: FactoryWorkerEnvironmentId,
+): Promise<FactoryWorkerRunRecord[] | null> {
   try {
     const response = await fetchFactoryWorkerJson<FactoryWorkerRunListResponse>("/api/factory/runs", {
       query: { environment },
@@ -121,7 +129,10 @@ export async function listFactoryRuns(environment: FactoryWorkerEnvironmentId): 
   }
 }
 
-export async function readFactoryRun(environment: FactoryWorkerEnvironmentId, gameName: string): Promise<FactoryWorkerRunRecord> {
+export async function readFactoryRun(
+  environment: FactoryWorkerEnvironmentId,
+  gameName: string,
+): Promise<FactoryWorkerRunRecord> {
   return fetchFactoryWorkerJson<FactoryWorkerRunRecord>(buildFactoryRunPath(environment, gameName));
 }
 
@@ -179,7 +190,11 @@ async function fetchFactoryWorkerJson<ResponseBody>(
   const payload = await readFactoryWorkerPayload(response);
 
   if (!response.ok) {
-    throw new FactoryWorkerApiError(resolveFactoryWorkerErrorMessage(payload, response.status), response.status, payload);
+    throw new FactoryWorkerApiError(
+      resolveFactoryWorkerErrorMessage(payload, response.status),
+      response.status,
+      payload,
+    );
   }
 
   return payload as ResponseBody;

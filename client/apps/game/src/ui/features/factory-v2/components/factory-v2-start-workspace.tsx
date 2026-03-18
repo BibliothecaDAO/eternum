@@ -12,7 +12,7 @@ const getPresetFacts = (preset: FactoryLaunchPreset) =>
     typeof preset.defaults.durationMinutes === "number"
       ? formatFactoryDurationLabel(preset.defaults.durationMinutes)
       : null,
-    preset.defaults.devMode ? "Dev mode" : null,
+    preset.defaults.devMode ? "Test mode" : null,
   ].filter(Boolean);
 
 export const FactoryV2StartWorkspace = ({
@@ -83,7 +83,7 @@ export const FactoryV2StartWorkspace = ({
   const showsBlitzModes = supportsBlitzRegistrationModes(mode);
   const canLaunch = gameName.trim().length > 0 && !isWatcherBusy && !existingGameName && !launchDisabledReason;
   const presetFacts = getPresetFacts(selectedPreset).join(" · ");
-  const launchLabel = `Launch ${modeLabel} game on ${environmentLabel}`;
+  const launchLabel = `Launch ${modeLabel} on ${environmentLabel}`;
   const launchButtonClassName = isMainnet
     ? "bg-[#a62f28] text-white hover:bg-[#912520]"
     : appearance.primaryButtonClassName;
@@ -156,7 +156,9 @@ export const FactoryV2StartWorkspace = ({
               className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-center text-sm text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25"
             />
             {existingGameName ? (
-              <p className="mt-2 text-sm leading-6 text-black/50">That game already exists. We will open its live status.</p>
+              <p className="mt-2 text-sm leading-6 text-black/50">
+                That name is already in use. We will open that game instead.
+              </p>
             ) : null}
             {!existingGameName && notice ? <p className="mt-2 text-sm leading-6 text-black/50">{notice}</p> : null}
             {!existingGameName && launchDisabledReason ? (

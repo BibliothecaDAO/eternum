@@ -17,7 +17,7 @@ import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
 import { FactoryV2WorkflowSwitch, type FactoryWorkflowView } from "./factory-v2-workflow-switch";
 
-type FactoryNetworkAction = "launch" | "continue" | "retry";
+type FactoryNetworkAction = "launch" | "continue" | "retry" | "reindex";
 
 export const FactoryV2Content = () => {
   const { chainId, connector } = useAccount();
@@ -68,6 +68,9 @@ export const FactoryV2Content = () => {
         return;
       case "retry":
         await factory.retrySelectedRun();
+        return;
+      case "reindex":
+        await factory.bringIndexerLiveForSelectedRun();
         return;
     }
   };
@@ -179,6 +182,7 @@ export const FactoryV2Content = () => {
             runs={factory.modeRuns}
             selectedRun={factory.selectedRun}
             activeRunName={factory.activeRunName}
+            acceptedRunMessage={factory.acceptedRunMessage}
             watcher={factory.watcher}
             pollingState={factory.pollingState}
             isWatcherBusy={factory.isWatcherBusy}
@@ -192,6 +196,9 @@ export const FactoryV2Content = () => {
             }}
             onRetry={() => {
               void runFactoryActionWithNetworkGuard("retry");
+            }}
+            onBringIndexerLive={() => {
+              void runFactoryActionWithNetworkGuard("reindex");
             }}
             onRefresh={() => {
               void factory.refreshSelectedRun();

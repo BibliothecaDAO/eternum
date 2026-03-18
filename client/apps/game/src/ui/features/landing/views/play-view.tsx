@@ -296,9 +296,7 @@ const FactoryTabContent = () => {
             onClick={() => setSelectedFactoryVersion("v2")}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-              selectedFactoryVersion === "v2"
-                ? "bg-gold text-black"
-                : "text-gold/70 hover:bg-gold/10 hover:text-gold",
+              selectedFactoryVersion === "v2" ? "bg-gold text-black" : "text-gold/70 hover:bg-gold/10 hover:text-gold",
             )}
           >
             Factory V2
@@ -308,9 +306,7 @@ const FactoryTabContent = () => {
             onClick={() => setSelectedFactoryVersion("v1")}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-              selectedFactoryVersion === "v1"
-                ? "bg-gold text-black"
-                : "text-gold/70 hover:bg-gold/10 hover:text-gold",
+              selectedFactoryVersion === "v1" ? "bg-gold text-black" : "text-gold/70 hover:bg-gold/10 hover:text-gold",
             )}
           >
             Factory V1
@@ -320,7 +316,9 @@ const FactoryTabContent = () => {
 
       <Suspense
         fallback={
-          <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">Loading factory...</div>
+          <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">
+            Loading factory...
+          </div>
         }
       >
         {selectedFactoryVersion === "v2" ? <FactoryV2Content /> : <FactoryPage embedded />}

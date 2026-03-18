@@ -6,6 +6,7 @@ export function mapFactoryWorkerRun(record: FactoryWorkerRunRecord): FactoryRun 
 
   return {
     id: record.runId,
+    syncKey: buildFactoryRunSyncKey(record),
     mode: record.gameType,
     name: record.gameName,
     environment: record.environment,
@@ -16,6 +17,16 @@ export function mapFactoryWorkerRun(record: FactoryWorkerRunRecord): FactoryRun 
     updatedAt: formatFactoryUpdatedAt(record.updatedAt),
     steps,
   };
+}
+
+function buildFactoryRunSyncKey(record: FactoryWorkerRunRecord) {
+  return [
+    record.latestLaunchRequestId,
+    record.updatedAt,
+    record.currentStepId ?? "none",
+    record.status,
+    ...record.steps.map((step) => `${step.id}:${step.status}:${step.finishedAt ?? step.startedAt ?? "none"}`),
+  ].join("|");
 }
 
 export function mapAndSortFactoryWorkerRuns(records: FactoryWorkerRunRecord[]) {

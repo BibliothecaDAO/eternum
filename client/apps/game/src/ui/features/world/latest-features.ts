@@ -10,6 +10,76 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Calmer Factory Done State",
+    description:
+      "Completed games in the new Factory no longer keep saying they are updating automatically, making the finished state feel clearer and less noisy.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Clearer Factory Step Notes",
+    description:
+      "Factory step details now use plain status messages instead of raw launcher wording, so each part is easier to understand while you check a game.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Manual Indexer Restart",
+    description:
+      "Factory details now include a dedicated indexer action, so you can bring the indexer back online again without rerunning the whole launch.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Cleaner Factory Waiting State",
+    description:
+      "The new Factory now shows one clear loading state while a game is starting or recovering, removing the extra repeated badges so it is easier to understand what is happening.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Factory Auto Recovery",
+    description:
+      "The new Factory now retries failed parts automatically, moves on by itself after a recovery step works, and only stops asking for help after ten automatic tries.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Clearer Factory Words",
+    description:
+      "The new Factory now uses plainer language across launch and watch screens, replacing tool-heavy progress messages with shorter copy that is easier to understand at a glance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Smarter Factory Relaunch",
+    description:
+      "Factory recovery now restarts the full launch automatically when the very first launch step fails, instead of forcing you through a step-by-step retry that cannot make forward progress.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Faster Factory Recovery Feedback",
+    description:
+      "Factory continue and retry actions now switch straight into a working state as soon as the launcher accepts them, so the page no longer leaves the old action button hanging around.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Stronger Factory Live Signal",
+    description:
+      "The Factory live badge now uses a brighter pulsing green signal so it is easier to tell at a glance when a game is actively being watched.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Cleaner Factory Live State",
+    description:
+      "Factory live tracking now shows a clearer pulsing live indicator and hides the extra manual refresh button while updates are already streaming in.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Tighter Factory Picker",
     description:
       "The Factory game picker now uses a smaller floating menu, so switching games feels lighter and takes up less space on the page.",
