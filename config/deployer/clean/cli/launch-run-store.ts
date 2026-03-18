@@ -7,7 +7,7 @@ import {
   recordFactoryLaunchStepSucceeded,
   type LaunchWorkflowScope,
 } from "../run-store";
-import { buildLaunchGameRequest, parseArgs, resolveLaunchGameStepId, resolveLaunchWorkflowScope } from "./launch-request";
+import { buildFactoryRunRequestContext, parseArgs, resolveLaunchGameStepId, resolveLaunchWorkflowScope } from "./launch-request";
 
 type LaunchRunStoreEvent = "launch-started" | "step-started" | "step-succeeded" | "step-failed";
 
@@ -74,10 +74,7 @@ async function main() {
 
   const event = resolveLaunchRunStoreEvent(args.event);
   const requestedLaunchStep: LaunchWorkflowScope = resolveLaunchWorkflowScope(args["launch-step"]);
-  const request = {
-    ...buildLaunchGameRequest(args),
-    requestedLaunchStep,
-  };
+  const request = buildFactoryRunRequestContext(args, requestedLaunchStep);
   const stepId = resolveEventStepId(event, args.step);
   const options = {
     branch: args.branch,

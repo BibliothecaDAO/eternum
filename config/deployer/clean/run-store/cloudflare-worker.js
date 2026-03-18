@@ -158,16 +158,8 @@ async function handleContinueFactoryRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRun = await dispatchGameLaunchWorkflow(resolveWorkflowGitHubClient(github, inputRecord, body), {
-    environment: inputRecord.request.environmentId,
-    gameName: inputRecord.request.gameName,
-    gameStartTime: String(inputRecord.request.startTime),
-    devModeOn: inputRecord.request.devModeOn,
-    singleRealmMode: inputRecord.request.singleRealmMode,
-    twoPlayerMode: inputRecord.request.twoPlayerMode,
-    durationSeconds: inputRecord.request.durationSeconds,
-    launchStep: body.launchStep,
-  });
+  const workflowRequest = buildContinueWorkflowRequest(route, inputRecord, body.launchStep);
+  const workflowRun = await dispatchGameLaunchWorkflow(resolveWorkflowGitHubClient(github, inputRecord, body), workflowRequest);
 
   return buildJsonResponse(
     request,
@@ -213,6 +205,47 @@ function validateContinueFactoryRunBody(body) {
 
   validateLaunchWorkflowScope(body.launchStep);
   validateWorkflowRef(body.workflowRef);
+}
+
+function buildContinueWorkflowRequest(route, inputRecord, launchStep) {
+  const rawRequest = resolveLaunchInputRequest(inputRecord);
+  const environment = inputRecord.environment || rawRequest.environmentId || route.environment;
+  const gameName = inputRecord.gameName || rawRequest.gameName || route.gameName;
+  const gameStartTime = rawRequest.startTime ?? inputRecord.startTime;
+
+  if (!environment || !gameName || gameStartTime === undefined || gameStartTime === null) {
+    logFactoryError("launch_input_invalid", {
+      environment: route.environment,
+      gameName: route.gameName,
+      inputPath: inputRecord.inputPath,
+      inputKeys: Object.keys(inputRecord || {}),
+      requestKeys: rawRequest ? Object.keys(rawRequest) : [],
+    });
+    throw new HttpError(502, "Stored launch input is missing required fields");
+  }
+
+  return {
+    environment,
+    gameName,
+    gameStartTime: String(gameStartTime),
+    devModeOn: rawRequest.devModeOn,
+    singleRealmMode: rawRequest.singleRealmMode,
+    twoPlayerMode: rawRequest.twoPlayerMode,
+    durationSeconds: rawRequest.durationSeconds,
+    launchStep,
+  };
+}
+
+function resolveLaunchInputRequest(inputRecord) {
+  if (!inputRecord || typeof inputRecord !== "object") {
+    return {};
+  }
+
+  if (inputRecord.request && typeof inputRecord.request === "object") {
+    return inputRecord.request;
+  }
+
+  return inputRecord;
 }
 
 function validateEnvironment(environment) {

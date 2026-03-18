@@ -7,7 +7,7 @@ import {
   DEFAULT_VERSION,
 } from "../constants";
 import type { ExecutionMode, LaunchGameRequest, LaunchGameStepId } from "../types";
-import type { LaunchWorkflowScope } from "../run-store";
+import type { FactoryRunRequestContext, LaunchWorkflowScope } from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
 
 export { parseArgs };
@@ -118,6 +118,17 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     dryRun: args["dry-run"] === "true",
     workflowFile: args["workflow-file"],
     ref: args.ref,
+  };
+}
+
+export function buildFactoryRunRequestContext(args: Args, requestedLaunchStep: LaunchWorkflowScope): FactoryRunRequestContext {
+  const request = buildLaunchGameRequest(args);
+
+  return {
+    environmentId: request.environmentId,
+    gameName: request.gameName,
+    requestedLaunchStep,
+    request,
   };
 }
 
