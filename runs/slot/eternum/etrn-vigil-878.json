@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-vigil-878/23248220652-1.json",
   "latestLaunchRequestId": "23248220652-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-18T13:54:41.217Z",
-  "updatedAt": "2026-03-18T13:56:28.378Z",
+  "updatedAt": "2026-03-18T13:56:54.358Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -26,11 +26,11 @@
     {
       "id": "create-world",
       "title": "Create world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create world",
-      "latestEvent": "Create world started",
+      "latestEvent": "Create world succeeded",
       "startedAt": "2026-03-18T13:56:28.378Z",
-      "finishedAt": "2026-03-18T13:55:06.674Z"
+      "finishedAt": "2026-03-18T13:56:54.358Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -75,13 +75,8 @@
       "latestEvent": "Waiting to run"
     }
   ],
-  "artifacts": {},
-  "activeLease": {
-    "launchRequestId": "23248220652-1",
-    "workflowRunId": 23248220652,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-18T13:56:28.378Z",
-    "expiresAt": "2026-03-18T14:41:28.378Z"
+  "artifacts": {
+    "summaryPath": ".context/game-launch/slot-eternum-etrn-vigil-878.json",
+    "createGameTxHash": "0x65146d1f257f59d3f40355faea598307776934e2a9d0b965972651ad196e5f9"
   }
 }
