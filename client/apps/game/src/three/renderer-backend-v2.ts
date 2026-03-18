@@ -50,11 +50,16 @@ export interface RendererBackendV2 {
   resize?(width: number, height: number): void;
 }
 
+export interface RendererOverlayPass {
+  camera: Camera;
+  name?: string;
+  scene: Scene;
+}
+
 export interface RendererFramePipeline {
   mainCamera: Camera;
   mainScene: Scene;
-  overlayCamera?: Camera;
-  overlayScene?: Scene;
+  overlayPasses?: RendererOverlayPass[];
   sceneName?: string;
 }
 

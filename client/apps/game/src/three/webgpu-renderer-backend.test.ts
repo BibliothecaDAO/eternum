@@ -323,8 +323,12 @@ describe("createWebGPURendererBackend", () => {
     backend.renderFrame?.({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
-      overlayCamera: { id: "overlay-camera" } as never,
-      overlayScene: { id: "overlay-scene" } as never,
+      overlayPasses: [
+        {
+          camera: { id: "overlay-camera" } as never,
+          scene: { id: "overlay-scene" } as never,
+        },
+      ],
     });
     backend.dispose?.();
 

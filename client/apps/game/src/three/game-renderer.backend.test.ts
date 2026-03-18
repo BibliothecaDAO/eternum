@@ -85,6 +85,12 @@ Object.defineProperty(navigator, "getBattery", {
   value: vi.fn(async () => ({ charging: true })),
 });
 
+vi.stubGlobal("GPUShaderStage", {
+  COMPUTE: 4,
+  FRAGMENT: 2,
+  VERTEX: 1,
+});
+
 const { default: GameRenderer } = await import("./game-renderer");
 
 function createFakeBackend() {
@@ -321,6 +327,7 @@ describe("GameRenderer backend seam", () => {
       update: vi.fn(),
       setWeatherAtmosphereState: vi.fn(),
       getScene: vi.fn(() => "world-scene"),
+      getInteractionOverlayScene: vi.fn(() => "world-interaction-overlay-scene"),
       getCurrentCameraView: vi.fn(() => undefined),
       hasActiveLabelAnimations: vi.fn(() => false),
     };
@@ -329,6 +336,7 @@ describe("GameRenderer backend seam", () => {
       update: vi.fn(),
       setWeatherAtmosphereState: vi.fn(),
       getScene: vi.fn(() => "hex-scene"),
+      getInteractionOverlayScene: vi.fn(() => "hex-interaction-overlay-scene"),
       getCurrentCameraView: vi.fn(() => undefined),
       hasActiveLabelAnimations: vi.fn(() => false),
     };
@@ -347,8 +355,18 @@ describe("GameRenderer backend seam", () => {
     expect(backend.renderFrame).toHaveBeenCalledWith({
       mainCamera: "camera",
       mainScene: "world-scene",
-      overlayCamera: "hud-camera",
-      overlayScene: "hud-scene",
+      overlayPasses: [
+        {
+          camera: "camera",
+          name: "world-interaction",
+          scene: "world-interaction-overlay-scene",
+        },
+        {
+          camera: "hud-camera",
+          name: "hud",
+          scene: "hud-scene",
+        },
+      ],
       sceneName: "map",
     });
     expect(requestAnimationFrameSpy).toHaveBeenCalled();

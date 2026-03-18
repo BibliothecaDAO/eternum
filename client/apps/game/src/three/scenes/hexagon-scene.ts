@@ -70,6 +70,7 @@ type CameraTransitionStatus = "idle" | "transitioning";
 
 export abstract class HexagonScene {
   protected scene!: Scene;
+  protected interactionOverlayScene!: Scene;
   protected camera!: PerspectiveCamera;
   protected inputManager!: InputManager;
   protected shortcutManager!: SceneShortcutManager;
@@ -196,12 +197,13 @@ export abstract class HexagonScene {
 
   private initializeScene(): void {
     this.scene = new Scene();
+    this.interactionOverlayScene = new Scene();
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
-    this.highlightHexManager = new HighlightHexManager(this.scene);
+    this.highlightHexManager = new HighlightHexManager(this.interactionOverlayScene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
@@ -678,6 +680,10 @@ export abstract class HexagonScene {
 
   public getScene() {
     return this.scene;
+  }
+
+  public getInteractionOverlayScene() {
+    return this.interactionOverlayScene;
   }
 
   public getCamera() {
@@ -1348,6 +1354,7 @@ export abstract class HexagonScene {
 
     // Finally, clear the scene
     this.scene.clear();
+    this.interactionOverlayScene.clear();
 
     console.log(`[HexagonScene] Destroyed ${this.sceneName}`);
   }

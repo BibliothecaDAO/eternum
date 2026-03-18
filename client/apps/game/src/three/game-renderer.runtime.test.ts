@@ -72,6 +72,12 @@ Object.defineProperty(navigator, "getBattery", {
   value: vi.fn(async () => ({ charging: true })),
 });
 
+vi.stubGlobal("GPUShaderStage", {
+  COMPUTE: 4,
+  FRAGMENT: 2,
+  VERTEX: 1,
+});
+
 const { default: GameRenderer } = await import("./game-renderer");
 
 describe("GameRenderer runtime harness", () => {
@@ -87,8 +93,18 @@ describe("GameRenderer runtime harness", () => {
     expect(harness.backend.renderFrame).toHaveBeenCalledWith({
       mainCamera: subject.camera,
       mainScene: "worldmap-scene",
-      overlayCamera: "hud-camera",
-      overlayScene: "hud-scene",
+      overlayPasses: [
+        {
+          camera: subject.camera,
+          name: "world-interaction",
+          scene: "worldmap-interaction-overlay-scene",
+        },
+        {
+          camera: "hud-camera",
+          name: "hud",
+          scene: "hud-scene",
+        },
+      ],
       sceneName: SceneName.WorldMap,
     });
   });

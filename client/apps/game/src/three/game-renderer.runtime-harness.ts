@@ -12,6 +12,7 @@ function createFakeScene(name: string) {
     deactivateInputSurface: vi.fn(),
     update: vi.fn(),
     getScene: vi.fn(() => `${name}-scene`),
+    getInteractionOverlayScene: vi.fn(() => `${name}-interaction-overlay-scene`),
     getCurrentCameraView: vi.fn(() => undefined),
     hasActiveLabelAnimations: vi.fn(() => false),
     setWeatherAtmosphereState: vi.fn(),

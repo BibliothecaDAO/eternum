@@ -1,5 +1,6 @@
 import type { RendererBackendV2, RendererFramePipeline, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 import type { RendererEnvironmentTargets, RendererSurfaceLike } from "./renderer-backend";
+import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 
 type CompatibleRendererBackend = RendererBackendV2 & {
   dispose?: () => void;
@@ -60,11 +61,7 @@ export function renderRendererBackendFrame(
   backend.renderer.info.reset();
   backend.renderer.clear();
   backend.renderer.render(pipeline.mainScene, pipeline.mainCamera);
-
-  if (pipeline.overlayScene && pipeline.overlayCamera) {
-    backend.renderer.clearDepth();
-    backend.renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
-  }
+  renderRendererOverlayPasses(backend.renderer, pipeline);
 }
 
 export function disposeRendererBackend(backend: CompatibleRendererBackend): void {

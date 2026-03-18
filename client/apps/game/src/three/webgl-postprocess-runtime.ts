@@ -20,6 +20,7 @@ import {
   type RendererPostProcessPlan,
   type RendererPostProcessRuntime,
 } from "./renderer-backend-v2";
+import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { syncRenderPassScene } from "./renderer-pass-scene";
 
 export function createWebGLPostProcessRuntime(input: {
@@ -120,11 +121,7 @@ class WebGLPostProcessRuntime implements RendererPostProcessRuntime {
 
     this.ensureRenderPass(pipeline.mainScene, pipeline.mainCamera);
     this.composer.render();
-
-    if (pipeline.overlayScene && pipeline.overlayCamera) {
-      this.renderer.clearDepth();
-      this.renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
-    }
+    renderRendererOverlayPasses(this.renderer, pipeline);
   }
 
   setSize(width: number, height: number): void {

@@ -83,8 +83,16 @@ describe("createWebGPUPostProcessRuntime", () => {
     runtime.renderFrame({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
-      overlayCamera: { id: "overlay-camera" } as never,
-      overlayScene: { id: "overlay-scene" } as never,
+      overlayPasses: [
+        {
+          camera: { id: "interaction-camera" } as never,
+          scene: { id: "interaction-scene" } as never,
+        },
+        {
+          camera: { id: "hud-camera" } as never,
+          scene: { id: "hud-scene" } as never,
+        },
+      ],
     });
 
     expect(createPass).toHaveBeenCalledWith({ id: "main-scene" }, { id: "main-camera" });
@@ -95,8 +103,9 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(renderer.toneMappingExposure).toBe(1.25);
     expect(renderer.clear).not.toHaveBeenCalled();
     expect(postProcessing.render).toHaveBeenCalledTimes(1);
-    expect(renderer.clearDepth).toHaveBeenCalledTimes(1);
-    expect(renderer.render).toHaveBeenCalledWith({ id: "overlay-scene" }, { id: "overlay-camera" });
+    expect(renderer.clearDepth).toHaveBeenCalledTimes(2);
+    expect(renderer.render).toHaveBeenNthCalledWith(1, { id: "interaction-scene" }, { id: "interaction-camera" });
+    expect(renderer.render).toHaveBeenNthCalledWith(2, { id: "hud-scene" }, { id: "hud-camera" });
   });
 
   it("falls back to the live renderer tone mapping when no explicit plan has been applied yet", () => {

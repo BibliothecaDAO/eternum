@@ -72,15 +72,24 @@ describe("renderer backend compat", () => {
     renderRendererBackendFrame(backend as never, {
       mainCamera: "main-camera" as never,
       mainScene: "main-scene" as never,
-      overlayCamera: "overlay-camera" as never,
-      overlayScene: "overlay-scene" as never,
+      overlayPasses: [
+        {
+          camera: "interaction-camera" as never,
+          scene: "interaction-overlay-scene" as never,
+        },
+        {
+          camera: "hud-camera" as never,
+          scene: "hud-overlay-scene" as never,
+        },
+      ],
     });
 
     expect(renderer.info.reset).toHaveBeenCalled();
     expect(renderer.clear).toHaveBeenCalled();
     expect(renderer.render).toHaveBeenNthCalledWith(1, "main-scene", "main-camera");
-    expect(renderer.clearDepth).toHaveBeenCalled();
-    expect(renderer.render).toHaveBeenNthCalledWith(2, "overlay-scene", "overlay-camera");
+    expect(renderer.clearDepth).toHaveBeenCalledTimes(2);
+    expect(renderer.render).toHaveBeenNthCalledWith(2, "interaction-overlay-scene", "interaction-camera");
+    expect(renderer.render).toHaveBeenNthCalledWith(3, "hud-overlay-scene", "hud-camera");
   });
 
   it("provides no-op postprocess and dispose fallbacks when optional hooks are missing", () => {

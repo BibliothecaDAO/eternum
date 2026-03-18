@@ -1286,6 +1286,23 @@ export default class GameRenderer {
       : isFastTravel
         ? (this.fastTravelScene?.getScene() ?? this.worldmapScene.getScene())
         : this.hexceptionScene.getScene();
+    const activeSceneController = isWorldMap
+      ? this.worldmapScene
+      : isFastTravel
+        ? (this.fastTravelScene ?? this.worldmapScene)
+        : this.hexceptionScene;
+    const overlayPasses = [
+      {
+        camera: this.camera,
+        name: "world-interaction",
+        scene: activeSceneController.getInteractionOverlayScene(),
+      },
+      {
+        camera: this.hudScene.getCamera(),
+        name: "hud",
+        scene: this.hudScene.getScene(),
+      },
+    ];
 
     const shouldRenderLabels = this.shouldRenderLabels(currentTime);
     if (shouldRenderLabels) {
@@ -1294,8 +1311,7 @@ export default class GameRenderer {
     renderRendererBackendFrame(this.backend, {
       mainCamera: this.camera,
       mainScene: activeScene,
-      overlayCamera: this.hudScene.getCamera(),
-      overlayScene: this.hudScene.getScene(),
+      overlayPasses,
       sceneName: this.sceneManager?.getCurrentScene(),
     });
     setRendererDiagnosticSceneName(this.sceneManager?.getCurrentScene() ?? "unknown");

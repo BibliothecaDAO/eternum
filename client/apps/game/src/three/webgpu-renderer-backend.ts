@@ -18,6 +18,7 @@ import {
   type RendererPostProcessPlan,
 } from "./renderer-backend-v2";
 import type { RendererBuildMode } from "./renderer-build-mode";
+import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 
 type ExperimentalRendererBuildMode = Exclude<RendererBuildMode, "legacy-webgl">;
@@ -295,11 +296,7 @@ export function createWebGPURendererBackend(
         renderer.info.reset();
         renderer.clear();
         renderer.render(pipeline.mainScene, pipeline.mainCamera);
-
-        if (pipeline.overlayScene && pipeline.overlayCamera) {
-          renderer.clearDepth();
-          renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
-        }
+        renderRendererOverlayPasses(renderer, pipeline);
         return;
       }
 

@@ -10,6 +10,7 @@ import {
   type RendererPostProcessPlan,
   type RendererPostProcessRuntime,
 } from "./renderer-backend-v2";
+import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 
 interface WebGPUScenePass {
   camera: Camera;
@@ -92,11 +93,7 @@ class WebGPUPostProcessRuntime implements RendererPostProcessRuntime {
 
     this.renderer.info.reset();
     this.postProcessing.render();
-
-    if (pipeline.overlayScene && pipeline.overlayCamera) {
-      this.renderer.clearDepth();
-      this.renderer.render(pipeline.overlayScene, pipeline.overlayCamera);
-    }
+    renderRendererOverlayPasses(this.renderer, pipeline);
   }
 
   setSize(): void {
