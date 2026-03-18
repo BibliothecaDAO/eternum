@@ -15,6 +15,10 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
  */
 export const SlotEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
+  blitz: {
+    ...CommonEternumGlobalConfig.blitz,
+    mode: { on: false },
+  },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
   },
@@ -31,8 +35,8 @@ export const SlotEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2, // 2 hours
-    pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
+    durationSeconds: 0, // no automatic end
+    pointRegistrationCloseAfterEndSeconds: 60 * 60 * 24, // 24h
   },
   battle: {
     ...CommonEternumGlobalConfig.battle,

@@ -11,7 +11,7 @@
   },
   "village": {
     "village_pass_nft_address": "0x5379c1f2fc7853f00942a8c712f9439febb558eba6aafd75bd05d4cac03e209",
-    "village_mint_initial_recipient": "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83"
+    "village_mint_initial_recipient": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -1483,9 +1483,9 @@
     "startSettlingAt": 0,
     "startMainAfterSeconds": 60,
     "startMainAt": 0,
-    "durationSeconds": 7200,
+    "durationSeconds": 0,
     "bridgeCloseAfterEndSeconds": 604800,
-    "pointRegistrationCloseAfterEndSeconds": 600
+    "pointRegistrationCloseAfterEndSeconds": 86400
   },
   "bridge": {
     "velords_fee_on_dpt_percent": 250,
@@ -1678,7 +1678,7 @@
   },
   "blitz": {
     "mode": {
-      "on": true
+      "on": false
     },
     "registration": {
       "fee_token": "0x3b1573ef7da572a464f0128b8ad230bb70e21c5960de2a689ad77ce62ccd951",
