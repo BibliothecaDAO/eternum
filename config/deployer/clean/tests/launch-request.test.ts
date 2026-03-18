@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildLaunchGameRequest, resolveLaunchGameStepId } from "../cli/launch-request";
+import { buildFactoryRunRequestContext, buildLaunchGameRequest, resolveLaunchGameStepId } from "../cli/launch-request";
 
 describe("launch request helpers", () => {
   test("builds a launch request from shared CLI args", () => {
@@ -24,6 +24,30 @@ describe("launch request helpers", () => {
     expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
     expect(resolveLaunchGameStepId("configure-world")).toBe("configure-world");
     expect(resolveLaunchGameStepId("create-indexer")).toBe("create-indexer");
+  });
+
+  test("builds a run-store request context with the nested launch request intact", () => {
+    expect(
+      buildFactoryRunRequestContext(
+        {
+          environment: "slot.blitz",
+          game: "bltz-test-1",
+          "start-time": "2026-03-18T10:00:00Z",
+          "two-player-mode": "true",
+        },
+        "full",
+      ),
+    ).toMatchObject({
+      environmentId: "slot.blitz",
+      gameName: "bltz-test-1",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.blitz",
+        gameName: "bltz-test-1",
+        startTime: "2026-03-18T10:00:00Z",
+        twoPlayerMode: true,
+      },
+    });
   });
 
   test("rejects unsupported launch step ids", () => {
