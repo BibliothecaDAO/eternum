@@ -73,13 +73,13 @@ export async function requestRendererScenePrewarm(
   scene: Object3D,
   camera: Camera,
 ): Promise<void> {
-  const compileAsync = (renderer as RendererSurfaceLike & {
+  const rendererWithCompile = renderer as RendererSurfaceLike & {
     compileAsync?: (scene: Object3D, camera: Camera) => Promise<void>;
-  } | undefined)?.compileAsync;
+  } | undefined;
 
-  if (typeof compileAsync !== "function") {
+  if (typeof rendererWithCompile?.compileAsync !== "function") {
     return;
   }
 
-  await compileAsync(scene, camera);
+  await rendererWithCompile.compileAsync(scene, camera);
 }

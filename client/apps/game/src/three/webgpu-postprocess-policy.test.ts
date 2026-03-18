@@ -75,4 +75,41 @@ describe("resolveWebgpuPostprocessPolicy", () => {
 
     expect(compileAsync).toHaveBeenCalledWith({ id: "scene" }, { id: "camera" });
   });
+
+  it("calls compileAsync with correct this binding on class-based renderer instances", async () => {
+    class FakeRenderer {
+      compileAsync = vi.fn(async function (this: FakeRenderer) {
+        // If `this` is not the renderer instance, this assertion will fail
+        expect(this).toBeInstanceOf(FakeRenderer);
+      });
+    }
+
+    const renderer = new FakeRenderer();
+
+    await requestRendererScenePrewarm(
+      renderer as never,
+      { id: "scene" } as never,
+      { id: "camera" } as never,
+    );
+
+    expect(renderer.compileAsync).toHaveBeenCalledOnce();
+    expect(renderer.compileAsync).toHaveBeenCalledWith({ id: "scene" }, { id: "camera" });
+  });
+
+  it("no-ops when renderer is undefined", async () => {
+    // Should resolve without throwing
+    await expect(
+      requestRendererScenePrewarm(undefined, { id: "scene" } as never, { id: "camera" } as never),
+    ).resolves.toBeUndefined();
+  });
+
+  it("no-ops when renderer does not expose compileAsync", async () => {
+    const renderer = { someOtherMethod: vi.fn() };
+
+    await expect(
+      requestRendererScenePrewarm(renderer as never, { id: "scene" } as never, { id: "camera" } as never),
+    ).resolves.toBeUndefined();
+
+    expect(renderer.someOtherMethod).not.toHaveBeenCalled();
+  });
 });

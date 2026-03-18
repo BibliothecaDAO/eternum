@@ -87,8 +87,6 @@ async function createDefaultWebGPURenderer(input: {
     powerPreference: "high-performance",
   }) as WebGPURendererSurface;
 
-  renderer.setPixelRatio(input.pixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.autoClear = false;
   renderer.shadowMap.enabled = input.graphicsSetting !== "LOW";
   renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;

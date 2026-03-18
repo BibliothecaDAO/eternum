@@ -109,12 +109,18 @@ export function recordRendererDiagnosticUncapturedError(message?: string): void 
 }
 
 export function setRendererDiagnosticCapabilities(capabilities: RendererBackendCapabilities): void {
-  rendererDiagnosticsState.capabilities = { ...capabilities };
+  rendererDiagnosticsState = {
+    ...rendererDiagnosticsState,
+    capabilities: { ...capabilities },
+  };
   syncRendererDiagnosticsWindow();
 }
 
 export function setRendererDiagnosticDegradations(degradations: RendererFeatureDegradation[]): void {
-  rendererDiagnosticsState.degradations = degradations.map((degradation) => ({ ...degradation }));
+  rendererDiagnosticsState = {
+    ...rendererDiagnosticsState,
+    degradations: degradations.map((degradation) => ({ ...degradation })),
+  };
   syncRendererDiagnosticsWindow();
 }
 

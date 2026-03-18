@@ -49,12 +49,15 @@ export async function initializeSelectedRendererBackend(input: {
     return experimental;
   } catch (error) {
     incrementRendererDiagnosticError("initErrors");
+    const legacyStart = performance.now();
     const legacy = await input.legacyFactory();
+    const legacyInitTimeMs = performance.now() - legacyStart;
     incrementRendererDiagnosticError("fallbacks");
     const diagnostics = createRendererInitDiagnostics({
       activeMode: "legacy-webgl",
       buildMode: input.options.envBuildMode,
       fallbackReason: "experimental-init-error",
+      initTimeMs: legacyInitTimeMs,
       requestedMode,
     });
     syncRendererBackendDiagnostics(diagnostics);

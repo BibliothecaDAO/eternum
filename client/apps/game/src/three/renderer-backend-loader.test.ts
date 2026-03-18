@@ -64,7 +64,7 @@ describe("initializeSelectedRendererBackend", () => {
       activeMode: "legacy-webgl",
       buildMode: "experimental-webgpu-auto",
       fallbackReason: "experimental-init-error",
-      initTimeMs: 0,
+      initTimeMs: expect.any(Number),
       requestedMode: "experimental-webgpu-auto",
     });
     expect(result.fallbackError).toBe(error);

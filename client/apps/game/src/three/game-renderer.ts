@@ -126,6 +126,7 @@ export default class GameRenderer {
     brightness: 0,
     vignetteDarkness: 0,
   };
+  private weatherBaseValuesInitialized = false;
   private weatherPostProcessingEnabled = true;
   private unsubscribeQualityController?: () => void;
   private lastAppliedQuality?: QualityFeatures;
@@ -763,16 +764,14 @@ export default class GameRenderer {
     this.setupListeners();
 
     document.body.style.background = "black";
-    this.renderer.domElement.id = "main-canvas";
-
-    // CRITICAL: Remove any existing canvas before adding a new one
-    // This prevents memory leaks from multiple canvases when navigating home and back
+    // Remove stale canvas from a previous instance BEFORE claiming the id
     const existingCanvas = document.getElementById("main-canvas");
     if (existingCanvas) {
       console.warn("[GameRenderer] Found existing canvas, removing it to prevent memory leak");
       existingCanvas.remove();
     }
 
+    this.renderer.domElement.id = "main-canvas";
     document.body.appendChild(this.renderer.domElement);
 
     // Set up periodic cleanup of the transition database
@@ -1149,11 +1148,12 @@ export default class GameRenderer {
     const stormIntensity = state.stormIntensity;
 
     // Store base values on first call if not already stored
-    if (this.basePostProcessingValues.saturation === 0 && this.postProcessingConfig) {
+    if (!this.weatherBaseValuesInitialized && this.postProcessingConfig) {
       this.basePostProcessingValues.saturation = this.postProcessingConfig.saturation;
       this.basePostProcessingValues.contrast = this.postProcessingConfig.contrast;
       this.basePostProcessingValues.brightness = this.postProcessingConfig.brightness;
       this.basePostProcessingValues.vignetteDarkness = this.postProcessingConfig.vignette.darkness;
+      this.weatherBaseValuesInitialized = true;
     }
 
     // Calculate weather-modulated values
@@ -1276,8 +1276,18 @@ export default class GameRenderer {
     this.hexceptionScene.setWeatherAtmosphereState(weatherState);
 
     // Render the current game scene
-    const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
-    const isFastTravel = this.sceneManager?.getCurrentScene() === SceneName.FastTravel && Boolean(this.fastTravelScene);
+    const currentScene = this.sceneManager?.getCurrentScene();
+    if (!currentScene) {
+      // No scene active yet (startup, transition, or failed setup).
+      // Transition overlay covers the gap — skip game scene update/render.
+      requestAnimationFrame(() => {
+        this.animate();
+      });
+      return;
+    }
+
+    const isWorldMap = currentScene === SceneName.WorldMap;
+    const isFastTravel = currentScene === SceneName.FastTravel && Boolean(this.fastTravelScene);
     if (isWorldMap) {
       this.worldmapScene.update(deltaTime);
     } else if (isFastTravel && this.fastTravelScene) {
@@ -1316,9 +1326,9 @@ export default class GameRenderer {
       mainCamera: this.camera,
       mainScene: activeScene,
       overlayPasses,
-      sceneName: this.sceneManager?.getCurrentScene(),
+      sceneName: currentScene,
     });
-    setRendererDiagnosticSceneName(this.sceneManager?.getCurrentScene() ?? "unknown");
+    setRendererDiagnosticSceneName(currentScene ?? "unknown");
     if (shouldRenderLabels) {
       this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     }

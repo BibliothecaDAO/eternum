@@ -200,4 +200,36 @@ describe("renderer-diagnostics", () => {
       sceneName: null,
     });
   });
+
+  it("setRendererDiagnosticCapabilities produces a new state object reference", () => {
+    const before = snapshotRendererDiagnostics();
+    setRendererDiagnosticCapabilities({
+      supportsBloom: true,
+      supportsChromaticAberration: false,
+      supportsColorGrade: false,
+      supportsEnvironmentIbl: false,
+      supportsToneMappingControl: false,
+      supportsVignette: false,
+      supportsWideLines: false,
+    });
+    const after = snapshotRendererDiagnostics();
+    expect(after).not.toBe(before);
+    expect(after.capabilities).toEqual({
+      supportsBloom: true,
+      supportsChromaticAberration: false,
+      supportsColorGrade: false,
+      supportsEnvironmentIbl: false,
+      supportsToneMappingControl: false,
+      supportsVignette: false,
+      supportsWideLines: false,
+    });
+  });
+
+  it("setRendererDiagnosticDegradations produces a new state object reference", () => {
+    const before = snapshotRendererDiagnostics();
+    setRendererDiagnosticDegradations([{ feature: "bloom", reason: "disabled-by-quality" }]);
+    const after = snapshotRendererDiagnostics();
+    expect(after).not.toBe(before);
+    expect(after.degradations).toEqual([{ feature: "bloom", reason: "disabled-by-quality" }]);
+  });
 });
