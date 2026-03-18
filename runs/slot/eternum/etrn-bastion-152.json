@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-bastion-152",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-bastion-152/23238186398-1.json",
   "latestLaunchRequestId": "23238186398-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:36:34.756Z",
+  "updatedAt": "2026-03-18T09:36:37.315Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,12 +80,11 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-bastion-152\" on slot.eternum\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.eternum\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"etrn-bastion-152\"\n\u001b[2m[+264ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"etrn-bastion-152\" in 250ms (0x01dfd27e...a57a76)\n\u001b[2m[+271ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x01dfd27e...a57a76\n\u001b[2m[+271ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref credence0x/factory-v2-polish\n\u001b[2m[+1.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.7s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #748: https://github.com/BibliothecaDAO/eternum/actions/runs/23238128066\n\u001b[2m[+7.8s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #748 status: in_progress\n\u001b[2m[+1m 04s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #748 status: completed (failure)\n\u001b[2m[+1m 04s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 1m 04s: factory-torii-deployer.yml run #748 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23238128066\nError: factory-torii-deployer.yml run #748 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23238128066\n    at waitForWorkflowRunToComplete (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/indexer.ts:341:19)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-03-18T09:33:36.770Z",
-      "finishedAt": "2026-03-18T09:34:42.601Z",
-      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-bastion-152\" on slot.eternum\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.eternum\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"etrn-bastion-152\"\n\u001b[2m[+264ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"etrn-bastion-152\" in 250ms (0x01dfd27e...a57a76)\n\u001b[2m[+271ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x01dfd27e...a57a76\n\u001b[2m[+271ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref credence0x/factory-v2-polish\n\u001b[2m[+1.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.7s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #748: https://github.com/BibliothecaDAO/eternum/actions/runs/23238128066\n\u001b[2m[+7.8s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #748 status: in_progress\n\u001b[2m[+1m 04s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #748 status: completed (failure)\n\u001b[2m[+1m 04s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 1m 04s: factory-torii-deployer.yml run #748 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23238128066\nError: factory-torii-deployer.yml run #748 failed with conclusion \"failure\": https://github.com/BibliothecaDAO/eternum/actions/runs/23238128066\n    at waitForWorkflowRunToComplete (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/indexer.ts:341:19)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Create indexer started",
+      "startedAt": "2026-03-18T09:36:37.315Z",
+      "finishedAt": "2026-03-18T09:34:42.601Z"
     }
   ],
   "artifacts": {
@@ -106,5 +105,13 @@
       "status": "completed",
       "conclusion": "success"
     }
+  },
+  "activeLease": {
+    "launchRequestId": "23238186398-1",
+    "workflowRunId": 23238186398,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-18T09:36:37.315Z",
+    "expiresAt": "2026-03-18T10:21:37.315Z"
   }
 }
