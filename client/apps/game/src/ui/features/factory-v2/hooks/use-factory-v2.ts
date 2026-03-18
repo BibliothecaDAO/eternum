@@ -11,7 +11,13 @@ import {
   getPresetStartAtValue,
 } from "../catalog";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
-import type { FactoryGameMode, FactoryLaunchPreset, FactoryRun, FactoryWatcherState } from "../types";
+import type {
+  FactoryGameMode,
+  FactoryLaunchPreset,
+  FactoryPollingState,
+  FactoryRun,
+  FactoryWatcherState,
+} from "../types";
 import { mapAndSortFactoryWorkerRuns, mapFactoryWorkerRun } from "../api/factory-run-mapper";
 import {
   continueFactoryRun,
@@ -27,6 +33,7 @@ import {
 
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
+const RUN_POLL_INTERVAL_MS = 5_000;
 
 export const useFactoryV2 = () => {
   const initialMode: FactoryGameMode = "eternum";
@@ -46,6 +53,12 @@ export const useFactoryV2 = () => {
   const [twoPlayerMode, setTwoPlayerMode] = useState(initialPreset?.defaults.twoPlayerMode ?? false);
   const [singleRealmMode, setSingleRealmMode] = useState(initialPreset?.defaults.singleRealmMode ?? false);
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
+  const [pendingRunName, setPendingRunName] = useState<string | null>(null);
+  const [pollingState, setPollingState] = useState<FactoryPollingState>({
+    status: "idle",
+    detail: "Live updates will appear here.",
+    lastCheckedAt: null,
+  });
   const [isLoadingRuns, setIsLoadingRuns] = useState(false);
   const [isResolvingRunName, setIsResolvingRunName] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -63,6 +76,8 @@ export const useFactoryV2 = () => {
   const showsDuration = supportsFactoryDuration(selectedMode);
   const durationOptions = showsDuration ? buildBlitzDurationOptions(presets, draftDurationMinutes) : [];
   const isWatcherBusy = watcher !== null;
+  const activeRunName = selectedRun?.name ?? pendingRunName;
+  const shouldPreferWatchView = Boolean(watcher) || Boolean(selectedRun && isFactoryRunActive(selectedRun));
   const environmentUnavailableReason = resolveEnvironmentUnavailableReason(selectedEnvironment?.id);
 
   useEffect(() => {
@@ -135,6 +150,66 @@ export const useFactoryV2 = () => {
     setSelectedRunId(modeRuns[0]?.id ?? null);
   }, [modeRuns, selectedRunId]);
 
+  useEffect(() => {
+    const environmentId = assertSupportedEnvironment(selectedRun?.environment);
+
+    if (!environmentId || !selectedRun || !isFactoryRunActive(selectedRun)) {
+      if (!watcher) {
+        setPollingState((currentState) => ({
+          ...currentState,
+          status: currentState.lastCheckedAt ? "live" : "idle",
+          detail: currentState.lastCheckedAt ? "Up to date." : "Live updates will appear here.",
+        }));
+      }
+      return;
+    }
+
+    let isActive = true;
+
+    const pollSelectedRun = async () => {
+      setPollingState((currentState) => ({
+        status: currentState.lastCheckedAt ? "live" : "checking",
+        detail: "Checking live status every few seconds.",
+        lastCheckedAt: currentState.lastCheckedAt,
+      }));
+
+      try {
+        await refreshRunRecord(environmentId, selectedRun.name);
+
+        if (!isActive) {
+          return;
+        }
+
+        setPollingState({
+          status: "live",
+          detail: "Checking live status every few seconds.",
+          lastCheckedAt: Date.now(),
+        });
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setPollingState((currentState) => ({
+          status: "paused",
+          detail: resolvePollingPauseMessage(error),
+          lastCheckedAt: currentState.lastCheckedAt,
+        }));
+      }
+    };
+
+    void pollSelectedRun();
+
+    const intervalId = window.setInterval(() => {
+      void pollSelectedRun();
+    }, RUN_POLL_INTERVAL_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [selectedRun?.environment, selectedRun?.id, selectedRun?.name, selectedRun?.status, watcher]);
+
   const selectMode = (mode: FactoryGameMode) => {
     const nextEnvironmentId = getDefaultEnvironmentIdForMode(mode);
     const nextPresetId = getDefaultPresetIdForModeSelection(mode);
@@ -158,6 +233,7 @@ export const useFactoryV2 = () => {
 
   const selectRun = (runId: string) => {
     setSelectedRunId(runId);
+    setPendingRunName(null);
     setNotice(null);
   };
 
@@ -200,6 +276,7 @@ export const useFactoryV2 = () => {
 
     if (matchingRun) {
       setSelectedRunId(matchingRun.id);
+      setPendingRunName(null);
       setNotice(null);
       return true;
     }
@@ -213,6 +290,7 @@ export const useFactoryV2 = () => {
     try {
       const existingRun = await openExistingRunIfPresent(environmentId, requestedGameName);
       if (existingRun) {
+        setNotice("That game already exists. We opened its live status.");
         return true;
       }
     } catch (error) {
@@ -220,22 +298,46 @@ export const useFactoryV2 = () => {
       return false;
     }
 
+    setPendingRunName(requestedGameName);
+    setPollingState({
+      status: "checking",
+      detail: "Starting the launch and waiting for the first live update.",
+      lastCheckedAt: Date.now(),
+    });
+
     return runWatchedAction(
       {
         kind: "launch",
+        gameName: requestedGameName,
         title: `Launching ${requestedGameName}`,
-        detail: "Starting the game.",
+        detail: "Starting the game and watching for live status.",
         workflowName: "game-launch.yml",
-        statusLabel: "Watching",
+        statusLabel: "Starting",
       },
       async () => {
-        await createFactoryRun(buildCreateRunRequest(environmentId, requestedGameName));
+        try {
+          await createFactoryRun(buildCreateRunRequest(environmentId, requestedGameName));
+        } catch (error) {
+          const openedConflictingRun = await openConflictingRunIfPresent(
+            error,
+            environmentId,
+            requestedGameName,
+            "This game is already being launched. We opened its live status.",
+          );
+
+          if (openedConflictingRun) {
+            return;
+          }
+
+          throw error;
+        }
+
         const nextRun = await waitForRunRecord(environmentId, requestedGameName);
         if (nextRun) {
           selectFetchedRun(environmentId, nextRun);
         } else {
           await refreshEnvironmentRuns(environmentId);
-          setNotice("Launch started. Check again in a moment if the game does not appear yet.");
+          setNotice("Launch started. We are still waiting for the first live update.");
         }
       },
     );
@@ -256,17 +358,33 @@ export const useFactoryV2 = () => {
     await runWatchedAction(
       {
         kind: "continue",
+        gameName: selectedRun.name,
         title: `Continuing ${selectedRun.name}`,
-        detail: "Doing the next safe part.",
+        detail: "Doing the next safe part and watching for the next update.",
         workflowName: stepId,
-        statusLabel: "Watching",
+        statusLabel: "Working",
       },
       async () => {
-        await continueFactoryRun({
-          environment: environmentId,
-          gameName: selectedRun.name,
-          launchStep: stepId,
-        });
+        try {
+          await continueFactoryRun({
+            environment: environmentId,
+            gameName: selectedRun.name,
+            launchStep: stepId,
+          });
+        } catch (error) {
+          const openedConflictingRun = await openConflictingRunIfPresent(
+            error,
+            environmentId,
+            selectedRun.name,
+            "Another launch is already working on this game. We opened its live status.",
+          );
+
+          if (openedConflictingRun) {
+            return;
+          }
+
+          throw error;
+        }
         await refreshRunRecord(environmentId, selectedRun.name);
       },
     );
@@ -287,17 +405,33 @@ export const useFactoryV2 = () => {
     await runWatchedAction(
       {
         kind: "retry",
+        gameName: selectedRun.name,
         title: `Retrying ${selectedRun.name}`,
-        detail: "Trying that part again.",
+        detail: "Retrying only the part that got stuck.",
         workflowName: stepId,
-        statusLabel: "Watching",
+        statusLabel: "Retrying",
       },
       async () => {
-        await continueFactoryRun({
-          environment: environmentId,
-          gameName: selectedRun.name,
-          launchStep: stepId,
-        });
+        try {
+          await continueFactoryRun({
+            environment: environmentId,
+            gameName: selectedRun.name,
+            launchStep: stepId,
+          });
+        } catch (error) {
+          const openedConflictingRun = await openConflictingRunIfPresent(
+            error,
+            environmentId,
+            selectedRun.name,
+            "This game is already moving again. We opened its live status.",
+          );
+
+          if (openedConflictingRun) {
+            return;
+          }
+
+          throw error;
+        }
         await refreshRunRecord(environmentId, selectedRun.name);
       },
     );
@@ -318,10 +452,11 @@ export const useFactoryV2 = () => {
     await runWatchedAction(
       {
         kind: "refresh",
+        gameName: selectedRun.name,
         title: `Checking ${selectedRun.name}`,
-        detail: "Looking for the latest state.",
+        detail: "Checking the latest state.",
         workflowName: "factory-runs",
-        statusLabel: "Watching",
+        statusLabel: "Checking",
       },
       async () => {
         await refreshRunRecord(environmentId, selectedRun.name);
@@ -378,10 +513,14 @@ export const useFactoryV2 = () => {
     selectedRunId,
     selectedRun,
     watcher,
+    pendingRunName,
+    activeRunName,
+    pollingState,
     isWatcherBusy,
     isLoadingRuns,
     isResolvingRunName,
     notice,
+    shouldPreferWatchView,
     environmentUnavailableReason,
     selectMode,
     selectEnvironment,
@@ -416,7 +555,13 @@ export const useFactoryV2 = () => {
 
   function clearTransientState() {
     setNotice(null);
+    setPendingRunName(null);
     setWatcher(null);
+    setPollingState({
+      status: "idle",
+      detail: "Live updates will appear here.",
+      lastCheckedAt: null,
+    });
   }
 
   function commitEnvironmentRuns(environmentId: string, nextRuns: FactoryRun[]) {
@@ -432,6 +577,7 @@ export const useFactoryV2 = () => {
 
     commitEnvironmentRuns(environmentId, nextRuns);
     setSelectedRunId(nextRun.id);
+    setPendingRunName(null);
     setNotice(null);
   }
 
@@ -457,6 +603,36 @@ export const useFactoryV2 = () => {
     return true;
   }
 
+  async function openConflictingRunIfPresent(
+    error: unknown,
+    environmentId: FactoryWorkerEnvironmentId,
+    gameName: string,
+    conflictNotice: string,
+  ) {
+    if (!(error instanceof FactoryWorkerApiError) || error.status !== 409) {
+      return false;
+    }
+
+    const record = await readFactoryRunIfPresent(environmentId, gameName);
+
+    if (!record) {
+      const delayedRecord = await waitForRunRecord(environmentId, gameName);
+
+      if (delayedRecord) {
+        selectFetchedRun(environmentId, delayedRecord);
+        setNotice(conflictNotice);
+        return true;
+      }
+
+      setNotice("Another launch is already working on this game. We are still waiting for its live status.");
+      return true;
+    }
+
+    selectFetchedRun(environmentId, record);
+    setNotice(conflictNotice);
+    return true;
+  }
+
   async function waitForRunRecord(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
     for (let attempt = 0; attempt < RUN_LOOKUP_ATTEMPTS; attempt += 1) {
       const record = await readFactoryRunIfPresent(environmentId, gameName);
@@ -464,6 +640,12 @@ export const useFactoryV2 = () => {
       if (record) {
         return record;
       }
+
+      setPollingState({
+        status: "checking",
+        detail: "Launch accepted. Waiting for the first live status update.",
+        lastCheckedAt: Date.now(),
+      });
 
       await delay(RUN_LOOKUP_DELAY_MS);
     }
@@ -480,6 +662,11 @@ export const useFactoryV2 = () => {
       return true;
     } catch (error) {
       setNotice(resolveWorkerErrorMessage(error));
+      setPollingState((currentState) => ({
+        status: "paused",
+        detail: resolvePollingPauseMessage(error),
+        lastCheckedAt: currentState.lastCheckedAt,
+      }));
       return false;
     } finally {
       setWatcher(null);
@@ -548,6 +735,10 @@ function resolveActionableStepId(run: FactoryRun, statuses: Array<FactoryRun["st
   return (step?.id as FactoryWorkerLaunchStepId | undefined) ?? null;
 }
 
+function isFactoryRunActive(run: FactoryRun) {
+  return run.status !== "complete";
+}
+
 function resolveStartTimeValue(startAt: string) {
   const date = new Date(startAt);
   return Number.isNaN(date.getTime()) ? startAt : date.toISOString();
@@ -571,14 +762,38 @@ function assertSupportedEnvironment(environmentId?: string | null) {
 
 function resolveWorkerErrorMessage(error: unknown) {
   if (error instanceof FactoryWorkerApiError) {
+    if (error.status === 404) {
+      return "We could not find that game yet.";
+    }
+
+    if (error.status === 409) {
+      return "Another launch is already working on this game.";
+    }
+
+    if (error.status >= 500) {
+      return "The launch service hit a problem. We are keeping the current state visible while it settles.";
+    }
+
     return error.message;
   }
 
   if (error instanceof Error) {
-    return error.message;
+    return error.message || "The launch service could not be reached.";
   }
 
   return "The factory worker could not be reached.";
+}
+
+function resolvePollingPauseMessage(error: unknown) {
+  if (error instanceof FactoryWorkerApiError && error.status === 404) {
+    return "We are still waiting for the first live status update.";
+  }
+
+  if (error instanceof FactoryWorkerApiError && error.status === 409) {
+    return "Another launch is already moving this game. We are showing its live state.";
+  }
+
+  return "Live updates paused for a moment. We will keep trying.";
 }
 
 function delay(durationMs: number) {

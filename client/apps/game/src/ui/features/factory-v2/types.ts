@@ -7,6 +7,7 @@ export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 export type FactoryStepStatus = "pending" | "running" | "succeeded" | "already_done" | "blocked" | "failed";
 
 export type FactoryWatcherKind = "launch" | "continue" | "retry" | "refresh";
+export type FactoryPollingStatus = "idle" | "checking" | "live" | "paused";
 
 export type FactoryLaunchStartRule = "next_hour";
 
@@ -73,8 +74,15 @@ export interface FactoryRun {
 
 export interface FactoryWatcherState {
   kind: FactoryWatcherKind;
+  gameName: string;
   title: string;
   detail: string;
   workflowName: string;
   statusLabel: string;
+}
+
+export interface FactoryPollingState {
+  status: FactoryPollingStatus;
+  detail: string;
+  lastCheckedAt: number | null;
 }

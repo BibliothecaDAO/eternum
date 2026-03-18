@@ -103,6 +103,25 @@ export const getCurrentStep = (run: FactoryRun) =>
   run.steps.find((step) => step.status === "pending") ??
   null;
 
+export const getCompletedStep = (run: FactoryRun) =>
+  [...run.steps].reverse().find((step) => step.status === "succeeded" || step.status === "already_done") ?? null;
+
+export const getNextStep = (run: FactoryRun) => {
+  const currentStep = getCurrentStep(run);
+
+  if (!currentStep) {
+    return null;
+  }
+
+  const currentStepIndex = run.steps.findIndex((step) => step.id === currentStep.id);
+
+  if (currentStepIndex === -1) {
+    return null;
+  }
+
+  return run.steps.slice(currentStepIndex + 1).find((step) => step.status === "pending") ?? null;
+};
+
 export const getSimpleStepTitle = (step: Pick<FactoryRun["steps"][number], "id" | "title">) =>
   SIMPLE_STEP_TITLES[step.id] ?? step.title;
 
@@ -139,12 +158,12 @@ export const getRunDetailMessage = (run: FactoryRun) => {
 
   switch (currentStep.status) {
     case "running":
-      return "The page is watching this part and will move forward when it sees the next state.";
+      return "We are watching this part live and will move forward as soon as it clears.";
     case "blocked":
     case "failed":
-      return "This part got stuck. The safe next move is to try that one part again.";
+      return "This part got stuck. The safest move is to retry only this one part.";
     case "pending":
-      return "The earlier parts need to finish before this one can start.";
+      return "The earlier parts still need to finish before this can start.";
     case "succeeded":
     case "already_done":
     default:
@@ -158,14 +177,14 @@ export const resolveRunPrimaryAction = (run: FactoryRun) => {
   if (hasRetryableStep(run)) {
     return {
       kind: "retry" as const,
-      label: "Try again",
+      label: "Retry this step",
     };
   }
 
   if (hasContinuableStep(run)) {
     return {
       kind: "continue" as const,
-      label: "Do next step",
+      label: "Continue",
     };
   }
 
