@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23248126401-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T13:48:21.646Z",
-  "updatedAt": "2026-03-18T13:55:18.380Z",
+  "updatedAt": "2026-03-18T13:55:19.681Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T13:55:19.681Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -81,5 +82,13 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-moss-211.json",
     "createGameTxHash": "0x7584b3aa889ffe48aa2ea4d4b26561f0191fa959fa4b38d74b97dc3f9369ecd",
     "worldAddress": "0x044dc3fd516be5fe1b7bdc085ccd482f2b06dfb892f4c6d044174eb7ca2312f9"
+  },
+  "activeLease": {
+    "launchRequestId": "23248126401-1",
+    "workflowRunId": 23248126401,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T13:55:19.681Z",
+    "expiresAt": "2026-03-18T14:40:19.681Z"
   }
 }
