@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "runId": "slot.eternum:etrn-quill-107",
+  "launchRequestId": "23232042297-1",
+  "environment": "slot.eternum",
+  "chain": "slot",
+  "gameType": "eternum",
+  "gameName": "etrn-quill-107",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-18T06:27:02.391Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23232042297,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23232042297",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "3ce155f316c66b2a38944daff467143adfb4bd3c"
+  }
+}
