@@ -11,19 +11,19 @@ interface FactoryRunPrimaryAction {
 }
 
 const SIMPLE_STEP_TITLES: Record<string, string> = {
-  "create-world": "Start the game",
-  "wait-factory-index": "Confirm game deployment",
-  "wait-for-factory-index": "Confirm game deployment",
-  "apply-config": "Apply game setup",
-  "configure-world": "Apply game setup",
-  "grant-lootchest-role": "Turn on loot chests",
-  "create-indexer": "Bring it online",
-  "wait-indexer": "Bring it online",
-  "grant-village-pass": "Deploy village pass",
-  "grant-village-pass-role": "Deploy village pass",
-  "create-banks": "Place banks",
-  "sync-paymaster": "Cover gas (paymaster)",
-  "publish-ready-state": "Mark it ready",
+  "create-world": "Create the game",
+  "wait-factory-index": "Wait for the game to appear",
+  "wait-for-factory-index": "Wait for the game to appear",
+  "apply-config": "Apply the game setup",
+  "configure-world": "Apply the game setup",
+  "grant-lootchest-role": "Enable loot chests",
+  "create-indexer": "Start live updates",
+  "wait-indexer": "Start live updates",
+  "grant-village-pass": "Enable village pass",
+  "grant-village-pass-role": "Enable village pass",
+  "create-banks": "Create banks",
+  "sync-paymaster": "Enable gas coverage",
+  "publish-ready-state": "Mark the game ready",
 };
 
 const STEP_DETAIL_MESSAGES: Record<
@@ -37,82 +37,82 @@ const STEP_DETAIL_MESSAGES: Record<
   }
 > = {
   "create-world": {
-    pending: "This game has not been started yet.",
-    running: "We are starting the game.",
-    done: "The game has been started.",
-    failed: "The game could not be started.",
+    pending: "The game has not been created yet.",
+    running: "We are creating the game now.",
+    done: "The game has been created.",
+    failed: "The game could not be created.",
   },
   "wait-factory-index": {
-    pending: "We have not checked the game yet.",
-    running: "We are confirming the game is there.",
-    done: "The game is confirmed.",
-    failed: "We could not confirm the game yet.",
+    pending: "We have not checked for the new game yet.",
+    running: "We are waiting for the game to appear.",
+    done: "The game is showing up.",
+    failed: "The game has not appeared yet.",
   },
   "wait-for-factory-index": {
-    pending: "We have not checked the game yet.",
-    running: "We are confirming the game is there.",
-    done: "The game is confirmed.",
-    failed: "We could not confirm the game yet.",
+    pending: "We have not checked for the new game yet.",
+    running: "We are waiting for the game to appear.",
+    done: "The game is showing up.",
+    failed: "The game has not appeared yet.",
   },
   "apply-config": {
-    pending: "The setup has not been applied yet.",
-    running: "We are applying the setup.",
-    done: "The setup is in place.",
-    failed: "The setup did not finish.",
+    pending: "The game setup has not been applied yet.",
+    running: "We are applying the game setup.",
+    done: "The game setup is in place.",
+    failed: "The game setup did not finish.",
   },
   "configure-world": {
-    pending: "The setup has not been applied yet.",
-    running: "We are applying the setup.",
-    done: "The setup is in place.",
-    failed: "The setup did not finish.",
+    pending: "The game setup has not been applied yet.",
+    running: "We are applying the game setup.",
+    done: "The game setup is in place.",
+    failed: "The game setup did not finish.",
   },
   "grant-lootchest-role": {
-    pending: "Rewards are not turned on yet.",
-    running: "We are turning rewards on.",
-    done: "Rewards are turned on.",
-    failed: "Rewards could not be turned on.",
+    pending: "Loot chests are not enabled yet.",
+    running: "We are enabling loot chests.",
+    done: "Loot chests are enabled.",
+    failed: "Loot chests could not be enabled.",
   },
   "grant-village-pass": {
-    pending: "Village pass is not open yet.",
-    running: "We are opening village pass.",
-    done: "Village pass is open.",
-    failed: "Village pass could not be opened.",
+    pending: "Village pass is not enabled yet.",
+    running: "We are enabling village pass.",
+    done: "Village pass is enabled.",
+    failed: "Village pass could not be enabled.",
   },
   "grant-village-pass-role": {
-    pending: "Village pass is not open yet.",
-    running: "We are opening village pass.",
-    done: "Village pass is open.",
-    failed: "Village pass could not be opened.",
+    pending: "Village pass is not enabled yet.",
+    running: "We are enabling village pass.",
+    done: "Village pass is enabled.",
+    failed: "Village pass could not be enabled.",
   },
   "create-banks": {
-    pending: "Banks are not placed yet.",
-    running: "We are placing banks.",
-    done: "Banks are in place.",
-    failed: "Banks could not be placed.",
+    pending: "Banks are not created yet.",
+    running: "We are creating the banks.",
+    done: "Banks are ready.",
+    failed: "Banks could not be created.",
   },
   "create-indexer": {
-    pending: "The game is not online yet.",
-    running: "We are bringing the game online.",
-    done: "The game is online.",
-    failed: "The game is not online yet.",
-    alreadyDone: "The game was already online.",
+    pending: "Live updates are not ready yet.",
+    running: "We are starting live updates.",
+    done: "Live updates are ready.",
+    failed: "Live updates are not ready yet.",
+    alreadyDone: "Live updates were already ready.",
   },
   "wait-indexer": {
-    pending: "The game is not online yet.",
-    running: "We are bringing the game online.",
-    done: "The game is online.",
-    failed: "The game is not online yet.",
-    alreadyDone: "The game was already online.",
+    pending: "Live updates are not ready yet.",
+    running: "We are starting live updates.",
+    done: "Live updates are ready.",
+    failed: "Live updates are not ready yet.",
+    alreadyDone: "Live updates were already ready.",
   },
   "sync-paymaster": {
-    pending: "Gas help is not ready yet.",
-    running: "We are turning on gas help.",
-    done: "Gas help is ready.",
-    failed: "Gas help could not be turned on.",
+    pending: "Gas coverage is not ready yet.",
+    running: "We are enabling gas coverage.",
+    done: "Gas coverage is ready.",
+    failed: "Gas coverage could not be enabled.",
   },
   "publish-ready-state": {
     pending: "This game is not marked ready yet.",
-    running: "We are marking this game ready.",
+    running: "We are marking the game ready.",
     done: "This game is marked ready.",
     failed: "This game could not be marked ready.",
   },
@@ -124,24 +124,25 @@ export const getRunStatusMeta = (status: FactoryRunStatus) => {
   switch (status) {
     case "attention":
       return {
-        label: "Needs Help",
+        label: "Needs attention",
         className: "border border-rose-300/50 bg-rose-50 text-rose-700",
       };
     case "waiting":
       return {
         label: "Getting Ready",
-        className: "border border-sky-300/50 bg-sky-50 text-sky-700",
+        className: "border border-black/8 bg-white/55 text-black/62",
       };
     case "complete":
       return {
-        label: "Done",
-        className: "border border-emerald-300/50 bg-emerald-50 text-emerald-700",
+        label: "Ready",
+        className: "border border-black/8 bg-white/68 text-black/70",
       };
     case "running":
     default:
       return {
-        label: "Working",
-        className: "border border-amber-300/50 bg-amber-50 text-amber-700",
+        label: "In progress",
+        className:
+          "border border-[#d4b487]/65 bg-[rgba(255,249,239,0.9)] text-[#8a5416] shadow-[0_8px_18px_rgba(186,129,44,0.12)]",
       };
   }
 };
@@ -151,38 +152,39 @@ export const getStepStatusMeta = (status: FactoryStepStatus) => {
     case "succeeded":
       return {
         label: "Done",
-        className: "border border-emerald-300/50 bg-emerald-50 text-emerald-700",
-        railClassName: "bg-emerald-300",
+        className: "border border-black/8 bg-white/58 text-black/58",
+        railClassName: "bg-black/18",
       };
     case "already_done":
       return {
         label: "Done",
-        className: "border border-amber-300/50 bg-amber-50 text-amber-700",
-        railClassName: "bg-amber-300",
+        className: "border border-black/8 bg-white/52 text-black/52",
+        railClassName: "bg-black/16",
       };
     case "running":
       return {
-        label: "Now",
-        className: "border border-sky-300/50 bg-sky-50 text-sky-700",
-        railClassName: "bg-sky-300",
+        label: "Current",
+        className:
+          "border border-[#d4b487]/65 bg-[rgba(255,249,239,0.92)] text-[#8a5416] shadow-[0_8px_18px_rgba(186,129,44,0.12)]",
+        railClassName: "bg-[#d9b16f]",
       };
     case "blocked":
       return {
-        label: "Needs Help",
+        label: "Needs attention",
         className: "border border-rose-300/50 bg-rose-50 text-rose-700",
         railClassName: "bg-rose-300",
       };
     case "failed":
       return {
-        label: "Needs Help",
+        label: "Needs attention",
         className: "border border-rose-300/50 bg-rose-50 text-rose-700",
         railClassName: "bg-rose-400",
       };
     case "pending":
     default:
       return {
-        label: "Not Yet",
-        className: "border border-black/10 bg-black/[0.04] text-black/55",
+        label: "Up next",
+        className: "border border-black/8 bg-white/40 text-black/52",
         railClassName: "bg-black/12",
       };
   }
@@ -299,15 +301,13 @@ export const getRunHeadline = (run: FactoryRun) => {
       return "Getting this game ready";
     case "blocked":
     case "failed":
-      return shouldRetryFullLaunch(run, currentStep)
-        ? "This game needs a fresh start"
-        : "This game needs a little help";
+      return shouldRetryFullLaunch(run, currentStep) ? "This game needs a fresh start" : "This game needs attention";
     case "pending":
-      return "There is still more to do";
+      return "Waiting on the next setup step";
     case "succeeded":
     case "already_done":
     default:
-      return "That part is done";
+      return "That step is done";
   }
 };
 
@@ -320,18 +320,18 @@ export const getRunDetailMessage = (run: FactoryRun) => {
 
   switch (currentStep.status) {
     case "running":
-      return "We are still getting this game ready.";
+      return "We are still finishing the setup.";
     case "blocked":
     case "failed":
       return shouldRetryFullLaunch(run, currentStep)
-        ? "This game stopped right away. Start the launch again from the top."
-        : "This game got stuck partway through. Try this part again.";
+        ? "This launch stopped early, so it will need a full retry."
+        : "This setup stalled on one step, so that step will need another try.";
     case "pending":
-      return "This part has not started yet.";
+      return "The next setup step has not started yet.";
     case "succeeded":
     case "already_done":
     default:
-      return "That part is finished.";
+      return "That step is finished.";
   }
 };
 

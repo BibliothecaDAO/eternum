@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Factory Progress Feels Active",
+    description:
+      "The Check a game view in the new Factory now gives the current step a clearer in-progress treatment, with a stronger active card and progress track that make setup feel visibly underway.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
     title: "Factory Start Fits Mobile",
     description:
       "The new Factory start form now keeps fields like Start time inside the card on smaller phones, so Eternum launch setup no longer spills past the mobile layout.",
