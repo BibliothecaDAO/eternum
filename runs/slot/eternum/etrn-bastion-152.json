@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-bastion-152",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-bastion-152/23238186398-1.json",
   "latestLaunchRequestId": "23238186398-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:36:37.315Z",
+  "updatedAt": "2026-03-18T09:38:05.870Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,11 +80,11 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer started",
+      "latestEvent": "Create indexer succeeded",
       "startedAt": "2026-03-18T09:36:37.315Z",
-      "finishedAt": "2026-03-18T09:34:42.601Z"
+      "finishedAt": "2026-03-18T09:38:05.870Z"
     }
   ],
   "artifacts": {
@@ -99,19 +99,12 @@
     "indexerWorkflowRun": {
       "workflowFile": "factory-torii-deployer.yml",
       "ref": "credence0x/factory-v2-polish",
-      "runId": 23238081933,
-      "runNumber": 747,
-      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23238081933",
+      "runId": 23238246566,
+      "runNumber": 749,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23238246566",
       "status": "completed",
       "conclusion": "success"
     }
   },
-  "activeLease": {
-    "launchRequestId": "23238186398-1",
-    "workflowRunId": 23238186398,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-18T09:36:37.315Z",
-    "expiresAt": "2026-03-18T10:21:37.315Z"
-  }
+  "completedAt": "2026-03-18T09:38:05.870Z"
 }
