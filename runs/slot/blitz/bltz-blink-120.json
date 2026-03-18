@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-blink-120",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/bltz-blink-120/23263319650-1.json",
   "latestLaunchRequestId": "23263319650-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T18:45:18.759Z",
-  "updatedAt": "2026-03-18T19:34:47.920Z",
+  "updatedAt": "2026-03-18T19:54:54.088Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,11 +62,12 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer started",
+      "latestEvent": "Create indexer failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-blink-120\" on slot.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 32 config steps for slot.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-blink-120\"\n\u001b[2m[+297ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-blink-120\" in 284ms (0x00617902...06c3fc)\n\u001b[2m[+304ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x00617902...06c3fc\n\u001b[2m[+304ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref credence0x/factory-v2-polish\n\u001b[2m[+1.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+20m 04s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 20m 04s: Timed out waiting for factory-torii-deployer.yml run to start for dispatch d5ed13b7-bd06-4882-962b-d45ff99f2e8c\nError: Timed out waiting for factory-torii-deployer.yml run to start for dispatch d5ed13b7-bd06-4882-962b-d45ff99f2e8c\n    at waitForWorkflowRunToAppear (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/indexer.ts:296:15)\n    at async createIndexerViaGitHubActions (unknown)\n    at processTicksAndRejections (native:7:39)",
       "startedAt": "2026-03-18T19:34:47.920Z",
-      "finishedAt": "2026-03-18T19:04:31.716Z"
+      "finishedAt": "2026-03-18T19:54:54.088Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-blink-120\" on slot.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 32 config steps for slot.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-blink-120\"\n\u001b[2m[+297ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-blink-120\" in 284ms (0x00617902...06c3fc)\n\u001b[2m[+304ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x00617902...06c3fc\n\u001b[2m[+304ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref credence0x/factory-v2-polish\n\u001b[2m[+1.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+20m 04s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 20m 04s: Timed out waiting for factory-torii-deployer.yml run to start for dispatch d5ed13b7-bd06-4882-962b-d45ff99f2e8c\nError: Timed out waiting for factory-torii-deployer.yml run to start for dispatch d5ed13b7-bd06-4882-962b-d45ff99f2e8c\n    at waitForWorkflowRunToAppear (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/indexer.ts:296:15)\n    at async createIndexerViaGitHubActions (unknown)\n    at processTicksAndRejections (native:7:39)"
     }
   ],
   "artifacts": {
@@ -75,13 +76,5 @@
     "worldAddress": "0x00617902398a3372a77b65c5b474558e48648171456a24fc65627366bb06c3fc",
     "configureTxHash": "0x3f8f6744be6f0e0d19fb974876d6fc32df178cde510db7393cfb47ccc567d7a",
     "lootChestRoleTxHash": "0x3c26f5f3fd9bc32c54e706561f8a6ff222115d780ce2ee10cfb57e81a23cfe1"
-  },
-  "activeLease": {
-    "launchRequestId": "23263319650-1",
-    "workflowRunId": 23263319650,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-18T19:34:47.920Z",
-    "expiresAt": "2026-03-18T20:19:47.920Z"
   }
 }
