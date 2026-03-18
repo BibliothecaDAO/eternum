@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-vigil-878/23248220652-1.json",
   "latestLaunchRequestId": "23248220652-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": "configure-world",
   "createdAt": "2026-03-18T13:54:41.217Z",
-  "updatedAt": "2026-03-18T13:56:55.506Z",
+  "updatedAt": "2026-03-18T13:56:57.132Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,10 +35,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Wait for factory index",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Wait for factory index",
-      "latestEvent": "Wait for factory index started",
-      "startedAt": "2026-03-18T13:56:55.506Z"
+      "latestEvent": "Wait for factory index succeeded",
+      "startedAt": "2026-03-18T13:56:55.506Z",
+      "finishedAt": "2026-03-18T13:56:57.132Z"
     },
     {
       "id": "configure-world",
@@ -78,14 +79,7 @@
   ],
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-eternum-etrn-vigil-878.json",
-    "createGameTxHash": "0x65146d1f257f59d3f40355faea598307776934e2a9d0b965972651ad196e5f9"
-  },
-  "activeLease": {
-    "launchRequestId": "23248220652-1",
-    "workflowRunId": 23248220652,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-03-18T13:56:55.506Z",
-    "expiresAt": "2026-03-18T14:41:55.506Z"
+    "createGameTxHash": "0x65146d1f257f59d3f40355faea598307776934e2a9d0b965972651ad196e5f9",
+    "worldAddress": "0x04bac508a708fd8bfca8aee8ebb9306a81fde5d82e577a36142489aeb2cd527f"
   }
 }
