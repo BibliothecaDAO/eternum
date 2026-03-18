@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23249636192-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T14:27:47.154Z",
-  "updatedAt": "2026-03-18T14:29:45.544Z",
+  "updatedAt": "2026-03-18T14:29:46.760Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T14:29:46.760Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-flux-824.json",
     "createGameTxHash": "0x668bffed6c145bde16bb869832a41827433ee585b36ad8384d20c8c884e3d07",
     "worldAddress": "0x02489d7f70817778e17f43dc9828737846a3d0a19acdd99f1e62da86245beb16"
+  },
+  "activeLease": {
+    "launchRequestId": "23249636192-1",
+    "workflowRunId": 23249636192,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T14:29:46.760Z",
+    "expiresAt": "2026-03-18T15:14:46.760Z"
   }
 }
