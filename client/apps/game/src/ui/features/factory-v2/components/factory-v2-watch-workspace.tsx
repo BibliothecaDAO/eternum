@@ -4,8 +4,9 @@ import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
 import { useEffect, useState, type KeyboardEvent } from "react";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
-import type { FactoryGameMode, FactoryRun, FactoryWatcherState } from "../types";
+import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 import {
+  getCompletedStep,
   getCurrentStep,
   getEnvironmentLabel,
   getRunDetailMessage,
@@ -14,6 +15,7 @@ import {
   getRunStatusMeta,
   getSimpleStepTitle,
   getStepStatusMeta,
+  getNextStep,
   resolveRunPrimaryAction,
 } from "../presenters";
 
@@ -21,9 +23,12 @@ export const FactoryV2WatchWorkspace = ({
   mode,
   runs,
   selectedRun,
+  activeRunName,
   watcher,
+  pollingState,
   isWatcherBusy,
   isResolvingRunName,
+  notice,
   lookupDisabledReason,
   onSelectRun,
   onResolveRunByName,
@@ -34,9 +39,12 @@ export const FactoryV2WatchWorkspace = ({
   mode: FactoryGameMode;
   runs: FactoryRun[];
   selectedRun: FactoryRun | null;
+  activeRunName: string | null;
   watcher: FactoryWatcherState | null;
+  pollingState: FactoryPollingState;
   isWatcherBusy: boolean;
   isResolvingRunName: boolean;
+  notice: string | null;
   lookupDisabledReason: string | null;
   onSelectRun: (runId: string) => void;
   onResolveRunByName: (gameName: string) => Promise<boolean>;
@@ -48,21 +56,42 @@ export const FactoryV2WatchWorkspace = ({
   const [showAllSteps, setShowAllSteps] = useState(false);
   const [watchGameName, setWatchGameName] = useState(selectedRun?.name ?? "");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [clockNow, setClockNow] = useState(() => Date.now());
 
   useEffect(() => {
     setShowAllSteps(selectedRun?.status === "attention");
   }, [selectedRun?.id, selectedRun?.status]);
 
   useEffect(() => {
-    setWatchGameName(selectedRun?.name ?? "");
-  }, [selectedRun?.id, selectedRun?.name]);
+    setWatchGameName(selectedRun?.name ?? activeRunName ?? "");
+  }, [activeRunName, selectedRun?.id, selectedRun?.name]);
+
+  useEffect(() => {
+    if (!pollingState.lastCheckedAt) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setClockNow(Date.now());
+    }, 1_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [pollingState.lastCheckedAt]);
+
   const matchingRuns = resolveMatchingRunsByName(runs, watchGameName);
   const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
   const currentStep = selectedRun ? getCurrentStep(selectedRun) : null;
+  const completedStep = selectedRun ? getCompletedStep(selectedRun) : null;
+  const nextStep = selectedRun ? getNextStep(selectedRun) : null;
   const primaryAction = selectedRun ? resolveRunPrimaryAction(selectedRun) : null;
   const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
   const currentStepLabel = currentStep ? getSimpleStepTitle(currentStep) : "Everything is done";
-  const detailMessage = selectedRun ? watcher?.detail ?? getRunDetailMessage(selectedRun) : "Type a game name to check it.";
+  const detailMessage = selectedRun ? watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun) : "Type a game name to check it.";
+  const headline = selectedRun ? getRunHeadline(selectedRun) : watcher?.title ?? "Looking for your game";
+  const liveStatusLabel = buildLiveStatusLabel(pollingState, clockNow);
+  const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
   const selectRunByName = (value: string) => {
     setWatchGameName(value);
     setIsPickerOpen(true);
@@ -179,13 +208,20 @@ export const FactoryV2WatchWorkspace = ({
                   {statusMeta?.label}
                 </div>
               </div>
-              <h3 className="text-[1.35rem] font-semibold tracking-tight text-black">{getRunHeadline(selectedRun)}</h3>
+              <h3 className="text-[1.35rem] font-semibold tracking-tight text-black">{headline}</h3>
+              <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
             </div>
 
             <div className={cn("rounded-[20px] px-4 py-3.5 text-left", appearance.quietSurfaceClassName)}>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
               <div className="mt-2 text-[15px] font-semibold text-black">{currentStepLabel}</div>
               <p className="mt-2 text-sm leading-5 text-black/56">{detailMessage}</p>
+            </div>
+
+            <div className="grid gap-2 text-left">
+              {completedStep ? <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} /> : null}
+              {currentStep ? <FactoryV2StepMoment label="Now" stepLabel={currentStepLabel} /> : null}
+              {nextStep ? <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} /> : null}
             </div>
 
             <div className="space-y-2">
@@ -232,12 +268,14 @@ export const FactoryV2WatchWorkspace = ({
               </button>
             </div>
 
+            {notice && !watcher ? <p className="text-sm leading-6 text-black/52">{notice}</p> : null}
+
             <button
               type="button"
               onClick={() => setShowAllSteps((open) => !open)}
               className="text-sm font-medium text-black/58 transition-colors hover:text-black"
             >
-              {showAllSteps ? "Hide details" : "Show details"}
+              {showAllSteps ? "Hide steps" : "See all steps"}
             </button>
 
             {showAllSteps ? (
@@ -249,6 +287,27 @@ export const FactoryV2WatchWorkspace = ({
             ) : null}
           </div>
         </div>
+      ) : watcher ? (
+        <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
+          <div className="space-y-3">
+            <div className="flex justify-center">
+              <div className="rounded-full border border-amber-300/50 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+                {watcher.statusLabel}
+              </div>
+            </div>
+            <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">{watcher.title}</h3>
+            <p className="text-sm leading-6 text-black/56">{watcher.detail}</p>
+            <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
+            {notice ? <p className="text-sm leading-6 text-black/52">{notice}</p> : null}
+            <div className={cn("rounded-[18px] px-4 py-3 text-left", appearance.quietSurfaceClassName)}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
+              <div className="mt-2 text-[15px] font-semibold text-black">Starting {launchPlaceholderName}</div>
+              <p className="mt-2 text-sm leading-5 text-black/56">
+                We are waiting for the first live status update from the launcher.
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
           <div className="text-sm leading-6 text-black/58">Type a game name and press Enter to check it.</div>
@@ -257,6 +316,37 @@ export const FactoryV2WatchWorkspace = ({
     </article>
   );
 };
+
+const FactoryV2LiveStatus = ({
+  pollingState,
+  liveStatusLabel,
+}: {
+  pollingState: FactoryPollingState;
+  liveStatusLabel: string;
+}) => (
+  <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-black/52">
+    <div
+      className={cn(
+        "h-2.5 w-2.5 rounded-full",
+        pollingState.status === "idle"
+          ? "bg-black/18"
+          : pollingState.status === "paused"
+          ? "bg-rose-400"
+          : pollingState.status === "checking"
+            ? "animate-pulse bg-amber-400"
+            : "bg-emerald-400",
+      )}
+    />
+    <span>{liveStatusLabel}</span>
+  </div>
+);
+
+const FactoryV2StepMoment = ({ label, stepLabel }: { label: string; stepLabel: string }) => (
+  <div className="flex items-center justify-between rounded-[16px] border border-black/8 bg-black/[0.03] px-4 py-2.5">
+    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{label}</span>
+    <span className="text-sm font-medium text-black/72">{stepLabel}</span>
+  </div>
+);
 
 const resolveMatchingRunByName = (runs: FactoryRun[], requestedName: string) => {
   const normalizedName = requestedName.trim().toLowerCase();
@@ -301,3 +391,22 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
     </div>
   );
 };
+
+function buildLiveStatusLabel(pollingState: FactoryPollingState, now: number) {
+  if (pollingState.status === "paused") {
+    return pollingState.detail;
+  }
+
+  if (!pollingState.lastCheckedAt) {
+    return pollingState.detail;
+  }
+
+  const elapsedSeconds = Math.max(0, Math.floor((now - pollingState.lastCheckedAt) / 1_000));
+  const ageLabel = elapsedSeconds < 2 ? "just now" : `${elapsedSeconds}s ago`;
+
+  if (pollingState.status === "checking") {
+    return `Checking live status · last checked ${ageLabel}`;
+  }
+
+  return `Checking every few seconds · last checked ${ageLabel}`;
+}

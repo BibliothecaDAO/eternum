@@ -30,6 +30,7 @@ export const FactoryV2StartWorkspace = ({
   twoPlayerMode,
   singleRealmMode,
   existingGameName,
+  notice,
   launchDisabledReason,
   onSelectPreset,
   onGameNameChange,
@@ -55,6 +56,7 @@ export const FactoryV2StartWorkspace = ({
   twoPlayerMode: boolean;
   singleRealmMode: boolean;
   existingGameName: string | null;
+  notice: string | null;
   launchDisabledReason: string | null;
   onSelectPreset: (presetId: string) => void;
   onGameNameChange: (value: string) => void;
@@ -154,9 +156,10 @@ export const FactoryV2StartWorkspace = ({
               className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-center text-sm text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25"
             />
             {existingGameName ? (
-              <p className="mt-2 text-sm leading-6 text-black/50">That name already exists. We will open it instead.</p>
+              <p className="mt-2 text-sm leading-6 text-black/50">That game already exists. We will open its live status.</p>
             ) : null}
-            {launchDisabledReason ? (
+            {!existingGameName && notice ? <p className="mt-2 text-sm leading-6 text-black/50">{notice}</p> : null}
+            {!existingGameName && launchDisabledReason ? (
               <p className="mt-2 text-sm leading-6 text-black/50">{launchDisabledReason}</p>
             ) : null}
           </div>

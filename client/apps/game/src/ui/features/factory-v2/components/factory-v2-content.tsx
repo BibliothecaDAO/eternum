@@ -41,7 +41,16 @@ export const FactoryV2Content = () => {
     setSelectedWorkflow("watch");
   }, [factory.matchingRun]);
 
+  useEffect(() => {
+    if (!factory.shouldPreferWatchView) {
+      return;
+    }
+
+    setSelectedWorkflow("watch");
+  }, [factory.shouldPreferWatchView]);
+
   const launchSelectedPreset = async () => {
+    setSelectedWorkflow("watch");
     const launched = await factory.launchSelectedPreset();
 
     if (launched) {
@@ -132,12 +141,6 @@ export const FactoryV2Content = () => {
           </div>
         </div>
 
-        {factory.notice ? (
-          <div className="mx-auto max-w-md rounded-[18px] border border-amber-900/12 bg-white/72 px-4 py-3 text-center text-sm text-black/58">
-            {factory.notice}
-          </div>
-        ) : null}
-
         {selectedWorkflow === "start" ? (
           <FactoryV2StartWorkspace
             mode={factory.selectedMode}
@@ -154,6 +157,7 @@ export const FactoryV2Content = () => {
             twoPlayerMode={factory.twoPlayerMode}
             singleRealmMode={factory.singleRealmMode}
             existingGameName={factory.matchingRun?.name ?? null}
+            notice={factory.notice}
             launchDisabledReason={factory.environmentUnavailableReason}
             onSelectPreset={factory.selectPreset}
             onGameNameChange={factory.setDraftGameName}
@@ -174,9 +178,12 @@ export const FactoryV2Content = () => {
             mode={factory.selectedMode}
             runs={factory.modeRuns}
             selectedRun={factory.selectedRun}
+            activeRunName={factory.activeRunName}
             watcher={factory.watcher}
+            pollingState={factory.pollingState}
             isWatcherBusy={factory.isWatcherBusy}
             isResolvingRunName={factory.isResolvingRunName}
+            notice={factory.notice}
             lookupDisabledReason={factory.environmentUnavailableReason}
             onSelectRun={factory.selectRun}
             onResolveRunByName={factory.resolveRunByName}
