@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23237620012-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T09:19:52.667Z",
-  "updatedAt": "2026-03-18T09:22:34.937Z",
+  "updatedAt": "2026-03-18T09:22:35.987Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T09:22:35.987Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-blink-940.json",
     "createGameTxHash": "0x66e81a237979e60936c088f90d74c463c858ccab09b540c1d50b4ef4cd4b293",
     "worldAddress": "0x01501b604fda3d8fca7626823f5bdd74de836819a2e2c87a5238606da542a978"
+  },
+  "activeLease": {
+    "launchRequestId": "23237620012-1",
+    "workflowRunId": 23237620012,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T09:22:35.987Z",
+    "expiresAt": "2026-03-18T10:07:35.987Z"
   }
 }
