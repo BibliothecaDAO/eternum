@@ -17,6 +17,9 @@ import { getRandomBackgroundImage } from "./ui/utils/utils";
 const LazyGameRoute = lazy(() => import("./game-route").then((module) => ({ default: module.GameRoute })));
 
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
+const FactoryV2Page = lazy(() =>
+  import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
+);
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
@@ -75,6 +78,16 @@ function App() {
               element={
                 <Suspense fallback={<LoadingScreen />}>
                   <FactoryPage />
+                </Suspense>
+              }
+            />
+
+            {/* Standalone factory v2 route */}
+            <Route
+              path="/factory/v2"
+              element={
+                <Suspense fallback={<LoadingScreen />}>
+                  <FactoryV2Page />
                 </Suspense>
               }
             />
