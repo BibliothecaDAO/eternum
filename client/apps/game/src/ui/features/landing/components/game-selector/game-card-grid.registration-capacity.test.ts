@@ -20,7 +20,8 @@ describe("Game card registration capacity", () => {
       "utf8",
     );
 
-    expect(source).toContain("const registrationCountMax = game.config?.registrationCountMax ?? null;");
+    expect(source).toContain("resolveEffectiveRegistrationCountMax");
+    expect(source).toContain("const registrationCountMax = resolveEffectiveRegistrationCountMax(game.config);");
     expect(source).toContain("`${registrationCount}/${registrationCountMax} players`");
   });
 
