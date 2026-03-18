@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23248220652-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T13:54:41.217Z",
-  "updatedAt": "2026-03-18T13:56:57.132Z",
+  "updatedAt": "2026-03-18T13:56:58.312Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T13:56:58.312Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -81,5 +82,13 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-vigil-878.json",
     "createGameTxHash": "0x65146d1f257f59d3f40355faea598307776934e2a9d0b965972651ad196e5f9",
     "worldAddress": "0x04bac508a708fd8bfca8aee8ebb9306a81fde5d82e577a36142489aeb2cd527f"
+  },
+  "activeLease": {
+    "launchRequestId": "23248220652-1",
+    "workflowRunId": 23248220652,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T13:56:58.312Z",
+    "expiresAt": "2026-03-18T14:41:58.312Z"
   }
 }
