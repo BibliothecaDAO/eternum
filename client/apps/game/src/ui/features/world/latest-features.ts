@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-18",
+    title: "Factory Start Fits Mobile",
+    description:
+      "The new Factory start form now keeps fields like Start time inside the card on smaller phones, so Eternum launch setup no longer spills past the mobile layout.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-18",
     title: "Factory Actions Stay Inline",
     description:
       "Retry, continue, and indexer actions in the new Factory now stay in the Factory flow instead of interrupting you with a network-switch prompt unless you choose to switch networks yourself.",

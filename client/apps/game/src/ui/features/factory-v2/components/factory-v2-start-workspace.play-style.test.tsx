@@ -24,10 +24,10 @@ const waitForAsyncWork = async () => {
   await Promise.resolve();
 };
 
-const createPreset = () => ({
+const createPreset = (mode: "blitz" | "eternum" = "blitz") => ({
   id: "preset-1",
   name: "Preset 1",
-  mode: "blitz" as const,
+  mode,
   description: "Preset description",
   defaults: {
     startRule: "next_hour" as const,
@@ -135,6 +135,30 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(article?.className).toContain("w-full");
     expect(article?.className).not.toContain("max-w-md");
     expect(actionBar?.className).toContain("sticky");
+  });
+
+  it("keeps the Eternum start-time control shrink-safe on mobile", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            mode: "eternum",
+            modeLabel: "Eternum",
+            presets: [createPreset("eternum")],
+            selectedPreset: createPreset("eternum"),
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const startTimeInput = container.querySelector<HTMLInputElement>("#factory-start-at");
+    const launchGrid = startTimeInput?.closest(".grid");
+
+    expect(startTimeInput?.className).toContain("min-w-0");
+    expect(startTimeInput?.className).toContain("max-w-full");
+    expect(startTimeInput?.className).toContain("overflow-hidden");
+    expect(launchGrid?.className).toContain("min-w-0");
   });
 
   it("shows the three fixed blitz play style options", async () => {
