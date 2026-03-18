@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-bastion-152",
-  "status": "complete",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-bastion-152/23238081864-1.json",
   "latestLaunchRequestId": "23238081864-1",
-  "currentStepId": null,
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:33:34.816Z",
+  "updatedAt": "2026-03-18T09:33:36.770Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,10 +80,10 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer succeeded",
-      "startedAt": "2026-03-18T09:32:23.799Z",
+      "latestEvent": "Create indexer started",
+      "startedAt": "2026-03-18T09:33:36.770Z",
       "finishedAt": "2026-03-18T09:33:30.600Z"
     }
   ],
@@ -106,5 +106,12 @@
       "conclusion": "success"
     }
   },
-  "completedAt": "2026-03-18T09:33:34.816Z"
+  "activeLease": {
+    "launchRequestId": "23238081864-1",
+    "workflowRunId": 23238081864,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-18T09:33:36.770Z",
+    "expiresAt": "2026-03-18T10:18:36.770Z"
+  }
 }
