@@ -366,9 +366,9 @@ describe("createWebGPUPostProcessRuntime", () => {
       render: vi.fn(),
     };
     const scenePass = {
-      camera: null,
+      camera: null as never,
       getTextureNode: vi.fn(() => ({ id: "node" })),
-      scene: null,
+      scene: null as never,
       setMRT: vi.fn(),
     };
 
@@ -413,9 +413,9 @@ describe("createWebGPUPostProcessRuntime", () => {
       render: vi.fn(),
     };
     const scenePass = {
-      camera: null,
+      camera: null as never,
       getTextureNode: vi.fn(() => ({ id: "node" })),
-      scene: null,
+      scene: null as never,
       setMRT: vi.fn(),
     };
 

@@ -14,6 +14,7 @@ describe("GameRenderer fast-travel bootstrap", () => {
     expect(
       resolveNavigationSceneTarget({
         requestedScene: SceneName.FastTravel,
+        currentPath: "/play/map",
         fastTravelEnabled: true,
       }),
     ).toBe(SceneName.FastTravel);
@@ -22,6 +23,7 @@ describe("GameRenderer fast-travel bootstrap", () => {
     expect(
       resolveNavigationSceneTarget({
         requestedScene: SceneName.FastTravel,
+        currentPath: "/play/map",
         fastTravelEnabled: false,
       }),
     ).toBe(SceneName.WorldMap);
@@ -31,6 +33,7 @@ describe("GameRenderer fast-travel bootstrap", () => {
     expect(
       resolveNavigationSceneTarget({
         requestedScene: SceneName.WorldMap,
+        currentPath: "/play/map",
         fastTravelEnabled: false,
       }),
     ).toBe(SceneName.WorldMap);
@@ -38,6 +41,7 @@ describe("GameRenderer fast-travel bootstrap", () => {
     expect(
       resolveNavigationSceneTarget({
         requestedScene: SceneName.Hexception,
+        currentPath: "/play/hex",
         fastTravelEnabled: false,
       }),
     ).toBe(SceneName.Hexception);
@@ -48,6 +52,7 @@ describe("GameRenderer fast-travel bootstrap", () => {
     const resolved = resolveSceneNameFromRouteSegment("travel");
     const target = resolveNavigationSceneTarget({
       requestedScene: resolved,
+      currentPath: "/play/travel",
       fastTravelEnabled: true,
     });
     expect(target).toBe(SceneName.FastTravel);

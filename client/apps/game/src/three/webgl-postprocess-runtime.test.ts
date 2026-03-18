@@ -4,6 +4,7 @@ const composerInstances: Array<{
   addPass: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
   passes: unknown[];
+  removePass: ReturnType<typeof vi.fn>;
   render: ReturnType<typeof vi.fn>;
   setSize: ReturnType<typeof vi.fn>;
 }> = [];
