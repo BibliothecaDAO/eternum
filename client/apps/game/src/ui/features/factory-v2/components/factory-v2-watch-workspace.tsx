@@ -164,7 +164,7 @@ export const FactoryV2WatchWorkspace = ({
   };
 
   return (
-    <article className="mx-auto max-w-md space-y-3">
+    <article className="mx-auto max-w-md space-y-3 sm:space-y-4">
       <div>
         <label
           htmlFor="factory-watch-game"
@@ -213,7 +213,7 @@ export const FactoryV2WatchWorkspace = ({
                     type="button"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => chooseRun(run)}
-                    className="flex w-full items-center justify-between rounded-[14px] border border-transparent bg-white/48 px-3 py-2.5 text-left text-[13px] text-black transition-colors hover:border-black/6 hover:bg-black/[0.035]"
+                    className="flex w-full flex-col items-start gap-1.5 rounded-[14px] border border-transparent bg-white/48 px-3 py-2.5 text-left text-[13px] text-black transition-colors hover:border-black/6 hover:bg-black/[0.035] sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <div className="truncate font-semibold text-black">{run.name}</div>
@@ -244,7 +244,7 @@ export const FactoryV2WatchWorkspace = ({
       {selectedRun ? (
         <div
           className={cn(
-            "relative overflow-hidden rounded-[26px] border px-5 py-6 text-center md:px-6 md:py-7",
+            "relative overflow-hidden rounded-[26px] border px-4 py-5 text-center sm:px-5 sm:py-6 md:px-6 md:py-7",
             appearance.featureSurfaceClassName,
           )}
         >
@@ -262,8 +262,10 @@ export const FactoryV2WatchWorkspace = ({
                   <FactoryV2LoaderHalo pollingState={pollingState} />
                 </div>
               ) : null}
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
-                {selectedRun.name} on {environmentLabel}
+              <div className="flex flex-col items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42 sm:flex-row sm:justify-center sm:gap-2">
+                <span className="max-w-full truncate">{selectedRun.name}</span>
+                <span className="hidden sm:inline">on</span>
+                <span>{environmentLabel}</span>
               </div>
               {!showsInFlightState ? (
                 <div className="flex justify-center">
@@ -462,7 +464,12 @@ const FactoryV2StepMoment = ({
   const toneClassName = resolveStepMomentToneClassName(tone);
 
   return (
-    <div className={cn("flex items-center justify-between rounded-[16px] border px-4 py-2.5", toneClassName)}>
+    <div
+      className={cn(
+        "flex flex-col items-start gap-1.5 rounded-[16px] border px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between",
+        toneClassName,
+      )}
+    >
       <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{label}</span>
       <span className="text-sm font-medium text-black/72">{stepLabel}</span>
     </div>
@@ -532,7 +539,7 @@ const FactoryV2StepSummary = ({
             <button
               type="button"
               onClick={manualAction.onPress}
-              className="inline-flex items-center justify-center rounded-full border border-black/12 bg-black/[0.05] px-3 py-1.5 text-[12px] font-semibold text-black transition-colors hover:bg-black/[0.08]"
+              className="inline-flex w-full items-center justify-center rounded-full border border-black/12 bg-black/[0.05] px-3 py-1.5 text-[12px] font-semibold text-black transition-colors hover:bg-black/[0.08] sm:w-auto"
             >
               {manualAction.label}
             </button>

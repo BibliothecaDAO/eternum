@@ -35,7 +35,7 @@ export const FactoryV2ModeSwitch = ({
       <div className="space-y-4 text-center">
         <div className="flex flex-col items-center gap-2">
           <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-black/42">Network</div>
-          <div className="inline-flex w-full max-w-[15rem] flex-wrap gap-1.5 rounded-full border border-black/8 bg-white/50 p-1">
+          <div className="grid w-full max-w-[18rem] grid-cols-2 gap-1.5 rounded-[20px] border border-black/8 bg-white/50 p-1">
             {environmentOptions.map((environment) => {
               const isSelected = environment.id === selectedEnvironmentId;
 
@@ -45,7 +45,7 @@ export const FactoryV2ModeSwitch = ({
                   type="button"
                   aria-pressed={isSelected}
                   className={cn(
-                    "flex-1 rounded-full px-4 py-2 text-[13px] font-semibold transition-all duration-200",
+                    "min-w-0 rounded-full px-3 py-2 text-[12px] font-semibold transition-all duration-200 sm:px-4 sm:text-[13px]",
                     isSelected ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
                   )}
                   onClick={() => onSelectEnvironment(environment.id)}
@@ -60,7 +60,7 @@ export const FactoryV2ModeSwitch = ({
         <div className="flex flex-col items-center gap-3">
           <div className="flex flex-col items-center gap-2">
             <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-black/42">Game</div>
-            <div className="inline-flex w-full max-w-[15rem] flex-wrap gap-1.5 rounded-full border border-black/8 bg-white/40 p-1">
+            <div className="grid w-full max-w-[18rem] grid-cols-2 gap-1.5 rounded-[20px] border border-black/8 bg-white/40 p-1">
               {modes.map((mode) => {
                 const isSelected = mode.id === selectedMode;
 
@@ -70,7 +70,7 @@ export const FactoryV2ModeSwitch = ({
                     type="button"
                     aria-pressed={isSelected}
                     className={cn(
-                      "flex-1 rounded-full px-4 py-2 text-[13px] font-semibold transition-all duration-200",
+                      "min-w-0 rounded-full px-3 py-2 text-[12px] font-semibold transition-all duration-200 sm:px-4 sm:text-[13px]",
                       isSelected ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
                     )}
                     onClick={() => onSelectMode(mode.id)}
