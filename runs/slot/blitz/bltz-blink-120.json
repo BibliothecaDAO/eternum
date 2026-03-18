@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-blink-120/23261304987-1.json",
   "latestLaunchRequestId": "23261304987-1",
-  "currentStepId": "grant-lootchest-role",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T18:45:18.759Z",
-  "updatedAt": "2026-03-18T18:46:36.880Z",
+  "updatedAt": "2026-03-18T18:46:42.237Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -53,10 +53,11 @@
     {
       "id": "grant-lootchest-role",
       "title": "Grant loot chest role",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Grant loot chest role",
-      "latestEvent": "Grant loot chest role started",
-      "startedAt": "2026-03-18T18:46:36.880Z"
+      "latestEvent": "Grant loot chest role succeeded",
+      "startedAt": "2026-03-18T18:46:36.880Z",
+      "finishedAt": "2026-03-18T18:46:42.237Z"
     },
     {
       "id": "create-indexer",
@@ -70,14 +71,7 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-blink-120.json",
     "createGameTxHash": "0x5cbc1aa75d379c9df6003e092fa42f0189e2f70ba16205deb9acd6976ddcd20",
     "worldAddress": "0x00617902398a3372a77b65c5b474558e48648171456a24fc65627366bb06c3fc",
-    "configureTxHash": "0x3f8f6744be6f0e0d19fb974876d6fc32df178cde510db7393cfb47ccc567d7a"
-  },
-  "activeLease": {
-    "launchRequestId": "23261304987-1",
-    "workflowRunId": 23261304987,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "acquiredAt": "2026-03-18T18:46:36.880Z",
-    "expiresAt": "2026-03-18T19:31:36.880Z"
+    "configureTxHash": "0x3f8f6744be6f0e0d19fb974876d6fc32df178cde510db7393cfb47ccc567d7a",
+    "lootChestRoleTxHash": "0x3c26f5f3fd9bc32c54e706561f8a6ff222115d780ce2ee10cfb57e81a23cfe1"
   }
 }
