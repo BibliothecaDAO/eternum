@@ -8,19 +8,19 @@
   "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/eternum/etrn-thorn-587/23239504754-1.json",
-  "latestLaunchRequestId": "23239504754-1",
+  "inputPath": "inputs/slot/eternum/etrn-thorn-587/23247690027-1.json",
+  "latestLaunchRequestId": "23247690027-1",
   "currentStepId": "create-world",
   "createdAt": "2026-03-18T10:08:30.224Z",
-  "updatedAt": "2026-03-18T10:11:04.839Z",
+  "updatedAt": "2026-03-18T13:44:48.771Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23239504754,
+    "workflowRunId": 23247690027,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23239504754",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23247690027",
     "ref": "credence0x/factory-v2-polish",
-    "sha": "97817f44676bf7835ae2fc5098b776a828a2f9c4"
+    "sha": "0008aad4fbb3f935d055b1bb33fa630e55cf6c2b"
   },
   "steps": [
     {
