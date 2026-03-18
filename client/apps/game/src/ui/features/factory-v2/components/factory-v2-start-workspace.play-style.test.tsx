@@ -115,32 +115,33 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.textContent).toContain("Max players");
   });
 
-  it("shows the three blitz play style options using the current player cap", async () => {
+  it("uses a wide layout with a sticky mobile launch bar", async () => {
     await act(async () => {
       root.render(<FactoryV2StartWorkspace {...(buildProps() as never)} />);
       await waitForAsyncWork();
     });
 
-    const defaultButton = findPlayStyleButton(container, "24 players, 3 Realms");
+    const article = container.querySelector("article");
+    const actionBar = container.querySelector('[data-testid="factory-start-action-bar"]');
+
+    expect(article?.className).toContain("w-full");
+    expect(article?.className).not.toContain("max-w-md");
+    expect(actionBar?.className).toContain("sticky");
+  });
+
+  it("shows the three fixed blitz play style options", async () => {
+    await act(async () => {
+      root.render(<FactoryV2StartWorkspace {...(buildProps() as never)} />);
+      await waitForAsyncWork();
+    });
+
+    const defaultButton = findPlayStyleButton(container, "Multiple Players, 3 Realms");
     const twoPlayerButton = findPlayStyleButton(container, "2 players, 3 Realms");
-    const singleRealmButton = findPlayStyleButton(container, "24 players, 1 Realm");
+    const singleRealmButton = findPlayStyleButton(container, "Multiple Players, 1 Realm");
 
     expect(defaultButton?.getAttribute("aria-pressed")).toBe("true");
     expect(twoPlayerButton?.getAttribute("aria-pressed")).toBe("false");
     expect(singleRealmButton?.getAttribute("aria-pressed")).toBe("false");
-  });
-
-  it("updates the multiplayer play-style copy when max players changes", async () => {
-    const moreOptionDraft = createFactoryMoreOptionsDraft("blitz", "slot");
-    moreOptionDraft.maxPlayers = "12";
-
-    await act(async () => {
-      root.render(<FactoryV2StartWorkspace {...(buildProps({ moreOptionDraft }) as never)} />);
-      await waitForAsyncWork();
-    });
-
-    expect(findPlayStyleButton(container, "12 players, 3 Realms")).toBeTruthy();
-    expect(findPlayStyleButton(container, "12 players, 1 Realm")).toBeTruthy();
   });
 
   it("hides the max player control while two-player mode is chosen", async () => {

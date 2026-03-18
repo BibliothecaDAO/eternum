@@ -100,7 +100,7 @@ export const FactoryV2StartWorkspace = ({
 
   if (!selectedPreset) {
     return (
-      <article className="mx-auto max-w-md sm:max-w-xl">
+      <article className="w-full md:mx-auto md:max-w-3xl">
         <div className={cn("rounded-[28px] border p-6 md:p-7", appearance.featureSurfaceClassName)}>
           <div className="text-sm leading-6 text-black/58">Pick a preset first.</div>
         </div>
@@ -110,7 +110,7 @@ export const FactoryV2StartWorkspace = ({
 
   const showsBlitzModes = supportsBlitzRegistrationModes(mode);
   const maxPlayersField = getFactoryMoreOptionField(mode, "maxPlayers", { twoPlayerMode });
-  const blitzPlayStyleOptions = getBlitzPlayStyleOptions(moreOptionDraft.maxPlayers);
+  const blitzPlayStyleOptions = getBlitzPlayStyleOptions();
   const selectedBlitzPlayStyleId = resolveSelectedBlitzPlayStyleId({ twoPlayerMode, singleRealmMode });
   const canLaunch =
     gameName.trim().length > 0 &&
@@ -156,9 +156,9 @@ export const FactoryV2StartWorkspace = ({
   };
 
   return (
-    <article className="mx-auto max-w-md sm:max-w-lg">
-      <div className={cn("rounded-[28px] border px-6 py-7 md:px-7 md:py-8", appearance.featureSurfaceClassName)}>
-        <div className="space-y-4">
+    <article className="w-full md:mx-auto md:max-w-3xl">
+      <div className={cn("rounded-[28px] border px-4 py-5 sm:px-5 sm:py-6 md:px-7 md:py-8", appearance.featureSurfaceClassName)}>
+        <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
           <FactoryV2StartSectionCard
             title="Launch basics"
             description="Choose the preset, name, and timing for this run."
@@ -177,7 +177,7 @@ export const FactoryV2StartWorkspace = ({
                   value={selectedPreset.id}
                   onChange={(event) => onSelectPreset(event.target.value)}
                   className={cn(
-                    "h-11 w-full appearance-none rounded-[18px] border border-black/10 bg-white/78 px-4 pr-11 text-center text-sm font-medium text-black outline-none transition-colors focus:border-black/25",
+                    "h-11 w-full appearance-none rounded-[18px] border border-black/10 bg-white/78 px-4 pr-11 text-left text-sm font-medium text-black outline-none transition-colors focus:border-black/25 md:text-center",
                     appearance.listItemClassName,
                   )}
                 >
@@ -220,7 +220,7 @@ export const FactoryV2StartWorkspace = ({
                 value={gameName}
                 onChange={(event) => onGameNameChange(event.target.value)}
                 placeholder={mode === "eternum" ? "etrn-sunrise-01" : "bltz-sprint-01"}
-                className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-center text-sm text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25"
+                className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-sm text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25 md:text-center"
               />
               {existingGameName ? (
                 <p className="mt-2 text-sm leading-6 text-black/50">
@@ -246,7 +246,7 @@ export const FactoryV2StartWorkspace = ({
                   type="datetime-local"
                   value={startAt}
                   onChange={(event) => onStartAtChange(event.target.value)}
-                  className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-center text-sm text-black outline-none transition-colors focus:border-black/25"
+                  className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-sm text-black outline-none transition-colors focus:border-black/25 md:text-center"
                 />
               </div>
 
@@ -264,7 +264,7 @@ export const FactoryV2StartWorkspace = ({
                       value={String(durationMinutes)}
                       onChange={(event) => onDurationChange(Number(event.target.value))}
                       className={cn(
-                        "h-11 w-full appearance-none rounded-[18px] border border-black/10 bg-white/78 px-4 pr-11 text-center text-sm font-medium text-black outline-none transition-colors focus:border-black/25",
+                        "h-11 w-full appearance-none rounded-[18px] border border-black/10 bg-white/78 px-4 pr-11 text-left text-sm font-medium text-black outline-none transition-colors focus:border-black/25 md:text-center",
                         appearance.listItemClassName,
                       )}
                     >
@@ -333,31 +333,14 @@ export const FactoryV2StartWorkspace = ({
             />
           </FactoryV2StartSectionCard>
 
-          <div className={cn("space-y-3 rounded-[22px] px-4 py-4 text-left", appearance.quietSurfaceClassName)}>
-            <div className="flex flex-wrap gap-2">
-              {launchSummaryItems.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] font-medium text-black/56"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={onLaunch}
-              disabled={!canLaunch}
-              className={cn(
-                "inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                launchButtonClassName,
-              )}
-            >
-              <Rocket className="h-5 w-5" />
-              {launchLabel}
-            </button>
-          </div>
+          <FactoryV2LaunchActionBar
+            launchSummaryItems={launchSummaryItems}
+            launchLabel={launchLabel}
+            canLaunch={canLaunch}
+            appearanceClassName={appearance.quietSurfaceClassName}
+            buttonClassName={launchButtonClassName}
+            onLaunch={onLaunch}
+          />
         </div>
       </div>
     </article>
@@ -375,7 +358,7 @@ const FactoryV2StartSectionCard = ({
   appearanceClassName: string;
   children: ReactNode;
 }) => (
-  <section className={cn("space-y-4 rounded-[22px] px-4 py-4 text-left", appearanceClassName)}>
+  <section className={cn("space-y-4 rounded-[24px] border border-black/8 px-4 py-4 text-left sm:px-5 sm:py-5", appearanceClassName)}>
     <div className="space-y-1">
       <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{title}</div>
       <p className="text-sm leading-5 text-black/50">{description}</p>
@@ -395,7 +378,7 @@ const FactoryV2InlineOptionField = ({
   error: string | null;
   onChange: (value: string) => void;
 }) => (
-  <label className="block rounded-[18px] border border-black/8 bg-white/72 px-4 py-3">
+  <label className="block rounded-[20px] border border-black/8 bg-white/72 px-4 py-3.5">
     <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1">
         <span className="block text-[13px] font-medium leading-5 text-black/74">{field.label}</span>
@@ -442,7 +425,7 @@ const FactoryV2PlayStyleOption = ({
     onClick={onClick}
     aria-pressed={isEnabled}
     className={cn(
-      "w-full rounded-[16px] border px-3.5 py-2.5 text-left transition-all duration-200",
+      "w-full rounded-[18px] border px-4 py-3 text-left transition-all duration-200",
       isEnabled
         ? "border-black/16 bg-[rgba(255,252,247,0.82)] text-[#1b140f] shadow-[0_8px_20px_rgba(44,28,15,0.08)]"
         : cn(appearanceClassName, "text-black/70 shadow-none"),
@@ -466,4 +449,52 @@ const FactoryV2PlayStyleOption = ({
       <span className="text-[13px] font-semibold leading-5">{label}</span>
     </div>
   </button>
+);
+
+const FactoryV2LaunchActionBar = ({
+  launchSummaryItems,
+  launchLabel,
+  canLaunch,
+  appearanceClassName,
+  buttonClassName,
+  onLaunch,
+}: {
+  launchSummaryItems: string[];
+  launchLabel: string;
+  canLaunch: boolean;
+  appearanceClassName: string;
+  buttonClassName: string;
+  onLaunch: () => void;
+}) => (
+  <div
+    data-testid="factory-start-action-bar"
+    className={cn(
+      "sticky bottom-3 z-10 space-y-3 rounded-[24px] border border-black/10 px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom))] pt-4 text-left shadow-[0_18px_42px_rgba(23,15,8,0.16)] backdrop-blur-xl md:static md:rounded-[22px] md:border-black/8 md:px-4 md:py-4 md:shadow-none md:backdrop-blur-0",
+      appearanceClassName,
+    )}
+  >
+    <div className="flex flex-wrap gap-2">
+      {launchSummaryItems.map((item) => (
+        <span
+          key={item}
+          className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] font-medium text-black/56"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+
+    <button
+      type="button"
+      onClick={onLaunch}
+      disabled={!canLaunch}
+      className={cn(
+        "inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        buttonClassName,
+      )}
+    >
+      <Rocket className="h-5 w-5" />
+      {launchLabel}
+    </button>
+  </div>
 );

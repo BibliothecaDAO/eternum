@@ -7,7 +7,7 @@ export const FactoryV2Shell = ({ children }: { children: ReactNode }) => {
       <div className="pointer-events-none absolute left-[-6rem] top-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
       <div className="pointer-events-none absolute bottom-8 right-[-5rem] h-80 w-80 rounded-full bg-amber-500/10 blur-3xl" />
 
-      <main className="relative mx-auto flex min-h-screen max-w-[1600px] flex-col gap-6 px-4 pb-28 pt-6 md:px-6 md:pb-32 xl:px-8">
+      <main className="relative mx-auto flex min-h-screen max-w-[1600px] flex-col gap-4 px-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-0 md:gap-6 md:px-6 md:pb-32 md:pt-6 xl:px-8">
         {children}
       </main>
     </div>
