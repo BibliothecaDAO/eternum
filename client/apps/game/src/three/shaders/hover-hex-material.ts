@@ -166,7 +166,6 @@ export function createHoverHexMaterial(
     },
     setTime(time) {
       uniforms.time.value = time;
-      redrawHoverTexture(texture, uniforms);
     },
     setParameters(nextParameters) {
       if (nextParameters.baseColor !== undefined) {

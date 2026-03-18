@@ -124,10 +124,10 @@ currentSky.multiplyScalar(darkenFactor);
 
 ### Delivery Tracker
 
-- [ ] Stage 0: Eliminate CPU texture redraw in hover hex material
-- [ ] Stage 1: Path renderer batch rebuild throttling
-- [ ] Stage 2: Allocation reduction in hot paths
-- [ ] Stage 3: Visual correctness in effects
+- [x] Stage 0: Eliminate CPU texture redraw in hover hex material
+- [x] Stage 1: Path renderer batch rebuild throttling
+- [x] Stage 2: Allocation reduction in hot paths
+- [x] Stage 3: Visual correctness in effects
 
 ### Dependencies between stages
 

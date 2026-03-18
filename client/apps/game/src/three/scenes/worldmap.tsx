@@ -5766,7 +5766,6 @@ export default class WorldmapScene extends WarpTravel {
         );
       },
       prewarmChunkAssets: async (targetChunkKey) => {
-        await this.waitForStructureHydrationIdle(targetChunkKey);
         const startedAt = performance.now();
         await this.structureManager.prewarmChunkAssets(targetChunkKey);
         presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
@@ -5939,7 +5938,6 @@ export default class WorldmapScene extends WarpTravel {
           );
         },
         prewarmChunkAssets: async (targetChunkKey) => {
-          await this.waitForStructureHydrationIdle(targetChunkKey);
           const startedAt = performance.now();
           await this.structureManager.prewarmChunkAssets(targetChunkKey);
           presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;

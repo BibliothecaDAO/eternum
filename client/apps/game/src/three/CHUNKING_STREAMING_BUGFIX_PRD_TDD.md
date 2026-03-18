@@ -129,11 +129,11 @@ All fixes operate on existing code paths without introducing new architectural s
 
 ### Delivery Tracker
 
-- [ ] Stage 0: Chunk Transition Safety Guards
-- [ ] Stage 1: Chunk Switch Critical Path — Remove Serialized Redundancy
-- [ ] Stage 2: Prewarm Correctness — Real Tile Fetch
+- [x] Stage 0: Chunk Transition Safety Guards
+- [x] Stage 1: Chunk Switch Critical Path — Remove Serialized Redundancy
+- [x] Stage 2: Prewarm Correctness — Real Tile Fetch
 - [x] Stage 3: Post-Commit Catch-Up Queue Throughput
-- [ ] Stage 4: Matrix Cache Eviction Under Pinning Pressure
+- [x] Stage 4: Matrix Cache Eviction Under Pinning Pressure
 - [x] Stage 5: Chunk Registration Order Data Structure
 
 ### Dependencies

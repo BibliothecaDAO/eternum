@@ -104,6 +104,52 @@ describe("hover hex material factory", () => {
     expect(Array.from(secondFrame)).toEqual(Array.from(firstFrame));
   });
 
+  it("setTime does NOT trigger texture redraw — texture bytes unchanged", () => {
+    const subject = createHoverHexMaterial();
+    const texture = subject.material.map as THREE.DataTexture;
+
+    // Snapshot texture after initial creation
+    const beforeSetTime = new Uint8Array(texture.image.data as Uint8Array);
+    texture.needsUpdate = false;
+
+    subject.setTime(42);
+
+    const afterSetTime = texture.image.data as Uint8Array;
+    expect(Array.from(afterSetTime)).toEqual(Array.from(beforeSetTime));
+  });
+
+  it("setTime still updates the time uniform value", () => {
+    const subject = createHoverHexMaterial();
+    expect(subject.uniforms.time.value).toBe(0);
+
+    subject.setTime(3.14);
+    expect(subject.uniforms.time.value).toBe(3.14);
+  });
+
+  it("setPalette still triggers a texture redraw (regression guard)", () => {
+    const subject = createHoverHexMaterial();
+    const texture = subject.material.map as THREE.DataTexture;
+    const before = new Uint8Array(texture.image.data as Uint8Array);
+
+    subject.setPalette(0xff0000, 0x00ff00, 0.8);
+
+    const after = texture.image.data as Uint8Array;
+    const changed = before.some((v, i) => v !== after[i]);
+    expect(changed).toBe(true);
+  });
+
+  it("setParameters still triggers a texture redraw (regression guard)", () => {
+    const subject = createHoverHexMaterial();
+    const texture = subject.material.map as THREE.DataTexture;
+    const before = new Uint8Array(texture.image.data as Uint8Array);
+
+    subject.setParameters({ borderThickness: 0.5, intensity: 1.0 });
+
+    const after = texture.image.data as Uint8Array;
+    const changed = before.some((v, i) => v !== after[i]);
+    expect(changed).toBe(true);
+  });
+
   it("drops the interior fill so the selector reads as an outline only", () => {
     const subject = createHoverHexMaterial();
     const texture = subject.material.map as THREE.DataTexture;

@@ -117,10 +117,10 @@ The bugs are gaps in these existing seams, not missing seams. Each fix adds the 
 
 ### Delivery Tracker
 
-- [ ] Stage 0: HexagonScene Lifecycle Leaks
-- [ ] Stage 1: HexceptionScene Subscription Leaks
-- [ ] Stage 2: WorldmapScene Timer and Effect Cleanup
-- [ ] Stage 3: Manager Cleanup Ordering
+- [x] Stage 0: HexagonScene Lifecycle Leaks
+- [x] Stage 1: HexceptionScene Subscription Leaks
+- [x] Stage 2: WorldmapScene Timer and Effect Cleanup
+- [x] Stage 3: Manager Cleanup Ordering
 
 ### Dependencies
 
