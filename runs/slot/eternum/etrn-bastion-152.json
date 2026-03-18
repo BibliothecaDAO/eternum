@@ -8,19 +8,19 @@
   "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/eternum/etrn-bastion-152/23237887881-1.json",
-  "latestLaunchRequestId": "23237887881-1",
+  "inputPath": "inputs/slot/eternum/etrn-bastion-152/23237963187-1.json",
+  "latestLaunchRequestId": "23237963187-1",
   "currentStepId": "create-world",
   "createdAt": "2026-03-18T09:26:36.014Z",
-  "updatedAt": "2026-03-18T09:29:12.816Z",
+  "updatedAt": "2026-03-18T09:30:32.756Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23237887881,
+    "workflowRunId": 23237963187,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23237887881",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23237963187",
     "ref": "credence0x/factory-v2-polish",
-    "sha": "2bc5ec1ac9a321cf28f559590163258b5a078cd2"
+    "sha": "ed886a7ba82cda3945033dd009c52c40e288b74d"
   },
   "steps": [
     {
