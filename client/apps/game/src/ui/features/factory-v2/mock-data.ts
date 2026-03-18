@@ -5,17 +5,11 @@ import {
   getFactoryPresetById,
   getPresetStartAtValue,
 } from "./catalog";
-import type {
-  FactoryGameMode,
-  FactoryLaunchPreset,
-  FactoryRun,
-  FactoryRunStatus,
-  FactoryRunStep,
-} from "./types";
+import type { FactoryGameMode, FactoryLaunchPreset, FactoryRun, FactoryRunStatus, FactoryRunStep } from "./types";
 
-const buildRun = (run: Omit<FactoryRun, "status" | "summary">): FactoryRun => {
+const buildRun = (run: Omit<FactoryRun, "status" | "summary" | "syncKey">): FactoryRun => {
   const { status, summary } = describeRunState(run.steps);
-  return { ...run, status, summary };
+  return { ...run, syncKey: `${run.id}:${run.updatedAt}`, status, summary };
 };
 
 const buildStep = (step: FactoryRunStep): FactoryRunStep => step;
@@ -286,16 +280,16 @@ const resolveRequestedRunName = (
 export const getDefaultRunIdForMode = (mode: FactoryGameMode, runs: FactoryRun[] = factoryRuns) =>
   runs.find((run) => run.mode === mode)?.id ?? runs[0]?.id ?? "";
 
-export const getSuggestedGameName = (mode: FactoryGameMode, environment: string, runs: FactoryRun[] = factoryRuns) =>
+const getSuggestedGameName = (mode: FactoryGameMode, environment: string, runs: FactoryRun[] = factoryRuns) =>
   resolveRequestedRunName(mode, environment, runs);
 
-export const getDefaultRunIdForSelection = (
+const getDefaultRunIdForSelection = (
   mode: FactoryGameMode,
   environment: string,
   runs: FactoryRun[] = factoryRuns,
 ) => runs.find((run) => run.mode === mode && run.environment === environment)?.id ?? getDefaultRunIdForMode(mode, runs);
 
-export const getFactoryRunsForSelection = (runs: FactoryRun[], mode: FactoryGameMode, environment: string) =>
+const getFactoryRunsForSelection = (runs: FactoryRun[], mode: FactoryGameMode, environment: string) =>
   runs.filter((run) => run.mode === mode && run.environment === environment);
 
 export const launchMockRun = ({
@@ -338,7 +332,7 @@ export const launchMockRun = ({
   return [newRun, ...existingRuns];
 };
 
-export const continueFactoryRun = (run: FactoryRun): FactoryRun => {
+const continueFactoryRun = (run: FactoryRun): FactoryRun => {
   const nextRunningStep = run.steps.find((step) => step.status === "running");
   if (nextRunningStep) {
     return rebuildRun(run, completeStepAndStartNext(run.steps, nextRunningStep.id));
@@ -352,7 +346,7 @@ export const continueFactoryRun = (run: FactoryRun): FactoryRun => {
   return rebuildRun(run, startPendingStep(run.steps, nextPendingStep.id));
 };
 
-export const retryFactoryRun = (run: FactoryRun): FactoryRun => {
+const retryFactoryRun = (run: FactoryRun): FactoryRun => {
   const blockedStep = run.steps.find((step) => step.status === "blocked" || step.status === "failed");
   if (!blockedStep) {
     return run;
@@ -361,7 +355,7 @@ export const retryFactoryRun = (run: FactoryRun): FactoryRun => {
   return rebuildRun(run, retryBlockedStep(run.steps, blockedStep.id));
 };
 
-export const refreshFactoryRun = (run: FactoryRun): FactoryRun =>
+const refreshFactoryRun = (run: FactoryRun): FactoryRun =>
   rebuildRun(
     run,
     run.steps.map((step) =>

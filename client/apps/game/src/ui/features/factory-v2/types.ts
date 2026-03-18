@@ -1,12 +1,34 @@
 import type { Chain } from "@contracts";
 
 export type FactoryGameMode = "eternum" | "blitz";
+export type FactoryRunStepId =
+  | "create-world"
+  | "wait-factory-index"
+  | "wait-for-factory-index"
+  | "apply-config"
+  | "configure-world"
+  | "grant-lootchest-role"
+  | "grant-village-pass"
+  | "grant-village-pass-role"
+  | "create-banks"
+  | "create-indexer"
+  | "wait-indexer"
+  | "sync-paymaster"
+  | "publish-ready-state";
+export type FactoryRecoveryStepId =
+  | "create-world"
+  | "wait-for-factory-index"
+  | "configure-world"
+  | "grant-lootchest-role"
+  | "grant-village-pass-role"
+  | "create-banks"
+  | "create-indexer";
 
 export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 
 export type FactoryStepStatus = "pending" | "running" | "succeeded" | "already_done" | "blocked" | "failed";
 
-export type FactoryWatcherKind = "launch" | "continue" | "retry" | "refresh";
+export type FactoryWatcherKind = "launch" | "continue" | "retry" | "refresh" | "reindex";
 export type FactoryPollingStatus = "idle" | "checking" | "live" | "paused";
 
 export type FactoryLaunchStartRule = "next_hour";
@@ -50,7 +72,7 @@ export interface FactoryDurationOption {
 }
 
 export interface FactoryRunStep {
-  id: string;
+  id: FactoryRunStepId;
   title: string;
   summary: string;
   workflowName: string;
@@ -61,6 +83,7 @@ export interface FactoryRunStep {
 
 export interface FactoryRun {
   id: string;
+  syncKey: string;
   mode: FactoryGameMode;
   name: string;
   environment: string;

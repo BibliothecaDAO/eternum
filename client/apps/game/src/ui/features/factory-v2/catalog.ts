@@ -26,22 +26,20 @@ export const factoryModeDefinitions: FactoryModeDefinition[] = [
   {
     id: "eternum",
     label: "Eternum",
-    strapline: "Long-form world launches with post-deploy follow-through.",
-    description:
-      "Eternum runs need explicit post-launch handling for roles, banks, indexing, and operator recovery when external systems lag behind.",
+    strapline: "Larger worlds with a few extra finishing touches.",
+    description: "Use this when you are launching a full Eternum world.",
     accentClassName: "from-gold/30 via-orange/20 to-red-900/30",
-    focusLabel: "Operator focus: safe recovery and long-running visibility",
-    stepPrinciples: ["Resume from the failed step", "Show external waits clearly", "Keep Eternum-only steps explicit"],
+    focusLabel: "Bigger launch, clearer recovery",
+    stepPrinciples: ["Keep the flow calm", "Show what needs attention", "Hide the heavy lifting"],
   },
   {
     id: "blitz",
     label: "Blitz",
-    strapline: "Fast launch paths with lighter recovery and faster operator feedback.",
-    description:
-      "Blitz runs should feel quick, obvious, and low-friction. The UI should emphasize speed, low ceremony, and clear completion.",
+    strapline: "Quick games with a short setup path.",
+    description: "Use this for fast games that should feel easy to start and easy to check.",
     accentClassName: "from-amber-200/30 via-orange-200/10 to-stone-900/35",
-    focusLabel: "Operator focus: launch speed and low-noise monitoring",
-    stepPrinciples: ["Fewer steps, less clutter", "Make success obvious", "Hide Eternum-only complexity"],
+    focusLabel: "Fast start, low noise",
+    stepPrinciples: ["Keep it simple", "Show progress clearly", "Hide extra setup"],
   },
 ];
 
@@ -49,8 +47,8 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
   {
     id: "eternum-ranked-season",
     mode: "eternum",
-    name: "Ranked season world",
-    description: "The normal long-form world.",
+    name: "Standard world",
+    description: "The usual Eternum launch.",
     defaults: {
       startRule: "next_hour",
       devMode: false,
@@ -61,8 +59,8 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
   {
     id: "eternum-sandbox-world",
     mode: "eternum",
-    name: "Season world",
-    description: "The live season launch.",
+    name: "Live world",
+    description: "Use this when the real world is ready to go live.",
     defaults: {
       startRule: "next_hour",
       devMode: false,
@@ -74,7 +72,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     id: "blitz-sandbox",
     mode: "blitz",
     name: "Sandbox",
-    description: "A roomy test run with dev mode on.",
+    description: "A long test game with dev mode on.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 5 * MINUTES_PER_DAY,
@@ -87,7 +85,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     id: "blitz-open",
     mode: "blitz",
     name: "Open",
-    description: "A balanced 90-minute blitz.",
+    description: "A standard 90-minute game.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 90,
@@ -100,7 +98,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     id: "blitz-duel",
     mode: "blitz",
     name: "Duel",
-    description: "The same pace, ready for head-to-head play.",
+    description: "A standard 90-minute head-to-head game.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 90,
@@ -113,7 +111,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     id: "blitz-fast",
     mode: "blitz",
     name: "Fast",
-    description: "A shorter run when you want a quicker turnaround.",
+    description: "A shorter one-hour game.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: MINUTES_PER_HOUR,

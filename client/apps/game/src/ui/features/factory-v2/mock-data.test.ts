@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getFactoryEnvironmentOptions, getFactoryLaunchPresetsForMode, getPresetStartAtValue } from "./catalog";
-import {
-  factoryRuns,
-  getDefaultRunIdForMode,
-  launchMockRun,
-} from "./mock-data";
+import { factoryRuns, getDefaultRunIdForMode, launchMockRun } from "./mock-data";
 import type { FactoryLaunchPreset } from "./types";
 
 describe("factory v2 mock data", () => {

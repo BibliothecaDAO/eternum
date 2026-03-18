@@ -33,14 +33,18 @@ export const buildBlitzDurationOptions = (
 ): FactoryDurationOption[] => {
   const durationMinutes = Array.from(
     new Set(
-      [...BLITZ_DURATION_PRESETS, ...presets.map((preset) => preset.defaults.durationMinutes), selectedDurationMinutes].filter(
-        (value): value is number => typeof value === "number",
-      ),
+      [
+        ...BLITZ_DURATION_PRESETS,
+        ...presets.map((preset) => preset.defaults.durationMinutes),
+        selectedDurationMinutes,
+      ].filter((value): value is number => typeof value === "number"),
     ),
   );
 
-  return durationMinutes.sort((left, right) => left - right).map((value) => ({
-    value,
-    label: formatFactoryDurationLabel(value),
-  }));
+  return durationMinutes
+    .sort((left, right) => left - right)
+    .map((value) => ({
+      value,
+      label: formatFactoryDurationLabel(value),
+    }));
 };

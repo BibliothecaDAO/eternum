@@ -4,26 +4,31 @@ import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
-import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 import {
   getCompletedStep,
   getCurrentStep,
   getEnvironmentLabel,
+  getNextStep,
   getRunDetailMessage,
   getRunHeadline,
   getRunProgressLabel,
   getRunStatusMeta,
+  getStepDetailMessage,
   getSimpleStepTitle,
   getStepStatusMeta,
-  getNextStep,
   resolveRunPrimaryAction,
 } from "../presenters";
+import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
+
+const FIRST_UPDATE_WAIT_MESSAGE = "We just started this game. Please wait a moment.";
+const AUTO_UPDATE_LABEL = "Updating automatically";
 
 export const FactoryV2WatchWorkspace = ({
   mode,
   runs,
   selectedRun,
   activeRunName,
+  acceptedRunMessage,
   watcher,
   pollingState,
   isWatcherBusy,
@@ -34,12 +39,14 @@ export const FactoryV2WatchWorkspace = ({
   onResolveRunByName,
   onContinue,
   onRetry,
+  onBringIndexerLive,
   onRefresh,
 }: {
   mode: FactoryGameMode;
   runs: FactoryRun[];
   selectedRun: FactoryRun | null;
   activeRunName: string | null;
+  acceptedRunMessage: string | null;
   watcher: FactoryWatcherState | null;
   pollingState: FactoryPollingState;
   isWatcherBusy: boolean;
@@ -50,6 +57,7 @@ export const FactoryV2WatchWorkspace = ({
   onResolveRunByName: (gameName: string) => Promise<boolean>;
   onContinue: () => void;
   onRetry: () => void;
+  onBringIndexerLive: () => void;
   onRefresh: () => void;
 }) => {
   const appearance = resolveFactoryModeAppearance(mode);
@@ -84,29 +92,37 @@ export const FactoryV2WatchWorkspace = ({
   const matchingRuns = resolveMatchingRunsByName(runs, isFilteringRuns ? watchGameName : "");
   const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
   const isPendingSelectedRun = Boolean(selectedRun && selectedRun.id.startsWith("pending:"));
+  const isAwaitingAcceptedUpdate = Boolean(acceptedRunMessage);
+  const showsInFlightState = isPendingSelectedRun || isAwaitingAcceptedUpdate;
   const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
   const currentStep = selectedRun ? getCurrentStep(selectedRun) : null;
   const completedStep = selectedRun ? getCompletedStep(selectedRun) : null;
   const nextStep = selectedRun ? getNextStep(selectedRun) : null;
-  const primaryAction = selectedRun ? resolveRunPrimaryAction(selectedRun) : null;
+  const primaryAction = selectedRun && !isWatcherBusy ? resolveRunPrimaryAction(selectedRun) : null;
   const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
   const currentStepLabel = isPendingSelectedRun
     ? `Starting ${selectedRun?.name ?? "your game"}`
     : currentStep
       ? getSimpleStepTitle(currentStep)
-      : "Everything is done";
+      : "Everything is ready";
   const detailMessage = selectedRun
     ? isPendingSelectedRun
-      ? watcher?.detail ?? "We are waiting for the first live status update from the launcher."
-      : watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun)
-    : "Type a game name to check it.";
+      ? (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE)
+      : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun))
+    : "Type a game name to open it.";
   const headline = selectedRun
     ? isPendingSelectedRun
       ? `Launching ${selectedRun.name}`
-      : getRunHeadline(selectedRun)
-    : watcher?.title ?? "Looking for your game";
-  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun);
+      : isAwaitingAcceptedUpdate
+        ? "Got it"
+        : getRunHeadline(selectedRun)
+    : (watcher?.title ?? "Find a game");
+  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
+  const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
+  const showsManualRefresh =
+    !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
+  const secondaryNotice = notice && notice !== detailMessage && !watcher ? notice : null;
   const selectRunByName = (value: string) => {
     setWatchGameName(value);
     setIsFilteringRuns(true);
@@ -186,9 +202,7 @@ export const FactoryV2WatchWorkspace = ({
             <ChevronDown className={cn("h-4 w-4 transition-transform", isPickerOpen ? "rotate-180" : "")} />
           </button>
           {isPickerOpen && matchingRuns.length > 0 ? (
-            <div
-              className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[18px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl"
-            >
+            <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[18px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl">
               <div className="border-b border-black/6 px-4 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34">
                 Choose a game
               </div>
@@ -219,8 +233,12 @@ export const FactoryV2WatchWorkspace = ({
             </div>
           ) : null}
         </div>
-        {lookupDisabledReason ? <p className="mt-2 text-center text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
-        {isResolvingRunName ? <p className="mt-2 text-center text-sm leading-6 text-black/50">Looking for that game.</p> : null}
+        {lookupDisabledReason ? (
+          <p className="mt-2 text-center text-sm leading-6 text-black/50">{lookupDisabledReason}</p>
+        ) : null}
+        {isResolvingRunName ? (
+          <p className="mt-2 text-center text-sm leading-6 text-black/50">Looking for that game.</p>
+        ) : null}
       </div>
 
       {selectedRun ? (
@@ -239,7 +257,7 @@ export const FactoryV2WatchWorkspace = ({
 
           <div className="relative space-y-4">
             <div className="space-y-2">
-              {isPendingSelectedRun ? (
+              {showsInFlightState ? (
                 <div className="flex justify-center">
                   <FactoryV2LoaderHalo pollingState={pollingState} />
                 </div>
@@ -247,18 +265,22 @@ export const FactoryV2WatchWorkspace = ({
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
                 {selectedRun.name} on {environmentLabel}
               </div>
-              <div className="flex justify-center">
-                <div
-                  className={cn(
-                    "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]",
-                    statusMeta?.className,
-                  )}
-                >
-                  {statusMeta?.label}
+              {!showsInFlightState ? (
+                <div className="flex justify-center">
+                  <div
+                    className={cn(
+                      "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]",
+                      statusMeta?.className,
+                    )}
+                  >
+                    {statusMeta?.label}
+                  </div>
                 </div>
-              </div>
+              ) : null}
               <h3 className="text-[1.35rem] font-semibold tracking-tight text-black">{headline}</h3>
-              <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
+              {!showsInFlightState ? (
+                <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
+              ) : null}
             </div>
 
             <div className={cn("rounded-[20px] px-4 py-3.5 text-left", appearance.quietSurfaceClassName)}>
@@ -268,7 +290,9 @@ export const FactoryV2WatchWorkspace = ({
             </div>
 
             <div className="grid gap-2 text-left">
-              {completedStep ? <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} /> : null}
+              {completedStep ? (
+                <FactoryV2StepMoment label="Done" stepLabel={getSimpleStepTitle(completedStep)} />
+              ) : null}
               {currentStep ? <FactoryV2StepMoment label="Now" stepLabel={currentStepLabel} /> : null}
               {nextStep ? <FactoryV2StepMoment label="Next" stepLabel={getSimpleStepTitle(nextStep)} /> : null}
             </div>
@@ -286,51 +310,61 @@ export const FactoryV2WatchWorkspace = ({
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              {primaryAction ? (
+              {visiblePrimaryAction ? (
                 <button
                   type="button"
-                  onClick={primaryAction.kind === "retry" ? onRetry : onContinue}
+                  onClick={visiblePrimaryAction.kind === "retry" ? onRetry : onContinue}
                   disabled={isWatcherBusy || Boolean(lookupDisabledReason)}
                   className={cn(
                     "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                    primaryAction.kind === "retry"
+                    visiblePrimaryAction.kind === "retry"
                       ? "bg-rose-600 text-white hover:bg-rose-700"
                       : appearance.primaryButtonClassName,
                   )}
                 >
-                  {primaryAction.kind === "retry" ? <RotateCcw className="h-4 w-4" /> : null}
-                  {isWatcherBusy ? "Checking..." : primaryAction.label}
+                  {visiblePrimaryAction.kind === "retry" ? <RotateCcw className="h-4 w-4" /> : null}
+                  {visiblePrimaryAction.label}
                 </button>
               ) : null}
 
-              <button
-                type="button"
-                onClick={onRefresh}
-                disabled={isWatcherBusy || Boolean(lookupDisabledReason)}
-                className={cn(
-                  "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                  appearance.secondaryButtonClassName,
-                )}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Check again
-              </button>
+              {showsManualRefresh ? (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  disabled={isWatcherBusy || Boolean(lookupDisabledReason)}
+                  className={cn(
+                    "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                    appearance.secondaryButtonClassName,
+                  )}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Check again
+                </button>
+              ) : null}
             </div>
 
-            {notice && !watcher ? <p className="text-sm leading-6 text-black/52">{notice}</p> : null}
+            {secondaryNotice ? <p className="text-sm leading-6 text-black/52">{secondaryNotice}</p> : null}
 
             <button
               type="button"
               onClick={() => setShowAllSteps((open) => !open)}
               className="text-sm font-medium text-black/58 transition-colors hover:text-black"
             >
-              {showAllSteps ? "Hide steps" : "See all steps"}
+              {showAllSteps ? "Hide details" : "See details"}
             </button>
 
             {showAllSteps ? (
               <div className="space-y-2 border-t border-black/8 pt-3 text-left">
                 {selectedRun.steps.map((step) => (
-                  <FactoryV2StepSummary key={step.id} step={step} />
+                  <FactoryV2StepSummary
+                    key={step.id}
+                    step={step}
+                    manualAction={resolveStepSummaryAction(step, {
+                      isWatcherBusy,
+                      isBlocked: Boolean(lookupDisabledReason) || showsInFlightState,
+                      onBringIndexerLive,
+                    })}
+                  />
                 ))}
               </div>
             ) : null}
@@ -342,31 +376,23 @@ export const FactoryV2WatchWorkspace = ({
             <div className="flex justify-center">
               <FactoryV2LoaderHalo pollingState={pollingState} />
             </div>
-            <div className="flex justify-center">
-              <div className="rounded-full border border-amber-300/50 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
-                {watcher?.statusLabel ?? "Watching"}
-              </div>
-            </div>
             <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">
-              {watcher?.title ?? `Watching ${launchPlaceholderName}`}
+              {watcher?.title ?? `Opening ${launchPlaceholderName}`}
             </h3>
-            <p className="text-sm leading-6 text-black/56">
-              {watcher?.detail ?? notice ?? "We are still waiting for the first live status update from the launcher."}
-            </p>
-            <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
-            {notice ? <p className="text-sm leading-6 text-black/52">{notice}</p> : null}
+            <p className="text-sm leading-6 text-black/56">{watcher?.detail ?? notice ?? FIRST_UPDATE_WAIT_MESSAGE}</p>
+            {notice && notice !== (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE) ? (
+              <p className="text-sm leading-6 text-black/52">{notice}</p>
+            ) : null}
             <div className={cn("rounded-[18px] px-4 py-3 text-left", appearance.quietSurfaceClassName)}>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
               <div className="mt-2 text-[15px] font-semibold text-black">Starting {launchPlaceholderName}</div>
-              <p className="mt-2 text-sm leading-5 text-black/56">
-                We are waiting for the first live status update from the launcher.
-              </p>
+              <p className="mt-2 text-sm leading-5 text-black/56">{FIRST_UPDATE_WAIT_MESSAGE}</p>
             </div>
           </div>
         </div>
       ) : (
         <div className={cn("rounded-[26px] border p-5 text-center md:p-6", appearance.featureSurfaceClassName)}>
-          <div className="text-sm leading-6 text-black/58">Type a game name and press Enter to check it.</div>
+          <div className="text-sm leading-6 text-black/58">Type a game name and press Enter.</div>
         </div>
       )}
     </article>
@@ -381,18 +407,23 @@ const FactoryV2LiveStatus = ({
   liveStatusLabel: string;
 }) => (
   <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-black/8 bg-white/45 px-3 py-1.5 text-[12px] text-black/52">
-    <div
-      className={cn(
-        "h-2.5 w-2.5 rounded-full",
-        pollingState.status === "idle"
-          ? "bg-black/18"
-          : pollingState.status === "paused"
-          ? "bg-rose-400"
-          : pollingState.status === "checking"
-            ? "animate-pulse bg-amber-400"
-            : "bg-emerald-400",
-      )}
-    />
+    <div className="relative flex h-3.5 w-3.5 items-center justify-center">
+      {pollingState.status === "live" ? (
+        <div className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-emerald-400/55" />
+      ) : null}
+      <div
+        className={cn(
+          "relative h-2.5 w-2.5 rounded-full",
+          pollingState.status === "idle"
+            ? "bg-black/18"
+            : pollingState.status === "paused"
+              ? "bg-rose-500"
+              : pollingState.status === "checking"
+                ? "animate-pulse bg-amber-500"
+                : "bg-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.8)]",
+        )}
+      />
+    </div>
     <span>{liveStatusLabel}</span>
   </div>
 );
@@ -413,12 +444,7 @@ const FactoryV2LoaderHalo = ({ pollingState }: { pollingState: FactoryPollingSta
           : "animate-spin border-t-amber-500 border-r-amber-300/70",
       )}
     />
-    <div
-      className={cn(
-        "h-3 w-3 rounded-full",
-        pollingState.status === "paused" ? "bg-rose-400" : "bg-amber-400",
-      )}
-    />
+    <div className={cn("h-3 w-3 rounded-full", pollingState.status === "paused" ? "bg-rose-400" : "bg-amber-400")} />
   </div>
 );
 
@@ -449,7 +475,13 @@ const resolveMatchingRunsByName = (runs: FactoryRun[], requestedName: string) =>
   return runs.filter((run) => run.name.trim().toLowerCase().includes(normalizedName));
 };
 
-const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) => {
+const FactoryV2StepSummary = ({
+  step,
+  manualAction,
+}: {
+  step: FactoryRun["steps"][number];
+  manualAction: FactoryV2StepManualAction | null;
+}) => {
   const statusMeta = getStepStatusMeta(step.status);
 
   return (
@@ -467,27 +499,76 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
             {statusMeta.label}
           </div>
         </div>
-        <div className="mt-2 text-sm leading-6 text-black/56">{step.latestEvent}</div>
+        <div className="mt-2 text-sm leading-6 text-black/56">{getStepDetailMessage(step)}</div>
+        {manualAction ? (
+          <div className="mt-3 space-y-2 rounded-[14px] border border-black/8 bg-white/55 px-3 py-2.5">
+            <div className="text-[12px] leading-5 text-black/52">{manualAction.description}</div>
+            <button
+              type="button"
+              onClick={manualAction.onPress}
+              className="inline-flex items-center justify-center rounded-full border border-black/12 bg-black/[0.05] px-3 py-1.5 text-[12px] font-semibold text-black transition-colors hover:bg-black/[0.08]"
+            >
+              {manualAction.label}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
 };
 
-function buildLiveStatusLabel(pollingState: FactoryPollingState, isPendingRun: boolean) {
+interface FactoryV2StepManualAction {
+  label: string;
+  description: string;
+  onPress: () => void;
+}
+
+function resolveStepSummaryAction(
+  step: FactoryRun["steps"][number],
+  options: {
+    isWatcherBusy: boolean;
+    isBlocked: boolean;
+    onBringIndexerLive: () => void;
+  },
+): FactoryV2StepManualAction | null {
+  if (step.status === "running" || options.isWatcherBusy || options.isBlocked) {
+    return null;
+  }
+
+  if (step.id !== "create-indexer" && step.id !== "wait-indexer") {
+    return null;
+  }
+
+  return {
+    label: "Bring indexer live",
+    description: "Use this if the indexer was deleted or needs to be started again.",
+    onPress: options.onBringIndexerLive,
+  };
+}
+
+function buildLiveStatusLabel(
+  pollingState: FactoryPollingState,
+  isPendingRun: boolean,
+  runStatus: FactoryRun["status"] | null,
+) {
   if (pollingState.status === "paused") {
     return pollingState.detail;
   }
 
   if (isPendingRun) {
-    return "Waiting for first live update";
+    return "Getting ready";
   }
 
   if (pollingState.status === "checking") {
-    return "Checking live status";
+    return AUTO_UPDATE_LABEL;
+  }
+
+  if (runStatus === "complete") {
+    return "All set";
   }
 
   if (pollingState.lastCheckedAt) {
-    return "Watching live";
+    return AUTO_UPDATE_LABEL;
   }
 
   return pollingState.detail;
