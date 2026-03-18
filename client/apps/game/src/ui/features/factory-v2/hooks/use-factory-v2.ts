@@ -12,11 +12,6 @@ import {
   type FactoryWorkerLaunchStepId,
 } from "../api/factory-worker";
 import {
-  rememberFactoryAutoRecoveryPlan,
-  resolveFactoryAutoRecoveryLimitNotice,
-  resolveFactoryAutoRecoveryPlan,
-} from "../auto-recovery";
-import {
   factoryModeDefinitions,
   getDefaultEnvironmentIdForMode,
   getDefaultPresetIdForModeSelection,
@@ -51,6 +46,11 @@ interface AcceptedRunState {
   latestEvent: string;
 }
 
+interface GuidedRecoveryState {
+  runId: string;
+  lastContinueActionKey: string | null;
+}
+
 export const useFactoryV2 = () => {
   const initialMode: FactoryGameMode = "eternum";
   const initialEnvironmentId = getDefaultEnvironmentIdForMode(initialMode);
@@ -70,6 +70,7 @@ export const useFactoryV2 = () => {
   const [singleRealmMode, setSingleRealmMode] = useState(initialPreset?.defaults.singleRealmMode ?? false);
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
   const [acceptedRunState, setAcceptedRunState] = useState<AcceptedRunState | null>(null);
+  const [guidedRecoveryState, setGuidedRecoveryState] = useState<GuidedRecoveryState | null>(null);
   const [pendingRunName, setPendingRunName] = useState<string | null>(null);
   const [pendingRunEnvironmentId, setPendingRunEnvironmentId] = useState<string | null>(null);
   const [pendingRunMode, setPendingRunMode] = useState<FactoryGameMode | null>(null);
@@ -319,36 +320,42 @@ export const useFactoryV2 = () => {
       return;
     }
 
-    const autoRecoveryPlan = resolveFactoryAutoRecoveryPlan(selectedRun);
-
-    if (!autoRecoveryPlan) {
-      const autoRecoveryLimitNotice = resolveFactoryAutoRecoveryLimitNotice(selectedRun);
-
-      if (autoRecoveryLimitNotice && notice !== autoRecoveryLimitNotice) {
-        setNotice(autoRecoveryLimitNotice);
-      }
-
+    if (guidedRecoveryState?.runId !== selectedRun.id) {
       return;
     }
 
-    rememberFactoryAutoRecoveryPlan(selectedRun.id, autoRecoveryPlan);
+    const primaryAction = resolveRunPrimaryAction(selectedRun);
+
+    if (!primaryAction) {
+      clearGuidedRecoveryState(selectedRun.id);
+      return;
+    }
+
+    if (primaryAction.kind !== "continue") {
+      return;
+    }
+
+    const continueActionKey = buildGuidedRecoveryActionKey(selectedRun, primaryAction.launchScope);
+
+    if (guidedRecoveryState.lastContinueActionKey === continueActionKey) {
+      return;
+    }
 
     void runWatchedAction(
       {
-        kind: autoRecoveryPlan.kind,
+        kind: "continue",
         gameName: selectedRun.name,
-        title:
-          autoRecoveryPlan.kind === "retry" ? `Trying ${selectedRun.name} again` : `Continuing ${selectedRun.name}`,
-        detail: autoRecoveryPlan.detail,
-        workflowName: autoRecoveryPlan.launchScope,
-        statusLabel: autoRecoveryPlan.statusLabel,
+        title: `Continuing ${selectedRun.name}`,
+        detail: "Picking up where this game stopped.",
+        workflowName: primaryAction.launchScope,
+        statusLabel: "Working",
       },
       async () => {
         try {
           await continueFactoryRun({
             environment: environmentId,
             gameName: selectedRun.name,
-            launchStep: autoRecoveryPlan.launchScope,
+            launchStep: primaryAction.launchScope,
           });
         } catch (error) {
           const openedConflictingRun = await openConflictingRunIfPresent(
@@ -365,13 +372,14 @@ export const useFactoryV2 = () => {
           throw error;
         }
 
-        acceptRunStepLocally(environmentId, selectedRun, autoRecoveryPlan.stepId, autoRecoveryPlan.notice);
+        rememberGuidedRecoveryContinue(selectedRun.id, continueActionKey);
+        acceptRunStepLocally(environmentId, selectedRun, primaryAction.stepId, "That part worked. Moving on now.");
       },
     );
   }, [
     environmentUnavailableReason,
+    guidedRecoveryState,
     isWatcherBusy,
-    notice,
     selectedRun?.environment,
     selectedRun?.id,
     selectedRun?.status,
@@ -558,6 +566,7 @@ export const useFactoryV2 = () => {
 
           throw error;
         }
+        armGuidedRecovery(selectedRun.id);
         acceptRunStepLocally(environmentId, selectedRun, stepId, "Got it. We are trying again now.");
       },
     );
@@ -615,6 +624,7 @@ export const useFactoryV2 = () => {
             ? "Got it. Starting this game again from the top."
             : "Got it. We are trying that part again.",
         );
+        armGuidedRecovery(selectedRun.id);
       },
     );
   };
@@ -788,6 +798,7 @@ export const useFactoryV2 = () => {
   function clearTransientState() {
     setNotice(null);
     setAcceptedRunState(null);
+    setGuidedRecoveryState(null);
     setPendingRunName(null);
     setPendingRunEnvironmentId(null);
     setPendingRunMode(null);
@@ -824,6 +835,10 @@ export const useFactoryV2 = () => {
     setPendingRunEnvironmentId(null);
     setPendingRunMode(null);
     setNotice(null);
+
+    if (nextRun.status === "complete") {
+      clearGuidedRecoveryState(nextRun.id);
+    }
   }
 
   function acceptRunStepLocally(
@@ -849,6 +864,38 @@ export const useFactoryV2 = () => {
       lastCheckedAt: Date.now(),
     });
     setNotice(latestEvent);
+  }
+
+  function armGuidedRecovery(runId: string) {
+    setGuidedRecoveryState({
+      runId,
+      lastContinueActionKey: null,
+    });
+  }
+
+  function rememberGuidedRecoveryContinue(runId: string, actionKey: string) {
+    setGuidedRecoveryState((currentState) =>
+      currentState?.runId === runId
+        ? {
+            ...currentState,
+            lastContinueActionKey: actionKey,
+          }
+        : currentState,
+    );
+  }
+
+  function clearGuidedRecoveryState(runId?: string) {
+    setGuidedRecoveryState((currentState) => {
+      if (!currentState) {
+        return null;
+      }
+
+      if (runId && currentState.runId !== runId) {
+        return currentState;
+      }
+
+      return null;
+    });
   }
 
   async function refreshEnvironmentRuns(environmentId: FactoryWorkerEnvironmentId) {
@@ -980,6 +1027,10 @@ function buildSuggestedGameName(mode: FactoryGameMode, runs: FactoryRun[]) {
 
 function buildPendingRunId(environmentId: string, gameName: string) {
   return `pending:${environmentId}:${gameName}`;
+}
+
+function buildGuidedRecoveryActionKey(run: FactoryRun, launchScope: string) {
+  return `${run.id}|${run.syncKey}|${launchScope}`;
 }
 
 function isPendingRun(run: FactoryRun) {
