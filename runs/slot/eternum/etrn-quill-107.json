@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23232042297-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-18T06:27:02.391Z",
-  "updatedAt": "2026-03-18T06:28:52.973Z",
+  "updatedAt": "2026-03-18T06:28:54.144Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,9 +80,10 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Create indexer started",
+      "startedAt": "2026-03-18T06:28:54.144Z"
     }
   ],
   "artifacts": {
@@ -93,5 +94,13 @@
     "lootChestRoleTxHash": "0x4c69dee523dc21c8ba7c90a07caae86cfe59fe25ee08add46ed6989f8e8bcec",
     "villagePassRoleTxHash": "0x1ea6f6308bad096143f920c1e08a7abbd0c42247a7971567aa787e1d767b3ff",
     "createBanksTxHash": "0x6abb6f275d65b9ed59dc9aa1c24b7f4ee11b0eba97489aab3abe1b5142455e6"
+  },
+  "activeLease": {
+    "launchRequestId": "23232042297-1",
+    "workflowRunId": 23232042297,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-18T06:28:54.144Z",
+    "expiresAt": "2026-03-18T07:13:54.144Z"
   }
 }
