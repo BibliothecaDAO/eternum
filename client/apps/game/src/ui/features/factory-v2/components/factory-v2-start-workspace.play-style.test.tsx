@@ -152,12 +152,15 @@ describe("FactoryV2StartWorkspace play style", () => {
       await waitForAsyncWork();
     });
 
-    const startTimeInput = container.querySelector<HTMLInputElement>("#factory-start-at");
-    const launchGrid = startTimeInput?.closest(".grid");
+    const startDateInput = container.querySelector<HTMLInputElement>("#factory-start-date");
+    const startTimeInput = container.querySelector<HTMLInputElement>("#factory-start-time");
+    const launchGrid = startDateInput?.closest(".grid");
 
+    expect(container.querySelector("#factory-start-at")).toBeNull();
+    expect(startDateInput?.className).toContain("min-w-0");
+    expect(startDateInput?.className).toContain("max-w-full");
     expect(startTimeInput?.className).toContain("min-w-0");
     expect(startTimeInput?.className).toContain("max-w-full");
-    expect(startTimeInput?.className).toContain("overflow-hidden");
     expect(launchGrid?.className).toContain("min-w-0");
   });
 
