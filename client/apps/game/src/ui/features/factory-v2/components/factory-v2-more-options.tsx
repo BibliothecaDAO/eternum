@@ -4,10 +4,10 @@ import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import type { FactoryMapOptionSection, FactoryMapOptionsDraft, FactoryMapOptionsErrors } from "../map-options";
 import type { FactoryGameMode } from "../types";
 
-const buildInitialExpandedSectionIds = (sections: FactoryMapOptionSection[]) =>
-  sections[0] ? [sections[0].id] : [];
+const buildInitialExpandedSectionIds = (sections: FactoryMapOptionSection[]) => (sections[0] ? [sections[0].id] : []);
 
-const buildSectionIdSignature = (sections: FactoryMapOptionSection[]) => sections.map((section) => section.id).join("|");
+const buildSectionIdSignature = (sections: FactoryMapOptionSection[]) =>
+  sections.map((section) => section.id).join("|");
 
 export const FactoryV2MoreOptions = ({
   mode,
@@ -73,15 +73,21 @@ export const FactoryV2MoreOptions = ({
                 </span>
               ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-black/45">Chance fields use percentages. Time fields use minutes where shown.</p>
+            <p className="mt-1 text-[11px] text-black/45">
+              Chance fields use percentages. Time fields use minutes where shown.
+            </p>
           </div>
-          <ChevronDown className={cn("h-4 w-4 flex-shrink-0 text-black/55 transition-transform", isOpen && "rotate-180")} />
+          <ChevronDown
+            className={cn("h-4 w-4 flex-shrink-0 text-black/55 transition-transform", isOpen && "rotate-180")}
+          />
         </div>
       </button>
 
       {isOpen ? (
         <div className="space-y-2 rounded-[20px] border border-black/10 bg-white/45 p-3 text-left">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-black/40">Compact overrides for this launch only.</p>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-black/40">
+            Compact overrides for this launch only.
+          </p>
 
           {sections.map((section) => (
             <div key={section.id} className="overflow-hidden rounded-[18px] border border-black/10 bg-white/60">

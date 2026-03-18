@@ -115,12 +115,7 @@ export const FactoryV2Content = () => {
   };
 
   return (
-    <section
-      className={cn(
-        "relative overflow-hidden md:rounded-[36px] md:border md:p-8",
-        appearance.canvasClassName,
-      )}
-    >
+    <section className={cn("relative overflow-hidden md:rounded-[36px] md:border md:p-8", appearance.canvasClassName)}>
       <div className={cn("pointer-events-none absolute inset-0", appearance.backdropClassName)} />
       <div className="relative mx-auto max-w-6xl space-y-4 pt-3 md:space-y-6 md:pt-0">
         <div className={cn("px-2 pb-4 md:border-b md:px-0 md:pb-6", appearance.sectionDividerClassName)}>

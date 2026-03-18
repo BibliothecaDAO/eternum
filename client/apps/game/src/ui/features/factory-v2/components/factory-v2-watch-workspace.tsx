@@ -338,7 +338,9 @@ const FactoryV2WatchRunCard = ({
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Recent steps</div>
-          <p className="text-[13px] leading-5 text-black/52">See what finished, what is running, and what comes next.</p>
+          <p className="text-[13px] leading-5 text-black/52">
+            See what finished, what is running, and what comes next.
+          </p>
         </div>
         <div className="grid gap-2">
           {completedStep ? (
@@ -353,7 +355,10 @@ const FactoryV2WatchRunCard = ({
         <div className="text-center text-[13px] text-black/54">{getRunProgressLabel(selectedRun)}</div>
         <div className="flex gap-2">
           {selectedRun.steps.map((step) => (
-            <div key={step.id} className={cn("h-1.5 flex-1 rounded-full", getStepStatusMeta(step.status).railClassName)} />
+            <div
+              key={step.id}
+              className={cn("h-1.5 flex-1 rounded-full", getStepStatusMeta(step.status).railClassName)}
+            />
           ))}
         </div>
       </div>
@@ -400,7 +405,10 @@ const FactoryV2WatchPendingCard = ({
   primaryNotice: string;
   secondaryNotice: string | null;
 }) => (
-  <FactoryV2WatchSurfaceCard appearanceClassName={appearance.featureSurfaceClassName} dataTestId="factory-watch-pending-panel">
+  <FactoryV2WatchSurfaceCard
+    appearanceClassName={appearance.featureSurfaceClassName}
+    dataTestId="factory-watch-pending-panel"
+  >
     <div className="mx-auto max-w-sm space-y-4 text-center">
       <div className="flex justify-center">
         <FactoryV2LoaderHalo pollingState={pollingState} />
@@ -455,7 +463,10 @@ const FactoryV2WatchSurfaceCard = ({
   >
     {artGlowClassName ? (
       <div
-        className={cn("pointer-events-none absolute right-[-3rem] top-[-3rem] h-28 w-28 rounded-full blur-3xl", artGlowClassName)}
+        className={cn(
+          "pointer-events-none absolute right-[-3rem] top-[-3rem] h-28 w-28 rounded-full blur-3xl",
+          artGlowClassName,
+        )}
       />
     ) : null}
     <div className="relative">{children}</div>

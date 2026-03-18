@@ -90,13 +90,7 @@ export const FactoryV2ModeSwitch = ({
   );
 };
 
-const FactoryV2ToggleGroup = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) => (
+const FactoryV2ToggleGroup = ({ title, children }: { title: string; children: ReactNode }) => (
   <div className="space-y-2 text-center">
     <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/42">{title}</div>
     {children}

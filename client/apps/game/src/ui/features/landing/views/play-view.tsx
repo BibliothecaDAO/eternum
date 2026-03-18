@@ -934,9 +934,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   return (
     <MarketsProviders>
-      <div
-        className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}
-      >
+      <div className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}>
         {/* Tab content */}
         {renderContent()}
       </div>

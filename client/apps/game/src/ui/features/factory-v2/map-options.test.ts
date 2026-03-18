@@ -17,9 +17,7 @@ describe("Factory V2 map options", () => {
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
       "Essence Rift chance",
     );
-    expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).not.toContain(
-      "Max players",
-    );
+    expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).not.toContain("Max players");
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).not.toContain(
       "Bitcoin Mine chance",
     );

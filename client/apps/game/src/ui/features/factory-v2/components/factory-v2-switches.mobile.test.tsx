@@ -48,8 +48,24 @@ describe("Factory V2 mobile switches", () => {
       root.render(
         <FactoryV2ModeSwitch
           modes={[
-            { id: "eternum", label: "Eternum", strapline: "", description: "", accentClassName: "", focusLabel: "", stepPrinciples: [] },
-            { id: "blitz", label: "Blitz", strapline: "", description: "", accentClassName: "", focusLabel: "", stepPrinciples: [] },
+            {
+              id: "eternum",
+              label: "Eternum",
+              strapline: "",
+              description: "",
+              accentClassName: "",
+              focusLabel: "",
+              stepPrinciples: [],
+            },
+            {
+              id: "blitz",
+              label: "Blitz",
+              strapline: "",
+              description: "",
+              accentClassName: "",
+              focusLabel: "",
+              stepPrinciples: [],
+            },
           ]}
           selectedMode="eternum"
           environmentOptions={[
