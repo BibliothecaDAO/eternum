@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23237185636-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-18T09:01:44.243Z",
-  "updatedAt": "2026-03-18T09:11:10.990Z",
+  "updatedAt": "2026-03-18T09:11:12.191Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Configure world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Configure world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Configure world started",
+      "startedAt": "2026-03-18T09:11:12.191Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-kick-961.json",
     "createGameTxHash": "0x66fbf1aa5373add06f85f310a713fa3d162c1c51b91b40df887cb2109219b5c",
     "worldAddress": "0x013e140e9ecf5786656487b5c78252478a87523531be89a5676a5ca65186fe3e"
+  },
+  "activeLease": {
+    "launchRequestId": "23237185636-1",
+    "workflowRunId": 23237185636,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-18T09:11:12.191Z",
+    "expiresAt": "2026-03-18T09:56:12.191Z"
   }
 }
