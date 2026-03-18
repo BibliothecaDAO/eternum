@@ -29,6 +29,13 @@ const getPresetFacts = (preset: FactoryLaunchPreset) =>
     preset.defaults.devMode ? "Test mode" : null,
   ].filter(Boolean);
 
+const FACTORY_FIELD_CONTROL_CLASS_NAME =
+  "mt-2 block h-11 w-full min-w-0 max-w-full rounded-[18px] border border-black/10 bg-white/78 px-3 text-left text-[13px] text-black outline-none transition-colors focus:border-black/25 md:px-4 md:text-center md:text-sm";
+
+const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} appearance-none pr-11 font-medium`;
+
+const FACTORY_DATETIME_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} overflow-hidden pr-2 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-2 [&::-webkit-calendar-picker-indicator]:flex-shrink-0 [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:text-left md:[&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0`;
+
 export const FactoryV2StartWorkspace = ({
   mode,
   modeLabel,
@@ -163,10 +170,10 @@ export const FactoryV2StartWorkspace = ({
         <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
           <FactoryV2StartSectionCard
             title="Launch basics"
-            description="Choose the preset, name, and timing for this run."
+            description="Choose the preset, name, and timing for this game."
             appearanceClassName={appearance.quietSurfaceClassName}
           >
-            <div>
+            <div className="min-w-0">
               <label
                 htmlFor="factory-preset"
                 className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
@@ -178,10 +185,7 @@ export const FactoryV2StartWorkspace = ({
                   id="factory-preset"
                   value={selectedPreset.id}
                   onChange={(event) => onSelectPreset(event.target.value)}
-                  className={cn(
-                    "h-11 w-full appearance-none rounded-[18px] border border-black/10 bg-white/78 px-4 pr-11 text-left text-sm font-medium text-black outline-none transition-colors focus:border-black/25 md:text-center",
-                    appearance.listItemClassName,
-                  )}
+                  className={cn(FACTORY_SELECT_CONTROL_CLASS_NAME, appearance.listItemClassName)}
                 >
                   {presets.map((preset) => (
                     <option key={preset.id} value={preset.id}>
@@ -197,7 +201,7 @@ export const FactoryV2StartWorkspace = ({
               ) : null}
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center justify-between gap-3">
                 <label
                   htmlFor="factory-game-name"
@@ -222,7 +226,7 @@ export const FactoryV2StartWorkspace = ({
                 value={gameName}
                 onChange={(event) => onGameNameChange(event.target.value)}
                 placeholder={mode === "eternum" ? "etrn-sunrise-01" : "bltz-sprint-01"}
-                className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-sm text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25 md:text-center"
+                className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-black/30`}
               />
               {existingGameName ? (
                 <p className="mt-2 text-sm leading-6 text-black/50">
@@ -235,8 +239,8 @@ export const FactoryV2StartWorkspace = ({
               ) : null}
             </div>
 
-            <div className={cn("grid gap-4", showsDuration ? "sm:grid-cols-2" : "")}>
-              <div>
+            <div className={cn("grid min-w-0 gap-4", showsDuration ? "sm:grid-cols-2" : "")}>
+              <div className="min-w-0">
                 <label
                   htmlFor="factory-start-at"
                   className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
@@ -248,12 +252,12 @@ export const FactoryV2StartWorkspace = ({
                   type="datetime-local"
                   value={startAt}
                   onChange={(event) => onStartAtChange(event.target.value)}
-                  className="mt-2 h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-sm text-black outline-none transition-colors focus:border-black/25 md:text-center"
+                  className={FACTORY_DATETIME_CONTROL_CLASS_NAME}
                 />
               </div>
 
               {showsDuration && durationMinutes !== null ? (
-                <div>
+                <div className="min-w-0">
                   <label
                     htmlFor="factory-duration"
                     className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
@@ -265,10 +269,7 @@ export const FactoryV2StartWorkspace = ({
                       id="factory-duration"
                       value={String(durationMinutes)}
                       onChange={(event) => onDurationChange(Number(event.target.value))}
-                      className={cn(
-                        "h-11 w-full appearance-none rounded-[18px] border border-black/10 bg-white/78 px-4 pr-11 text-left text-sm font-medium text-black outline-none transition-colors focus:border-black/25 md:text-center",
-                        appearance.listItemClassName,
-                      )}
+                      className={cn(FACTORY_SELECT_CONTROL_CLASS_NAME, appearance.listItemClassName)}
                     >
                       {durationOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -301,7 +302,7 @@ export const FactoryV2StartWorkspace = ({
               <div className="space-y-1">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Play style</div>
                 <p className="text-sm leading-5 text-black/50">
-                  Choose how players and realms are arranged for this run.
+                  Choose how players and realms are arranged for this game.
                 </p>
               </div>
               <div className="space-y-1.5">
