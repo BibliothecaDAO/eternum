@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-lore-450/23238375328-1.json",
   "latestLaunchRequestId": "23238375328-1",
-  "currentStepId": "grant-village-pass-role",
+  "currentStepId": "create-banks",
   "createdAt": "2026-03-18T09:41:21.090Z",
-  "updatedAt": "2026-03-18T09:43:26.008Z",
+  "updatedAt": "2026-03-18T09:43:39.094Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,10 +62,11 @@
     {
       "id": "grant-village-pass-role",
       "title": "Grant village pass role",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Grant village pass role",
-      "latestEvent": "Grant village pass role started",
-      "startedAt": "2026-03-18T09:43:26.008Z"
+      "latestEvent": "Grant village pass role succeeded",
+      "startedAt": "2026-03-18T09:43:26.008Z",
+      "finishedAt": "2026-03-18T09:43:39.094Z"
     },
     {
       "id": "create-banks",
@@ -87,14 +88,7 @@
     "createGameTxHash": "0x6a3dff6e9cc15174427398f0715afb42665e90d4224e1c4b7d4fef1b03910c6",
     "worldAddress": "0x059383cd6952ad29d0f42d1dcf83d8a2cf4e9df784ef7d7dd4ea9adbadb0c4dc",
     "configureTxHash": "0x2b669cd866b61683a087e744dd95c0c52f1b056ddc9ad3b9696c71ca7b25a24",
-    "lootChestRoleTxHash": "0x2a99ee48f2cdeddd299a8f890f9cb8561433b45af9a14890273210aa7b0c349"
-  },
-  "activeLease": {
-    "launchRequestId": "23238375328-1",
-    "workflowRunId": 23238375328,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-role",
-    "acquiredAt": "2026-03-18T09:43:26.008Z",
-    "expiresAt": "2026-03-18T10:28:26.008Z"
+    "lootChestRoleTxHash": "0x2a99ee48f2cdeddd299a8f890f9cb8561433b45af9a14890273210aa7b0c349",
+    "villagePassRoleTxHash": "0x1cf4e2b86a363e584eacf0a848d51797197c65b13b1ac21382c3c11f800023b"
   }
 }
