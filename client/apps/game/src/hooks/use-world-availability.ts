@@ -157,6 +157,7 @@ export interface WorldConfigMeta {
   villagePassAddress: string | null;
   registrationCount: number | null;
   registrationCountMax: number | null;
+  twoPlayerMode: boolean;
   // Blitz registration config
   entryTokenAddress: string | null;
   feeTokenAddress: string | null;
@@ -311,6 +312,7 @@ const fetchWorldConfigMeta = async (
     villagePassAddress: null,
     registrationCount: null,
     registrationCountMax: null,
+    twoPlayerMode: false,
     entryTokenAddress: null,
     feeTokenAddress: null,
     feeAmount: 0n,
@@ -373,7 +375,7 @@ const fetchWorldConfigMeta = async (
         if (row.registration_end_at != null)
           meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
 
-        const twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+        meta.twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
 
         // Calculate hyperstructures left from max_ring_count
         const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
@@ -385,14 +387,18 @@ const fetchWorldConfigMeta = async (
             if (globalsResponse.ok) {
               const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
               const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(
+                maxRingCount,
+                createdCount,
+                meta.twoPlayerMode,
+              );
             } else {
               // If no globals exist yet, all hyperstructures are available
-              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, meta.twoPlayerMode);
             }
           } catch {
             // If query fails, calculate based on zero created
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, meta.twoPlayerMode);
           }
         }
       }

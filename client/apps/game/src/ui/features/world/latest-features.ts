@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-18",
+    title: "1v1 Capacity Display Fix",
+    description:
+      "Blitz 1v1 game cards and registration checks now use the true two-player cap, so the lobby count and Register availability stay aligned with onchain settlement limits.",
+    type: "fix",
+  },
+  {
     date: "2026-03-17",
     title: "Spire and Mine Tile Actions",
     description:

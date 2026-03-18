@@ -13,6 +13,7 @@ import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { env } from "../../env";
+import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
@@ -182,8 +183,8 @@ export const useWorldRegistration = ({
   const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
   const registrationCount = config?.registrationCount ?? 0;
-  const registrationCountMax = config?.registrationCountMax ?? null;
-  const isRegistrationFull = registrationCountMax !== null && registrationCount >= registrationCountMax;
+  const registrationCountMax = resolveEffectiveRegistrationCountMax(config);
+  const isRegistrationFull = isRegistrationCapacityReached(registrationCount, registrationCountMax);
   const requiresFeeBalanceForRegistration = chain === "mainnet";
   const needsFeeBalanceCheck = requiresFeeBalanceForRegistration && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 

@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
+import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
 import {
   getAvailabilityStatus,
   getWorldKey,
@@ -224,6 +225,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
     config?.devModeOn ? "1" : "0",
     config?.mmrEnabled ? "1" : "0",
     config?.registrationCountMax ?? "",
+    config?.twoPlayerMode ? "1" : "0",
     config?.numHyperstructuresLeft ?? "",
     config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
@@ -429,7 +431,7 @@ const GameCard = ({
   const showRegistered = game.isRegistered || registrationStage === "done";
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
   const registrationCount = game.registrationCount ?? 0;
-  const registrationCountMax = game.config?.registrationCountMax ?? null;
+  const registrationCountMax = resolveEffectiveRegistrationCountMax(game.config);
   const registrationLabel =
     registrationCountMax !== null
       ? `${registrationCount}/${registrationCountMax} players`

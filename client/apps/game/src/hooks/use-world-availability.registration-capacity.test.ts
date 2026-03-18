@@ -8,7 +8,9 @@ describe("World availability registration capacity metadata", () => {
     const source = readFileSync(resolve(process.cwd(), "src/hooks/use-world-availability.ts"), "utf8");
 
     expect(source).toContain('"blitz_registration_config.registration_count_max" AS registration_count_max');
+    expect(source).toContain('"blitz_settlement_config.two_player_mode" AS two_player_mode');
     expect(source).toContain("registrationCountMax");
+    expect(source).toContain("twoPlayerMode");
   });
 
   it("includes eternum settled players, realms, and villages counts", () => {
