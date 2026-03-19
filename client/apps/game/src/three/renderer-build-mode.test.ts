@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_RENDERER_BUILD_MODE,
+  RENDERER_MODE_STORAGE_KEY,
   resolveRendererBuildMode,
   resolveRendererBuildModeFromSearch,
   resolveThreeEntryPoint,
@@ -55,6 +56,61 @@ describe("renderer build mode search overrides", () => {
         search: "?rendererMode=experimental-webgpu-auto",
       }),
     ).toBe("legacy-webgl");
+  });
+});
+
+describe("localStorage user preference", () => {
+  it("uses userPreference when no query param is present", () => {
+    expect(
+      resolveRendererBuildModeFromSearch({
+        envBuildMode: "experimental-webgpu-auto",
+        search: "",
+        userPreference: "legacy-webgl",
+      }),
+    ).toBe("legacy-webgl");
+  });
+
+  it("query param takes priority over userPreference", () => {
+    expect(
+      resolveRendererBuildModeFromSearch({
+        envBuildMode: "experimental-webgpu-auto",
+        search: "?rendererMode=experimental-webgpu-force-webgl",
+        userPreference: "legacy-webgl",
+      }),
+    ).toBe("experimental-webgpu-force-webgl");
+  });
+
+  it("ignores userPreference on legacy-webgl builds (cannot upgrade to webgpu)", () => {
+    expect(
+      resolveRendererBuildModeFromSearch({
+        envBuildMode: "legacy-webgl",
+        search: "",
+        userPreference: "experimental-webgpu-auto",
+      }),
+    ).toBe("legacy-webgl");
+  });
+
+  it("ignores invalid userPreference values", () => {
+    expect(
+      resolveRendererBuildModeFromSearch({
+        envBuildMode: "experimental-webgpu-auto",
+        search: "",
+        userPreference: "nonsense",
+      }),
+    ).toBe("experimental-webgpu-auto");
+  });
+
+  it("falls through to envBuildMode when userPreference is undefined", () => {
+    expect(
+      resolveRendererBuildModeFromSearch({
+        envBuildMode: "experimental-webgpu-auto",
+        search: "",
+      }),
+    ).toBe("experimental-webgpu-auto");
+  });
+
+  it("exports the storage key constant", () => {
+    expect(RENDERER_MODE_STORAGE_KEY).toBe("RENDERER_MODE");
   });
 });
 

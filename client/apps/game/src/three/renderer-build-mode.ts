@@ -10,6 +10,8 @@ export const DEFAULT_RENDERER_BUILD_MODE: RendererBuildMode = "legacy-webgl";
 
 const RENDERER_MODE_QUERY_PARAM = "rendererMode";
 
+export const RENDERER_MODE_STORAGE_KEY = "RENDERER_MODE";
+
 function isRendererBuildMode(value: string): value is RendererBuildMode {
   return (RENDERER_BUILD_MODES as readonly string[]).includes(value);
 }
@@ -33,21 +35,32 @@ export function resolveThreeEntryPoint(mode: RendererBuildMode): "three" | "thre
 export function resolveRendererBuildModeFromSearch(input: {
   envBuildMode: RendererBuildMode;
   search: string;
+  userPreference?: string;
 }): RendererBuildMode {
   const queryValue = new URLSearchParams(input.search).get(RENDERER_MODE_QUERY_PARAM);
-  if (!queryValue) {
-    return input.envBuildMode;
+  if (queryValue) {
+    const requestedMode = resolveRendererBuildMode(queryValue);
+
+    if (requestedMode === "legacy-webgl") {
+      return "legacy-webgl";
+    }
+
+    if (!usesExperimentalWebGPUThreeBuild(input.envBuildMode)) {
+      return input.envBuildMode;
+    }
+
+    return requestedMode;
   }
 
-  const requestedMode = resolveRendererBuildMode(queryValue);
-
-  if (requestedMode === "legacy-webgl") {
-    return "legacy-webgl";
+  if (input.userPreference && isRendererBuildMode(input.userPreference)) {
+    if (input.userPreference === "legacy-webgl") {
+      return "legacy-webgl";
+    }
+    if (!usesExperimentalWebGPUThreeBuild(input.envBuildMode)) {
+      return input.envBuildMode;
+    }
+    return input.userPreference;
   }
 
-  if (!usesExperimentalWebGPUThreeBuild(input.envBuildMode)) {
-    return input.envBuildMode;
-  }
-
-  return requestedMode;
+  return input.envBuildMode;
 }

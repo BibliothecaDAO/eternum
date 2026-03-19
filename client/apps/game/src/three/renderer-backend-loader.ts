@@ -6,6 +6,7 @@ import {
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
 import {
+  RENDERER_MODE_STORAGE_KEY,
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
 } from "./renderer-build-mode";
@@ -29,6 +30,7 @@ export async function initializeSelectedRendererBackend(input: {
   const requestedMode = resolveRendererBuildModeFromSearch({
     envBuildMode: input.options.envBuildMode,
     search: input.options.search,
+    userPreference: localStorage.getItem(RENDERER_MODE_STORAGE_KEY) ?? undefined,
   });
 
   if (requestedMode === "legacy-webgl") {

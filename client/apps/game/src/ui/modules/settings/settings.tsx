@@ -23,6 +23,7 @@ import type { Chain } from "@contracts";
 import * as platform from "platform";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { RENDERER_MODE_STORAGE_KEY, usesExperimentalWebGPUThreeBuild } from "@/three/renderer-build-mode";
 import { env as gameEnv } from "../../../../env";
 
 // Helper function to extract architecture from filename
@@ -113,6 +114,9 @@ export const SettingsWindow = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
   const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
+
+  const rendererMode = localStorage.getItem(RENDERER_MODE_STORAGE_KEY) || gameEnv.VITE_PUBLIC_RENDERER_BUILD_MODE;
+  const webgpuBuildAvailable = usesExperimentalWebGPUThreeBuild(gameEnv.VITE_PUBLIC_RENDERER_BUILD_MODE);
 
   const guilds = useGuilds();
   const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
@@ -335,6 +339,33 @@ export const SettingsWindow = () => {
                 High
               </Button>
             </div>
+            {webgpuBuildAvailable && (
+              <>
+                <div className="text-xs text-gray-gold mt-2">Renderer</div>
+                <div className="flex space-x-2">
+                  <Button
+                    disabled={rendererMode === "legacy-webgl"}
+                    variant={rendererMode === "legacy-webgl" ? "success" : "outline"}
+                    onClick={() => {
+                      localStorage.setItem(RENDERER_MODE_STORAGE_KEY, "legacy-webgl");
+                      window.location.reload();
+                    }}
+                  >
+                    WebGL
+                  </Button>
+                  <Button
+                    disabled={rendererMode === "experimental-webgpu-auto"}
+                    variant={rendererMode === "experimental-webgpu-auto" ? "success" : "outline"}
+                    onClick={() => {
+                      localStorage.setItem(RENDERER_MODE_STORAGE_KEY, "experimental-webgpu-auto");
+                      window.location.reload();
+                    }}
+                  >
+                    WebGPU
+                  </Button>
+                </div>
+              </>
+            )}
           </section>
 
           {/* Guild Section */}
