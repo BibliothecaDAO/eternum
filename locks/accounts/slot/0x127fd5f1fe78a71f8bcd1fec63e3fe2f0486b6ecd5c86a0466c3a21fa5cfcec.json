@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-riff-479",
-    "launchRequestId": "23304901317-1",
+    "gameName": "bltz-glow-70",
+    "launchRequestId": "23305545213-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23304901317,
+    "workflowRunId": 23305545213,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "2aa0a2f7-e037-404a-838c-5ffcc428a63c"
+    "stepId": "create-world",
+    "leaseId": "4410e085-64bf-421d-92e5-3bf2b561ce52"
   },
-  "acquiredAt": "2026-03-19T16:21:29.730Z",
-  "heartbeatAt": "2026-03-19T16:21:31.562Z",
-  "expiresAt": "2026-03-19T16:21:31.562Z",
-  "releasedAt": "2026-03-19T16:21:31.562Z"
+  "acquiredAt": "2026-03-19T16:33:45.090Z",
+  "heartbeatAt": "2026-03-19T16:33:45.090Z",
+  "expiresAt": "2026-03-19T16:43:45.090Z"
 }
