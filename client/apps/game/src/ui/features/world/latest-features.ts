@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-19",
+    title: "Factory Time Pickers Stay Inside",
+    description:
+      "The Factory start form now keeps its date and time pickers clipped and contained on iPhone-sized screens, so the schedule controls no longer spill past their rounded panels on iOS.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
     title: "Factory Steps Read Clearly",
     description:
       "Factory setup steps now use shorter progress wording and clearer status text, so the watch flow reads like work in progress instead of instructions or backend jargon.",
