@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-rush-466",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-rush-466/23308878267-1.json",
   "latestLaunchRequestId": "23308878267-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-19T17:49:42.871Z",
-  "updatedAt": "2026-03-19T17:51:35.223Z",
+  "updatedAt": "2026-03-19T17:52:57.551Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,10 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Create indexer",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Create indexer",
-      "latestEvent": "Create indexer started",
-      "startedAt": "2026-03-19T17:51:35.223Z"
+      "latestEvent": "Create indexer succeeded",
+      "startedAt": "2026-03-19T17:51:35.223Z",
+      "finishedAt": "2026-03-19T17:52:57.551Z"
     }
   ],
   "artifacts": {
@@ -73,14 +74,17 @@
     "createGameTxHash": "0x2ed40eff98412392889201e2d9e589269c20cf1ae6d6694458e630630dfe60d",
     "worldAddress": "0x0799c63879136eb5654391554d8929f5719566f5bb37d962c03e9472f083a424",
     "configureTxHash": "0x43a63e511aa58e36425b037ee76f41106b4f0be307658c19ad90a4cc228e9eb",
-    "lootChestRoleTxHash": "0x137f38f3e0b849950fa2cb6e8fbd4b982cd8781acfdc4c4e9ca4390055444db"
+    "lootChestRoleTxHash": "0x137f38f3e0b849950fa2cb6e8fbd4b982cd8781acfdc4c4e9ca4390055444db",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "credence0x/factory-v2-polish",
+      "runId": 23309012936,
+      "runNumber": 768,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23309012936",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
-  "activeLease": {
-    "launchRequestId": "23308878267-1",
-    "workflowRunId": 23308878267,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-19T17:51:35.223Z",
-    "expiresAt": "2026-03-19T18:36:35.223Z"
-  }
+  "completedAt": "2026-03-19T17:52:57.551Z"
 }
