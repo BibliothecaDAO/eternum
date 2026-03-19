@@ -177,6 +177,23 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.forceRefreshReasons.hydrated_chunk).toBe(1);
   });
 
+  it("increments deferred_transition_tile reason without NaN corruption", () => {
+    incrementWorldmapForceRefreshReason("deferred_transition_tile");
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.forceRefreshReasons.deferred_transition_tile).toBe(1);
+    expect(Number.isNaN(snapshot.forceRefreshReasons.deferred_transition_tile)).toBe(false);
+  });
+
+  it("initializes all forceRefreshReasons keys as finite numbers", () => {
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    for (const [key, value] of Object.entries(snapshot.forceRefreshReasons)) {
+      expect(Number.isFinite(value), `forceRefreshReasons.${key} should be finite, got ${value}`).toBe(true);
+    }
+  });
+
   it("tracks duplicate tile authoritative state updates as a separate counter", () => {
     // Stage 0: when a biome delta is written to authoritative state BEFORE
     // reconcile scheduling, we need a counter to verify it happened.

@@ -56,7 +56,8 @@ describe("worldmap runtime lifecycle", () => {
       invalidatePendingFetches: invalidatePendingFetchesSpy,
     });
 
-    expect(clearTimeoutSpy).toHaveBeenCalledTimes(2);
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(3);
+    expect(clearTimeoutSpy).toHaveBeenCalledWith("fallback-timeout");
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledTimes(2);
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(101);
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(202);

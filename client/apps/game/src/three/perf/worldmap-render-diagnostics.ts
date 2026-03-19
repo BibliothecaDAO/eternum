@@ -58,6 +58,7 @@ export type WorldmapForceRefreshReason =
   | "default"
   | "visibility_recovery"
   | "duplicate_tile"
+  | "deferred_transition_tile"
   | "structure_count_change"
   | "hydrated_chunk"
   | "terrain_self_heal"
@@ -143,6 +144,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     default: 0,
     visibility_recovery: 0,
     duplicate_tile: 0,
+    deferred_transition_tile: 0,
     structure_count_change: 0,
     hydrated_chunk: 0,
     terrain_self_heal: 0,

@@ -230,7 +230,7 @@ import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import {
   deferWarpTravelManagerFanout,
-  drainBudgetedDeferredManagerCatchUpQueue,
+  drainMultiBudgetedDeferredManagerCatchUpQueue,
   runWarpTravelManagerFanout,
 } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
@@ -3212,6 +3212,11 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      if (this.isChunkTransitioning) {
+        this.requestChunkRefresh(false, "deferred_transition_tile");
+        return;
+      }
+
       // Add hex to all interactive hexes
       this.interactiveHexManager.addHex({ col, row });
 
@@ -3658,7 +3663,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private drainPostCommitManagerCatchUpQueue(): void {
-    const drainResult = drainBudgetedDeferredManagerCatchUpQueue({
+    const drainResult = drainMultiBudgetedDeferredManagerCatchUpQueue({
       queue: this.postCommitManagerCatchUpQueue,
       budgetBytes: this.postCommitManagerCatchUpBudgetBytes,
     });
@@ -3670,29 +3675,33 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const task = drainResult.taskToRun;
-    if (!task) {
+    if (drainResult.tasksToRun.length === 0) {
       return;
     }
 
-    if ((task.deferredCount ?? 0) === 0) {
-      incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate");
-    }
+    void (async () => {
+      for (const task of drainResult.tasksToRun) {
+        if ((task.deferredCount ?? 0) === 0) {
+          incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate");
+        }
 
-    void deferWarpTravelManagerFanout({
-      shouldRun: () =>
-        shouldRunManagerUpdate({
-          transitionToken: task.options?.transitionToken,
-          expectedTransitionToken: this.chunkTransitionToken,
-          currentChunk: this.currentChunk,
-          targetChunk: task.chunkKey,
-        }),
-      run: () => this.updateManagersForChunk(task.chunkKey, task.options),
-      schedule: (callback) => callback(),
-    })
-      .catch((error) => {
-        console.error("[WorldMap] Deferred manager catch-up failed:", error);
-      })
+        try {
+          await deferWarpTravelManagerFanout({
+            shouldRun: () =>
+              shouldRunManagerUpdate({
+                transitionToken: task.options?.transitionToken,
+                expectedTransitionToken: this.chunkTransitionToken,
+                currentChunk: this.currentChunk,
+                targetChunk: task.chunkKey,
+              }),
+            run: () => this.updateManagersForChunk(task.chunkKey, task.options),
+            schedule: (callback) => callback(),
+          });
+        } catch (error) {
+          console.error("[WorldMap] Deferred manager catch-up failed:", error);
+        }
+      }
+    })()
       .finally(() => {
         if (this.postCommitManagerCatchUpQueue.length > 0) {
           this.schedulePostCommitManagerCatchUpDrain();
@@ -3733,7 +3742,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
-    this.visibleTerrainMembership.clear();
     this.tileHydrationFetches.clear();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
@@ -5697,6 +5705,7 @@ export default class WorldmapScene extends WarpTravel {
           nextTransitionToken: transitionToken,
           previousTransitionToken: this.actionPathsTransitionToken,
         });
+        this.isChunkTransitioning = true;
         this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
         try {
           await this.globalChunkSwitchPromise;
@@ -5704,6 +5713,7 @@ export default class WorldmapScene extends WarpTravel {
           return true;
         } finally {
           this.globalChunkSwitchPromise = null;
+          this.isChunkTransitioning = false;
         }
       }
 
@@ -5833,7 +5843,6 @@ export default class WorldmapScene extends WarpTravel {
       prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
         const startedAt = performance.now();
         const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
-        this.cachePreparedTerrainChunk(preparedChunk);
         presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
         recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
         return preparedChunk;
@@ -5961,8 +5970,6 @@ export default class WorldmapScene extends WarpTravel {
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
     const refreshAreaKey = this.getRenderAreaKeyForChunk(chunkKey);
 
-    this.updateCurrentChunkBounds(startRow, startCol);
-
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.removeCachedMatricesForChunk(startRow, startCol);
     this.hydratedRefreshSuppressionAreaKeys.add(refreshAreaKey);
@@ -6005,7 +6012,6 @@ export default class WorldmapScene extends WarpTravel {
         prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
           const startedAt = performance.now();
           const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
-          this.cachePreparedTerrainChunk(preparedChunk);
           presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
           recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
           return preparedChunk;
@@ -6043,6 +6049,7 @@ export default class WorldmapScene extends WarpTravel {
       if (commitDecision.shouldCommit && preparedTerrain) {
         const terrainCommitStartedAt = performance.now();
         this.applyPreparedTerrainChunk(preparedTerrain);
+        this.updateCurrentChunkBounds(startRow, startCol);
         const commitCompletedAt = performance.now();
         const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
         const firstVisibleCommitDurationMs = commitCompletedAt - refreshStartedAt;

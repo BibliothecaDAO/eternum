@@ -22,7 +22,7 @@ const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
-  private biomeMeshes: any[] = [];
+  private biomeMeshes: THREE.Mesh[] = [];
   private count: number = 0;
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;

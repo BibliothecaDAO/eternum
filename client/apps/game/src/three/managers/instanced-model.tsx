@@ -48,7 +48,7 @@ const ANIMATION_BUCKETS = 16;
 export default class InstancedModel {
   public group: Group;
   public instancedMeshes: AnimatedInstancedMesh[] = [];
-  private biomeMeshes: any[] = [];
+  private biomeMeshes: Mesh[] = [];
   private count: number = 0;
   private capacity: number;
   private mixer: AnimationMixer | null = null;

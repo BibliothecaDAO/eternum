@@ -87,6 +87,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovements.forEach((entityId) => clearPendingArmyMovement(entityId));
   pendingArmyMovements.clear();
   pendingArmyMovementStartedAt.clear();
+  pendingArmyMovementFallbackTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
   pendingArmyMovementFallbackTimeouts.clear();
   armyStructureOwners.clear();
 
