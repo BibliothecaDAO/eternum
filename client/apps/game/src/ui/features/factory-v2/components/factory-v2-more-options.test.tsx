@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createFactoryMapOptionsDraft,
   createFactoryMoreOptionsDraft,
   getFactoryMapOptionSections,
   getFactoryMoreOptionSections,
@@ -21,7 +20,7 @@ const waitForAsyncWork = async () => {
 };
 
 const buildProps = (overrides: Record<string, unknown> = {}) => {
-  const draft = createFactoryMapOptionsDraft("eternum", "slot");
+  const draft = createFactoryMoreOptionsDraft("eternum", "slot");
 
   return {
     mode: "eternum" as const,

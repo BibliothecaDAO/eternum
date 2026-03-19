@@ -47,5 +47,3 @@ export const useFactoryV2MoreOptions = ({
     },
   };
 };
-
-export const useFactoryV2MapOptions = useFactoryV2MoreOptions;

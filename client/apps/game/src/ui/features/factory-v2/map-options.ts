@@ -141,9 +141,7 @@ interface FactoryMoreOptionsValidationResult {
   hasErrors: boolean;
 }
 
-export type FactoryMapOptionFieldId = FactoryMoreOptionFieldId;
 export type FactoryMapOptionSection = FactoryMoreOptionSection;
-export type FactoryMapOptionField = FactoryMoreOptionField;
 export type FactoryMapOptionsDraft = FactoryMoreOptionsDraft;
 export type FactoryMapOptionsErrors = FactoryMoreOptionsErrors;
 
@@ -564,8 +562,6 @@ export const createFactoryMoreOptionsDraft = (
     EMPTY_MORE_OPTIONS_DRAFT,
   );
 };
-
-export const createFactoryMapOptionsDraft = createFactoryMoreOptionsDraft;
 
 export const getFactoryMoreOptionSections = (
   mode: FactoryGameMode,

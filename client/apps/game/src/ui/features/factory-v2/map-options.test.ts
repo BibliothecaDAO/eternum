@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildFactoryCreateRunRequest } from "./create-run-request";
 import {
-  createFactoryMapOptionsDraft,
   createFactoryMoreOptionsDraft,
   getFactoryMoreOptionField,
   getFactoryMapOptionSections,
@@ -44,7 +43,7 @@ describe("Factory V2 map options", () => {
   });
 
   it("omits map overrides when the displayed values still match the environment defaults", () => {
-    const draft = createFactoryMapOptionsDraft("eternum", "slot");
+    const draft = createFactoryMoreOptionsDraft("eternum", "slot");
     const result = validateFactoryMapOptions("eternum", "slot", draft);
 
     expect(result.hasErrors).toBe(false);
@@ -52,7 +51,7 @@ describe("Factory V2 map options", () => {
   });
 
   it("converts edited percentage and integer values into raw map config overrides", () => {
-    const draft = createFactoryMapOptionsDraft("eternum", "slot");
+    const draft = createFactoryMoreOptionsDraft("eternum", "slot");
     draft.bitcoinMine = "2.5";
     draft.hyperstructureCenter = "12.345";
     draft.hyperstructureRadiusMultiplier = "98.21";
@@ -72,7 +71,7 @@ describe("Factory V2 map options", () => {
   });
 
   it("rejects invalid relic inputs", () => {
-    const draft = createFactoryMapOptionsDraft("blitz", "slot");
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
     draft.relicHexDistance = "256";
 
     const result = validateFactoryMapOptions("blitz", "slot", draft);
