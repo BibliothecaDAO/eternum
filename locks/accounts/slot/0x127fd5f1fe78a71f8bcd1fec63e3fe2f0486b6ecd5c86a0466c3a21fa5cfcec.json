@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-swish-818",
-    "launchRequestId": "23288739233-1",
+    "gameName": "bltz-riff-479",
+    "launchRequestId": "23304901317-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23288739233,
+    "workflowRunId": 23304901317,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "d2a2ac16-8058-4527-a848-2928efc67039"
+    "stepId": "create-world",
+    "leaseId": "deda002e-51bc-4c2b-9e2a-ce3753f29267"
   },
-  "acquiredAt": "2026-03-19T09:41:23.680Z",
-  "heartbeatAt": "2026-03-19T09:41:25.604Z",
-  "expiresAt": "2026-03-19T09:41:25.604Z",
-  "releasedAt": "2026-03-19T09:41:25.604Z"
+  "acquiredAt": "2026-03-19T16:19:20.665Z",
+  "heartbeatAt": "2026-03-19T16:19:20.665Z",
+  "expiresAt": "2026-03-19T16:29:20.665Z"
 }
