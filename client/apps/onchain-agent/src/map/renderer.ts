@@ -10,6 +10,16 @@ import type { TileState, ExplorerInfo, StructureInfo } from "@bibliothecadao/cli
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import { projectExplorerStamina } from "../world/stamina.js";
 
+/**
+ * Maps occupier type IDs to their single-character ASCII representation on the map.
+ *
+ * Structure types: 0=empty(.), 1–4=Realm(R), 5–8=Wonder(W), 9–11=Hyperstructure(H),
+ * 12=Mine(M), 13=Village(V), 14=Bank(B).
+ * Explorer types: 15–17=knight regular(k), 18–20=paladin regular(p),
+ * 21–23=crossbow regular(x), 24–26=knight daydreams(K), 27–29=paladin daydreams(P),
+ * 30–32=crossbow daydreams(X).
+ * Special: 33=Quest(Q), 34=Chest(C), 35=Spire(S).
+ */
 const OCCUPIER_ASCII: Record<number, string> = {
   0: ".",
   1: "R",
@@ -49,7 +59,13 @@ const OCCUPIER_ASCII: Record<number, string> = {
   35: "S",
 };
 
-/** Circled variants for agent-owned entities. */
+/**
+ * Circled Unicode variants used for agent-owned entities on the map.
+ *
+ * Same type-ID mapping as {@link OCCUPIER_ASCII} but rendered with
+ * circled characters (e.g. Ⓡ, Ⓦ, ⓚ) so the agent's own entities
+ * are visually distinct from neutral or enemy ones.
+ */
 const OWNED_ASCII: Record<number, string> = {
   1: "Ⓡ",
   2: "Ⓡ",
@@ -85,7 +101,15 @@ const OWNED_ASCII: Record<number, string> = {
   32: "Ⓧ", // Explorer (crossbow daydreams)
 };
 
-/** Explorer occupier types: 15–32. */
+/**
+ * Check whether an occupier type ID represents an explorer (army) entity.
+ *
+ * Explorer type IDs range from 15 to 32, covering all troop categories
+ * (knight, paladin, crossbow) across regular and daydreams variants at all tiers.
+ *
+ * @param occupierType - The numeric occupier type from a {@link TileState}.
+ * @returns `true` if the type falls within the explorer range (15–32).
+ */
 function isExplorerType(occupierType: number): boolean {
   return occupierType >= 15 && occupierType <= 32;
 }
@@ -222,7 +246,6 @@ export function renderMap(
   const totalCols = maxX - minX + 1;
   const rowNumWidth = String(totalRows).length;
   const prefix = (n: number) => String(n).padStart(rowNumWidth) + "| ";
-  const blankPrefix = " ".repeat(rowNumWidth) + "  ";
 
   const lines: string[] = [];
 
