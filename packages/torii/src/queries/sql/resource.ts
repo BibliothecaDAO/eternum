@@ -50,10 +50,6 @@ export const RESOURCE_BALANCE_COLUMNS: ReadonlyArray<{
   { column: "PALADIN_T3_BALANCE", resourceId: ResourcesIds.PaladinT3, name: "Paladin T3" },
 ];
 
-/** @deprecated Use RESOURCE_BALANCE_COLUMNS which now includes troop columns. */
-export const TROOP_BALANCE_COLUMNS = RESOURCE_BALANCE_COLUMNS.filter(
-  (c) => c.column.includes("KNIGHT") || c.column.includes("CROSSBOWMAN") || c.column.includes("PALADIN"),
-);
 
 const BALANCE_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => c.column).join(", ");
 
