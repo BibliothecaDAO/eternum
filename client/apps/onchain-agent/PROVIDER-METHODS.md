@@ -12,13 +12,13 @@ Legend:
 | Method | Status | Description |
 |--------|--------|-------------|
 | `explorer_create` | MCP / PI | Spawn new army from a structure |
-| `explorer_add` | PI | Reinforce existing army with more troops (must be adjacent to home) |
+| `explorer_add` | MCP / PI | Reinforce existing army with more troops (must be adjacent to home) |
 | `explorer_delete` | PI | Disband an army, return troops to structure |
 | `guard_add` | MCP / PI | Add troops from storage to a structure's guard slot |
 | `guard_delete` | — | Remove troops from a guard slot |
-| `explorer_explorer_swap` | PI | Transfer troops between two adjacent armies (same type/tier) |
-| `explorer_guard_swap` | PI | Move troops from army to structure guard slot |
-| `guard_explorer_swap` | — | Move troops from guard slot to adjacent army |
+| `explorer_explorer_swap` | MCP / PI | Transfer troops between two adjacent armies (same type/tier) |
+| `explorer_guard_swap` | MCP / PI | Move troops from army to structure guard slot |
+| `guard_explorer_swap` | MCP | Move troops from guard slot to adjacent army |
 
 ## Movement
 | Method | Status | Description |
@@ -32,14 +32,14 @@ Legend:
 |--------|--------|-------------|
 | `attack_explorer_vs_explorer` | MCP / PI | Army attacks another army |
 | `attack_explorer_vs_guard` | MCP / PI | Army attacks a structure's guards |
-| `attack_guard_vs_explorer` | — | Structure guard attacks adjacent army |
-| `raid_explorer_vs_guard` | — | Raid a structure (10% damage, can steal resources) |
+| `attack_guard_vs_explorer` | MCP | Structure guard attacks adjacent army |
+| `raid_explorer_vs_guard` | MCP | Raid a structure (10% damage, can steal resources) |
 
 ## Resource Transfer
 | Method | Status | Description | Blitz? |
 |--------|--------|-------------|--------|
-| `troop_troop_adjacent_transfer` | — | Transfer resources between adjacent armies | Yes |
-| `troop_structure_adjacent_transfer` | — | Transfer resources from army to adjacent structure | Yes |
+| `troop_troop_adjacent_transfer` | MCP | Transfer resources between adjacent armies | Yes |
+| `troop_structure_adjacent_transfer` | MCP | Transfer resources from army to adjacent structure | Yes |
 | `structure_troop_adjacent_transfer` | — | Transfer resources from structure to adjacent army | **BLOCKED in Blitz** |
 | `send_resources` | MCP / PI | Send resources between structures (donkey caravan) | Yes |
 | `send_resources_multiple` | — | Send resources to multiple structures | Yes |
@@ -66,7 +66,7 @@ Legend:
 | Method | Status | Description |
 |--------|--------|-------------|
 | `open_chest` | MCP / PI | Open a relic chest (with VRF) |
-| `apply_relic` | — | Apply a relic effect to an entity |
+| `apply_relic` | MCP | Apply a relic effect to an entity |
 
 ## Hyperstructures
 | Method | Status | Description |
