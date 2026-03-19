@@ -30,7 +30,12 @@ vi.mock("./factory-v2-mode-switch", () => ({
 }));
 
 vi.mock("./factory-v2-start-workspace", () => ({
-  FactoryV2StartWorkspace: () => <div>Start workspace</div>,
+  FactoryV2StartWorkspace: ({ onLaunch }: { onLaunch: () => void }) => (
+    <div>
+      <div>Start workspace</div>
+      <button onClick={onLaunch}>Launch</button>
+    </div>
+  ),
 }));
 
 vi.mock("./factory-v2-watch-workspace", () => ({
@@ -87,7 +92,6 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   isLoadingRuns: false,
   isResolvingRunName: false,
   notice: null,
-  shouldPreferWatchView: false,
   environmentUnavailableReason: null,
   moreOptions: {
     isOpen: false,
@@ -140,49 +144,12 @@ describe("FactoryV2Content workflow selection", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("keeps the start panel selected when the same deploying game refreshes", async () => {
-    const run = {
-      id: "run-1",
-      name: "etrn-sunrise-01",
-      environment: "slot.eternum",
-      status: "running",
-    };
-
+  it("keeps the start panel selected when an active run refreshes", async () => {
     vi.mocked(useFactoryV2).mockReturnValue(
       buildFactoryState({
         activeRunName: "etrn-sunrise-01",
         matchingRun: { id: "run-1", name: "etrn-sunrise-01" },
-        selectedRun: run,
-        shouldPreferWatchView: true,
-      }) as unknown as ReturnType<typeof useFactoryV2>,
-    );
-
-    await act(async () => {
-      root.render(<FactoryV2Content />);
-      await waitForAsyncWork();
-    });
-
-    await vi.waitFor(() => {
-      expect(container.textContent).toContain("Watch workspace");
-    });
-
-    const startButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Start a game"),
-    );
-
-    await act(async () => {
-      (startButton as HTMLButtonElement).click();
-      await waitForAsyncWork();
-    });
-
-    expect(container.textContent).toContain("Start workspace");
-
-    vi.mocked(useFactoryV2).mockReturnValue(
-      buildFactoryState({
-        activeRunName: "etrn-sunrise-01",
-        matchingRun: { id: "run-1-updated", name: "etrn-sunrise-01" },
-        selectedRun: { ...run, id: "run-1-updated" },
-        shouldPreferWatchView: true,
+        selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "slot.eternum", status: "running" },
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 
@@ -193,15 +160,17 @@ describe("FactoryV2Content workflow selection", () => {
 
     expect(container.textContent).toContain("Start workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
-  });
 
-  it("still auto-opens watch for a different game after the user dismissed the previous one", async () => {
     vi.mocked(useFactoryV2).mockReturnValue(
       buildFactoryState({
         activeRunName: "etrn-sunrise-01",
-        matchingRun: { id: "run-1", name: "etrn-sunrise-01" },
-        selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "slot.eternum", status: "running" },
-        shouldPreferWatchView: true,
+        matchingRun: { id: "run-1-updated", name: "etrn-sunrise-01" },
+        selectedRun: {
+          id: "run-1-updated",
+          name: "etrn-sunrise-01",
+          environment: "slot.eternum",
+          status: "running",
+        },
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 
@@ -210,21 +179,34 @@ describe("FactoryV2Content workflow selection", () => {
       await waitForAsyncWork();
     });
 
-    const startButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Start a game"),
+    expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).not.toContain("Watch workspace");
+    expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
+  });
+
+  it("keeps the start panel selected when the mode changes to one with an active deployment", async () => {
+    vi.mocked(useFactoryV2).mockReturnValue(
+      buildFactoryState({
+        selectedMode: "eternum",
+      }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 
     await act(async () => {
-      (startButton as HTMLButtonElement).click();
+      root.render(<FactoryV2Content />);
       await waitForAsyncWork();
     });
+
+    expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
 
     vi.mocked(useFactoryV2).mockReturnValue(
       buildFactoryState({
-        activeRunName: "etrn-sunrise-02",
-        matchingRun: { id: "run-2", name: "etrn-sunrise-02" },
-        selectedRun: { id: "run-2", name: "etrn-sunrise-02", environment: "slot.eternum", status: "running" },
-        shouldPreferWatchView: true,
+        selectedMode: "blitz",
+        modeDefinition: { label: "Blitz" },
+        selectedEnvironmentId: "slot.blitz",
+        selectedEnvironment: { id: "slot.blitz", label: "Slot", chain: "slot" },
+        activeRunName: "bltz-rush-01",
+        matchingRun: { id: "run-2", name: "bltz-rush-01" },
+        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "slot.blitz", status: "running" },
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 
@@ -233,6 +215,30 @@ describe("FactoryV2Content workflow selection", () => {
       await waitForAsyncWork();
     });
 
+    expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).not.toContain("Watch workspace");
+    expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
+  });
+
+  it("switches to the watch panel when launch is clicked", async () => {
+    const factory = buildFactoryState();
+    vi.mocked(useFactoryV2).mockReturnValue(factory as unknown as ReturnType<typeof useFactoryV2>);
+
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+      await waitForAsyncWork();
+    });
+
+    const launchButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Launch"),
+    );
+
+    await act(async () => {
+      (launchButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(factory.launchSelectedPreset).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain("Watch workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });

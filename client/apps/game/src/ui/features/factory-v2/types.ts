@@ -3,6 +3,7 @@ import type { Chain } from "@contracts";
 export type FactoryGameMode = "eternum" | "blitz";
 export type FactoryLaunchChain = Extract<Chain, "mainnet" | "slot">;
 export type FactoryRunStepId =
+  | "launch-request"
   | "create-world"
   | "wait-factory-index"
   | "wait-for-factory-index"

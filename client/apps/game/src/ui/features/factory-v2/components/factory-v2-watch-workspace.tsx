@@ -16,6 +16,7 @@ import {
   getStepDetailMessage,
   getSimpleStepTitle,
   getStepStatusMeta,
+  resolveRunProgressMetrics,
   resolveRunPrimaryAction,
 } from "../presenters";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
@@ -100,10 +101,11 @@ export const FactoryV2WatchWorkspace = ({
   const isPendingSelectedRun = Boolean(selectedRun && selectedRun.id.startsWith("pending:"));
   const isAwaitingAcceptedUpdate = Boolean(acceptedRunMessage);
   const showsInFlightState = isPendingSelectedRun || isAwaitingAcceptedUpdate;
+  const timelineRun = selectedRun ? buildWatchTimelineRun(selectedRun) : null;
   const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
-  const currentStep = selectedRun ? getCurrentStep(selectedRun) : null;
-  const completedStep = selectedRun ? getCompletedStep(selectedRun) : null;
-  const nextStep = selectedRun ? getNextStep(selectedRun) : null;
+  const currentStep = timelineRun ? getCurrentStep(timelineRun) : null;
+  const completedStep = timelineRun ? getCompletedStep(timelineRun) : null;
+  const nextStep = timelineRun ? getNextStep(timelineRun) : null;
   const primaryAction = selectedRun && !isWatcherBusy ? resolveRunPrimaryAction(selectedRun) : null;
   const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
   const currentStepLabel = isPendingSelectedRun
@@ -114,14 +116,14 @@ export const FactoryV2WatchWorkspace = ({
   const detailMessage = selectedRun
     ? isPendingSelectedRun
       ? (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE)
-      : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(selectedRun))
+      : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(timelineRun ?? selectedRun))
     : WATCH_EMPTY_DESCRIPTION;
   const headline = selectedRun
     ? isPendingSelectedRun
       ? `Launching ${selectedRun.name}`
       : isAwaitingAcceptedUpdate
         ? "Got it"
-        : getRunHeadline(selectedRun)
+        : getRunHeadline(timelineRun ?? selectedRun)
     : (watcher?.title ?? "Check a game");
   const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
@@ -216,6 +218,7 @@ export const FactoryV2WatchWorkspace = ({
         <FactoryV2WatchRunCard
           appearance={appearance}
           selectedRun={selectedRun}
+          timelineRun={timelineRun ?? selectedRun}
           environmentLabel={environmentLabel}
           showsInFlightState={showsInFlightState}
           headline={headline}
@@ -252,6 +255,7 @@ export const FactoryV2WatchWorkspace = ({
 const FactoryV2WatchRunCard = ({
   appearance,
   selectedRun,
+  timelineRun,
   environmentLabel,
   showsInFlightState,
   headline,
@@ -271,6 +275,7 @@ const FactoryV2WatchRunCard = ({
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
   selectedRun: FactoryRun;
+  timelineRun: FactoryRun;
   environmentLabel: string | null;
   showsInFlightState: boolean;
   headline: string;
@@ -332,7 +337,7 @@ const FactoryV2WatchRunCard = ({
 
       <FactoryV2CurrentStepCard
         appearanceClassName={appearance.quietSurfaceClassName}
-        selectedRun={selectedRun}
+        timelineRun={timelineRun}
         currentStep={currentStep}
         currentStepLabel={currentStepLabel}
         detailMessage={detailMessage}
@@ -357,8 +362,8 @@ const FactoryV2WatchRunCard = ({
       </div>
 
       <div className="space-y-2">
-        <div className="text-center text-[13px] text-black/54">{getRunProgressLabel(selectedRun)}</div>
-        <FactoryV2SegmentedProgressTrack steps={selectedRun.steps} />
+        <div className="text-center text-[13px] text-black/54">{getRunProgressLabel(timelineRun)}</div>
+        <FactoryV2SegmentedProgressTrack steps={timelineRun.steps} />
       </div>
 
       {actionBarProps ? <FactoryV2WatchActionBar {...actionBarProps} /> : null}
@@ -375,7 +380,7 @@ const FactoryV2WatchRunCard = ({
 
       {showAllSteps ? (
         <div className="space-y-2 rounded-[24px] border border-black/8 bg-white/38 p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-          {selectedRun.steps.map((step) => (
+          {timelineRun.steps.map((step) => (
             <FactoryV2StepSummary
               key={step.id}
               step={step}
@@ -390,20 +395,20 @@ const FactoryV2WatchRunCard = ({
 
 const FactoryV2CurrentStepCard = ({
   appearanceClassName,
-  selectedRun,
+  timelineRun,
   currentStep,
   currentStepLabel,
   detailMessage,
 }: {
   appearanceClassName: string;
-  selectedRun: FactoryRun;
+  timelineRun: FactoryRun;
   currentStep: FactoryRun["steps"][number] | null;
   currentStepLabel: string;
   detailMessage: string;
 }) => {
-  const progress = resolveWatchProgressMetrics(selectedRun, currentStep);
+  const progress = resolveWatchProgressMetrics(timelineRun, currentStep);
   const isRunningStep = currentStep?.status === "running";
-  const statusLabel = resolveCurrentStepStatusLabel(currentStep, selectedRun.status);
+  const statusLabel = resolveCurrentStepStatusLabel(currentStep, timelineRun.status);
 
   return (
     <div
@@ -841,24 +846,46 @@ const FactoryV2SegmentedProgressTrack = ({ steps }: { steps: FactoryRun["steps"]
   </div>
 );
 
+function buildWatchTimelineRun(run: FactoryRun): FactoryRun {
+  if (run.steps.some((step) => step.id === "launch-request")) {
+    return run;
+  }
+
+  return {
+    ...run,
+    steps: [buildAcceptedLaunchRequestStep(), ...run.steps],
+  };
+}
+
+function buildAcceptedLaunchRequestStep(): FactoryRun["steps"][number] {
+  const latestEvent = "The launch request was accepted.";
+
+  return {
+    id: "launch-request",
+    title: "Launch the game",
+    summary: latestEvent,
+    workflowName: "launch-request",
+    status: "succeeded",
+    verification: latestEvent,
+    latestEvent,
+  };
+}
+
 function resolveWatchProgressMetrics(run: FactoryRun, currentStep: FactoryRun["steps"][number] | null) {
-  const totalSteps = Math.max(run.steps.length, 1);
-  const currentStepIndex = currentStep ? run.steps.findIndex((step) => step.id === currentStep.id) : -1;
-  const settledSteps = run.steps.filter((step) => step.status === "succeeded" || step.status === "already_done").length;
-  const activeStepNumber = currentStepIndex >= 0 ? currentStepIndex + 1 : totalSteps;
+  const { currentStepIndex, currentStepNumber, totalSteps } = resolveRunProgressMetrics(run);
   const completionFraction =
     currentStep?.status === "running"
       ? (currentStepIndex + 0.55) / totalSteps
       : currentStepIndex >= 0
         ? currentStepIndex / totalSteps
-        : settledSteps / totalSteps;
+        : currentStepNumber / totalSteps;
   const completionPercent = Math.max(12, Math.min(100, Math.round(completionFraction * 100)));
 
   return {
     completionPercent,
-    progressLabel: `${settledSteps} complete`,
+    progressLabel: `${currentStepNumber} of ${totalSteps} parts`,
     percentLabel: `${completionPercent}%`,
-    stepLabel: `Step ${activeStepNumber} of ${totalSteps}`,
+    stepLabel: `Step ${currentStepNumber} of ${totalSteps}`,
   };
 }
 

@@ -23,6 +23,11 @@ import {
 import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
 import { buildFandomizedGameName } from "../funny-names";
+import {
+  readFactoryPendingLaunches,
+  writeFactoryPendingLaunches,
+  type FactoryPendingLaunch,
+} from "../pending-launch-storage";
 import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import { resolveRunPrimaryAction } from "../presenters";
@@ -37,7 +42,7 @@ import type {
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
 const RUN_POLL_INTERVAL_MS = 5_000;
-const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. Confirm game deployment.";
+const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
 const AUTO_UPDATE_MESSAGE = "Updating automatically.";
 const EXISTING_GAME_NOTICE = "That game already exists. We opened it for you.";
 
@@ -73,9 +78,7 @@ export const useFactoryV2 = () => {
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
   const [acceptedRunState, setAcceptedRunState] = useState<AcceptedRunState | null>(null);
   const [guidedRecoveryState, setGuidedRecoveryState] = useState<GuidedRecoveryState | null>(null);
-  const [pendingRunName, setPendingRunName] = useState<string | null>(null);
-  const [pendingRunEnvironmentId, setPendingRunEnvironmentId] = useState<string | null>(null);
-  const [pendingRunMode, setPendingRunMode] = useState<FactoryGameMode | null>(null);
+  const [pendingLaunches, setPendingLaunches] = useState<FactoryPendingLaunch[]>(() => readFactoryPendingLaunches());
   const [pollingState, setPollingState] = useState<FactoryPollingState>({
     status: "idle",
     detail: "Updates will show up here.",
@@ -85,6 +88,7 @@ export const useFactoryV2 = () => {
   const [isResolvingRunName, setIsResolvingRunName] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const runsByEnvironmentRef = useRef<Record<string, FactoryRun[]>>({});
+  const pendingLaunchesRef = useRef<FactoryPendingLaunch[]>(pendingLaunches);
 
   const modeDefinition = resolveModeDefinition(selectedMode);
   const environmentOptions = getFactoryEnvironmentOptions(selectedMode);
@@ -92,16 +96,14 @@ export const useFactoryV2 = () => {
     environmentOptions.find((environment) => environment.id === selectedEnvironmentId) ?? environmentOptions[0] ?? null;
   const presets = getFactoryLaunchPresetsForMode(selectedMode);
   const environmentRuns = runsByEnvironment[selectedEnvironment?.id ?? ""] ?? [];
-  const pendingRun = buildPendingRun({
-    pendingRunName,
-    pendingRunEnvironmentId,
-    pendingRunMode,
+  const visiblePendingRuns = buildVisiblePendingRuns({
+    pendingLaunches,
     selectedEnvironmentId,
     watcher,
     pollingState,
   });
   const modeRuns = mergeAcceptedRunIntoEnvironment(
-    mergePendingRunIntoEnvironment(environmentRuns, pendingRun),
+    mergePendingRunsIntoEnvironment(environmentRuns, visiblePendingRuns),
     acceptedRunState,
   );
   const selectedRun = modeRuns.find((run) => run.id === selectedRunId) ?? modeRuns[0] ?? null;
@@ -110,10 +112,10 @@ export const useFactoryV2 = () => {
   const showsDuration = supportsFactoryDuration(selectedMode);
   const durationOptions = showsDuration ? buildBlitzDurationOptions(presets, draftDurationMinutes) : [];
   const isWatcherBusy = watcher !== null;
+  const pendingRunName = visiblePendingRuns[0]?.name ?? null;
   const activeRunName = selectedRun?.name ?? pendingRunName;
   const acceptedRunMessage =
     selectedRun && acceptedRunState?.runId === selectedRun.id ? acceptedRunState.latestEvent : null;
-  const shouldPreferWatchView = Boolean(watcher) || Boolean(selectedRun && isFactoryRunActive(selectedRun));
   const environmentUnavailableReason = resolveEnvironmentUnavailableReason(selectedEnvironment?.id);
   const moreOptions = useFactoryV2MoreOptions({
     mode: selectedMode,
@@ -125,6 +127,27 @@ export const useFactoryV2 = () => {
   useEffect(() => {
     runsByEnvironmentRef.current = runsByEnvironment;
   }, [runsByEnvironment]);
+
+  useEffect(() => {
+    pendingLaunchesRef.current = pendingLaunches;
+  }, [pendingLaunches]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleStorage = () => {
+      const nextPendingLaunches = readFactoryPendingLaunches();
+      pendingLaunchesRef.current = nextPendingLaunches;
+      setPendingLaunches(nextPendingLaunches);
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedEnvironment?.id) {
@@ -144,7 +167,7 @@ export const useFactoryV2 = () => {
       setIsLoadingRuns(true);
 
       try {
-        const nextRuns = await loadEnvironmentRuns(
+        const listedRuns = await loadEnvironmentRuns(
           selectedEnvironment.id,
           runsByEnvironmentRef.current[selectedEnvironment.id] ?? [],
         );
@@ -153,7 +176,13 @@ export const useFactoryV2 = () => {
           return;
         }
 
+        const nextRuns = mergeListedRunsWithCurrentRuns(
+          runsByEnvironmentRef.current[selectedEnvironment.id] ?? [],
+          listedRuns,
+        );
+
         commitEnvironmentRuns(selectedEnvironment.id, nextRuns);
+        forgetPendingLaunchesThatExistAsRealRuns(selectedEnvironment.id, nextRuns);
       } catch (error) {
         if (isActive) {
           setNotice(resolveWorkerErrorMessage(error));
@@ -459,9 +488,6 @@ export const useFactoryV2 = () => {
 
     if (matchingRun) {
       setSelectedRunId(matchingRun.id);
-      setPendingRunName(null);
-      setPendingRunEnvironmentId(null);
-      setPendingRunMode(null);
       setNotice(null);
       return true;
     }
@@ -483,9 +509,12 @@ export const useFactoryV2 = () => {
       return false;
     }
 
-    setPendingRunName(requestedGameName);
-    setPendingRunEnvironmentId(environmentId);
-    setPendingRunMode(selectedMode);
+    rememberPendingLaunch({
+      environmentId,
+      gameName: requestedGameName,
+      mode: selectedMode,
+      createdAt: new Date().toISOString(),
+    });
     setSelectedRunId(buildPendingRunId(environmentId, requestedGameName));
     setPollingState({
       status: "checking",
@@ -493,7 +522,7 @@ export const useFactoryV2 = () => {
       lastCheckedAt: Date.now(),
     });
 
-    return runWatchedAction(
+    const launched = await runWatchedAction(
       {
         kind: "launch",
         gameName: requestedGameName,
@@ -529,6 +558,12 @@ export const useFactoryV2 = () => {
         }
       },
     );
+
+    if (!launched) {
+      forgetPendingLaunch(environmentId, requestedGameName);
+    }
+
+    return launched;
   };
 
   const continueSelectedRun = async () => {
@@ -769,7 +804,6 @@ export const useFactoryV2 = () => {
     isLoadingRuns,
     isResolvingRunName,
     notice,
-    shouldPreferWatchView,
     environmentUnavailableReason,
     moreOptions,
     selectMode,
@@ -808,9 +842,6 @@ export const useFactoryV2 = () => {
     setNotice(null);
     setAcceptedRunState(null);
     setGuidedRecoveryState(null);
-    setPendingRunName(null);
-    setPendingRunEnvironmentId(null);
-    setPendingRunMode(null);
     setWatcher(null);
     setPollingState({
       status: "idle",
@@ -820,10 +851,13 @@ export const useFactoryV2 = () => {
   }
 
   function commitEnvironmentRuns(environmentId: string, nextRuns: FactoryRun[]) {
-    setRunsByEnvironment((currentRuns) => ({
-      ...currentRuns,
+    const nextRunsByEnvironment = {
+      ...runsByEnvironmentRef.current,
       [environmentId]: nextRuns,
-    }));
+    };
+
+    runsByEnvironmentRef.current = nextRunsByEnvironment;
+    setRunsByEnvironment(nextRunsByEnvironment);
   }
 
   function selectFetchedRun(
@@ -840,9 +874,7 @@ export const useFactoryV2 = () => {
         : currentState,
     );
     setSelectedRunId(nextRun.id);
-    setPendingRunName(null);
-    setPendingRunEnvironmentId(null);
-    setPendingRunMode(null);
+    forgetPendingLaunch(environmentId, nextRun.name);
     setNotice(null);
 
     if (nextRun.status === "complete") {
@@ -908,8 +940,10 @@ export const useFactoryV2 = () => {
   }
 
   async function refreshEnvironmentRuns(environmentId: FactoryWorkerEnvironmentId) {
-    const nextRuns = await loadEnvironmentRuns(environmentId, runsByEnvironmentRef.current[environmentId] ?? []);
+    const listedRuns = await loadEnvironmentRuns(environmentId, runsByEnvironmentRef.current[environmentId] ?? []);
+    const nextRuns = mergeListedRunsWithCurrentRuns(runsByEnvironmentRef.current[environmentId] ?? [], listedRuns);
     commitEnvironmentRuns(environmentId, nextRuns);
+    forgetPendingLaunchesThatExistAsRealRuns(environmentId, nextRuns);
     return nextRuns;
   }
 
@@ -1014,6 +1048,46 @@ export const useFactoryV2 = () => {
       blitzRegistrationOverrides: moreOptions.blitzRegistrationOverrides,
     });
   }
+
+  function commitPendingLaunches(nextPendingLaunches: FactoryPendingLaunch[]) {
+    pendingLaunchesRef.current = nextPendingLaunches;
+    setPendingLaunches(nextPendingLaunches);
+    writeFactoryPendingLaunches(nextPendingLaunches);
+  }
+
+  function updatePendingLaunches(
+    updateLaunches: (currentPendingLaunches: FactoryPendingLaunch[]) => FactoryPendingLaunch[],
+  ) {
+    const nextPendingLaunches = updateLaunches(pendingLaunchesRef.current);
+
+    if (arePendingLaunchesEqual(nextPendingLaunches, pendingLaunchesRef.current)) {
+      return;
+    }
+
+    commitPendingLaunches(nextPendingLaunches);
+  }
+
+  function rememberPendingLaunch(nextPendingLaunch: FactoryPendingLaunch) {
+    updatePendingLaunches((currentPendingLaunches) => upsertPendingLaunch(currentPendingLaunches, nextPendingLaunch));
+  }
+
+  function forgetPendingLaunch(environmentId: string, gameName: string) {
+    updatePendingLaunches((currentPendingLaunches) =>
+      currentPendingLaunches.filter((pendingLaunch) => !matchesPendingLaunch(pendingLaunch, environmentId, gameName)),
+    );
+  }
+
+  function forgetPendingLaunchesThatExistAsRealRuns(environmentId: string, runs: FactoryRun[]) {
+    updatePendingLaunches((currentPendingLaunches) =>
+      currentPendingLaunches.filter(
+        (pendingLaunch) =>
+          pendingLaunch.environmentId !== environmentId ||
+          !runs.some(
+            (run) => normalizePendingLaunchKey(environmentId, run.name) === buildPendingLaunchKey(pendingLaunch),
+          ),
+      ),
+    );
+  }
 };
 
 async function loadEnvironmentRuns(environmentId: FactoryWorkerEnvironmentId, fallbackRuns: FactoryRun[]) {
@@ -1050,42 +1124,39 @@ function isPendingRun(run: FactoryRun) {
   return run.id.startsWith("pending:");
 }
 
-function buildPendingRun({
-  pendingRunName,
-  pendingRunEnvironmentId,
-  pendingRunMode,
+function buildVisiblePendingRuns({
+  pendingLaunches,
   selectedEnvironmentId,
   watcher,
   pollingState,
 }: {
-  pendingRunName: string | null;
-  pendingRunEnvironmentId: string | null;
-  pendingRunMode: FactoryGameMode | null;
+  pendingLaunches: FactoryPendingLaunch[];
   selectedEnvironmentId: string | null;
   watcher: FactoryWatcherState | null;
   pollingState: FactoryPollingState;
 }) {
-  if (
-    !pendingRunName ||
-    !pendingRunEnvironmentId ||
-    !pendingRunMode ||
-    pendingRunEnvironmentId !== selectedEnvironmentId
-  ) {
-    return null;
-  }
+  return pendingLaunches
+    .filter((pendingLaunch) => pendingLaunch.environmentId === selectedEnvironmentId)
+    .map((pendingLaunch) => buildPendingRun(pendingLaunch, watcher, pollingState));
+}
 
+function buildPendingRun(
+  pendingLaunch: FactoryPendingLaunch,
+  watcher: FactoryWatcherState | null,
+  pollingState: FactoryPollingState,
+): FactoryRun {
   return {
-    id: buildPendingRunId(pendingRunEnvironmentId, pendingRunName),
-    syncKey: `pending:${pendingRunEnvironmentId}:${pendingRunName}`,
-    mode: pendingRunMode,
-    name: pendingRunName,
-    environment: pendingRunEnvironmentId,
+    id: buildPendingRunId(pendingLaunch.environmentId, pendingLaunch.gameName),
+    syncKey: `pending:${pendingLaunch.environmentId}:${pendingLaunch.gameName}`,
+    mode: pendingLaunch.mode,
+    name: pendingLaunch.gameName,
+    environment: pendingLaunch.environmentId,
     owner: "Factory",
     presetId: "pending",
-    status: "running" as const,
-    summary: watcher?.detail ?? pollingState.detail,
+    status: "running",
+    summary: resolvePendingRunSummary(pendingLaunch, watcher, pollingState),
     updatedAt: "Starting now",
-    steps: buildPendingRunSteps(pendingRunMode),
+    steps: buildPendingRunSteps(pendingLaunch.mode),
   };
 }
 
@@ -1093,24 +1164,38 @@ function buildPendingRunSteps(mode: FactoryGameMode): FactoryRun["steps"] {
   return (
     mode === "eternum"
       ? [
-          createPendingStep("create-world", "Create world", "Creating the world right now.", "running"),
-          createPendingStep("wait-for-factory-index", "Wait for factory index", "Giving the game a moment.", "pending"),
-          createPendingStep("configure-world", "Configure world", "Applying the setup.", "pending"),
-          createPendingStep("grant-village-pass-role", "Grant village pass role", "Opening village pass.", "pending"),
-          createPendingStep("create-banks", "Create banks", "Placing banks.", "pending"),
-          createPendingStep("create-indexer", "Create indexer", "Bringing the game online.", "pending"),
+          createPendingStep("launch-request", "Launch the game", "Starting the launch now.", "running"),
+          createPendingStep("create-world", "Create the game", "Creating the game now.", "pending"),
+          createPendingStep(
+            "wait-for-factory-index",
+            "Wait for the game to appear",
+            "Waiting for the game to show up.",
+            "pending",
+          ),
+          createPendingStep("configure-world", "Apply the game setup", "Applying the game setup.", "pending"),
+          createPendingStep("grant-lootchest-role", "Enable loot chests", "Enabling loot chests.", "pending"),
+          createPendingStep("grant-village-pass-role", "Enable village pass", "Enabling village pass.", "pending"),
+          createPendingStep("create-banks", "Create banks", "Creating the banks.", "pending"),
+          createPendingStep("create-indexer", "Start live updates", "Starting live updates.", "pending"),
         ]
       : [
-          createPendingStep("create-world", "Create world", "Creating the world right now.", "running"),
-          createPendingStep("wait-for-factory-index", "Wait for factory index", "Giving the game a moment.", "pending"),
-          createPendingStep("configure-world", "Configure world", "Applying the setup.", "pending"),
-          createPendingStep("create-indexer", "Create indexer", "Bringing the game online.", "pending"),
+          createPendingStep("launch-request", "Launch the game", "Starting the launch now.", "running"),
+          createPendingStep("create-world", "Create the game", "Creating the game now.", "pending"),
+          createPendingStep(
+            "wait-for-factory-index",
+            "Wait for the game to appear",
+            "Waiting for the game to show up.",
+            "pending",
+          ),
+          createPendingStep("configure-world", "Apply the game setup", "Applying the game setup.", "pending"),
+          createPendingStep("grant-lootchest-role", "Enable loot chests", "Enabling loot chests.", "pending"),
+          createPendingStep("create-indexer", "Start live updates", "Starting live updates.", "pending"),
         ]
   ) satisfies FactoryRun["steps"];
 }
 
 function createPendingStep(
-  id: FactoryWorkerLaunchStepId,
+  id: FactoryRun["steps"][number]["id"],
   title: string,
   latestEvent: string,
   status: FactoryRun["steps"][number]["status"],
@@ -1126,12 +1211,19 @@ function createPendingStep(
   };
 }
 
-function mergePendingRunIntoEnvironment(runs: FactoryRun[], pendingRun: FactoryRun | null) {
-  if (!pendingRun) {
+function mergePendingRunsIntoEnvironment(runs: FactoryRun[], pendingRuns: FactoryRun[]) {
+  if (pendingRuns.length === 0) {
     return runs;
   }
 
-  return [pendingRun, ...runs.filter((run) => run.id !== pendingRun.id && run.name !== pendingRun.name)];
+  const pendingRunKeys = new Set(
+    pendingRuns.map((pendingRun) => normalizePendingLaunchKey(pendingRun.environment, pendingRun.name)),
+  );
+
+  return [
+    ...pendingRuns,
+    ...runs.filter((run) => !pendingRunKeys.has(normalizePendingLaunchKey(run.environment, run.name))),
+  ];
 }
 
 function mergeAcceptedRunIntoEnvironment(runs: FactoryRun[], acceptedRunState: AcceptedRunState | null) {
@@ -1149,6 +1241,66 @@ function mergeAcceptedRunIntoEnvironment(runs: FactoryRun[], acceptedRunState: A
 function replaceRunInEnvironment(runs: FactoryRun[], nextRun: FactoryRun) {
   const remainingRuns = runs.filter((run) => run.id !== nextRun.id && run.name !== nextRun.name);
   return [nextRun, ...remainingRuns];
+}
+
+function mergeListedRunsWithCurrentRuns(currentRuns: FactoryRun[], listedRuns: FactoryRun[]) {
+  if (currentRuns.length === 0 || listedRuns.length === 0) {
+    return listedRuns.length === 0 ? currentRuns : listedRuns;
+  }
+
+  const listedRunKeys = new Set(listedRuns.map((run) => normalizePendingLaunchKey(run.environment, run.name)));
+  // Preserve targeted run fetches until the broader environment list catches up.
+  const missingCurrentRuns = currentRuns.filter(
+    (run) => !listedRunKeys.has(normalizePendingLaunchKey(run.environment, run.name)),
+  );
+
+  return [...missingCurrentRuns, ...listedRuns];
+}
+
+function resolvePendingRunSummary(
+  pendingLaunch: FactoryPendingLaunch,
+  watcher: FactoryWatcherState | null,
+  pollingState: FactoryPollingState,
+) {
+  if (watcher?.gameName === pendingLaunch.gameName) {
+    return watcher.detail;
+  }
+
+  return pollingState.status === "paused" ? pollingState.detail : FIRST_UPDATE_WAIT_MESSAGE;
+}
+
+function upsertPendingLaunch(currentPendingLaunches: FactoryPendingLaunch[], nextPendingLaunch: FactoryPendingLaunch) {
+  return [
+    nextPendingLaunch,
+    ...currentPendingLaunches.filter(
+      (pendingLaunch) => buildPendingLaunchKey(pendingLaunch) !== buildPendingLaunchKey(nextPendingLaunch),
+    ),
+  ];
+}
+
+function matchesPendingLaunch(pendingLaunch: FactoryPendingLaunch, environmentId: string, gameName: string) {
+  return buildPendingLaunchKey(pendingLaunch) === normalizePendingLaunchKey(environmentId, gameName);
+}
+
+function buildPendingLaunchKey(pendingLaunch: FactoryPendingLaunch) {
+  return normalizePendingLaunchKey(pendingLaunch.environmentId, pendingLaunch.gameName);
+}
+
+function normalizePendingLaunchKey(environmentId: string, gameName: string) {
+  return `${environmentId}:${gameName.trim().toLowerCase()}`;
+}
+
+function arePendingLaunchesEqual(left: FactoryPendingLaunch[], right: FactoryPendingLaunch[]) {
+  return (
+    left.length === right.length &&
+    left.every(
+      (pendingLaunch, index) =>
+        pendingLaunch.environmentId === right[index]?.environmentId &&
+        pendingLaunch.gameName === right[index]?.gameName &&
+        pendingLaunch.mode === right[index]?.mode &&
+        pendingLaunch.createdAt === right[index]?.createdAt,
+    )
+  );
 }
 
 function resolveMatchingRunByName(runs: FactoryRun[], requestedName: string) {

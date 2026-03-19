@@ -135,7 +135,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(searchPanel?.textContent).toContain("recent games");
     expect(selectedPanel?.textContent).toContain("Setup progress");
     expect(selectedPanel?.textContent).toContain("In progress");
-    expect(selectedPanel?.textContent).toContain("Step 2 of 3");
+    expect(selectedPanel?.textContent).toContain("3 of 4 parts");
+    expect(selectedPanel?.textContent).toContain("Step 3 of 4");
     expect(gameNameInput?.className).toContain("text-center");
     expect(doneMoment?.className).toContain("opacity-45");
     expect(nowMoment?.className).toContain("shadow-[0_20px_40px_rgba(157,107,36,0.14)]");
@@ -143,5 +144,97 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(nextMoment?.className).toContain("opacity-70");
     expect(currentProgressTrack?.textContent).toBe("");
     expect(actionBar?.className).toContain("sticky");
+  });
+
+  it("shows the pending launch request as the first setup step", async () => {
+    const pendingRun = buildRun({
+      id: "pending:slot.blitz:bltz-sprint-01",
+      steps: [
+        {
+          id: "launch-request" as const,
+          title: "Launch the game",
+          summary: "Starting the launch now.",
+          workflowName: "launch-request",
+          status: "running" as const,
+          verification: "running",
+          latestEvent: "running",
+        },
+        {
+          id: "create-world" as const,
+          title: "Create world",
+          summary: "Create world",
+          workflowName: "launch-world",
+          status: "pending" as const,
+          verification: "pending",
+          latestEvent: "pending",
+        },
+        {
+          id: "wait-for-factory-index" as const,
+          title: "Wait for factory index",
+          summary: "Wait for factory index",
+          workflowName: "wait-for-factory-index",
+          status: "pending" as const,
+          verification: "pending",
+          latestEvent: "pending",
+        },
+        {
+          id: "configure-world" as const,
+          title: "Configure world",
+          summary: "Configure world",
+          workflowName: "configure-world",
+          status: "pending" as const,
+          verification: "pending",
+          latestEvent: "pending",
+        },
+        {
+          id: "grant-lootchest-role" as const,
+          title: "Grant loot chest role",
+          summary: "Grant loot chest role",
+          workflowName: "grant-lootchest-role",
+          status: "pending" as const,
+          verification: "pending",
+          latestEvent: "pending",
+        },
+        {
+          id: "create-indexer" as const,
+          title: "Create indexer",
+          summary: "Create indexer",
+          workflowName: "create-indexer",
+          status: "pending" as const,
+          verification: "pending",
+          latestEvent: "pending",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[pendingRun]}
+          selectedRun={pendingRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+
+    expect(selectedPanel?.textContent).toContain("1 of 6 parts");
+    expect(selectedPanel?.textContent).toContain("Step 1 of 6");
   });
 });
