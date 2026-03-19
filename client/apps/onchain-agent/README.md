@@ -24,8 +24,16 @@ pnpm dev
 
 ## MCP Server (Claude Code)
 
+From the repo root:
+
 ```bash
-claude mcp add eternum -- npx tsx client/apps/onchain-agent/dev/scripts/mcp-server.ts
+claude mcp add eternum -- npx tsx ./client/apps/onchain-agent/dev/scripts/mcp-server.ts
+```
+
+Or with an absolute path if your working directory differs:
+
+```bash
+claude mcp add eternum -- npx tsx /path/to/eternum/client/apps/onchain-agent/dev/scripts/mcp-server.ts
 ```
 
 22 tools for gameplay — see [PROVIDER-METHODS.md](PROVIDER-METHODS.md) for full list.
