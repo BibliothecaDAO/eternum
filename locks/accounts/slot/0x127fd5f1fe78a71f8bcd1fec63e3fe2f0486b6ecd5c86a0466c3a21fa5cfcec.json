@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-rush-466",
-    "launchRequestId": "23308878267-1",
+    "gameName": "bltz-thrum-276",
+    "launchRequestId": "23312991016-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23308878267,
+    "workflowRunId": 23312991016,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "bf079482-4bca-4206-ae32-35c80576f977"
+    "stepId": "create-world",
+    "leaseId": "834ead0b-4beb-4fed-bb81-3730f4bccc0c"
   },
-  "acquiredAt": "2026-03-19T17:51:26.151Z",
-  "heartbeatAt": "2026-03-19T17:51:27.677Z",
-  "expiresAt": "2026-03-19T17:51:27.677Z",
-  "releasedAt": "2026-03-19T17:51:27.677Z"
+  "acquiredAt": "2026-03-19T19:27:28.703Z",
+  "heartbeatAt": "2026-03-19T19:27:28.703Z",
+  "expiresAt": "2026-03-19T19:37:28.703Z"
 }
