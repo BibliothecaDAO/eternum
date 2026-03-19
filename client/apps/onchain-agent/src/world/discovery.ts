@@ -106,7 +106,7 @@ function extractRpcUrl(row: Record<string, unknown>): string | null {
  * Resolved from the Cartridge factory; provides everything the agent needs
  * to connect to Torii and StarkNet.
  */
-interface WorldInfo {
+export interface WorldInfo {
   /** Base Torii GraphQL/SQL URL for the world (e.g. `https://api.cartridge.gg/x/<worldName>/torii`). */
   toriiUrl: string;
   /** Normalized 64-hex-digit world contract address (0x-prefixed). */

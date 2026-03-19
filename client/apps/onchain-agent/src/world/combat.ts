@@ -7,6 +7,13 @@
 
 // ── Tier damage values (match on-chain t1_damage_value / multipliers) ──
 
+/**
+ * Base damage value per troop tier. T2 and T3 are multipliers of T1.
+ *
+ * - T1: 100 (baseline)
+ * - T2: 250 (2.5x)
+ * - T3: 700 (7x)
+ */
 const TIER_DAMAGE: Record<string, number> = {
   T1: 100,
   T2: 250, // 100 * 2.5
@@ -17,9 +24,15 @@ const TIER_DAMAGE: Record<string, number> = {
 // Returns a multiplier (e.g. 1.3 for +30%, 0.7 for -30%, 1.0 for neutral)
 // Mirrors configManager.getBiomeCombatBonus from packages/core
 
+/** Maps troop type name to its index in the biome bonus tuple. */
 const TROOP_IDX: Record<string, number> = { Knight: 0, Crossbowman: 1, Paladin: 2 };
 
-// [Knight, Crossbowman, Paladin] bonus as fraction (0.3 = 30%)
+/**
+ * Per-biome combat bonus for each troop type as `[Knight, Crossbowman, Paladin]`.
+ * Values are fractions: 0.3 = +30% bonus, -0.3 = -30% penalty, 0 = neutral.
+ *
+ * Biome IDs follow the on-chain `BiomeType` enum.
+ */
 const BIOME_BONUS: Record<number, [number, number, number]> = {
   // Ocean/DeepOcean/Beach/Snow — Crossbowman +30%, Paladin -30%
   1: [0, 0.3, -0.3], 2: [0, 0.3, -0.3], 4: [0, 0.3, -0.3],
@@ -33,6 +46,13 @@ const BIOME_BONUS: Record<number, [number, number, number]> = {
   15: [0.3, 0, -0.3], 16: [0.3, 0, -0.3],
 };
 
+/**
+ * Returns the combat multiplier for a troop type on a given biome.
+ *
+ * @param troopType - One of "Knight", "Crossbowman", or "Paladin".
+ * @param biomeId - Numeric biome ID from the on-chain `BiomeType` enum.
+ * @returns Multiplier applied to damage (e.g. 1.3 for +30%, 0.7 for -30%, 1.0 for neutral).
+ */
 function biomeCombatMultiplier(troopType: string, biomeId: number): number {
   const idx = TROOP_IDX[troopType];
   const bonuses = BIOME_BONUS[biomeId];
@@ -42,9 +62,22 @@ function biomeCombatMultiplier(troopType: string, biomeId: number): number {
 
 // ── Stamina modifiers ──
 
+/** Minimum stamina required to attack at full effectiveness. Below this, damage is 0. */
 const STAMINA_ATTACK_REQ = 50;
+
+/** Minimum stamina for full defensive effectiveness. Below this, defense is reduced to 70%. */
 const STAMINA_DEFENSE_REQ = 40;
 
+/**
+ * Returns the stamina-based damage modifier for an army.
+ *
+ * - Attackers: 1 if stamina >= 50, otherwise 0 (cannot attack).
+ * - Defenders: 1 if stamina >= 40, otherwise 0.7 (30% penalty).
+ *
+ * @param stamina - Current stamina of the army.
+ * @param isAttacker - Whether the army is the attacker.
+ * @returns Multiplier in the range [0, 1].
+ */
 function staminaModifier(stamina: number, isAttacker: boolean): number {
   if (isAttacker) return stamina >= STAMINA_ATTACK_REQ ? 1 : 0;
   return stamina >= STAMINA_DEFENSE_REQ ? 1 : 0.7;
@@ -52,6 +85,17 @@ function staminaModifier(stamina: number, isAttacker: boolean): number {
 
 // ── Cooldown modifier ──
 
+/**
+ * Returns the cooldown-based damage modifier for an army.
+ *
+ * - Attackers on cooldown cannot attack (returns 0).
+ * - Defenders on cooldown suffer a 15% penalty (returns 0.85).
+ *
+ * @param cooldownEnd - Unix timestamp when the battle cooldown expires.
+ * @param now - Current Unix timestamp.
+ * @param isAttacker - Whether the army is the attacker.
+ * @returns Multiplier in the range [0, 1].
+ */
 function cooldownModifier(cooldownEnd: number, now: number, isAttacker: boolean): number {
   const onCooldown = cooldownEnd > now;
   if (isAttacker) return onCooldown ? 0 : 1;
@@ -60,22 +104,41 @@ function cooldownModifier(cooldownEnd: number, now: number, isAttacker: boolean)
 
 // ── Main simulation ──
 
+/**
+ * Input stats for one side of a combat simulation.
+ */
 export interface CombatInput {
+  /** Number of troops in the army. */
   troopCount: number;
-  troopType: string;  // "Knight" | "Crossbowman" | "Paladin"
-  troopTier: string;  // "T1" | "T2" | "T3"
+  /** Troop category: "Knight", "Crossbowman", or "Paladin". */
+  troopType: string;
+  /** Troop tier: "T1", "T2", or "T3". */
+  troopTier: string;
+  /** Current stamina points (attackers need >= 50, defenders >= 40 for full effect). */
   stamina: number;
-  cooldownEnd?: number; // battle_cooldown_end timestamp, default 0
+  /** Unix timestamp when the battle cooldown expires. Defaults to 0 (no cooldown). */
+  cooldownEnd?: number;
 }
 
+/**
+ * Outcome of a combat simulation, including damage dealt, casualties, and the winner.
+ */
 export interface CombatResult {
+  /** Total damage dealt by the attacker (before clamping to defender troop count). */
   attackerDamage: number;
+  /** Total damage dealt by the defender (before clamping to attacker troop count). */
   defenderDamage: number;
+  /** Number of attacker troops killed. */
   attackerCasualties: number;
+  /** Number of defender troops killed. */
   defenderCasualties: number;
+  /** Attacker troops remaining after battle. */
   attackerSurviving: number;
+  /** Defender troops remaining after battle. */
   defenderSurviving: number;
+  /** Which side wins, or "draw" if both are wiped out or both survive. */
   winner: "attacker" | "defender" | "draw";
+  /** Human-readable summary of biome advantage (e.g. "favors attacker (Knight +30%)"). */
   biomeAdvantage: string;
 }
 
@@ -83,10 +146,24 @@ export interface CombatResult {
  * Simulate a battle between two armies. Uses the same deterministic math
  * as the Cairo contracts — the result is guaranteed to match on-chain.
  *
+ * The damage formula accounts for troop count, tier ratio, stamina, cooldown,
+ * and biome bonuses, scaled by a Lanchester-style `totalTroops^beta` denominator.
+ *
  * @param attacker - Attacker army stats.
  * @param defender - Defender army stats.
  * @param biomeId - Biome ID of the tile where the battle occurs.
  * @returns Predicted battle outcome with casualties and winner.
+ *
+ * @example
+ * ```ts
+ * const result = simulateCombat(
+ *   { troopCount: 1000, troopType: "Knight", troopTier: "T1", stamina: 100 },
+ *   { troopCount: 800, troopType: "Paladin", troopTier: "T1", stamina: 60 },
+ *   10, // Taiga biome — Knight +30%
+ * );
+ * // result.winner === "attacker"
+ * // result.biomeAdvantage === "favors attacker (Knight +30%)"
+ * ```
  */
 export function simulateCombat(
   attacker: CombatInput,

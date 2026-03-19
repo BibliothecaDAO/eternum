@@ -14,10 +14,19 @@ import { Direction, getNeighborOffsets, getDirectionBetweenAdjacentHexes, Coord 
 
 // ── Types ────────────────────────────────────────────────────────────
 
-/** Cost function: given a destination tile key "x,y", return stamina cost to enter it. */
+/**
+ * Cost function that returns the stamina cost to enter a tile.
+ * @param tileKey - Tile key in "x,y" format.
+ * @returns Stamina cost to enter the tile.
+ */
 type TileCostFn = (tileKey: string) => number;
 
-interface PathResult {
+/**
+ * Result of an A* pathfinding search between two hex positions.
+ * Returned by {@link findPath}; contains the full path, direction sequence,
+ * and stamina accounting.
+ */
+export interface PathResult {
   /** Ordered hex positions from start to end (inclusive). */
   path: Position[];
   /** Direction values for each step. Length = path.length - 1. */
@@ -177,10 +186,11 @@ function reconstructPath(endNode: Node): PathResult {
 // ── Build tile index from MapSnapshot tiles ──────────────────────────
 
 /**
- * Pre-built lookup sets used by `findPath` to classify tiles without
+ * Pre-built lookup sets used by {@link findPath} to classify tiles without
  * iterating the full tile array on every pathfinding call.
+ * Constructed via {@link buildTileIndex}.
  */
-interface TileIndex {
+export interface TileIndex {
   /** Set of tile keys ("x,y") for every tile that has been explored. */
   explored: Set<string>;
   /** Set of tile keys ("x,y") for tiles that block movement (occupied by any entity). */
@@ -190,7 +200,10 @@ interface TileIndex {
 /**
  * Build a pathfinding tile index from raw tile data.
  * Any tile with a non-zero `occupierType` is marked as blocked.
- * The end position is never treated as blocked by `findPath`, allowing targeting.
+ * The end position is never treated as blocked by {@link findPath}, allowing targeting.
+ *
+ * @param tiles - Array of tile states from a map snapshot.
+ * @returns Pre-built {@link TileIndex} with explored and blocked sets keyed by "x,y".
  */
 export function buildTileIndex(tiles: TileState[]): TileIndex {
   const explored = new Set<string>();

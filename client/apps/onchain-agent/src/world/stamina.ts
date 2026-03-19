@@ -7,6 +7,7 @@
 
 import type { StaminaConfig } from "@bibliothecadao/torii";
 
+/** Flat stamina bonus added on top of the config base max, keyed by troop tier. */
 const TIER_BONUS: Record<string, number> = {
   T1: 0,
   T2: 20,
@@ -21,8 +22,13 @@ const TIER_BONUS: Record<string, number> = {
  * @param troopTier - Troop tier: "T1", "T2", or "T3".
  * @param baseMax - Base maximum stamina from the on-chain stamina config.
  * @returns Effective maximum stamina after applying the tier bonus.
+ *
+ * @example
+ * ```ts
+ * getMaxStamina("Knight", "T3", 100); // => 140
+ * ```
  */
-export function getMaxStamina(troopType: string, troopTier: string, baseMax: number): number {
+export function getMaxStamina(_troopType: string, troopTier: string, baseMax: number): number {
   return baseMax + (TIER_BONUS[troopTier] ?? 0);
 }
 
@@ -48,6 +54,17 @@ interface ProjectStaminaArgs {
  *
  * @param args - Stamina projection arguments (see {@link ProjectStaminaArgs}).
  * @returns Projected stamina capped at `maxStamina`.
+ *
+ * @example
+ * ```ts
+ * projectStamina({
+ *   currentAmount: 60,
+ *   updatedTick: 100,
+ *   currentTick: 110,
+ *   gainPerTick: 2,
+ *   maxStamina: 100,
+ * }); // => 80
+ * ```
  */
 export function projectStamina(args: ProjectStaminaArgs): number {
   const { currentAmount, updatedTick, currentTick, gainPerTick, maxStamina } = args;
@@ -62,7 +79,12 @@ export function projectStamina(args: ProjectStaminaArgs): number {
 }
 
 /**
- * Resolve the base max stamina from config for the given troop type.
+ * Resolve the base max stamina from the on-chain config for the given troop type.
+ * Falls back to the Knight value for unrecognised troop types.
+ *
+ * @param troopType - "Knight", "Paladin", or "Crossbowman".
+ * @param config - On-chain stamina config containing per-type max values.
+ * @returns Base max stamina before tier bonus.
  */
 function baseMaxFromConfig(troopType: string, config: StaminaConfig): number {
   switch (troopType) {
