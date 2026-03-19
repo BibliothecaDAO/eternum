@@ -1,4 +1,3 @@
-import type { Config } from "@bibliothecadao/types";
 import type { GameType } from "./environment";
 export type { GameType };
 import blitzLocalConfig from "../environments/data/blitz.local.json";
@@ -15,7 +14,11 @@ import eternumSlottestConfig from "../environments/data/eternum.slottest.json";
 /** Valid chain identifiers */
 export type Chain = "sepolia" | "mainnet" | "slot" | "slottest" | "local";
 
-const configs: Record<GameType, Record<Chain, any>> = {
+type NetworkConfigDocument = {
+  configuration: any;
+};
+
+const configs: Record<GameType, Record<Chain, NetworkConfigDocument>> = {
   blitz: {
     local: blitzLocalConfig,
     mainnet: blitzMainnetConfig,
@@ -32,7 +35,7 @@ const configs: Record<GameType, Record<Chain, any>> = {
   },
 };
 
-export function getConfigFromNetwork(chain: Chain, gameType: GameType): Config {
+export function getConfigFromNetwork(chain: Chain, gameType: GameType) {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
     throw new Error(`Invalid game type: ${gameType}. Must be "blitz" or "eternum".`);
