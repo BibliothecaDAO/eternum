@@ -1,3 +1,10 @@
+/**
+ * Game config queries and parsing via Torii SQL.
+ *
+ * This is the SQL-only equivalent of packages/core ClientConfigManager,
+ * which reads the same data from Dojo ECS components. This module exists
+ * so the headless agent can load game config without a full Dojo client.
+ */
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 // ── Raw row types ────────────────────────────────────────────────────
