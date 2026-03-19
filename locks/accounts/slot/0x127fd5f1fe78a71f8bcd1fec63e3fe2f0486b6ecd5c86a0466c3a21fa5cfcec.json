@@ -13,6 +13,7 @@
     "leaseId": "69f674de-7086-48f5-ab12-bd91e2df2eaf"
   },
   "acquiredAt": "2026-03-19T16:20:39.068Z",
-  "heartbeatAt": "2026-03-19T16:20:39.068Z",
-  "expiresAt": "2026-03-19T16:30:39.068Z"
+  "heartbeatAt": "2026-03-19T16:20:51.412Z",
+  "expiresAt": "2026-03-19T16:20:51.412Z",
+  "releasedAt": "2026-03-19T16:20:51.412Z"
 }
