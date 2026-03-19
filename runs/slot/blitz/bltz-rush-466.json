@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "runId": "slot.blitz:bltz-rush-466",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-rush-466",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/blitz/bltz-rush-466/23308878267-1.json",
+  "latestLaunchRequestId": "23308878267-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-19T17:49:42.871Z",
+  "updatedAt": "2026-03-19T17:49:42.871Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23308878267,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23308878267",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "aebe708eb3d61d3522c54d8e8667e9554503b6f2"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Create world",
+      "status": "pending",
+      "workflowStepName": "Create world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Wait for factory index",
+      "status": "pending",
+      "workflowStepName": "Wait for factory index",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Configure world",
+      "status": "pending",
+      "workflowStepName": "Configure world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Grant loot chest role",
+      "status": "pending",
+      "workflowStepName": "Grant loot chest role",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Create indexer",
+      "status": "pending",
+      "workflowStepName": "Create indexer",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {}
+}
