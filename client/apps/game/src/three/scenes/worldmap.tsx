@@ -3213,7 +3213,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (this.isChunkTransitioning) {
-        this.requestChunkRefresh(false, "deferred_transition_tile");
+        this.requestChunkRefresh(true, "deferred_transition_tile");
         return;
       }
 
