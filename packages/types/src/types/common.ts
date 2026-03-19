@@ -726,7 +726,9 @@ export type FactoryMapConfigOverrides = Partial<
   >
 >;
 
-export type FactoryBlitzRegistrationOverrides = Partial<Pick<Config["blitz"]["registration"], "registration_count_max">>;
+export type FactoryBlitzRegistrationOverrides = Partial<
+  Pick<Config["blitz"]["registration"], "registration_count_max">
+>;
 
 export interface RealmInfo {
   realmId: ID;

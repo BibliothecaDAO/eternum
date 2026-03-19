@@ -255,7 +255,11 @@ export function applyBlitzRegistrationOverrides(
   }
 
   Object.entries(overrides).forEach(([key, rawValue]) => {
-    validateBlitzRegistrationOverrideValue(key as keyof FactoryBlitzRegistrationOverrides, rawValue as number, twoPlayerMode);
+    validateBlitzRegistrationOverrideValue(
+      key as keyof FactoryBlitzRegistrationOverrides,
+      rawValue as number,
+      twoPlayerMode,
+    );
   });
 
   config.blitz = {
