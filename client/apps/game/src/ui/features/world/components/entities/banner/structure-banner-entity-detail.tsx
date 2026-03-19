@@ -232,7 +232,7 @@ const StructureBannerEntityDetailContent = memo(
             )}
 
             {showFaithTab && (
-              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
+              <Tabs.Panel scrollable={true} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
                 <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
               </Tabs.Panel>
             )}

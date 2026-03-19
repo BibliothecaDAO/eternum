@@ -10,6 +10,27 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-19",
+    title: "FP Wallet Chip Removed",
+    description:
+      "Removed the experimental FP Wallet chip from the top header to keep entity and resource UI focused on core in-panel faith metrics.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Faith Panel Overflow Fix",
+    description:
+      "Adjusted Wonder faith cards in compact entity details so all key stats remain visible without clipping, and enabled scrolling in the full Faith tab when content is taller than the panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Wonder Faith Detail Views",
+    description:
+      "Wonders now have a dedicated faith detail view from both map tiles and the Faith leaderboard, with ownership, FP rates, and follower details in a dedicated modal panel.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-19",
     title: "Auto World Mode Detection",
     description:
       "Fixed game startup so Blitz and Eternum mode are detected from each world's onchain config instead of requiring a forced environment mode flag.",

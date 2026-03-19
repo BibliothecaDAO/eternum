@@ -4,6 +4,7 @@ import {
   fetchFaithfulStructureStatus,
   type FaithLeaderboardEntry,
 } from "@/services/leaderboard/faith-leaderboard-service";
+import { WonderFaithDetailModal, WonderFaithDetailPanel } from "@/ui/features/social/faith/wonder-faith-detail-panel";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
@@ -86,6 +87,7 @@ export const FaithDevotionActionPanel = ({
 
   const structureCategory = structure?.base?.category;
   const eligibleForDevotion = isDevotionEligible(structureCategory);
+  const isWonderStructure = Boolean(structure?.metadata?.has_wonder);
 
   const { data: wonderEntries = [], isLoading: isLoadingWonders } = useQuery({
     queryKey: ["faith-devotion-wonders"],
@@ -135,6 +137,15 @@ export const FaithDevotionActionPanel = ({
       />,
     );
   }, [structureEntityId, structureName, toggleModal]);
+  const openWonderDetailModal = useCallback(() => {
+    toggleModal(
+      <WonderFaithDetailModal
+        wonderId={structureEntityId}
+        fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+        onClose={() => toggleModal(null)}
+      />,
+    );
+  }, [structureEntityId, structureName, toggleModal]);
 
   if (isLoadingStructure) {
     return (
@@ -162,6 +173,40 @@ export const FaithDevotionActionPanel = ({
           </span>
           <p className="text-xxs text-gold/70">Only Realms and Villages can be devoted to a Wonder.</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isWonderStructure) {
+    const isCompactVariant = variant === "compact";
+
+    return (
+      <div className={cn("flex h-full min-h-0 flex-col", isCompactVariant ? "gap-2" : "gap-3", className)}>
+        <div className="flex flex-col gap-1 text-left">
+          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Faith</span>
+          <span className={cn("font-semibold text-gold", isCompactVariant ? "text-sm" : "text-base")}>
+            Wonder Details
+          </span>
+        </div>
+
+        <WonderFaithDetailPanel
+          wonderId={structureEntityId}
+          fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+          compact={isCompactVariant}
+          className={cn("min-h-0", isCompactVariant ? "flex-none" : "flex-1")}
+        />
+
+        {isCompactVariant && (
+          <Button
+            size="xs"
+            variant="outline"
+            forceUppercase={false}
+            className="w-full shrink-0 border-gold/40 bg-gold/10 text-gold hover:bg-gold/15"
+            onClick={openWonderDetailModal}
+          >
+            Open Wonder Detail
+          </Button>
+        )}
       </div>
     );
   }

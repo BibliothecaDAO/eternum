@@ -1,6 +1,8 @@
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { displayAddress } from "@/ui/utils/utils";
 import { fetchFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
+import { WonderFaithDetailModal } from "./wonder-faith-detail-panel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const AUTO_REFRESH_INTERVAL_MS = 30_000;
@@ -31,6 +33,7 @@ const buildOwnerLabel = (entry: FaithLeaderboardEntry): string => {
 };
 
 export const FaithLeaderboardPanel = () => {
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const [entries, setEntries] = useState<FaithLeaderboardEntry[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,6 +100,18 @@ export const FaithLeaderboardPanel = () => {
   }, [lastUpdatedAt]);
 
   const hasEntries = entries.length > 0;
+  const openWonderDetails = useCallback(
+    (entry: FaithLeaderboardEntry) => {
+      toggleModal(
+        <WonderFaithDetailModal
+          wonderId={entry.wonderId}
+          fallbackWonderName={entry.wonderName}
+          onClose={() => toggleModal(null)}
+        />,
+      );
+    },
+    [toggleModal],
+  );
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden p-4">
@@ -140,7 +155,19 @@ export const FaithLeaderboardPanel = () => {
             </thead>
             <tbody>
               {entries.map((entry) => (
-                <tr key={entry.wonderId.toString()} className="border-t border-gold/10 text-gold/90">
+                <tr
+                  key={entry.wonderId.toString()}
+                  className="cursor-pointer border-t border-gold/10 text-gold/90 transition hover:bg-gold/5"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openWonderDetails(entry)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openWonderDetails(entry);
+                    }
+                  }}
+                >
                   <td className="px-3 py-2 text-center">{entry.rank}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col">

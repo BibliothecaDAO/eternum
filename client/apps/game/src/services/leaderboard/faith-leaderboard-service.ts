@@ -14,9 +14,24 @@ interface FaithLeaderboardRow {
   num_structures_pledged?: unknown;
 }
 
+interface WonderFaithDetailRow extends FaithLeaderboardRow {
+  owner_claim_per_sec?: unknown;
+}
+
 interface FaithfulStructureRow {
   structure_id?: unknown;
   wonder_id?: unknown;
+  faithful_since?: unknown;
+  fp_to_wonder_owner_per_sec?: unknown;
+  fp_to_struct_owner_per_sec?: unknown;
+}
+
+interface WonderFaithFollowerRow {
+  structure_id?: unknown;
+  structure_type?: unknown;
+  realm_id?: unknown;
+  owner_address?: unknown;
+  owner_name?: unknown;
   faithful_since?: unknown;
   fp_to_wonder_owner_per_sec?: unknown;
   fp_to_struct_owner_per_sec?: unknown;
@@ -33,12 +48,42 @@ export interface FaithLeaderboardEntry {
   followerCount: number;
 }
 
-export interface FaithfulStructureStatus {
+interface FaithfulStructureStatus {
   structureId: bigint;
   wonderId: bigint;
   faithfulSince: number;
   fpToWonderOwnerPerSec: number;
   fpToStructureOwnerPerSec: number;
+}
+
+export interface WonderFaithFollowerEntry {
+  structureId: bigint;
+  structureType: number;
+  structureTypeLabel: string;
+  structureLabel: string;
+  ownerAddress: string;
+  ownerName: string | null;
+  faithfulSince: number;
+  fpToWonderOwnerPerSec: number;
+  fpToFollowerOwnerPerSec: number;
+  totalContributionPerSec: number;
+}
+
+export interface WonderFaithDetail {
+  wonderId: bigint;
+  wonderName: string;
+  ownerAddress: string;
+  ownerName: string | null;
+  totalFaithPoints: bigint;
+  totalFaithPointsPerSec: number;
+  ownBaselinePerSec: number;
+  followersContributionPerSec: number;
+  followerCount: number;
+  ownerSharePercent: number;
+  followerSharePercent: number;
+  ownerSharePerSecFromFollowers: number;
+  followersSharePerSec: number;
+  followers: WonderFaithFollowerEntry[];
 }
 
 const WONDER_FAITH_LEADERBOARD_QUERY = `
@@ -56,6 +101,49 @@ const WONDER_FAITH_LEADERBOARD_QUERY = `
   LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
   WHERE s.\`metadata.has_wonder\` = true
   ORDER BY COALESCE(wf.claimed_points, 0) DESC, COALESCE(wf.claim_per_sec, 0) DESC, s.entity_id ASC;
+`;
+
+const REALM_STRUCTURE_TYPE = 1;
+const VILLAGE_STRUCTURE_TYPE = 5;
+const HOLY_SITE_STRUCTURE_TYPE = 6;
+const OWNER_SHARE_PERCENT = 30;
+const FOLLOWER_SHARE_PERCENT = 70;
+
+const buildWonderFaithDetailQuery = (wonderId: bigint): string => `
+  SELECT
+    s.entity_id AS wonder_id,
+    s.owner AS owner_address,
+    sos.name AS owner_name,
+    s.\`metadata.realm_id\` AS realm_id,
+    COALESCE(wf.claimed_points, 0) AS claimed_points,
+    COALESCE(wf.claim_per_sec, 0) AS claim_per_sec,
+    COALESCE(wf.claim_last_at, 0) AS claim_last_at,
+    COALESCE(wf.owner_claim_per_sec, 0) AS owner_claim_per_sec,
+    COALESCE(wf.num_structures_pledged, 0) AS num_structures_pledged
+  FROM [s1_eternum-Structure] s
+  LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id
+  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+  WHERE s.entity_id = ${wonderId.toString()} AND s.\`metadata.has_wonder\` = true
+  LIMIT 1;
+`;
+
+const buildWonderFaithFollowersQuery = (wonderId: bigint): string => `
+  SELECT
+    fs.structure_id AS structure_id,
+    s.\`base.category\` AS structure_type,
+    s.\`metadata.realm_id\` AS realm_id,
+    s.owner AS owner_address,
+    sos.name AS owner_name,
+    fs.faithful_since AS faithful_since,
+    fs.fp_to_wonder_owner_per_sec AS fp_to_wonder_owner_per_sec,
+    fs.fp_to_struct_owner_per_sec AS fp_to_struct_owner_per_sec
+  FROM [s1_eternum-FaithfulStructure] fs
+  LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = fs.structure_id
+  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+  WHERE fs.wonder_id = ${wonderId.toString()}
+    AND fs.structure_id != ${wonderId.toString()}
+    AND s.\`base.category\` IN (${REALM_STRUCTURE_TYPE}, ${VILLAGE_STRUCTURE_TYPE}, ${HOLY_SITE_STRUCTURE_TYPE})
+  ORDER BY fs.faithful_since ASC, fs.structure_id ASC;
 `;
 
 const buildFaithfulStructureStatusQuery = (structureId: bigint): string => `
@@ -159,6 +247,32 @@ const parseOwnerName = (value: unknown): string | null => {
   return trimmed;
 };
 
+const getFaithfulStructureTypeLabel = (structureType: number): string => {
+  switch (structureType) {
+    case REALM_STRUCTURE_TYPE:
+      return "Realm";
+    case VILLAGE_STRUCTURE_TYPE:
+      return "Village";
+    case HOLY_SITE_STRUCTURE_TYPE:
+      return "Holy Site";
+    default:
+      return "Structure";
+  }
+};
+
+const buildFaithfulStructureLabel = (structureId: bigint, structureType: number, realmId: number): string => {
+  if (structureType === REALM_STRUCTURE_TYPE && realmId > 0) {
+    const realmName = getRealmNameById(realmId);
+    if (realmName) {
+      return `Realm - ${realmName}`;
+    }
+    return `Realm #${realmId}`;
+  }
+
+  const structureTypeLabel = getFaithfulStructureTypeLabel(structureType);
+  return `${structureTypeLabel} #${structureId.toString()}`;
+};
+
 const getOptimisticFaithPoints = (
   claimedPoints: bigint,
   claimPerSecond: bigint,
@@ -228,6 +342,74 @@ const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeader
     ...entry,
     rank: index + 1,
   }));
+};
+
+const transformWonderFaithFollowerRows = (rows: WonderFaithFollowerRow[]): WonderFaithFollowerEntry[] => {
+  return rows
+    .map((row) => {
+      const structureId = parseBigInt(row.structure_id);
+      if (structureId == null || structureId <= 0n) {
+        return null;
+      }
+
+      const structureType = parseIntNumber(row.structure_type);
+      const realmId = parseIntNumber(row.realm_id);
+      const fpToWonderOwnerPerSec = parseIntNumber(row.fp_to_wonder_owner_per_sec);
+      const fpToFollowerOwnerPerSec = parseIntNumber(row.fp_to_struct_owner_per_sec);
+
+      return {
+        structureId,
+        structureType,
+        structureTypeLabel: getFaithfulStructureTypeLabel(structureType),
+        structureLabel: buildFaithfulStructureLabel(structureId, structureType, realmId),
+        ownerAddress: formatOwnerAddress(row.owner_address),
+        ownerName: parseOwnerName(row.owner_name),
+        faithfulSince: parseIntNumber(row.faithful_since),
+        fpToWonderOwnerPerSec,
+        fpToFollowerOwnerPerSec,
+        totalContributionPerSec: fpToWonderOwnerPerSec + fpToFollowerOwnerPerSec,
+      } satisfies WonderFaithFollowerEntry;
+    })
+    .filter((entry): entry is WonderFaithFollowerEntry => entry !== null);
+};
+
+const transformWonderFaithDetailRow = (
+  row: WonderFaithDetailRow,
+  followers: WonderFaithFollowerEntry[],
+): WonderFaithDetail | null => {
+  const wonderId = parseBigInt(row.wonder_id);
+  if (wonderId == null || wonderId <= 0n) {
+    return null;
+  }
+
+  const nowInSeconds = BigInt(Math.floor(Date.now() / 1000));
+  const realmId = parseIntNumber(row.realm_id);
+  const claimedPoints = parseNonNegativeBigInt(row.claimed_points);
+  const claimPerSecond = parseNonNegativeBigInt(row.claim_per_sec);
+  const claimLastAt = parseNonNegativeBigInt(row.claim_last_at);
+  const totalFaithPoints = getOptimisticFaithPoints(claimedPoints, claimPerSecond, claimLastAt, nowInSeconds);
+  const totalFaithPointsPerSec = parseIntNumber(claimPerSecond);
+  const followersContributionPerSec = followers.reduce((sum, follower) => sum + follower.totalContributionPerSec, 0);
+  const ownBaselinePerSec = Math.max(0, totalFaithPointsPerSec - followersContributionPerSec);
+  const ownerSharePerSecFromFollowers = followers.reduce((sum, follower) => sum + follower.fpToWonderOwnerPerSec, 0);
+  const followersSharePerSec = followers.reduce((sum, follower) => sum + follower.fpToFollowerOwnerPerSec, 0);
+
+  return {
+    wonderId,
+    wonderName: buildWonderName(wonderId, realmId),
+    ownerAddress: formatOwnerAddress(row.owner_address),
+    ownerName: parseOwnerName(row.owner_name),
+    totalFaithPoints,
+    totalFaithPointsPerSec,
+    ownBaselinePerSec,
+    followersContributionPerSec,
+    followerCount: followers.length,
+    ownerSharePercent: OWNER_SHARE_PERCENT,
+    followerSharePercent: FOLLOWER_SHARE_PERCENT,
+    ownerSharePerSecFromFollowers,
+    followersSharePerSec,
+    followers,
+  };
 };
 
 const transformFaithfulStructureRows = (rows: FaithfulStructureRow[]): FaithfulStructureStatus | null => {
@@ -311,4 +493,48 @@ export const fetchFaithfulStructureStatus = async (
 
     throw error;
   }
+};
+
+export const fetchWonderFaithDetail = async (
+  wonderIdInput: bigint | number | string,
+  toriiBaseUrl?: string,
+): Promise<WonderFaithDetail | null> => {
+  const wonderId = parseBigInt(wonderIdInput);
+  if (wonderId == null || wonderId <= 0n) {
+    return null;
+  }
+
+  const explicitUrl = toriiBaseUrl?.trim();
+  const baseUrl = explicitUrl?.length ? explicitUrl : getSqlApiBaseUrl();
+
+  if (!baseUrl?.trim()) {
+    return null;
+  }
+
+  const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
+  const detailUrl = buildApiUrl(sqlBaseUrl, buildWonderFaithDetailQuery(wonderId));
+  const detailRows = await fetchWithErrorHandling<WonderFaithDetailRow>(
+    detailUrl,
+    "Failed to fetch wonder faith detail",
+  );
+  const detailRow = detailRows[0];
+  if (!detailRow) {
+    return null;
+  }
+
+  const followersUrl = buildApiUrl(sqlBaseUrl, buildWonderFaithFollowersQuery(wonderId));
+  let followerRows: WonderFaithFollowerRow[] = [];
+  try {
+    followerRows = await fetchWithErrorHandling<WonderFaithFollowerRow>(
+      followersUrl,
+      "Failed to fetch wonder followers",
+    );
+  } catch (error) {
+    if (!isFaithfulStructureMissingTableError(error)) {
+      throw error;
+    }
+  }
+
+  const followers = transformWonderFaithFollowerRows(followerRows);
+  return transformWonderFaithDetailRow(detailRow, followers);
 };
