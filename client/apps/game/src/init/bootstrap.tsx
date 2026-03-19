@@ -196,7 +196,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   console.log("[INITIAL SYNC COMPLETED]");
 
-  configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
+  configManager.setDojo(setupResult.components, ETERNUM_CONFIG({ chain, components: setupResult.components }));
 
   // Store the cleanup function so we can call it when navigating away
   gameRendererCleanup = initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);

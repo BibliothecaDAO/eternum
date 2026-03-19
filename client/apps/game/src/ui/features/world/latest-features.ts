@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-19",
+    title: "Auto World Mode Detection",
+    description:
+      "Fixed game startup so Blitz and Eternum mode are detected from each world's onchain config instead of requiring a forced environment mode flag.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
     title: "Stable Leaderboard Refresh",
     description:
       "Fixed in-game leaderboard refresh behavior so standings no longer collapse and redraw during periodic sync updates.",
