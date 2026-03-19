@@ -97,7 +97,7 @@ const BASE_BUILDING_EXCLUSIONS = new Set<string>([
   "Storehouse",
 ]);
 
-const BLITZ_BUILDING_EXCLUSIONS = new Set<string>(["ResourceFish"]);
+const BLITZ_BUILDING_EXCLUSIONS = new Set<string>(["ResourceFish", "ResourceResearch"]);
 
 const BLITZ_UNMANAGEABLE_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Labor, ResourcesIds.Wheat]);
 
