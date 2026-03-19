@@ -155,6 +155,8 @@ describe("FactoryV2StartWorkspace play style", () => {
     const startDateInput = container.querySelector<HTMLInputElement>("#factory-start-date");
     const startTimeInput = container.querySelector<HTMLInputElement>("#factory-start-time");
     const launchGrid = startDateInput?.closest(".grid");
+    const startDatePanel = startDateInput?.closest("label");
+    const startTimePanel = startTimeInput?.closest("label");
 
     expect(container.querySelector("#factory-start-at")).toBeNull();
     expect(startDateInput?.className).toContain("min-w-0");
@@ -162,6 +164,33 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(startTimeInput?.className).toContain("min-w-0");
     expect(startTimeInput?.className).toContain("max-w-full");
     expect(launchGrid?.className).toContain("min-w-0");
+    expect(launchGrid?.className).toContain("sm:grid-cols-2");
+    expect(startDatePanel?.className).toContain("rounded-[20px]");
+    expect(startTimePanel?.className).toContain("rounded-[20px]");
+  });
+
+  it("lets the blitz schedule keep the full row when duration is shown", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            showsDuration: true,
+            durationMinutes: 120,
+            durationOptions: [{ value: 120, label: "2 hours" }],
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const timingGroup = container.querySelector('[data-testid="factory-launch-timing"]');
+    const startDateInput = container.querySelector<HTMLInputElement>("#factory-start-date");
+    const durationField = container.querySelector<HTMLSelectElement>("#factory-duration");
+
+    expect(timingGroup?.className).toContain("space-y-4");
+    expect(timingGroup?.className).not.toContain("grid");
+    expect(startDateInput?.closest(".grid")?.querySelector("#factory-duration")).toBeNull();
+    expect(durationField).not.toBeNull();
   });
 
   it("shows the three fixed blitz play style options", async () => {

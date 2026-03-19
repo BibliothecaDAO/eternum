@@ -9,6 +9,34 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-19",
+    title: "Factory Timing Gets A Full Row",
+    description:
+      "Blitz now gives the start schedule its own full-width row, so the date and time controls no longer feel squeezed next to the game duration picker.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-19",
+    title: "Factory Progress Counts Forward",
+    description:
+      "Factory launch progress now gives the launch request its own first step, then carries the rest of setup forward on the same total so the watch flow no longer feels like it resets when the real run appears.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Factory Start Time Fills Out",
+    description:
+      "The new Factory start form now gives both the date and time controls full-width schedule panels, so the kickoff picker feels properly sized on both mobile and desktop.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-19",
+    title: "Steadier Factory Launch Tracking",
+    description:
+      "Factory now stays on Start when you switch modes or networks, and games you just launched keep showing up after a refresh while the first deployment update is still on the way.",
+    type: "fix",
+  },
+  {
     date: "2026-03-18",
     title: "Cleaner Factory Start Time",
     description:
