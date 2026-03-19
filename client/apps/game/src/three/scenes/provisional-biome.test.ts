@@ -45,7 +45,6 @@ describe("createProvisionalBiomeTracker", () => {
 describe("resolveArmySpawnBiome", () => {
   it("returns skip when tile already has authoritative biome", () => {
     const tiles = makeTiles([[5, 5, BiomeType.Ocean]]);
-    const tracker = createProvisionalBiomeTracker();
 
     const result = resolveArmySpawnBiome(tiles, 5, 5, BiomeType.Grassland);
 
@@ -54,7 +53,6 @@ describe("resolveArmySpawnBiome", () => {
 
   it("returns write_provisional when tile has no biome", () => {
     const tiles = new Map<number, Map<number, BiomeValue>>();
-    const tracker = createProvisionalBiomeTracker();
 
     const result = resolveArmySpawnBiome(tiles, 5, 5, BiomeType.Grassland);
 
