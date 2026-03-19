@@ -82,8 +82,20 @@ import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
   console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) toStderr(...a); };
 }
 
+/** Log to stderr with `[eternum-mcp]` prefix. MCP owns stdout. */
 const log = (msg: string) => process.stderr.write(`[eternum-mcp] ${msg}\n`);
 
+/**
+ * Main entry point. Registers all MCP tools, connects the stdio transport
+ * (completing the handshake immediately), then bootstraps the game connection
+ * in the background. Tools return "not ready" until bootstrap completes.
+ *
+ * Architecture:
+ *   1. Register tools (with readiness gates)
+ *   2. Connect MCP transport (handshake completes instantly)
+ *   3. Bootstrap: discover world → authenticate → load config → start map loop
+ *   4. Tools become operational
+ */
 async function main() {
   log("Starting...");
 
@@ -131,6 +143,19 @@ async function main() {
   // ── MCP Server + Tool Registration ──
   // Register tools BEFORE connecting the transport so the handshake
   // completes immediately. Tools gate on notReady() / mapCtx checks.
+  //
+  // Tools (22):
+  //   Status:     status
+  //   Map:        map_tile_info, map_nearby, map_entity_info, map_find, map_briefing
+  //   Automation: automation
+  //   Movement:   move_army
+  //   Combat:     simulate_attack, attack_target, attack_from_guard, raid_target
+  //   Army Mgmt:  create_army, open_chest
+  //   Resources:  send_resources
+  //   Guards:     guard_from_storage, guard_from_army, reinforce_army,
+  //               transfer_troops, unguard_to_army
+  //   Transfers:  transfer_to_structure, transfer_to_army
+  //   Buffs:      apply_relic
   const server = new McpServer({ name: "eternum", version: "1.0.0" });
 
   // ── Status Tool (always works, even before bootstrap) ──
@@ -264,7 +289,7 @@ async function main() {
     },
   );
 
-  // ── Action Tools ──
+  // ── Movement Tools ──
 
   server.tool(
     "move_army",
@@ -489,6 +514,8 @@ async function main() {
       return { content: [{ type: "text", text: msg }] };
     },
   );
+
+  // ── Combat Tools ──
 
   server.tool(
     "simulate_attack",
@@ -803,6 +830,8 @@ async function main() {
     },
   );
 
+  // ── Army Management Tools ──
+
   server.tool(
     "create_army",
     "Create a new army at one of your realms. Auto-selects troop type by biome. " +
@@ -893,6 +922,7 @@ async function main() {
     },
   );
 
+  // ── Resource Transfer Tools ──
 
   server.tool(
     "send_resources",
@@ -995,6 +1025,8 @@ async function main() {
       return { content: [{ type: "text", text: `Neither structure has enough donkeys (need ${donkeysNeeded}). Sender: ${senderDonkeys}, Recipient: ${recipientDonkeys}.` }], isError: true };
     },
   );
+
+  // ── Guard & Troop Transfer Tools ──
 
   server.tool(
     "guard_from_storage",
@@ -1346,6 +1378,8 @@ async function main() {
       return { content: [{ type: "text", text: `Transferred ${summary} from army ${from_army_id} to army ${to_army_id}.` }] };
     },
   );
+
+  // ── Buff Tools ──
 
   server.tool(
     "apply_relic",
