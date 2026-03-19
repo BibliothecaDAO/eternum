@@ -196,8 +196,8 @@ export function createAutomationLoop(
           // Compact log — one line per realm (build status only; production always runs)
           const buildLabels = plan.builds.map((b) => b.step.label);
           const buildSummary = plan.idle
-            ? `builds done`
-            : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}`;
+            ? `builds done (${plan.idle})`
+            : `${buildLabels.length} planned${plan.upgrade ? " +upgrade" : ""}: ${buildLabels.slice(0, 5).join(", ")}${buildLabels.length > 5 ? "..." : ""}`;
           console.log(`[AUTO] ${structureType} ${entityId} | lv${level} | ${buildSummary} | producing`);
 
           // Upgrade as soon as slots are full — the executor runs builds first,
@@ -210,7 +210,7 @@ export function createAutomationLoop(
             const canAffordUpgrade =
               upgradeCosts?.length > 0 &&
               upgradeCosts.every(
-                (c: { resource: number; amount: number }) => (snapshot.balances.get(c.resource) ?? 0) >= c.amount,
+                (c: { resource: number; amount: number }) => (snapshot.projectedBalances.get(c.resource) ?? 0) >= c.amount,
               );
             if (canAffordUpgrade) {
               upgradeIntent = plan.upgrade;
@@ -259,11 +259,13 @@ export function createAutomationLoop(
             slotIdx++;
           }
 
-          // Unified plan: buildings + production compete for the same budget
+          // Unified plan: buildings + production compete for the same budget.
+          // Use projectedBalances (includes unharvested production) — raw balances
+          // are stale and undercount resources like Labor that produce passively.
           const troopPath = troopPathForBiome(biome);
           const isVillage = realmEntities.find((r) => Number(r.entity_id) === entityId)?.category === 5;
           const unifiedPlan = planProduction(
-            snapshot.balances,
+            snapshot.projectedBalances,
             buildingCounts,
             troopPath,
             gameConfig,
@@ -279,10 +281,41 @@ export function createAutomationLoop(
             useSimple: bt.useSimple,
           }));
 
+          // Write build diagnostics to file for debugging
+          try {
+            const { appendFileSync } = await import("fs");
+            appendFileSync("/tmp/eternum-build-debug.txt",
+              `[${new Date().toISOString()}] ${structureType} ${entityId} | plan: ${plan.builds.length} builds | candidates: ${candidateBuilds.length} | affordable: ${buildActions.length} | idle: ${plan.idle ?? 'no'}\n`);
+          } catch {}
           if (buildActions.length > 0) {
             console.log(
               `[AUTO] ${structureType} ${entityId} | building ${buildActions.length}: ${buildActions.map((a) => a.step.label).join(", ")}`,
             );
+          }
+          if (candidateBuilds.length > 0 && buildActions.length === 0) {
+            console.log(
+              `[AUTO] ${structureType} ${entityId} | ${candidateBuilds.length} candidates but 0 affordable: ${candidateBuilds.map((b) => b.label).slice(0, 5).join(", ")}`,
+            );
+            for (const skipped of unifiedPlan.skippedBuilds) {
+              console.log(`[AUTO]   skipped ${skipped.label}: ${skipped.reason}`);
+            }
+          }
+          if (candidateBuilds.length === 0 && plan.builds.length > 0) {
+            const slotCount = slots.length;
+            const diagLines = [
+              `${structureType} ${entityId} | ${plan.builds.length} planned but 0 candidates | slots found: ${slotCount}`,
+              `First 3 builds: ${plan.builds.slice(0, 3).map(b => `${b.step.label}(type=${b.step.building})`).join(", ")}`,
+            ];
+            for (const b of plan.builds.slice(0, 3)) {
+              const cfg = gameConfig.buildingCosts[b.step.building];
+              diagLines.push(`  ${b.step.label}(${b.step.building}): complexCosts=${cfg?.complexCosts?.length ?? 'MISSING'}, simpleCosts=${cfg?.simpleCosts?.length ?? 'MISSING'}, popCost=${cfg?.populationCost ?? 'MISSING'}`);
+            }
+            // Write to a file we can read since stderr isn't visible
+            try {
+              const { writeFileSync } = await import("fs");
+              writeFileSync("/tmp/eternum-build-debug.txt", diagLines.join("\n") + "\n", { flag: "a" });
+            } catch {}
+            console.log(`[AUTO] ${diagLines[0]}`);
           }
 
           // Run both complex and simple production every tick
@@ -310,10 +343,11 @@ export function createAutomationLoop(
             productionCalls,
           });
 
-          // Build order progress — use the last build's index or total if idle
-          const lastBuildIndex =
-            plan.builds.length > 0 ? plan.builds[plan.builds.length - 1].index : buildOrder.steps.length;
-          const progress = `${lastBuildIndex}/${buildOrder.steps.length}`;
+          // Build order progress — count actual buildings on the realm vs total steps.
+          // Using the plan's last index was misleading when builds failed silently.
+          const totalBuildings = Array.from(buildingCounts.values()).reduce((a, b) => a + b, 0)
+            + tickResult.built.length; // include what we just built this tick
+          const progress = `${Math.min(totalBuildings, buildOrder.steps.length)}/${buildOrder.steps.length}`;
 
           return {
             realmEntityId: entityId,
@@ -356,44 +390,55 @@ export function createAutomationLoop(
       }
 
       // Phase 5: Auto-offload resource arrivals
+      // Query Torii for pending arrivals, find which slots have data, offload them.
       try {
-        const sql = client.sql as any;
-        if (typeof sql.fetchWithQuery === "function" || typeof sql.query === "function") {
-          // Try to query ResourceArrival for all owned structures
-          const structureIds = allStructures.map((s) => Number(s.entity_id));
-          for (const structureId of structureIds) {
-            try {
-              const query = `SELECT structure_id, day, slot_1, slot_2, slot_3, slot_4, slot_5, slot_6, slot_7, slot_8, total_amount FROM [s1_eternum-ResourceArrival] WHERE structure_id = ${structureId} AND total_amount > 0 LIMIT 10;`;
-              const baseUrl = (sql as any).baseUrl ?? (client as any).toriiUrl + "/sql";
-              const url = `${baseUrl}?query=${encodeURIComponent(query)}`;
-              const res = await fetch(url);
-              if (!res.ok) continue;
+        const structureIds = allStructures.map((s) => Number(s.entity_id));
+        if (structureIds.length > 0) {
+          const sql = client.sql as any;
+          const baseUrl = sql.baseUrl ?? (client as any).toriiUrl + "/sql";
+          const idList = structureIds.join(",");
+          // Build SELECT for all 48 slots + metadata
+          const slotCols = Array.from({ length: 48 }, (_, i) => `slot_${i + 1}`).join(", ");
+          const query = `SELECT structure_id, day, ${slotCols}, total_amount FROM [s1_eternum-ResourceArrival] WHERE structure_id IN (${idList}) AND total_amount > 0 LIMIT 50`;
+          try {
+            const res = await fetch(`${baseUrl}?query=${encodeURIComponent(query)}`);
+            if (res.ok) {
               const rows = (await res.json()) as any[];
               for (const row of rows) {
-                if (!row.total_amount || Number(row.total_amount) <= 0) continue;
-                // Count non-empty slots to determine resource_count
-                let resourceCount = 0;
-                for (let i = 1; i <= 8; i++) {
+                const totalHex = String(row.total_amount ?? "0x0");
+                if (totalHex === "0x0" || totalHex === "0x00000000000000000000000000000000") continue;
+                const structureId = Number(row.structure_id);
+                const day = typeof row.day === "string" ? Number(BigInt(row.day)) : Number(row.day);
+
+                // Find which slots have data (non-empty arrays)
+                for (let i = 1; i <= 48; i++) {
                   const slotVal = row[`slot_${i}`];
-                  if (slotVal && slotVal !== "0x0" && slotVal !== "0" && slotVal !== "[]") resourceCount++;
-                }
-                if (resourceCount <= 0) resourceCount = 1; // at least 1
-                try {
-                  await provider.arrivals_offload({
-                    structureId,
-                    day: row.day,
-                    slot: 0, // offload from first slot
-                    resource_count: resourceCount,
-                    signer,
-                  });
-                  console.log(`[AUTO] Offloaded arrival for structure ${structureId}`);
-                } catch {
-                  // Arrival may not be ready yet — skip silently
+                  if (!slotVal || slotVal === "[]") continue;
+                  // Parse slot to count resources: each entry is [resourceType, amount]
+                  let resourceCount = 1;
+                  try {
+                    const parsed = typeof slotVal === "string" ? JSON.parse(slotVal) : slotVal;
+                    if (Array.isArray(parsed)) resourceCount = Math.max(1, parsed.length);
+                  } catch { /* use default 1 */ }
+
+                  try {
+                    console.log(`[AUTO] Attempting offload: structure ${structureId}, day ${day}, slot ${i}, resources ${resourceCount}`);
+                    await provider.arrivals_offload({
+                      structureId,
+                      day,
+                      slot: i, // contract uses 1-indexed slots matching column names
+                      resource_count: resourceCount,
+                      signer,
+                    });
+                    console.log(`[AUTO] Offloaded arrival for structure ${structureId} day ${day} slot ${i} (${resourceCount} resources)`);
+                  } catch (offloadErr: any) {
+                    console.log(`[AUTO] Offload failed: structure ${structureId}, slot ${i}: ${offloadErr?.message ?? offloadErr}`);
+                  }
                 }
               }
-            } catch {
-              // Non-critical — skip this structure
             }
+          } catch {
+            // Query failed — non-critical, retry next tick
           }
         }
       } catch {

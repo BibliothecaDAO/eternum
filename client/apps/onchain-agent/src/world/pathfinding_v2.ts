@@ -25,7 +25,6 @@
 
 import {
   latLngToCell,
-  gridPathCells,
   gridDisk,
   gridDistance,
   localIjToCell,
@@ -43,6 +42,7 @@ import {
   TroopTier,
   TileOccupier,
   getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
 } from "@bibliothecadao/types";
 
 import type { TileState, Position } from "@bibliothecadao/client";
@@ -344,20 +344,10 @@ export function findPath(
   // Destination must be passable
   if (!canEnter(endH3)) return null;
 
-  // ── Fast path: H3 straight line ──
-  try {
-    const direct = gridPathCells(startH3, endH3);
-    if (direct.length > 0) {
-      const pathCells = direct.filter(c => c !== startH3);
-      if (pathCells.every(c => canEnter(c))) {
-        let cost = 0;
-        for (const c of pathCells) cost += cellCost(c);
-        return buildResult(startH3, pathCells, cost, budget, index);
-      }
-    }
-  } catch { /* fall through */ }
-
-  // ── A* with H3 primitives ──
+  // ── A* with H3 neighbors (gridDisk) ──
+  // Uses gridDisk(cell, 1) for neighbor lookup — guaranteed H3-adjacent.
+  // Previously used gridPathCells as a fast path, but it produced non-adjacent
+  // cell pairs causing "Non-adjacent hex pair in path" errors.
   // Heuristic: gridDistance * minimum possible tile cost (admissible)
   const minCost = config.travelCost - config.bonusValue; // e.g. 20 - 10 = 10
 
@@ -567,4 +557,168 @@ export function applyMapOverlays(
     const [x, y] = options.selfPosition.split(",").map(Number) as [number, number];
     markUnblocked(index, x, y);
   }
+}
+
+// ============================================================================
+// NATIVE OFFSET HEX A* — no H3 dependency
+//
+// Uses getNeighborHexes from @bibliothecadao/types directly on the even-r
+// offset grid. Guaranteed correct adjacency. Works with any Map<"x,y", tile>
+// grid index.
+// ============================================================================
+
+export interface GridIndex {
+  /** Biome ID at position. 0 = unexplored. */
+  getBiome(x: number, y: number): number;
+  /** Occupier type at position. 0 = empty. */
+  getOccupier(x: number, y: number): number;
+  /** Whether this position exists in the index at all. */
+  has(x: number, y: number): boolean;
+  /** Whether this tile is synthetic (injected unexplored). Explore cost applies. */
+  isSynthetic?(x: number, y: number): boolean;
+}
+
+/** Adapter: wrap MapSnapshot.gridIndex into our GridIndex interface. */
+export function gridIndexFromSnapshot(
+  gridIndex: Map<string, { biome: number; occupierType: number }>,
+): GridIndex {
+  return {
+    getBiome: (x, y) => gridIndex.get(`${x},${y}`)?.biome ?? 0,
+    getOccupier: (x, y) => gridIndex.get(`${x},${y}`)?.occupierType ?? 0,
+    has: (x, y) => gridIndex.has(`${x},${y}`),
+  };
+}
+
+/**
+ * Native A* pathfinder on the even-r offset hex grid.
+ *
+ * Uses getNeighborHexes for neighbor lookup — guaranteed correct adjacency.
+ * No H3 dependency. Works directly with game coordinates.
+ */
+export function findPathNative(
+  start: Position,
+  end: Position,
+  grid: GridIndex,
+  options: FindPathOptions = {},
+): PathResult | null {
+  const config = options.staminaConfig ?? DEFAULT_STAMINA_CONFIG;
+  const { troop, maxStamina: budget } = options;
+
+  if (start.x === end.x && start.y === end.y) {
+    return { path: [start], directions: [], distance: 0, staminaCost: 0, reachedLimit: false };
+  }
+
+  // Passability check
+  function canEnter(x: number, y: number): boolean {
+    if (!grid.has(x, y)) return false;
+    if (grid.getBiome(x, y) === 0) return false;
+    if (grid.getOccupier(x, y) !== 0) return false;
+    return true;
+  }
+
+  if (!canEnter(end.x, end.y)) return null;
+
+  // Tile cost — synthetic (unexplored) tiles use exploreCost,
+  // explored tiles use biome-weighted travel cost
+  function tileCost(x: number, y: number): number {
+    if (grid.isSynthetic?.(x, y)) return config.exploreCost;
+    const biomeId = grid.getBiome(x, y);
+    if (troop && biomeId > 0) return travelStaminaCostById(biomeId, troop, config);
+    return config.travelCost;
+  }
+
+  // Hex distance heuristic (admissible for even-r offset)
+  function hexDist(ax: number, ay: number, bx: number, by: number): number {
+    // Convert offset to cube coords for accurate distance
+    const axC = ax - (ay - (ay & 1)) / 2;
+    const azC = ay;
+    const ayC = -axC - azC;
+    const bxC = bx - (by - (by & 1)) / 2;
+    const bzC = by;
+    const byC = -bxC - bzC;
+    return Math.max(Math.abs(axC - bxC), Math.abs(ayC - byC), Math.abs(azC - bzC));
+  }
+
+  const minCost = Math.max(1, config.travelCost - config.bonusValue);
+  const startKey = `${start.x},${start.y}`;
+  const endKey = `${end.x},${end.y}`;
+
+  // A* with simple array priority queue
+  const frontier: { x: number; y: number; f: number }[] = [{ x: start.x, y: start.y, f: 0 }];
+  const cameFrom = new Map<string, string | null>();
+  const gScore = new Map<string, number>();
+  cameFrom.set(startKey, null);
+  gScore.set(startKey, 0);
+
+  while (frontier.length > 0) {
+    // Pop lowest f-score
+    let bestIdx = 0;
+    for (let i = 1; i < frontier.length; i++) {
+      if (frontier[i]!.f < frontier[bestIdx]!.f) bestIdx = i;
+    }
+    const current = frontier.splice(bestIdx, 1)[0]!;
+    const currentKey = `${current.x},${current.y}`;
+
+    if (currentKey === endKey) break;
+
+    const currentG = gScore.get(currentKey)!;
+    const neighbors = getNeighborHexes(current.x, current.y);
+
+    for (const nb of neighbors) {
+      if (!canEnter(nb.col, nb.row)) continue;
+
+      const nbKey = `${nb.col},${nb.row}`;
+      const stepCost = tileCost(nb.col, nb.row);
+      const tentativeG = currentG + stepCost;
+
+      if (!gScore.has(nbKey) || tentativeG < gScore.get(nbKey)!) {
+        gScore.set(nbKey, tentativeG);
+        cameFrom.set(nbKey, currentKey);
+        const h = hexDist(nb.col, nb.row, end.x, end.y) * minCost;
+        frontier.push({ x: nb.col, y: nb.row, f: tentativeG + h });
+      }
+    }
+  }
+
+  if (!cameFrom.has(endKey)) return null;
+
+  // Reconstruct path
+  const path: Position[] = [];
+  let cur: string | null = endKey;
+  while (cur && cur !== startKey) {
+    const [x, y] = cur.split(",").map(Number);
+    path.push({ x, y });
+    cur = cameFrom.get(cur) ?? null;
+  }
+  path.push(start);
+  path.reverse();
+
+  // Build directions
+  const directions: Direction[] = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const from = path[i]!;
+    const to = path[i + 1]!;
+    const dir = getDirectionBetweenAdjacentHexes(
+      { col: from.x, row: from.y },
+      { col: to.x, row: to.y },
+    );
+    if (dir === null) {
+      // Should never happen with native neighbors — but safety check
+      throw new Error(`Non-adjacent hex pair: (${from.x},${from.y}) → (${to.x},${to.y})`);
+    }
+    directions.push(dir);
+  }
+
+  let staminaCost = 0;
+  for (let i = 1; i < path.length; i++) {
+    staminaCost += tileCost(path[i]!.x, path[i]!.y);
+  }
+
+  return {
+    path,
+    directions,
+    distance: directions.length,
+    staminaCost,
+    reachedLimit: budget !== undefined && staminaCost > budget,
+  };
 }

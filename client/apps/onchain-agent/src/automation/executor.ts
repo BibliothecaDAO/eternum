@@ -81,9 +81,13 @@ export async function executeRealmTick(input: TickInput): Promise<TickResult> {
     errors: [],
   };
 
-  // Buildings run first and sequentially — they consume resources and change
-  // population. Running them before production ensures building costs aren't
-  // eaten by parallel production burns.
+  // Buildings run sequentially before production to ensure building costs
+  // aren't eaten by parallel production burns.
+  //
+  // On failure: only stop if the failed build was a WorkersHut (population
+  // dependency — subsequent builds may need its capacity). For all other
+  // failures, log the error and keep going so expensive T2/T3 builds
+  // aren't blocked by a failed WheatFarm with unrelated costs.
   for (const build of input.buildActions) {
     try {
       await provider.create_building({
@@ -97,9 +101,9 @@ export async function executeRealmTick(input: TickInput): Promise<TickResult> {
       result.idle = false;
     } catch (e: any) {
       result.errors.push(`Build ${build.step.label} failed: ${e.message ?? e}`);
-      // Stop building on first failure — subsequent builds may depend on
-      // population capacity from this one (e.g., WorkersHut before troop building)
-      break;
+      // Only stop if a WorkersHut failed — subsequent builds may depend on
+      // its population capacity. Other failures are independent.
+      if (build.step.building === 1) break; // 1 = WorkersHut
     }
   }
 

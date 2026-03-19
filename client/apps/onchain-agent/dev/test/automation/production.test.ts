@@ -292,7 +292,7 @@ describe("planProduction — simple fallback", () => {
   it("uses simple recipes when complex inputs exhausted", () => {
     const balances = new Map([
       [R.Wheat, 1000],
-      [R.Labor, 500],
+      [R.Labor, 2000],
     ]);
     const plan = planProduction(balances, buildings([B.Wood, 1]), "Paladin", gameConfig, 60);
 
@@ -306,7 +306,7 @@ describe("planProduction — simple fallback", () => {
     // So only simple (labor) production runs, complex is skipped
     const balances = new Map([
       [R.Wheat, 1000],
-      [R.Labor, 500],
+      [R.Labor, 2000],
     ]);
     const bc = buildings([B.Wood, 1]);
     const plan = planProduction(balances, bc, "Paladin", gameConfig, 60);
@@ -327,7 +327,7 @@ describe("planProduction — dual method per resource", () => {
       [R.Wheat, 1000],
       [R.Coal, 50],
       [R.Copper, 50],
-      [R.Labor, 500],
+      [R.Labor, 2000],
     ]);
     const bc = buildings([B.Wood, 1], [B.Coal, 1], [B.Copper, 1]);
     const plan = planProduction(balances, bc, "Paladin", gameConfig, 60);
