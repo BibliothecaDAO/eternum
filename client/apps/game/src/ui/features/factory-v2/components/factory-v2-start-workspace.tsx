@@ -35,9 +35,14 @@ const FACTORY_FIELD_CONTROL_CLASS_NAME =
 
 const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} appearance-none pr-11 font-medium`;
 
-const FACTORY_DATE_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} [color-scheme:light]`;
+const FACTORY_SCHEDULE_PANEL_CLASS_NAME =
+  "block min-w-0 overflow-hidden rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]";
 
-const FACTORY_TIME_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} [color-scheme:light]`;
+const FACTORY_NATIVE_PICKER_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} overflow-hidden pr-2 text-left [color-scheme:light] [contain:layout_paint] [&::-webkit-calendar-picker-indicator]:shrink-0 [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:max-w-full [&::-webkit-date-and-time-value]:overflow-hidden [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:block [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit]:max-w-full [&::-webkit-datetime-edit]:overflow-hidden [&::-webkit-datetime-edit-fields-wrapper]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:max-w-full [&::-webkit-datetime-edit-fields-wrapper]:overflow-hidden`;
+
+const FACTORY_DATE_CONTROL_CLASS_NAME = FACTORY_NATIVE_PICKER_CONTROL_CLASS_NAME;
+
+const FACTORY_TIME_CONTROL_CLASS_NAME = FACTORY_NATIVE_PICKER_CONTROL_CLASS_NAME;
 
 export const FactoryV2StartWorkspace = ({
   mode,
@@ -363,7 +368,7 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
         <span className="text-[11px] leading-5 text-black/38">Your local time</span>
       </div>
       <div className="grid min-w-0 gap-2 sm:grid-cols-2">
-        <label className="block min-w-0 rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
+        <label className={FACTORY_SCHEDULE_PANEL_CLASS_NAME}>
           <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">Date</span>
           <input
             id="factory-start-date"
@@ -373,7 +378,7 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
             className={FACTORY_DATE_CONTROL_CLASS_NAME}
           />
         </label>
-        <label className="block min-w-0 rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
+        <label className={FACTORY_SCHEDULE_PANEL_CLASS_NAME}>
           <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">Time</span>
           <input
             id="factory-start-time"

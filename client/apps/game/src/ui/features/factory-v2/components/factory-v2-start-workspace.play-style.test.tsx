@@ -161,12 +161,18 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.querySelector("#factory-start-at")).toBeNull();
     expect(startDateInput?.className).toContain("min-w-0");
     expect(startDateInput?.className).toContain("max-w-full");
+    expect(startDateInput?.className).toContain("overflow-hidden");
+    expect(startDateInput?.className).toContain("[&::-webkit-datetime-edit]:overflow-hidden");
     expect(startTimeInput?.className).toContain("min-w-0");
     expect(startTimeInput?.className).toContain("max-w-full");
+    expect(startTimeInput?.className).toContain("overflow-hidden");
+    expect(startTimeInput?.className).toContain("[&::-webkit-datetime-edit]:overflow-hidden");
     expect(launchGrid?.className).toContain("min-w-0");
     expect(launchGrid?.className).toContain("sm:grid-cols-2");
     expect(startDatePanel?.className).toContain("rounded-[20px]");
+    expect(startDatePanel?.className).toContain("overflow-hidden");
     expect(startTimePanel?.className).toContain("rounded-[20px]");
+    expect(startTimePanel?.className).toContain("overflow-hidden");
   });
 
   it("lets the blitz schedule keep the full row when duration is shown", async () => {
