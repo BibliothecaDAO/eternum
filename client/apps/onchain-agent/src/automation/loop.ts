@@ -78,7 +78,9 @@ function scaledBuildingCost(
  * @param mapCtx - Map context snapshot for biome lookups by coordinate.
  * @param gameConfig - On-chain game configuration (building costs, upgrade costs, recipes).
  * @param intervalMs - Tick interval in milliseconds (default 60 000 ms / 1 minute).
- * @returns An AutomationLoop handle with start/stop/refresh controls.
+ * @param automationStatus - Optional shared mutable map updated each tick with per-realm status;
+ *   read by context transformers to inject automation state into the agent prompt.
+ * @returns An {@link AutomationLoop} handle with start/stop/refresh controls.
  */
 export function createAutomationLoop(
   client: EternumClient,

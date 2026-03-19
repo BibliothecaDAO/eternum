@@ -1,12 +1,21 @@
+/**
+ * Building placement — finds open hex slots on a realm's inner grid and computes
+ * BFS direction paths from the center tile to each slot.
+ */
 import { getNeighborHexes, Direction } from "@bibliothecadao/types";
 
+/** Center tile of every realm's inner hex grid. */
 const CENTER: [number, number] = [10, 10];
 
-// Max rings per realm level (0-indexed): Settlement=1, City=2, Kingdom=3, Empire=4
+/** Max buildable rings per realm level (0-indexed): Settlement=1, City=2, Kingdom=3, Empire=4. */
 const LEVEL_TO_MAX_RING: Record<number, number> = { 0: 1, 1: 2, 2: 3, 3: 4 };
 
 /**
- * BFS from start to end on the inner hex grid and return the Direction[] path.
+ * BFS from `start` to `end` on the inner hex grid, returning the shortest direction path.
+ *
+ * @param start - Starting hex as [col, row].
+ * @param end - Target hex as [col, row].
+ * @returns Ordered Direction[] to walk from start to end, or an empty array if unreachable or already there.
  */
 export function getDirectionsArray(start: [number, number], end: [number, number]): Direction[] {
   const [startCol, startRow] = start;

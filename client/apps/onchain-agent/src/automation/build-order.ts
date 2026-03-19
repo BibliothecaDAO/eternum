@@ -12,9 +12,10 @@
  * Actual slot usage per tier will be higher due to auto-injected WorkersHuts.
  */
 
-// ── BuildingType numeric values (from @bibliothecadao/types) ──────────
-// Inlined to keep this module dependency-free.
-
+/**
+ * BuildingType numeric values (from @bibliothecadao/types).
+ * Inlined to keep this module dependency-free.
+ */
 const B = {
   WorkersHut: 1,
   Coal: 4,

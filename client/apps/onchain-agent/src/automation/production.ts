@@ -24,17 +24,33 @@ import type { TroopPath } from "./build-order.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
+/**
+ * A single production instruction: produce N cycles of a resource
+ * using either the complex (resource-to-resource) or simple (labor-only) recipe.
+ */
 interface ProductionCall {
+  /** The resource being produced. */
   resourceId: number;
+  /** Number of recipe cycles to execute. */
   cycles: number;
+  /** Total output amount (cycles * outputPerCycle). */
   produced: number;
+  /** Which recipe variant to use. */
   method: "complex" | "simple";
 }
 
+/**
+ * The result of planning a single tick's production across all resources.
+ * Tracks what will be produced, what inputs were consumed, and what was skipped.
+ */
 interface ProductionPlan {
+  /** Ordered list of production instructions to execute. */
   calls: ProductionCall[];
+  /** Total input resources consumed across all calls (resource ID -> amount). */
   consumed: Map<number, number>;
+  /** Total output resources produced across all calls (resource ID -> amount). */
   produced: Map<number, number>;
+  /** Resources that were skipped with the reason (no building, no recipe, etc.). */
   skipped: Array<{ resourceId: number; reason: string }>;
 }
 
@@ -52,13 +68,20 @@ export interface BuildingTarget {
   slot: any; // SlotResult — opaque to the planner
 }
 
+/**
+ * Extended production plan that also includes building affordability results.
+ * Buildings are evaluated first and their costs deducted before production planning.
+ */
 interface UnifiedPlan extends ProductionPlan {
+  /** Buildings that passed the affordability check and should be constructed. */
   affordableBuilds: BuildingTarget[];
+  /** Buildings that failed the affordability check. */
   skippedBuilds: Array<{ label: string; reason: string }>;
 }
 
 // ── Resource & building IDs ──────────────────────────────────────────
 
+/** Lookup table mapping resource names to their numeric IDs. */
 const R = {
   Coal: 2,
   Wood: 3,
@@ -81,7 +104,7 @@ const R = {
   PaladinT3: 34,
 } as const;
 
-// BuildingType for troop buildings (not resource+2 offset)
+/** BuildingType values for troop barracks (not derived from resource ID + offset). */
 const TROOP_BUILDING = {
   KnightT1: 28,
   KnightT2: 29,
@@ -94,20 +117,39 @@ const TROOP_BUILDING = {
   PaladinT3: 36,
 } as const;
 
-// Resource ID → building type offset for resource buildings
+/**
+ * Offset added to a resource ID to derive its corresponding resource building type.
+ * Does not apply to troop buildings, which have their own mapping in {@link TROOP_BUILDING}.
+ */
 const RESOURCE_TO_BUILDING_OFFSET = 2;
 
+/**
+ * Configuration for a single troop specialization path (Knight, Crossbowman, or Paladin).
+ * Maps each tier to its resource ID, upstream T2/T3 resource, and barracks building type.
+ */
 interface TroopPathConfig {
+  /** T1 troop resource ID. */
   t1: number;
+  /** T2 troop resource ID. */
   t2: number;
+  /** T3 troop resource ID. */
   t3: number;
+  /** T2 intermediate resource needed for T2 troops (e.g., ColdIron for Knights). */
   t2Resource: number;
+  /** T3 intermediate resource needed for T3 troops (e.g., Mithral for Knights). */
   t3Resource: number;
+  /** BuildingType for the T1 barracks. */
   t1Building: number;
+  /** BuildingType for the T2 barracks. */
   t2Building: number;
+  /** BuildingType for the T3 barracks. */
   t3Building: number;
 }
 
+/**
+ * Full troop path configurations keyed by specialization name.
+ * Each path defines which resources and buildings are involved at each tier.
+ */
 const TROOP_PATHS: Record<TroopPath, TroopPathConfig> = {
   Knight: {
     t1: R.Knight,
@@ -143,9 +185,16 @@ const TROOP_PATHS: Record<TroopPath, TroopPathConfig> = {
 
 // ── Production target resolution ─────────────────────────────────────
 
+/**
+ * A single resource to produce, pairing a resource ID with the recipe method
+ * and the number of buildings that can execute it in parallel.
+ */
 interface ProductionTarget {
+  /** The resource to produce. */
   resourceId: number;
+  /** Which recipe variant to use for this target. */
   method: "complex" | "simple";
+  /** Number of buildings capable of producing this resource. */
   buildingCount: number;
 }
 
@@ -155,6 +204,11 @@ interface ProductionTarget {
  * Only includes resources the realm can actually produce (has the corresponding
  * building). Ordered by dependency level so upstream resources are produced
  * before downstream consumers.
+ *
+ * @param troopPath - The realm's troop specialization (Knight, Crossbowman, or Paladin).
+ * @param buildingCounts - Map of BuildingType -> count currently on the realm.
+ * @param gameConfig - On-chain game configuration containing resource factory recipes.
+ * @returns Dependency-ordered list of production targets for this tick.
  */
 function resolveTargets(
   troopPath: TroopPath,
@@ -219,22 +273,33 @@ function resolveTargets(
  * Buildings are evaluated first and their costs deducted from the shared budget before
  * production is planned, ensuring buildings always get priority on shared resources.
  *
- * @param balances - Current resource balances (resource ID → human-readable amount).
- * @param buildingCounts - Map of BuildingType → count on the realm.
+ * @param balances - Current resource balances (resource ID -> human-readable amount).
+ * @param buildingCounts - Map of BuildingType -> count on the realm.
  * @param troopPath - Troop path this realm follows; determines T2/T3 resource targets.
  * @param gameConfig - On-chain game configuration with resource recipes and factory data.
  * @param tickSeconds - Tick interval in seconds; reserved for future rate calculations (default 60).
  * @param isVillage - Whether this is a village structure; reserved for future rate scaling.
  * @param buildingTargets - Candidate buildings to evaluate for affordability against the shared budget.
- * @returns A UnifiedPlan listing production calls, affordable/skipped builds, and budget tracking maps.
+ * @returns A {@link UnifiedPlan} listing production calls, affordable/skipped builds, and budget tracking maps.
+ *
+ * @example
+ * ```ts
+ * const plan = planProduction(balances, buildings, "Knight", gameConfig);
+ * for (const call of plan.calls) {
+ *   await executeProduction(call.resourceId, call.cycles, call.method);
+ * }
+ * for (const build of plan.affordableBuilds) {
+ *   await constructBuilding(build.buildingType, build.slot);
+ * }
+ * ```
  */
 export function planProduction(
   balances: Map<number, number>,
   buildingCounts: Map<number, number>,
   troopPath: TroopPath,
   gameConfig: GameConfig,
-  tickSeconds: number = 60,
-  isVillage: boolean = false,
+  _tickSeconds: number = 60,
+  _isVillage: boolean = false,
   buildingTargets: BuildingTarget[] = [],
 ): UnifiedPlan {
   const targets = resolveTargets(troopPath, buildingCounts, gameConfig);
@@ -358,33 +423,48 @@ export function planProduction(
 
 // ── Smart weight computation ────────────────────────────────────────
 
+/**
+ * Production weight for a single resource, split by recipe method.
+ * Values are percentages (0-100) of the resource's total balance to allocate.
+ */
 interface SmartWeight {
+  /** Percentage of balance allocated to complex (resource-to-resource) production. */
   resourceToResource: number;
+  /** Percentage of balance allocated to simple (labor-only) production. */
   laborToResource: number;
 }
 
-// T1 resource building types
+/** BuildingType values for T1 resource buildings (Wood, Coal, Copper). */
 const T1_BUILDING_TYPES = [
   R.Wood + RESOURCE_TO_BUILDING_OFFSET, // 5
   R.Coal + RESOURCE_TO_BUILDING_OFFSET, // 4
   R.Copper + RESOURCE_TO_BUILDING_OFFSET, // 6
 ];
 
-// T1 resource IDs
+/** Resource IDs for T1 resources, ordered to match {@link T1_BUILDING_TYPES}. */
 const T1_RESOURCE_IDS = [R.Wood, R.Coal, R.Copper];
 
-// Donkey building type
+/** BuildingType for the Donkey production building. */
 const DONKEY_BUILDING = R.Donkey + RESOURCE_TO_BUILDING_OFFSET; // 27
 
 /**
  * Compute smart production weights based on the realm's development stage.
  *
  * Weights determine what percentage of each resource's balance to allocate
- * to production. Stage is inferred from which buildings exist.
+ * to production. Stage is inferred from which buildings exist:
+ * - **T1 incomplete**: labor-only at 5% (bootstrapping phase)
+ * - **T1 complete, no higher tiers**: 30% resource + 10% labor (growing the pool)
+ * - **T1 + higher tiers**: differentiated weights favoring Copper, plus tier-based troop allocation
  *
- * @param buildingCounts - Map of BuildingType → count on the realm.
- * @param troopPath - Troop path this realm follows.
- * @returns Map of resource ID → SmartWeight.
+ * @param buildingCounts - Map of BuildingType -> count on the realm.
+ * @param troopPath - Troop specialization this realm follows.
+ * @returns Map of resource ID -> {@link SmartWeight} allocation percentages.
+ *
+ * @example
+ * ```ts
+ * const weights = computeSmartWeights(buildingCounts, "Knight");
+ * const copperWeight = weights.get(4); // { resourceToResource: 30, laborToResource: 10 }
+ * ```
  */
 export function computeSmartWeights(
   buildingCounts: Map<number, number>,
@@ -483,6 +563,10 @@ export function computeSmartWeights(
  *
  * Handles self-referencing recipes and circular dependencies by tracking
  * visited nodes. Only follows complex (resource-to-resource) recipes.
+ *
+ * @param targetId - Resource ID to trace demand backwards from.
+ * @param gameConfig - On-chain game configuration with resource factory recipes.
+ * @returns Map of input resource ID -> units needed per 1 cycle of the target.
  */
 function computeTotalDemand(
   targetId: number,
@@ -524,13 +608,23 @@ function computeTotalDemand(
  * to produce the target troop. Bottleneck resources get higher weights.
  *
  * Falls back to null if the realm has no troop buildings (caller should
- * use computeSmartWeights instead).
+ * use {@link computeSmartWeights} instead).
  *
- * @param balances - Current resource balances (resource ID → human amount).
- * @param buildingCounts - Map of BuildingType → count on the realm.
- * @param troopPath - Troop path this realm follows.
+ * @param balances - Current resource balances (resource ID -> human-readable amount).
+ * @param buildingCounts - Map of BuildingType -> count on the realm.
+ * @param troopPath - Troop specialization this realm follows.
  * @param gameConfig - On-chain game configuration with resource recipes.
- * @returns Optimal weights, or null if no troop buildings exist.
+ * @returns Optimal weights as a Map of resource ID -> {@link SmartWeight}, or null if no troop buildings exist.
+ *
+ * @example
+ * ```ts
+ * const optimal = computeOptimalWeights(balances, buildings, "Knight", gameConfig);
+ * if (optimal) {
+ *   // Use deficit-driven weights
+ * } else {
+ *   // Fall back to computeSmartWeights()
+ * }
+ * ```
  */
 export function computeOptimalWeights(
   balances: Map<number, number>,
