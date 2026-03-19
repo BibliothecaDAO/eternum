@@ -350,7 +350,9 @@ export abstract class HexagonScene {
     if (clickedHex) {
       this.onHexagonClick(clickedHex.hexCoords);
     } else {
-      this.onHexagonClick(null);
+      // Fallback: try direct army model raycasting when hex picking fails
+      const fallbackHex = this.tryArmyRaycastFallback(raycaster);
+      this.onHexagonClick(fallbackHex);
     }
   }
 
@@ -1379,6 +1381,14 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
+
+  /**
+   * Fallback selection path when hex-based ground plane picking fails.
+   * Override in subclasses to try direct army model raycasting.
+   */
+  protected tryArmyRaycastFallback(_raycaster: Raycaster): HexPosition | null {
+    return null;
+  }
   public abstract setup(): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(nextSceneName?: SceneName): void;

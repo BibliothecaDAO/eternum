@@ -1655,6 +1655,18 @@ export default class WorldmapScene extends WarpTravel {
     return { army, structure, chest };
   }
 
+  protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
+    if (!this.armyManager) return null;
+    const entityId = this.armyManager.onMouseMove(raycaster);
+    if (entityId === undefined) return null;
+    const position = this.armiesPositions.get(entityId);
+    if (!position) return null;
+    if (import.meta.env.DEV) {
+      console.warn(`[Selection Fallback] Hex picking failed but army raycast hit entity ${entityId} at (${position.col}, ${position.row})`);
+    }
+    return position;
+  }
+
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");

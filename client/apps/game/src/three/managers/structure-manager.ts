@@ -175,6 +175,7 @@ export class StructureManager {
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
   private needsSpatialReindex = false;
+  private hasPendingModelBounds = false;
   private visibleStructureCount = 0;
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
   private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
@@ -1647,6 +1648,9 @@ export class StructureManager {
     this.previouslyActiveStructureModels = nextActiveStructureModels;
     this.previouslyActiveCosmeticStructureModels = nextActiveCosmeticStructureModels;
 
+    // Apply deferred worldBounds now that instance data matches the new chunk
+    this.applyPendingModelBounds();
+
     // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
     if (this.pointsRenderers) {
       Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
@@ -1860,6 +1864,18 @@ export class StructureManager {
 
   public setChunkBounds(bounds?: { box: Box3; sphere: Sphere }) {
     this.currentChunkBounds = bounds ?? undefined;
+    // Model worldBounds are NOT applied here — they are deferred to
+    // applyPendingModelBounds() which runs after instance data is rebuilt
+    // in performVisibleStructuresUpdate. Applying bounds before instance
+    // data is updated causes ghosting at chunk edges (old instances pass
+    // frustum culling with new chunk bounds).
+    this.hasPendingModelBounds = true;
+  }
+
+  private applyPendingModelBounds() {
+    if (!this.hasPendingModelBounds) return;
+    this.hasPendingModelBounds = false;
+    const bounds = this.currentChunkBounds;
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.setWorldBounds(bounds));
     });

@@ -49,6 +49,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds,
       forceVisibilityUpdate,
       updateCurrentChunkBounds,
+
       scheduleManagerCatchUp: scheduleManagerCatchUp.fn,
       unregisterPreviousChunkOnNextFrame,
     });
@@ -98,6 +99,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
+
       scheduleManagerCatchUp: scheduleManagerCatchUp.fn,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
@@ -206,6 +208,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
+
       scheduleManagerCatchUp,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
