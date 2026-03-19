@@ -100,6 +100,7 @@ export class ArmyModel {
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
   private nextInstanceIndex = 0;
+  private hasPendingBounds = false;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
@@ -504,9 +505,11 @@ export class ArmyModel {
       // Fallback: if we don't know the owner, clear all models (legacy behavior)
       // This should rarely happen in practice
       this.models.forEach((modelData) => {
+        modelData.activeInstances.delete(matrixIndex);
         this.clearModelSlot(modelData, matrixIndex);
       });
       this.cosmeticModels.forEach((modelData) => {
+        modelData.activeInstances.delete(matrixIndex);
         this.clearModelSlot(modelData, matrixIndex);
       });
     }
@@ -583,6 +586,17 @@ export class ArmyModel {
    * Clears cosmetic assignment for an entity, falling back to base ModelType.
    */
   public clearCosmeticForEntity(entityId: number): void {
+    const cosmeticKey = this.entityCosmeticMap.get(entityId);
+    if (cosmeticKey) {
+      const instanceInfo = this.instanceData.get(entityId);
+      if (instanceInfo && instanceInfo.matrixIndex !== undefined) {
+        const cosmeticData = this.cosmeticModels.get(cosmeticKey);
+        if (cosmeticData) {
+          cosmeticData.activeInstances.delete(instanceInfo.matrixIndex);
+          this.clearModelSlot(cosmeticData, instanceInfo.matrixIndex);
+        }
+      }
+    }
     this.entityCosmeticMap.delete(entityId);
   }
 
@@ -1937,6 +1951,41 @@ export class ArmyModel {
 
   public setAnimationState(index: number, isWalking: boolean): void {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
+  }
+
+  /**
+   * Visually hide an instance slot by zeroing its matrix without freeing
+   * the slot or removing it from activeInstances. Used when an army enters
+   * the deferred-removal queue so it disappears immediately while remaining
+   * matchable for supersede logic.
+   */
+  public hideInstanceSlot(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      if (modelData.activeInstances.has(matrixIndex)) {
+        modelData.instancedMeshes.forEach((mesh) => {
+          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          mesh.instanceMatrix.needsUpdate = true;
+        });
+      }
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      if (modelData.activeInstances.has(matrixIndex)) {
+        modelData.instancedMeshes.forEach((mesh) => {
+          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          mesh.instanceMatrix.needsUpdate = true;
+        });
+      }
+    });
+  }
+
+  public requestBoundsUpdate(): void {
+    this.hasPendingBounds = true;
+  }
+
+  public applyPendingBounds(): void {
+    if (!this.hasPendingBounds) return;
+    this.computeBoundingSphere();
+    this.hasPendingBounds = false;
   }
 
   public computeBoundingSphere(): void {

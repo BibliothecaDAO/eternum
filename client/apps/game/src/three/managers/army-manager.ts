@@ -176,6 +176,8 @@ export class ArmyManager {
   private chunkStride: number;
   private needsSpatialReindex = false;
   private isDestroyed = false;
+  private isArmyChunkTransitioning = false;
+  private deferredArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
 
@@ -896,7 +898,10 @@ export class ArmyManager {
     this.compactVisibleArmySlots();
     this.syncVisibleSlots();
     this.armyModel.updateAllInstances();
-    this.armyModel.computeBoundingSphere();
+    // Defer bounds computation until after instance matrices are flushed
+    // to prevent frustum culling mismatches at chunk edges
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
     this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
@@ -1229,6 +1234,7 @@ export class ArmyManager {
       return;
     }
 
+    this.isArmyChunkTransitioning = true;
     try {
       const [startRow, startCol] = chunkKey.split(",").map(Number);
       const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
@@ -1322,6 +1328,8 @@ export class ArmyManager {
         this.updateVisibleArmyBuffers();
       }
     } finally {
+      this.isArmyChunkTransitioning = false;
+      this.drainDeferredArmyQueue();
       recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
       setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
       setWorldmapRenderGauge("activePaths", this.getActivePathCount());
@@ -1406,6 +1414,33 @@ export class ArmyManager {
       this.chunkToArmies.set(newKey, newSet);
     }
     newSet.add(entityId);
+  }
+
+  /**
+   * Atomically transfer an army from one spatial bucket to another.
+   * Removes from source and adds to destination in a single synchronous call,
+   * preventing duplicate bucket membership races.
+   */
+  private atomicSpatialTransfer(entityId: ID, fromHex: Position, toHex: Position): void {
+    const fromNorm = fromHex.getNormalized();
+    const fromKey = this.getSpatialKey(fromNorm.x, fromNorm.y);
+    const toNorm = toHex.getNormalized();
+    const toKey = this.getSpatialKey(toNorm.x, toNorm.y);
+
+    // Remove from source
+    const fromBucket = this.chunkToArmies.get(fromKey);
+    if (fromBucket) {
+      fromBucket.delete(entityId);
+      if (fromBucket.size === 0) this.chunkToArmies.delete(fromKey);
+    }
+
+    // Add to destination
+    let toBucket = this.chunkToArmies.get(toKey);
+    if (!toBucket) {
+      toBucket = new Set();
+      this.chunkToArmies.set(toKey, toBucket);
+    }
+    toBucket.add(entityId);
   }
 
   /**
@@ -1509,7 +1544,21 @@ export class ArmyManager {
     return this.isArmyVisible(army, this.getChunkBounds(startRow, startCol));
   }
 
+  private drainDeferredArmyQueue(): void {
+    if (this.deferredArmyQueue.size === 0) return;
+    const deferred = [...this.deferredArmyQueue];
+    this.deferredArmyQueue.clear();
+    for (const entityId of deferred) {
+      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+    }
+  }
+
   private async renderArmyIntoCurrentChunkIfVisible(entityId: ID): Promise<boolean> {
+    if (this.isArmyChunkTransitioning) {
+      this.deferredArmyQueue.add(entityId);
+      return false;
+    }
+
     if (!isCommittedManagerChunk(this.currentChunkKey)) {
       return false;
     }
@@ -1840,6 +1889,9 @@ export class ArmyManager {
     this.armyPaths.set(entityId, path);
 
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
+      // Guard: if the army was removed during movement, skip all callbacks
+      // to prevent re-adding to spatial buckets that were already cleaned up
+      if (!this.armies.has(entityId)) return;
       this.armyPaths.delete(entityId);
       // Remove from source bucket now that movement is complete
       this.cleanupMovementSourceBucket(entityId);
@@ -1858,6 +1910,18 @@ export class ArmyManager {
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+  }
+
+  /**
+   * Visually hide an army without removing it from tracking structures.
+   * Used to immediately hide armies entering the deferred-removal queue
+   * so they don't render at stale positions during the freshness window.
+   */
+  public hideArmyVisual(entityId: ID): void {
+    const slot = this.visibleArmyIndices.get(entityId);
+    if (slot !== undefined) {
+      this.armyModel.hideInstanceSlot(slot);
+    }
   }
 
   public removeArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {

@@ -2782,6 +2782,10 @@ export default class WorldmapScene extends WarpTravel {
       position: removalPosition,
     });
 
+    // Immediately hide the army visually so it doesn't render at a stale
+    // position during the deferred removal window
+    this.armyManager.hideArmyVisual(entityId);
+
     const schedule = (delay: number) => {
       const timeout = setTimeout(() => {
         const meta = this.pendingArmyRemovalMeta.get(entityId);
