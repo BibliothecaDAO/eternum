@@ -74,9 +74,9 @@ Legend:
 | `initialize` | — | Initialize a hyperstructure |
 | `contribute_to_construction` | — | Contribute resources to hyperstructure construction |
 | `set_access` | — | Set hyperstructure construction access |
-| `allocate_shares` | — | Allocate victory point shares to co-owners |
+| `allocate_shares` | AUTO | Allocate victory point shares to co-owners |
 | `claim_construction_points` | — | Claim construction contribution points |
-| `claim_share_points` | — | Claim share points from hyperstructures |
+| `claim_share_points` | AUTO | Claim share points from hyperstructures |
 
 ## Guilds
 | Method | Status | Description |
