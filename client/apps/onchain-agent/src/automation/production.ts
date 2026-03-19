@@ -242,7 +242,10 @@ export function planProduction(
   const optimalWeights = computeOptimalWeights(balances, buildingCounts, troopPath, gameConfig);
   const smartWeights = optimalWeights ?? computeSmartWeights(buildingCounts, troopPath);
 
-  // Budget = 90% of each resource's balance (same cap as game client)
+  // Budget = 90% of each resource's balance (same cap as game client).
+  // Buildings are evaluated first and consume from this budget before production.
+  // Labor reserve is applied AFTER buildings, not before — so buildings can
+  // always access the full Labor balance for construction.
   const budget = new Map<number, number>();
   for (const [resourceId, amount] of balances) {
     budget.set(resourceId, Math.max(0, Math.floor((amount * 90) / 100)));
@@ -275,6 +278,15 @@ export function planProduction(
     } else {
       skippedBuilds.push({ label: bt.label, reason: "Insufficient budget" });
     }
+  }
+
+  // Apply Labor reserve AFTER buildings — buildings get full access to Labor
+  // for construction, but production shouldn't drain it below the reserve.
+  const LABOR_ID = 23;
+  const LABOR_RESERVE = 800;
+  const laborBudget = budget.get(LABOR_ID) ?? 0;
+  if (laborBudget > 0) {
+    budget.set(LABOR_ID, Math.max(0, laborBudget - LABOR_RESERVE));
   }
 
   for (const target of targets) {
@@ -592,16 +604,48 @@ export function computeOptimalWeights(
   const MIN_WEIGHT = 5;
   const MAX_WEIGHT = 50;
 
+  // If Labor is below 800, stop burning it for production so it can
+  // accumulate for building construction and realm upgrades.
+  const laborBalance = bal(23); // Labor = resource 23
+  const laborFloor = laborBalance < 800 ? 0 : 10;
+
   for (const [resourceId, inverse] of inverses) {
     const proportion = totalInverse > 0 ? inverse / totalInverse : 0;
     const rawWeight = Math.round(proportion * 80); // 80% total budget for complex
     const weight = Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, rawWeight));
-    weights.set(resourceId, { resourceToResource: weight, laborToResource: 10 });
+    weights.set(resourceId, { resourceToResource: weight, laborToResource: laborFloor });
+  }
+
+  // Ensure the target troop and any intermediate troop tiers get weights.
+  // The demand tree only contains INPUTS to the target, not the target itself.
+  // Without this, troop production gets zero weight and is skipped.
+  if (has(tp.t1Building) && !weights.has(tp.t1)) {
+    weights.set(tp.t1, { resourceToResource: 30, laborToResource: laborFloor });
+  }
+  if (has(tp.t2Building) && !weights.has(tp.t2)) {
+    weights.set(tp.t2, { resourceToResource: 30, laborToResource: laborFloor });
+  }
+  if (has(tp.t3Building) && !weights.has(tp.t3)) {
+    weights.set(tp.t3, { resourceToResource: 50, laborToResource: laborFloor });
+  }
+
+  // Ensure T2/T3 resource buildings get weights even if they're not in the
+  // current target's demand tree. These resources are needed for building
+  // T2/T3 barracks and for higher-tier troop production once barracks exist.
+  // Without this, Gold/Ironwood/ColdIron/Mithral/Adamantine/Dragonhide never
+  // accumulate and T2/T3 barracks can never be afforded.
+  const t2ResBldg = tp.t2Resource + RESOURCE_TO_BUILDING_OFFSET;
+  if (has(t2ResBldg) && !weights.has(tp.t2Resource)) {
+    weights.set(tp.t2Resource, { resourceToResource: 10, laborToResource: laborFloor });
+  }
+  const t3ResBldg = tp.t3Resource + RESOURCE_TO_BUILDING_OFFSET;
+  if (has(t3ResBldg) && !weights.has(tp.t3Resource)) {
+    weights.set(tp.t3Resource, { resourceToResource: 10, laborToResource: laborFloor });
   }
 
   // Ensure donkey always gets a small allocation if building exists
   if (has(DONKEY_BUILDING) && !weights.has(R.Donkey)) {
-    weights.set(R.Donkey, { resourceToResource: 5, laborToResource: 10 });
+    weights.set(R.Donkey, { resourceToResource: 5, laborToResource: laborFloor });
   }
 
   return weights;

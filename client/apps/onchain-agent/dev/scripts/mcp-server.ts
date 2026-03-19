@@ -56,7 +56,7 @@ import type { MapContext } from "../../src/map/context.js";
 import type { TxContext } from "../../src/tools/tx-context.js";
 import { extractTxError, addressesEqual } from "../../src/tools/tx-context.js";
 import { directionBetween } from "../../src/world/pathfinding.js";
-import { findPath as findPathV2, buildH3TileIndex, applyMapOverlays } from "../../src/world/pathfinding_v2.js";
+import { findPathNative, gridIndexFromSnapshot, buildH3TileIndex, applyMapOverlays } from "../../src/world/pathfinding_v2.js";
 import { isExplorer, isStructure, isChest } from "../../src/world/occupier.js";
 import { calculateStrength, calculateGuardStrength } from "../../src/world/strength.js";
 import { projectExplorerStamina } from "../../src/world/stamina.js";
@@ -74,9 +74,12 @@ import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
   const _error = console.error;
   const providerNoise = (msg: string) =>
     msg.includes("[provider]") || msg.includes("Failed to estimate") || msg.includes("Insufficient transaction");
-  console.log = (...a: any[]) => process.stderr.write(a.map(String).join(" ") + "\n");
-  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) process.stderr.write(a.map(String).join(" ") + "\n"); };
-  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) process.stderr.write(a.map(String).join(" ") + "\n"); };
+  const toStderr = (...a: any[]) => process.stderr.write(a.map(String).join(" ") + "\n");
+  console.log = toStderr;
+  console.info = toStderr;
+  console.debug = toStderr;
+  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) toStderr(...a); };
+  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) toStderr(...a); };
 }
 
 const log = (msg: string) => process.stderr.write(`[eternum-mcp] ${msg}\n`);
@@ -92,6 +95,8 @@ async function main() {
   let gameConfig: GameConfig | null = null;
   const BASE_MAP_CENTER = 2147483646;
   let mapCenter = BASE_MAP_CENTER; // updated during bootstrap with map_center_offset
+  let donkeyCapacityGrams = 50_000; // updated during bootstrap
+  const resourceWeightGrams = new Map<number, number>(); // resource ID → grams per unit
 
   /** Convert raw contract X coordinate to small display coordinate. */
   const toDisplayX = (raw: number) => raw - mapCenter;
@@ -229,8 +234,9 @@ async function main() {
         const lines: string[] = [`Automation: ${automationRunning ? "RUNNING" : "STOPPED"}`];
         if (automationStatus.size > 0) {
           for (const s of automationStatus.values()) {
-            const errs = s.errors.length > 0 ? ` | ERRORS: ${s.errors[0]}` : "";
-            lines.push(`  ${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}${errs}`);
+            const errs = s.errors.length > 0 ? ` | ERRORS: ${s.errors.join("; ")}` : "";
+            const built = s.lastBuilt.length > 0 ? ` | built: ${s.lastBuilt.join(", ")}` : "";
+            lines.push(`  ${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}${built}${errs}`);
           }
         } else {
           lines.push("  No realm data yet.");
@@ -294,44 +300,59 @@ async function main() {
         return { content: [{ type: "text", text: `No stamina (${projectedStamina}). Wait for regen.` }], isError: true };
       }
 
-      // Build H3 index with overlays.
-      // Inject unexplored tiles along the path to the target so the pathfinder
-      // can route through them. The execution loop uses explorer_explore for
-      // tiles not in the explored set, so this is safe — it just lets the
-      // pathfinder "see" them with a flat explore stamina cost.
-      const h3Index = buildH3TileIndex(mapCtx.snapshot.tiles);
-      applyMapOverlays(h3Index, { selfPosition: `${start.x},${start.y}` });
+      // Build grid index from snapshot + inject unexplored tiles toward target.
+      // Uses native offset hex A* — no H3 dependency, guaranteed correct adjacency.
+      const snapshotGrid = mapCtx.snapshot.gridIndex;
+      const syntheticTiles = new Map<string, number>(); // "x,y" → biome (1 = generic explored)
 
-      // Inject unexplored tiles: walk neighbors outward from explored frontier
-      // toward the target, up to the distance between start and target.
+      // Inject unexplored tiles: BFS outward from explored frontier toward target
       {
         const explored = new Set<string>();
         for (const t of mapCtx.snapshot.tiles) {
           if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`);
         }
-        const { getNeighborHexes } = await import("@bibliothecadao/types");
-        const { markExplored: inject } = await import("../../src/world/pathfinding_v2.js");
+        const { getNeighborHexes: getNbrs } = await import("@bibliothecadao/types");
         const maxDist = Math.abs(target_x - start.x) + Math.abs(target_y - start.y) + 5;
         const frontier = [...explored];
-        const injected = new Set<string>();
         for (let wave = 0; wave < maxDist && frontier.length > 0; wave++) {
           const next: string[] = [];
           for (const key of frontier) {
             const [fx, fy] = key.split(",").map(Number);
-            for (const n of getNeighborHexes(fx, fy)) {
+            for (const n of getNbrs(fx, fy)) {
               const nk = `${n.col},${n.row}`;
-              if (explored.has(nk) || injected.has(nk)) continue;
-              injected.add(nk);
-              inject(h3Index, n.col, n.row, 1); // biome=1 (generic explored)
+              if (explored.has(nk) || syntheticTiles.has(nk)) continue;
+              syntheticTiles.set(nk, 1);
               next.push(nk);
             }
           }
           frontier.length = 0;
           frontier.push(...next);
-          // Stop once we've injected the target
-          if (injected.has(`${target_x},${target_y}`)) break;
+          if (syntheticTiles.has(`${target_x},${target_y}`)) break;
         }
       }
+
+      // Wrap snapshot + synthetic tiles into GridIndex
+      const grid = gridIndexFromSnapshot(snapshotGrid);
+      const augmentedGrid = {
+        getBiome: (x: number, y: number) => {
+          const b = grid.getBiome(x, y);
+          if (b > 0) return b;
+          return syntheticTiles.get(`${x},${y}`) ?? 0;
+        },
+        getOccupier: (x: number, y: number) => grid.getOccupier(x, y),
+        has: (x: number, y: number) => grid.has(x, y) || syntheticTiles.has(`${x},${y}`),
+        isSynthetic: (x: number, y: number) => syntheticTiles.has(`${x},${y}`),
+      };
+      // Unblock self position
+      const selfKey = `${start.x},${start.y}`;
+      const selfOccupier = grid.getOccupier(start.x, start.y);
+      const gridForPath = {
+        ...augmentedGrid,
+        getOccupier: (x: number, y: number) => {
+          if (x === start.x && y === start.y) return 0;
+          return augmentedGrid.getOccupier(x, y);
+        },
+      };
 
       const staminaConfig = {
         gainPerTick: gameConfig!.stamina.gainPerTick,
@@ -346,27 +367,27 @@ async function main() {
       const pathOptions = { troop: explorer.troopType as any, maxStamina: projectedStamina, staminaConfig };
 
       // Check if target is occupied — pathfind to adjacent instead
-      const targetTile = mapCtx.snapshot.gridIndex.get(`${target_x},${target_y}`);
+      const targetTile = snapshotGrid.get(`${target_x},${target_y}`);
       const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
 
       let pathResult: any = null;
       if (targetIsOccupied) {
-        const { getNeighborHexes } = await import("@bibliothecadao/types");
-        const neighbors = getNeighborHexes(target_x, target_y);
+        const { getNeighborHexes: getNbrs } = await import("@bibliothecadao/types");
+        const neighbors = getNbrs(target_x, target_y);
         for (const n of neighbors) {
-          // Check both snapshot and H3 index (injected tiles won't be in snapshot)
-          const adjTile = mapCtx.snapshot.gridIndex.get(`${n.col},${n.row}`);
-          const inH3 = h3Index.keyToH3.has(`${n.col},${n.row}`);
-          if (!adjTile && !inH3) continue;
+          const adjKey = `${n.col},${n.row}`;
+          const adjTile = snapshotGrid.get(adjKey);
+          const inSynthetic = syntheticTiles.has(adjKey);
+          if (!adjTile && !inSynthetic) continue;
           if (adjTile && adjTile.occupierType !== 0) continue;
-          const candidate = findPathV2(start, { x: n.col, y: n.row }, h3Index, pathOptions);
+          const candidate = findPathNative(start, { x: n.col, y: n.row }, gridForPath, pathOptions);
           if (candidate) {
             if (!pathResult || candidate.staminaCost < pathResult.staminaCost) pathResult = candidate;
           }
         }
         if (!pathResult) return { content: [{ type: "text", text: `No path to any tile adjacent to (${dispX},${dispY}).` }], isError: true };
       } else {
-        pathResult = findPathV2(start, target, h3Index, pathOptions);
+        pathResult = findPathNative(start, target, gridForPath, pathOptions);
       }
 
       if (!pathResult) return { content: [{ type: "text", text: `No path to (${dispX},${dispY}).` }], isError: true };
@@ -663,6 +684,147 @@ async function main() {
   );
 
 
+  server.tool(
+    "send_resources",
+    "Transfer resources between your structures via donkey caravan. " +
+    "Automatically uses sender's donkeys, or recipient's donkeys (pickup) if sender has none. " +
+    "Resources arrive after travel time. Automation will offload arrivals automatically.",
+    {
+      from_structure_id: z.coerce.number().describe("Entity ID of source structure"),
+      to_structure_id: z.coerce.number().describe("Entity ID of destination structure"),
+      resources: z.array(z.object({
+        resource_id: z.coerce.number().describe("Resource type ID (e.g. 38=Essence, 3=Wood, 4=Copper, 7=Gold, 25=Donkey)"),
+        amount: z.coerce.number().describe("Amount to send (human-readable, not precision-scaled)"),
+      })).describe("Resources to send"),
+    },
+    async ({ from_structure_id, to_structure_id, resources: resourceList }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      if (from_structure_id === to_structure_id) {
+        return { content: [{ type: "text", text: "Cannot send to the same structure." }], isError: true };
+      }
+      if (resourceList.length === 0) {
+        return { content: [{ type: "text", text: "No resources specified." }], isError: true };
+      }
+
+      const scaledResources = resourceList.map((r) => ({
+        resource: r.resource_id,
+        amount: Math.floor(r.amount * RESOURCE_PRECISION),
+      }));
+
+      // Calculate donkey cost from resource weights
+      let totalWeightGrams = 0;
+      for (const r of resourceList) {
+        const weightPerUnit = resourceWeightGrams.get(r.resource_id) ?? 0;
+        totalWeightGrams += r.amount * weightPerUnit;
+      }
+      const donkeysNeeded = donkeyCapacityGrams > 0 ? Math.ceil(totalWeightGrams / donkeyCapacityGrams) : 0;
+
+      // Check donkey balance on both structures to decide send vs pickup
+      let senderDonkeys = 0;
+      let recipientDonkeys = 0;
+      try {
+        for (const t of mapCtx.snapshot?.tiles ?? []) {
+          if (t.occupierId === from_structure_id) {
+            const info = await client!.view.structureAt(t.position.x, t.position.y);
+            senderDonkeys = info?.resources.find((r) => r.name === "Donkey")?.amount ?? 0;
+            break;
+          }
+        }
+        for (const t of mapCtx.snapshot?.tiles ?? []) {
+          if (t.occupierId === to_structure_id) {
+            const info = await client!.view.structureAt(t.position.x, t.position.y);
+            recipientDonkeys = info?.resources.find((r) => r.name === "Donkey")?.amount ?? 0;
+            break;
+          }
+        }
+      } catch { /* non-critical — will try send first */ }
+
+      // Check if either side has enough donkeys
+      if (donkeysNeeded > 0 && senderDonkeys < donkeysNeeded && recipientDonkeys < donkeysNeeded) {
+        return { content: [{ type: "text", text: `Need ${donkeysNeeded} donkeys but sender has ${senderDonkeys} and recipient has ${recipientDonkeys}. Produce more donkeys first.` }], isError: true };
+      }
+
+      const summary = resourceList.map((r) => `${r.amount.toLocaleString()} of resource ${r.resource_id}`).join(", ");
+      const donkeyNote = donkeysNeeded > 0 ? ` (${donkeysNeeded} donkeys burned)` : "";
+
+      // Use sender's donkeys if available, otherwise pickup with recipient's
+      if (senderDonkeys >= donkeysNeeded) {
+        try {
+          await provider!.send_resources({
+            sender_entity_id: from_structure_id,
+            recipient_entity_id: to_structure_id,
+            resources: scaledResources,
+            signer: account,
+          });
+          return { content: [{ type: "text", text: `Sent ${summary} from ${from_structure_id} → ${to_structure_id}${donkeyNote}. Sender's donkeys dispatched.` }] };
+        } catch (err: any) {
+          const msg = extractTxError(err);
+          if (!msg.toLowerCase().includes("donkey")) {
+            return { content: [{ type: "text", text: `Send failed: ${msg}` }], isError: true };
+          }
+        }
+      }
+
+      // Pickup mode — recipient's donkeys fetch the resources
+      if (recipientDonkeys >= donkeysNeeded) {
+        try {
+          await provider!.pickup_resources({
+            recipient_entity_id: to_structure_id,
+            owner_entity_id: from_structure_id,
+            resources: scaledResources,
+            signer: account,
+          });
+          return { content: [{ type: "text", text: `Picking up ${summary} from ${from_structure_id} → ${to_structure_id}${donkeyNote}. Recipient's donkeys dispatched.` }] };
+        } catch (err: any) {
+          return { content: [{ type: "text", text: `Pickup failed: ${extractTxError(err)}` }], isError: true };
+        }
+      }
+
+      return { content: [{ type: "text", text: `Neither structure has enough donkeys (need ${donkeysNeeded}). Sender: ${senderDonkeys}, Recipient: ${recipientDonkeys}.` }], isError: true };
+    },
+  );
+
+  server.tool(
+    "guard_structure",
+    "Add troops from a structure's storage to one of its guard slots for defense. " +
+    "Structures can have up to 4 guard slots (Alpha=0, Bravo=1, Charlie=2, Delta=3). " +
+    "Check map_entity_info first to see which slots are occupied.",
+    {
+      structure_id: z.coerce.number().describe("Entity ID of the structure to guard"),
+      slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
+      troop_type: z.enum(["Knight", "Paladin", "Crossbowman"]).describe("Troop type"),
+      tier: z.coerce.number().min(1).max(3).default(1).describe("Troop tier (1-3)"),
+      amount: z.coerce.number().describe("Number of troops to assign as guards"),
+    },
+    async ({ structure_id, slot, troop_type, tier, amount: troopAmount }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const category = { Knight: 0, Paladin: 1, Crossbowman: 2 }[troop_type] ?? 0;
+      const tierValue = (tier ?? 1) - 1;
+      const amount = Math.floor(troopAmount * RESOURCE_PRECISION);
+      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
+      const tierSuffix = ["T1", "T2", "T3"][tierValue];
+
+      try {
+        await provider!.guard_add({
+          for_structure_id: structure_id,
+          slot,
+          category,
+          tier: tierValue,
+          amount,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Guard failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      return { content: [{ type: "text", text: `Added ${troopAmount.toLocaleString()} ${troop_type} ${tierSuffix} to ${slotNames[slot] ?? `slot ${slot}`} guard on structure ${structure_id}.` }] };
+    },
+  );
+
   // ── Connect transport FIRST so the MCP handshake completes immediately ──
   log("Connecting MCP transport...");
   const transport = new StdioServerTransport();
@@ -741,6 +903,25 @@ async function main() {
         }
       }
     } catch { /* non-critical — coords will use raw values */ }
+
+    // Query donkey capacity and resource weights for transport calculations
+    try {
+      const sql = client.sql as any;
+      const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
+      const capRes = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `capacity_config.donkey_capacity` as cap FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+      if (capRes.ok) {
+        const rows = await capRes.json() as any[];
+        if (rows[0]?.cap != null) donkeyCapacityGrams = Number(rows[0].cap);
+      }
+      const weightRes = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT resource_type, weight_gram FROM `s1_eternum-WeightConfig`")}`);
+      if (weightRes.ok) {
+        const rows = await weightRes.json() as any[];
+        for (const row of rows) {
+          resourceWeightGrams.set(Number(row.resource_type), Number(BigInt(row.weight_gram)));
+        }
+      }
+      log(`Transport config: donkey capacity ${donkeyCapacityGrams}g, ${resourceWeightGrams.size} resource weights loaded`);
+    } catch { /* non-critical */ }
 
     // Map loop
     const mapLoop = createMapLoop(client, mapCtx, playerAddress, 10_000, gameConfig!.stamina, undefined, mapCenter);
