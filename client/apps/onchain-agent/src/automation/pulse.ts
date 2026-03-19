@@ -8,7 +8,7 @@
  * Everything else (building, production) is handled by background automation.
  */
 
-import { type BuildStep, buildOrderForBiome } from "./build-order.js";
+import { buildOrderForBiome } from "./build-order.js";
 import type { RealmState } from "./runner.js";
 
 // ── Essence costs per BuildingType ────────────────────────────────────
@@ -33,22 +33,35 @@ const ESSENCE_COST: Record<number, number> = {
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-interface EssencePulse {
+/** Essence availability relative to the next build milestone that requires it. */
+export interface EssencePulse {
+  /** Current essence balance. */
   balance: number;
+  /** Next essence-gated build step, or null if none remain in the build order. */
   milestone: { label: string; cost: number } | null;
+  /** How much more essence is needed (0 when sufficient). */
   shortfall: number;
+  /** True when the current balance covers the next milestone's cost. */
   sufficient: boolean;
 }
 
-interface WheatPulse {
+/** Wheat status expressed as remaining army moves. */
+export interface WheatPulse {
+  /** Current wheat balance. */
   balance: number;
+  /** Estimated number of army moves the current wheat can fuel. */
   movesRemaining: number;
+  /** True when movesRemaining drops below the safety threshold. */
   low: boolean;
 }
 
-interface PulseCheck {
+/** Combined pulse check result with a pre-formatted briefing for the agent prompt. */
+export interface PulseCheck {
+  /** Essence availability status. */
   essence: EssencePulse;
+  /** Wheat / army-fuel status. */
   wheat: WheatPulse;
+  /** Human-readable multi-line summary suitable for direct injection into the agent context. */
   briefing: string;
 }
 

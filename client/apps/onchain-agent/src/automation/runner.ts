@@ -12,7 +12,7 @@ import { type BuildOrder, type BuildStep, buildOrderForBiome } from "./build-ord
 
 // ── Realm level → max building slots ──────────────────────────────────
 
-// On-chain levels are 0-indexed: 0=Settlement, 1=City, 2=Kingdom, 3=Empire
+/** Realm level (0-indexed) to maximum building slot count. */
 const LEVEL_SLOTS: Record<number, number> = {
   0: 6, // Settlement
   1: 18, // City
@@ -20,6 +20,7 @@ const LEVEL_SLOTS: Record<number, number> = {
   3: 60, // Empire
 };
 
+/** Realm level to human-readable name for log output. */
 const LEVEL_NAMES: Record<number, string> = {
   0: "Settlement",
   1: "City",
@@ -27,11 +28,15 @@ const LEVEL_NAMES: Record<number, string> = {
   3: "Empire",
 };
 
+/** BuildingType ID for WorkersHut, used when auto-injecting population buildings. */
 const WORKERS_HUT = 1;
 
 // ── Input / Output types ──────────────────────────────────────────────
 
-/** Population impact of a single building instance. */
+/**
+ * Population impact of a single building instance.
+ * Used by the runner to decide when to inject WorkersHuts.
+ */
 export interface BuildingPopulationInfo {
   /** How much population capacity this building consumes when placed. */
   populationCost: number;
@@ -39,6 +44,7 @@ export interface BuildingPopulationInfo {
   capacityGrant: number;
 }
 
+/** Snapshot of the realm's current state, consumed by the automation runner each tick. */
 export interface RealmState {
   /** Biome of the realm's home tile (drives troop path selection). */
   biome: number;
@@ -51,22 +57,36 @@ export interface RealmState {
   buildingCounts: Map<number, number>;
 }
 
+/** A single building the runner intends to place this tick. */
 interface BuildIntent {
+  /** The build-order step being fulfilled. */
   step: BuildStep;
+  /** Position within the (possibly multi-pass) build-order walk. */
   index: number;
-  /** True if this WH was injected for population — paired with the next build. */
+  /** True when this is an auto-injected WorkersHut to satisfy population demand. */
   injectedForPopulation?: boolean;
 }
 
+/** Signal that the realm should be upgraded to unlock more building slots. */
 interface UpgradeIntent {
+  /** Current realm level (0-based). */
   fromLevel: number;
+  /** Human-readable name of the current level (e.g. "City"). */
   fromName: string;
+  /** Human-readable name of the next level (e.g. "Kingdom"). */
   toName: string;
 }
 
+/**
+ * The complete output of a single automation tick.
+ * Exactly one of `builds`, `upgrade`, or `idle` will be the "primary" action.
+ */
 interface AutomationPlan {
+  /** Ordered list of buildings to place this tick (may include auto-injected WorkersHuts). */
   builds: BuildIntent[];
+  /** Non-null when the build order is blocked by slot capacity and a realm upgrade is needed. */
   upgrade: UpgradeIntent | null;
+  /** Non-null with a human-readable reason when nothing can be built (e.g. "Build order complete"). */
   idle: string | null;
 }
 

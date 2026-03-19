@@ -71,17 +71,30 @@ export function formatStatus(input: StatusInput): string {
 
 /** Live automation status for a single realm, updated each automation tick. */
 export interface AutomationRealmStatus {
+  /** On-chain entity ID of the realm. */
   entityId: number;
+  /** Human-readable realm name (e.g. "Realm 42"). */
   name: string;
+  /** Current realm level (0=Settlement, 1=City, 2=Kingdom, 3=Empire). */
   level: number;
+  /** Build order progress string (e.g. "5/44"). */
   buildOrderProgress: string;
+  /** Labels of buildings constructed during the most recent tick. */
   lastBuilt: string[];
+  /** Upgrade description from the most recent tick, or null if none occurred. */
   lastUpgrade: string | null;
+  /** Whether production was executed during the most recent tick. */
   produced: boolean;
+  /** Error messages from the most recent tick's failed transactions. */
   errors: string[];
+  /** Current wheat balance (precision-scaled). */
   wheatBalance: number;
+  /** Current essence balance (precision-scaled). */
   essenceBalance: number;
 }
 
-/** Shared mutable map updated by the automation loop, read by transformContext. */
+/**
+ * Shared mutable map updated by the automation loop each tick, keyed by realm entity ID.
+ * Read by `transformContext` to inject per-realm status into the agent's prompt context.
+ */
 export type AutomationStatusMap = Map<number, AutomationRealmStatus>;
