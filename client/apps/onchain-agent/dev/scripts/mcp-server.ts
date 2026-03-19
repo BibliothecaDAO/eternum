@@ -60,18 +60,23 @@ import { findPath as findPathV2, buildH3TileIndex, applyMapOverlays } from "../.
 import { isExplorer, isStructure, isChest } from "../../src/world/occupier.js";
 import { calculateStrength, calculateGuardStrength } from "../../src/world/strength.js";
 import { projectExplorerStamina } from "../../src/world/stamina.js";
+import { simulateCombat } from "../../src/world/combat.js";
 import { createMapProtocol } from "../../src/map/protocol.js";
 import { packTileSeed, getNeighborHexes, Direction, BiomeIdToType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
 
-// Suppress noisy provider logs
+// ── Redirect ALL console output to stderr ──
+// MCP protocol owns stdout. Any stray console.log (e.g. Cartridge SDK
+// printing an auth URL) would corrupt the JSON-RPC stream. Redirect
+// everything to stderr so auth URLs appear in the MCP server logs.
 {
   const _warn = console.warn;
   const _error = console.error;
   const providerNoise = (msg: string) =>
     msg.includes("[provider]") || msg.includes("Failed to estimate") || msg.includes("Insufficient transaction");
-  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) _warn.apply(console, a); };
-  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) _error.apply(console, a); };
+  console.log = (...a: any[]) => process.stderr.write(a.map(String).join(" ") + "\n");
+  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) process.stderr.write(a.map(String).join(" ") + "\n"); };
+  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) process.stderr.write(a.map(String).join(" ") + "\n"); };
 }
 
 const log = (msg: string) => process.stderr.write(`[eternum-mcp] ${msg}\n`);
@@ -79,73 +84,78 @@ const log = (msg: string) => process.stderr.write(`[eternum-mcp] ${msg}\n`);
 async function main() {
   log("Starting...");
 
-  // ── Bootstrap (same as agent main.ts) ──
-  const config = loadConfig();
+  // ── Mutable state — filled by background bootstrap ──
+  let client: EternumClient | null = null;
+  let provider: EternumProvider | null = null;
+  let account: any = null;
+  let playerAddress = "";
+  let gameConfig: GameConfig | null = null;
+  const BASE_MAP_CENTER = 2147483646;
+  let mapCenter = BASE_MAP_CENTER; // updated during bootstrap with map_center_offset
 
-  let contractsBySelector: Record<string, string> | undefined;
-  if (config.worldName && (!config.toriiUrl || !config.worldAddress)) {
-    log(`Discovering world "${config.worldName}"...`);
-    const info = await discoverWorld(config.chain, config.worldName);
-    config.toriiUrl = info.toriiUrl;
-    config.worldAddress = info.worldAddress;
-    config.rpcUrl = info.rpcUrl;
-    contractsBySelector = info.contractsBySelector;
-    config.dataDir = join(homedir(), ".axis", "worlds", info.worldAddress);
-    log(`Discovered: ${info.toriiUrl}`);
-  }
-
-  let manifest = getManifest(config.chain);
-  if (contractsBySelector) {
-    manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
-  }
-
-  const account = await getAccount({
-    chain: config.chain,
-    rpcUrl: config.rpcUrl,
-    chainId: config.chainId,
-    basePath: join(config.dataDir, ".cartridge"),
-    manifest,
-  });
-  log(`Account: ${account.address}`);
-
-  const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
-  const provider = new EternumProvider(manifest, config.rpcUrl, config.vrfProviderAddress);
-  const gameConfig: GameConfig = await (client.sql as any).fetchGameConfig();
-  log(`Game config loaded. ${Object.keys(gameConfig.buildingCosts).length} buildings.`);
-
+  /** Convert raw contract X coordinate to small display coordinate. */
+  const toDisplayX = (raw: number) => raw - mapCenter;
+  /** Convert raw contract Y coordinate to small display coordinate (negated: positive = north). */
+  const toDisplayY = (raw: number) => -(raw - mapCenter);
+  /** Convert small display X coordinate to raw contract coordinate. */
+  const toContractX = (display: number) => display + mapCenter;
+  /** Convert small display Y coordinate to raw contract coordinate (negated back). */
+  const toContractY = (display: number) => -display + mapCenter;
+  /** Shorthand for action tools that convert display input to raw. */
+  const toContract = toContractX;
+  const toDisplay = toDisplayX;
   const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
-  const txCtx: TxContext = { provider, signer: account };
-  const playerAddress = account.address;
-
-  // ── Map loop ──
-  const mapLoop = createMapLoop(client, mapCtx, playerAddress, 10_000, gameConfig.stamina);
-  mapLoop.start();
-
-  log("Waiting for map...");
-  for (let i = 0; i < 30; i++) {
-    if (mapCtx.snapshot) break;
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  log(mapCtx.snapshot ? `Map loaded: ${mapCtx.snapshot.tiles.length} tiles` : "Map failed to load");
-
-  // ── Automation loop (off by default, toggled via tool) ──
   const automationStatus: AutomationStatusMap = new Map();
-  const automationLoop = createAutomationLoop(
-    client, provider, account, playerAddress, config.dataDir, mapCtx, gameConfig, 60_000, automationStatus,
-  );
+  let automationLoop: ReturnType<typeof createAutomationLoop> | null = null;
   let automationRunning = false;
+  let bootstrapDone = false;
+  let bootstrapError: string | null = null;
+  let bootstrapPhase = "starting";
+  let authUrl: string | null = null;
 
-  // ── MCP Server ──
+  /** Return an error string if the server isn't ready, or null if good to go. */
+  const notReady = (): string | null => {
+    if (bootstrapError) return `Server failed to start: ${bootstrapError}`;
+    if (!bootstrapDone) {
+      if (authUrl) return `Waiting for authentication. [Click here to login](${authUrl}), then retry.`;
+      return `Server is ${bootstrapPhase}. Please wait a moment and retry.`;
+    }
+    return null;
+  };
+
+  // ── MCP Server + Tool Registration ──
+  // Register tools BEFORE connecting the transport so the handshake
+  // completes immediately. Tools gate on notReady() / mapCtx checks.
   const server = new McpServer({ name: "eternum", version: "1.0.0" });
 
+  // ── Status Tool (always works, even before bootstrap) ──
+
+  server.tool(
+    "status",
+    "Check server status. If not authenticated yet, returns a login link. Call this first.",
+    {},
+    async () => {
+      if (bootstrapError) return { content: [{ type: "text", text: `Failed: ${bootstrapError}` }], isError: true };
+      if (authUrl) {
+        const { exec } = await import("node:child_process");
+        exec(`echo ${JSON.stringify(authUrl)} | pbcopy`);
+        return { content: [{ type: "text", text: "Auth URL copied to clipboard. Paste in your browser to login." }] };
+      }
+      if (!bootstrapDone) return { content: [{ type: "text", text: `Starting up (${bootstrapPhase})...` }] };
+      return { content: [{ type: "text", text: `Ready. Account: ${playerAddress}` }] };
+    },
+  );
+
   // ── Map Protocol Tools ──
+  // The protocol handles coordinate conversion (display ↔ raw) internally.
+  // Tools pass display coords directly — small numbers like (6,-4).
 
   server.tool(
     "map_tile_info",
     "What's at this position? Full details: biome, entity, guards, resources, strength.",
-    { x: z.number().describe("World hex X"), y: z.number().describe("World hex Y") },
+    { x: z.coerce.number().describe("Map X coordinate"), y: z.coerce.number().describe("Map Y coordinate") },
     async ({ x, y }) => {
-      if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
+      if (!mapCtx.protocol) return { content: [{ type: "text", text: notReady() ?? "Map not loaded yet." }] };
       const r = await mapCtx.protocol.tileInfo(x, y);
       return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
     },
@@ -155,12 +165,12 @@ async function main() {
     "map_nearby",
     "What's around this position? Returns grouped lists: your armies, enemies, structures, chests.",
     {
-      x: z.number().describe("World hex X"),
-      y: z.number().describe("World hex Y"),
-      radius: z.number().optional().default(5).describe("Search radius in hexes"),
+      x: z.coerce.number().describe("Map X coordinate"),
+      y: z.coerce.number().describe("Map Y coordinate"),
+      radius: z.coerce.number().optional().default(5).describe("Search radius in hexes"),
     },
     async ({ x, y, radius }) => {
-      if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
+      if (!mapCtx.protocol) return { content: [{ type: "text", text: notReady() ?? "Map not loaded yet." }] };
       const r = await mapCtx.protocol.nearby(x, y, radius);
       return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
     },
@@ -169,9 +179,9 @@ async function main() {
   server.tool(
     "map_entity_info",
     "Full details on an entity by ID: troops, stamina, guards, resources, strength, owner.",
-    { entity_id: z.number().describe("Entity ID") },
+    { entity_id: z.coerce.number().describe("Entity ID") },
     async ({ entity_id }) => {
-      if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
+      if (!mapCtx.protocol) return { content: [{ type: "text", text: notReady() ?? "Map not loaded yet." }] };
       const r = await mapCtx.protocol.entityInfo(entity_id);
       if (!r) return { content: [{ type: "text", text: `Entity ${entity_id} not found.` }], isError: true };
       return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
@@ -183,11 +193,11 @@ async function main() {
     "Find entities by type across the map. Types: hyperstructure, mine, village, chest, enemy_army, enemy_structure, own_army, own_structure. Sorted by distance from ref position.",
     {
       type: z.enum(["hyperstructure", "mine", "village", "chest", "enemy_army", "enemy_structure", "own_army", "own_structure"]),
-      ref_x: z.number().optional().describe("Reference X for distance sorting"),
-      ref_y: z.number().optional().describe("Reference Y for distance sorting"),
+      ref_x: z.coerce.number().optional().describe("Reference X for distance sorting"),
+      ref_y: z.coerce.number().optional().describe("Reference Y for distance sorting"),
     },
     async ({ type, ref_x, ref_y }) => {
-      if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
+      if (!mapCtx.protocol) return { content: [{ type: "text", text: notReady() ?? "Map not loaded yet." }] };
       const ref = ref_x != null && ref_y != null ? { x: ref_x, y: ref_y } : undefined;
       const r = await mapCtx.protocol.find(type, ref);
       return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
@@ -199,7 +209,7 @@ async function main() {
     "Get the current game state briefing: your armies, structures, threats, opportunities.",
     {},
     async () => {
-      if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
+      if (!mapCtx.protocol) return { content: [{ type: "text", text: notReady() ?? "Map not loaded yet." }] };
       return { content: [{ type: "text", text: mapCtx.protocol.briefing() || "(No owned entities)" }] };
     },
   );
@@ -212,6 +222,9 @@ async function main() {
     "Use action='status' to check, 'start' to enable, 'stop' to disable.",
     { action: z.enum(["start", "stop", "status"]).describe("start, stop, or status") },
     async ({ action }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }] };
+
       if (action === "status") {
         const lines: string[] = [`Automation: ${automationRunning ? "RUNNING" : "STOPPED"}`];
         if (automationStatus.size > 0) {
@@ -227,7 +240,7 @@ async function main() {
 
       if (action === "start") {
         if (automationRunning) return { content: [{ type: "text", text: "Automation is already running." }] };
-        automationLoop.start();
+        automationLoop!.start();
         automationRunning = true;
         log("Automation started.");
         return { content: [{ type: "text", text: "Automation started. Building, upgrading, and production will run every 60s for all owned realms." }] };
@@ -235,7 +248,7 @@ async function main() {
 
       if (action === "stop") {
         if (!automationRunning) return { content: [{ type: "text", text: "Automation is already stopped." }] };
-        automationLoop.stop();
+        automationLoop!.stop();
         automationRunning = false;
         log("Automation stopped.");
         return { content: [{ type: "text", text: "Automation stopped." }] };
@@ -251,14 +264,20 @@ async function main() {
     "move_army",
     "Move one of your armies to a target position. Pathfinds automatically. Explores unexplored tiles.",
     {
-      army_id: z.number().describe("Entity ID of your army"),
-      target_x: z.number().describe("Target world hex X"),
-      target_y: z.number().describe("Target world hex Y"),
+      army_id: z.coerce.number().describe("Entity ID of your army"),
+      target_x: z.coerce.number().describe("Target map X"),
+      target_y: z.coerce.number().describe("Target map Y"),
     },
-    async ({ army_id, target_x, target_y }) => {
-      if (!mapCtx.snapshot) return { content: [{ type: "text", text: "Map not loaded." }], isError: true };
+    async ({ army_id, target_x: dispX, target_y: dispY }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+      if (!mapCtx.snapshot) return { content: [{ type: "text", text: "Map not loaded yet." }], isError: true };
 
-      const explorer = await client.view.explorerInfo(army_id);
+      // Convert display coords to raw for all internal operations
+      const target_x = toContractX(dispX);
+      const target_y = toContractY(dispY);
+
+      const explorer = await client!.view.explorerInfo(army_id);
       if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
       if (!addressesEqual(explorer.ownerAddress ?? "", playerAddress)) {
         return { content: [{ type: "text", text: `Army ${army_id} is not yours.` }], isError: true };
@@ -267,26 +286,61 @@ async function main() {
       const target = { x: target_x, y: target_y };
       const start = explorer.position;
       if (start.x === target.x && start.y === target.y) {
-        return { content: [{ type: "text", text: `Already at (${target_x},${target_y}).` }], isError: true };
+        return { content: [{ type: "text", text: `Already at (${dispX},${dispY}).` }], isError: true };
       }
 
-      const projectedStamina = projectExplorerStamina(explorer, gameConfig.stamina);
+      const projectedStamina = projectExplorerStamina(explorer, gameConfig!.stamina);
       if (projectedStamina <= 0) {
         return { content: [{ type: "text", text: `No stamina (${projectedStamina}). Wait for regen.` }], isError: true };
       }
 
-      // Build H3 index with overlays
+      // Build H3 index with overlays.
+      // Inject unexplored tiles along the path to the target so the pathfinder
+      // can route through them. The execution loop uses explorer_explore for
+      // tiles not in the explored set, so this is safe — it just lets the
+      // pathfinder "see" them with a flat explore stamina cost.
       const h3Index = buildH3TileIndex(mapCtx.snapshot.tiles);
       applyMapOverlays(h3Index, { selfPosition: `${start.x},${start.y}` });
 
+      // Inject unexplored tiles: walk neighbors outward from explored frontier
+      // toward the target, up to the distance between start and target.
+      {
+        const explored = new Set<string>();
+        for (const t of mapCtx.snapshot.tiles) {
+          if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`);
+        }
+        const { getNeighborHexes } = await import("@bibliothecadao/types");
+        const { markExplored: inject } = await import("../../src/world/pathfinding_v2.js");
+        const maxDist = Math.abs(target_x - start.x) + Math.abs(target_y - start.y) + 5;
+        const frontier = [...explored];
+        const injected = new Set<string>();
+        for (let wave = 0; wave < maxDist && frontier.length > 0; wave++) {
+          const next: string[] = [];
+          for (const key of frontier) {
+            const [fx, fy] = key.split(",").map(Number);
+            for (const n of getNeighborHexes(fx, fy)) {
+              const nk = `${n.col},${n.row}`;
+              if (explored.has(nk) || injected.has(nk)) continue;
+              injected.add(nk);
+              inject(h3Index, n.col, n.row, 1); // biome=1 (generic explored)
+              next.push(nk);
+            }
+          }
+          frontier.length = 0;
+          frontier.push(...next);
+          // Stop once we've injected the target
+          if (injected.has(`${target_x},${target_y}`)) break;
+        }
+      }
+
       const staminaConfig = {
-        gainPerTick: gameConfig.stamina.gainPerTick,
-        travelCost: gameConfig.stamina.travelCost,
-        exploreCost: gameConfig.stamina.exploreCost,
-        bonusValue: gameConfig.stamina.bonusValue,
-        maxKnight: gameConfig.stamina.knightMaxStamina,
-        maxPaladin: gameConfig.stamina.paladinMaxStamina,
-        maxCrossbowman: gameConfig.stamina.crossbowmanMaxStamina,
+        gainPerTick: gameConfig!.stamina.gainPerTick,
+        travelCost: gameConfig!.stamina.travelCost,
+        exploreCost: gameConfig!.stamina.exploreCost,
+        bonusValue: gameConfig!.stamina.bonusValue,
+        maxKnight: gameConfig!.stamina.knightMaxStamina,
+        maxPaladin: gameConfig!.stamina.paladinMaxStamina,
+        maxCrossbowman: gameConfig!.stamina.crossbowmanMaxStamina,
       };
 
       const pathOptions = { troop: explorer.troopType as any, maxStamina: projectedStamina, staminaConfig };
@@ -300,32 +354,67 @@ async function main() {
         const { getNeighborHexes } = await import("@bibliothecadao/types");
         const neighbors = getNeighborHexes(target_x, target_y);
         for (const n of neighbors) {
+          // Check both snapshot and H3 index (injected tiles won't be in snapshot)
           const adjTile = mapCtx.snapshot.gridIndex.get(`${n.col},${n.row}`);
-          if (!adjTile || adjTile.occupierType !== 0) continue;
+          const inH3 = h3Index.keyToH3.has(`${n.col},${n.row}`);
+          if (!adjTile && !inH3) continue;
+          if (adjTile && adjTile.occupierType !== 0) continue;
           const candidate = findPathV2(start, { x: n.col, y: n.row }, h3Index, pathOptions);
-          if (candidate && !candidate.reachedLimit) {
+          if (candidate) {
             if (!pathResult || candidate.staminaCost < pathResult.staminaCost) pathResult = candidate;
           }
         }
-        if (!pathResult) return { content: [{ type: "text", text: `No path to any tile adjacent to (${target_x},${target_y}).` }], isError: true };
+        if (!pathResult) return { content: [{ type: "text", text: `No path to any tile adjacent to (${dispX},${dispY}).` }], isError: true };
       } else {
         pathResult = findPathV2(start, target, h3Index, pathOptions);
       }
 
-      if (!pathResult) return { content: [{ type: "text", text: `No path to (${target_x},${target_y}).` }], isError: true };
+      if (!pathResult) return { content: [{ type: "text", text: `No path to (${dispX},${dispY}).` }], isError: true };
+
+      // If path exceeds stamina budget, truncate to what we can afford
+      if (pathResult.reachedLimit && projectedStamina > 0) {
+        let cost = 0;
+        let truncateAt = 0;
+        for (let i = 0; i < pathResult.directions.length; i++) {
+          const stepPos = pathResult.path[i + 1];
+          const stepKey = `${stepPos.x},${stepPos.y}`;
+          const isExplore = !(mapCtx.snapshot.gridIndex.get(stepKey)?.biome);
+          const stepCost = isExplore ? (staminaConfig.exploreCost || 30) : (staminaConfig.travelCost || 20);
+          if (cost + stepCost > projectedStamina) break;
+          cost += stepCost;
+          truncateAt = i + 1;
+        }
+        if (truncateAt === 0) {
+          return { content: [{ type: "text", text: `Not enough stamina (${projectedStamina}) for even 1 step. Need ${staminaConfig.exploreCost || 30}.` }], isError: true };
+        }
+        pathResult = {
+          ...pathResult,
+          path: pathResult.path.slice(0, truncateAt + 1),
+          directions: pathResult.directions.slice(0, truncateAt),
+          distance: truncateAt,
+          staminaCost: cost,
+          reachedLimit: true,
+        };
+      }
 
       // Build explored set for segment splitting
       const explored = new Set<string>();
       for (const t of mapCtx.snapshot.tiles) { if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`); }
 
-      // Execute movement segments
-      try {
-        let segStart = 0;
-        while (segStart < pathResult.directions.length) {
-          const nextPos = pathResult.path[segStart + 1];
-          const nextKey = `${nextPos.x},${nextPos.y}`;
-          const isUnexplored = !explored.has(nextKey);
+      // Execute movement segments — track progress so partial moves report correctly
+      let exploreCount = 0;
+      let travelCount = 0;
+      let lastReachedIdx = 0; // index into pathResult.path of last confirmed position
+      let stoppedEarly = false;
+      let stopReason = "";
 
+      let segStart = 0;
+      while (segStart < pathResult.directions.length) {
+        const nextPos = pathResult.path[segStart + 1];
+        const nextKey = `${nextPos.x},${nextPos.y}`;
+        const isUnexplored = !explored.has(nextKey);
+
+        try {
           if (!isUnexplored) {
             let segEnd = segStart + 1;
             while (segEnd < pathResult.directions.length) {
@@ -333,72 +422,154 @@ async function main() {
               if (!explored.has(`${futurePos.x},${futurePos.y}`)) break;
               segEnd++;
             }
-            await provider.explorer_travel({ explorer_id: army_id, directions: pathResult.directions.slice(segStart, segEnd), signer: account });
+            await provider!.explorer_travel({ explorer_id: army_id, directions: pathResult.directions.slice(segStart, segEnd), signer: account });
+            travelCount += segEnd - segStart;
+            lastReachedIdx = segEnd;
             segStart = segEnd;
           } else {
             const dir = pathResult.directions[segStart];
             const vrf_source_salt = packTileSeed({ alt: false, col: nextPos.x, row: nextPos.y });
             try {
-              await provider.explorer_explore({ explorer_id: army_id, directions: [dir], signer: account, vrf_source_salt });
+              await provider!.explorer_explore({ explorer_id: army_id, directions: [dir], signer: account, vrf_source_salt });
+              exploreCount++;
             } catch (err: any) {
               if (extractTxError(err).includes("already explored")) {
-                await provider.explorer_travel({ explorer_id: army_id, directions: [dir], signer: account });
+                await provider!.explorer_travel({ explorer_id: army_id, directions: [dir], signer: account });
+                travelCount++;
               } else throw err;
             }
+            lastReachedIdx = segStart + 1;
             segStart++;
           }
+        } catch (err: any) {
+          stoppedEarly = true;
+          stopReason = extractTxError(err);
+          break;
         }
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Move failed: ${extractTxError(err)}` }], isError: true };
       }
 
-      const endPos = pathResult.path[pathResult.path.length - 1];
-      return { content: [{ type: "text", text: `Moved ${pathResult.distance} steps to (${endPos.x},${endPos.y}). Stamina: ~${Math.max(0, projectedStamina - pathResult.staminaCost)}` }] };
+      const totalSteps = exploreCount + travelCount;
+      const endPos = pathResult.path[lastReachedIdx];
+      const stepsDetail = exploreCount > 0 && travelCount > 0
+        ? `${totalSteps} steps (${exploreCount} explored, ${travelCount} traveled)`
+        : exploreCount > 0
+        ? `${totalSteps} steps (all explored)`
+        : `${totalSteps} steps (all traveled)`;
+
+      if (totalSteps === 0 && stoppedEarly) {
+        return { content: [{ type: "text", text: `Move failed: ${stopReason}` }], isError: true };
+      }
+
+      let msg = `Moved ${stepsDetail} to (${toDisplayX(endPos.x)},${toDisplayY(endPos.y)}).`;
+      if (stoppedEarly) {
+        const remaining = pathResult.directions.length - lastReachedIdx;
+        msg += ` Ran out of stamina — ${remaining} steps remaining to target.`;
+      }
+      return { content: [{ type: "text", text: msg }] };
     },
   );
 
   server.tool(
     "attack_target",
-    "Attack a target adjacent to your army. Captures unguarded structures for free.",
+    "Attack a target adjacent to your army. Simulates the battle first, then executes. Reports predicted casualties.",
     {
-      army_id: z.number().describe("Entity ID of your army"),
-      target_x: z.number().describe("Target world hex X"),
-      target_y: z.number().describe("Target world hex Y"),
+      army_id: z.coerce.number().describe("Entity ID of your army"),
+      target_x: z.coerce.number().describe("Target map X"),
+      target_y: z.coerce.number().describe("Target map Y"),
     },
-    async ({ army_id, target_x, target_y }) => {
-      const explorer = await client.view.explorerInfo(army_id);
+    async ({ army_id, target_x: dispX, target_y: dispY }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const target_x = toContractX(dispX);
+      const target_y = toContractY(dispY);
+
+      const explorer = await client!.view.explorerInfo(army_id);
       if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
       if (!addressesEqual(explorer.ownerAddress ?? "", playerAddress)) {
         return { content: [{ type: "text", text: `Army ${army_id} is not yours.` }], isError: true };
       }
 
+      const projectedStamina = projectExplorerStamina(explorer, gameConfig!.stamina);
       const targetHex = { x: target_x, y: target_y };
       const direction = directionBetween(explorer.position, targetHex);
       if (direction === null) {
-        return { content: [{ type: "text", text: `Army not adjacent to (${target_x},${target_y}). Move first.` }], isError: true };
+        return { content: [{ type: "text", text: `Army not adjacent to (${dispX},${dispY}). Move first.` }], isError: true };
       }
 
       const tile = mapCtx.snapshot?.gridIndex.get(`${target_x},${target_y}`);
       if (!tile || tile.occupierType === 0) {
-        return { content: [{ type: "text", text: `Nothing to attack at (${target_x},${target_y}).` }], isError: true };
+        return { content: [{ type: "text", text: `Nothing to attack at (${dispX},${dispY}).` }], isError: true };
       }
 
+      // Build attacker input for simulation
+      const attackerInput = {
+        troopCount: explorer.troopCount,
+        troopType: explorer.troopType,
+        troopTier: explorer.troopTier,
+        stamina: projectedStamina,
+      };
+
+      // Build defender input — explorer or structure guard
+      let defenderInput: { troopCount: number; troopType: string; troopTier: string; stamina: number } | null = null;
+      let isStructureTarget = false;
+
+      if (isExplorer(tile.occupierType)) {
+        const defExplorer = await client!.view.explorerInfo(tile.occupierId);
+        if (defExplorer) {
+          const defStamina = projectExplorerStamina(defExplorer, gameConfig!.stamina);
+          defenderInput = { troopCount: defExplorer.troopCount, troopType: defExplorer.troopType, troopTier: defExplorer.troopTier, stamina: defStamina };
+        }
+      } else if (isStructure(tile.occupierType)) {
+        isStructureTarget = true;
+        const structure = await client!.view.structureAt(target_x, target_y);
+        if (structure) {
+          const guard = structure.guards?.find((g: any) => g.count > 0);
+          if (guard) {
+            defenderInput = { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 };
+          }
+        }
+      }
+
+      // Simulate the battle
+      let simResult: ReturnType<typeof simulateCombat> | null = null;
+      if (defenderInput && defenderInput.troopCount > 0) {
+        simResult = simulateCombat(attackerInput, defenderInput, tile.biome);
+      }
+
+      // Execute the attack
       try {
         if (isExplorer(tile.occupierType)) {
-          await provider.attack_explorer_vs_explorer({ aggressor_id: army_id, defender_id: tile.occupierId, defender_direction: direction, steal_resources: [], signer: account });
-        } else if (isStructure(tile.occupierType)) {
-          const structure = await client.view.structureAt(target_x, target_y);
+          await provider!.attack_explorer_vs_explorer({ aggressor_id: army_id, defender_id: tile.occupierId, defender_direction: direction, steal_resources: [], signer: account });
+        } else if (isStructureTarget) {
+          const structure = await client!.view.structureAt(target_x, target_y);
           if (!structure) return { content: [{ type: "text", text: "Structure not found." }], isError: true };
-          await provider.attack_explorer_vs_guard({ explorer_id: army_id, structure_id: structure.entityId, structure_direction: direction, signer: account });
+          await provider!.attack_explorer_vs_guard({ explorer_id: army_id, structure_id: structure.entityId, structure_direction: direction, signer: account });
         }
       } catch (err: any) {
         return { content: [{ type: "text", text: `Attack failed: ${extractTxError(err)}` }], isError: true };
       }
 
-      // Check outcome
-      const after = await client.view.explorerInfo(army_id);
-      const survived = after && after.troopCount > 0;
-      return { content: [{ type: "text", text: survived ? `Attack complete. ${after!.troopCount.toLocaleString()} troops remaining.` : "Your army was destroyed." }] };
+      // Report outcome from simulation (deterministic — matches on-chain)
+      if (!simResult) {
+        // Unguarded — free capture
+        return { content: [{ type: "text", text: `Captured unguarded ${isStructureTarget ? "structure" : "target"} at (${dispX},${dispY}). ${explorer.troopCount.toLocaleString()} troops intact.` }] };
+      }
+
+      const lines = [
+        `Battle at (${dispX},${dispY}) — ${simResult.winner === "attacker" ? "VICTORY" : simResult.winner === "defender" ? "DEFEAT" : "DRAW"}`,
+        `  Your ${explorer.troopCount.toLocaleString()} ${explorer.troopType} ${explorer.troopTier} vs ${defenderInput!.troopCount.toLocaleString()} ${defenderInput!.troopType} ${defenderInput!.troopTier}`,
+        `  Biome: ${simResult.biomeAdvantage}`,
+        `  Your casualties: ${simResult.attackerCasualties.toLocaleString()} | Surviving: ${simResult.attackerSurviving.toLocaleString()}`,
+        `  Enemy casualties: ${simResult.defenderCasualties.toLocaleString()} | Surviving: ${simResult.defenderSurviving.toLocaleString()}`,
+      ];
+      if (simResult.winner === "attacker" && isStructureTarget && simResult.defenderSurviving <= 0) {
+        lines.push(`  Structure captured!`);
+      }
+      if (simResult.winner === "defender") {
+        lines.push(`  Your army was destroyed.`);
+      }
+      return { content: [{ type: "text", text: lines.join("\n") }] };
     },
   );
 
@@ -406,12 +577,15 @@ async function main() {
     "create_army",
     "Create a new army at one of your realms. Auto-selects troop type by biome.",
     {
-      structure_id: z.number().describe("Entity ID of your realm"),
+      structure_id: z.coerce.number().describe("Entity ID of your realm"),
       troop_type: z.enum(["Knight", "Paladin", "Crossbowman"]).optional().describe("Override troop type"),
-      tier: z.number().min(1).max(3).optional().default(1).describe("Troop tier (1-3)"),
+      tier: z.coerce.number().min(1).max(3).optional().default(1).describe("Troop tier (1-3)"),
+      amount: z.coerce.number().optional().describe("Number of troops (default: all available, max 10000)"),
     },
-    async ({ structure_id, troop_type, tier }) => {
-      const structure = await client.view.structureAt(0, 0); // need to find by entity ID
+    async ({ structure_id, troop_type, tier, amount: requestedAmount }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
       // Find tile by entity ID
       let structTile = null as any;
       for (const t of mapCtx.snapshot?.tiles ?? []) {
@@ -419,7 +593,7 @@ async function main() {
       }
       if (!structTile) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
 
-      const info = await client.view.structureAt(structTile.position.x, structTile.position.y);
+      const info = await client!.view.structureAt(structTile.position.x, structTile.position.y);
       if (!info) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
       if (info.category !== "Realm") return { content: [{ type: "text", text: `${info.category} is not a realm.` }], isError: true };
       if (!addressesEqual(info.ownerAddress, playerAddress)) return { content: [{ type: "text", text: "Not yours." }], isError: true };
@@ -433,7 +607,9 @@ async function main() {
       const available = info.resources.find((r) => r.name === resName)?.amount ?? 0;
       if (available <= 0) return { content: [{ type: "text", text: `No ${resName} available. Resources: ${info.resources.filter(r => r.amount > 0).map(r => `${r.amount.toLocaleString()} ${r.name}`).join(", ")}` }], isError: true };
 
-      const amount = Math.min(10_000 * RESOURCE_PRECISION, Math.floor(available * RESOURCE_PRECISION));
+      const troopCount = requestedAmount ?? Math.min(10_000, available);
+      if (troopCount > available) return { content: [{ type: "text", text: `Only ${available.toLocaleString()} ${resName} available, requested ${troopCount.toLocaleString()}.` }], isError: true };
+      const amount = Math.floor(troopCount * RESOURCE_PRECISION);
 
       // Find open spawn hex
       const neighbors = getNeighborHexes(structTile.position.x, structTile.position.y);
@@ -445,12 +621,11 @@ async function main() {
       if (spawnDir === null) return { content: [{ type: "text", text: "No open spawn hex." }], isError: true };
 
       try {
-        await provider.explorer_create({ for_structure_id: structure_id, category, tier: tierValue, amount, spawn_direction: spawnDir, signer: account });
+        await provider!.explorer_create({ for_structure_id: structure_id, category, tier: tierValue, amount, spawn_direction: spawnDir, signer: account });
       } catch (err: any) {
         return { content: [{ type: "text", text: `Create failed: ${extractTxError(err)}` }], isError: true };
       }
 
-      const troopCount = Math.floor(amount / RESOURCE_PRECISION);
       return { content: [{ type: "text", text: `Army created: ${troopCount.toLocaleString()} ${resName} at ${Direction[spawnDir]} of realm. Armies: ${info.explorerCount + 1}/${info.maxExplorerCount}` }] };
     },
   );
@@ -459,12 +634,18 @@ async function main() {
     "open_chest",
     "Open a chest adjacent to your army for relics and victory points.",
     {
-      army_id: z.number().describe("Entity ID of your army"),
-      chest_x: z.number().describe("Chest world hex X"),
-      chest_y: z.number().describe("Chest world hex Y"),
+      army_id: z.coerce.number().describe("Entity ID of your army"),
+      chest_x: z.coerce.number().describe("Chest map X"),
+      chest_y: z.coerce.number().describe("Chest map Y"),
     },
-    async ({ army_id, chest_x, chest_y }) => {
-      const explorer = await client.view.explorerInfo(army_id);
+    async ({ army_id, chest_x: dispCX, chest_y: dispCY }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const chest_x = toContractX(dispCX);
+      const chest_y = toContractY(dispCY);
+
+      const explorer = await client!.view.explorerInfo(army_id);
       if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
 
       const chestHex = { x: chest_x, y: chest_y };
@@ -472,32 +653,118 @@ async function main() {
       if (direction === null) return { content: [{ type: "text", text: "Army not adjacent to chest." }], isError: true };
 
       try {
-        await provider.open_chest({ explorer_id: army_id, chest_coord: { alt: false, x: chest_x, y: chest_y }, signer: account });
+        await provider!.open_chest({ explorer_id: army_id, chest_coord: { alt: false, x: chest_x, y: chest_y }, signer: account });
       } catch (err: any) {
         return { content: [{ type: "text", text: `Open chest failed: ${extractTxError(err)}` }], isError: true };
       }
 
-      return { content: [{ type: "text", text: `Opened chest at (${chest_x},${chest_y}). Relics granted!` }] };
+      return { content: [{ type: "text", text: `Opened chest at (${dispCX},${dispCY}). Relics granted!` }] };
     },
   );
 
-  server.tool(
-    "inspect_tile",
-    "Deep inspection of a tile: owner, guards, resources, strength, biome. Use map_tile_info instead for most cases.",
-    { x: z.number().describe("World hex X"), y: z.number().describe("World hex Y") },
-    async ({ x, y }) => {
-      if (!mapCtx.protocol) return { content: [{ type: "text", text: "Map not loaded." }] };
-      const r = await mapCtx.protocol.tileInfo(x, y);
-      return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
-    },
-  );
 
-  // ── Start ──
-
-  log("Starting MCP server on stdio...");
+  // ── Connect transport FIRST so the MCP handshake completes immediately ──
+  log("Connecting MCP transport...");
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  log("MCP server connected.");
+  log("MCP transport connected. Bootstrapping...");
+
+  // Exit cleanly when Claude Code closes the connection
+  process.stdin.on("end", () => { log("stdin closed — exiting."); process.exit(0); });
+  process.on("SIGTERM", () => { log("SIGTERM — exiting."); process.exit(0); });
+  process.on("SIGINT", () => { log("SIGINT — exiting."); process.exit(0); });
+
+  // ── Bootstrap (runs AFTER handshake — no timeout risk) ──
+  try {
+    const config = loadConfig();
+
+    let contractsBySelector: Record<string, string> | undefined;
+    if (config.worldName && (!config.toriiUrl || !config.worldAddress)) {
+      bootstrapPhase = "discovering world";
+      log(`Discovering world "${config.worldName}"...`);
+      const info = await discoverWorld(config.chain, config.worldName);
+      config.toriiUrl = info.toriiUrl;
+      config.worldAddress = info.worldAddress;
+      config.rpcUrl = info.rpcUrl;
+      contractsBySelector = info.contractsBySelector;
+      config.dataDir = join(homedir(), ".axis", "worlds", info.worldAddress);
+      log(`Discovered: ${info.toriiUrl}`);
+    }
+
+    let manifest = getManifest(config.chain);
+    if (contractsBySelector) {
+      manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
+    }
+
+    bootstrapPhase = "authenticating";
+    // Intercept console.log to capture the auth URL the Cartridge SDK prints.
+    // The URL is surfaced via tool responses as a clickable markdown link.
+    const _origLog = console.log;
+    console.log = (...a: any[]) => {
+      const msg = a.map(String).join(" ");
+      const urlMatch = msg.match(/https?:\/\/\S+/);
+      if (urlMatch) {
+        authUrl = urlMatch[0];
+        log("Auth URL captured — call any tool to get the login link.");
+      }
+      _origLog(...a);
+    };
+    log("Authenticating...");
+    account = await getAccount({
+      chain: config.chain,
+      rpcUrl: config.rpcUrl,
+      chainId: config.chainId,
+      basePath: join(config.dataDir, ".cartridge"),
+      manifest,
+    });
+    console.log = _origLog; // restore after auth
+    playerAddress = account.address;
+    authUrl = null;
+    log(`Account: ${playerAddress}`);
+
+    bootstrapPhase = "loading game data";
+    client = await EternumClient.create({ toriiUrl: config.toriiUrl });
+    provider = new EternumProvider(manifest, config.rpcUrl, config.vrfProviderAddress);
+    gameConfig = await (client.sql as any).fetchGameConfig();
+    log(`Game config loaded. ${Object.keys(gameConfig!.buildingCosts).length} buildings.`);
+
+    // Query map_center_offset for coordinate conversion
+    try {
+      const sql = client.sql as any;
+      const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
+      const res = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+      if (res.ok) {
+        const rows = await res.json() as any[];
+        if (rows[0]?.map_center_offset != null) {
+          mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
+          log(`Map center: ${mapCenter} (offset ${rows[0].map_center_offset})`);
+        }
+      }
+    } catch { /* non-critical — coords will use raw values */ }
+
+    // Map loop
+    const mapLoop = createMapLoop(client, mapCtx, playerAddress, 10_000, gameConfig!.stamina, undefined, mapCenter);
+    mapLoop.start();
+
+    bootstrapPhase = "loading map";
+    log("Waiting for first map snapshot...");
+    for (let i = 0; i < 30; i++) {
+      if (mapCtx.snapshot) break;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    log(mapCtx.snapshot ? `Map loaded: ${mapCtx.snapshot.tiles.length} tiles` : "Map failed to load (tools will retry)");
+
+    // Automation loop (off by default)
+    automationLoop = createAutomationLoop(
+      client, provider, account, playerAddress, config.dataDir, mapCtx, gameConfig!, 60_000, automationStatus,
+    );
+
+    bootstrapDone = true;
+    log("Bootstrap complete. All tools ready.");
+  } catch (err: any) {
+    bootstrapError = err.message ?? String(err);
+    log(`Bootstrap failed: ${bootstrapError}`);
+  }
 }
 
 main().catch((err) => {

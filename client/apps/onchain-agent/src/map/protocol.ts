@@ -207,12 +207,60 @@ function decodeOwner(address: string | null | undefined): string {
  * to fill in details the snapshot doesn't have (guards, resources, troops).
  */
 export class MapProtocol {
+  /** Map center for coordinate conversion. 0 = no conversion (raw coords). */
+  private mapCenter: number;
+
   constructor(
     private snapshot: MapSnapshot,
     private ownedEntityIds: Set<number>,
     private staminaConfig?: StaminaConfig,
     private client?: EternumClient,
-  ) {}
+    mapCenter: number = 0,
+  ) {
+    this.mapCenter = mapCenter;
+  }
+
+  /** Convert raw contract X coordinate to display coordinate. */
+  private toDisplayX(raw: number): number {
+    return this.mapCenter ? raw - this.mapCenter : raw;
+  }
+
+  /** Convert raw contract Y coordinate to display coordinate (negated so positive = north). */
+  private toDisplayY(raw: number): number {
+    return this.mapCenter ? -(raw - this.mapCenter) : raw;
+  }
+
+
+  /** Convert display X coordinate to raw contract coordinate. */
+  toContractX(display: number): number {
+    return this.mapCenter ? display + this.mapCenter : display;
+  }
+
+  /** Convert display Y coordinate to raw contract coordinate (negated back). */
+  toContractY(display: number): number {
+    return this.mapCenter ? -display + this.mapCenter : display;
+  }
+
+  /** Convert display coordinate to raw (kept for backward compat — X axis). */
+  toContract(display: number): number {
+    return this.toContractX(display);
+  }
+
+  /** Convert a raw position to display position. */
+  private displayPos(raw: { x: number; y: number }): { x: number; y: number } {
+    return { x: this.toDisplayX(raw.x), y: this.toDisplayY(raw.y) };
+  }
+
+  /** Format a raw position as a display string like "(6,4)". */
+  private fmtPos(raw: { x: number; y: number }): string {
+    const dp = this.displayPos(raw);
+    return `(${dp.x},${dp.y})`;
+  }
+
+  /** Format raw x,y as a display string. */
+  private fmtXY(x: number, y: number): string {
+    return `(${this.toDisplayX(x)},${this.toDisplayY(y)})`;
+  }
 
   // ── Position-based: "What's at this tile?" (like LSP hover) ───────
 
@@ -221,7 +269,9 @@ export class MapProtocol {
    * When a client is available, fetches full entity details (guards, resources, troops).
    */
   async tileInfo(x: number, y: number): Promise<TileInfoResult> {
-    const tile = this.snapshot.gridIndex.get(`${x},${y}`);
+    const rawX = this.toContractX(x);
+    const rawY = this.toContractY(y);
+    const tile = this.snapshot.gridIndex.get(`${rawX},${rawY}`);
 
     if (!tile) {
       return { position: { x, y }, biome: "Unknown", biomeId: 0, explored: false, entity: null };
@@ -243,9 +293,9 @@ export class MapProtocol {
    * When a client is available, batch-fetches explorer details for army strength.
    */
   async nearby(x: number, y: number, radius: number = 5): Promise<NearbyResult> {
-    const center = { x, y };
+    const rawCenter = { x: this.toContractX(x), y: this.toContractY(y) };
     const result: NearbyResult = {
-      center,
+      center: { x, y },
       radius,
       ownedArmies: [],
       ownedStructures: [],
@@ -257,14 +307,14 @@ export class MapProtocol {
 
     for (const tile of this.snapshot.tiles) {
       if (tile.occupierType === 0) continue;
-      const dist = hexDistance(center, tile.position);
+      const dist = hexDistance(rawCenter, tile.position);
       if (dist > radius) continue;
 
       const occupier = this.summarizeOccupier(tile);
       if (!occupier || occupier.kind === "empty") continue;
 
       const entry: NearbyEntity = {
-        position: tile.position,
+        position: this.displayPos(tile.position),
         distance: dist,
         occupier,
         biome: biomeName(tile.biome),
@@ -366,7 +416,7 @@ export class MapProtocol {
     const kind = occupierKind(tile.occupierType);
     const base: EntityInfoResult = {
       entityId,
-      position: tile.position,
+      position: this.displayPos(tile.position),
       kind: kind as EntityInfoResult["kind"],
       owned,
       biome: biomeName(biome),
@@ -394,10 +444,13 @@ export class MapProtocol {
         };
       }
     } else if (isStructure(tile.occupierType)) {
-      // Try snapshot cache first, then live fetch
-      let detail = this.snapshot.structureDetails.get(entityId);
-      if (!detail && this.client) {
+      // Live fetch preferred (has resources); fall back to snapshot cache
+      let detail: any = undefined;
+      if (this.client) {
         detail = (await this.client.view.structureAt(tile.position.x, tile.position.y)) ?? undefined;
+      }
+      if (!detail) {
+        detail = this.snapshot.structureDetails.get(entityId);
       }
       if (detail) {
         const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
@@ -431,6 +484,8 @@ export class MapProtocol {
     referencePos?: { x: number; y: number },
     limit: number = 15,
   ): Promise<FindResult[]> {
+    // Convert display ref to raw for distance calc
+    const rawRef = referencePos ? { x: this.toContractX(referencePos.x), y: this.toContractY(referencePos.y) } : undefined;
     const results: FindResult[] = [];
 
     for (const tile of this.snapshot.tiles) {
@@ -479,13 +534,13 @@ export class MapProtocol {
 
       const entry: FindResult = {
         entityId: tile.occupierId,
-        position: tile.position,
+        position: this.displayPos(tile.position),
         kind: label,
         label: owned ? `Your ${label}` : label,
       };
 
-      if (referencePos) {
-        entry.distance = hexDistance(referencePos, tile.position);
+      if (rawRef) {
+        entry.distance = hexDistance(rawRef, tile.position);
       }
 
       // Attach strength for armies and guarded structures
@@ -553,8 +608,8 @@ export class MapProtocol {
 
         diags.push({
           severity: "threat",
-          message: `Enemy army at (${nx},${ny})${strengthStr} adjacent to your structure at (${tile.position.x},${tile.position.y})`,
-          position: { x: nx, y: ny },
+          message: `Enemy army at ${this.fmtXY(nx, ny)}${strengthStr} adjacent to your structure at ${this.fmtPos(tile.position)}`,
+          position: this.displayPos({ x: nx, y: ny }),
           entityId: neighbor.occupierId,
         });
       }
@@ -576,14 +631,17 @@ export class MapProtocol {
 
         diags.push({
           severity: "opportunity",
-          message: `Unopened chest at (${nx},${ny}) adjacent to your army at (${tile.position.x},${tile.position.y})`,
-          position: { x: nx, y: ny },
+          message: `Unopened chest at ${this.fmtXY(nx, ny)} adjacent to your army at ${this.fmtPos(tile.position)}`,
+          position: this.displayPos({ x: nx, y: ny }),
           entityId: tile.occupierId,
         });
       }
     }
 
     // Opportunity: unguarded enemy structures near owned armies (within 3 hexes)
+    // Note: this is sync — guard data comes from snapshot cache only.
+    // Enemy structures aren't fetched in the batch, so we track candidates
+    // and the caller should verify with a live fetch before acting.
     for (const tile of this.snapshot.tiles) {
       if (!isExplorer(tile.occupierType)) continue;
       if (!this.ownedEntityIds.has(tile.occupierId)) continue;
@@ -594,14 +652,29 @@ export class MapProtocol {
         const dist = hexDistance(tile.position, candidate.position);
         if (dist > 3) continue;
 
-        const detail = this.snapshot.structureDetails.get(candidate.occupierId);
-        const guards = detail?.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
+        // Check snapshot cache first
+        let detail = this.snapshot.structureDetails.get(candidate.occupierId);
+        // For enemy structures, snapshot cache is usually empty — do NOT assume unguarded.
+        // Only flag as unguarded if we have confirmed guard data showing 0 guards.
+        if (!detail) {
+          // No data — report as nearby enemy structure (unknown guard status)
+          const label = STRUCTURE_TYPE_LABELS[candidate.occupierType] ?? "Structure";
+          diags.push({
+            severity: "opportunity",
+            message: `${label} at ${this.fmtPos(candidate.position)}, ${dist} hexes from your army at ${this.fmtPos(tile.position)} — guard status unknown, use map_entity_info to check`,
+            position: this.displayPos(candidate.position),
+            entityId: candidate.occupierId,
+          });
+          continue;
+        }
+
+        const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
         if (guards.length === 0) {
           const label = STRUCTURE_TYPE_LABELS[candidate.occupierType] ?? "Structure";
           diags.push({
             severity: "opportunity",
-            message: `Unguarded ${label} at (${candidate.position.x},${candidate.position.y}), ${dist} hexes from your army at (${tile.position.x},${tile.position.y})`,
-            position: candidate.position,
+            message: `Unguarded ${label} at ${this.fmtPos(candidate.position)}, ${dist} hexes from your army at ${this.fmtPos(tile.position)}`,
+            position: this.displayPos(candidate.position),
             entityId: candidate.occupierId,
           });
         }
@@ -623,8 +696,8 @@ export class MapProtocol {
       if (stamina >= 80) {
         diags.push({
           severity: "info",
-          message: `Army ${tile.occupierId} at (${tile.position.x},${tile.position.y}) has ${stamina} stamina — ready to move`,
-          position: tile.position,
+          message: `Army ${tile.occupierId} at ${this.fmtPos(tile.position)} has ${stamina} stamina — ready to move`,
+          position: this.displayPos(tile.position),
           entityId: tile.occupierId,
         });
       }
@@ -655,11 +728,13 @@ export class MapProtocol {
           : detail.stamina;
         const strength = calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, tile.biome);
         const biome = biomeName(tile.biome);
+        const dp = this.displayPos(tile.position);
         armies.push(
-          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.display} | stam ${stamina} | at (${tile.position.x},${tile.position.y}) | ${biome}`,
+          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.display} | stam ${stamina} | at (${dp.x},${dp.y}) | ${biome}`,
         );
       } else {
-        armies.push(`  ${tile.occupierId} | at (${tile.position.x},${tile.position.y})`);
+        const dp = this.displayPos(tile.position);
+        armies.push(`  ${tile.occupierId} | at (${dp.x},${dp.y})`);
       }
     }
     if (armies.length > 0) {
@@ -679,12 +754,14 @@ export class MapProtocol {
         const guardStr = guards.length > 0
           ? guards.map((g: GuardInfo) => `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`).join(", ")
           : "unguarded";
+        const dp = this.displayPos(tile.position);
         structures.push(
-          `  ${tile.occupierId} | ${label} lv${detail.level} | armies ${detail.explorerCount}/${detail.maxExplorerCount} | guards: ${guardStr} | at (${tile.position.x},${tile.position.y})`,
+          `  ${tile.occupierId} | ${label} lv${detail.level} | armies ${detail.explorerCount}/${detail.maxExplorerCount} | guards: ${guardStr} | at (${dp.x},${dp.y})`,
         );
       } else {
         const label = STRUCTURE_TYPE_LABELS[tile.occupierType] ?? "Structure";
-        structures.push(`  ${tile.occupierId} | ${label} | at (${tile.position.x},${tile.position.y})`);
+        const dp = this.displayPos(tile.position);
+        structures.push(`  ${tile.occupierId} | ${label} | at (${dp.x},${dp.y})`);
       }
     }
     if (structures.length > 0) {
@@ -772,6 +849,7 @@ export function createMapProtocol(
   ownedEntityIds: Set<number>,
   staminaConfig?: StaminaConfig,
   client?: EternumClient,
+  mapCenter: number = 0,
 ): MapProtocol {
-  return new MapProtocol(snapshot, ownedEntityIds, staminaConfig, client);
+  return new MapProtocol(snapshot, ownedEntityIds, staminaConfig, client, mapCenter);
 }
