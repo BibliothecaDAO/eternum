@@ -4,7 +4,7 @@
  * Produces both raw on-chain balances (safe for spending/budget) and projected
  * balances (includes unharvested production — useful for prioritisation).
  */
-import { RESOURCE_BALANCE_COLUMNS, TROOP_BALANCE_COLUMNS } from "@bibliothecadao/torii";
+import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 /** Parsed resource and building state for a single realm at a point in time. */
@@ -115,16 +115,6 @@ export function parseRealmSnapshot(
     if (count > 0) {
       buildingCounts.set(buildingType, count);
       activeBuildings.add(buildingType);
-    }
-  }
-
-  // Troop balances — needed so the production planner can use T1 troops
-  // as input for T2 production, and T2 troops as input for T3.
-  for (const { column, resourceId } of TROOP_BALANCE_COLUMNS) {
-    const amount = parseBalance(row[column]);
-    if (amount > 0) {
-      balances.set(resourceId, Math.floor(amount));
-      projectedBalances.set(resourceId, Math.floor(amount));
     }
   }
 

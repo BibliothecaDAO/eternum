@@ -38,17 +38,7 @@ export const RESOURCE_BALANCE_COLUMNS: ReadonlyArray<{
   { column: "FISH_BALANCE", resourceId: ResourcesIds.Fish, name: "Fish" },
   { column: "LORDS_BALANCE", resourceId: ResourcesIds.Lords, name: "Lords" },
   { column: "ESSENCE_BALANCE", resourceId: ResourcesIds.Essence, name: "Essence" },
-];
-
-/**
- * Troop reserve balance columns — stored in the same `s1_eternum-Resource` table.
- * These represent produced troops stockpiled at a structure.
- */
-export const TROOP_BALANCE_COLUMNS: ReadonlyArray<{
-  column: string;
-  resourceId: ResourcesIds;
-  name: string;
-}> = [
+  // Troop reserve balances — same table, represent produced troops stockpiled at a structure
   { column: "KNIGHT_T1_BALANCE", resourceId: ResourcesIds.Knight, name: "Knight T1" },
   { column: "KNIGHT_T2_BALANCE", resourceId: ResourcesIds.KnightT2, name: "Knight T2" },
   { column: "KNIGHT_T3_BALANCE", resourceId: ResourcesIds.KnightT3, name: "Knight T3" },
@@ -60,9 +50,12 @@ export const TROOP_BALANCE_COLUMNS: ReadonlyArray<{
   { column: "PALADIN_T3_BALANCE", resourceId: ResourcesIds.PaladinT3, name: "Paladin T3" },
 ];
 
-const BALANCE_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => c.column).join(", ");
+/** @deprecated Use RESOURCE_BALANCE_COLUMNS which now includes troop columns. */
+export const TROOP_BALANCE_COLUMNS = RESOURCE_BALANCE_COLUMNS.filter(
+  (c) => c.column.includes("KNIGHT") || c.column.includes("CROSSBOWMAN") || c.column.includes("PALADIN"),
+);
 
-const TROOP_COLS = TROOP_BALANCE_COLUMNS.map((c) => c.column).join(", ");
+const BALANCE_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => c.column).join(", ");
 
 /** Production building_count column for each resource (dot-notation from Torii SQL). */
 const PRODUCTION_COLS = RESOURCE_BALANCE_COLUMNS.map(
@@ -86,7 +79,7 @@ export const RESOURCE_QUERIES = {
    * Selects only *_BALANCE columns (29 cols) instead of the full Resource table (218 cols).
    */
   RESOURCE_BALANCES: `
-    SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}
+    SELECT entity_id, ${BALANCE_COLS}
     FROM \`s1_eternum-Resource\`
     WHERE entity_id IN ({entityIds});
   `,
@@ -97,7 +90,7 @@ export const RESOURCE_QUERIES = {
    * plus troop reserve balance columns.
    */
   RESOURCE_BALANCES_AND_PRODUCTION: `
-    SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_COLS}
+    SELECT entity_id, ${BALANCE_COLS}, ${PRODUCTION_COLS}
     FROM \`s1_eternum-Resource\`
     WHERE entity_id IN ({entityIds});
   `,
@@ -107,7 +100,7 @@ export const RESOURCE_QUERIES = {
    * Includes production_rate, output_amount_left, and last_updated_at per resource.
    */
   RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION: `
-    SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_FULL_COLS}
+    SELECT entity_id, ${BALANCE_COLS}, ${PRODUCTION_FULL_COLS}
     FROM \`s1_eternum-Resource\`
     WHERE entity_id IN ({entityIds});
   `,
