@@ -10,42 +10,24 @@ export type BlitzPlayStyleId =
   | "two-players-three-realms"
   | "multiple-players-one-realm";
 
-const resolveBlitzMultiplayerLabel = (maxPlayersValue?: string) => {
-  const trimmedValue = maxPlayersValue?.trim();
-
-  if (!trimmedValue) {
-    return "Players";
-  }
-
-  const parsedValue = Number(trimmedValue);
-
-  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
-    return "Players";
-  }
-
-  return `${parsedValue} ${parsedValue === 1 ? "player" : "players"}`;
-};
+const blitzPlayStyleOptions = [
+  {
+    id: "multiple-players-three-realms",
+    label: "Multiple Players, 3 Realms",
+  },
+  {
+    id: "two-players-three-realms",
+    label: "2 players, 3 Realms",
+  },
+  {
+    id: "multiple-players-one-realm",
+    label: "Multiple Players, 1 Realm",
+  },
+] satisfies Array<{ id: BlitzPlayStyleId; label: string }>;
 
 export const supportsBlitzRegistrationModes = (mode: FactoryGameMode) => mode === "blitz";
 
-export const getBlitzPlayStyleOptions = (maxPlayersValue?: string) => {
-  const multiplayerLabel = resolveBlitzMultiplayerLabel(maxPlayersValue);
-
-  return [
-    {
-      id: "multiple-players-three-realms",
-      label: `${multiplayerLabel}, 3 Realms`,
-    },
-    {
-      id: "two-players-three-realms",
-      label: "2 players, 3 Realms",
-    },
-    {
-      id: "multiple-players-one-realm",
-      label: `${multiplayerLabel}, 1 Realm`,
-    },
-  ] satisfies Array<{ id: BlitzPlayStyleId; label: string }>;
-};
+export const getBlitzPlayStyleOptions = () => blitzPlayStyleOptions;
 
 export const resolveSelectedBlitzPlayStyleId = ({
   twoPlayerMode,
