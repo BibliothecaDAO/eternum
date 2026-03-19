@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-19",
+    title: "Factory Time Pickers Look Native",
+    description:
+      "The Factory start form now shows date and time as cleaner custom rows while still opening the real iPhone picker, so the schedule controls feel balanced instead of shoving the value against one side.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-19",
     title: "Factory Time Pickers Stay Inside",
     description:
       "The Factory start form now keeps its date and time pickers clipped and contained on iPhone-sized screens, so the schedule controls no longer spill past their rounded panels on iOS.",
