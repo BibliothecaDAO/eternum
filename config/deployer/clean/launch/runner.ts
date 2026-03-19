@@ -13,8 +13,8 @@ import {
   DEFAULT_VERSION,
   DEFAULT_VRF_PROVIDER_ADDRESS,
 } from "../constants";
-import { buildDefaultBanks, grantVillagePassRoleToRealmInternalSystems } from "../eternum";
-import { resolveDeploymentEnvironment } from "../environment";
+import { buildDefaultBanks, grantVillagePassRolesToWorldSystems } from "../eternum";
+import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
 import {
   isZeroAddress,
   patchManifestWithFactory,
@@ -493,20 +493,20 @@ async function grantLootChestMinterRoleIfNeeded(params: {
   return (receipt as { transaction_hash?: string }).transaction_hash;
 }
 
-async function grantVillagePassRoleToRealmInternalSystemsIfNeeded(params: {
+async function grantVillagePassRolesIfNeeded(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
   accountAddress: string;
   privateKey: string;
 }): Promise<string | undefined> {
-  if (params.runtime.environment.gameType !== "eternum") {
+  if (!isEternumDeploymentEnvironment(params.runtime.environment)) {
     return undefined;
   }
 
   const result = await params.runtime.progress.run(
-    "grant village pass minter role",
+    "grant village pass roles",
     () =>
-      grantVillagePassRoleToRealmInternalSystems({
+      grantVillagePassRolesToWorldSystems({
         chain: `${params.runtime.environment.chain}.eternum`,
         gameName: params.request.gameName,
         rpcUrl: params.runtime.rpcUrl,
@@ -515,10 +515,10 @@ async function grantVillagePassRoleToRealmInternalSystemsIfNeeded(params: {
         cartridgeApiBase: params.runtime.cartridgeApiBase,
       }),
     {
-      start: "Granting village pass MINTER_ROLE to realm_internal_systems",
+      start: "Granting village pass roles to realm_internal_systems and village_systems",
       success: (summary, elapsedMs) =>
         summary.transactionHash
-          ? `Village pass role granted in ${formatDuration(elapsedMs)} (${shortenHash(summary.transactionHash)})`
+          ? `Village pass roles granted in ${formatDuration(elapsedMs)} (${shortenHash(summary.transactionHash)})`
           : `Village pass role grant prepared in ${formatDuration(elapsedMs)}`,
     },
   );
@@ -532,7 +532,7 @@ async function createBanksIfNeeded(params: {
   patchedProvider: ConfiguredWorldProvider;
   providerSigner: ProviderSigner;
 }): Promise<string | undefined> {
-  if (params.runtime.environment.gameType !== "eternum") {
+  if (!isEternumDeploymentEnvironment(params.runtime.environment)) {
     params.runtime.progress.log("Bank creation not required for blitz worlds");
     return undefined;
   }
@@ -668,7 +668,7 @@ async function runGrantVillagePassRoleStep(
   execution: PreparedLaunchExecution,
   accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
 ): Promise<LaunchAccountContext> {
-  execution.summary.villagePassRoleTxHash = await grantVillagePassRoleToRealmInternalSystemsIfNeeded({
+  execution.summary.villagePassRoleTxHash = await grantVillagePassRolesIfNeeded({
     runtime: execution.runtime,
     request: execution.request,
     accountAddress: accountContext.accountAddress,

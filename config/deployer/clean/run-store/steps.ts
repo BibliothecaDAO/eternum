@@ -11,7 +11,7 @@ export function resolveLaunchStepTitle(stepId: LaunchGameStepId): string {
     case "grant-lootchest-role":
       return "Grant loot chest role";
     case "grant-village-pass-role":
-      return "Grant village pass role";
+      return "Grant village pass roles";
     case "create-banks":
       return "Create banks";
     case "create-indexer":

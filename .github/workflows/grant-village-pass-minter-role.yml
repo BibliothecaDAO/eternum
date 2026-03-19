@@ -1,4 +1,4 @@
-name: Grant Village Pass Minter Role
+name: Grant Village Pass Roles
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
         required: true
 
 jobs:
-  grant-minter-role:
+  grant-village-pass-roles:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: ${{ github.event.inputs.chain }}
@@ -44,7 +44,7 @@ jobs:
           set -euo pipefail
           pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Grant MINTER_ROLE to realm systems on village pass
+      - name: Grant village pass roles to world systems
         env:
           NO_COLOR: ""
           DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
@@ -66,6 +66,6 @@ jobs:
       - name: Upload role grant summary
         uses: actions/upload-artifact@v4
         with:
-          name: village-pass-minter-role-summary
-          path: .context/village-pass-minter-role/**/*
+          name: village-pass-role-summary
+          path: .context/village-pass-role/**/*
           if-no-files-found: error
