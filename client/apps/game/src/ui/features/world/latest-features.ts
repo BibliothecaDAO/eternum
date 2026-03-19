@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-19",
+    title: "Faith Total FP Estimation",
+    description:
+      "Faith leaderboard Total FP now includes estimated unclaimed points from each Wonder's current FP/sec, so rankings reflect live devotion growth between contract claims.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-18",
     title: "Wonder Devotion Actions",
     description:

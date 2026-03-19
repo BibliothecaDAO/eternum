@@ -10,6 +10,7 @@ interface FaithLeaderboardRow {
   realm_id?: unknown;
   claimed_points?: unknown;
   claim_per_sec?: unknown;
+  claim_last_at?: unknown;
   num_structures_pledged?: unknown;
 }
 
@@ -48,6 +49,7 @@ const WONDER_FAITH_LEADERBOARD_QUERY = `
     s.\`metadata.realm_id\` AS realm_id,
     COALESCE(wf.claimed_points, 0) AS claimed_points,
     COALESCE(wf.claim_per_sec, 0) AS claim_per_sec,
+    COALESCE(wf.claim_last_at, 0) AS claim_last_at,
     COALESCE(wf.num_structures_pledged, 0) AS num_structures_pledged
   FROM [s1_eternum-Structure] s
   LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id
@@ -92,11 +94,17 @@ const parseBigInt = (value: unknown): bigint | null => {
   return null;
 };
 
-const parseIntNumber = (value: unknown): number => {
+const parseNonNegativeBigInt = (value: unknown): bigint => {
   const parsed = parseBigInt(value);
   if (parsed == null || parsed < 0n) {
-    return 0;
+    return 0n;
   }
+
+  return parsed;
+};
+
+const parseIntNumber = (value: unknown): number => {
+  const parsed = parseNonNegativeBigInt(value);
 
   const asNumber = Number(parsed);
   if (!Number.isFinite(asNumber) || asNumber < 0) {
@@ -151,7 +159,28 @@ const parseOwnerName = (value: unknown): string | null => {
   return trimmed;
 };
 
+const getOptimisticFaithPoints = (
+  claimedPoints: bigint,
+  claimPerSecond: bigint,
+  claimLastAt: bigint,
+  nowInSeconds: bigint,
+): bigint => {
+  if (claimedPoints <= 0n && claimPerSecond <= 0n) {
+    return 0n;
+  }
+
+  if (claimPerSecond <= 0n || claimLastAt <= 0n || nowInSeconds <= claimLastAt) {
+    return claimedPoints;
+  }
+
+  const elapsedSeconds = nowInSeconds - claimLastAt;
+  const pendingPoints = claimPerSecond * elapsedSeconds;
+  return claimedPoints + pendingPoints;
+};
+
 const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeaderboardEntry[] => {
+  const nowInSeconds = BigInt(Math.floor(Date.now() / 1000));
+
   const entries = rows
     .map((row) => {
       const wonderId = parseBigInt(row.wonder_id);
@@ -160,8 +189,11 @@ const transformFaithLeaderboardRows = (rows: FaithLeaderboardRow[]): FaithLeader
       }
 
       const realmId = parseIntNumber(row.realm_id);
-      const totalFaithPoints = parseBigInt(row.claimed_points) ?? 0n;
-      const faithPointsPerSecond = parseIntNumber(row.claim_per_sec);
+      const claimedPoints = parseNonNegativeBigInt(row.claimed_points);
+      const claimPerSecond = parseNonNegativeBigInt(row.claim_per_sec);
+      const claimLastAt = parseNonNegativeBigInt(row.claim_last_at);
+      const totalFaithPoints = getOptimisticFaithPoints(claimedPoints, claimPerSecond, claimLastAt, nowInSeconds);
+      const faithPointsPerSecond = parseIntNumber(claimPerSecond);
       const followerCount = parseIntNumber(row.num_structures_pledged);
 
       return {

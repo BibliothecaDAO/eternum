@@ -104,6 +104,7 @@ export const FaithLeaderboardPanel = () => {
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-gold">Faith Leaderboard</span>
           <span className="text-[11px] text-gold/65">Last update: {updatedLabel}</span>
+          <span className="text-[10px] text-gold/50">Total FP includes estimated unclaimed points from FP/sec.</span>
         </div>
         <RefreshButton
           onClick={() => {
