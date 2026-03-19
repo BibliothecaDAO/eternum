@@ -6,7 +6,7 @@ import { Subscription, useSyncStore } from "../store/use-sync-store";
 import { LoadingStateKey } from "../store/use-world-loading";
 import { useToriiSync } from "./use-torii-sync";
 
-export const useSyncLeaderboard = () => {
+export const useSyncLeaderboard = ({ auto = true, skip = false }: { auto?: boolean; skip?: boolean } = {}) => {
   const syncLeaderboard = useCallback(
     async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const hyperstructureIds = await sqlApi.fetchHyperstructures();
@@ -39,6 +39,8 @@ export const useSyncLeaderboard = () => {
     subscriptionKey: Subscription.Guild,
     loadingKey: LoadingStateKey.Leaderboard,
     fetch: syncLeaderboard,
+    auto,
+    skip,
   });
 
   return { isSyncing, sync };

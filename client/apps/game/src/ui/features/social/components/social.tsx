@@ -285,48 +285,13 @@ export const Social = () => {
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
+  const { isSyncing } = useSyncLeaderboard({ auto: isOpen, skip: !isOpen });
 
   useEffect(() => {
     if (tabsLength > 0 && activeTabIndex !== selectedTab) {
       setSelectedTab(activeTabIndex);
     }
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
-
-  const SocialContent = () => {
-    const { isSyncing } = useSyncLeaderboard();
-    return isSyncing ? (
-      <LoadingAnimation />
-    ) : (
-      <Tabs
-        size="small"
-        selectedIndex={activeTabIndex}
-        onChange={(index: number) => {
-          setSelectedTab(index);
-          setIsExpanded(false);
-          setSelectedPlayer(0n);
-        }}
-        className="h-full mt-3"
-      >
-        <div className="flex flex-col h-full">
-          <Tabs.List className="">
-            {tabs.map((tab) => (
-              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                {tab.label}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-
-          <Tabs.Panels className="overflow-hidden flex-1">
-            {tabs.map((tab) => (
-              <Tabs.Panel key={tab.key} className="h-full">
-                {tab.component}
-              </Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </div>
-      </Tabs>
-    );
-  };
 
   return (
     <ExpandableOSWindow
@@ -340,7 +305,40 @@ export const Social = () => {
       childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >
-      {isOpen ? <SocialContent /> : null}
+      {isOpen ? (
+        isSyncing ? (
+          <LoadingAnimation />
+        ) : (
+          <Tabs
+            size="small"
+            selectedIndex={activeTabIndex}
+            onChange={(index: number) => {
+              setSelectedTab(index);
+              setIsExpanded(false);
+              setSelectedPlayer(0n);
+            }}
+            className="h-full mt-3"
+          >
+            <div className="flex flex-col h-full">
+              <Tabs.List className="">
+                {tabs.map((tab) => (
+                  <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                    {tab.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+
+              <Tabs.Panels className="overflow-hidden flex-1">
+                {tabs.map((tab) => (
+                  <Tabs.Panel key={tab.key} className="h-full">
+                    {tab.component}
+                  </Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </div>
+          </Tabs>
+        )
+      ) : null}
     </ExpandableOSWindow>
   );
 };
