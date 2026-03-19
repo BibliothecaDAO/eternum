@@ -210,30 +210,21 @@ function getManifestContracts(manifest: GameManifestLike) {
   return Array.isArray(manifest.contracts) ? manifest.contracts : [];
 }
 
-function isMatchingContractTag(tag: string | undefined, lookup: ManifestContractAddressLookup): boolean {
-  if (!tag) {
-    return false;
-  }
-
-  if (lookup.exactTag && tag === lookup.exactTag) {
-    return true;
-  }
-
-  if (lookup.suffix && tag.endsWith(lookup.suffix)) {
-    return true;
-  }
-
-  if (lookup.includes && tag.includes(lookup.includes)) {
-    return true;
-  }
-
-  return false;
+function resolveTaggedManifestContract(
+  manifest: GameManifestLike,
+  matchesTag: (tag: string) => boolean,
+): GameManifestLike["contracts"][number] | undefined {
+  return getManifestContracts(manifest).find((entry) => {
+    const tag = typeof entry?.tag === "string" ? entry.tag : undefined;
+    return tag ? matchesTag(tag) : false;
+  });
 }
 
 function resolveManifestContractAddress(manifest: GameManifestLike, lookup: ManifestContractAddressLookup): string {
-  const contract = getManifestContracts(manifest).find((entry) =>
-    isMatchingContractTag(typeof entry?.tag === "string" ? entry.tag : undefined, lookup),
-  );
+  const contract =
+    (lookup.exactTag ? resolveTaggedManifestContract(manifest, (tag) => tag === lookup.exactTag) : undefined) ||
+    (lookup.suffix ? resolveTaggedManifestContract(manifest, (tag) => tag.endsWith(lookup.suffix)) : undefined) ||
+    (lookup.includes ? resolveTaggedManifestContract(manifest, (tag) => tag.includes(lookup.includes)) : undefined);
 
   if (contract?.address && !isZeroAddress(contract.address)) {
     return contract.address;
@@ -319,5 +310,13 @@ export function resolveRealmInternalSystemsAddress(manifest: GameManifestLike): 
     label: "realm_internal_systems",
     exactTag: "s1_eternum-realm_internal_systems",
     suffix: "-realm_internal_systems",
+  });
+}
+
+export function resolveVillageSystemsAddress(manifest: GameManifestLike): string {
+  return resolveManifestContractAddress(manifest, {
+    label: "village_systems",
+    exactTag: "s1_eternum-village_systems",
+    suffix: "-village_systems",
   });
 }

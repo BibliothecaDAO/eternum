@@ -57,7 +57,7 @@ function buildFactoryRunSteps(gameType: FactoryRunRecord["gameType"]): FactoryRu
 
   return [
     ...sharedSteps.slice(0, 4),
-    buildFactoryRunStep("grant-village-pass-role", "Grant village pass role"),
+    buildFactoryRunStep("grant-village-pass-role", "Grant village pass roles"),
     buildFactoryRunStep("create-banks", "Create banks"),
     sharedSteps[4],
   ];

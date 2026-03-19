@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs, resolveOptionalArg } from "./args";
-import { grantVillagePassRoleToRealmInternalSystems } from "../eternum/village-pass-role";
+import { grantVillagePassRolesToWorldSystems } from "../eternum/village-pass-role";
 
 function usage(): void {
   console.log(
@@ -8,6 +8,10 @@ function usage(): void {
       "",
       "Usage:",
       "  bun config/deployer/clean/cli/grant-village-pass-minter-role.ts --chain <slot.eternum|slottest.eternum|sepolia.eternum|mainnet.eternum|local.eternum> --game <world-name>",
+      "",
+      "This command grants village pass roles for one eternum world:",
+      "  MINTER_ROLE -> realm_internal_systems",
+      "  DISTRIBUTOR_ROLE -> village_systems",
       "",
       "Optional env or flags:",
       "  RPC_URL / --rpc-url",
@@ -58,7 +62,7 @@ async function main() {
     return;
   }
 
-  const summary = await grantVillagePassRoleToRealmInternalSystems(buildGrantVillagePassRequest(args));
+  const summary = await grantVillagePassRolesToWorldSystems(buildGrantVillagePassRequest(args));
   console.log(JSON.stringify(summary, null, 2));
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveDeploymentEnvironment } from "../environment";
+import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
 
 describe("resolveDeploymentEnvironment", () => {
   test("accepts slot.blitz", () => {
@@ -16,5 +16,10 @@ describe("resolveDeploymentEnvironment", () => {
     expect(() => resolveDeploymentEnvironment("mainnet.blitz")).toThrow(
       'Unsupported environment "mainnet.blitz". Expected one of: slot.blitz, slot.eternum',
     );
+  });
+
+  test("keeps eternum-only launch gates separate from blitz", () => {
+    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("slot.eternum"))).toBe(true);
+    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("slot.blitz"))).toBe(false);
   });
 });

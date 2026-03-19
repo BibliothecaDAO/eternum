@@ -116,7 +116,7 @@ shows each launch step separately:
 - Wait for factory index
 - Configure world
 - Grant loot chest role
-- Grant village pass role
+- Grant village pass roles
 - Create banks
 - Create indexer
 
@@ -148,13 +148,14 @@ burying conflict logic inside the workflow YAML. Stale leases are ignored after 
 not block recovery forever.
 
 For `slot.eternum`, the launch flow also runs the village pass role grant automatically after world configuration. It
-grants `MINTER_ROLE` on the chain's `villagePass` contract to the deployed `realm_internal_systems` contract for the new
-game, using the same admin account as the rest of the launch.
+grants `MINTER_ROLE` to the deployed `realm_internal_systems` contract and `DISTRIBUTOR_ROLE` to the deployed
+`village_systems` contract on the chain's `villagePass` contract, using the same admin account as the rest of the
+launch.
 
 ## Village Pass Role Grant
 
-For `{network}.eternum` worlds, the clean deployer also exposes a dedicated command to grant `MINTER_ROLE` on the
-chain's `villagePass` contract to the deployed `realm_internal_systems` contract for one game:
+For `{network}.eternum` worlds, the clean deployer also exposes a dedicated command to grant both village pass roles for
+one game:
 
 ```bash
 bun config/deployer/clean/cli/grant-village-pass-minter-role.ts \
@@ -163,9 +164,13 @@ bun config/deployer/clean/cli/grant-village-pass-minter-role.ts \
 ```
 
 It resolves the live world addresses from factory SQL, patches the game manifest in memory, finds
-`s1_eternum-realm_internal_systems`, loads `villagePass` from `contracts/common/addresses/{chain}.json`, and submits a
-single `grant_role(MINTER_ROLE, realm_internal_systems)` transaction. Artifacts are written to
-`.context/village-pass-minter-role/`.
+`s1_eternum-realm_internal_systems` and `s1_eternum-village_systems`, loads `villagePass` from
+`contracts/common/addresses/{chain}.json`, and submits a single Starknet multicall containing:
+
+- `grant_role(MINTER_ROLE, realm_internal_systems)`
+- `grant_role(DISTRIBUTOR_ROLE, village_systems)`
+
+Artifacts are written to `.context/village-pass-role/`.
 
 Progress output is written to stderr during execution so CI logs show the current stage and elapsed time without
 breaking the final JSON written to stdout.

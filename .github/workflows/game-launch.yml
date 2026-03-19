@@ -478,7 +478,7 @@ jobs:
           source .context/game-launch/launch-env.sh
           run_launch_step grant-lootchest-role
 
-      - name: Grant village pass role
+      - name: Grant village pass roles
         if:
           ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-role'
           }}
