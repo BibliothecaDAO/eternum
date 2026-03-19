@@ -6,7 +6,10 @@ An autonomous agent + MCP server for playing [Eternum](https://eternum.realms.wo
 
 ```bash
 # From repo root
-pnpm i && pnpm build:packages
+pnpm i
+pnpm build:packages
+pnpm --dir packages/client build
+pnpm --dir packages/game-agent build
 
 # Setup
 cd client/apps/onchain-agent
