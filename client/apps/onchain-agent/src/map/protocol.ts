@@ -33,101 +33,190 @@ import { Coord, getNeighborOffsets } from "@bibliothecadao/types";
 
 // ── Result types ──────────────────────────────────────────────────────
 
-/** Deep drill-down on a single tile, returned by tileInfo(). */
+/**
+ * Deep drill-down on a single tile, returned by {@link MapProtocol.tileInfo}.
+ *
+ * Contains biome info and, when the tile is occupied, full entity details.
+ */
 export interface TileInfoResult {
+  /** Display coordinates (centered, Y-positive-north). */
   position: { x: number; y: number };
+  /** Human-readable biome name (e.g. "Deep Ocean", "Tropical Seasonal Forest"). */
   biome: string;
+  /** Raw numeric biome identifier from the contract. */
   biomeId: number;
+  /** Whether this tile has been explored on the map. */
   explored: boolean;
   /** Full entity details if the tile is occupied. Null for empty/unexplored tiles. */
   entity: EntityInfoResult | null;
 }
 
-/** Summary of whatever occupies a tile. */
+/**
+ * Compact summary of whatever occupies a tile.
+ *
+ * Used inside {@link NearbyEntity} and by the internal `summarizeOccupier` helper.
+ * Designed to be immediately scannable without needing a follow-up query.
+ */
 export interface OccupierSummary {
+  /** Classification of the occupier. */
   kind: "structure" | "explorer" | "chest" | "quest" | "spire" | "empty";
+  /** On-chain entity ID of the occupier. */
   entityId: number;
+  /** Whether the current player owns this entity. */
   owned: boolean;
-  /** One-line human-readable description. */
+  /** One-line human-readable description (e.g. "Your 5,000 Knight T2", "Realm lv3"). */
   label: string;
   /** Combat strength if applicable (explorer or guarded structure). */
   strength?: { base: number; display: string };
 }
 
-/** A nearby entity with distance, returned by nearby(). */
+/**
+ * A nearby entity with distance metadata, returned inside {@link NearbyResult}.
+ */
 export interface NearbyEntity {
+  /** Display coordinates of the entity. */
   position: { x: number; y: number };
+  /** Hex distance from the query center. */
   distance: number;
+  /** Summary of the occupier at this position. */
   occupier: OccupierSummary;
+  /** Human-readable biome name at this tile. */
   biome: string;
 }
 
-/** Result of nearby() — grouped by category for immediate use. */
+/**
+ * Result of {@link MapProtocol.nearby} — entities grouped by category for immediate use.
+ *
+ * Each category is sorted by ascending hex distance from the query center.
+ */
 export interface NearbyResult {
+  /** The display-coordinate center of the search. */
   center: { x: number; y: number };
+  /** Search radius in hex tiles. */
   radius: number;
+  /** Player-owned armies within range, sorted by distance. */
   ownedArmies: NearbyEntity[];
+  /** Player-owned structures within range, sorted by distance. */
   ownedStructures: NearbyEntity[];
+  /** Enemy armies within range, sorted by distance. */
   enemyArmies: NearbyEntity[];
+  /** Enemy structures within range, sorted by distance. */
   enemyStructures: NearbyEntity[];
+  /** Chests (opened or unopened) within range, sorted by distance. */
   chests: NearbyEntity[];
+  /** Quests, spires, and other non-categorized entities within range. */
   other: NearbyEntity[];
 }
 
-/** Full entity details, returned by entityInfo(). */
+/**
+ * Full entity details for an on-chain entity, returned by {@link MapProtocol.entityInfo}
+ * and {@link MapProtocol.tileInfo}.
+ *
+ * Exactly one of `explorer`, `structure`, or `chest` is populated based on `kind`.
+ */
 export interface EntityInfoResult {
+  /** On-chain entity ID. */
   entityId: number;
+  /** Display coordinates. */
   position: { x: number; y: number };
+  /** Classification of the entity. */
   kind: "structure" | "explorer" | "chest" | "quest" | "spire";
+  /** Whether the current player owns this entity. */
   owned: boolean;
+  /** Human-readable biome name at the entity's tile. */
   biome: string;
+  /** Raw numeric biome identifier. */
   biomeId: number;
-  /** Explorer-specific fields. */
+  /** Explorer-specific fields. Present only when `kind === "explorer"`. */
   explorer?: {
+    /** Troop class name (e.g. "Knight", "Paladin", "Crossbowman"). */
     troopType: string;
+    /** Troop tier label (e.g. "T1", "T2", "T3"). */
     troopTier: string;
+    /** Number of individual troops in the army. */
     troopCount: number;
+    /** Current projected stamina (accounts for regeneration since last update). */
     stamina: number;
+    /** Combat strength with base value and biome-modified display string. */
     strength: { base: number; display: string };
+    /** Owner display name ("You" for own armies, decoded felt or truncated address). */
     owner: string;
   };
-  /** Structure-specific fields. */
+  /** Structure-specific fields. Present only when `kind === "structure"`. */
   structure?: {
+    /** Structure category (e.g. "Realm", "Hyperstructure", "Fragment Mine"). */
     category: string;
+    /** Current structure level. */
     level: number;
+    /** Active guard slots with non-zero troop counts. */
     guards: GuardInfo[];
+    /** Aggregate combat strength of all guards, accounting for biome. */
     guardStrength: { base: number; display: string };
+    /** Resources held by the structure. */
     resources: ResourceInfo[];
+    /** Current number of explorers spawned from this structure. */
     explorerCount: number;
+    /** Maximum explorers this structure can spawn. */
     maxExplorerCount: number;
+    /** Owner display name ("You" for own structures, decoded felt or truncated address). */
     owner: string;
   };
-  /** Chest-specific fields. */
+  /** Chest-specific fields. Present only when `kind === "chest"`. */
   chest?: {
+    /** Whether the chest reward has already been claimed. */
     opened: boolean;
   };
 }
 
-/** A matching entity from find(). */
+/**
+ * A matching entity from {@link MapProtocol.find}, with optional distance
+ * and strength when available.
+ */
 export interface FindResult {
+  /** On-chain entity ID. */
   entityId: number;
+  /** Display coordinates. */
   position: { x: number; y: number };
+  /** Human-readable entity type (e.g. "Realm", "Knight", "Chest"). */
   kind: string;
+  /** Descriptive label, prefixed with "Your" for owned entities. */
   label: string;
+  /** Hex distance from the reference position (present only if `referencePos` was provided). */
   distance?: number;
+  /** Combat strength (present for armies and guarded structures). */
   strength?: { base: number; display: string };
 }
 
-/** A diagnostic pushed automatically each refresh. */
+/**
+ * A diagnostic alert pushed automatically each snapshot refresh.
+ *
+ * Diagnostics are injected into the agent's context before each tick
+ * to surface threats, opportunities, and status updates without requiring
+ * the agent to poll.
+ */
 export interface Diagnostic {
+  /** Alert severity: "threat" for imminent danger, "opportunity" for actionable advantage, "info" for status. */
   severity: "threat" | "opportunity" | "info";
+  /** Human-readable description of the diagnostic. */
   message: string;
+  /** Display coordinates of the relevant tile, when spatial. */
   position?: { x: number; y: number };
+  /** Entity ID most relevant to this diagnostic (e.g. the threatening army or the target structure). */
   entityId?: number;
 }
 
 // ── Target types for find() ───────────────────────────────────────────
 
+/**
+ * Entity category filter for {@link MapProtocol.find}.
+ *
+ * - `"hyperstructure"` — victory-point structures (occupier types 9-11)
+ * - `"mine"` — fragment mines (occupier type 12)
+ * - `"village"` — villages (occupier type 13)
+ * - `"chest"` — unopened chests only
+ * - `"enemy_army"` / `"enemy_structure"` — entities not owned by the player
+ * - `"own_army"` / `"own_structure"` — entities owned by the player
+ */
 export type FindTargetType =
   | "hyperstructure"
   | "mine"
@@ -140,6 +229,11 @@ export type FindTargetType =
 
 // ── Occupier type → kind mapping ──────────────────────────────────────
 
+/**
+ * Map a raw occupier type number to its semantic kind.
+ * @param occupierType - Raw numeric occupier type from the tile state.
+ * @returns The semantic kind string, or "empty" for unrecognized types.
+ */
 function occupierKind(occupierType: number): OccupierSummary["kind"] {
   if (occupierType === 0) return "empty";
   if (isStructure(occupierType)) return "structure";
@@ -150,6 +244,7 @@ function occupierKind(occupierType: number): OccupierSummary["kind"] {
   return "empty";
 }
 
+/** Lookup table: occupier type number to structure category label. */
 const STRUCTURE_TYPE_LABELS: Record<number, string> = {
   1: "Realm", 2: "Realm", 3: "Realm", 4: "Realm",
   5: "Wonder", 6: "Wonder", 7: "Wonder", 8: "Wonder",
@@ -157,6 +252,7 @@ const STRUCTURE_TYPE_LABELS: Record<number, string> = {
   12: "Fragment Mine", 13: "Village", 14: "Bank",
 };
 
+/** Lookup table: occupier type number to explorer troop class label. */
 const EXPLORER_TYPE_LABELS: Record<number, string> = {
   15: "Knight", 16: "Knight", 17: "Knight",
   18: "Paladin", 19: "Paladin", 20: "Paladin",
@@ -166,17 +262,36 @@ const EXPLORER_TYPE_LABELS: Record<number, string> = {
   30: "Crossbowman", 31: "Crossbowman", 32: "Crossbowman",
 };
 
+/**
+ * Convert a raw biome ID to a human-readable name with space-separated words.
+ * @param biomeId - Numeric biome identifier.
+ * @returns Formatted biome name (e.g. "Tropical Seasonal Forest"), or "Unknown".
+ */
 function biomeName(biomeId: number): string {
   const type = BiomeIdToType[biomeId];
   if (!type) return "Unknown";
   return type.replace(/([a-z])([A-Z])/g, "$1 $2");
 }
 
+/**
+ * Compute hex distance between two positions using the Coord utility.
+ * @param a - First position in raw contract coordinates.
+ * @param b - Second position in raw contract coordinates.
+ * @returns Integer hex distance.
+ */
 function hexDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
   return new Coord(a.x, a.y).distance(new Coord(b.x, b.y));
 }
 
-/** Decode a felt (hex address) to a human-readable short string, or truncate. */
+/**
+ * Decode a felt-encoded address to a human-readable owner name.
+ *
+ * Attempts ASCII decoding first (Cartridge controller names are stored as felts).
+ * Falls back to a truncated hex representation.
+ *
+ * @param address - Hex-encoded felt address string, or null/undefined.
+ * @returns Decoded name, "The Vanguard" for address 0, or truncated hex.
+ */
 function decodeOwner(address: string | null | undefined): string {
   if (!address) return "Unknown";
   try {
@@ -200,16 +315,40 @@ function decodeOwner(address: string | null | undefined): string {
 // ── Protocol implementation ───────────────────────────────────────────
 
 /**
- * Eternum Map Protocol — structured query layer over a MapSnapshot.
+ * Eternum Map Protocol — structured query layer over a {@link MapSnapshot}.
+ *
+ * Provides four LSP-style operations:
+ * - {@link tileInfo} — deep drill-down on a single tile (like LSP hover)
+ * - {@link nearby} — entities within a radius, grouped by category (like findReferences)
+ * - {@link entityInfo} — full details on an entity by ID (like goToDefinition)
+ * - {@link find} — search all tiles for entities matching a type filter (like workspaceSymbol)
+ *
+ * Plus automatic {@link diagnostics} computed each refresh (threats, opportunities, status).
  *
  * Snapshot data is used when available (fast, sync). When an optional
- * EternumClient is provided, tileInfo and entityInfo do live fetches
+ * {@link EternumClient} is provided, `tileInfo` and `entityInfo` do live fetches
  * to fill in details the snapshot doesn't have (guards, resources, troops).
+ *
+ * @example
+ * ```ts
+ * const protocol = createMapProtocol(snapshot, ownedIds, staminaConfig, client, 2147483647);
+ * const tile = await protocol.tileInfo(6, 4);
+ * const enemies = await protocol.find("enemy_army", { x: 0, y: 0 }, 10);
+ * const alerts = protocol.diagnostics();
+ * ```
  */
 export class MapProtocol {
   /** Map center for coordinate conversion. 0 = no conversion (raw coords). */
   private mapCenter: number;
 
+  /**
+   * @param snapshot - Current map snapshot containing tile and entity data.
+   * @param ownedEntityIds - Set of entity IDs owned by the current player.
+   * @param staminaConfig - Stamina regeneration config for projecting current stamina values.
+   * @param client - Optional live client for fetching details not cached in the snapshot.
+   * @param mapCenter - Contract coordinate of the map center; used to convert between
+   *                     raw contract coords and display coords. 0 disables conversion.
+   */
   constructor(
     private snapshot: MapSnapshot,
     private ownedEntityIds: Set<number>,
@@ -231,17 +370,31 @@ export class MapProtocol {
   }
 
 
-  /** Convert display X coordinate to raw contract coordinate. */
+  /**
+   * Convert a display X coordinate back to raw contract coordinate.
+   * @param display - X in display space (centered on map center).
+   * @returns X in raw contract space.
+   */
   toContractX(display: number): number {
     return this.mapCenter ? display + this.mapCenter : display;
   }
 
-  /** Convert display Y coordinate to raw contract coordinate (negated back). */
+  /**
+   * Convert a display Y coordinate back to raw contract coordinate (negated back).
+   * @param display - Y in display space (positive = north).
+   * @returns Y in raw contract space.
+   */
   toContractY(display: number): number {
     return this.mapCenter ? -display + this.mapCenter : display;
   }
 
-  /** Convert display coordinate to raw (kept for backward compat — X axis). */
+  /**
+   * Convert a display coordinate to raw contract coordinate (X axis only).
+   *
+   * @deprecated Use {@link toContractX} for clarity. Kept for backward compatibility.
+   * @param display - X in display space.
+   * @returns X in raw contract space.
+   */
   toContract(display: number): number {
     return this.toContractX(display);
   }
@@ -265,8 +418,22 @@ export class MapProtocol {
   // ── Position-based: "What's at this tile?" (like LSP hover) ───────
 
   /**
-   * Get structured info about a single tile by world coordinates.
-   * When a client is available, fetches full entity details (guards, resources, troops).
+   * Get structured info about a single tile by display coordinates.
+   *
+   * When a client is available, fetches full entity details (guards, resources, troops)
+   * for occupied tiles. For unexplored or empty tiles, returns minimal biome data.
+   *
+   * @param x - Display X coordinate.
+   * @param y - Display Y coordinate.
+   * @returns Tile info with biome data and optional entity details.
+   *
+   * @example
+   * ```ts
+   * const tile = await protocol.tileInfo(6, 4);
+   * if (tile.entity?.explorer) {
+   *   console.log(`Army strength: ${tile.entity.explorer.strength.display}`);
+   * }
+   * ```
    */
   async tileInfo(x: number, y: number): Promise<TileInfoResult> {
     const rawX = this.toContractX(x);
@@ -289,8 +456,24 @@ export class MapProtocol {
   // ── Position-based: "What's around here?" (like LSP findReferences) ─
 
   /**
-   * Get all entities within a radius of a world position, grouped by category.
-   * When a client is available, batch-fetches explorer details for army strength.
+   * Get all entities within a hex radius of a display position, grouped by category.
+   *
+   * Categories: owned armies, owned structures, enemy armies, enemy structures, chests, other.
+   * Each category is sorted by ascending distance. When a client is available,
+   * batch-fetches explorer details to populate army strength values.
+   *
+   * @param x - Display X coordinate of the search center.
+   * @param y - Display Y coordinate of the search center.
+   * @param radius - Search radius in hex tiles.
+   * @returns Entities grouped by category with distance metadata.
+   *
+   * @example
+   * ```ts
+   * const scan = await protocol.nearby(0, 0, 8);
+   * for (const enemy of scan.enemyArmies) {
+   *   console.log(`${enemy.occupier.label} at distance ${enemy.distance}`);
+   * }
+   * ```
    */
   async nearby(x: number, y: number, radius: number = 5): Promise<NearbyResult> {
     const rawCenter = { x: this.toContractX(x), y: this.toContractY(y) };
@@ -347,8 +530,21 @@ export class MapProtocol {
   // ── Entity-based: "Tell me about this entity" (like LSP goToDefinition) ─
 
   /**
-   * Get full details on an entity by ID. Returns null if the entity
-   * is not on any explored tile. Fetches live data when a client is available.
+   * Get full details on an entity by its on-chain ID.
+   *
+   * Searches the snapshot for the tile containing the entity, then resolves
+   * full details (troops, guards, resources) using snapshot cache or live fetch.
+   *
+   * @param entityId - On-chain entity ID to look up.
+   * @returns Full entity details, or null if the entity is not on any explored tile.
+   *
+   * @example
+   * ```ts
+   * const info = await protocol.entityInfo(42);
+   * if (info?.structure) {
+   *   console.log(`Guards: ${info.structure.guardStrength.display}`);
+   * }
+   * ```
    */
   async entityInfo(entityId: number): Promise<EntityInfoResult | null> {
     // Find the tile this entity occupies
@@ -365,8 +561,10 @@ export class MapProtocol {
   }
 
   /**
-   * Batch-enrich NearbyEntity army summaries with strength data.
-   * Fetches explorer details for armies missing strength in their occupier summary.
+   * Batch-enrich NearbyEntity army summaries with strength data from live client.
+   *
+   * Only fetches for armies missing strength in their occupier summary.
+   * No-op if no client is available or all armies already have strength.
    */
   private async enrichArmySummaries(armies: NearbyEntity[]): Promise<void> {
     const missing = armies.filter((a) => a.occupier.kind === "explorer" && !a.occupier.strength);
@@ -386,7 +584,9 @@ export class MapProtocol {
   }
 
   /**
-   * Batch-enrich FindResult army entries with strength data.
+   * Batch-enrich FindResult army entries with strength data from live client.
+   *
+   * Only fetches for results missing strength. No-op if no client is available.
    */
   private async enrichFindResults(results: FindResult[]): Promise<void> {
     const missing = results.filter((r) => !r.strength);
@@ -407,7 +607,12 @@ export class MapProtocol {
 
   /**
    * Resolve full entity details for a tile occupier.
-   * Uses snapshot cache first, falls back to live ViewClient queries.
+   *
+   * Uses snapshot cache first, falls back to live ViewClient queries when a
+   * client is available. Handles explorers, structures, and chests.
+   *
+   * @param tile - The tile state containing the occupier to resolve.
+   * @returns Fully populated entity info with type-specific fields.
    */
   private async resolveEntityDetails(tile: TileState): Promise<EntityInfoResult> {
     const entityId = tile.occupierId;
@@ -476,8 +681,25 @@ export class MapProtocol {
   // ── Global: "Find all X" (like LSP workspaceSymbol) ─────────────
 
   /**
-   * Search the map for entities matching a type filter.
-   * Optionally sorts by distance from a reference position.
+   * Search the entire map for entities matching a type filter.
+   *
+   * When `referencePos` is provided, results are sorted by ascending hex distance.
+   * For army searches (`"enemy_army"`, `"own_army"`), results are batch-enriched
+   * with live strength data when a client is available.
+   *
+   * @param type - Entity category to search for.
+   * @param referencePos - Optional display-coordinate position to sort results by distance from.
+   * @param limit - Maximum number of results to return.
+   * @returns Matching entities with optional distance and strength metadata.
+   *
+   * @example
+   * ```ts
+   * // Find the 5 nearest enemy armies to your position
+   * const enemies = await protocol.find("enemy_army", { x: 0, y: 0 }, 5);
+   * for (const e of enemies) {
+   *   console.log(`${e.label} at (${e.position.x},${e.position.y}), strength: ${e.strength?.display}`);
+   * }
+   * ```
    */
   async find(
     type: FindTargetType,
@@ -581,8 +803,16 @@ export class MapProtocol {
 
   /**
    * Compute diagnostics — threats, opportunities, and status alerts.
-   * Called by the map loop after each refresh. Results are injected into
-   * the agent's context automatically (like LSP diagnostics).
+   *
+   * Called by the map loop after each snapshot refresh. Results are injected
+   * into the agent's context automatically (like LSP diagnostics).
+   *
+   * Detects:
+   * - **Threats**: enemy armies adjacent to owned structures
+   * - **Opportunities**: unopened chests near owned armies, enemy structures within 3 hexes
+   * - **Info**: owned armies with high stamina (>= 80) ready to move
+   *
+   * @returns Array of diagnostics sorted by severity (threats first).
    */
   diagnostics(): Diagnostic[] {
     const diags: Diagnostic[] = [];
@@ -709,8 +939,16 @@ export class MapProtocol {
   // ── Briefing: compact tick context ──────────────────────────────
 
   /**
-   * Build a compact structured briefing for the tick prompt.
-   * Replaces the full ASCII map with ~2K chars of actionable data.
+   * Build a compact structured briefing for the agent's tick prompt.
+   *
+   * Produces a ~2K character summary with sections:
+   * - **YOUR ARMIES** — each army's troops, strength, stamina, position, biome
+   * - **YOUR STRUCTURES** — each structure's level, army capacity, guard status, position
+   * - **THREATS** — from {@link diagnostics}, enemy armies adjacent to your structures
+   * - **OPPORTUNITIES** — chests, unguarded structures near your armies
+   * - **STATUS** — armies ready to move
+   *
+   * @returns Multi-line plaintext briefing string.
    */
   briefing(): string {
     const sections: string[] = [];
@@ -789,6 +1027,15 @@ export class MapProtocol {
 
   // ── Internal helpers ────────────────────────────────────────────
 
+  /**
+   * Build a compact {@link OccupierSummary} for a tile occupier.
+   *
+   * Uses snapshot-cached details when available to populate strength and
+   * descriptive labels. Returns null only for truly empty tiles.
+   *
+   * @param tile - Tile state to summarize.
+   * @returns Occupier summary, or null if the tile is empty.
+   */
   private summarizeOccupier(tile: TileState): OccupierSummary | null {
     if (tile.occupierType === 0) return null;
 
@@ -841,8 +1088,16 @@ export class MapProtocol {
 }
 
 /**
- * Create a MapProtocol instance from the current snapshot.
- * Called by the map loop after each refresh.
+ * Create a {@link MapProtocol} instance from the current snapshot.
+ *
+ * Convenience factory called by the map loop after each refresh.
+ *
+ * @param snapshot - Current map snapshot with tile and entity data.
+ * @param ownedEntityIds - Set of entity IDs owned by the current player.
+ * @param staminaConfig - Optional stamina regeneration config for projecting stamina.
+ * @param client - Optional live client for fetching details missing from the snapshot.
+ * @param mapCenter - Contract coordinate of the map center (0 disables coordinate conversion).
+ * @returns Configured MapProtocol instance ready for queries.
  */
 export function createMapProtocol(
   snapshot: MapSnapshot,

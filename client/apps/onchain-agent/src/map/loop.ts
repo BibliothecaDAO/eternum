@@ -16,11 +16,17 @@ import { createMapProtocol } from "./protocol.js";
 import { isExplorer } from "../world/occupier.js";
 import { detectThreats, type ThreatAlert } from "./threat-detection.js";
 
+/**
+ * Handle returned by {@link createMapLoop} to control the background refresh cycle.
+ */
 interface MapLoop {
+  /** Begin periodic refreshes. No-op if already running. */
   start(): void;
+  /** Stop the periodic timer and mark the loop as inactive. */
   stop(): void;
   /** Force an immediate refresh (e.g. after a successful action). */
   refresh(): Promise<void>;
+  /** Whether the periodic refresh timer is currently active. */
   readonly isRunning: boolean;
 }
 
@@ -41,6 +47,10 @@ interface MapLoop {
  *                        details (level, guard slots). Omit to disable all entity annotations.
  * @param intervalMs - Refresh interval in milliseconds. Defaults to 10 000 ms.
  * @param staminaConfig - Stamina config used to project current stamina values.
+ * @param onThreat - Callback invoked when enemy explorers are detected adjacent to owned
+ *                   structures. Receives deduplicated alerts (same enemy position is not
+ *                   re-reported for 60 seconds).
+ * @param mapCenter - Entity ID used to center the rendered map. Defaults to 0 (world origin).
  * @returns A {@link MapLoop} handle with `start`, `stop`, `refresh`, and `isRunning`.
  */
 export function createMapLoop(
