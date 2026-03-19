@@ -445,7 +445,78 @@ export function createAutomationLoop(
         // Non-critical — offloading can retry next tick
       }
 
-      // Phase 6: Write status file
+      // Phase 6: Hyperstructure victory points
+      // For owned hyperstructures: allocate shares (100% to us in Blitz) and claim points.
+      try {
+        const sql = client.sql as any;
+        const baseUrl = sql.baseUrl ?? (client as any).toriiUrl + "/sql";
+        // Find owned hyperstructures — query all category=2 structures and match owner
+        const ownedHyps: number[] = [];
+        try {
+          const hypStructQuery = `SELECT entity_id, owner FROM [s1_eternum-Structure] WHERE category = 2`;
+          const hypStructRes = await fetch(`${baseUrl}?query=${encodeURIComponent(hypStructQuery)}`);
+          if (hypStructRes.ok) {
+            const rows = (await hypStructRes.json()) as any[];
+            const normalizedPlayer = playerAddress.toLowerCase().replace(/^0x0*/, "0x");
+            for (const r of rows) {
+              const owner = String(r.owner ?? "").toLowerCase().replace(/^0x0*/, "0x");
+              if (owner === normalizedPlayer) ownedHyps.push(Number(r.entity_id));
+            }
+          }
+        } catch { /* non-critical */ }
+
+        if (ownedHyps.length > 0) {
+          const hypIdList = ownedHyps.join(",");
+          const hypQuery = `SELECT hyperstructure_id, initialized, completed, points_multiplier FROM [s1_eternum-Hyperstructure] WHERE hyperstructure_id IN (${hypIdList})`;
+
+          try {
+            const hypRes = await fetch(`${baseUrl}?query=${encodeURIComponent(hypQuery)}`);
+            if (hypRes.ok) {
+              const hypRows = (await hypRes.json()) as any[];
+              const completedHyps: number[] = [];
+
+              for (const hyp of hypRows) {
+                if (!hyp.initialized || !hyp.completed) continue;
+                const hypId = Number(hyp.hyperstructure_id);
+                completedHyps.push(hypId);
+
+                // If points_multiplier is 0, shares haven't been allocated yet
+                if (Number(hyp.points_multiplier) === 0) {
+                  try {
+                    await provider.allocate_shares({
+                      hyperstructure_entity_id: hypId,
+                      co_owners: [[playerAddress, 10000]], // 100% in Blitz
+                      signer,
+                    });
+                    console.log(`[AUTO] Allocated 100% shares on hyperstructure ${hypId}`);
+                  } catch (e: any) {
+                    console.log(`[AUTO] Allocate shares failed for ${hypId}: ${e?.message ?? e}`);
+                  }
+                }
+              }
+
+              // Claim share points for all completed hyperstructures
+              if (completedHyps.length > 0) {
+                try {
+                  await provider.claim_share_points({
+                    hyperstructure_ids: completedHyps,
+                    signer,
+                  });
+                  console.log(`[AUTO] Claimed share points for ${completedHyps.length} hyperstructure(s)`);
+                } catch (e: any) {
+                  console.log(`[AUTO] Claim share points failed: ${e?.message ?? e}`);
+                }
+              }
+            }
+          } catch {
+            // Query failed — non-critical
+          }
+        }
+      } catch {
+        // Non-critical
+      }
+
+      // Phase 7: Write status file
       const statusText = formatStatus({
         timestamp: new Date(),
         realms: realmStatuses,

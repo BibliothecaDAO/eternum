@@ -491,8 +491,84 @@ async function main() {
   );
 
   server.tool(
+    "simulate_attack",
+    "Preview a battle outcome WITHOUT executing it. Shows predicted casualties, winner, and biome advantage. " +
+    "Use this before attack_target to decide whether to commit. " +
+    "NOTE: Larger armies are disproportionately stronger due to combat scaling.",
+    {
+      army_id: z.coerce.number().describe("Entity ID of your army"),
+      target_x: z.coerce.number().describe("Target map X"),
+      target_y: z.coerce.number().describe("Target map Y"),
+    },
+    async ({ army_id, target_x: dispX, target_y: dispY }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const target_x = toContractX(dispX);
+      const target_y = toContractY(dispY);
+
+      const explorer = await client!.view.explorerInfo(army_id);
+      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
+
+      const projectedStamina = projectExplorerStamina(explorer, gameConfig!.stamina);
+      const tile = mapCtx.snapshot?.gridIndex.get(`${target_x},${target_y}`);
+      if (!tile || tile.occupierType === 0) {
+        return { content: [{ type: "text", text: `Nothing to attack at (${dispX},${dispY}).` }], isError: true };
+      }
+
+      const attackerInput = {
+        troopCount: explorer.troopCount,
+        troopType: explorer.troopType,
+        troopTier: explorer.troopTier,
+        stamina: projectedStamina,
+      };
+
+      let defenderInput: { troopCount: number; troopType: string; troopTier: string; stamina: number } | null = null;
+      let defenderLabel = "target";
+
+      if (isExplorer(tile.occupierType)) {
+        const defExplorer = await client!.view.explorerInfo(tile.occupierId);
+        if (defExplorer) {
+          const defStamina = projectExplorerStamina(defExplorer, gameConfig!.stamina);
+          defenderInput = { troopCount: defExplorer.troopCount, troopType: defExplorer.troopType, troopTier: defExplorer.troopTier, stamina: defStamina };
+          defenderLabel = `${defExplorer.troopCount.toLocaleString()} ${defExplorer.troopType} ${defExplorer.troopTier}`;
+        }
+      } else if (isStructure(tile.occupierType)) {
+        const structure = await client!.view.structureAt(target_x, target_y);
+        if (structure) {
+          const guard = structure.guards?.find((g: any) => g.count > 0);
+          if (guard) {
+            defenderInput = { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 };
+            defenderLabel = `${guard.count.toLocaleString()} ${guard.troopType} ${guard.troopTier}`;
+          } else {
+            return { content: [{ type: "text", text: `${structure.category} at (${dispX},${dispY}) is unguarded — free capture.` }] };
+          }
+        }
+      }
+
+      if (!defenderInput || defenderInput.troopCount <= 0) {
+        return { content: [{ type: "text", text: `No troops to fight at (${dispX},${dispY}).` }] };
+      }
+
+      const simResult = simulateCombat(attackerInput, defenderInput, tile.biome);
+
+      const lines = [
+        `SIMULATION — ${simResult.winner === "attacker" ? "YOU WIN" : simResult.winner === "defender" ? "YOU LOSE" : "DRAW"}`,
+        `  Your ${explorer.troopCount.toLocaleString()} ${explorer.troopType} ${explorer.troopTier} vs ${defenderLabel}`,
+        `  Biome: ${simResult.biomeAdvantage}`,
+        `  Your casualties: ${simResult.attackerCasualties.toLocaleString()} | Surviving: ${simResult.attackerSurviving.toLocaleString()}`,
+        `  Enemy casualties: ${simResult.defenderCasualties.toLocaleString()} | Surviving: ${simResult.defenderSurviving.toLocaleString()}`,
+      ];
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    },
+  );
+
+  server.tool(
     "attack_target",
-    "Attack a target adjacent to your army. Simulates the battle first, then executes. Reports predicted casualties.",
+    "Attack a target adjacent to your army. Reports battle outcome including casualties. " +
+    "NOTE: Larger armies are disproportionately stronger due to combat scaling — always attack with your biggest army. " +
+    "Use simulate_attack first to preview the outcome before committing.",
     {
       army_id: z.coerce.number().describe("Entity ID of your army"),
       target_x: z.coerce.number().describe("Target map X"),
@@ -595,8 +671,142 @@ async function main() {
   );
 
   server.tool(
+    "attack_from_guard",
+    "Attack an adjacent enemy army using your structure's guards. Defensive strike — no army needed. " +
+    "NOTE: Larger groups in one slot are disproportionately stronger.",
+    {
+      structure_id: z.coerce.number().describe("Entity ID of your structure"),
+      slot: z.coerce.number().min(0).max(3).describe("Guard slot to attack with (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
+      target_army_id: z.coerce.number().describe("Entity ID of the enemy army to attack"),
+    },
+    async ({ structure_id, slot, target_army_id }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      // Find structure position
+      let structPos: { x: number; y: number } | null = null;
+      for (const t of mapCtx.snapshot?.tiles ?? []) {
+        if (t.occupierId === structure_id) { structPos = t.position; break; }
+      }
+      if (!structPos) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
+
+      const targetExplorer = await client!.view.explorerInfo(target_army_id);
+      if (!targetExplorer) return { content: [{ type: "text", text: `Enemy army ${target_army_id} not found.` }], isError: true };
+
+      const direction = directionBetween(structPos, targetExplorer.position);
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Enemy army is not adjacent to structure. ` }], isError: true };
+      }
+
+      // Simulate: get guard info for this slot
+      const structInfo = await client!.view.structureAt(structPos.x, structPos.y);
+      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
+      const guard = structInfo?.guards?.find((g: any) => g.slot === slotNames[slot]);
+      const tile = mapCtx.snapshot?.gridIndex.get(`${structPos.x},${structPos.y}`);
+      const biome = tile?.biome ?? 0;
+
+      let simResult: ReturnType<typeof simulateCombat> | null = null;
+      if (guard && guard.count > 0) {
+        const defStamina = projectExplorerStamina(targetExplorer, gameConfig!.stamina);
+        simResult = simulateCombat(
+          { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 },
+          { troopCount: targetExplorer.troopCount, troopType: targetExplorer.troopType, troopTier: targetExplorer.troopTier, stamina: defStamina },
+          biome,
+        );
+      }
+
+      try {
+        await provider!.attack_guard_vs_explorer({
+          structure_id,
+          structure_guard_slot: slot,
+          explorer_id: target_army_id,
+          explorer_direction: direction,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Attack failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      if (!simResult) {
+        return { content: [{ type: "text", text: `Attacked enemy army ${target_army_id} from ${slotNames[slot]} guard.` }] };
+      }
+
+      const lines = [
+        `Guard attack — ${simResult.winner === "attacker" ? "VICTORY" : simResult.winner === "defender" ? "DEFEAT" : "DRAW"}`,
+        `  Your ${guard!.count.toLocaleString()} ${guard!.troopType} ${guard!.troopTier} (${slotNames[slot]}) vs ${targetExplorer.troopCount.toLocaleString()} ${targetExplorer.troopType} ${targetExplorer.troopTier}`,
+        `  Your casualties: ${simResult.attackerCasualties.toLocaleString()} | Surviving: ${simResult.attackerSurviving.toLocaleString()}`,
+        `  Enemy casualties: ${simResult.defenderCasualties.toLocaleString()} | Surviving: ${simResult.defenderSurviving.toLocaleString()}`,
+      ];
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    },
+  );
+
+  server.tool(
+    "raid_target",
+    "Raid an adjacent structure for resources. Deals only 10% of normal battle damage but can steal loot on success. " +
+    "Success if your damage > 2x defender's, fail if < 0.5x, chance-based in between. " +
+    "NOTE: Larger armies are disproportionately stronger.",
+    {
+      army_id: z.coerce.number().describe("Entity ID of your raiding army"),
+      target_x: z.coerce.number().describe("Target structure map X"),
+      target_y: z.coerce.number().describe("Target structure map Y"),
+      steal_resources: z.array(z.object({
+        resource_id: z.coerce.number().describe("Resource type ID to steal"),
+        amount: z.coerce.number().describe("Amount to steal (human-readable)"),
+      })).optional().default([]).describe("Resources to steal on success"),
+    },
+    async ({ army_id, target_x: dispX, target_y: dispY, steal_resources: stealList }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const target_x = toContractX(dispX);
+      const target_y = toContractY(dispY);
+
+      const explorer = await client!.view.explorerInfo(army_id);
+      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
+
+      const targetHex = { x: target_x, y: target_y };
+      const direction = directionBetween(explorer.position, targetHex);
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Army not adjacent to (${dispX},${dispY}). Move first.` }], isError: true };
+      }
+
+      const tile = mapCtx.snapshot?.gridIndex.get(`${target_x},${target_y}`);
+      if (!tile || !isStructure(tile.occupierType)) {
+        return { content: [{ type: "text", text: `No structure at (${dispX},${dispY}). Raids only work on structures.` }], isError: true };
+      }
+
+      const structure = await client!.view.structureAt(target_x, target_y);
+      if (!structure) return { content: [{ type: "text", text: "Structure not found." }], isError: true };
+
+      const scaledSteal = stealList.map((r) => ({
+        resourceId: r.resource_id,
+        amount: Math.floor(r.amount * RESOURCE_PRECISION),
+      }));
+
+      try {
+        await provider!.raid_explorer_vs_guard({
+          explorer_id: army_id,
+          structure_id: structure.entityId,
+          structure_direction: direction,
+          steal_resources: scaledSteal,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Raid failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      const stealSummary = stealList.length > 0
+        ? ` Attempted to steal: ${stealList.map((r) => `${r.amount} of resource ${r.resource_id}`).join(", ")}.`
+        : "";
+      return { content: [{ type: "text", text: `Raided structure at (${dispX},${dispY}). 10% damage dealt to guards.${stealSummary}` }] };
+    },
+  );
+
+  server.tool(
     "create_army",
-    "Create a new army at one of your realms. Auto-selects troop type by biome.",
+    "Create a new army at one of your realms. Auto-selects troop type by biome. " +
+    "NOTE: Larger armies are disproportionately stronger — 1 army of 2000 beats 2 armies of 1000. Prefer fewer, bigger armies.",
     {
       structure_id: z.coerce.number().describe("Entity ID of your realm"),
       troop_type: z.enum(["Knight", "Paladin", "Crossbowman"]).optional().describe("Override troop type"),
@@ -787,10 +997,11 @@ async function main() {
   );
 
   server.tool(
-    "guard_structure",
-    "Add troops from a structure's storage to one of its guard slots for defense. " +
+    "guard_from_storage",
+    "Add troops from a structure's own resource storage into one of its guard slots. " +
     "Structures can have up to 4 guard slots (Alpha=0, Bravo=1, Charlie=2, Delta=3). " +
-    "Check map_entity_info first to see which slots are occupied.",
+    "Check map_entity_info first to see which slots are occupied. " +
+    "NOTE: Larger groups in one slot are disproportionately stronger — concentrate troops in fewer slots.",
     {
       structure_id: z.coerce.number().describe("Entity ID of the structure to guard"),
       slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
@@ -822,6 +1033,348 @@ async function main() {
       }
 
       return { content: [{ type: "text", text: `Added ${troopAmount.toLocaleString()} ${troop_type} ${tierSuffix} to ${slotNames[slot] ?? `slot ${slot}`} guard on structure ${structure_id}.` }] };
+    },
+  );
+
+  server.tool(
+    "guard_from_army",
+    "Move troops from an adjacent army into a structure's guard slot. " +
+    "The army must be adjacent to the structure. " +
+    "NOTE: Larger groups in one slot are disproportionately stronger — concentrate troops in fewer slots.",
+    {
+      army_id: z.coerce.number().describe("Entity ID of the army donating troops"),
+      structure_id: z.coerce.number().describe("Entity ID of the structure to garrison"),
+      slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
+      amount: z.coerce.number().describe("Number of troops to move into the guard slot"),
+    },
+    async ({ army_id, structure_id, slot, amount: troopAmount }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      // Find structure position for adjacency check
+      let structPos: { x: number; y: number } | null = null;
+      for (const t of mapCtx.snapshot?.tiles ?? []) {
+        if (t.occupierId === structure_id) { structPos = t.position; break; }
+      }
+
+      const explorer = await client!.view.explorerInfo(army_id);
+      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
+
+      if (structPos) {
+        const direction = directionBetween(explorer.position, structPos);
+        if (direction === null) {
+          return { content: [{ type: "text", text: `Army ${army_id} is not adjacent to structure ${structure_id}. Move first.` }], isError: true };
+        }
+      }
+
+      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
+      const direction = structPos ? directionBetween(explorer.position, structPos) : null;
+
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Cannot determine direction to structure.` }], isError: true };
+      }
+
+      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
+
+      try {
+        await provider!.explorer_guard_swap({
+          from_explorer_id: army_id,
+          to_structure_id: structure_id,
+          to_structure_direction: direction,
+          to_guard_slot: slot,
+          count: scaledAmount,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Garrison failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      return { content: [{ type: "text", text: `Garrisoned ${troopAmount.toLocaleString()} troops from army ${army_id} into ${slotNames[slot] ?? `slot ${slot}`} on structure ${structure_id}.` }] };
+    },
+  );
+
+  server.tool(
+    "reinforce_army",
+    "Add more troops from the home structure's storage to an existing army. " +
+    "The army must be adjacent to its home structure. " +
+    "NOTE: Larger armies are disproportionately stronger — reinforce rather than create new armies.",
+    {
+      army_id: z.coerce.number().describe("Entity ID of the army to reinforce"),
+      amount: z.coerce.number().describe("Number of troops to add"),
+    },
+    async ({ army_id, amount: troopAmount }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const explorer = await client!.view.explorerInfo(army_id);
+      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
+
+      // Find the home structure — the explorer's owner field is the structure entity ID
+      const ownerStructureId = explorer.entityId; // explorer.owner is the structure
+      let homePos: { x: number; y: number } | null = null;
+      for (const t of mapCtx.snapshot?.tiles ?? []) {
+        // The owner of the explorer is stored differently — look for structures adjacent to the army
+        if (t.occupierId > 0 && t.occupierType >= 1 && t.occupierType <= 14) {
+          const dir = directionBetween(explorer.position, t.position);
+          if (dir !== null) {
+            // Check if this structure owns this explorer
+            const structInfo = await client!.view.structureAt(t.position.x, t.position.y);
+            if (structInfo && addressesEqual(structInfo.ownerAddress, playerAddress)) {
+              homePos = t.position;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!homePos) {
+        return { content: [{ type: "text", text: `Army ${army_id} is not adjacent to any of your structures. Move it home first.` }], isError: true };
+      }
+
+      const homeDirection = directionBetween(explorer.position, homePos);
+      if (homeDirection === null) {
+        return { content: [{ type: "text", text: `Cannot determine direction to home structure.` }], isError: true };
+      }
+
+      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
+
+      try {
+        await provider!.explorer_add({
+          to_explorer_id: army_id,
+          amount: scaledAmount,
+          home_direction: homeDirection,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Reinforce failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      return { content: [{ type: "text", text: `Reinforced army ${army_id} with ${troopAmount.toLocaleString()} troops.` }] };
+    },
+  );
+
+  server.tool(
+    "transfer_troops",
+    "Transfer troops between two adjacent armies of the same type and tier. " +
+    "NOTE: Larger armies are disproportionately stronger — use this to consolidate small armies into one big one.",
+    {
+      from_army_id: z.coerce.number().describe("Entity ID of the army giving troops"),
+      to_army_id: z.coerce.number().describe("Entity ID of the army receiving troops"),
+      amount: z.coerce.number().describe("Number of troops to transfer"),
+    },
+    async ({ from_army_id, to_army_id, amount: troopAmount }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const fromExplorer = await client!.view.explorerInfo(from_army_id);
+      if (!fromExplorer) return { content: [{ type: "text", text: `Army ${from_army_id} not found.` }], isError: true };
+
+      const toExplorer = await client!.view.explorerInfo(to_army_id);
+      if (!toExplorer) return { content: [{ type: "text", text: `Army ${to_army_id} not found.` }], isError: true };
+
+      const direction = directionBetween(fromExplorer.position, toExplorer.position);
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Armies are not adjacent. Move them next to each other first.` }], isError: true };
+      }
+
+      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
+
+      try {
+        await provider!.explorer_explorer_swap({
+          from_explorer_id: from_army_id,
+          to_explorer_id: to_army_id,
+          to_explorer_direction: direction,
+          count: scaledAmount,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Transfer failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      return { content: [{ type: "text", text: `Transferred ${troopAmount.toLocaleString()} troops from army ${from_army_id} to army ${to_army_id}.` }] };
+    },
+  );
+
+  server.tool(
+    "unguard_to_army",
+    "Move troops from a structure's guard slot to an adjacent army. " +
+    "The army must be adjacent to the structure and have the same troop type/tier.",
+    {
+      structure_id: z.coerce.number().describe("Entity ID of the structure"),
+      slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
+      army_id: z.coerce.number().describe("Entity ID of the receiving army"),
+      amount: z.coerce.number().describe("Number of troops to move out of the guard slot"),
+    },
+    async ({ structure_id, slot, army_id, amount: troopAmount }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      // Find structure position
+      let structPos: { x: number; y: number } | null = null;
+      for (const t of mapCtx.snapshot?.tiles ?? []) {
+        if (t.occupierId === structure_id) { structPos = t.position; break; }
+      }
+
+      const explorer = await client!.view.explorerInfo(army_id);
+      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
+
+      if (!structPos) {
+        return { content: [{ type: "text", text: `Structure ${structure_id} not found on map.` }], isError: true };
+      }
+
+      const direction = directionBetween(structPos, explorer.position);
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Army ${army_id} is not adjacent to structure ${structure_id}. Move first.` }], isError: true };
+      }
+
+      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
+      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
+
+      try {
+        await provider!.guard_explorer_swap({
+          from_structure_id: structure_id,
+          from_guard_slot: slot,
+          to_explorer_id: army_id,
+          to_explorer_direction: direction,
+          count: scaledAmount,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Unguard failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      return { content: [{ type: "text", text: `Moved ${troopAmount.toLocaleString()} troops from ${slotNames[slot] ?? `slot ${slot}`} on structure ${structure_id} to army ${army_id}.` }] };
+    },
+  );
+
+  server.tool(
+    "transfer_to_structure",
+    "Transfer resources (relics, loot, etc.) from an army to an adjacent structure. " +
+    "The army must be adjacent to the structure.",
+    {
+      army_id: z.coerce.number().describe("Entity ID of the army carrying resources"),
+      structure_id: z.coerce.number().describe("Entity ID of the receiving structure"),
+      resources: z.array(z.object({
+        resource_id: z.coerce.number().describe("Resource type ID"),
+        amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
+      })).describe("Resources to transfer"),
+    },
+    async ({ army_id, structure_id, resources: resourceList }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+      if (resourceList.length === 0) return { content: [{ type: "text", text: "No resources specified." }], isError: true };
+
+      const explorer = await client!.view.explorerInfo(army_id);
+      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
+
+      let structPos: { x: number; y: number } | null = null;
+      for (const t of mapCtx.snapshot?.tiles ?? []) {
+        if (t.occupierId === structure_id) { structPos = t.position; break; }
+      }
+      if (!structPos) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
+
+      const direction = directionBetween(explorer.position, structPos);
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Army not adjacent to structure. Move first.` }], isError: true };
+      }
+
+      const scaledResources = resourceList.map((r) => ({
+        resourceId: r.resource_id,
+        amount: Math.floor(r.amount * RESOURCE_PRECISION),
+      }));
+
+      try {
+        await provider!.troop_structure_adjacent_transfer({
+          from_explorer_id: army_id,
+          to_structure_id: structure_id,
+          resources: scaledResources,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Transfer failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      const summary = resourceList.map((r) => `${r.amount.toLocaleString()} of resource ${r.resource_id}`).join(", ");
+      return { content: [{ type: "text", text: `Transferred ${summary} from army ${army_id} to structure ${structure_id}.` }] };
+    },
+  );
+
+  server.tool(
+    "transfer_to_army",
+    "Transfer resources (relics, loot, etc.) between two adjacent armies.",
+    {
+      from_army_id: z.coerce.number().describe("Entity ID of the army giving resources"),
+      to_army_id: z.coerce.number().describe("Entity ID of the army receiving resources"),
+      resources: z.array(z.object({
+        resource_id: z.coerce.number().describe("Resource type ID"),
+        amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
+      })).describe("Resources to transfer"),
+    },
+    async ({ from_army_id, to_army_id, resources: resourceList }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+      if (resourceList.length === 0) return { content: [{ type: "text", text: "No resources specified." }], isError: true };
+
+      const fromExplorer = await client!.view.explorerInfo(from_army_id);
+      if (!fromExplorer) return { content: [{ type: "text", text: `Army ${from_army_id} not found.` }], isError: true };
+
+      const toExplorer = await client!.view.explorerInfo(to_army_id);
+      if (!toExplorer) return { content: [{ type: "text", text: `Army ${to_army_id} not found.` }], isError: true };
+
+      const direction = directionBetween(fromExplorer.position, toExplorer.position);
+      if (direction === null) {
+        return { content: [{ type: "text", text: `Armies are not adjacent. Move them next to each other first.` }], isError: true };
+      }
+
+      const scaledResources = resourceList.map((r) => ({
+        resourceId: r.resource_id,
+        amount: Math.floor(r.amount * RESOURCE_PRECISION),
+      }));
+
+      try {
+        await provider!.troop_troop_adjacent_transfer({
+          from_troop_id: from_army_id,
+          to_troop_id: to_army_id,
+          resources: scaledResources,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Transfer failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      const summary = resourceList.map((r) => `${r.amount.toLocaleString()} of resource ${r.resource_id}`).join(", ");
+      return { content: [{ type: "text", text: `Transferred ${summary} from army ${from_army_id} to army ${to_army_id}.` }] };
+    },
+  );
+
+  server.tool(
+    "apply_relic",
+    "Apply a relic buff to an army, structure guards, or structure production. " +
+    "Costs Essence. Relics come from opening chests. " +
+    "Recipient types: 0=Explorer (army buff), 1=StructureGuard (guard buff), 2=StructureProduction (production buff).",
+    {
+      entity_id: z.coerce.number().describe("Entity ID of the army or structure to buff"),
+      relic_resource_id: z.coerce.number().describe("Resource ID of the relic to apply"),
+      recipient_type: z.coerce.number().min(0).max(2).describe("0=Explorer, 1=StructureGuard, 2=StructureProduction"),
+    },
+    async ({ entity_id, relic_resource_id, recipient_type }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+
+      const recipientNames = ["Explorer (army)", "Structure Guard", "Structure Production"];
+
+      try {
+        await provider!.apply_relic({
+          entity_id,
+          relic_resource_id,
+          recipient_type,
+          signer: account,
+        });
+      } catch (err: any) {
+        return { content: [{ type: "text", text: `Apply relic failed: ${extractTxError(err)}` }], isError: true };
+      }
+
+      return { content: [{ type: "text", text: `Applied relic ${relic_resource_id} to entity ${entity_id} as ${recipientNames[recipient_type] ?? `type ${recipient_type}`}.` }] };
     },
   );
 
