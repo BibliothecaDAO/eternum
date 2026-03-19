@@ -1,3 +1,3 @@
 export function resolveArmyPointLabelSize(): number {
-  return 2;
+  return 32;
 }

@@ -3,6 +3,6 @@ import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 
 describe("resolveArmyPointLabelSize", () => {
   it("keeps army shield point-label icons below the old oversized scale", () => {
-    expect(resolveArmyPointLabelSize()).toBe(2);
+    expect(resolveArmyPointLabelSize()).toBe(32);
   });
 });

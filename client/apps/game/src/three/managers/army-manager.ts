@@ -2541,7 +2541,7 @@ export class ArmyManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
               ),
               enemy: new PointsLabelRenderer(
@@ -2551,7 +2551,7 @@ export class ArmyManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
               ),
               ally: new PointsLabelRenderer(
@@ -2561,7 +2561,7 @@ export class ArmyManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
               ),
               agent: new PointsLabelRenderer(
@@ -2571,7 +2571,7 @@ export class ArmyManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
               ),
             };

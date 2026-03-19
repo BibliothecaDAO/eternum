@@ -533,9 +533,16 @@ function createNoopWorldFxHandle(): WorldFxHandle {
 }
 
 function resolveTextureAspectRatio(texture: THREE.Texture): number {
-  const image = texture.image as { height?: unknown; width?: unknown } | undefined;
-  const width = typeof image?.width === "number" ? image.width : NaN;
-  const height = typeof image?.height === "number" ? image.height : NaN;
+  const image = texture.image as
+    | { naturalWidth?: unknown; naturalHeight?: unknown; height?: unknown; width?: unknown }
+    | undefined;
+
+  // Prefer naturalWidth/naturalHeight (intrinsic dimensions) over width/height
+  // (DOM layout dimensions) because off-DOM HTMLImageElements report width/height as 0.
+  const rawW = typeof image?.naturalWidth === "number" && image.naturalWidth > 0 ? image.naturalWidth : undefined;
+  const rawH = typeof image?.naturalHeight === "number" && image.naturalHeight > 0 ? image.naturalHeight : undefined;
+  const width: number = rawW ?? (typeof image?.width === "number" ? image.width : NaN);
+  const height: number = rawH ?? (typeof image?.height === "number" ? image.height : NaN);
 
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
     return 1;

@@ -1,3 +1,3 @@
 export function resolveChestPointLabelSize(): number {
-  return 2.5;
+  return 40;
 }

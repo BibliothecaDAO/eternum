@@ -13,6 +13,13 @@ function createRectangularTexture(width: number, height: number): THREE.Texture 
   return texture;
 }
 
+/** Simulates an off-DOM HTMLImageElement where width/height are 0 but naturalWidth/naturalHeight are set. */
+function createNaturalDimensionTexture(naturalWidth: number, naturalHeight: number): THREE.Texture {
+  const texture = new THREE.Texture();
+  texture.image = { height: 0, naturalHeight, naturalWidth, width: 0 };
+  return texture;
+}
+
 function collectObjectTypes(root: THREE.Object3D): string[] {
   const types: string[] = [];
   root.traverse((node) => {
@@ -130,6 +137,35 @@ describe("webgpu billboard sizing", () => {
       isInfinite: true,
       size: 1.25,
       texture: createRectangularTexture(128, 64),
+      type: "travel",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+
+    const mesh = findFirstMesh(scene);
+    expect(mesh).toBeDefined();
+    expect(mesh?.scale.x).toBeCloseTo(2.5);
+    expect(mesh?.scale.y).toBeCloseTo(1.25);
+  });
+
+  it("uses naturalWidth/naturalHeight when width/height are zero (off-DOM image)", () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: resolveRendererFxCapabilities({
+        activeMode: "webgpu",
+      }),
+      scene,
+    });
+
+    backend.spawnIconFx({
+      animate: (fx) => {
+        fx.setOpacity(1);
+        return true;
+      },
+      isInfinite: true,
+      size: 1.25,
+      texture: createNaturalDimensionTexture(128, 64),
       type: "travel",
       x: 0,
       y: 0,

@@ -140,7 +140,7 @@ export class ChestManager {
           resolveChestPointLabelSize(),
           0, // Hover scale multiplier
           1.3, // Hover brightness multiplier
-          true, // sizeAttenuation: false = fixed screen size, true = scales with distance
+          false, // sizeAttenuation: false = fixed screen size (avoids WebGPU squish)
         );
 
         console.log("[ChestManager] Points-based icon renderer initialized");
