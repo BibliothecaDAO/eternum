@@ -50,6 +50,7 @@ export function createMapLoop(
   intervalMs = 10_000,
   staminaConfig?: StaminaConfig,
   onThreat?: (alerts: ThreatAlert[]) => void,
+  mapCenter: number = 0,
 ): MapLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
   let running = false;
@@ -152,7 +153,7 @@ export function createMapLoop(
         structureDetailMap,
       );
       ctx.snapshot = snapshot;
-      ctx.protocol = createMapProtocol(snapshot, ownedEntityIds ?? new Set(), staminaConfig, client);
+      ctx.protocol = createMapProtocol(snapshot, ownedEntityIds ?? new Set(), staminaConfig, client, mapCenter);
 
       if (onThreat && ownedEntityIds) {
         const toInput = (t: any) => ({

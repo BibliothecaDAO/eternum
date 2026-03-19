@@ -238,7 +238,9 @@ export function planProduction(
   buildingTargets: BuildingTarget[] = [],
 ): UnifiedPlan {
   const targets = resolveTargets(troopPath, buildingCounts, gameConfig);
-  const smartWeights = computeSmartWeights(buildingCounts, troopPath);
+  // Try optimal (recipe-driven) weights first; fall back to fixed smart weights
+  const optimalWeights = computeOptimalWeights(balances, buildingCounts, troopPath, gameConfig);
+  const smartWeights = optimalWeights ?? computeSmartWeights(buildingCounts, troopPath);
 
   // Budget = 90% of each resource's balance (same cap as game client)
   const budget = new Map<number, number>();
@@ -406,36 +408,36 @@ export function computeSmartWeights(
       }
     }
   } else if (!hasHigherTiers) {
-    // T1 complete only: 30% resource
+    // T1 complete only: 30% resource + 10% labor (grow the pool)
     for (let i = 0; i < T1_RESOURCE_IDS.length; i++) {
       if (has(T1_BUILDING_TYPES[i])) {
-        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: 30, laborToResource: 0 });
+        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: 30, laborToResource: 10 });
       }
     }
   } else {
-    // T1 + higher tiers: Wood=20, Coal=20, Copper=30
+    // T1 + higher tiers: Wood=20, Coal=20, Copper=30 + 10% labor each
     const t1Weights = [20, 20, 30]; // Wood, Coal, Copper
     for (let i = 0; i < T1_RESOURCE_IDS.length; i++) {
       if (has(T1_BUILDING_TYPES[i])) {
-        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: t1Weights[i], laborToResource: 0 });
+        weights.set(T1_RESOURCE_IDS[i], { resourceToResource: t1Weights[i], laborToResource: 10 });
       }
     }
   }
 
   // ── Donkey ──
   if (has(DONKEY_BUILDING)) {
-    weights.set(R.Donkey, { resourceToResource: 10, laborToResource: 0 });
+    weights.set(R.Donkey, { resourceToResource: 10, laborToResource: 10 });
   }
 
   // ── T2/T3 Resources ──
   if (hasHigherTiers) {
     const t2ResBldg = tp.t2Resource + RESOURCE_TO_BUILDING_OFFSET;
     if (has(t2ResBldg)) {
-      weights.set(tp.t2Resource, { resourceToResource: 10, laborToResource: 0 });
+      weights.set(tp.t2Resource, { resourceToResource: 10, laborToResource: 10 });
     }
     const t3ResBldg = tp.t3Resource + RESOURCE_TO_BUILDING_OFFSET;
     if (has(t3ResBldg)) {
-      weights.set(tp.t3Resource, { resourceToResource: 10, laborToResource: 0 });
+      weights.set(tp.t3Resource, { resourceToResource: 10, laborToResource: 10 });
     }
   }
 
@@ -445,17 +447,161 @@ export function computeSmartWeights(
   const hasT3Troop = has(tp.t3Building);
 
   if (hasT3Troop) {
-    // T3 exists: T3=50%, T2=30%, T1=10%
-    weights.set(tp.t3, { resourceToResource: 50, laborToResource: 0 });
-    if (hasT2Troop) weights.set(tp.t2, { resourceToResource: 30, laborToResource: 0 });
-    if (hasT1Troop) weights.set(tp.t1, { resourceToResource: 10, laborToResource: 0 });
+    // T3 exists: T3=50%, T2=30%, T1=10% + 10% labor each
+    weights.set(tp.t3, { resourceToResource: 50, laborToResource: 10 });
+    if (hasT2Troop) weights.set(tp.t2, { resourceToResource: 30, laborToResource: 10 });
+    if (hasT1Troop) weights.set(tp.t1, { resourceToResource: 10, laborToResource: 10 });
   } else if (hasT2Troop) {
-    // T2 exists: T2=30%, T1=10%
-    weights.set(tp.t2, { resourceToResource: 30, laborToResource: 0 });
-    if (hasT1Troop) weights.set(tp.t1, { resourceToResource: 10, laborToResource: 0 });
+    // T2 exists: T2=30%, T1=10% + 10% labor each
+    weights.set(tp.t2, { resourceToResource: 30, laborToResource: 10 });
+    if (hasT1Troop) weights.set(tp.t1, { resourceToResource: 10, laborToResource: 10 });
   } else if (hasT1Troop) {
-    // T1 only: 30%
-    weights.set(tp.t1, { resourceToResource: 30, laborToResource: 0 });
+    // T1 only: 30% + 10% labor
+    weights.set(tp.t1, { resourceToResource: 30, laborToResource: 10 });
+  }
+
+  return weights;
+}
+
+// ── Optimal weight computation (recipe-driven) ─────────────────────
+
+/**
+ * Walk the recipe tree from a target resource, computing total demand
+ * for each input resource per 1 unit of target output.
+ *
+ * Handles self-referencing recipes and circular dependencies by tracking
+ * visited nodes. Only follows complex (resource-to-resource) recipes.
+ */
+function computeTotalDemand(
+  targetId: number,
+  gameConfig: GameConfig,
+): Map<number, number> {
+  const demand = new Map<number, number>();
+
+  function walk(resourceId: number, multiplier: number, visited: Set<number>) {
+    const factory = gameConfig.resourceFactories[resourceId];
+    if (!factory || factory.complexInputs.length === 0) return;
+
+    const output = factory.outputPerComplexInput;
+    if (output <= 0) return;
+
+    for (const input of factory.complexInputs) {
+      // Skip self-referencing inputs (some recipes consume their own output)
+      if (input.resource === resourceId) continue;
+      // Skip already-visited to prevent infinite loops in circular recipes
+      if (visited.has(input.resource)) continue;
+
+      const neededPerUnit = (input.amount / output) * multiplier;
+      demand.set(input.resource, (demand.get(input.resource) ?? 0) + neededPerUnit);
+
+      // Recurse into the input's recipe
+      walk(input.resource, neededPerUnit, new Set([...visited, resourceId]));
+    }
+  }
+
+  walk(targetId, 1, new Set());
+  return demand;
+}
+
+/**
+ * Compute production weights by walking the recipe tree backwards from
+ * the highest-tier troop the realm can produce.
+ *
+ * Instead of fixed percentages, weights are proportional to each resource's
+ * "deficit" — how far its current balance is from the ideal ratio needed
+ * to produce the target troop. Bottleneck resources get higher weights.
+ *
+ * Falls back to null if the realm has no troop buildings (caller should
+ * use computeSmartWeights instead).
+ *
+ * @param balances - Current resource balances (resource ID → human amount).
+ * @param buildingCounts - Map of BuildingType → count on the realm.
+ * @param troopPath - Troop path this realm follows.
+ * @param gameConfig - On-chain game configuration with resource recipes.
+ * @returns Optimal weights, or null if no troop buildings exist.
+ */
+export function computeOptimalWeights(
+  balances: Map<number, number>,
+  buildingCounts: Map<number, number>,
+  troopPath: TroopPath,
+  gameConfig: GameConfig,
+): Map<number, SmartWeight> | null {
+  const tp = TROOP_PATHS[troopPath];
+  const has = (bt: number) => (buildingCounts.get(bt) ?? 0) > 0;
+  const bal = (r: number) => balances.get(r) ?? 0;
+
+  // Find target: highest tier troop with a building.
+  // If Essence is required but absent, downgrade to a tier that doesn't need it.
+  let targetId: number | null = null;
+
+  if (has(tp.t3Building) && bal(38) > 0) {
+    targetId = tp.t3;
+  } else if (has(tp.t2Building) && bal(38) > 0) {
+    targetId = tp.t2;
+  } else if (has(tp.t1Building)) {
+    targetId = tp.t1;
+  }
+
+  if (targetId === null) return null; // no troop buildings → fallback
+
+  // Walk the recipe tree to find total demand per cycle of target
+  const demand = computeTotalDemand(targetId, gameConfig);
+
+  if (demand.size === 0) return null; // no recipe data → fallback
+
+  // For each resource in demand, compute "sustain cycles" = balance / demandPerCycle.
+  // Resources that sustain fewer cycles are the bottleneck and need more weight.
+  const sustainInfo: Array<{ resourceId: number; cycles: number; hasBuilding: boolean }> = [];
+
+  for (const [resourceId, demandPerCycle] of demand) {
+    if (demandPerCycle <= 0) continue;
+
+    // Check if we have a building for this resource
+    // Resource buildings: resourceId + 2. Troop buildings: use TROOP_PATHS lookup.
+    const resBuildingType = resourceId + RESOURCE_TO_BUILDING_OFFSET;
+    const isTroop =
+      resourceId === tp.t1 || resourceId === tp.t2 || resourceId === tp.t3;
+    const troopBuildingType = isTroop
+      ? resourceId === tp.t1 ? tp.t1Building
+        : resourceId === tp.t2 ? tp.t2Building
+        : tp.t3Building
+      : -1;
+    const hasBuilding = has(resBuildingType) || has(troopBuildingType);
+
+    // Non-producible resources (like Essence) are constraints, not targets
+    // Skip them — they can't be produced so weighting them is pointless
+    if (!hasBuilding) continue;
+
+    const cycles = bal(resourceId) / demandPerCycle;
+    sustainInfo.push({ resourceId, cycles, hasBuilding });
+  }
+
+  if (sustainInfo.length === 0) return null;
+
+  // Compute weights: inverse of sustain cycles (fewer cycles = more deficit = more weight)
+  let totalInverse = 0;
+  const inverses = new Map<number, number>();
+
+  for (const { resourceId, cycles } of sustainInfo) {
+    const inverse = 1 / (cycles + 1); // +1 to avoid div-by-zero
+    inverses.set(resourceId, inverse);
+    totalInverse += inverse;
+  }
+
+  const weights = new Map<number, SmartWeight>();
+  const MIN_WEIGHT = 5;
+  const MAX_WEIGHT = 50;
+
+  for (const [resourceId, inverse] of inverses) {
+    const proportion = totalInverse > 0 ? inverse / totalInverse : 0;
+    const rawWeight = Math.round(proportion * 80); // 80% total budget for complex
+    const weight = Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, rawWeight));
+    weights.set(resourceId, { resourceToResource: weight, laborToResource: 10 });
+  }
+
+  // Ensure donkey always gets a small allocation if building exists
+  if (has(DONKEY_BUILDING) && !weights.has(R.Donkey)) {
+    weights.set(R.Donkey, { resourceToResource: 5, laborToResource: 10 });
   }
 
   return weights;
